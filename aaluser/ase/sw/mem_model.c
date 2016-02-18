@@ -461,7 +461,6 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr, int *ret_fd )
 
   // DPI pbase address
   uint64_t *ase_pbase;
-  // *ret_fd = 0;
  
   // This is the real offset to perform read/write
   uint64_t real_offset, calc_pbase;
@@ -471,13 +470,10 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr, int *ret_fd )
 
   // For debug only
 #ifdef ASE_DEBUG
-  // BEGIN_YELLOW_FONTCOLOR;
-  // printf("req_paddr = %p | ", (void *)req_paddr);
   if (fp_memaccess_log != NULL) 
     {
       fprintf(fp_memaccess_log, "req_paddr = %p | ", (void *)req_paddr);
     }
-  // END_YELLOW_FONTCOLOR;
 #endif
 
   // Search which buffer offset_from_pin lies in
@@ -490,15 +486,14 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr, int *ret_fd )
 	  calc_pbase = trav_ptr->pbase;
 	  ase_pbase = (uint64_t*)(calc_pbase + real_offset);
 	  *ret_fd = trav_ptr->fd_ase;
+
 	  // Debug only
         #ifdef ASE_DEBUG
-	  /* BEGIN_YELLOW_FONTCOLOR; */
-	  // printf("offset=0x%016lx | pbase=%p | ret_fd = %d\n", real_offset, (void *)ase_pbase, *ret_fd);
 	  if (fp_memaccess_log != NULL)
 	    {
-	      fprintf(fp_memaccess_log, "offset=0x%016lx | pbase=%p | ret_fd = %d\n", real_offset, (void *)ase_pbase, *ret_fd);
+	      fprintf(fp_memaccess_log, "offset=0x%016lx | pbase=%p | ret_fd = %d\n", 
+		      real_offset, (void *)ase_pbase, *ret_fd);
 	    }
-	  /* END_YELLOW_FONTCOLOR; */
         #endif
 	  return ase_pbase;
 	}
@@ -508,6 +503,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr, int *ret_fd )
 	}
     }
 
+  // If accesses are correct, ASE should not reach this point
   if(trav_ptr == NULL)
     {
       BEGIN_RED_FONTCOLOR;
@@ -519,17 +515,18 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr, int *ret_fd )
 
       // Write error to file
       error_fp = fopen("ase_error.log", "wb");
-      fprintf(error_fp, "*** ASE stopped on an illegal memory access ERROR ***\n");
-      fprintf(error_fp, "        AFU requested access @ physical memory %p\n", (void*)req_paddr);
-      fprintf(error_fp, "        Address not found in requested workspaces listed in workspace_info.log\n");
-      fprintf(error_fp, "        Timestamped transaction to this address is listed in transactions.tsv\n");
-      fflush(error_fp);
-      fclose(error_fp);
+      if (error_fp != NULL) 
+	{
+	  fprintf(error_fp, "*** ASE stopped on an illegal memory access ERROR ***\n");
+	  fprintf(error_fp, "        AFU requested access @ physical memory %p\n", (void*)req_paddr);
+	  fprintf(error_fp, "        Address not found in requested workspaces\n");
+	  fprintf(error_fp, "        Timestamped transaction to this address is listed in ccip_transactions.tsv\n");
+	  fflush(error_fp);
+	  fclose(error_fp);
+	}
 
-      // ase_perror_teardown();
-      // final_ipc_cleanup();
       // Request SIMKILL
-      start_simkill_countdown(); // RRS: exit(1);
+      start_simkill_countdown();
     }
 
   return (uint64_t*)NOT_OK;

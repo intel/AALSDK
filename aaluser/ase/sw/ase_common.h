@@ -338,7 +338,9 @@ void ase_buffer_t_to_str(struct buffer_t *, char *);
 void ase_str_to_buffer_t(char *, struct buffer_t *);
 int ase_dump_to_file(struct buffer_t*, char*);
 uint64_t ase_rand64();
-char* ase_eval_session_directory();
+//char* ase_eval_session_directory();
+// void ase_eval_session_directory(char *);
+void ase_eval_session_directory();
 char* ase_malloc (size_t);
 
 // Message queue operations
@@ -513,14 +515,19 @@ struct ase_cfg_t *cfg;
  */
 // CCI transaction packet
 typedef struct {
-  int       wrfence;
-  int       write_en;
+  int       mode;
+  // int       write_en;
   long      mdata;
   long long cl_addr;
   long long qword[8];
   int       resp_en;
   int       resp_channel;
 } cci_pkt;
+
+#define CCIPKT_WRITE_MODE    0x1000 
+#define CCIPKT_READ_MODE     0x2000
+#define CCIPKT_WRFENCE_MODE  0xFFFF   
+#define CCIPKT_CMPXCHG_MODE  0x8000
 
 
 /*
@@ -572,14 +579,14 @@ void update_glbl_dealloc(int);
  * Request/Response options
  */
 // RX0 channel
-#define ASE_RX0_CSR_WRITE    0x0
-#define ASE_RX0_WR_RESP      0x1
-#define ASE_RX0_RD_RESP      0x4
-#define ASE_RX0_INTR_CMPLT   0x8   // CCI 1.8
-#define ASE_RX0_UMSG         0xf   // CCI 1.8
-// RX1 channel
-#define ASE_RX1_WR_RESP      0x1
-#define ASE_RX1_INTR_CMPLT   0x8   // CCI 1.8
+/* #define ASE_RX0_CSR_WRITE    0x0 */
+/* #define ASE_RX0_WR_RESP      0x1 */
+/* #define ASE_RX0_RD_RESP      0x4 */
+/* #define ASE_RX0_INTR_CMPLT   0x8   // CCI 1.8 */
+/* #define ASE_RX0_UMSG         0xf   // CCI 1.8 */
+/* // RX1 channel */
+/* #define ASE_RX1_WR_RESP      0x1 */
+/* #define ASE_RX1_INTR_CMPLT   0x8   // CCI 1.8 */
 
 
 /*

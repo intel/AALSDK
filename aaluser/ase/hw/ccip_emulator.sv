@@ -1359,11 +1359,11 @@ module ccip_emulator
       begin
 	 // Write fence
 	 if (txhdr.reqtype == ASE_WRFENCE)
-	   pkt.wrfence  = 1;
+	   pkt.mode  = CCIPKT_WRFENCE_MODE;
 	 else
-	   pkt.wrfence  = 0;	 
+	   pkt.mode  = CCIPKT_WRITE_MODE;	 
 	 // Write enable
-	 pkt.write_en = int'(write_en);
+	 // pkt.write_en = int'(write_en);
 	 // Metadata
 	 pkt.vc       = int'(txhdr.vc);
 	 pkt.mdata    = int'(txhdr.mdata);
@@ -1383,7 +1383,6 @@ module ccip_emulator
 	 // Response channel
 	 if (write_en) begin
 	    pkt.resp_channel = 1;	    
-// wrresp_tx2rx_chsel();
 	 end
 	 else begin
 	    pkt.resp_channel = 0;

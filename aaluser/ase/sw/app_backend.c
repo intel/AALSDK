@@ -111,13 +111,16 @@ void session_init()
   // Initialize lock
   if ( pthread_mutex_init(&app_lock, NULL) != 0)
     {
+      BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  Lock initialization failed, EXIT\n");
+      END_YELLOW_FONTCOLOR;
       exit (1);
     }
   
   // Initialize ase_workdir_path
   ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
-  ase_workdir_path = ase_eval_session_directory();
+  // ase_workdir_path = ase_eval_session_directory();  
+  ase_eval_session_directory ();  
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  ASE Session Directory located at =>\n");
   printf("         %s\n", ase_workdir_path);
@@ -134,7 +137,7 @@ void session_init()
   signal(SIGPIPE, SIG_IGN);
 
   BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  Initializing simulation session ... ");
+  printf("  [APP]  Initializing simulation session ... \n");
   END_YELLOW_FONTCOLOR;
 
   app2sim_alloc_tx    = mqueue_open( mq_array[0].name, mq_array[0].perm_flag );

@@ -224,8 +224,8 @@ package ase_pkg;
     * CCI Transaction packet
     */
    typedef struct {
-      int 	  wrfence;
-      int         write_en;
+      int 	  mode;
+      // int         write_en;
       int 	  vc;
       int 	  mdata;
       longint 	  cl_addr;
@@ -234,6 +234,11 @@ package ase_pkg;
       int 	  resp_channel;
    } cci_pkt;
 
+   parameter CCIPKT_WRITE_MODE   = 32'h1000;   
+   parameter CCIPKT_READ_MODE    = 32'h2000;   
+   parameter CCIPKT_WRFENCE_MODE = 32'hFFFF;   
+   parameter CCIPKT_CMPXCHG_MODE = 32'h8000;
+      
 
    /*
     * ASE config structure

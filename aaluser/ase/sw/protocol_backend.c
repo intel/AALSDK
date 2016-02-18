@@ -123,7 +123,7 @@ void wr_memline_dex(cci_pkt *pkt)
   uint64_t *wr_target_vaddr = (uint64_t*)NULL;
   int ret_fd;
 
-  if (pkt->wrfence == 0) 
+  if (pkt->mode == CCIPKT_WRITE_MODE) 
     {
       // Get cl_addr, deduce wr_target_vaddr
       phys_addr = (uint64_t)pkt->cl_addr << 6;
@@ -532,14 +532,23 @@ int ase_init()
   // Evaluate PWD
   ase_run_path = ase_malloc(ASE_FILEPATH_LEN);
   ase_run_path = getenv("PWD");
+#ifdef ASE_DEBUG
+  if (ase_run_path == NULL)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("SIM-C : getenv(PWD) evaluated NULL -- this is unexpected !\n");
+      END_RED_FONTCOLOR;
+    }
+#endif
 
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
 
   // Evaluate Session directory
-  ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
+  // ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
   /* ase_workdir_path = ase_eval_session_directory();   */
-  sprintf(ase_workdir_path, "%s/", ase_run_path);
+  ase_eval_session_directory();
+  // sprintf(ase_workdir_path, "%s/", ase_run_path);
   printf("SIM-C : ASE Session Directory located at =>\n");
   printf("        %s\n", ase_workdir_path);
   printf("SIM-C : ASE Run path =>\n");
@@ -725,6 +734,13 @@ void start_simkill_countdown()
 
   // Close workspace log
   fclose(fp_workspace_log);
+
+#ifdef ASE_DEBUG
+  if (fp_memaccess_log != NULL) 
+    {
+      fclose(fp_memaccess_log);
+    }
+#endif
 
   // Remove session files
   printf("SIM-C : Cleaning session files...\n");

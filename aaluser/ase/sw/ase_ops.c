@@ -42,6 +42,7 @@ struct buffer_t *end;
 // ase_dump_to_file : Dumps a shared memory region into a file
 // Dump contents of shared memory to a file
 // -----------------------------------------------------------
+#if 0
 int ase_dump_to_file(struct buffer_t *mem, char *dump_file)
 {
   FILE *fileptr;
@@ -67,7 +68,7 @@ int ase_dump_to_file(struct buffer_t *mem, char *dump_file)
   fclose(fileptr);
   return OK;
 }
-
+#endif
 
 // -------------------------------------------------------------
 // ase_buffer_info : Print out information about the buffer
@@ -165,35 +166,56 @@ void ase_memory_barrier()
  *     - Check if "work" directory already exists, if not create one
  *   - If not Error out
  */
-char* ase_eval_session_directory()
+//char* ase_eval_session_directory()
+// void ase_eval_session_directory(char* env_path) 
+void ase_eval_session_directory() 
 {
   FUNC_CALL_ENTRY;
-  
+
   // char *workdir_path;
-  char *env_path;
+  // char *env_path;
     
   // workdir_path = ase_malloc (ASE_FILEPATH_LEN);
-  env_path = ase_malloc (ASE_FILEPATH_LEN);
+  ase_workdir_path = ase_malloc (ASE_FILEPATH_LEN);
 
   // Evaluate location of simulator or own location
 #ifdef SIM_SIDE
-  env_path = getenv ("PWD");
+  ase_workdir_path = getenv ("PWD");
 #else
-  env_path = getenv ("ASE_WORKDIR");
-
-  // Check if directory exists here
-  DIR* ase_dir;  
-  ase_dir = opendir(env_path);
-  if (!ase_dir)
+  ase_workdir_path = getenv ("ASE_WORKDIR");
+  #ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [DEBUG]  env(ASE_WORKDIR) = %s\n", ase_workdir_path);
+  END_YELLOW_FONTCOLOR;
+  #endif
+  if (ase_workdir_path == NULL) 
     {
-      printf("  [APP]  ASE workdir path pointed by env(ASE_WORKDIR) does not exist !\n");
-      printf("         Cannot continue execution... exiting !");
-      perror("opendir");
+      BEGIN_RED_FONTCOLOR;
+      printf("  [APP]  **ERROR** Environment variable ASE_WORKDIR could not be evaluated !!\n");
+      printf("         **ERROR** ASE will exit now !!\n");
+      END_RED_FONTCOLOR;
+      perror("getenv");
       exit(1);
+    }
+  else
+    {
+      // Check if directory exists here
+      DIR* ase_dir;  
+      ase_dir = opendir(ase_workdir_path);
+      if (!ase_dir)
+	{
+	  BEGIN_RED_FONTCOLOR;
+	  printf("  [APP]  ASE workdir path pointed by env(ASE_WORKDIR) does not exist !\n");
+	  printf("         Cannot continue execution... exiting !");
+	  END_RED_FONTCOLOR;
+	  perror("opendir");
+	  exit(1);
+	}
     }
 #endif
   
-  return env_path;
+  // return env_path;
+  // return ase_workdir_path;
 }
 
 
