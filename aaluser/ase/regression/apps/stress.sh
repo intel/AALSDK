@@ -41,8 +41,8 @@ do
 	num_cl=$(($num_cl * $mcl_cnt))
 	
 	echo ./nlb_test $num_cl $vc_set $mcl_set
-	./nlb_test $num_cl $vc_set $mcl_set > output.log
-	if grep -q "ERROR" output.log
+	./nlb_test $num_cl $vc_set $mcl_set > output.$i.log
+	if grep -q "ERROR" output.$i.log
 	then
 	    echo "***** Test error *****"
 	    exit
