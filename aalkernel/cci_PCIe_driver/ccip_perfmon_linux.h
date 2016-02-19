@@ -55,7 +55,7 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-/// @file ccip_perfmon.h
+/// @file ccip_perfmon_linux.h
 /// @brief  Definitions for ccip performance counter.
 /// @ingroup aalkernel_ccip
 /// @verbatim
@@ -70,76 +70,28 @@
 // WHEN:          WHO:     WHAT:
 // 02/19/2016     JG       Refactored OS specific portion
 //****************************************************************************///
-#ifndef __AALKERNEL_CCIP_PERFMON_H_
-#define __AALKERNEL_CCIP_PERFMON_H_
+#ifndef __AALKERNEL_CCIP_PERFMON_LINUX_H_
+#define __AALKERNEL_CCIP_PERFMON_LINUX_H_
 
-#include <aalsdk/kernel/aaltypes.h>
-#include <aalsdk/kernel/ccipdriver.h>
-#include <aalsdk/kernel/ccip_defs.h>
-#include "cci_pcie_driver_internal.h"
-
-BEGIN_NAMESPACE(AAL)
-
-#define CACHE_EVENT_COUNTER_MAX_TRY 30
-#define PERF_MONITOR_VERSION 1
-#define PERF_MONITOR_COUNT 11
-
-#define PMONITOR_VERSION        "version"
-#define NUM_COUNTERS            "number of counters"
-#define CACHE_READ_HIT          "Read_Hit"
-#define CACHE_WRITE_HIT         "Write_Hit"
-#define CACHE_READ_MISS         "Read_Miss"
-#define CACHE_WRITE_MISS        "Write_Miss"
-#define CACHE_EVICTIONS         "Evictions"
-#define FABRIC_PCIE0_READ       "PCIe0 Read"
-#define FABRIC_PCIE0_WRITE      "PCIe0 Write"
-#define FABRIC_PCIE1_READ       "PCIe1 Read"
-#define FABRIC_PCIE1_WRITE      "PCIe1 Write"
-#define FABRIC_UPI_READ         "UPI Read"
-#define FABRIC_UPI_WRITE        "UPI Write"
-#define VTD_COUNTER              "VT-d"
+#include <ccip_permon.h>
 
 
-/// Name:    get_perfmonitor_counters
-/// @brief   get snapshot of performance counters
+/// Name:    create_perfmonitor
+/// @brief   creates performance monitor
 ///
+/// @param[in] ppcidev  pci device  pointer.
 /// @param[in] pfme_dev fme device pointer.
-/// @param[in] pPerf performance counters pointer
 /// @return    error code
-bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
-                                    struct CCIP_PERF_COUNTERS* pPerf);
+bt32bitInt create_perfmonitor(struct pci_dev* ppcidev,
+                              struct fme_device* pfme_dev);
 
-/// Name:    update_fabric_event_counters
-/// @brief   get Fabric performance counters
+/// Name:    remove_perfmonitor
+/// @brief   removes perfoemanceee counters
 ///
-/// @param[in] event_code performance counters event device pointer.
-/// @param[in] pfme_dev fme device pointer.
-/// @param[in] pPerf performance counters pointer
+/// @param[in] ppcidev  pci device  pointer.
 /// @return    error code
-bt32bitInt update_fabric_event_counters(bt32bitInt event_code ,
-                                       struct fme_device *pfme_dev,
-                                       struct CCIP_PERF_COUNTERS* pPerf);
+bt32bitInt remove_perfmonitor(struct pci_dev* ppcidev);
 
-/// Name:    update_cache_event_counters
-/// @brief   get cache performance counters
-///
-/// @param[in] event_code performance counters event device pointer.
-/// @param[in] pfme_dev fme device pointer.
-/// @param[in] pPerf performance counters pointer
-/// @return    error code
-bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
-                                       struct fme_device *pfme_dev,
-                                       struct CCIP_PERF_COUNTERS* pPerf);
 
-/// Name:    get_perfmon_counters
-/// @brief   get  performance counters
-///
-/// @param[in] pfme_dev fme device pointer.
-/// @param[in] pPerf performance counters pointer
-/// @return    error code
-bt32bitInt get_perfmon_counters(struct fme_device* pfme_dev,
-                                struct CCIP_PERF_COUNTERS* pPerfCounter);
 
-END_NAMESPACE(AAL)
-
-#endif //__AALKERNEL_CCIP_PERFMON_H_
+#endif //__AALKERNEL_CCIP_PERFMON_LINUX_H_

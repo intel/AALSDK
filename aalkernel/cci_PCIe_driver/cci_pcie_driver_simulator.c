@@ -350,7 +350,7 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
 
          // Inherits B:D:F from board
          ccip_port_bustype(pportdev)   = ccip_dev_pcie_bustype(pccipdev);
-         ccip_port_busnum(pportdev)    = ccip_dev_pcie_busnum(pccipdev);
+         ccip_port_busnum(pportdev)    = (btUnsigned16bitInt) ccip_dev_pcie_busnum(pccipdev);
          ccip_port_devnum(pportdev)    = ccip_dev_pcie_devnum(pccipdev);
          ccip_port_fcnnum(pportdev)    = ccip_dev_pcie_fcnnum(pccipdev);
 

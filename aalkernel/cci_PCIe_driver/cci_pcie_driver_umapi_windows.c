@@ -46,11 +46,15 @@
 
 #define MODULE_FLAGS UIDRV_DBG_MOD
 #include "cci_pcie_windows.h"
+#include "cci_pcie_driver_umapi_windows.h"
 
 // User Mode Interface ID
 DEFINE_GUID( GUID_DEVINTERFACE_CCIP,
              0x3a704f1b, 0xdba, 0x408d, 0xb4, 0xd5, 0x9d, 0x3d, 0x7a, 0x35, 0xc, 0xf3 );
 
+// TODO seperate Linux um_APIDriver
+struct um_driver            thisDriver;
+struct um_driver *_um_driver = &thisDriver;
 
 
 //=============================================================================

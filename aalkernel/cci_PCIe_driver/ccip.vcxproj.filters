@@ -49,6 +49,12 @@
     <ClCompile Include="cci_pcie_driver_umapi_common.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ccip_perfmon.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ccip_port.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cci_pcie_windows.h">
@@ -61,6 +67,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="cci_pcie_driver_PIPsession.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ccipdrv-events.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ccip_perfmon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ccip_port.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cci_pcie_driver_umapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cci_pcie_driver_umapi_linux.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
