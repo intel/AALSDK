@@ -458,7 +458,7 @@ int cci_destroy_aal_device( struct cci_aal_device* pcci_aaldev)
       PERR("Attempting to destroy NULL pointer to cci_aal_device object\n");
       return -EINVAL;
    }
-#if  0 
+
    if(NULL != pcci_aaldev->m_workq_deactimeout) {
       kosal_destroy_workqueue(pcci_aaldev->m_workq_deactimeout);
    }

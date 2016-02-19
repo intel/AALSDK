@@ -147,7 +147,7 @@ int cci_sim_discover_devices(unsigned numdevices,
    struct aal_device_id aalid;
    btVirtAddr           bar0, bar2        = NULL;
 
-   PVERBOSE("Creating %ld simulated CCI devices", numdevices);
+   PVERBOSE("Creating %d simulated CCI devices", numdevices);
 
    // Loop through and probe each simulated device
    while(numdevices--){

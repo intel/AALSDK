@@ -152,7 +152,7 @@ AC_CONFIG_LINKS([aalresourcemgr_client/kbuild/aalrm-file.c:aalresourcemgr_client
 
 
 AC_CONFIG_FILES([cci_PCIe_driver/kbuild/Makefile:cci_PCIe_driver/Kbuild.in])
-AC_CONFIG_LINKS([cci_PCIe_driver/kbuild/cci_pcie_driver_main.c:cci_PCIe_driver/cci_pcie_driver_main.c
+AC_CONFIG_LINKS([cci_PCIe_driver/kbuild/cci_pcie_driver_main_linux.c:cci_PCIe_driver/cci_pcie_driver_main_linux.c
                  cci_PCIe_driver/kbuild/cci_pcie_driver_internal.h:cci_PCIe_driver/cci_pcie_driver_internal.h
                  cci_PCIe_driver/kbuild/cci_pcie_driver_simulator.c:cci_PCIe_driver/cci_pcie_driver_simulator.c
                  cci_PCIe_driver/kbuild/cci_pcie_driver_simulator.h:cci_PCIe_driver/cci_pcie_driver_simulator.h
@@ -166,6 +166,7 @@ AC_CONFIG_LINKS([cci_PCIe_driver/kbuild/cci_pcie_driver_main.c:cci_PCIe_driver/c
                  cci_PCIe_driver/kbuild/cci_pcie_driver_umapi_linux.h:cci_PCIe_driver/cci_pcie_driver_umapi_linux.h
                  cci_PCIe_driver/kbuild/ccipdrv-events.h:cci_PCIe_driver/ccipdrv-events.h
                  cci_PCIe_driver/kbuild/ccip_fme.c:cci_PCIe_driver/ccip_fme.c
+                 cci_PCIe_driver/kbuild/ccip_fme_mmap_linux.c:cci_PCIe_driver/ccip_fme_mmap_linux.c
                  cci_PCIe_driver/kbuild/ccip_fme.h:cci_PCIe_driver/ccip_fme.h
                  cci_PCIe_driver/kbuild/ccip_port.c:cci_PCIe_driver/ccip_port.c
                  cci_PCIe_driver/kbuild/ccip_port.h:cci_PCIe_driver/ccip_port.h

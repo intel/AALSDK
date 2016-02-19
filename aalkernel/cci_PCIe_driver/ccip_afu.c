@@ -383,7 +383,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          // Set up the return payload
          WSID.evtID           = uid_wseventMMIOMap;
-         WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
+         WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
          WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
          WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
 
@@ -447,7 +447,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          // Set up the return payload
          WSID.evtID           = uid_wseventAllocate;
-         WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
+         WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
          WSID.wsParms.physptr = (btWSID)kosal_virt_to_phys(krnl_virt);
          WSID.wsParms.size    = preq->ahmreq.u.wksp.m_size;
 
@@ -638,7 +638,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          // Set up the return payload
          WSID.evtID           = uid_wseventAllocate;
-         WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
+         WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
          WSID.wsParms.physptr = (btWSID) puMsgvirt->ccip_umsg_base_address.umsg_base_address;
          WSID.wsParms.size    = size;
 

@@ -970,7 +970,7 @@ btInt ccidrv_freewsid(struct aal_wsid *pwsid)
    }
 
    /* search for the provided wsid on the known list */
-   if (NULL ==  ccidrv_valwsid( pwsid_to_wsidhandle(pwsid) )) {
+   if (NULL ==  ccidrv_valwsid( pwsid_to_wsidHandle(pwsid) )) {
       return -EINVAL;
    }
 
