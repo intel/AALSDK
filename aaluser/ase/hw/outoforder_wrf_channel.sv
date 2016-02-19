@@ -569,9 +569,11 @@ module outoforder_wrf_channel
 	     find_iter < latbuf_push_ptr + NUM_WAIT_STATIONS;
 	     find_iter = find_iter + 1) begin
 	    ret_free_slot = find_iter % NUM_WAIT_STATIONS;
+   	    // if ( (records[ret_free_slot].state == LatSc_Disabled) &&
+	    // 	 ~records[ret_free_slot].record_valid &&
+	    // 	 ~records[ret_free_slot].record_pop ) begin 
    	    if ( (records[ret_free_slot].state == LatSc_Disabled) &&
-		 ~records[ret_free_slot].record_valid &&
-		 ~records[ret_free_slot].record_pop ) begin 
+	    	 ~records[ret_free_slot].record_valid ) begin
    	       return ret_free_slot;
    	    end
    	 end
@@ -793,7 +795,12 @@ module outoforder_wrf_channel
 		      records[ii].record_valid <= 0;
 		      records[ii].record_ready <= 0;
 		      records[ii].ctr_out      <= 0;
-		      records[ii].state        <= LatSc_Disabled;
+		      if (~records[ii].record_pop) begin
+			 records[ii].state        <= LatSc_Disabled;
+		      end
+		      else begin
+			 records[ii].state        <= LatSc_RecordPopped;
+		      end
 		   end
 
 		 default:
@@ -844,8 +851,8 @@ module outoforder_wrf_channel
       begin
 	 for(pop_iter = latbuf_pop_ptr; pop_iter < latbuf_pop_ptr + NUM_WAIT_STATIONS ; pop_iter = pop_iter + 1) begin
 	    sel_slot = pop_iter % NUM_WAIT_STATIONS;
-	    // if (records[sel_slot].record_ready) begin
-	    if (records[sel_slot].state == LatSc_DoneReady) begin
+	    if (records[sel_slot].record_ready) begin
+	    // if (records[sel_slot].state == LatSc_DoneReady) begin
 	       return sel_slot;
 	    end
 	 end
