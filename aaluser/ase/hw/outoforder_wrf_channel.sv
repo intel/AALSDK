@@ -559,17 +559,35 @@ module outoforder_wrf_channel
    end
       
    // Latbuf status signals
-   // always @(*) begin
-   //    if (latbuf_cnt == NUM_WAIT_STATIONS)
-   // 	latbuf_empty <= 1;
-   //    else
-   // 	latbuf_empty <= 0;
-   // end
+  
+   // assign latbuf_empty   = (latbuf_cnt == 0) ? 1 : 0;
+   always @(*) begin
+      if (latbuf_cnt == 0)
+	latbuf_empty <= 1;
+      else
+	latbuf_empty <= 0;      
+   end
+
+   always @(*) begin
+      if (latbuf_cnt == NUM_WAIT_STATIONS)
+	latbuf_full <= 1;
+      else
+	latbuf_full <= 0;      
+   end
+
    
-   assign latbuf_empty   = (latbuf_cnt == 0) ? 1 : 0;
-   assign latbuf_full    = (latbuf_cnt == NUM_WAIT_STATIONS) ? 1 : 0;
+   
+   // assign latbuf_full    = (latbuf_cnt == NUM_WAIT_STATIONS) ? 1 : 0;
    assign latbuf_almfull = (latbuf_cnt >= (NUM_WAIT_STATIONS-3)) ? 1 : 0;
 
+   // always @(*) begin
+   //    if (latbuf_cnt >= (NUM_WAIT_STATIONS-3))
+   // 	latbuf_almfull <= 1;
+   //    else
+   // 	latbuf_almfull <= 0;      
+   // end
+
+   
    // push_ptr selector
    function automatic integer find_next_push_slot();
       int 				     find_iter;
@@ -756,6 +774,9 @@ module outoforder_wrf_channel
 	    if (rst) begin
 	       records[ii].ctr_out      <= 0;
 	       records[ii].record_ready <= 0;
+	       record_vl0_flag_arr[ii] <= 0;
+	       record_vh0_flag_arr[ii] <= 0;
+	       record_vh1_flag_arr[ii] <= 0;
 	       // records[ii].record_valid <= 0;
 	    end
 	    else begin
@@ -768,6 +789,15 @@ module outoforder_wrf_channel
 			 records[ii].ctr_out      <= get_delay(records[ii].hdr);
 			 records[ii].state        <= LatSc_Countdown;
 			 // latbuf_used[ii]          <= 0;			 
+			 if (records[ii].hdr.vc == VC_VL0) begin
+	 		    record_vl0_flag_arr[ii] <= 1;
+			 end
+			 else if (records[ii].hdr.vc == VC_VH0) begin
+	 		    record_vh0_flag_arr[ii] <= 1;
+			 end
+			 else if (records[ii].hdr.vc == VC_VH1) begin
+	 		    record_vh1_flag_arr[ii] <= 1;
+			 end			 
 		      end
 		      else begin
 			 // records[ii].record_valid <= 0;
@@ -808,6 +838,9 @@ module outoforder_wrf_channel
 
 		 LatSc_RecordPopped:
 		   begin
+	 	      record_vl0_flag_arr[ii] <= 0;
+	 	      record_vh0_flag_arr[ii] <= 0;
+	 	      record_vh1_flag_arr[ii] <= 0;
 		      // records[ii].record_valid <= 0;
 		      records[ii].record_ready <= 0;
 		      records[ii].ctr_out      <= 0;
@@ -831,35 +864,35 @@ module outoforder_wrf_channel
 	 end
 
 	 // Flag settings
-	 always @(posedge clk) begin
-	    if (rst) begin
-	       record_vl0_flag_arr[ii] <= 0;
-	       record_vh0_flag_arr[ii] <= 0;
-	       record_vh1_flag_arr[ii] <= 0;
-	    end
-	    else begin
-	       if (records[ii].record_push && records[ii].hdr.vc == VC_VL0) begin
-		  record_vl0_flag_arr[ii] <= 1;
-	       end
-	       else if (records[ii].record_push && records[ii].hdr.vc == VC_VH0) begin
-		  record_vh0_flag_arr[ii] <= 1;
-	       end
-	       else if (records[ii].record_push && records[ii].hdr.vc == VC_VH1) begin
-		  record_vh1_flag_arr[ii] <= 1;
-	       end
-	       else if (records[ii].record_pop) begin
-		  record_vl0_flag_arr[ii] <= 0;
-		  record_vh0_flag_arr[ii] <= 0;
-		  record_vh1_flag_arr[ii] <= 0;
-	       end
-	    end
-	 end
+	 // always @(posedge clk) begin
+	 //    if (rst) begin
+	 //       record_vl0_flag_arr[ii] <= 0;
+	 //       record_vh0_flag_arr[ii] <= 0;
+	 //       record_vh1_flag_arr[ii] <= 0;
+	 //    end
+	 //    else begin
+	 //       if (records[ii].record_push && records[ii].hdr.vc == VC_VL0) begin
+	 // 	  record_vl0_flag_arr[ii] <= 1;
+	 //       end
+	 //       else if (records[ii].record_push && records[ii].hdr.vc == VC_VH0) begin
+	 // 	  record_vh0_flag_arr[ii] <= 1;
+	 //       end
+	 //       else if (records[ii].record_push && records[ii].hdr.vc == VC_VH1) begin
+	 // 	  record_vh1_flag_arr[ii] <= 1;
+	 //       end
+	 //       else if (records[ii].record_pop) begin
+	 // 	  record_vl0_flag_arr[ii] <= 0;
+	 // 	  record_vh0_flag_arr[ii] <= 0;
+	 // 	  record_vh1_flag_arr[ii] <= 0;
+	 //       end
+	 //    end
+	 // end
 
 	 // Register record_pop
-	 always @(posedge clk) begin : records_loop_pushpop_regproc
-	    record_pop_arr[ii]  <= records[ii].record_pop;
-	    record_push_arr[ii] <= records[ii].record_push;	    
-	 end
+	 // always @(posedge clk) begin : records_loop_pushpop_regproc
+	 //    record_pop_arr[ii]  <= records[ii].record_pop;
+	 //    record_push_arr[ii] <= records[ii].record_push;	    
+	 // end
 	 
       end
    endgenerate
