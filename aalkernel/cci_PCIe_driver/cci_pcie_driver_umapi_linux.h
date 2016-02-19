@@ -100,7 +100,6 @@ struct um_APIdriver {
 
    struct device              *m_device;
    struct class               *m_class;
-   struct um_driver            m_common;
 };
 
 

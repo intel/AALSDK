@@ -100,6 +100,7 @@ ccip_afu.c \
 ccip_stap.c \
 ccip_pr.c \
 ccip_perfmon.c \
+ccip_perfmon_linux.c \
 ccip_fme_mmap_linux.c \
 ccip_perfmon.h
 

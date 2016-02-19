@@ -419,8 +419,9 @@ ccipdrv_event_afu_aysnc_pr_request_release_create(uid_afurespID_e    respID,
                                                   btUnsigned64bitInt timeout,
                                                   uid_errnum_e       eno)
 {
+#if   defined( __AAL_WINDOWS__ )
    UNREFERENCED_PARAMETER(action);
-
+#endif
    struct aalui_PREvent *response = NULL;
    struct ccipdrv_event_afu_response_event *This =
       (struct ccipdrv_event_afu_response_event *)kosal_kzmalloc( sizeof(struct ccipdrv_event_afu_response_event) + sizeof(struct aalui_PREvent));
