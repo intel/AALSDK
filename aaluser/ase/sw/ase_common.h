@@ -527,7 +527,7 @@ typedef struct {
 #define CCIPKT_WRITE_MODE    0x1000 
 #define CCIPKT_READ_MODE     0x2000
 #define CCIPKT_WRFENCE_MODE  0xFFFF   
-#define CCIPKT_CMPXCHG_MODE  0x8000
+#define CCIPKT_ATOMIC_MODE   0x8000
 
 
 /*

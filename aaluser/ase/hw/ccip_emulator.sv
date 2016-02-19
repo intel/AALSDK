@@ -133,30 +133,12 @@ module ccip_emulator
       else
 	C0TxRdValid <= 0;
       // --------------------------------------------------------- //
-      // Read Response
-      // if (C0RxRspValid && (C0RxHdr.resptype == ASE_RD_RSP) )
-      // 	C0RxRdValid <= 1;
-      // else
-      // 	C0RxRdValid <= 0;
-      // --------------------------------------------------------- //
       // Write Request
       if (C1TxValid &&
 	  ( (C1TxHdr.reqtype == ASE_WRFENCE)||(C1TxHdr.reqtype == ASE_WRLINE_I)||(C1TxHdr.reqtype == ASE_WRLINE_M)) )
 	C1TxWrValid <= 1;
       else
 	C1TxWrValid <= 0;
-      // --------------------------------------------------------- //
-      // Write response
-      // if (C1RxRspValid && (C1RxHdr.resptype == ASE_WR_RSP) )
-      // 	C1RxWrValid <= 1;
-      // else
-      // 	C1RxWrValid <= 0;
-      // --------------------------------------------------------- //
-      // Umsg response
-      // if (C0RxRspValid && (C0RxHdr.resptype == ASE_UMSG))
-      // 	C0RxUMsgValid <= 1;
-      // else
-      // 	C0RxUMsgValid <= 0;
       // --------------------------------------------------------- //
    end
 
@@ -516,10 +498,13 @@ module ccip_emulator
    //       1        |     1               0     |
    //       1        |     1               1     | Initial reset
    
-   always @(posedge clk) begin
-      SoftReset <= sys_reset | sw_reset_trig;
-   end
+   // always @(posedge clk) begin
+   // always @(*) begin
+   //    SoftReset <= sys_reset | sw_reset_trig;
+   // end
+   assign SoftReset = sys_reset | sw_reset_trig;
 
+   
    /* ******************************************************************
     *
     * run_clocks : Run 'n' clocks
@@ -702,7 +687,6 @@ module ccip_emulator
    parameter int MMIORESP_FIFO_WIDTH = CCIP_MMIO_TID_WIDTH + CCIP_MMIO_RDDATA_WIDTH;
 
    logic [MMIORESP_FIFO_WIDTH-1:0] mmioresp_dout;
-   // logic 			   mmioresp_write;
    logic 			   mmioresp_read;
    logic 			   mmioresp_valid;
    logic 			   mmioresp_full;
@@ -830,18 +814,15 @@ module ccip_emulator
    UMsgHdr_t                   umsgfifo_hdr_in;
    logic [CCIP_DATA_WIDTH-1:0] umsgfifo_data_in;
 
-   logic [CCIP_DATA_WIDTH-1:0]     umsgfifo_data_out;
+   logic [CCIP_DATA_WIDTH-1:0]    umsgfifo_data_out;
    logic [ASE_UMSG_HDR_WIDTH-1:0] umsgfifo_hdrvec_out;
-   // UMsgHdr_t                       umsgfifo_hdr_out;
+
 
    logic 		       umsgfifo_write;
-//   logic 		       umsgfifo_pop;
    logic 		       umsgfifo_read;
    logic 		       umsgfifo_valid;
    logic 		       umsgfifo_full;
    logic 		       umsgfifo_empty;
-   // logic 		       umsgfifo_overflow;
-   // logic 		       umsgfifo_underflow;
 
    // Data store
    logic [CCIP_DATA_WIDTH-1:0] umsg_latest_data_array [0:NUM_UMSG_PER_AFU-1];
@@ -940,7 +921,6 @@ module ccip_emulator
 		 // Wait until hint popped by event queue
 		 UMsgSendHint:
 		   begin
-		      // umsg_array[ii].hint_ready <= 1;
 		      if (umsg_array[ii].hint_pop) begin
 			 umsg_array[ii].hint_ready <= 0;
 			 umsg_array[ii].data_timer <= $urandom_range(`UMSG_HINT2DATA_LATRANGE);
@@ -962,8 +942,6 @@ module ccip_emulator
 			 umsg_array[ii].state      <= UMsgSendData;
 		      end
 		      else begin
-			 // umsg_array[ii].hint_ready <= 0;
-			 // umsg_array[ii].data_ready <= 0;
 			 umsg_array[ii].data_timer <= umsg_array[ii].data_timer - 1;
 			 umsg_array[ii].state      <= UMsgDataWait;
 		      end
@@ -1156,8 +1134,6 @@ module ccip_emulator
       .underflow  (  )
       );
 
-   // assign umsgfifo_hdr_out = UmsgHdr_t'(umsgfifo_hdrvec_out);
-
 
    /* ******************************************************************
     *
@@ -1173,9 +1149,6 @@ module ccip_emulator
 	 cfg.enable_reuse_seed        = cfg_in.enable_reuse_seed;
 	 cfg.enable_cl_view           = cfg_in.enable_cl_view   ;
 	 cfg.phys_memory_available_gb = cfg_in.phys_memory_available_gb;
-	 // cfg.num_umsg_log2         = cfg_in.num_umsg_log2    ;
-	 // cfg.enable_capcm       = cfg_in.enable_capcm     ;
-	 // cfg.memmap_sad_setting = cfg_in.memmap_sad_setting    ;
       end
    endtask
 
@@ -1191,7 +1164,6 @@ module ccip_emulator
    int ase_tx0_rdvalid_cnt   ;
    int ase_rx0_rdvalid_cnt   ;
    int ase_tx1_wrvalid_cnt   ;
-   // int ase_rx0_wrvalid_cnt   ;
    int ase_rx1_wrvalid_cnt   ;
    int ase_tx1_wrfence_cnt   ;
    int ase_rx1_wrfence_cnt   ;
@@ -1211,7 +1183,6 @@ module ccip_emulator
 	 ase_tx0_rdvalid_cnt <= 0 ;
 	 ase_rx0_rdvalid_cnt <= 0 ;
 	 ase_tx1_wrvalid_cnt <= 0 ;
-	 // ase_rx0_wrvalid_cnt <= 0 ;
 	 ase_rx1_wrvalid_cnt <= 0 ;
 	 ase_tx1_wrfence_cnt <= 0 ;
 	 ase_rx1_wrfence_cnt <= 0 ;
@@ -1276,22 +1247,6 @@ module ccip_emulator
    task count_error_flag_ping();
       begin
 	 count_error_flag_pong(count_error_flag);
-	 // `ifdef ASE_DEBUG
-	 // `BEGIN_RED_FONTCOLOR;	 
-	 // $display("Internal counts =>");
-	 // $display("         Wrfence status CH0 : %b %b %b", 
-	 // 	  cf2as_latbuf_ch0.vl0_wrfence_flag, 
-	 // 	  cf2as_latbuf_ch0.vh0_wrfence_flag,
-	 // 	  cf2as_latbuf_ch0.vh1_wrfence_flag);
-	 // $display("         Wrfence status CH1 : %b %b %b", 
-	 // 	  cf2as_latbuf_ch1.vl0_wrfence_flag, 
-	 // 	  cf2as_latbuf_ch1.vh0_wrfence_flag,
-	 // 	  cf2as_latbuf_ch1.vh1_wrfence_flag);
-	 // $display("         latbuf_ch{0,1}     : %d %d",
-	 // 	  cf2as_latbuf_ch0.latbuf_cnt,
-	 // 	  cf2as_latbuf_ch1.latbuf_cnt);	 
-	 // `END_RED_FONTCOLOR;
-	 // `endif 
       end
    endtask
 
@@ -1971,8 +1926,8 @@ module ccip_emulator
     *
     */
    initial begin : ase_entry_point
-      // sys_reset = 1;
-      // sw_reset_trig = 1;
+      sys_reset     = 1;
+      sw_reset_trig = 1;
 
       $display("SIM-SV: Simulator started...");
       // Initialize data-structures
