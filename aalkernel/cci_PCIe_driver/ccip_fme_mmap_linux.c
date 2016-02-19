@@ -278,7 +278,7 @@ cci_mmap(struct aaldev_ownerSession *pownerSess,
             goto ERROR;
          }
 
-         PERR("Unrecognized MMIO region ID %d\n", wsidp->m_id);
+         PERR("Unrecognized MMIO region ID %d\n", (btInt)wsidp->m_id);
          return res;
       }
 

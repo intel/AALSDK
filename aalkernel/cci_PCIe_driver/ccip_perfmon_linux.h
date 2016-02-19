@@ -73,7 +73,7 @@
 #ifndef __AALKERNEL_CCIP_PERFMON_LINUX_H_
 #define __AALKERNEL_CCIP_PERFMON_LINUX_H_
 
-#include <ccip_permon.h>
+#include <ccip_perfmon.h>
 
 
 /// Name:    create_perfmonitor

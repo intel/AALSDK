@@ -81,7 +81,7 @@
 
 #include "ccip_fme.h"
 #include "ccip_port.h"
-#include "ccip_perfmon.h"
+#include "ccip_perfmon_linux.h"
 
 //#include "aalsdk/kernel/spl2defs.h"
 
