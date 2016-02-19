@@ -16,6 +16,8 @@ libgtest_la_LDFLAGS=$(GTEST_LDFLAGS)
 COMMON_CPPFLAGS=\
 -I$(top_srcdir)/include \
 -I$(top_srcdir)/aas/AALRuntime \
+-I$(top_srcdir)/aas/AIAService \
+-I$(top_srcdir)/aas/RRMBrokerService \
 -I$(top_srcdir)/tests/swvalmod \
 -I$(top_builddir)/include $(GTEST_CPPFLAGS)
 
@@ -23,7 +25,8 @@ COMMON_LDADD=\
 $(check_LTLIBRARIES) \
 $(top_builddir)/aas/OSAL/libOSAL.la \
 $(top_builddir)/aas/AASLib/libAAS.la \
-$(top_builddir)/aas/AALRuntime/libaalrt.la
+$(top_builddir)/aas/AALRuntime/libaalrt.la \
+$(top_builddir)/aas/AASResourceManager/libAASResMgr.la
 
 check_PROGRAMS=\
 bat \
@@ -33,7 +36,10 @@ weekly
 bat_SOURCES=\
 gtAALEvent.cpp \
 gtAALService.cpp \
+gtAAS.cpp \
 gtAASBase.cpp \
+gtAASResMgr.cpp \
+gtAIAService.cpp \
 gtBarrier.cpp \
 gtCommon.cpp \
 gtCommon.h \
@@ -41,8 +47,11 @@ gtCritSect.cpp \
 gtDispatchables.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
+gtHWALIAFU.cpp \
 gtMDS.cpp \
+gtOSAL.cpp \
 gtOSServiceModule.cpp \
+gtRRMBrokerService.cpp \
 gtRuntime.cpp \
 gtRuntime_Int.cpp \
 gtSem.cpp \
@@ -64,11 +73,14 @@ bat_LDADD=$(COMMON_LDADD)
 
 
 nightly_SOURCES=\
+gtAASResMgr.cpp \
+gtAIAService.cpp \
 gtCommon.cpp \
 gtCommon.h \
 gtCritSect.cpp \
 gtDynLinkLibrary.cpp \
 gtOSServiceModule.cpp \
+gtRRMBrokerService.cpp \
 gtSem.cpp \
 gtThread.cpp \
 gtThreadGroup.cpp \
@@ -85,6 +97,8 @@ nightly_LDADD=$(COMMON_LDADD)
 
 
 weekly_SOURCES=\
+gtAASResMgr.cpp \
+gtAIAService.cpp \
 gtCValue.cpp \
 gtCommon.cpp \
 gtCommon.h \
@@ -97,6 +111,7 @@ gtNVS5.cpp \
 gtNVSLegacy.cpp \
 gtNVSTester.cpp \
 gtNVSTester.h \
+gtRRMBrokerService.cpp \
 gtSeqRand.cpp \
 gtSeqRand.h \
 main.cpp
@@ -113,7 +128,9 @@ else
 EXTRA_DIST=\
 gtAALEvent.cpp \
 gtAALService.cpp \
+gtAAS.cpp \
 gtAASBase.cpp \
+gtAIAService.cpp \
 gtBarrier.cpp \
 gtCValue.cpp \
 gtCommon.cpp \
@@ -122,6 +139,7 @@ gtCritSect.cpp \
 gtDispatchables.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
+gtHWALIAFU.cpp \
 gtMDS.cpp \
 gtNVS0.cpp \
 gtNVS1.cpp \
@@ -132,7 +150,9 @@ gtNVS5.cpp \
 gtNVSLegacy.cpp \
 gtNVSTester.cpp \
 gtNVSTester.h \
+gtOSAL.cpp \
 gtOSServiceModule.cpp \
+gtRRMBrokerService.cpp \
 gtRuntime.cpp \
 gtRuntime_Int.cpp \
 gtSem.cpp \

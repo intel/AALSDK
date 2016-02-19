@@ -37,6 +37,10 @@
 #ifndef _ASE_COMMON_H_
 #define _ASE_COMMON_H_
 
+#ifdef QUESTA
+#include "dpiheader.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -57,6 +61,9 @@
 #include <math.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/file.h>
+#include <dirent.h>
+
 
 #ifdef SIM_SIDE 
 #include "svdpi.h"
@@ -315,7 +322,7 @@ int ase_recv_msg(struct buffer_t *);
 void ase_alloc_action(struct buffer_t *);
 void ase_dealloc_action(struct buffer_t *);
 void ase_destroy();
-uint64_t* ase_fakeaddr_to_vaddr(uint64_t);
+uint64_t* ase_fakeaddr_to_vaddr(uint64_t, int*);
 void ase_dbg_memtest(struct buffer_t *);
 void ase_perror_teardown();
 void ase_empty_buffer(struct buffer_t *);
@@ -331,7 +338,9 @@ void ase_buffer_t_to_str(struct buffer_t *, char *);
 void ase_str_to_buffer_t(char *, struct buffer_t *);
 int ase_dump_to_file(struct buffer_t*, char*);
 uint64_t ase_rand64();
-char* ase_eval_session_directory();
+//char* ase_eval_session_directory();
+// void ase_eval_session_directory(char *);
+void ase_eval_session_directory();
 char* ase_malloc (size_t);
 
 // Message queue operations
@@ -406,7 +415,7 @@ extern "C" {
 #define ASE_MQ_MAXMSG     8
 #define ASE_MQ_MSGSIZE    1024
 #define ASE_MQ_NAME_LEN   64
-#define ASE_MQ_INSTANCES  7
+#define ASE_MQ_INSTANCES  9
 
 // Message presence setting
 #define ASE_MSG_PRESENT 0xD33D
@@ -490,11 +499,8 @@ struct ase_cfg_t
   int ase_timeout;
   int ase_num_tests;
   int enable_reuse_seed;
-  /* int num_umsg_log2; */
   int enable_cl_view;
   int phys_memory_available_gb;
-  /* int enable_capcm; */
-  /* int memmap_sad_setting; */
 };
 struct ase_cfg_t *cfg;
 
@@ -509,14 +515,19 @@ struct ase_cfg_t *cfg;
  */
 // CCI transaction packet
 typedef struct {
-  int       wrfence;
-  int       write_en;
+  int       mode;
+  int       qw_start;
   long      mdata;
   long long cl_addr;
   long long qword[8];
-  int       resp_en;
   int       resp_channel;
+  int       success;
 } cci_pkt;
+
+#define CCIPKT_WRITE_MODE    0x1000 
+#define CCIPKT_READ_MODE     0x2000
+#define CCIPKT_WRFENCE_MODE  0xFFFF   
+#define CCIPKT_ATOMIC_MODE   0x8000
 
 
 /*
@@ -554,9 +565,6 @@ void umsg_dispatch(int init, struct umsgcmd_t *umsg_pkt);
 
 // PORT control functions
 
-// void ase_umsg_init();
-/* int umsg_listener(); */
-// void ase_umsg_init();
 
 // Buffer message injection
 void buffer_msg_inject (char *);
@@ -564,19 +572,21 @@ void buffer_msg_inject (char *);
 // Count error flag dex
 extern int count_error_flag_ping();
 void count_error_flag_pong(int);
+void update_glbl_dealloc(int);
+
 
 /*
  * Request/Response options
  */
 // RX0 channel
-#define ASE_RX0_CSR_WRITE    0x0
-#define ASE_RX0_WR_RESP      0x1
-#define ASE_RX0_RD_RESP      0x4
-#define ASE_RX0_INTR_CMPLT   0x8   // CCI 1.8
-#define ASE_RX0_UMSG         0xf   // CCI 1.8
-// RX1 channel
-#define ASE_RX1_WR_RESP      0x1
-#define ASE_RX1_INTR_CMPLT   0x8   // CCI 1.8
+/* #define ASE_RX0_CSR_WRITE    0x0 */
+/* #define ASE_RX0_WR_RESP      0x1 */
+/* #define ASE_RX0_RD_RESP      0x4 */
+/* #define ASE_RX0_INTR_CMPLT   0x8   // CCI 1.8 */
+/* #define ASE_RX0_UMSG         0xf   // CCI 1.8 */
+/* // RX1 channel */
+/* #define ASE_RX1_WR_RESP      0x1 */
+/* #define ASE_RX1_INTR_CMPLT   0x8   // CCI 1.8 */
 
 
 /*
@@ -612,6 +622,11 @@ int ase_pid;
 // Workspace information log (information dump of 
 FILE *fp_workspace_log;
 
+// Memory access debug log
+#ifdef ASE_DEBUG
+FILE *fp_memaccess_log;
+#endif
+
 // Physical address mask - used to constrain generated addresses
 uint64_t PHYS_ADDR_PREFIX_MASK;
 
@@ -622,21 +637,25 @@ uint64_t PHYS_ADDR_PREFIX_MASK;
  * IPC MQ fd names
  */
 #ifdef SIM_SIDE
-int app2sim_rx;           // app2sim mesaage queue in RX mode
-int sim2app_tx;           // sim2app mesaage queue in TX mode
+int app2sim_alloc_rx;           // app2sim mesaage queue in RX mode
+int sim2app_alloc_tx;           // sim2app mesaage queue in TX mode
 int app2sim_mmioreq_rx;   // MMIO Request path
 int sim2app_mmiorsp_tx;   // MMIO Response path
 int app2sim_umsg_rx;      // UMSG    message queue in RX mode
 int app2sim_simkill_rx;   // app2sim message queue in RX mode
 int app2sim_portctrl_rx;  // Port Control messages in Rx mode
+int app2sim_dealloc_rx;
+int sim2app_dealloc_tx;
 #else
-int app2sim_tx;           // app2sim mesaage queue in RX mode
-int sim2app_rx;           // sim2app mesaage queue in TX mode
+int app2sim_alloc_tx;           // app2sim mesaage queue in RX mode
+int sim2app_alloc_rx;           // sim2app mesaage queue in TX mode
 int app2sim_mmioreq_tx;   // MMIO Request path
 int sim2app_mmiorsp_rx;   // MMIO Response path
 int app2sim_umsg_tx;      // UMSG    message queue in RX mode
 int app2sim_simkill_tx;   // app2sim message queue in RX mode
 int app2sim_portctrl_tx;  // Port Control message in TX mode 
+int app2sim_dealloc_tx;
+int sim2app_dealloc_rx;
 #endif // End SIM_SIDE
 
 

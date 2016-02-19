@@ -50,16 +50,15 @@ void ase_mqueue_teardown()
   FUNC_CALL_ENTRY;
 
   // Close message queues
-  mqueue_close(app2sim_rx);       
-  mqueue_close(sim2app_tx);       
+  mqueue_close(app2sim_alloc_rx);       
+  mqueue_close(sim2app_alloc_tx);       
   mqueue_close(app2sim_mmioreq_rx);
   mqueue_close(sim2app_mmiorsp_tx);
   mqueue_close(app2sim_umsg_rx);
-#if 0
-  // mqueue_close(sim2app_intr_tx);       
-#endif
   mqueue_close(app2sim_simkill_rx);
   mqueue_close(app2sim_portctrl_rx);
+  mqueue_close(app2sim_dealloc_rx);       
+  mqueue_close(sim2app_dealloc_tx);       
 
   int ipc_iter;
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
@@ -106,7 +105,7 @@ int ase_recv_msg(struct buffer_t *mem)
   char tmp_msg[ASE_MQ_MSGSIZE];
 
   // Receive a message on mqueue
-  if(mqueue_recv(app2sim_rx, tmp_msg)==ASE_MSG_PRESENT)
+  if(mqueue_recv(app2sim_alloc_rx, tmp_msg)==ASE_MSG_PRESENT)
     {
       // Convert the string to buffer_t
       ase_str_to_buffer_t(tmp_msg, mem);
@@ -137,7 +136,7 @@ void ase_send_msg(struct buffer_t *mem)
   ase_buffer_t_to_str(mem, tmp_msg);
 
   // Send message out
-  mqueue_send(sim2app_tx, tmp_msg);
+  mqueue_send(sim2app_alloc_tx, tmp_msg);
 
   FUNC_CALL_EXIT;
 }
@@ -210,7 +209,7 @@ void ase_alloc_action(struct buffer_t *mem)
   mem->metadata = HDR_MEM_ALLOC_REPLY;
   
   // Convert buffer_t to string
-  mqueue_send(sim2app_tx, (char*)mem, ASE_MQ_MSGSIZE);
+  mqueue_send(sim2app_alloc_tx, (char*)mem, ASE_MQ_MSGSIZE);
 
    // If memtest is enabled
 #ifdef ASE_MEMTEST_ENABLE
@@ -270,7 +269,7 @@ void ase_dealloc_action(struct buffer_t *buf)
       dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
       ll_remove_buffer(dealloc_ptr);
       memcpy(buf_str, dealloc_ptr, sizeof(struct buffer_t));
-      mqueue_send(sim2app_tx, buf_str, ASE_MQ_MSGSIZE);
+      mqueue_send(sim2app_dealloc_tx, buf_str, ASE_MQ_MSGSIZE);
     #ifdef ASE_DEBUG
       BEGIN_YELLOW_FONTCOLOR;
       ll_traverse_print();
@@ -453,7 +452,7 @@ uint64_t get_range_checked_physaddr(uint32_t size)
  * Takes in a simulated physical address from AFU, converts it 
  *   to virtual address
  */
-uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
+uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr, int *ret_fd )
 {
   FUNC_CALL_ENTRY; 
 
@@ -462,7 +461,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 
   // DPI pbase address
   uint64_t *ase_pbase;
-  
+ 
   // This is the real offset to perform read/write
   uint64_t real_offset, calc_pbase;
   
@@ -471,18 +470,14 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 
   // For debug only
 #ifdef ASE_DEBUG
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("req_paddr = %p | ", (void *)req_paddr);
-  END_YELLOW_FONTCOLOR;
+  if (fp_memaccess_log != NULL) 
+    {
+      fprintf(fp_memaccess_log, "req_paddr = %p | ", (void *)req_paddr);
+    }
 #endif
 
   // Search which buffer offset_from_pin lies in
   trav_ptr = head;
-/* #ifdef ASE_DEBUG */
-/*   BEGIN_YELLOW_FONTCOLOR; */
-/*   ll_traverse_print(); */
-/*   END_YELLOW_FONTCOLOR; */
-/* #endif */
   while(trav_ptr != NULL)
     {
       if((req_paddr >= trav_ptr->fake_paddr) && (req_paddr < trav_ptr->fake_paddr_hi))
@@ -490,12 +485,16 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 	  real_offset = (uint64_t)req_paddr - (uint64_t)trav_ptr->fake_paddr;
 	  calc_pbase = trav_ptr->pbase;
 	  ase_pbase = (uint64_t*)(calc_pbase + real_offset);
+	  *ret_fd = trav_ptr->fd_ase;
+
 	  // Debug only
-#ifdef ASE_DEBUG
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("offset = 0x%016lx | pbase_off = %p\n", real_offset, (void *)ase_pbase);
-	  END_YELLOW_FONTCOLOR;
-#endif
+        #ifdef ASE_DEBUG
+	  if (fp_memaccess_log != NULL)
+	    {
+	      fprintf(fp_memaccess_log, "offset=0x%016lx | pbase=%p | ret_fd = %d\n", 
+		      real_offset, (void *)ase_pbase, *ret_fd);
+	    }
+        #endif
 	  return ase_pbase;
 	}
       else
@@ -504,6 +503,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 	}
     }
 
+  // If accesses are correct, ASE should not reach this point
   if(trav_ptr == NULL)
     {
       BEGIN_RED_FONTCOLOR;
@@ -515,17 +515,18 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 
       // Write error to file
       error_fp = fopen("ase_error.log", "wb");
-      fprintf(error_fp, "*** ASE stopped on an illegal memory access ERROR ***\n");
-      fprintf(error_fp, "        AFU requested access @ physical memory %p\n", (void*)req_paddr);
-      fprintf(error_fp, "        Address not found in requested workspaces listed in workspace_info.log\n");
-      fprintf(error_fp, "        Timestamped transaction to this address is listed in transactions.tsv\n");
-      fflush(error_fp);
-      fclose(error_fp);
+      if (error_fp != NULL) 
+	{
+	  fprintf(error_fp, "*** ASE stopped on an illegal memory access ERROR ***\n");
+	  fprintf(error_fp, "        AFU requested access @ physical memory %p\n", (void*)req_paddr);
+	  fprintf(error_fp, "        Address not found in requested workspaces\n");
+	  fprintf(error_fp, "        Timestamped transaction to this address is listed in ccip_transactions.tsv\n");
+	  fflush(error_fp);
+	  fclose(error_fp);
+	}
 
-      // ase_perror_teardown();
-      // final_ipc_cleanup();
       // Request SIMKILL
-      start_simkill_countdown(); // RRS: exit(1);
+      start_simkill_countdown();
     }
 
   return (uint64_t*)NOT_OK;

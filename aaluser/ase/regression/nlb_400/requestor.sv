@@ -649,11 +649,11 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
             ErrorVector[3]  <= ab2re_ErrorValid;
 
         /* synthesis translate_off */
-        if(af2cp_sTxPort.c1.valid )
-            $display("*Req Type: %x \t Addr: %x \n Data: %x", af2cp_sTxPort.c1.hdr.req_type, af2cp_sTxPort.c1.hdr.address, af2cp_sTxPort.c1.data);
+       // if(af2cp_sTxPort.c1.valid )
+          // $display("*Req Type: %x \t Addr: %x \n Data: %x", af2cp_sTxPort.c1.hdr.req_type, af2cp_sTxPort.c1.hdr.address, af2cp_sTxPort.c1.data);
 
-        if(af2cp_sTxPort.c0.valid)
-            $display("*Req Type: %x \t Addr: %x", af2cp_sTxPort.c0.hdr.req_type, af2cp_sTxPort.c0.hdr.address);
+       // if(af2cp_sTxPort.c0.valid)
+          //  $display("*Req Type: %x \t Addr: %x", af2cp_sTxPort.c0.hdr.req_type, af2cp_sTxPort.c0.hdr.address);
 
         /* synthesis translate_on */
 

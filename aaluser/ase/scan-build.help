@@ -149,7 +149,6 @@ AVAILABLE CHECKERS:
    alpha.core.PointerSub           Check for pointer subtractions on two pointers pointing to different memory chunks
    alpha.core.SizeofPtr            Warn about unintended use of sizeof() on pointer expressions
    alpha.core.TestAfterDivZero     Check for division by variable that is later compared against 0. Either the comparison is useless or there is division by zero.
-   alpha.cplusplus.NewDeleteLeaks  Check for memory leaks. Traces memory managed by new/delete.
    alpha.cplusplus.VirtualCall     Check virtual function calls during construction or destruction
    alpha.deadcode.UnreachableCode  Check unreachable code
    alpha.osx.cocoa.Dealloc         Warn about Objective-C classes that lack a correct implementation of -dealloc
@@ -197,6 +196,7 @@ AVAILABLE CHECKERS:
                                    Check for blocks that capture uninitialized values
  + core.uninitialized.UndefReturn  Check for uninitialized values being returned to the caller
  + cplusplus.NewDelete             Check for double-free and use-after-free problems. Traces memory managed by new/delete.
+ + cplusplus.NewDeleteLeaks        Check for memory leaks. Traces memory managed by new/delete.
  + deadcode.DeadStores             Check for values stored to variables that are never read afterwards
    debug.ConfigDumper              Dump config table
    debug.DumpCFG                   Display Control-Flow Graphs

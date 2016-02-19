@@ -46,6 +46,10 @@
  * certain cache line
  *
  * All warnings are logged in warnings.log
+ * 
+ * FIXME list
+ * - Sop & cllen pattern matching
+ * - Atomic must pass through VL0 only, else error out
  */
 
 import ase_pkg::*;

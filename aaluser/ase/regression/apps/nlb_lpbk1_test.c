@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
 
   while(*status_addr == 0)
     {
-      usleep(100);
+      // usleep(100);
     }
   
   printf("Test complete\n");

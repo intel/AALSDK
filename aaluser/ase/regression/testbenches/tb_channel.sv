@@ -12,11 +12,13 @@ module tb_channel();
    logic valid_out;
    logic [CCIP_DATA_WIDTH-1:0] data_out;
 
-   localparam MAX_ITEMS = 4;
+   // localparam MAX_ITEMS = 32;
+   // localparam MAX_ITEMS = 4096;
+   localparam MAX_ITEMS = 16384; 
       
    outoforder_wrf_channel
      #(
-       .UNROLL_ENABLE (1)
+       .UNROLL_ENABLE (0)
        )
    outoforder_wrf_channel
      (clk, rst, hdr_in, 512'b0, wr_en, txhdr_out, rxhdr_out, data_out, valid_out, rd_en, empty, full );
@@ -33,11 +35,11 @@ module tb_channel();
    int x;
       
    initial begin
-      rst = 1;
+      rst <= 1;
       #200;
-      rst = 0;
+      rst <= 0;
       wait (wr_i == MAX_ITEMS);
-      #50000;
+      #500000;
       `ifdef ASE_DEBUG
       $display("------- Dropped Transactions -------");
       //      $display(tb_channel.outoforder_wrf_channel.checkunit.check_array);
@@ -69,24 +71,24 @@ module tb_channel();
 	 wr_en <= 0;
 	 wr_i  <= 0;
       end
-      // else if (~full && ($time % 7 == 0) && (wr_i < MAX_ITEMS)) begin
-      // 	 hdr_in.vc <= VC_VA; // ccip_vc_t'($random) % 4;
-      // 	 hdr_in.sop <= 1;
-      // 	 hdr_in.len <= ASE_1CL;
-      // 	 hdr_in.reqtype <= ASE_WRFENCE;
-      // 	 hdr_in.addr <= 0;	 
-      // 	 hdr_in.mdata <= wr_i;
-      // 	 wr_en <= 1;
-      // 	 hdr_in.rsvd70 <= 0;
-      // 	 hdr_in.rsvd63_58 <= 0;
-      // 	 $display("Wrfence asserted, mdata = %x", wr_i);
-      // 	 wr_i <= wr_i + 1;	 
-      // end 
+      else if (~full && ($time % 7 == 0) && (wr_i < MAX_ITEMS)) begin
+      	 hdr_in.vc <= ccip_vc_t'($random) % 4;
+      	 hdr_in.sop <= 1;
+      	 hdr_in.len <= ASE_1CL;
+      	 hdr_in.reqtype <= ASE_WRFENCE;
+      	 hdr_in.addr <= 0;	 
+      	 hdr_in.mdata <= wr_i;
+      	 wr_en <= 1;
+      	 hdr_in.rsvd70 <= 0;
+      	 hdr_in.rsvd63_58 <= 0;
+      	 $display("Wrfence asserted, mdata = %x", wr_i);
+      	 wr_i <= wr_i + 1;	 
+      end 
       else if (~full && (wr_i < MAX_ITEMS)) begin
 	 hdr_in.vc <= ccip_vc_t'($random) % 4;
 	 hdr_in.sop <= 1;
-	 hdr_in.len <= ASE_4CL; // sel_rand_len();	 
-	 hdr_in.reqtype <= ASE_RDLINE_I; // ASE_WRLINE_I;
+	 hdr_in.len <= sel_rand_len();	 
+	 hdr_in.reqtype <= ASE_WRLINE_I;
 	 hdr_in.addr <= 32'h8400_0000 + wr_i;
 	 hdr_in.mdata <= wr_i;
 	 wr_i      <= wr_i + 1;

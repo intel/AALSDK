@@ -128,7 +128,7 @@ btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd)
    //if --warm-fpga-cache is mentioned
    if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE))
    {
-      csr_type wfc_cfg = (csr_type)NLB_TEST_MODE_READ;
+      csr_type wfc_cfg = (csr_type)NLB_TEST_MODE_WRITE;
 
       if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0))
       {

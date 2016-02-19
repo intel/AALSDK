@@ -32,12 +32,16 @@ setup "$D" ${WANTDISTCC}
 declare AUTO_COLOR=''
 [ -t 1 ] && AUTO_COLOR='--gtest-opt=--gtest_color=yes'
 
-WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --bat --gtest-opt=--gtest_print_time=0 ${AUTO_COLOR} ${ARGS}"
+WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --bat --gtest-opt=--vpath=${VPATH} --gtest-opt=--gtest_print_time=0 ${AUTO_COLOR} ${ARGS}"
 
 GCDA_DIRS=(\
 "--directory ${VPATH}/aas/OSAL/.libs" \
 "--directory ${VPATH}/aas/AASLib/.libs" \
 "--directory ${VPATH}/aas/AALRuntime/.libs" \
+"--directory ${VPATH}/aas/AIAService/.libs" \
+"--directory ${VPATH}/aas/RRMBrokerService/.libs" \
+"--directory ${VPATH}/aas/AASResourceManager/.libs" \
+"--directory ${VPATH}/utils/ALIAFU/HWALIAFU/.libs" \
 "--directory ${VPATH}/tests/harnessed/gtest"\
 )
 
