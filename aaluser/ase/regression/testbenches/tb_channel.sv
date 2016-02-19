@@ -12,7 +12,9 @@ module tb_channel();
    logic valid_out;
    logic [CCIP_DATA_WIDTH-1:0] data_out;
 
-   localparam MAX_ITEMS = 256;
+   // localparam MAX_ITEMS = 32;
+   // localparam MAX_ITEMS = 4096;
+   localparam MAX_ITEMS = 16384; 
       
    outoforder_wrf_channel
      #(
@@ -37,7 +39,7 @@ module tb_channel();
       #200;
       rst <= 0;
       wait (wr_i == MAX_ITEMS);
-      #50000;
+      #500000;
       `ifdef ASE_DEBUG
       $display("------- Dropped Transactions -------");
       //      $display(tb_channel.outoforder_wrf_channel.checkunit.check_array);
