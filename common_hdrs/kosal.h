@@ -898,8 +898,10 @@ do                                                \
 //
 #if   defined( __AAL_LINUX__ )
 # include <linux/slab.h>
+#define kosal_map_handle   btAny
 #elif defined( __AAL_WINDOWS__ )
 # include <ntddk.h>
+#define kosal_map_handle   PMDL
 #endif // OS
 
 KOSAL_VIRT _kosal_kmalloc(__ASSERT_HERE_PROTO KOSAL_WSSIZE );
@@ -947,9 +949,8 @@ KOSAL_WSSIZE kosal_round_up_to_page_size(KOSAL_WSSIZE s) {
 //
 #if   defined( __AAL_LINUX__ )
 # include <linux/workqueue.h>
-   //struct workqueue_struct   * kosal_work_queue
-   //#define kosal_create_workqueue(pd)  create_workqueue( aaldev_to_basedev(pd) )
-   #define kosal_create_workqueue(name)  create_workqueue(name)
+   // Dev must be the an aal_device pointer but is not currently used here
+   #define kosal_create_workqueue(name, dev)  create_workqueue(name)
    #define kosal_destroy_workqueue(wq)   destroy_workqueue(wq)
     // Worker thread items
 
@@ -996,9 +997,10 @@ void kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, KOSAL_TIME 
 
 #define kosal_init_waitqueue_head(q)
 
-#define kosal_create_workqueue(pd)  IoAllocateWorkItem(aaldev_to_basedev(pd))
+// Name not currently used
+#define kosal_create_workqueue(name, dev)    IoAllocateWorkItem(aaldev_to_basedev(pd))
 
-#define kosal_destroy_workqueue(pd)  IoFreeWorkItem(aaldev_to_basedev(pd))
+#define kosal_destroy_workqueue(pd)          IoFreeWorkItem(pd)
 //kosal_create_workqueue
 
 typedef void (*osfunc)(PDEVICE_OBJECT,PVOID);

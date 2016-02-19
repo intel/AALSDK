@@ -154,12 +154,12 @@ struct cci_aal_device {
    // AFU MMIO Space
    btVirtAddr                 m_kvp_afu_mmio;   // kv address of MMIO space
    btPhysAddr                 m_phys_afu_mmio;  // Physical address of MMIO space
-   size_t                     m_len_afu_mmio;   // Bytes
+   btUnsigned64bitInt         m_len_afu_mmio;   // Bytes
 
    // AFU uMSG Space
    btVirtAddr                 m_kvp_afu_umsg;    // kv address of CSR space
    btPhysAddr                 m_phys_afu_umsg;   // Physical address of CSR space
-   size_t                     m_len_afu_umsg;    // Bytes
+   btUnsigned64bitInt         m_len_afu_umsg;    // Bytes
 
    struct cci_PIPsession     *m_pPIPSession;     // PIP session object
 

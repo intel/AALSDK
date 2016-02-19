@@ -391,7 +391,7 @@ CCIPDrvEvtIoDeviceControl( IN WDFQUEUE   Queue,
       struct aal_device  dev;
       aaldev_to_basedev( &dev ) = pdevObject;
       if( NULL == pWinccidev->m_workq ) {
-         //         pWinccidev->m_workq = kosal_create_workqueue(&dev);
+         //         pWinccidev->m_workq = kosal_create_workqueue("WorkQueue", &dev);
          pWinccidev->m_workq = IoAllocateWorkItem( pdevObject );
          KOSAL_INIT_WORK( &( pWinccidev->task_handler ), Testtask_poller );
          kosal_queue_delayed_work( pWinccidev->m_workq, &( pWinccidev->task_handler ), 20000 );
