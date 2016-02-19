@@ -305,6 +305,9 @@ module ccip_emulator
    export "DPI-C" task count_error_flag_ping;
    import "DPI-C" function void count_error_flag_pong(int flag);
 
+   // Global dealloc allowed flag
+   import "DPI-C" function void update_glbl_dealloc(int flag);
+      
    // CONFIG, SCRIPT DEX operations
    import "DPI-C" function void sv2c_config_dex(string str);
    import "DPI-C" function void sv2c_script_dex(string str);
@@ -369,6 +372,21 @@ module ccip_emulator
    int finish_logger = 0;
 
 
+   /*
+    * Credit control system
+    */
+   int glbl_dealloc_credit;
+   int glbl_dealloc_credit_q;   
+
+   // Individual credit counts
+   int rd_credit;
+   int wr_credit;
+   int mmiowr_credit;
+   int mmiord_credit;
+   int umsg_credit;
+   
+
+   
    /* ***************************************************************************
     * CCI signals declarations
     * ***************************************************************************
@@ -497,8 +515,10 @@ module ccip_emulator
    //       1        |     0               1     |
    //       1        |     1               0     |
    //       1        |     1               1     | Initial reset
-   assign SoftReset = sys_reset | sw_reset_trig;
-
+   
+   always @(posedge clk) begin
+      SoftReset <= sys_reset | sw_reset_trig;
+   end
 
    /* ******************************************************************
     *
@@ -713,7 +733,7 @@ module ccip_emulator
       );
 
    // MMIO Response mask (act by reference)
-   function void mmio_rsp_mask( ref mmio_t mmio_in );
+   function automatic void mmio_rsp_mask( ref mmio_t mmio_in );
       begin
 	 // Data
 	 mmio_in.qword[0] = mmioresp_dout[CCIP_MMIO_RDDATA_WIDTH-1:0];
@@ -1341,11 +1361,11 @@ module ccip_emulator
       begin
 	 // Write fence
 	 if (txhdr.reqtype == ASE_WRFENCE)
-	   pkt.wrfence  = 1;
+	   pkt.mode  = CCIPKT_WRFENCE_MODE;
 	 else
-	   pkt.wrfence  = 0;	 
+	   pkt.mode  = CCIPKT_WRITE_MODE;	 
 	 // Write enable
-	 pkt.write_en = int'(write_en);
+	 // pkt.write_en = int'(write_en);
 	 // Metadata
 	 pkt.vc       = int'(txhdr.vc);
 	 pkt.mdata    = int'(txhdr.mdata);
@@ -1365,7 +1385,6 @@ module ccip_emulator
 	 // Response channel
 	 if (write_en) begin
 	    pkt.resp_channel = 1;	    
-// wrresp_tx2rx_chsel();
 	 end
 	 else begin
 	    pkt.resp_channel = 0;
@@ -1690,7 +1709,7 @@ module ccip_emulator
     * *******************************************************************/
    // Output channel
    always @(posedge clk) begin
-      if (sys_reset|SoftReset) begin
+      if (SoftReset) begin
    	 C0RxMmioWrValid <= 1'b0;
    	 C0RxMmioRdValid <= 1'b0;
 //   	 C0RxWrValid     <= 1'b0;
@@ -1817,7 +1836,7 @@ module ccip_emulator
     *
     * *******************************************************************/
    always @(posedge clk) begin
-      if (sys_reset | SoftReset) begin
+      if (SoftReset) begin
    	 C1RxHdr <= {CCIP_RX_HDR_WIDTH{1'b0}};
    	 C1RxWrValid <= 1'b0;
    	 C1RxIntrValid <= 1'b0;
@@ -1952,6 +1971,8 @@ module ccip_emulator
     *
     */
    initial begin : ase_entry_point
+      sys_reset <= 1;
+      sw_reset_trig <= 1;
 
       $display("SIM-SV: Simulator started...");
       // Initialize data-structures
@@ -1971,13 +1992,14 @@ module ccip_emulator
 
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
-      sys_reset = 1;
-      sw_reset_trig = 1;
-      #100ns;
-      sys_reset = 0;
-      sw_reset_trig = 0;
-      #100ns;
-
+      // sys_reset = 1;
+      // sw_reset_trig = 1;
+      // #100ns;
+      run_clocks(100);
+      sys_reset <= 0;
+      sw_reset_trig <= 0;
+      // #100ns;
+      run_clocks(100);
       // Setting up CA-private memory
       // if (cfg.enable_capcm) begin
       // 	 $display("SIM-SV: Enabling structures for CA Private Memory... ");
@@ -2236,5 +2258,79 @@ module ccip_emulator
    endtask
 
 
+
+   /* ***************************************************************************
+    * Memory deallocation lock
+    * --------------------------------------------------------------------------
+    * Problem: Due to reordering nature of ASE (guaranteed unordered
+    * transactions, DSMs can get unordered, resulting in applications
+    * deallocating memory
+    * 
+    * Potential solution:    
+    * - Count credits running in ASE, { (Tx0, RX0), (Tx1, Rx1), Umsg
+    * outstanding, CsrWrite, (Rx0MMIORd, C2tx) }     
+    * - If total credit count is non-zero, a lock variable will be set, back 
+    * pressuring any deallocate_buffer requests
+    * - Dellocate requests will be queued but not executed
+    * **************************************************************************/
+   always @(posedge clk) begin
+      // ---------------------------------------------------- //
+      // Read credit counter
+      case ( {C0TxRdValid, C0RxRdValid} )
+	2'b10   : rd_credit <= rd_credit + C0TxHdr.len + 1;
+	2'b01   : rd_credit <= rd_credit - 1;
+	2'b11   : rd_credit <= rd_credit + C0TxHdr.len + 1 - 1;
+	default : rd_credit <= rd_credit;	
+      endcase // case ( {C0TxRdValid, C0RxRdValid} )      
+      // ---------------------------------------------------- //
+      // Write credit counter
+      case ( {C1TxWrValid, C1RxWrValid} )
+	2'b10   : wr_credit <= wr_credit + 1;	
+	2'b01   : wr_credit <= wr_credit - 1;	
+	default : wr_credit <= wr_credit;	
+      endcase // case ( {C1TxWrValid, C1RxWrValid} )
+      // ---------------------------------------------------- //
+      // MMIO Writevalid counter
+      case ( {cwlp_wrvalid, C0RxMmioWrValid} )
+	2'b10   : mmiowr_credit <= mmiowr_credit + 1;
+	2'b01   : mmiowr_credit <= mmiowr_credit - 1;
+	default : mmiowr_credit <= mmiowr_credit;	
+      endcase // case ( {cwlp_wrvalid, C0RxMmioWrValid} )
+      // ---------------------------------------------------- //
+      // MMIO readvalid counter
+      case ( {cwlp_rdvalid, mmioresp_valid} )
+	2'b10   : mmiord_credit <= mmiord_credit + 1;
+	2'b01   : mmiord_credit <= mmiord_credit - 1;
+	default : mmiord_credit <= mmiord_credit;	
+      endcase // case ( {cwlp_rdvalid, mmioresp_valid} )      
+      // ---------------------------------------------------- //
+      // Umsg valid counter
+      // *FIXME* 
+      // ---------------------------------------------------- //
+   end
+
+   // Global dealloc flag enable
+   always @(posedge clk) begin
+      glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit;      
+   end
+
+   // Register for changes
+   always @(posedge clk)
+     glbl_dealloc_credit_q <= glbl_dealloc_credit;
+   
+
+   // Update process
+   always @(posedge clk) begin
+      if ((glbl_dealloc_credit_q == 0) && (glbl_dealloc_credit != 0)) begin
+	 update_glbl_dealloc(0);	 
+      end
+      else if ((glbl_dealloc_credit_q != 0) && (glbl_dealloc_credit == 0)) begin
+	 update_glbl_dealloc(1);	 
+      end
+      else if (glbl_dealloc_credit == 0) begin
+	 update_glbl_dealloc(1);	 
+      end
+   end
+   
 
 endmodule // cci_emulator

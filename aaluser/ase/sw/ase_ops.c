@@ -38,13 +38,11 @@
 struct buffer_t *head;
 struct buffer_t *end;
 
-// uint64_t csr_fake_pin;
-// struct timeval start;
-
 // -----------------------------------------------------------
 // ase_dump_to_file : Dumps a shared memory region into a file
 // Dump contents of shared memory to a file
 // -----------------------------------------------------------
+#if 0
 int ase_dump_to_file(struct buffer_t *mem, char *dump_file)
 {
   FILE *fileptr;
@@ -54,11 +52,11 @@ int ase_dump_to_file(struct buffer_t *mem, char *dump_file)
   fileptr = fopen(dump_file,"wb");
   if(fileptr == NULL)
     {
-#ifdef SIM_SIDE
+    #ifdef SIM_SIDE
       ase_error_report ("fopen", errno, ASE_OS_FOPEN_ERR);
-#else
+    #else
       perror("fopen");
-#endif
+    #endif
       return NOT_OK;
     }
 
@@ -70,7 +68,7 @@ int ase_dump_to_file(struct buffer_t *mem, char *dump_file)
   fclose(fileptr);
   return OK;
 }
-
+#endif
 
 // -------------------------------------------------------------
 // ase_buffer_info : Print out information about the buffer
@@ -91,8 +89,8 @@ void ase_buffer_info(struct buffer_t *mem)
   printf("\tBufferName  = \"%s\"\n", mem->memname);  
   printf("\tPhysAddr LO = %p\n",     (void *)mem->fake_paddr); 
   printf("\tPhysAddr HI = %p\n",     (void *)mem->fake_paddr_hi);
-  printf("\tisMMIOMap   = %s\n",     (mem->is_mmiomap) ? "YES" : "NO");
-  printf("\tisUMAS      = %s\n",     (mem->is_umas) ? "YES" : "NO");
+  printf("\tisMMIOMap   = %s\n",     (mem->is_mmiomap == 1) ? "YES" : "NO");
+  printf("\tisUMAS      = %s\n",     (mem->is_umas == 1) ? "YES" : "NO");
   END_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
@@ -108,9 +106,9 @@ void ase_buffer_oneline(struct buffer_t *mem)
 
   printf("%d  ", mem->index);
   if (mem->valid == ASE_BUFFER_VALID) 
-    printf("ADDED   ");
+    printf("\tADDED   ");
   else
-    printf("REMOVED ");
+    printf("\tREMOVED ");
   printf("%5s \t", mem->memname);
   printf("\n");
 
@@ -141,7 +139,6 @@ void ase_str_to_buffer_t(char *str, struct buffer_t *buf)
   FUNC_CALL_ENTRY;
   
   memcpy((char*)buf, str, sizeof(struct buffer_t));
-  
 
   FUNC_CALL_EXIT;
 }
@@ -169,70 +166,57 @@ void ase_memory_barrier()
  *     - Check if "work" directory already exists, if not create one
  *   - If not Error out
  */
-char* ase_eval_session_directory()
+//char* ase_eval_session_directory()
+// void ase_eval_session_directory(char* env_path) 
+void ase_eval_session_directory() 
 {
   FUNC_CALL_ENTRY;
-  
-  char *workdir_path;
-  char *env_path;
-  /* struct stat s; */
-  /* int err; */
+
+  // char *workdir_path;
+  // char *env_path;
     
-  workdir_path = ase_malloc (ASE_FILEPATH_LEN);
-  // if (!workdir_path) return NULL;
+  // workdir_path = ase_malloc (ASE_FILEPATH_LEN);
+  ase_workdir_path = ase_malloc (ASE_FILEPATH_LEN);
 
-  // Evaluate basename location
+  // Evaluate location of simulator or own location
 #ifdef SIM_SIDE
-  env_path = getenv ("PWD");
+  ase_workdir_path = getenv ("PWD");
 #else
-  env_path = getenv ("ASE_WORKDIR");
-#endif
-      
-  // Locate work directory
-  if( env_path) 
+  ase_workdir_path = getenv ("ASE_WORKDIR");
+  #ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [DEBUG]  env(ASE_WORKDIR) = %s\n", ase_workdir_path);
+  END_YELLOW_FONTCOLOR;
+  #endif
+  if (ase_workdir_path == NULL) 
     {
-      // strcat( workdir_path, env_path );
-      memcpy(workdir_path, env_path, ASE_FILEPATH_LEN);
-    } 
-  /* else  */
-  /*   { */
-  /*     *workdir_path = '\0'; */
-  /*   } */
-
-  // strcat( workdir_path, "/work/" );  || RRS:
-
-  // *FIXME*: Idiot-proof the work directory
-
-  FUNC_CALL_EXIT;
+      BEGIN_RED_FONTCOLOR;
+      printf("  [APP]  **ERROR** Environment variable ASE_WORKDIR could not be evaluated !!\n");
+      printf("         **ERROR** ASE will exit now !!\n");
+      END_RED_FONTCOLOR;
+      perror("getenv");
+      exit(1);
+    }
+  else
+    {
+      // Check if directory exists here
+      DIR* ase_dir;  
+      ase_dir = opendir(ase_workdir_path);
+      if (!ase_dir)
+	{
+	  BEGIN_RED_FONTCOLOR;
+	  printf("  [APP]  ASE workdir path pointed by env(ASE_WORKDIR) does not exist !\n");
+	  printf("         Cannot continue execution... exiting !");
+	  END_RED_FONTCOLOR;
+	  perror("opendir");
+	  exit(1);
+	}
+    }
+#endif
   
-  return workdir_path;
+  // return env_path;
+  // return ase_workdir_path;
 }
-
-//char* ase_eval_session_directory()
-//{
-//  FUNC_CALL_ENTRY;
-//
-//  char *workdir_path;
-//  /* struct stat s; */
-//  /* int err; */
-//
-//  workdir_path = malloc (ASE_FILEPATH_LEN);
-//  // Evaluate basename location
-//#ifdef SIM_SIDE
-//  workdir_path = getenv ("PWD");
-//#else
-//  workdir_path = getenv ("ASE_WORKDIR");
-//#endif
-//
-//  // Locate work directory
-//  strcat( workdir_path, "/work/" );
-//
-//  // *FIXME*: Idiot-proof the work directory
-//
-//  FUNC_CALL_EXIT;
-//
-//  return workdir_path;
-//}
 
 
 /*

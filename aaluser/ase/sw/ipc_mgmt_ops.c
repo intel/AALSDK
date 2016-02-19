@@ -141,8 +141,7 @@ void final_ipc_cleanup()
       	    }
       	}
     }
-  
-  
+
   // Close both files
   fclose(local_ipc_fp);
 

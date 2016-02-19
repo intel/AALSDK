@@ -63,7 +63,6 @@ uint64_t ase_read_seed()
       printf("        Old seed unusable --- creating a new seed\n");
       new_seed = time(NULL);
       ase_write_seed(new_seed);      
-      // fclose(fp_seed);
       return new_seed;
     }
   else

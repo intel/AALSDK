@@ -102,7 +102,7 @@ def print_instructions():
 ### Argument checking ###
 print("#############################################################################")
 print("#                                                                           #")
-print("#            Intel QuickAssist AFU Simulation Environment 4.1.7             #")
+print("#          Intel Xeon+FPGA BDX-P AFU Simulation Environment 5.0.1           #")
 print("#                                                                           #")
 print("#############################################################################")
 if len(sys.argv) == 1:
