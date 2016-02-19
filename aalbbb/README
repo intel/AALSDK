@@ -1,0 +1,78 @@
+Hello ALI VTP NLB
+=================
+
+The version of the native loopback (NLB) AFU in the HW subdirectory is *only*
+intended to be used with ASE simulation and the Hello_ALI_VTP_NLB sample
+application. Follow the steps below to run ASE with this sample.
+
+These instructions assume you have compiled the AAL SDK and installed them in
+$INSTDIR. You also have the AAL SDK sources in $SDKDIR, the basic building
+blocks in $BBBDIR, and the Hello_ALI_VTP_NLB sample in $SAMPLEDIR. It is also
+assumed that you have set up your RTL simulator to work with ASE. See the ASE
+documentation for details.
+
+
+Extract MPF BBB into NLB MPF sample
+-----------------------------------
+
+In order to work, the nlb_mpf sample needs the cci_mpf basic building block BBB,
+which can be found in the Building_blocks directory of the release. Uncompress
+it into a directory of your choice (we'll refer to it as $CCI_MPF).
+
+Now link the hardware implementation into the nlb_mpf sample:
+
+   $ cd $SAMPLEDIR/HW
+   $ ln -s $CCI_MPF/HW cci_mpf
+
+
+Build ASE model for NLB MPF
+---------------------------
+
+Prepare and build the simulation environment to run the NLB MPF AFU:
+
+   $ cd $SDKDIR/ase
+   $ scripts/generate_ase_environment.py $SAMPLEDIR/HW/
+
+Edit $SDKDIR/ase/Makefile, add the following at line 106:
+
+   SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+USE_PLATFORM_CCIP
+   SNPS_VLOGAN_OPT+= +define+CCI_SIMULATION=1 +define+SIM_MODE=1
+
+Edit $SDKDIR/ase/vlog_files.list so that first 8 lines have the following
+evaluation order; also comment out ccip_if_pkg:
+
+   .../cci_mpf/cci-if/ccis_if_pkg.sv
+   .../cci_mpf/cci-if/ccip_if_funcs_pkg.sv
+   .../cci_mpf/cci-if/ccis_if_funcs_pkg.sv
+   .../cci_mpf/cci-mpf-if/cci_mpf_if_pkg.sv
+   .../cci_mpf/cci-if/cci_csr_if_pkg.sv
+   #.../cci_mpf/cci-if/ccip_if_pkg.sv
+   .../cci_mpf/cci-if/ccip_feature_list_pkg.sv
+   .../cci_mpf/cci_mpf_csrs_pkg.sv
+
+'...' denotes your actual $SAMPLEDIR/HW - it will have been set properly by the
+generate_ase_environment.py script above.
+
+Now build ASE and run it:
+
+   $ make
+   $ make sim
+
+
+Build sample app
+----------------
+
+The Hello ALI VTP NLB sample application is configured to exercise NLB with a
+buffer size of almost 64MB. This will run a while - you can adjust the
+definition of LPBK1_BUFFER_SIZE within $SAMPLEDIR/SW/HelloALIVTPNLB.cpp to
+reduce the test size if you want a shorter runtime. Note that MB(64)-CL(1) is
+the maximum supported by NLB.
+
+In a separate terminal window, build and run the demo application:
+
+   $ cd $SAMPLEDIR/SW
+   $ make prefix=$INSTDIR
+   $ export ASE_WORKDIR=$SDKDIR/ase/work
+   $ ./helloALIVTPnlb
+
+
