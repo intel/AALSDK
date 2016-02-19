@@ -655,10 +655,13 @@ module outoforder_wrf_channel
    always @(posedge clk) begin : latbuf_push_proc
       if (rst) begin
    	 vc_pop <= Select_VL0;
-	 // latbuf_used <= {NUM_WAIT_STATIONS{1'b0}};
 	 vl0_wrfence_flag <= 0;
 	 vh0_wrfence_flag <= 0;
 	 vh1_wrfence_flag <= 0;
+	 for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
+	    records[ii].record_push <= 0;
+	    records[ii].record_valid <= 0;
+	 end
       end
       else begin
 	 // If input arrays are available
@@ -716,11 +719,9 @@ module outoforder_wrf_channel
 	 end
 	 // Release latbuf_used & record_push
 	 for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
-	    // if (records[ii].record_ready) begin
-	    //    latbuf_used[ii] = 0;
-	    // end
 	    if (records[ii].state == LatSc_Countdown) begin
 	       records[ii].record_push <= 0;
+	       records[ii].record_valid <= 0;
 	    end
 	 end
       end
@@ -755,7 +756,7 @@ module outoforder_wrf_channel
 	    if (rst) begin
 	       records[ii].ctr_out      <= 0;
 	       records[ii].record_ready <= 0;
-	       records[ii].record_valid <= 0;
+	       // records[ii].record_valid <= 0;
 	    end
 	    else begin
 	       case (records[ii].state)
@@ -763,13 +764,13 @@ module outoforder_wrf_channel
 		   begin
 		      records[ii].record_ready  <= 0;
 		      if (records[ii].record_push) begin
-			 records[ii].record_valid <= 1;
+			 // records[ii].record_valid <= 1;
 			 records[ii].ctr_out      <= get_delay(records[ii].hdr);
 			 records[ii].state        <= LatSc_Countdown;
 			 // latbuf_used[ii]          <= 0;			 
 		      end
 		      else begin
-			 records[ii].record_valid <= 0;
+			 // records[ii].record_valid <= 0;
 			 records[ii].ctr_out      <= 0;
 			 records[ii].state        <= LatSc_Disabled;
 			 // latbuf_used[ii]          <= 0;			 
@@ -779,7 +780,7 @@ module outoforder_wrf_channel
 		 LatSc_Countdown:
 		   begin
 		      // latbuf_used
-		      records[ii].record_valid <= 1;
+		      // records[ii].record_valid <= 1;
 		      records[ii].ctr_out      <= records[ii].ctr_out - 1;
 		      if (records[ii].ctr_out == 0) begin
 			 records[ii].record_ready <= 1;
@@ -793,7 +794,7 @@ module outoforder_wrf_channel
 
 		 LatSc_DoneReady:
 		   begin
-		      records[ii].record_valid <= 1;
+		      // records[ii].record_valid <= 1;
 		      records[ii].ctr_out      <= 0;
 		      if (records[ii].record_pop) begin
 			 records[ii].record_ready <= 0;
@@ -807,7 +808,7 @@ module outoforder_wrf_channel
 
 		 LatSc_RecordPopped:
 		   begin
-		      records[ii].record_valid <= 0;
+		      // records[ii].record_valid <= 0;
 		      records[ii].record_ready <= 0;
 		      records[ii].ctr_out      <= 0;
 		      if (~records[ii].record_pop) begin
@@ -820,7 +821,7 @@ module outoforder_wrf_channel
 
 		 default:
 		   begin
-		      records[ii].record_valid <= 0;
+		      // records[ii].record_valid <= 0;
 		      records[ii].record_ready <= 0;
 		      records[ii].ctr_out      <= 0;
 		      records[ii].state        <= LatSc_Disabled;
