@@ -420,7 +420,7 @@ clean: header
 	rm -rf work/ *.log *.tsv AN.DB/ || echo "make: Didn't clean up work"
 	rm -rf csrc/ vc_hdrs.h .vlogansetup.* *.vpd
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
-	rm -rf profile* simprofile* scanbuild/
+	rm -rf profile* simprofile* scanbuild/ DVEfiles/ csrc/
 	rm -rf .ase_* *.o ase_seed.txt warnings.txt
 
 distclean: header clean

@@ -1313,14 +1313,39 @@ module ccip_emulator
 						 input int                   write_en,
 						 input TxHdr_t               txhdr,
 						 input [CCIP_DATA_WIDTH-1:0] txdata);
-      begin
-	 // Write fence
-	 if (txhdr.reqtype == ASE_WRFENCE)
-	   pkt.mode  = CCIPKT_WRFENCE_MODE;
-	 else
-	   pkt.mode  = CCIPKT_WRITE_MODE;	 
-	 // Write enable
-	 // pkt.write_en = int'(write_en);
+      begin 
+	 case (txhdr.reqtype)
+	   ASE_RDLINE_S:
+	     begin
+		pkt.mode = CCIPKT_READ_MODE;
+		pkt.resp_channel = 0;		
+	     end
+	   ASE_RDLINE_I:
+	     begin
+		pkt.mode = CCIPKT_READ_MODE;
+		pkt.resp_channel = 0;		
+	     end
+	   ASE_WRLINE_M:
+	     begin
+		pkt.mode = CCIPKT_WRITE_MODE;
+		pkt.resp_channel = 1;		
+	     end
+	   ASE_WRLINE_I:
+	     begin
+		pkt.mode = CCIPKT_WRITE_MODE;
+		pkt.resp_channel = 1;		
+	     end
+	   ASE_WRFENCE:
+	     begin
+		pkt.mode = CCIPKT_WRFENCE_MODE;
+		pkt.resp_channel = 1;		
+	     end
+	   ASE_ATOMIC_REQ:
+	     begin
+		pkt.mode = CCIPKT_ATOMIC_MODE;
+		pkt.resp_channel = 0;		
+	     end
+	 endcase
 	 // Metadata
 	 pkt.vc       = int'(txhdr.vc);
 	 pkt.mdata    = int'(txhdr.mdata);
@@ -1336,14 +1361,7 @@ module ccip_emulator
 	 pkt.qword[6] =  txdata[ 447:384 ];
 	 pkt.qword[7] =  txdata[ 511:448 ];
 	 // Response enable
-	 pkt.resp_en  = 0;
-	 // Response channel
-	 if (write_en) begin
-	    pkt.resp_channel = 1;	    
-	 end
-	 else begin
-	    pkt.resp_channel = 0;
-	 end
+	 // pkt.resp_en  = 0;
       end
    endfunction
 
@@ -1354,7 +1372,6 @@ module ccip_emulator
    logic                         cf2as_latbuf_ch0_empty;
    logic                         cf2as_latbuf_ch0_read;
    int 				 cf2as_latbuf_ch0_count;
-   // logic 			 cf2as_latbuf_ch0_pop;
 
    // cf2as_latbuf_ch1 signals
    logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx1hdr_vec;
@@ -1365,7 +1382,6 @@ module ccip_emulator
    logic 		         cf2as_latbuf_ch1_read;
    int 				 cf2as_latbuf_ch1_count;
    logic 			 cf2as_latbuf_ch1_valid;
-   // logic 			 cf2as_latbuf_ch1_pop;
 
    RxHdr_t                       cf2as_latbuf_rx0hdr_q;
    RxHdr_t                       cf2as_latbuf_rx1hdr_q;
@@ -1397,14 +1413,6 @@ module ccip_emulator
       .empty		( cf2as_latbuf_ch0_empty ),
       .full             ( C0TxAlmFull )
       );
-
-   // assign cf2as_latbuf_ch0_pop = ~cf2as_latbuf_ch0_empty && cf2as_latbuf_ch0_read;
-
-   // always @(posedge clk) begin
-   //    if (sys_reset) begin
-   // 	 cf2as_latbuf_ch0_read <= 0;
-   //    end
-   // end
 
    // Read TX0
    always @(posedge clk) begin

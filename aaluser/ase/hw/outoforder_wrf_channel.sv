@@ -1191,6 +1191,7 @@ module outoforder_wrf_channel
 	 latbuf_pop_proc_status	<= 3'b000;
 	 glbl_wrfence_pop_status <= 0;
       end
+      // --------------------------------------------------------------------
       // Book keeping
       for(int ready_i = 0; ready_i < NUM_WAIT_STATIONS ; ready_i = ready_i + 1) begin
 	 //latbuf_ready[ready_i] <= records[ready_i].record_ready;

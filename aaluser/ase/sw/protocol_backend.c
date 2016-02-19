@@ -134,7 +134,7 @@ void wr_memline_dex(cci_pkt *pkt)
    }
   
   // Enable response
-  pkt->resp_en = 1;
+  // pkt->resp_en = 1;
 
   FUNC_CALL_EXIT;
 }
@@ -159,7 +159,7 @@ void rd_memline_dex(cci_pkt *pkt )
   memcpy((char*)pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);
 
   // Enable response
-  pkt->resp_en = 1;
+  // pkt->resp_en = 1;
 
   FUNC_CALL_EXIT;
 }

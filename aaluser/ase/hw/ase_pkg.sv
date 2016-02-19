@@ -232,7 +232,7 @@ package ase_pkg;
       int 	  mdata;
       longint 	  cl_addr;
       longint     qword[8];
-      int 	  resp_en;
+      // int 	  resp_en;
       int 	  resp_channel;
    } cci_pkt;
 
