@@ -55,11 +55,11 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-//        FILE: cci_pcie_driver_umapi_linux.h
-//     CREATED: 10/20/2015
+//        FILE: cci_pcie_driver_umapi.h
+//     CREATED: 02/19/2016
 //      AUTHOR: Joseph Grecco
 //
-// PURPOSE:  This file contains Linux definitions for the
+// PURPOSE:  This file contains commmon definitions for the
 //           Intel(R) QuickAssist Technology Accelerator Abstraction Layer (AAL)
 //           User Mode Interface for the AAL CCI device driver
 // HISTORY:
@@ -67,13 +67,13 @@
 // WHEN:          WHO:     WHAT:
 // 10/20/2015     JG       Initial version started
 //****************************************************************************
-#ifndef __AALKERNEL_AAL_PCIE_DRIVER_UMAPI_LINUX_H__
-#define __AALKERNEL_AAL_PCIE_DRIVER_UMAPI_LINUX_H__
+#ifndef __AALKERNEL_AAL_PCIE_DRIVER_UMAPI_H__
+#define __AALKERNEL_AAL_PCIE_DRIVER_UMAPI_H__
 #include "aalsdk/kernel/kosal.h"
 #include "aalsdk/kernel/aalbus.h"
 #include "aalsdk/kernel/ccipdriver.h"
-#include "cci_pcie_driver_umapi.h"
 
+#if 0
 #define DEV_NAME          "aalui"
 
 #ifndef DRV_VERSION
@@ -86,23 +86,58 @@
 
 // TODO THESE NEED PROPER DEFINITION IN IDS
 #define  AALUI_DRV_INTC          (0x0000000000002000)
-
+#endif
 //=============================================================================
 // Name: um_APIdriver
 // Description: CCI User Mode API Class
 //=============================================================================
-struct um_APIdriver {
-   dev_t           m_devtype;
+struct um_driver {
 
-   struct file_operations      m_fops;  // Interface
-   struct cdev                 m_cdev;  // character device
-   btInt                       m_major; // major number of device node
+   // List of current sessions
+   // this is the head, and is linked with ccidrv_session->m_sessions
+   kosal_semaphore          m_qsem;
+   kosal_list_head          m_sessq;
 
-   struct device              *m_device;
-   struct class               *m_class;
-   struct um_driver            m_common;
+   // Private semaphore
+   kosal_semaphore          m_sem;
+
+   /* list of allocated wsids */
+   kosal_semaphore          wsid_list_sem;
+   kosal_list_head          wsid_list_head;
+};
+
+//=============================================================================
+// Name: ccidrv_session
+// Description: Session structure holds state and other context for a user
+//              session with the device subsystem.
+//=============================================================================
+struct ccidrv_session {
+   // PIP to UI driver interface
+   struct aal_uiapi           m_msgHandler;
+
+   // Owning driver module (UDDI in this case)
+   struct ui_driver          *m_aaldriver;
+
+   // Head of list of devices (struct aaldev_owner->m_devicelist) owned by this session
+   kosal_list_head            m_devicelist;
+
+   // Wait queue used for poll
+   kosal_poll_object          m_waitq;
+
+   // Private semaphore
+   kosal_semaphore            m_sem;
+
+   // Link to global UDDI session list.  head is ui_driver->m_sessq.
+   kosal_list_head            m_sessions;
+
+   // Event queue
+   aal_queue_t                m_eventq;
+
+   // Pid of process associated with this session
+   btPID                      m_pid;
+
 };
 
 
-#endif // __AALKERNEL_AAL_PCIE_DRIVER_UMAPI_LINUX_H__
+#endif // __AALKERNEL_AAL_PCIE_DRIVER_UMAPI_H__
 

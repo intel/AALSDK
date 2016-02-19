@@ -72,7 +72,7 @@
 #define MODULE_FLAGS UIDRV_DBG_MOD
 
 
-#include "cci_pcie_driver_umapi_linux.h"
+#include "cci_pcie_driver_umapi.h"
 #include "ccipdrv-events.h"
 
 // Prototypes
@@ -104,7 +104,7 @@ btInt ccidrv_marshal_upstream_message( struct ccipui_ioctlreq *preq,
                                        btWSSize              *pOutbufsize);
 struct aal_wsid *ccidrv_valwsid(btWSID);
 
-extern struct um_APIdriver thisDriver;
+extern struct um_driver *_um_driver;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -222,12 +222,12 @@ int ccidrv_session_destroy(struct ccidrv_session * psess)
     } // end kosal_list_for_each_entry_safe
 
     // Remove from the UDDI session list
-    if (kosal_sem_get_krnl_alertable( &thisDriver.m_qsem)){
+    if (kosal_sem_get_krnl_alertable( &_um_driver->m_qsem)){
        PERR("Failed to claim semaphore.  FATAL ERROR!\n");
        return -EIO;
     }
     kosal_list_del(&psess->m_sessions);
-    kosal_sem_put( &thisDriver.m_qsem);
+    kosal_sem_put( &_um_driver->m_qsem);
 
     kosal_sem_put(&psess->m_sem);
     kosal_kfree(psess, sizeof(struct ccidrv_session));
@@ -925,7 +925,7 @@ struct aal_wsid* ccidrv_getwsid(struct aal_device *pdev,
    PDEBUG(": Created WSID %llu [Handle %llx] for device id %llx \n", nextWSID, pwsid->m_handle, id);
 
    /* get list manipulation semaphore */
-   status = kosal_sem_get_krnl_alertable(&thisDriver.wsid_list_sem);
+   status = kosal_sem_get_krnl_alertable(&_um_driver->wsid_list_sem);
    if (0 != status) {
       DPRINTF (UIDRV_DBG_FILE, ": couldn't add WSID to alloc_list\n");
 #ifdef __i386__
@@ -937,10 +937,10 @@ struct aal_wsid* ccidrv_getwsid(struct aal_device *pdev,
    }
 
    /* add to allocated list */
-   kosal_list_add_head(&pwsid->m_alloc_list, &thisDriver.wsid_list_head);
+   kosal_list_add_head(&pwsid->m_alloc_list, &_um_driver->wsid_list_head);
 
    /* release semaphore */
-   kosal_sem_put(&thisDriver.wsid_list_sem);
+   kosal_sem_put(&_um_driver->wsid_list_sem);
 
    nextWSID++;
 
@@ -974,12 +974,12 @@ btInt ccidrv_freewsid(struct aal_wsid *pwsid)
       return -EINVAL;
    }
 
-   status = kosal_sem_get_krnl_alertable(&thisDriver.wsid_list_sem);
+   status = kosal_sem_get_krnl_alertable(&_um_driver->wsid_list_sem);
    if (0 != status) {
       return status;
    }
    kosal_list_del(&pwsid->m_alloc_list);
-   kosal_sem_put(&thisDriver.wsid_list_sem);
+   kosal_sem_put(&_um_driver->wsid_list_sem);
 
 #ifdef __i386__
    free_page(pwsid);
@@ -1037,21 +1037,21 @@ struct aal_wsid *ccidrv_valwsid(btWSID wsidHandle)
       return NULL;
    }
 
-   status = kosal_sem_get_krnl_alertable(&thisDriver.wsid_list_sem);
+   status = kosal_sem_get_krnl_alertable(&_um_driver->wsid_list_sem);
    if (0 != status) {
       PERR(": couldn't get list semaphore\n");
-      kosal_sem_put(&thisDriver.wsid_list_sem);
+      kosal_sem_put(&_um_driver->wsid_list_sem);
       return NULL;
    }
 
-   kosal_list_for_each_entry(listwsid_p, &thisDriver.wsid_list_head, m_alloc_list, struct aal_wsid) {
+   kosal_list_for_each_entry(listwsid_p, &_um_driver->wsid_list_head, m_alloc_list, struct aal_wsid) {
       if (listwsid_p->m_handle == wsidHandle) {
-         kosal_sem_put(&thisDriver.wsid_list_sem);
+         kosal_sem_put(&_um_driver->wsid_list_sem);
          return listwsid_p;
       }
    }
 
-   kosal_sem_put(&thisDriver.wsid_list_sem);
+   kosal_sem_put(&_um_driver->wsid_list_sem);
 
    PINFO(": wsid %llu not on list\n", wsidHandle);
 
