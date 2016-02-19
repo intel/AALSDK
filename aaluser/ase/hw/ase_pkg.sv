@@ -174,7 +174,7 @@ package ase_pkg;
       ccip_resptype_t resp_type;
       logic [15:0]    mdata;    
    } Atomics_t;
-   parameter CCIP_CMPXCHG_HDR_WIDTH = $bits(CmpXchg_t);
+   parameter CCIP_CMPXCHG_HDR_WIDTH = $bits(Atomics_t);
       
    // Config channel
    parameter CCIP_MMIO_ADDR_WIDTH   = 16;

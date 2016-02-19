@@ -1572,9 +1572,10 @@ module ccip_emulator
     * *******************************************************************/
 
    logic [CCIP_RX_HDR_WIDTH-1:0] rdrsp_hdr_out_vec;
-   logic [CCIP_RX_HDR_WIDTH-1:0] wr0rsp_hdr_out_vec;
    logic [CCIP_RX_HDR_WIDTH-1:0] wr1rsp_hdr_out_vec;
-
+   logic [CCIP_RX_HDR_WIDTH-1:0] atomics_hdr_out_vec;
+   
+   
    /*
     * RX0 Read Response staging
     */
@@ -2051,7 +2052,7 @@ module ccip_emulator
       .C1TxHdr          (C1TxHdr         ),
       .C1TxData         (C1TxData        ),
       .C1TxWrValid      (C1TxWrValid     ),
-      .C1TxIntrValid    (0   ),
+      .C1TxIntrValid    (1'b0   ),
       .C2TxHdr          (C2TxHdr         ),
       .C2TxMmioRdValid  (C2TxMmioRdValid ),
       .C2TxData         (C2TxData        ),
@@ -2118,7 +2119,7 @@ module ccip_emulator
       .C1TxHdr          (C1TxHdr         ),
       .C1TxData         (C1TxData        ),
       .C1TxWrValid      (C1TxWrValid     ),
-      .C1TxIntrValid    (0   ),
+      .C1TxIntrValid    (1'b0   ),
       .C2TxHdr          (C2TxHdr         ),
       .C2TxMmioRdValid  (C2TxMmioRdValid ),
       .C2TxData         (C2TxData        ),
