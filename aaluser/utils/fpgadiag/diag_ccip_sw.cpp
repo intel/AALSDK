@@ -89,12 +89,6 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 	  btBool ret = m_pALIuMSGService->umsgSetAttributes(nvs);
     }
 
-    /* COOL FPGA CACHE temporarily disabled
-	if ( 0 != CacheCooldown(pOutputUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
-		return 1;
-	}
-    */
-
     // Initiate AFU Reset
     if (0 != m_pALIResetService->afuReset())
     {

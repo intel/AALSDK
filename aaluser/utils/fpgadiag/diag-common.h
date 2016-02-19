@@ -267,7 +267,7 @@ protected:
    }
 
    btInt ResetHandshake();
-   btInt CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize CoolSize);
+   btInt CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize CoolSize, const NLBCmdLine &cmd);
 
    void      			ReadPerfMonitors();
    void       			SavePerfMonitors();

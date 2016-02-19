@@ -65,9 +65,9 @@ btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd)
    // Clear the DSM status fields
    ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
-   /*if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->InputPhys(), m_pMyApp->InputSize()) ) {
+   if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->InputPhys(), m_pMyApp->InputSize(), cmd) ) {
       return 1;
-   }*/
+   }
 
    // Initiate AFU Reset
    if (0 != m_pALIResetService->afuReset())
