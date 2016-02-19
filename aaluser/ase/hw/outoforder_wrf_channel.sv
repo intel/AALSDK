@@ -530,7 +530,7 @@ module outoforder_wrf_channel
    int 	 vh1_records_cnt;
 
 
-   logic [0:NUM_WAIT_STATIONS-1] latbuf_used;
+   // logic [0:NUM_WAIT_STATIONS-1] latbuf_used;
    //logic [0:NUM_WAIT_STATIONS-1] latbuf_ready;
    int 				 latbuf_cnt;
    logic 			 latbuf_full;
@@ -613,10 +613,10 @@ module outoforder_wrf_channel
 		  records[ptr].tid          = array_tid;
 		  records[ptr].record_push  = 1;
 		  records[ptr].record_valid = 1;
-		  latbuf_used[ptr]          = 1;
+		  // latbuf_used[ptr]          = 1;
 	 `ifdef ASE_DEBUG
 		  $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
-		  $fwrite(log_fd, "%d | latbuf_push : tid=%x cause latbuf_used=%x\n", $time, array_tid, latbuf_used);
+		  // $fwrite(log_fd, "%d | latbuf_push : tid=%x cause latbuf_used=%x\n", $time, array_tid, latbuf_used);
 	 `endif
 	       end // if (ptr != LATBUF_SLOT_INVALID)
 	 //       else begin
@@ -638,7 +638,7 @@ module outoforder_wrf_channel
    always @(posedge clk) begin : latbuf_push_proc
       if (rst) begin
    	 vc_pop <= Select_VL0;
-	 latbuf_used <= {NUM_WAIT_STATIONS{1'b0}};
+	 // latbuf_used <= {NUM_WAIT_STATIONS{1'b0}};
 	 vl0_wrfence_flag <= 0;
 	 vh0_wrfence_flag <= 0;
 	 vh1_wrfence_flag <= 0;
@@ -699,9 +699,9 @@ module outoforder_wrf_channel
 	 end
 	 // Release latbuf_used & record_push
 	 for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
-	    if (records[ii].record_ready) begin
-	       latbuf_used[ii] = 0;
-	    end
+	    // if (records[ii].record_ready) begin
+	    //    latbuf_used[ii] = 0;
+	    // end
 	    if (records[ii].state == LatSc_Countdown) begin
 	       records[ii].record_push <= 0;
 	    end
@@ -749,12 +749,13 @@ module outoforder_wrf_channel
 			 records[ii].record_valid <= 1;
 			 records[ii].ctr_out      <= get_delay(records[ii].hdr);
 			 records[ii].state        <= LatSc_Countdown;
-			 //latbuf_used[ii]          <= 0;			 
+			 // latbuf_used[ii]          <= 0;			 
 		      end
 		      else begin
 			 records[ii].record_valid <= 0;
 			 records[ii].ctr_out      <= 0;
 			 records[ii].state        <= LatSc_Disabled;
+			 // latbuf_used[ii]          <= 0;			 
 		      end
 		   end
 
@@ -1008,7 +1009,7 @@ module outoforder_wrf_channel
                `ifdef ASE_DEBUG
 	       $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
 	       $fwrite(log_fd, "%d | latbuf_pop : tid=%x out of record[%02d]\n", $time, records[ptr].tid, ptr);
-	       $fwrite(log_fd, "%d | latbuf_pop : tid=%x cause latbuf_used=%x\n", $time, records[ptr].tid, latbuf_used);
+	       // $fwrite(log_fd, "%d | latbuf_pop : tid=%x cause latbuf_used=%x\n", $time, records[ptr].tid, latbuf_used);
 	       `endif
 	       @(posedge clk);
 	       outfifo_write_en        = 0;
