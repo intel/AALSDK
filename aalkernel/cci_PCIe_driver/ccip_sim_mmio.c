@@ -618,7 +618,7 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
 
     ptr = afuptr + port_hdr.ccip_port_next_afu.csr;
 
-   PINFO("AFU offset is %x beyond PORT header at %p = %p\n", offset, afuptr, ptr );
+   PINFO("AFU offset is %lx beyond PORT header at %p = %p\n", offset, afuptr, ptr );
 
    offset = 0;
 

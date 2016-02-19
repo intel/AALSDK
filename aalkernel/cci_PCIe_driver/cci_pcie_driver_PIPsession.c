@@ -273,7 +273,7 @@ cci_flush_all_wsids(struct cci_PIPsession *psess)
          kosal_free_contiguous_mem((btAny)wsidp->m_id, wsidp->m_size);
 
          // remove the wsid from the device and destroy
-         PVERBOSE("Done Freeing PWS with id 0x%llx.\n",pwsid_to_wsidhandle(wsidp));
+         PVERBOSE("Done Freeing PWS with id 0x%llx.\n",pwsid_to_wsidHandle(wsidp));
       }
 
       list_del_init(&wsidp->m_list);

@@ -80,7 +80,7 @@ EXTRA_PROGRAMS=driver
 
 driver_SOURCES=\
 cci_pcie_driver_internal.h \
-cci_pcie_driver_main.c \
+cci_pcie_driver_main_linux.c \
 cci_pcie_common.c \
 cci_pcie_driver_simulator.c \
 ccip_sim_mmio.c \
@@ -100,6 +100,7 @@ ccip_afu.c \
 ccip_stap.c \
 ccip_pr.c \
 ccip_perfmon.c \
+ccip_fme_mmap_linux.c \
 ccip_perfmon.h
 
 

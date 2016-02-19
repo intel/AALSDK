@@ -1685,7 +1685,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          // Set up the return payload
          WSID.evtID           = uid_wseventMMIOMap;
-         WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
+         WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
          WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
          WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
 
@@ -1754,7 +1754,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          // Create the event
          pafuws_evt = ccipdrv_event_afu_afuallocws_create(
                                                aalsess_aaldevicep(pownerSess),
-                                               pwsid_to_wsidhandle(wsidp), // make the wsid appear page aligned for mmap
+                                               pwsid_to_wsidHandle(wsidp), // make the wsid appear page aligned for mmap
                                                NULL,
                                                kosal_virt_to_phys((btVirtAddr)wsidp->m_id),
                                                preq->ahmreq.u.wksp.m_size,
