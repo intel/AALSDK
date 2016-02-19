@@ -1370,3 +1370,40 @@ Return Value:
 }
 #endif
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+////////////////////                                     //////////////////////
+/////////////////          AAL SUPPORT FUNCTIONS           ////////////////////
+////////////////////                                     //////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+//=============================================================================
+// Name: aalbus_get_bus
+// Description: Returns a pointer to the bus object
+// Interface: public export
+// Inputs: none.
+// Returns: Pointer to aalbus object
+// Comments: Used by clients of the bus to get access to the bus interface
+//=============================================================================
+struct aal_bus *
+   aalbus_get_bus( void )
+{
+   return NULL;
+}
+
+//=============================================================================
+// Name: DriverEntry
+// Description:     DriverEntry initializes the driver and is the first routine
+//     called by the system after the driver is loaded. DriverEntry configures 
+//     and creates a WDF driver object.
+// Interface: public
+// Inputs: DriverObject - Instance of this function driver. Remains in scope 
+//                        until the driver is unloaded.
+//         RegistryPath - Driver specific path in Registry. Can be used by 
+//                        driver to store persistent (i.e., survives reboots) 
+//                        data.
+// Outputs: STATUS_SUCCESS if successful,
+//          STATUS_UNSUCCESSFUL if failure.
+// Comments:
+//=============================================================================

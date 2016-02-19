@@ -546,7 +546,7 @@ ccipdrv_event_afu_afugetmmiomap_create( btObjectType      devhandle,
 static inline struct ccipdrv_event_afu_response_event *
                 ccipdrv_event_bindcmplt_create( btObjectType devhandle,
                                                 struct ccipdrv_DeviceAttributes *pattributes,
-                                                uid_errnum_e errno,
+                                                uid_errnum_e errnum,
                                                 struct ccipui_ioctlreq  *preq)
 {
    struct ccipdrv_DeviceAttributes           *pattrib       = NULL;
@@ -567,7 +567,7 @@ static inline struct ccipdrv_event_afu_response_event *
    }
 
    This->m_devhandle = devhandle;
-   This->m_errnum    = errno;
+   This->m_errnum    = errnum;
    This->m_context   = preq->context;
    This->m_tranID    = preq->tranID;
 
@@ -616,7 +616,7 @@ struct uidrv_event_unbindcmplt
 // Description: Constructor
 //=============================================================================
 static inline struct ccipdrv_event_afu_response_event *
-                     ccipdrv_event_Unbindcmplt_create(uid_errnum_e errno,
+                     ccipdrv_event_Unbindcmplt_create(uid_errnum_e errnum,
                                                     struct ccipui_ioctlreq  *preq)
 {
    struct ccipdrv_event_afu_response_event * This =
@@ -627,7 +627,7 @@ static inline struct ccipdrv_event_afu_response_event *
 
    This->m_context   = preq->context;
    This->m_tranID    = preq->tranID;
-   This->m_errnum    = errno;
+   This->m_errnum    = errnum;
 
    AALQ_QID(This)    = rspid_UID_UnbindComplete;
    AALQ_QLEN(This)   = 0;

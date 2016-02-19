@@ -57,7 +57,7 @@
 //****************************************************************************
 //        FILE: cci_pcie_driver_umapi_common.c
 //     CREATED: 10/23/2015
-//      AUTHOR: Joseph Grecco
+//      AUTHOR: Joseph Grecco, Intel Corporation
 //
 // PURPOSE:  This file contains the OS independent code for the Intel(R)
 //           QuickAssist Technology Accelerator Abstraction Layer (AAL)
@@ -78,7 +78,6 @@
 // Prototypes
 struct ccidrv_session * ccidrv_session_create(btPID );
 btInt ccidrv_session_destroy(struct ccidrv_session * );
-btInt ccidrv_fasync(btInt fd, struct file *, btInt );
 btInt ccidrv_messageHandler( struct ccidrv_session  *,
                              btUnsigned32bitInt     ,
                              struct ccipui_ioctlreq *,

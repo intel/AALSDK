@@ -107,9 +107,9 @@ struct port_device
    kosal_semaphore              m_sem;
 
    enum aal_bus_types_e          m_bustype;
-   btUnsigned32bitInt            m_busNum;
-   btUnsigned32bitInt            m_devicenum;   // device number
-   btUnsigned32bitInt            m_functnum;    // function number
+   btUnsigned16bitInt            m_busNum;
+   btUnsigned16bitInt            m_devicenum;   // device number
+   btUnsigned16bitInt            m_functnum;    // function number
 
    // The User AFU in this port
    struct cci_aal_device        *m_uafu;
