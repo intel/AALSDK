@@ -223,7 +223,7 @@ module ccip_emulator
 
 
    // ASE's internal reset signal
-   logic 			      sys_reset;
+   logic 			      sys_reset = 1;
 
    /*
     * Remapping ASE CCIP to cvl_pkg struct
@@ -460,7 +460,7 @@ module ccip_emulator
    end
 
    // Reset management
-   logic 			  sw_reset_trig ;
+   logic 			  sw_reset_trig = 1;
 
    // AFU Soft Reset Trigger
    task afu_softreset_trig( int value );
@@ -1045,8 +1045,8 @@ module ccip_emulator
 
    // Calculate slots for UMSGs
    always @(posedge clk) begin : umsg_slot_finder_proc
-      umsg_data_slot = find_umsg_data();
-      umsg_hint_slot = find_umsg_hint();
+      umsg_data_slot <= find_umsg_data();
+      umsg_hint_slot <= find_umsg_hint();
    end
 
    // Pop HINT/DATA
@@ -1971,8 +1971,8 @@ module ccip_emulator
     *
     */
    initial begin : ase_entry_point
-      sys_reset <= 1;
-      sw_reset_trig <= 1;
+      // sys_reset = 1;
+      // sw_reset_trig = 1;
 
       $display("SIM-SV: Simulator started...");
       // Initialize data-structures
@@ -1992,8 +1992,8 @@ module ccip_emulator
 
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
-      // sys_reset = 1;
-      // sw_reset_trig = 1;
+      // sys_reset <= 1;
+      // sw_reset_trig <= 1;
       // #100ns;
       run_clocks(100);
       sys_reset <= 0;

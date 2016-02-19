@@ -371,9 +371,13 @@ module outoforder_wrf_channel
    endfunction
 
    // Infifo empty
-   assign infifo_empty = (infifo_cnt == 0) ? 1 : 0;
-
-
+   always @(*) begin
+      if (infifo_cnt == 0)
+	infifo_empty <= 1;
+      else
+	infifo_empty <= 0;      
+   end
+   
    // Write fence response generator
    function automatic logic [CCIP_RX_HDR_WIDTH-1:0] prepare_wrfence_response(TxHdr_t wrfence);
       RxHdr_t wrfence_rsp;
@@ -544,7 +548,14 @@ module outoforder_wrf_channel
       latbuf_cnt <= vl0_records_cnt + vh0_records_cnt + vh1_records_cnt;
    end
       
-   // Latbuf status signal
+   // Latbuf status signals
+   // always @(*) begin
+   //    if (latbuf_cnt == NUM_WAIT_STATIONS)
+   // 	latbuf_empty <= 1;
+   //    else
+   // 	latbuf_empty <= 0;
+   // end
+   
    assign latbuf_empty   = (latbuf_cnt == 0) ? 1 : 0;
    assign latbuf_full    = (latbuf_cnt == NUM_WAIT_STATIONS) ? 1 : 0;
    assign latbuf_almfull = (latbuf_cnt >= (NUM_WAIT_STATIONS-3)) ? 1 : 0;
@@ -574,18 +585,18 @@ module outoforder_wrf_channel
    //////////////////////////////////////////////////////////////////////
    // Read and update record in latency scoreboard
    function automatic void read_vc_latbuf_push (ref logic [FIFO_WIDTH-1:0] array[$:INTERNAL_FIFO_DEPTH-1],
-				      ref logic 	   	 wrfence_flag,
-				      ref logic [TID_WIDTH-1:0]  wrfence_tid
-				      );
-      logic [CCIP_TX_HDR_WIDTH-1:0] 		     array_hdr;
-      logic [CCIP_DATA_WIDTH-1:0] 		     array_data;
-      logic [TID_WIDTH-1:0] 			     array_tid;
-      TxHdr_t                                        hdr;
-      int 					     ptr;
+						ref logic 		  wrfence_flag,
+						ref logic [TID_WIDTH-1:0] wrfence_tid
+						);
+      logic [CCIP_TX_HDR_WIDTH-1:0] 					  array_hdr;
+      logic [CCIP_DATA_WIDTH-1:0] 					  array_data;
+      logic [TID_WIDTH-1:0] 						  array_tid;
+      TxHdr_t                                                             hdr;
+      int 								  ptr;
       begin
 	 ptr = find_next_push_slot();
 	 latbuf_push_ptr = ptr;
-	 if (~latbuf_almfull) begin
+	 if (~latbuf_almfull && ~outfifo_almfull) begin
 	    {array_tid, array_data, array_hdr} = array.pop_front();
 	    hdr = TxHdr_t'(array_hdr);
 	    if (hdr.reqtype == ASE_WRFENCE) begin
@@ -608,12 +619,12 @@ module outoforder_wrf_channel
 		  $fwrite(log_fd, "%d | latbuf_push : tid=%x cause latbuf_used=%x\n", $time, array_tid, latbuf_used);
 	 `endif
 	       end // if (ptr != LATBUF_SLOT_INVALID)
-	       else begin
-		  array.push_front({array_tid, array_data, array_hdr});
-	 `ifdef ASE_DEBUG
-		  $fwrite(log_fd, "%d | latbuf_used : backtrace tid=%x, latbuf slot unavailable\n", $time, array_tid);
-	 `endif
-	       end // else: !if(ptr != LATBUF_SLOT_INVALID)
+	 //       else begin
+	 // 	  array.push_front({array_tid, array_data, array_hdr});
+	 // `ifdef ASE_DEBUG
+	 // 	  $fwrite(log_fd, "%d | latbuf_used : backtrace tid=%x, latbuf slot unavailable\n", $time, array_tid);
+	 // `endif
+	 //       end // else: !if(ptr != LATBUF_SLOT_INVALID)
 	    end // else: !if(hdr.reqtype == ASE_WRFENCE)
 	 end
       end
@@ -1125,7 +1136,15 @@ module outoforder_wrf_channel
 
    // Outfifo Full/Empty
    assign outfifo_almfull  = (outfifo_cnt > VISIBLE_FULL_THRESH) ? 1 : 0;
-   assign outfifo_empty    = (outfifo_cnt == 0) ? 1 : 0;
+
+   // assign outfifo_empty    = (outfifo_cnt == 0) ? 1 : 0;
+   always @(*) begin
+      if (outfifo_cnt == 0) 
+	outfifo_empty <= 1;
+      else
+	outfifo_empty <= 0;      
+   end
+   
    assign outfifo_almempty = (outfifo_cnt <= 2) ? 1 : 0;
    assign outfifo_read_en = read_en;
 
