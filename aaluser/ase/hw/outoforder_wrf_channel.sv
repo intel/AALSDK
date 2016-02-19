@@ -198,6 +198,7 @@ module outoforder_wrf_channel
    logic 			  infifo_empty;
 
    logic 			  outfifo_empty;
+   logic 			  outfifo_almempty;
    logic 			  outfifo_almfull;
 
    logic 			  outfifo_write_en;
@@ -205,8 +206,11 @@ module outoforder_wrf_channel
    logic [2:0] 			  vc_push;
 
    logic 			  some_lane_full;
-   assign some_lane_full = vl0_array_full | vh0_array_full | vh1_array_full;
 
+   always @(*) begin : lane_fullcheck_comb
+      some_lane_full <= vl0_array_full | vh0_array_full | vh1_array_full;
+   end
+   
    // Tracking ID generator
    always @(posedge clk) begin : tid_proc
       if (rst)
@@ -293,7 +297,10 @@ module outoforder_wrf_channel
    logic [0:NUM_WAIT_STATIONS-1] 		 record_vh0_flag_arr;
    logic [0:NUM_WAIT_STATIONS-1] 		 record_vh1_flag_arr;
    
-
+   logic [0:NUM_WAIT_STATIONS-1] 		 record_pop_arr;
+   logic [0:NUM_WAIT_STATIONS-1] 		 record_push_arr;
+   
+   
    /*
     * Slot setup
     */
@@ -371,9 +378,13 @@ module outoforder_wrf_channel
    endfunction
 
    // Infifo empty
-   assign infifo_empty = (infifo_cnt == 0) ? 1 : 0;
-
-
+   always @(*) begin
+      if (infifo_cnt == 0)
+	infifo_empty <= 1;
+      else
+	infifo_empty <= 0;      
+   end
+   
    // Write fence response generator
    function automatic logic [CCIP_RX_HDR_WIDTH-1:0] prepare_wrfence_response(TxHdr_t wrfence);
       RxHdr_t wrfence_rsp;
@@ -519,14 +530,17 @@ module outoforder_wrf_channel
    logic [TID_WIDTH-1:0] vh1_wrfence_tid;
 
    int 	 latbuf_push_ptr;
+   int 	 latbuf_push_ptr_reg;   
+   
    int 	 latbuf_pop_ptr;
+   int 	 latbuf_pop_ptr_reg;
 
    int 	 vl0_records_cnt ;
    int 	 vh0_records_cnt ;
    int 	 vh1_records_cnt;
 
 
-   logic [0:NUM_WAIT_STATIONS-1] latbuf_used;
+   // logic [0:NUM_WAIT_STATIONS-1] latbuf_used;
    //logic [0:NUM_WAIT_STATIONS-1] latbuf_ready;
    int 				 latbuf_cnt;
    logic 			 latbuf_full;
@@ -544,11 +558,36 @@ module outoforder_wrf_channel
       latbuf_cnt <= vl0_records_cnt + vh0_records_cnt + vh1_records_cnt;
    end
       
-   // Latbuf status signal
-   assign latbuf_empty   = (latbuf_cnt == 0) ? 1 : 0;
-   assign latbuf_full    = (latbuf_cnt == NUM_WAIT_STATIONS) ? 1 : 0;
+   // Latbuf status signals
+  
+   // assign latbuf_empty   = (latbuf_cnt == 0) ? 1 : 0;
+   always @(*) begin
+      if (latbuf_cnt == 0)
+	latbuf_empty <= 1;
+      else
+	latbuf_empty <= 0;      
+   end
+
+   always @(*) begin
+      if (latbuf_cnt == NUM_WAIT_STATIONS)
+	latbuf_full <= 1;
+      else
+	latbuf_full <= 0;      
+   end
+
+   
+   
+   // assign latbuf_full    = (latbuf_cnt == NUM_WAIT_STATIONS) ? 1 : 0;
    assign latbuf_almfull = (latbuf_cnt >= (NUM_WAIT_STATIONS-3)) ? 1 : 0;
 
+   // always @(*) begin
+   //    if (latbuf_cnt >= (NUM_WAIT_STATIONS-3))
+   // 	latbuf_almfull <= 1;
+   //    else
+   // 	latbuf_almfull <= 0;      
+   // end
+
+   
    // push_ptr selector
    function automatic integer find_next_push_slot();
       int 				     find_iter;
@@ -558,9 +597,11 @@ module outoforder_wrf_channel
 	     find_iter < latbuf_push_ptr + NUM_WAIT_STATIONS;
 	     find_iter = find_iter + 1) begin
 	    ret_free_slot = find_iter % NUM_WAIT_STATIONS;
+   	    // if ( (records[ret_free_slot].state == LatSc_Disabled) &&
+	    // 	 ~records[ret_free_slot].record_valid &&
+	    // 	 ~records[ret_free_slot].record_pop ) begin 
    	    if ( (records[ret_free_slot].state == LatSc_Disabled) &&
-		 ~records[ret_free_slot].record_valid &&
-		 ~records[ret_free_slot].record_pop ) begin 
+	    	 ~records[ret_free_slot].record_valid ) begin
    	       return ret_free_slot;
    	    end
    	 end
@@ -568,24 +609,29 @@ module outoforder_wrf_channel
       end
    endfunction
 
-
+   // Latbuf_push_ptr register process
+   always @(posedge clk) begin : latbuf_push_ptr_regproc
+      latbuf_push_ptr_reg <= latbuf_push_ptr;      
+   end
+   
+   
    //////////////////////////////////////////////////////////////////////
    // Latbuf assignment process
    //////////////////////////////////////////////////////////////////////
    // Read and update record in latency scoreboard
    function automatic void read_vc_latbuf_push (ref logic [FIFO_WIDTH-1:0] array[$:INTERNAL_FIFO_DEPTH-1],
-				      ref logic 	   	 wrfence_flag,
-				      ref logic [TID_WIDTH-1:0]  wrfence_tid
-				      );
-      logic [CCIP_TX_HDR_WIDTH-1:0] 		     array_hdr;
-      logic [CCIP_DATA_WIDTH-1:0] 		     array_data;
-      logic [TID_WIDTH-1:0] 			     array_tid;
-      TxHdr_t                                        hdr;
-      int 					     ptr;
+						ref logic 		  wrfence_flag,
+						ref logic [TID_WIDTH-1:0] wrfence_tid
+						);
+      logic [CCIP_TX_HDR_WIDTH-1:0] 					  array_hdr;
+      logic [CCIP_DATA_WIDTH-1:0] 					  array_data;
+      logic [TID_WIDTH-1:0] 						  array_tid;
+      TxHdr_t                                                             hdr;
+      int 								  ptr;
       begin
 	 ptr = find_next_push_slot();
 	 latbuf_push_ptr = ptr;
-	 if (~latbuf_almfull) begin
+	 if (~latbuf_almfull && ~outfifo_almfull) begin
 	    {array_tid, array_data, array_hdr} = array.pop_front();
 	    hdr = TxHdr_t'(array_hdr);
 	    if (hdr.reqtype == ASE_WRFENCE) begin
@@ -602,18 +648,18 @@ module outoforder_wrf_channel
 		  records[ptr].tid          = array_tid;
 		  records[ptr].record_push  = 1;
 		  records[ptr].record_valid = 1;
-		  latbuf_used[ptr]          = 1;
+		  // latbuf_used[ptr]          = 1;
 	 `ifdef ASE_DEBUG
 		  $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
-		  $fwrite(log_fd, "%d | latbuf_push : tid=%x cause latbuf_used=%x\n", $time, array_tid, latbuf_used);
+		  // $fwrite(log_fd, "%d | latbuf_push : tid=%x cause latbuf_used=%x\n", $time, array_tid, latbuf_used);
 	 `endif
 	       end // if (ptr != LATBUF_SLOT_INVALID)
-	       else begin
-		  array.push_front({array_tid, array_data, array_hdr});
-	 `ifdef ASE_DEBUG
-		  $fwrite(log_fd, "%d | latbuf_used : backtrace tid=%x, latbuf slot unavailable\n", $time, array_tid);
-	 `endif
-	       end // else: !if(ptr != LATBUF_SLOT_INVALID)
+	 //       else begin
+	 // 	  array.push_front({array_tid, array_data, array_hdr});
+	 // `ifdef ASE_DEBUG
+	 // 	  $fwrite(log_fd, "%d | latbuf_used : backtrace tid=%x, latbuf slot unavailable\n", $time, array_tid);
+	 // `endif
+	 //       end // else: !if(ptr != LATBUF_SLOT_INVALID)
 	    end // else: !if(hdr.reqtype == ASE_WRFENCE)
 	 end
       end
@@ -627,10 +673,13 @@ module outoforder_wrf_channel
    always @(posedge clk) begin : latbuf_push_proc
       if (rst) begin
    	 vc_pop <= Select_VL0;
-	 latbuf_used <= {NUM_WAIT_STATIONS{1'b0}};
 	 vl0_wrfence_flag <= 0;
 	 vh0_wrfence_flag <= 0;
 	 vh1_wrfence_flag <= 0;
+	 for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
+	    records[ii].record_push <= 0;
+	    records[ii].record_valid <= 0;
+	 end
       end
       else begin
 	 // If input arrays are available
@@ -688,11 +737,9 @@ module outoforder_wrf_channel
 	 end
 	 // Release latbuf_used & record_push
 	 for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
-	    if (records[ii].record_ready) begin
-	       latbuf_used[ii] = 0;
-	    end
 	    if (records[ii].state == LatSc_Countdown) begin
 	       records[ii].record_push <= 0;
+	       records[ii].record_valid <= 0;
 	    end
 	 end
       end
@@ -727,7 +774,10 @@ module outoforder_wrf_channel
 	    if (rst) begin
 	       records[ii].ctr_out      <= 0;
 	       records[ii].record_ready <= 0;
-	       records[ii].record_valid <= 0;
+	       record_vl0_flag_arr[ii] <= 0;
+	       record_vh0_flag_arr[ii] <= 0;
+	       record_vh1_flag_arr[ii] <= 0;
+	       // records[ii].record_valid <= 0;
 	    end
 	    else begin
 	       case (records[ii].state)
@@ -735,22 +785,32 @@ module outoforder_wrf_channel
 		   begin
 		      records[ii].record_ready  <= 0;
 		      if (records[ii].record_push) begin
-			 records[ii].record_valid <= 1;
+			 // records[ii].record_valid <= 1;
 			 records[ii].ctr_out      <= get_delay(records[ii].hdr);
 			 records[ii].state        <= LatSc_Countdown;
-			 //latbuf_used[ii]          <= 0;			 
+			 // latbuf_used[ii]          <= 0;			 
+			 if (records[ii].hdr.vc == VC_VL0) begin
+	 		    record_vl0_flag_arr[ii] <= 1;
+			 end
+			 else if (records[ii].hdr.vc == VC_VH0) begin
+	 		    record_vh0_flag_arr[ii] <= 1;
+			 end
+			 else if (records[ii].hdr.vc == VC_VH1) begin
+	 		    record_vh1_flag_arr[ii] <= 1;
+			 end			 
 		      end
 		      else begin
-			 records[ii].record_valid <= 0;
+			 // records[ii].record_valid <= 0;
 			 records[ii].ctr_out      <= 0;
 			 records[ii].state        <= LatSc_Disabled;
+			 // latbuf_used[ii]          <= 0;			 
 		      end
 		   end
 
 		 LatSc_Countdown:
 		   begin
 		      // latbuf_used
-		      records[ii].record_valid <= 1;
+		      // records[ii].record_valid <= 1;
 		      records[ii].ctr_out      <= records[ii].ctr_out - 1;
 		      if (records[ii].ctr_out == 0) begin
 			 records[ii].record_ready <= 1;
@@ -764,7 +824,7 @@ module outoforder_wrf_channel
 
 		 LatSc_DoneReady:
 		   begin
-		      records[ii].record_valid <= 1;
+		      // records[ii].record_valid <= 1;
 		      records[ii].ctr_out      <= 0;
 		      if (records[ii].record_pop) begin
 			 records[ii].record_ready <= 0;
@@ -778,15 +838,23 @@ module outoforder_wrf_channel
 
 		 LatSc_RecordPopped:
 		   begin
-		      records[ii].record_valid <= 0;
+	 	      record_vl0_flag_arr[ii] <= 0;
+	 	      record_vh0_flag_arr[ii] <= 0;
+	 	      record_vh1_flag_arr[ii] <= 0;
+		      // records[ii].record_valid <= 0;
 		      records[ii].record_ready <= 0;
 		      records[ii].ctr_out      <= 0;
-		      records[ii].state        <= LatSc_Disabled;
+		      if (~records[ii].record_pop) begin
+			 records[ii].state        <= LatSc_Disabled;
+		      end
+		      else begin
+			 records[ii].state        <= LatSc_RecordPopped;
+		      end
 		   end
 
 		 default:
 		   begin
-		      records[ii].record_valid <= 0;
+		      // records[ii].record_valid <= 0;
 		      records[ii].record_ready <= 0;
 		      records[ii].ctr_out      <= 0;
 		      records[ii].state        <= LatSc_Disabled;
@@ -796,29 +864,35 @@ module outoforder_wrf_channel
 	 end
 
 	 // Flag settings
-	 always @(posedge clk) begin
-	    if (rst) begin
-	       record_vl0_flag_arr[ii] <= 0;
-	       record_vh0_flag_arr[ii] <= 0;
-	       record_vh1_flag_arr[ii] <= 0;
-	    end
-	    else begin
-	       if (records[ii].record_push && records[ii].hdr.vc == VC_VL0) begin
-		  record_vl0_flag_arr[ii] <= 1;
-	       end
-	       else if (records[ii].record_push && records[ii].hdr.vc == VC_VH0) begin
-		  record_vh0_flag_arr[ii] <= 1;
-	       end
-	       else if (records[ii].record_push && records[ii].hdr.vc == VC_VH1) begin
-		  record_vh1_flag_arr[ii] <= 1;
-	       end
-	       else if (records[ii].record_pop) begin
-		  record_vl0_flag_arr[ii] <= 0;
-		  record_vh0_flag_arr[ii] <= 0;
-		  record_vh1_flag_arr[ii] <= 0;
-	       end
-	    end
-	 end
+	 // always @(posedge clk) begin
+	 //    if (rst) begin
+	 //       record_vl0_flag_arr[ii] <= 0;
+	 //       record_vh0_flag_arr[ii] <= 0;
+	 //       record_vh1_flag_arr[ii] <= 0;
+	 //    end
+	 //    else begin
+	 //       if (records[ii].record_push && records[ii].hdr.vc == VC_VL0) begin
+	 // 	  record_vl0_flag_arr[ii] <= 1;
+	 //       end
+	 //       else if (records[ii].record_push && records[ii].hdr.vc == VC_VH0) begin
+	 // 	  record_vh0_flag_arr[ii] <= 1;
+	 //       end
+	 //       else if (records[ii].record_push && records[ii].hdr.vc == VC_VH1) begin
+	 // 	  record_vh1_flag_arr[ii] <= 1;
+	 //       end
+	 //       else if (records[ii].record_pop) begin
+	 // 	  record_vl0_flag_arr[ii] <= 0;
+	 // 	  record_vh0_flag_arr[ii] <= 0;
+	 // 	  record_vh1_flag_arr[ii] <= 0;
+	 //       end
+	 //    end
+	 // end
+
+	 // Register record_pop
+	 // always @(posedge clk) begin : records_loop_pushpop_regproc
+	 //    record_pop_arr[ii]  <= records[ii].record_pop;
+	 //    record_push_arr[ii] <= records[ii].record_push;	    
+	 // end
 	 
       end
    endgenerate
@@ -832,8 +906,8 @@ module outoforder_wrf_channel
       begin
 	 for(pop_iter = latbuf_pop_ptr; pop_iter < latbuf_pop_ptr + NUM_WAIT_STATIONS ; pop_iter = pop_iter + 1) begin
 	    sel_slot = pop_iter % NUM_WAIT_STATIONS;
-	    // if (records[sel_slot].record_ready) begin
-	    if (records[sel_slot].state == LatSc_DoneReady) begin
+	    if (records[sel_slot].record_ready) begin
+	    // if (records[sel_slot].state == LatSc_DoneReady) begin
 	       return sel_slot;
 	    end
 	 end
@@ -841,7 +915,14 @@ module outoforder_wrf_channel
       end
    endfunction
 
+   
+   // Register latbuf_pop_ptr
+   always @(posedge clk) begin
+      latbuf_pop_ptr_reg <= latbuf_pop_ptr;      
+   end
 
+   
+   // Status of unroll (readouts)
    logic [CCIP_RX_HDR_WIDTH-1:0] rxhdr_out_vec;
    logic [CCIP_TX_HDR_WIDTH-1:0] txhdr_out_vec;
    logic 			 unroll_active;
@@ -997,7 +1078,7 @@ module outoforder_wrf_channel
                `ifdef ASE_DEBUG
 	       $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
 	       $fwrite(log_fd, "%d | latbuf_pop : tid=%x out of record[%02d]\n", $time, records[ptr].tid, ptr);
-	       $fwrite(log_fd, "%d | latbuf_pop : tid=%x cause latbuf_used=%x\n", $time, records[ptr].tid, latbuf_used);
+	       // $fwrite(log_fd, "%d | latbuf_pop : tid=%x cause latbuf_used=%x\n", $time, records[ptr].tid, latbuf_used);
 	       `endif
 	       @(posedge clk);
 	       outfifo_write_en        = 0;
@@ -1125,8 +1206,23 @@ module outoforder_wrf_channel
 
    // Outfifo Full/Empty
    assign outfifo_almfull  = (outfifo_cnt > VISIBLE_FULL_THRESH) ? 1 : 0;
-   assign outfifo_empty    = (outfifo_cnt == 0) ? 1 : 0;
-   assign outfifo_almempty = (outfifo_cnt <= 2) ? 1 : 0;
+
+   // assign outfifo_empty    = (outfifo_cnt == 0) ? 1 : 0;
+   always @(*) begin
+      if (outfifo_cnt == 0) 
+	outfifo_empty <= 1;
+      else
+	outfifo_empty <= 0;      
+   end
+   
+   // assign outfifo_almempty = (outfifo_cnt <= 2) ? 1 : 0;
+   always @(*) begin
+      if (outfifo_cnt <= 2)
+	outfifo_almempty <= 1;     
+      else
+	outfifo_almempty <= 0;      
+   end
+   
    assign outfifo_read_en = read_en;
 
    // Module empty (out)
