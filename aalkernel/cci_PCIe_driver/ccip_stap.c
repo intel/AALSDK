@@ -471,32 +471,7 @@ cci_mmap(struct aaldev_ownerSession *pownerSess,
          return 0;
       }
 
-      // TO REST OF CHECKS
-
-      // Map the PCIe BAR as the CSR region.
-      ptr = (void *) cci_dev_phys_afu_mmio(pdev);
-      size = cci_dev_len_afu_mmio(pdev);
-
-      PVERBOSE("Mapping CSR %s Aperture Physical=0x%p size=%" PRIuSIZE_T " at uvp=0x%p\n",
-         ((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),
-         ptr,
-         size,
-         (void *)pvma->vm_start);
-
-      // Map the region to user VM
-      res = remap_pfn_range(pvma,                             // Virtual Memory Area
-         pvma->vm_start,                   // Start address of virtual mapping
-         ((unsigned long) ptr) >> PAGE_SHIFT, // Pointer in Pages (Page Frame Number)
-         size,
-         pvma->vm_page_prot);
-
-      if ( unlikely(0 != res) ) {
-         PERR("remap_pfn_range error at CSR mmap %d\n", res);
-         goto ERROR;
-      }
-
-      // Successfully mapped CSR region.
-      return 0;
+      goto ERROR;
    }
 
    //------------------------

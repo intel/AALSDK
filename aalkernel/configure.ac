@@ -164,6 +164,7 @@ AC_CONFIG_LINKS([cci_PCIe_driver/kbuild/cci_pcie_driver_main_linux.c:cci_PCIe_dr
                  cci_PCIe_driver/kbuild/cci_pcie_driver_umapi_linux.c:cci_PCIe_driver/cci_pcie_driver_umapi_linux.c
                  cci_PCIe_driver/kbuild/cci_pcie_driver_umapi_common.c:cci_PCIe_driver/cci_pcie_driver_umapi_common.c
                  cci_PCIe_driver/kbuild/cci_pcie_driver_umapi_linux.h:cci_PCIe_driver/cci_pcie_driver_umapi_linux.h
+                 cci_PCIe_driver/kbuild/cci_pcie_driver_umapi.h:cci_PCIe_driver/cci_pcie_driver_umapi.h
                  cci_PCIe_driver/kbuild/ccipdrv-events.h:cci_PCIe_driver/ccipdrv-events.h
                  cci_PCIe_driver/kbuild/ccip_fme.c:cci_PCIe_driver/ccip_fme.c
                  cci_PCIe_driver/kbuild/ccip_fme_mmap_linux.c:cci_PCIe_driver/ccip_fme_mmap_linux.c

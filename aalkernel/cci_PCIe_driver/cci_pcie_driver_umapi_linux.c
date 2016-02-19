@@ -158,7 +158,7 @@ struct um_APIdriver thisDriver = {
       },
 };
 
-
+struct um_driver *_um_driver = &thisDriver.m_common;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -190,12 +190,12 @@ ccidrv_initUMAPI(void)
    //---------------------------
    // Initialize data structures
    //---------------------------
-   kosal_mutex_init(&thisDriver.m_qsem);
-   kosal_list_init(&thisDriver.m_sessq);
-   kosal_mutex_init(&thisDriver.m_sem);
+   kosal_mutex_init(&thisDriver.m_common.m_qsem);
+   kosal_list_init(&thisDriver.m_common.m_sessq);
+   kosal_mutex_init(&thisDriver.m_common.m_sem);
 
-   kosal_mutex_init(&thisDriver.wsid_list_sem);
-   kosal_list_init(&thisDriver.wsid_list_head);
+   kosal_mutex_init(&thisDriver.m_common.wsid_list_sem);
+   kosal_list_init(&thisDriver.m_common.wsid_list_head);
 
    PDEBUG("Allocating major number for \"%s\"\n",devname);
 
@@ -413,9 +413,9 @@ int ccidrv_open  (struct inode *inode, struct file *file)
    file->private_data = psess;
 
    // Add it to the list of sessions
-   if (kosal_sem_get_krnl_alertable( &thisDriver.m_qsem)) { /* FIXME */ }
-   list_add_tail( &psess->m_sessions, &thisDriver.m_sessq);
-   up( &thisDriver.m_qsem);
+   if (kosal_sem_get_krnl_alertable( &thisDriver.m_common.m_qsem)) { /* FIXME */ }
+   list_add_tail( &psess->m_sessions, &thisDriver.m_common.m_sessq);
+   up( &thisDriver.m_common.m_qsem);
 
    DPRINTF (UIDRV_DBG_FILE, "Application Session Created sess=%p\n", psess);
    return ret;
