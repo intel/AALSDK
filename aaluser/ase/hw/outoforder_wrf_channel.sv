@@ -198,6 +198,7 @@ module outoforder_wrf_channel
    logic 			  infifo_empty;
 
    logic 			  outfifo_empty;
+   logic 			  outfifo_almempty;
    logic 			  outfifo_almfull;
 
    logic 			  outfifo_write_en;
@@ -205,8 +206,11 @@ module outoforder_wrf_channel
    logic [2:0] 			  vc_push;
 
    logic 			  some_lane_full;
-   assign some_lane_full = vl0_array_full | vh0_array_full | vh1_array_full;
 
+   always @(*) begin : lane_fullcheck_comb
+      some_lane_full <= vl0_array_full | vh0_array_full | vh1_array_full;
+   end
+   
    // Tracking ID generator
    always @(posedge clk) begin : tid_proc
       if (rst)
@@ -293,7 +297,10 @@ module outoforder_wrf_channel
    logic [0:NUM_WAIT_STATIONS-1] 		 record_vh0_flag_arr;
    logic [0:NUM_WAIT_STATIONS-1] 		 record_vh1_flag_arr;
    
-
+   logic [0:NUM_WAIT_STATIONS-1] 		 record_pop_arr;
+   logic [0:NUM_WAIT_STATIONS-1] 		 record_push_arr;
+   
+   
    /*
     * Slot setup
     */
@@ -523,7 +530,10 @@ module outoforder_wrf_channel
    logic [TID_WIDTH-1:0] vh1_wrfence_tid;
 
    int 	 latbuf_push_ptr;
+   int 	 latbuf_push_ptr_reg;   
+   
    int 	 latbuf_pop_ptr;
+   int 	 latbuf_pop_ptr_reg;
 
    int 	 vl0_records_cnt ;
    int 	 vh0_records_cnt ;
@@ -581,7 +591,12 @@ module outoforder_wrf_channel
       end
    endfunction
 
-
+   // Latbuf_push_ptr register process
+   always @(posedge clk) begin : latbuf_push_ptr_regproc
+      latbuf_push_ptr_reg <= latbuf_push_ptr;      
+   end
+   
+   
    //////////////////////////////////////////////////////////////////////
    // Latbuf assignment process
    //////////////////////////////////////////////////////////////////////
@@ -838,6 +853,12 @@ module outoforder_wrf_channel
 	       end
 	    end
 	 end
+
+	 // Register record_pop
+	 always @(posedge clk) begin : records_loop_pushpop_regproc
+	    record_pop_arr[ii]  <= records[ii].record_pop;
+	    record_push_arr[ii] <= records[ii].record_push;	    
+	 end
 	 
       end
    endgenerate
@@ -860,7 +881,14 @@ module outoforder_wrf_channel
       end
    endfunction
 
+   
+   // Register latbuf_pop_ptr
+   always @(posedge clk) begin
+      latbuf_pop_ptr_reg <= latbuf_pop_ptr;      
+   end
 
+   
+   // Status of unroll (readouts)
    logic [CCIP_RX_HDR_WIDTH-1:0] rxhdr_out_vec;
    logic [CCIP_TX_HDR_WIDTH-1:0] txhdr_out_vec;
    logic 			 unroll_active;
@@ -1153,7 +1181,14 @@ module outoforder_wrf_channel
 	outfifo_empty <= 0;      
    end
    
-   assign outfifo_almempty = (outfifo_cnt <= 2) ? 1 : 0;
+   // assign outfifo_almempty = (outfifo_cnt <= 2) ? 1 : 0;
+   always @(*) begin
+      if (outfifo_cnt <= 2)
+	outfifo_almempty <= 1;     
+      else
+	outfifo_almempty <= 0;      
+   end
+   
    assign outfifo_read_en = read_en;
 
    // Module empty (out)
