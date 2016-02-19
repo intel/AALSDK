@@ -166,14 +166,14 @@ package ase_pkg;
 
    // CmpXchg header (received from a Compare-Exchange operation)
    typedef struct packed {
-      ccip_vc_t       vc;
-      logic           poison;
+      ccip_vc_t       vc_used;
+      logic 	      poison;
       logic 	      hitmiss;
       logic 	      rsvd_23_21;
-      logic 	      matched;
+      logic 	      success_fail;
       ccip_resptype_t resp_type;
       logic [15:0]    mdata;    
-   } CmpXchg_t;
+   } Atomics_t;
    parameter CCIP_CMPXCHG_HDR_WIDTH = $bits(CmpXchg_t);
       
    // Config channel
@@ -227,13 +227,12 @@ package ase_pkg;
     */
    typedef struct {
       int 	  mode;
-      // int         write_en;
-      int 	  vc;
+      int 	  qw_start;
       int 	  mdata;
       longint 	  cl_addr;
       longint     qword[8];
-      // int 	  resp_en;
       int 	  resp_channel;
+      int 	  success;
    } cci_pkt;
 
    parameter CCIPKT_WRITE_MODE   = 32'h1000;   

@@ -516,12 +516,12 @@ struct ase_cfg_t *cfg;
 // CCI transaction packet
 typedef struct {
   int       mode;
-  // int       write_en;
+  int       qw_start;
   long      mdata;
   long long cl_addr;
   long long qword[8];
-  // int       resp_en;
   int       resp_channel;
+  int       success;
 } cci_pkt;
 
 #define CCIPKT_WRITE_MODE    0x1000 
