@@ -1218,9 +1218,9 @@ struct cci_aal_device   *
    //
 
    // Initialize the worker thread
-   cci_dev_workq_deactimeout(pcci_aaldev)      = kosal_create_workqueue("ReconfTimeOut");
-   cci_dev_workq_prcconfigure(pcci_aaldev)     = kosal_create_workqueue("PRreconfiguration");
-   cci_dev_workq_revokeafu(pcci_aaldev)        = kosal_create_workqueue("RevokeAFU");
+   cci_dev_workq_deactimeout( pcci_aaldev ) = kosal_create_workqueue( "ReconfTimeOut", cci_aaldev_to_aaldev( pcci_aaldev ) );
+   cci_dev_workq_prcconfigure( pcci_aaldev ) = kosal_create_workqueue( "PRreconfiguration", cci_aaldev_to_aaldev( pcci_aaldev ) );
+   cci_dev_workq_revokeafu( pcci_aaldev ) = kosal_create_workqueue( "RevokeAFU", cci_aaldev_to_aaldev( pcci_aaldev ) );
 
    pworkobj = &cci_dev_task_deactimeout_handler(pcci_aaldev);
    KOSAL_INIT_WORK(pworkobj,task_poller,afu_release_timeout_callback);

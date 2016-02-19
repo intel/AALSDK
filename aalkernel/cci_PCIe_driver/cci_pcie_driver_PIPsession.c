@@ -268,7 +268,7 @@ cci_flush_all_wsids(struct cci_PIPsession *psess)
 
    PVERBOSE("Freeing allocated workspaces.\n");
 
-   list_for_each_entry_safe(wsidp, tmp, &pownerSess->m_wshead, m_list) {
+   kosal_list_for_each_entry_safe( wsidp, tmp, &pownerSess->m_wshead, m_list, struct aal_wsid) {
       if( WSM_TYPE_VIRTUAL == wsidp->m_type){
          kosal_free_contiguous_mem((btAny)wsidp->m_id, wsidp->m_size);
 
@@ -276,7 +276,7 @@ cci_flush_all_wsids(struct cci_PIPsession *psess)
          PVERBOSE("Done Freeing PWS with id 0x%llx.\n",pwsid_to_wsidHandle(wsidp));
       }
 
-      list_del_init(&wsidp->m_list);
+      kosal_list_del_init(&wsidp->m_list);
 
       ccidrv_freewsid(wsidp);
    } // end list_for_each_entry

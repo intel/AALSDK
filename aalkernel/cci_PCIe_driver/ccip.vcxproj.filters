@@ -40,6 +40,15 @@
     <ClCompile Include="ccip_fme.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cci_pcie_driver_PIPsession.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ccip_fme_mmap_windows.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cci_pcie_driver_umapi_common.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cci_pcie_windows.h">
@@ -49,6 +58,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ccip_fme.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cci_pcie_driver_PIPsession.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
