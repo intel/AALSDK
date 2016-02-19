@@ -512,8 +512,9 @@ cci_release_device(pkosal_os_dev pdev)
 int cci_publish_aaldevice(struct cci_aal_device * pcci_aaldev)
 {
    btInt ret = 0;
+#if defined( __AAL_WINDOWS__ )
    UNREFERENCED_PARAMETER(pcci_aaldev);
-#if 0
+#else
    // Pointer to the AAL Bus interface
    struct aal_bus       *pAALbus = aalbus_get_bus();
 
