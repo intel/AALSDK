@@ -83,13 +83,11 @@
 #include "ccip_port.h"
 #include "ccip_perfmon_linux.h"
 
-//#include "aalsdk/kernel/spl2defs.h"
-
 extern int print_sim_fme_device(struct fme_device *);
 extern int print_sim_port_device(struct port_device *pport_dev);
 
 /// g_device_list - Global device list for this module.
-struct list_head g_device_list;
+struct kosal_list_head g_device_list;
 
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -110,7 +108,7 @@ MODULE_LICENSE    (DRV_LICENSE);
 //    sudo insmod ccidrv           # Normal load. PCIe enumeration enabled
 //    sudo insmod ccidrv sim=4     # Instantiate 4 simulated AFUs
 
-ulong sim = 0;
+btUnsigned32bitInt sim = 0;
 MODULE_PARM_DESC(sim, "Simulation: #=Number of simulated AFUs to instantiate");
 module_param    (sim, ulong, S_IRUGO);
 
