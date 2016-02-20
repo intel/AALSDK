@@ -48,7 +48,7 @@
 #include "nlb-specific.h"
 #include "diag-nlb-common.h"
 
-btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd)
+btInt CNLBWrite::RunTest(const NLBCmdLine &cmd)
 {
    btInt res = 0;
    btWSSize  sz = CL(cmd.begincls);
@@ -290,7 +290,7 @@ btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd)
    return res;
 }
 
-void  CNLBCcipWrite::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
+void  CNLBWrite::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 {
 	nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 	bt64bitCSR ticks;

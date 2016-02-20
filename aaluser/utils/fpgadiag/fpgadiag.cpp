@@ -316,19 +316,19 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
 
-  	   if(0 == strcmp(TestMode().c_str(), "TestMode_ccipread") ||
-		  0 == strcmp(TestMode().c_str(), "TestMode_ccipwrite") ||
-		  0 == strcmp(TestMode().c_str(), "TestMode_cciptrput")){
+  	   if(0 == strcmp(TestMode().c_str(), "TestMode_read") ||
+		  0 == strcmp(TestMode().c_str(), "TestMode_write") ||
+		  0 == strcmp(TestMode().c_str(), "TestMode_trput")){
 
   		   ConfigRecord.Add(keyRegAFU_ID,"751E795F-7DA4-4CC6-8309-935132BCA9B6");
   		   Manifest.Add(keyRegAFU_ID,"751E795F-7DA4-4CC6-8309-935132BCA9B6");
 
-  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_cciplpbk1")){
+  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_lpbk1")){
 
   		   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
   		   Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
 
-  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_ccipsw")){
+  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_sw")){
 
  		   ConfigRecord.Add(keyRegAFU_ID,"A944F6E7-15D3-4D95-9452-15DBD47C76BD");
  		   Manifest.Add(keyRegAFU_ID,"A944F6E7-15D3-4D95-9452-15DBD47C76BD");
@@ -719,13 +719,13 @@ int main(int argc, char *argv[])
       return 5;
    }
 
-   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
+   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_LPBK1)))
       {
-   		// Run NLB ccip test, which performs sw data verification.
-   		CNLBCcipLpbk1 nlbccip_lpbk1(&myapp);
+   		// Run NLB test, which performs sw data verification.
+   		CNLBLpbk1 nlb_lpbk1(&myapp);
 
-   		cout << " * Data Copy - CCIP LPBK1" << flush;
-   		res = nlbccip_lpbk1.RunTest(gCmdLine);
+   		cout << " * Data Copy - LPBK1" << flush;
+   		res = nlb_lpbk1.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
    		  cout << PASS << "PASS - DATA VERIFIED";
@@ -734,13 +734,13 @@ int main(int argc, char *argv[])
    		}
    		cout << NORMAL << endl;
 	}
-	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_READ)))
+	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_READ)))
 	{
-   		// Run NLB ccip read test.
-   		CNLBCcipRead nlbccip_read(&myapp);
+   		// Run NLB read test.
+   		CNLBRead nlb_read(&myapp);
 
-   		cout << " * Read Bandwidth from Memory - CCIP READ" << flush;
-   		res = nlbccip_read.RunTest(gCmdLine);
+   		cout << " * Read Bandwidth from Memory - READ" << flush;
+   		res = nlb_read.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
    		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
@@ -749,13 +749,13 @@ int main(int argc, char *argv[])
    		}
    		cout << NORMAL << endl;
 	}
-	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_WRITE)))
+	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_WRITE)))
 	{
-   		// Run NLB ccip write test.
-   		CNLBCcipWrite nlbccip_write(&myapp);
+   		// Run NLB write test.
+   		CNLBWrite nlb_write(&myapp);
 
-   		cout << " * Write Bandwidth from Memory - CCIP WRITE" << flush;
-   		res = nlbccip_write.RunTest(gCmdLine);
+   		cout << " * Write Bandwidth from Memory - WRITE" << flush;
+   		res = nlb_write.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
    		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
@@ -764,13 +764,13 @@ int main(int argc, char *argv[])
    		}
    		cout << NORMAL << endl;
 	}
-	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_TRPUT)))
+	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_TRPUT)))
 	{
-   		// Run NLB ccip trput test.
-   		CNLBCcipTrput nlbccip_trput(&myapp);
+   		// Run NLB  trput test.
+   		CNLBTrput nlb_trput(&myapp);
 
-   		cout << " * Simultaneous Read/Write Bandwidth - CCIP TRPUT" << flush;
-   		res = nlbccip_trput.RunTest(gCmdLine);
+   		cout << " * Simultaneous Read/Write Bandwidth - TRPUT" << flush;
+   		res = nlb_trput.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
    		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
@@ -779,14 +779,14 @@ int main(int argc, char *argv[])
    		}
    		cout << NORMAL << endl;
 	}
-	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_SW)))
+	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_SW)))
 	{
    	   // Run an SW Test..
    	   // * report bandwidth in GiB/s
-   	   CNLBCcipSW nlbccip_sw(&myapp);
+   	   CNLBSW nlb_sw(&myapp);
 
-   	   cout << " * CCIP-SW test " << flush;
-   	   res = nlbccip_sw.RunTest(gCmdLine);
+   	   cout << " * SW test " << flush;
+   	   res = nlb_sw.RunTest(gCmdLine);
    	   totalres += res;
    	   if ( 0 == res ) {
    		  cout << PASS << "PASS - DATA VERIFIED";

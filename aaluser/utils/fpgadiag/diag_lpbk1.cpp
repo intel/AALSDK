@@ -24,8 +24,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-// @file diag_trput.cpp
-// @brief NLB Trput test application file.
+// @file diag_lpbk1.cpp
+// @brief NLB LPBK1 test application file.
 // @ingroup
 // @verbatim
 // Intel(R) QuickAssist Technology Accelerator Abstraction Layer
@@ -35,28 +35,49 @@
 //
 // HISTORY:
 // WHEN:          WHO:     WHAT:
-// 05/30/2013     TSW      Initial version.
-// 07/30/2105     SC	   fpgadiag version@endverbatim
+// 09/17/2015     SC      Initial version.@endverbatim
 //****************************************************************************
 
-//TRPUT: This test combines the read and write streams. There is no data checking
-//and no dependency between read and writes. It reads CSR_NUM_LINES starting from
-//CSR_SRC_ADDR location and writes CSR_NUM_LINS to CSR_DST_ADDR. It is also used
-//to measure 50% read + 50% write bandwidth.
+//CCIP: This is a memory copy test. AFU copies CSR_NUM_LINES from source buffer to destination buffer.
+//On test completion, the software compares the source and destination buffers.
 #include <aalsdk/kernel/aalui.h>
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"
 #include "diag-nlb-common.h"
 
-btInt CNLBCcipTrput::RunTest(const NLBCmdLine &cmd)
+// non-continuous mode.
+// no cache treatment.
+btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 {
-   btInt res = 0;
+   btInt 	 res = 0;
    btWSSize  sz = CL(cmd.begincls);
    uint_type  mcl = cmd.multicls;
+   uint_type NumCacheLines = cmd.begincls;
 
-   btVirtAddr pInputUsrVirt  = m_pMyApp->InputVirt();
-   btVirtAddr pOutputUsrVirt = m_pMyApp->OutputVirt();
+   const btInt StopTimeoutMillis = 250;
+   btInt MaxPoll = StopTimeoutMillis;
+
+   // We need to initialize the input and output buffers, so we need addresses suitable
+   // for dereferencing in user address space.
+   // volatile, because the FPGA will be updating the buffers, too.
+   volatile btVirtAddr pInputUsrVirt = m_pMyApp->InputVirt();
+
+   ::memset((void *)pInputUsrVirt, 0, m_pMyApp->InputSize());
+
+   btUnsigned32bitInt  InputData = 0x00000000;
+   volatile btUnsigned32bitInt *pInput    = (volatile btUnsigned32bitInt *)pInputUsrVirt;
+   volatile btUnsigned32bitInt *pEndInput = (volatile btUnsigned32bitInt *)pInput +
+                                     (m_pMyApp->InputSize() / sizeof(btUnsigned32bitInt));
+
+   for ( ; pInput < pEndInput ; ++pInput ) {
+      *pInput = InputData++;
+   }
+
+   volatile btVirtAddr pOutputUsrVirt = m_pMyApp->OutputVirt();
+
+   // zero the output buffer
+   ::memset((void *)pOutputUsrVirt, 0, m_pMyApp->OutputSize());
 
    volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 
@@ -85,43 +106,40 @@ btInt CNLBCcipTrput::RunTest(const NLBCmdLine &cmd)
    m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
 
    // Set output workspace address
-   m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys())+512); //offset added to avoid clashes in cache
+   m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
 
    // Set the test mode
-   m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
-   csr_type cfg = (csr_type)NLB_TEST_MODE_TRPUT;
+   csr_type cfg = (csr_type)NLB_TEST_MODE_LPBK1;
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
-     {
-       cfg |= (csr_type)NLB_TEST_MODE_CONT;
-     }
-
-   //Check for write through mode and add to CSR_CFG
+   {
+	   cfg |= (csr_type)NLB_TEST_MODE_CONT;
+   }
+   // Check for write through mode and add to CSR_CFG
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WT))
    {
-     cfg |= (csr_type)NLB_TEST_MODE_WT;
+	   cfg |= (csr_type)NLB_TEST_MODE_WT;
    }
-
-   // Set the read type flags of the CSR_Config.
+   // Set the read flags.
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI))
    {
-	cfg |= (csr_type)NLB_TEST_MODE_RDI;
+	   cfg |= (csr_type)NLB_TEST_MODE_RDI;
    }
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDO))
    {
-    cfg |= (csr_type)NLB_TEST_MODE_RDO;
+	   cfg |= (csr_type)NLB_TEST_MODE_RDO;
    }
    // Select the channel.
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0))
    {
-	cfg |= (csr_type)NLB_TEST_MODE_VL0;
+    cfg |= (csr_type)NLB_TEST_MODE_VL0;
    }
    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH0))
    {
-	cfg |= (csr_type)NLB_TEST_MODE_VH0;
+    cfg |= (csr_type)NLB_TEST_MODE_VH0;
    }
    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1))
    {
-	cfg |= (csr_type)NLB_TEST_MODE_VH1;
+    cfg |= (csr_type)NLB_TEST_MODE_VH1;
    }
    // Set Multi CL CSR.
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_MULTICL))
@@ -159,83 +177,90 @@ btInt CNLBCcipTrput::RunTest(const NLBCmdLine &cmd)
    Timer     absolute = Timer() + Timer(&ts);
 #endif // OS
 
-   const btInt StopTimeoutMillis = 250;
-   btInt MaxPoll = StopTimeoutMillis;
-
-
    while ( sz <= CL(cmd.endcls) )
    {
-	   	   // Assert Device Reset
-	   	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
+	    // Assert Device Reset
+	    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
-	   	   // Clear the DSM status fields
-	   	   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
+		// Clear the DSM status fields
+		::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
-	   	   // De-assert Device Reset
-	   	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
+		// De-assert Device Reset
+		m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
-	   	   // Set the number of cache lines for the test
-	   	   m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
+	    // Set the number of cache lines for the test
+		m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
 
-		   // Start the test
-	   	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
+	    // Start the test
+		m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
 
-		   // In cont mode, send a stop signal after timeout. Wait till DSM complete register goes high
-		   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
-		   {
-			   //Wait till timeout.
-			   while(Timer() < absolute){
-				   SleepNano(10);
-			   }
-
-			   // Stop the device
-			   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
-
-			   //wait for DSM register update or timeout
-			   while ( 0 == pAFUDSM->test_complete &&
-					 ( MaxPoll >= 0 )) {
-				   MaxPoll -= 1;
-				   SleepMilli(1);
-			   }
-
-			   //Update timer.
-			   absolute = Timer() + Timer(&ts);
-		   }
-		   else	//In non-cont mode, wait till test completes and then stop the device.
-		   {
-			   // Wait for test completion or timeout
-			   while ( 0 == pAFUDSM->test_complete &&
-					 ( MaxPoll >= 0 )) {
-				   MaxPoll -= 1;
-				   SleepMilli(1);
-			   }
-
-			   // Stop the device
-			   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
+	    // In cont mode, send a stop signal after timeout. Wait till DSM complete register goes high
+	    if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
+	    {
+		   //Wait till timeout.
+		   while(Timer() < absolute){
+			   SleepNano(10);
 		   }
 
-		   ReadPerfMonitors();
+		   // Stop the device
+		   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 
-		   PrintOutput(cmd, (sz / CL(1)));
-
-		   SavePerfMonitors();
-
-		   // Increment number of cachelines.
-		   sz += CL(mcl);
-
-		   // Check the device status
-		   if ( MaxPoll < 0 ) {
-		      cerr << "The maximum timeout for test stop was exceeded." << endl;
-		      ++res;
-		      break;
+		   //wait for DSM register update or timeout
+		   while ( 0 == pAFUDSM->test_complete &&
+				 ( MaxPoll >= 0 )) {
+			   MaxPoll -= 1;
+			   SleepMilli(1);
 		   }
-		   MaxPoll = StopTimeoutMillis;
 
-		   if ( 0 != pAFUDSM->test_error ) {
-			  cerr << "Error bit set in DSM.\n";
-		      ++res;
-		      break;
+		   //Update timer.
+		   absolute = Timer() + Timer(&ts);
+	    }
+	    else	//In non-cont mode, wait till test completes and then stop the device.
+	    {
+		   // Wait for test completion or timeout
+		   while ( 0 == pAFUDSM->test_complete &&
+				 ( MaxPoll >= 0 )) {
+			   MaxPoll -= 1;
+			   SleepMilli(1);
 		   }
+
+		   // Stop the device
+		   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
+	    }
+
+	    ReadPerfMonitors();
+
+	    PrintOutput(cmd, NumCacheLines);
+
+	    SavePerfMonitors();
+
+	    // Verify the buffers
+	    if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, NumCacheLines) != 0 )
+	    {
+	 	   cerr << "Data mismatch in Input and Output buffers.\n";
+	       ++res;
+	       break;
+	    }
+
+	    // Verify the device
+	    if ( 0 != pAFUDSM->test_error ) {
+	 	  cerr << "Error bit is in the DSM.\n";
+	      ++res;
+	      break;
+	    }
+
+	   //Increment number of cachelines
+	   sz += CL(mcl);
+	   NumCacheLines += mcl;
+
+	   // Check the device status
+	   if ( MaxPoll < 0 ) {
+		  cerr << "The maximum timeout for test stop was exceeded." << endl;
+		  ++res;
+		  break;
+	   }
+
+	   MaxPoll = StopTimeoutMillis;
    }
 
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
@@ -250,26 +275,26 @@ btInt CNLBCcipTrput::RunTest(const NLBCmdLine &cmd)
    return res;
 }
 
-void  CNLBCcipTrput::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
+void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 {
 	nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 	bt64bitCSR ticks;
-    bt64bitCSR rawticks     = pAFUDSM->num_clocks;
-    bt32bitCSR startpenalty = pAFUDSM->start_overhead;
-    bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
+	bt64bitCSR rawticks     = pAFUDSM->num_clocks;
+	bt32bitCSR startpenalty = pAFUDSM->start_overhead;
+	bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
 
-    cout << setw(10) << cls 								<< ' '
-	     << setw(10) << pAFUDSM->num_reads    				<< ' '
-	     << setw(11) << pAFUDSM->num_writes   				<< ' '
-	     << setw(12) << GetPerfMonitor(READ_HIT)      		<< ' '
-	     << setw(12) << GetPerfMonitor(WRITE_HIT)      		<< ' '
-	     << setw(13) << GetPerfMonitor(READ_MISS)      		<< ' '
-	     << setw(13) << GetPerfMonitor(WRITE_MISS)      	<< ' '
-	     << setw(10) << GetPerfMonitor(EVICTIONS)     		<< ' ';
+	cout << setw(10) << cls 								<< ' '
+		 << setw(10) << pAFUDSM->num_reads    			<< ' '
+		 << setw(11) << pAFUDSM->num_writes   			<< ' '
+		 << setw(12) << GetPerfMonitor(READ_HIT)     << ' '
+		 << setw(12) << GetPerfMonitor(WRITE_HIT)    << ' '
+		 << setw(13) << GetPerfMonitor(READ_MISS)    << ' '
+		 << setw(13) << GetPerfMonitor(WRITE_MISS)   << ' '
+		 << setw(10) << GetPerfMonitor(EVICTIONS)    << ' ';
 
-    if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
-    	ticks = rawticks - startpenalty;
-    }
+	if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
+		ticks = rawticks - startpenalty;
+	}
 	else
 	{
 	ticks = rawticks - (startpenalty + endpenalty);
@@ -287,4 +312,6 @@ void  CNLBCcipTrput::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 
 	cout << endl;
 }
+
+
 
