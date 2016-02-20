@@ -49,11 +49,6 @@ BEGIN_C_DECLS
 #define HIGH 0xffffffff
 #define LOW  0x00000000
 
-# define NLB_TESTMODE_LPBK1 	   "TestMode_lpbk1"
-# define NLB_TESTMODE_READ  	   "TestMode_read"
-# define NLB_TESTMODE_WRITE 	   "TestMode_write"
-# define NLB_TESTMODE_TRPUT 	   "TestMode_trput"
-# define NLB_TESTMODE_SW    	   "TestMode_sw"
 # define NLB_TESTMODE_CCIP_LPBK1 "TestMode_cciplpbk1"
 # define NLB_TESTMODE_CCIP_READ  "TestMode_ccipread"
 # define NLB_TESTMODE_CCIP_WRITE "TestMode_ccipwrite"

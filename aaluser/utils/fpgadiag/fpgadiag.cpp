@@ -719,90 +719,7 @@ int main(int argc, char *argv[])
       return 5;
    }
 
-   /*if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_LPBK1)))
-   {
-	   // Run NLB Lpbk1, which performs sw data verification.
-	   CNLBLpbk1 nlblpbk1(&myapp);
-
-	   cout << " * Data Copy " << flush;
-	   res = nlblpbk1.RunTest(gCmdLine);
-	   totalres += res;
-	   if ( 0 == res ) {
-		  cout << PASS << "PASS - DATA VERIFIED";
-	   } else {
-		  cout << FAIL << "ERROR";
-	   }
-	   cout << NORMAL << endl;
-   }
-   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_READ)))
-   {
-	   // Run an NLB Read bandwidth measurement..
-	   // * cold cache (a la, --prefill-misses)
-	   // * report read bandwidth in GiB/s
-	   CNLBRead nlbread(&myapp);
-
-	   cout << " * Read Bandwidth from Memory " << flush;
-	   res = nlbread.RunTest(gCmdLine);
-	   totalres += res;
-	   if ( 0 == res ) {
-		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-	   } else {
-		  cout << FAIL << "ERROR";
-	   }
-	   cout << NORMAL << endl;
-   }
-   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_WRITE)))
-   {
-	   // Run an NLB Write bandwidth measurement..
-	   // * cold cache (a la, --prefill-misses)
-	   // * report write bandwidth in GiB/s
-	   CNLBWrite nlbwrite(&myapp);
-
-	   cout << " * Write Bandwidth to Memory " << flush;
-	   res = nlbwrite.RunTest(gCmdLine);
-	   totalres += res;
-	   if ( 0 == res ) {
-		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-	   } else {
-		  cout << FAIL << "ERROR";
-	   }
-	   cout << NORMAL << endl;
-   }
-   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_TRPUT)))
-   {
-	   // Run an NLB Trput measurement..
-	   // * report bandwidth in GiB/s
-	   CNLBTrput nlbtrput(&myapp);
-
-	   cout << " * Simultaneous Read/Write Bandwidth " << flush;
-	   res = nlbtrput.RunTest(gCmdLine);
-	   totalres += res;
-	   if ( 0 == res ) {
-		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-	   } else {
-		  cout << FAIL << "ERROR";
-	   }
-	   cout << NORMAL << endl
-			<< endl;
-   }
-   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_SW)))
-   {
-	   // Run an SW Test..
-	   // * report bandwidth in GiB/s
-	   CNLBSW nlbsw(&myapp);
-
-	   cout << " * SW test " << flush;
-	   res = nlbsw.RunTest(gCmdLine);
-	   totalres += res;
-	   if ( 0 == res ) {
-		  cout << PASS << "PASS - DATA VERIFIED";
-	   } else {
-		  cout << FAIL << "ERROR";
-	   }
-	   cout << NORMAL << endl
-			<< endl;
-   }
-   else*/ if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
+   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
       {
    		// Run NLB ccip test, which performs sw data verification.
    		CNLBCcipLpbk1 nlbccip_lpbk1(&myapp);
@@ -816,9 +733,9 @@ int main(int argc, char *argv[])
    		  cout << FAIL << "ERROR";
    		}
    		cout << NORMAL << endl;
-      }
-      else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_READ)))
-      {
+	}
+	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_READ)))
+	{
    		// Run NLB ccip read test.
    		CNLBCcipRead nlbccip_read(&myapp);
 
@@ -831,9 +748,9 @@ int main(int argc, char *argv[])
    		  cout << FAIL << "ERROR";
    		}
    		cout << NORMAL << endl;
-     }
-     else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_WRITE)))
-     {
+	}
+	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_WRITE)))
+	{
    		// Run NLB ccip write test.
    		CNLBCcipWrite nlbccip_write(&myapp);
 
@@ -846,9 +763,9 @@ int main(int argc, char *argv[])
    		  cout << FAIL << "ERROR";
    		}
    		cout << NORMAL << endl;
-     }
-     else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_TRPUT)))
-     {
+	}
+	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_TRPUT)))
+	{
    		// Run NLB ccip trput test.
    		CNLBCcipTrput nlbccip_trput(&myapp);
 
@@ -861,9 +778,9 @@ int main(int argc, char *argv[])
    		  cout << FAIL << "ERROR";
    		}
    		cout << NORMAL << endl;
-     }
-     else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_SW)))
-     {
+	}
+	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_SW)))
+	{
    	   // Run an SW Test..
    	   // * report bandwidth in GiB/s
    	   CNLBCcipSW nlbccip_sw(&myapp);

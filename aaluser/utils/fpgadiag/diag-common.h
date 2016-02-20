@@ -83,7 +83,7 @@ using namespace AAL;
 #define DEFAULT_TARGET_AFU ALIAFU_NVS_VAL_TARGET_FPGA
 
 /// The default Test Mode.
-#define DEFAULT_TEST_MODE NLB_TESTMODE_LPBK1
+#define DEFAULT_TEST_MODE NLB_TESTMODE_CCIP_LPBK1
 
 /// The default Sub-Device ID.
 #define DEFAULT_TARGET_DEV -1
@@ -291,57 +291,6 @@ protected:
    std::string 		   m_WrBw;
 };
 
-class CNLBLpbk1 : public INLB
-{
-public:
-   CNLBLpbk1(CMyApp *pMyApp) :
-      INLB(pMyApp)
-   {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
-   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
-};
-
-class CNLBRead : public INLB
-{
-public:
-	CNLBRead(CMyApp *pMyApp) :
-      INLB(pMyApp)
-   {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
-   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
-};
-
-class CNLBWrite : public INLB
-{
-public:
-	CNLBWrite(CMyApp *pMyApp) :
-      INLB(pMyApp)
-   {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
-   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
-};
-
-
-class CNLBTrput : public INLB
-{
-public:
-   CNLBTrput(CMyApp *pMyApp) :
-      INLB(pMyApp)
-   {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
-   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
-};
-
-
-class CNLBSW : public INLB
-{
-public:
-	CNLBSW(CMyApp *pMyApp) :
-      INLB(pMyApp)
-    {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
-   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
-};
 class CNLBCcipLpbk1 : public INLB
 {
 public:
