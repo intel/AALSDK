@@ -799,10 +799,10 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    if ( 0 == strcasecmp(test.c_str(), "ATOMIC"))
    {
       fprintf(fp, "      <SUB-MODE>  = --shared-token    OR --st,    CmpXchg is lock-stepped between SW and HW,      ");
-      fprintf(fp, "HW Quad Word value should be equal to SW Quad Word value\n");
+      fprintf(fp, "HW Quad Word value should NOT be equal to SW Quad Word value\n");
 
       fprintf(fp, "                  = --unshared-token  OR --ut,    CmpXchg is independent on SW and HW,            ");
-      fprintf(fp, "HW Quad Word value need not be equal to SW Quad Word value\n");
+      fprintf(fp, "HW Quad Word value may be equal to SW Quad Word value\n");
 
       fprintf(fp, "      <QUAD-WORD> = --hardware-qw=H   OR --hqw=H, where %llu <= H <= %llu,                              ",
               nlbcl->defaults.minhqw, nlbcl->defaults.maxhqw);
