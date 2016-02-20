@@ -310,11 +310,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\kOSAL\kOSAL.c" />
+    <ClCompile Include="ccip_afu.c" />
     <ClCompile Include="ccip_fme.c" />
     <ClCompile Include="ccip_fme_mmap_windows.c" />
     <ClCompile Include="ccip_perfmon.c" />
     <ClCompile Include="ccip_port.c" />
+    <ClCompile Include="ccip_pr.c" />
     <ClCompile Include="ccip_sim_mmio.c" />
+    <ClCompile Include="ccip_stap.c" />
     <ClCompile Include="cci_pcie_common.c" />
     <ClCompile Include="cci_pcie_driver_main_windows.c" />
     <ClCompile Include="cci_pcie_driver_PIPsession.c" />

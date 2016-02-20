@@ -980,9 +980,9 @@ KOSAL_WSSIZE kosal_round_up_to_page_size(KOSAL_WSSIZE s) {
    void task_poller(struct work_struct *work);
 
 
-#define KOSAL_INIT_WORK(w,f,callbackfun)      do {(w->fnct) = f; \
+#define KOSAL_INIT_WORK(w,f)        do {(w->fnct) = f; \
                                                   (w->context)=(&w); \
-                                                  (w->callback)=&callbackfun; \
+                                                  (w->callback)=task_poller; \
                                                   INIT_DELAYED_WORK(&(w->workobj),f); \
                                                  }while(0);
 
@@ -998,7 +998,7 @@ void kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, KOSAL_TIME 
 #define kosal_init_waitqueue_head(q)
 
 // Name not currently used
-#define kosal_create_workqueue(name, dev)    IoAllocateWorkItem(aaldev_to_basedev(pd))
+#define kosal_create_workqueue(name, pd)     IoAllocateWorkItem(aaldev_to_basedev(pd))
 //kosal_create_workqueue
 
 typedef void (*osfunc)(PDEVICE_OBJECT,PVOID);

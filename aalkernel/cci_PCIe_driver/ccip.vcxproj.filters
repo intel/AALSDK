@@ -55,6 +55,15 @@
     <ClCompile Include="ccip_port.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ccip_stap.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ccip_pr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ccip_afu.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cci_pcie_windows.h">

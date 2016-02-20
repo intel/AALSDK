@@ -51,6 +51,8 @@
 #include "cci_pcie_windows.h"
 #include "cci_pcie_driver_simulator.h"
 
+btUnsigned32bitInt sim = 0;
+
 btUnsignedInt debug = 0
 
 /* Type and Level selection flags */
