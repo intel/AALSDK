@@ -111,6 +111,9 @@ struct NLBCmdLine gCmdLine =
    DEFAULT_SRCPHYS,
    DEFAULT_DSTPHYS,
    DEFAULT_FPGA_CLK_FREQ,
+   DEFAULT_CX,
+   DEFAULT_HQW,
+   DEFAULT_SQW,
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
 #elif defined( __AAL_LINUX__ )
@@ -162,7 +165,16 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_VA,
       DEFAULT_VL0,
       DEFAULT_VH0,
-      DEFAULT_VH1
+      DEFAULT_VH1,
+      DEFAULT_MINCX,
+      DEFAULT_MAXCX,
+      DEFAULT_CX,
+      DEFAULT_HQW,
+      DEFAULT_SQW,
+      DEFAULT_MINHQW,
+      DEFAULT_MAXHQW,
+      DEFAULT_MINSQW,
+      DEFAULT_MAXSQW
    },
    0,
    {

@@ -116,6 +116,8 @@ typedef AAL::btUnsigned32bitInt size_type;
 typedef AAL::btVirtAddr         virt_type;
 typedef AAL::btPhysAddr         phys_type;
 typedef AAL::btUnsigned32bitInt csr_type;
+typedef AAL::btUnsigned64bitInt cmp_xchg_type;
+typedef AAL::btUnsigned64bitInt quad_word_type;
 
 typedef AAL::bt32bitInt         sint_type;
 typedef AAL::btUnsigned32bitInt uint_type;

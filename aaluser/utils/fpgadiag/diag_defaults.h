@@ -76,6 +76,15 @@
 #define DEFAULT_VL0				"off"
 #define DEFAULT_VH0		   	"off"
 #define DEFAULT_VH1		   	"off"
+#define DEFAULT_CX            2
+#define DEFAULT_MINCX         2
+#define DEFAULT_MAXCX         0xFFFF
+#define DEFAULT_HQW           0
+#define DEFAULT_SQW           0
+#define DEFAULT_MINHQW        0
+#define DEFAULT_MAXHQW        7
+#define DEFAULT_MINSQW        0
+#define DEFAULT_MAXSQW        7
 //#define DEFAULT_FPGA_CLK_FREQ 	200000000ULL
 
 #endif

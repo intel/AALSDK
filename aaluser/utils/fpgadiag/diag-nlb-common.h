@@ -97,6 +97,16 @@ struct NLBDefaults
    const char     *vl0;
    const char     *vh0;
    const char     *vh1;
+
+   cmp_xchg_type  mincx;
+   cmp_xchg_type  maxcx;
+   cmp_xchg_type  cx;
+   quad_word_type hqw;
+   quad_word_type sqw;
+   quad_word_type minhqw;
+   quad_word_type maxhqw;
+   quad_word_type minsqw;
+   quad_word_type maxsqw;
 };
 
 struct NLBBandwidth
@@ -195,6 +205,9 @@ struct NLBCmdLine
    phys_type                srcphys;
    phys_type                dstphys;
    freq_type                clkfreq;
+   cmp_xchg_type            cx;
+   quad_word_type           hqw;
+   quad_word_type           sqw;
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
 #elif defined( __AAL_LINUX__ )
