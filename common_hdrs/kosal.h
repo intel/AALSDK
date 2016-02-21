@@ -112,6 +112,7 @@ typedef struct module *kosal_ownermodule;
 
 // Undefined - Used for reference counting
 typedef void * kosal_ownermodule;
+
 #endif
 
 
@@ -119,6 +120,7 @@ typedef void * kosal_ownermodule;
 # define KOSAL_INT       AAL::btInt
 # define KOSAL_UINT      AAL::btUnsignedInt
 # define KOSAL_U32       AAL::btUnsigned32bitInt
+# define KOSAL_U64       AAL::btUnsigned64bitInt
 # define KOSAL_PID       AAL::btPID
 # define KOSAL_TID       AAL::btTID
 # define KOSAL_BYTEARRAY AAL::btByteArray
@@ -133,6 +135,7 @@ typedef void * kosal_ownermodule;
 # define KOSAL_INT       btInt
 # define KOSAL_UINT      btUnsignedInt
 # define KOSAL_U32       btUnsigned32bitInt
+# define KOSAL_U64       btUnsigned64bitInt
 # define KOSAL_PID       btPID
 # define KOSAL_TID       btTID
 # define KOSAL_BYTEARRAY btByteArray
@@ -960,36 +963,36 @@ KOSAL_WSSIZE kosal_round_up_to_page_size(KOSAL_WSSIZE s) {
    # error Linux version < 2.6.19 not supported
    #endif
 
-   typedef void (*osfunc)(void * , void * );
+   typedef void (*osfunc)(struct work_struct *work);
 
 
    // typedef struct work_object *pwork_object;
-   struct work_object;
+   struct kosal_work_object;
 
-   typedef void (*kosal_work_handler)(struct work_object * );
+   typedef void (*kosal_work_handler)(struct kosal_work_object * );
 
-   typedef struct {
-    struct delayed_work  workobj;
+   struct kosal_work_object{
+      struct delayed_work  workobj;
       void *               context;
       osfunc               callback;
       kosal_work_handler   fnct;
-   } work_object, *pwork_object;
+   };
 
 
 
    void task_poller(struct work_struct *work);
 
 
-#define KOSAL_INIT_WORK(w,f)        do {(w->fnct) = f; \
-                                                  (w->context)=(&w); \
-                                                  (w->callback)=task_poller; \
-                                                  INIT_DELAYED_WORK(&(w->workobj),f); \
-                                                 }while(0);
+#define KOSAL_INIT_WORK(w,f)        do {((w)->fnct) = f; \
+                                         ((w)->context)=(w); \
+                                         ((w)->callback)=task_poller; \
+                                         INIT_DELAYED_WORK(&((w)->workobj),task_poller); \
+                                    }while(0)
 
 
 #define kosal_init_waitqueue_head(q) init_waitqueue_head(q)
 
-void kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, KOSAL_TIME msec);
+void kosal_queue_delayed_work(kosal_work_queue wq, struct kosal_work_object* pwo, KOSAL_TIME msec);
 
 
 #elif defined( __AAL_WINDOWS__ )
@@ -1005,14 +1008,14 @@ void kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, KOSAL_TIME 
 
 typedef void (*osfunc)(PDEVICE_OBJECT,PVOID);
 
-typedef void(*kosal_work_handler)(pwork_object);
+typedef void(*kosal_work_handler)(pkosal_work_object);
 
 typedef struct {
    void *               context;
    osfunc               callback;
    KOSAL_TIME           msec_delay;
    kosal_work_handler   fnct;
-}work_object;
+}kosal_work_object;
 
 #define KOSAL_INIT_WORK(w,f)      do {((w)->fnct) = f; \
                                       ((w)->context)=(w); \
@@ -1022,7 +1025,7 @@ typedef struct {
 
 
 
-typedef work_object *pwork_object;
+typedef kosal_work_object *pkosal_work_object;
 
 void WorkItemCallback(IN PDEVICE_OBJECT pdevObject, IN PVOID Context);
 void kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, KOSAL_TIME msec);

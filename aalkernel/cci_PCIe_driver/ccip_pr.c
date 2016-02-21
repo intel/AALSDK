@@ -122,6 +122,7 @@ extern int cci_mmap( struct aaldev_ownerSession *pownerSess,
 
 btBool  reconfigure_activateAFU( struct port_device  *pportdev, struct cci_aal_device  *pdev );
 
+
 ///=============================================================================
 /// Name: cci_PRpip
 /// @brief Physical Interface Protocol Interface for the PR AFU
@@ -436,6 +437,7 @@ int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
 ///============================================================================
 struct pr_program_context
 {
+   struct kosal_work_object         m_workobject;
    btUnsigned64bitInt               m_cmd;
    struct port_device              *m_pportdev;
    struct cci_aal_device           *m_pPR_dev;
@@ -463,7 +465,8 @@ struct pr_program_context pr_program_ctx;
 /// @param[in] ptr -null pointer.
 /// @return    void
 ///============================================================================
-void program_afu_callback(void* pr_context,void* ptr)
+//void program_afu_callback(void* pr_context,void* ptr)
+void program_afu_callback(struct kosal_work_object * pwork)
 {
 
    btVirtAddr                 kptr = NULL;
@@ -484,7 +487,7 @@ void program_afu_callback(void* pr_context,void* ptr)
    PTRACEIN;
    UNREFERENCED_PARAMETER(ptr);
 
-   ppr_program_ctx = (struct pr_program_context*) pr_context;
+   ppr_program_ctx = (struct pr_program_context*) kosal_get_object_containing( pwork, struct pr_program_context, m_workobject );
 
    if(NULL == ppr_program_ctx) {
       PERR("Invalid PR Context\n");
@@ -987,6 +990,7 @@ void deactiavted_afu_device(struct port_device  *pportdev)
    PTRACEOUT;
 }
 
+
 ///============================================================================
 /// Name: afu_revoke_callback
 /// @brief Revokes AFU from applications
@@ -995,7 +999,7 @@ void deactiavted_afu_device(struct port_device  *pportdev)
 /// @param[in] ptr - null pointer.
 /// @return    void
 ///============================================================================
-void afu_revoke_callback(void* pr_context,void* ptr)
+void afu_revoke_callback(struct kosal_work_object *pwork)
 {
    struct aal_device          *pafu_aal_dev = NULL;
    int static revoke_count     =0;
@@ -1003,9 +1007,8 @@ void afu_revoke_callback(void* pr_context,void* ptr)
    struct ccipdrv_event_afu_response_event *pafuws_evt  = NULL;
 
    PTRACEIN;
-   UNREFERENCED_PARAMETER(ptr);
 
-   ppr_program_ctx = (struct pr_program_context *)pr_context;
+   ppr_program_ctx = (struct pr_program_context*) kosal_get_object_containing( pwork, struct pr_program_context, m_workobject );
    pafu_aal_dev = ppr_program_ctx->m_pAFU_dev->m_aaldev;
 
    // AFU has no owner (AFU revoked from application),Deactivate and Reconfigure AFU.
@@ -1015,7 +1018,7 @@ void afu_revoke_callback(void* pr_context,void* ptr)
 
       if(ppr_program_ctx->m_cmd == ccipdrv_configureAFU)
       {
-         program_afu_callback((void*)ppr_program_ctx,NULL);
+         program_afu_callback(&(ppr_program_ctx->m_workobject));
          revoke_count =0;
          PTRACEOUT;
          return;
@@ -1044,9 +1047,10 @@ void afu_revoke_callback(void* pr_context,void* ptr)
       }
       else
       {
-         cci_dev_task_revokeafu_handler(ppr_program_ctx->m_pPR_dev).context =(void*)ppr_program_ctx;
+         KOSAL_INIT_WORK(&pr_program_ctx.m_workobject,afu_revoke_callback);
+
          kosal_queue_delayed_work(cci_dev_workq_revokeafu(ppr_program_ctx->m_pPR_dev),
-                                  &cci_dev_task_revokeafu_handler(ppr_program_ctx->m_pPR_dev),
+                                  &pr_program_ctx.m_workobject,
                                   PR_WQ_REVOKE_TIMEOUT);
 
          PTRACEOUT;
@@ -1084,7 +1088,7 @@ ERR:
 /// @param[in] ptr - null pointer.
 /// @return    void
 ///============================================================================
-void afu_release_timeout_callback(void* pr_context,void* ptr)
+void afu_release_timeout_callback(struct kosal_work_object *pwork)
 {
 
    struct aal_device          *pafu_aal_dev = NULL;
@@ -1095,7 +1099,7 @@ void afu_release_timeout_callback(void* pr_context,void* ptr)
    PTRACEIN;
    UNREFERENCED_PARAMETER(ptr);
 
-   ppr_program_ctx = (struct pr_program_context *)pr_context;
+   ppr_program_ctx = (struct pr_program_context*) kosal_get_object_containing( pwork, struct pr_program_context, m_workobject );
    pafu_aal_dev = ppr_program_ctx->m_pAFU_dev->m_aaldev;
    ppr_aal_dev =  ppr_program_ctx->m_pPR_dev->m_aaldev;
 
@@ -1109,7 +1113,7 @@ void afu_release_timeout_callback(void* pr_context,void* ptr)
       deactiavted_afu_device(ppr_program_ctx->m_pportdev);
 
       if(ppr_program_ctx->m_cmd == ccipdrv_configureAFU)  {
-         program_afu_callback((void*)ppr_program_ctx,NULL);
+         program_afu_callback(&(ppr_program_ctx->m_workobject));
          PTRACEOUT;
          return;
       }
@@ -1153,7 +1157,7 @@ void afu_release_timeout_callback(void* pr_context,void* ptr)
       // Reconfigure action Honor Request, sends Revoke event to AAL Service
       // AAL Frame work failed to release AFU, driver send error event
       afu_revoke_sendevent((void*)ppr_program_ctx,NULL);
-      afu_revoke_callback((void*)ppr_program_ctx,NULL);
+      afu_revoke_callback(&(ppr_program_ctx->m_workobject));
 
     }
    PTRACEOUT;
@@ -1174,7 +1178,6 @@ struct cci_aal_device   *
                                           struct aal_device_id *paalid)
 {
    struct cci_aal_device   *pcci_aaldev = NULL;
-   work_object             *pworkobj =NULL;
    int ret;
 
    PTRACEIN;
@@ -1223,16 +1226,6 @@ struct cci_aal_device   *
    cci_dev_workq_deactimeout( pcci_aaldev ) = kosal_create_workqueue( "ReconfTimeOut", cci_aaldev_to_aaldev( pcci_aaldev ) );
    cci_dev_workq_prcconfigure( pcci_aaldev ) = kosal_create_workqueue( "PRreconfiguration", cci_aaldev_to_aaldev( pcci_aaldev ) );
    cci_dev_workq_revokeafu( pcci_aaldev ) = kosal_create_workqueue( "RevokeAFU", cci_aaldev_to_aaldev( pcci_aaldev ) );
-
-   pworkobj = &cci_dev_task_deactimeout_handler(pcci_aaldev);
-   KOSAL_INIT_WORK(pworkobj,afu_release_timeout_callback);
-
-   pworkobj = &cci_dev_task_prcconfigure_handler(pcci_aaldev);
-   KOSAL_INIT_WORK(pworkobj,program_afu_callback);
-
-   pworkobj = &cci_dev_task_revokeafu_handler(pcci_aaldev);
-   KOSAL_INIT_WORK(pworkobj,afu_revoke_callback);
-
 
    // Set how many owners are allowed access to this device simultaneously
    cci_aaldev_to_aaldev(pcci_aaldev)->m_maxowners = 1;
@@ -1429,10 +1422,11 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          afu_request_release_sendevent((void*)&pr_program_ctx,NULL);
 
          // starts Reconfigure timer worker thread if Reconfigure timeout is more then 0 seconds
-          cci_dev_task_deactimeout_handler(pdev).context =(void*)&pr_program_ctx;
-          kosal_queue_delayed_work(cci_dev_workq_deactimeout(pdev),
-                                            &cci_dev_task_deactimeout_handler(pdev),
-                                            pr_program_ctx.m_reconfTimeout);
+         KOSAL_INIT_WORK(&pr_program_ctx.m_workobject,afu_release_timeout_callback);
+
+         kosal_queue_delayed_work( cci_dev_workq_prcconfigure(pdev),
+                                   &pr_program_ctx.m_workobject,
+                                   pr_program_ctx.m_reconfTimeout);
 
          return 0;
 
@@ -1557,11 +1551,14 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             // No AFU, DeActivated AFU
             if(NULL == ccip_port_uafu_dev(pportdev))
             {
+
                PDEBUG("NULL == ccip_port_uafu_dev(pportdev)  \n");
                // afu DeActivated  and  Reconfigure AFU with bitstream
-               cci_dev_task_prcconfigure_handler(pdev).context =(void*)&pr_program_ctx;
+
+               KOSAL_INIT_WORK(&pr_program_ctx.m_workobject,program_afu_callback);
+
                kosal_queue_delayed_work(cci_dev_workq_prcconfigure(pdev),
-                                        &cci_dev_task_prcconfigure_handler(pdev),
+                                        &pr_program_ctx.m_workobject,
                                         PR_WQ_TIMEOUT);
 
                return 0;
@@ -1580,10 +1577,14 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
               // TODO FOR NOW JUST DO IT
               // AFU has no owner, DeActivate AFU ,Reconfigure AFU with bitstream
               deactiavted_afu_device(pportdev);
-              cci_dev_task_prcconfigure_handler(pdev).context =(void*)&pr_program_ctx;
+
+              KOSAL_INIT_WORK(&pr_program_ctx.m_workobject,program_afu_callback);
+
               kosal_queue_delayed_work(cci_dev_workq_prcconfigure(pdev),
-                                       &cci_dev_task_prcconfigure_handler(pdev),
+                                       &pr_program_ctx.m_workobject,
                                        PR_WQ_TIMEOUT);
+
+
 
               return 0;
             }
@@ -1621,10 +1622,11 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                afu_request_release_sendevent((void*)&pr_program_ctx,NULL);
 
                // starts Reconfigure timer worker thread if Reconfigure timeout is more then 0 seconds
-                cci_dev_task_deactimeout_handler(pdev).context =(void*)&pr_program_ctx;
-                kosal_queue_delayed_work(cci_dev_workq_deactimeout(pdev),
-                                                  &cci_dev_task_deactimeout_handler(pdev),
-                                                  pr_program_ctx.m_reconfTimeout);
+               KOSAL_INIT_WORK(&pr_program_ctx.m_workobject,afu_release_timeout_callback);
+
+               kosal_queue_delayed_work(cci_dev_workq_deactimeout(pdev),
+                                        &pr_program_ctx.m_workobject,
+                                        pr_program_ctx.m_reconfTimeout);
 
                return 0;
             }

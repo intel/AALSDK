@@ -87,7 +87,7 @@ extern int print_sim_fme_device(struct fme_device *);
 extern int print_sim_port_device(struct port_device *pport_dev);
 
 /// g_device_list - Global device list for this module.
-struct kosal_list_head g_device_list;
+kosal_list_head g_device_list;
 
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -108,7 +108,7 @@ MODULE_LICENSE    (DRV_LICENSE);
 //    sudo insmod ccidrv           # Normal load. PCIe enumeration enabled
 //    sudo insmod ccidrv sim=4     # Instantiate 4 simulated AFUs
 
-btUnsigned32bitInt sim = 0;
+btUnsigned64bitInt  sim = 0;
 MODULE_PARM_DESC(sim, "Simulation: #=Number of simulated AFUs to instantiate");
 module_param    (sim, ulong, S_IRUGO);
 
@@ -190,12 +190,12 @@ DRIVER_ATTR(debug,S_IRUGO|S_IWUSR|S_IWGRP, ahmpip_attrib_show_debug,ahmpip_attri
 //=============================================================================
 static int cci_pci_probe(struct pci_dev * , const struct pci_device_id * );
 static void cci_pci_remove(struct pci_dev * );
-
+#if 0
 static
 struct ccip_device *
 cci_pcie_stub_probe( struct pci_dev             *pcidev,
                      const struct pci_device_id *pcidevid);
-
+#endif
 static
 struct ccip_device *
 cci_enumerate_device( struct pci_dev             *pcidev,
@@ -297,7 +297,7 @@ static inline int cci_getBARAddress( struct pci_dev   *ppcidev,
    *pvirtaddr = ioremap_nocache(*pphysaddr, *psize);
    return 1;
 }
-
+#if 0
 //=============================================================================
 // Name: cci_pcie_stub_probe
 // Description: Called if either the PCIe_DEVICE_ID_RCiEP1 or PCIe_DEVICE_ID_RCiEP2
@@ -338,7 +338,7 @@ struct ccip_device * cci_pcie_stub_probe( struct pci_dev             *pcidev,
    }
    return (struct ccip_device *) (-1);
 }
-
+#endif
 //=============================================================================
 // Name: cci_pci_probe
 // Description: Called during the device probe by PCIe subsystem.
@@ -703,7 +703,7 @@ cci_pci_remove(struct pci_dev *pcidev)
 
       // Run through list of devices.  Use safe variant
       //  as we will be deleting entries
-      list_for_each_safe(This, tmp, &g_device_list) {
+      kosal_list_for_each_safe(This, tmp, &g_device_list) {
 
          pccidev = ccip_list_to_ccip_device(This);
 
