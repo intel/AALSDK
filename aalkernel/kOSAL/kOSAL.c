@@ -460,12 +460,12 @@ void _kosal_free_contiguous_mem(__ASSERT_HERE_PROTO btAny krnl_virt, btWSSize si
 void task_poller(struct work_struct *work)
 {
    struct delayed_work *delayedWork = container_of(work, struct delayed_work, work);
-   pwork_object         pwork       = container_of(delayedWork, work_object, workobj);
+   struct kosal_work_object *pwork  = container_of(delayedWork, struct kosal_work_object, workobj);
 
-   pwork->callback(pwork->context,NULL);
+   pwork->fnct(pwork->context);
 
 }
-void kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, KOSAL_TIME msec) {
+void kosal_queue_delayed_work(kosal_work_queue wq, struct kosal_work_object *pwo, KOSAL_TIME msec) {
 
    queue_delayed_work(wq,&(pwo->workobj),msecs_to_jiffies(msec));
 }
