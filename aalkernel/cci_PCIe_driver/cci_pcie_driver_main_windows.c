@@ -1201,7 +1201,7 @@ VOID CCIPDrvDeviceFileCreate ( IN WDFDEVICE  hDevice,
 
 
 void
-Testtask_poller( pwork_object pwork)
+Testtask_poller( struct kosal_work_object *pwork)
 {
    UNREFERENCED_PARAMETER( pwork );
 #if 0 
