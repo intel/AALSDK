@@ -465,7 +465,6 @@ struct pr_program_context pr_program_ctx;
 /// @param[in] ptr -null pointer.
 /// @return    void
 ///============================================================================
-//void program_afu_callback(void* pr_context,void* ptr)
 void program_afu_callback(struct kosal_work_object * pwork)
 {
 
@@ -485,7 +484,6 @@ void program_afu_callback(struct kosal_work_object * pwork)
 
 
    PTRACEIN;
-   UNREFERENCED_PARAMETER(ptr);
 
    ppr_program_ctx = (struct pr_program_context*) kosal_get_object_containing( pwork, struct pr_program_context, m_workobject );
 
@@ -1097,7 +1095,6 @@ void afu_release_timeout_callback(struct kosal_work_object *pwork)
    struct ccipdrv_event_afu_response_event *pafuws_evt  = NULL;
 
    PTRACEIN;
-   UNREFERENCED_PARAMETER(ptr);
 
    ppr_program_ctx = (struct pr_program_context*) kosal_get_object_containing( pwork, struct pr_program_context, m_workobject );
    pafu_aal_dev = ppr_program_ctx->m_pAFU_dev->m_aaldev;

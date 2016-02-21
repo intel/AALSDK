@@ -474,14 +474,14 @@ void kosal_queue_delayed_work(kosal_work_queue wq, struct kosal_work_object *pwo
 #elif defined( __AAL_WINDOWS__ )
 
 void WorkItemCallback(IN PDEVICE_OBJECT pdevObject, IN PVOID Context) {
-   pwork_object pwork = (pwork_object)Context;
+   struct kosal_work_object *pwork = ( struct kosal_work_object * )Context;
    UNREFERENCED_PARAMETER(pdevObject);
    kosal_mdelay(pwork->msec_delay);
    pwork->fnct(pwork->context);
    return;
 }
 
-void kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, btTime msec)
+void kosal_queue_delayed_work(kosal_work_queue wq, struct kosal_work_object *pwo, btTime msec)
 {
    pwo->msec_delay = msec;
    IoQueueWorkItem(wq, WorkItemCallback, DelayedWorkQueue, pwo);

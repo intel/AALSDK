@@ -1008,12 +1008,12 @@ typedef void (*osfunc)(PDEVICE_OBJECT,PVOID);
 
 typedef void(*kosal_work_handler)(pkosal_work_object);
 
-typedef struct {
+struct kosal_work_object{
    void *               context;
    osfunc               callback;
    KOSAL_TIME           msec_delay;
    kosal_work_handler   fnct;
-}kosal_work_object;
+};
 
 #define KOSAL_INIT_WORK(w,f)      do {((w)->fnct) = f; \
                                       ((w)->context)=(w); \
@@ -1021,12 +1021,8 @@ typedef struct {
                                      }while(0)
 
 
-
-
-typedef kosal_work_object *pkosal_work_object;
-
 void WorkItemCallback(IN PDEVICE_OBJECT pdevObject, IN PVOID Context);
-void kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, KOSAL_TIME msec);
+void kosal_queue_delayed_work(kosal_work_queue wq, struct kosal_work_object* pwo, KOSAL_TIME msec);
 #if 0
 static void
    kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, KOSAL_TIME msec)

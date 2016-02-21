@@ -45,27 +45,25 @@
 //
 typedef struct _CCI_DEVICE
 {
-   struct ccip_device      m_cci_device;
-   kosal_list_head         g_device_list;
+   struct ccip_device         m_cci_device;
+   kosal_list_head            g_device_list;
 
-   WDFDEVICE               m_WdfDevice;
-   WDFWMIINSTANCE          m_WmiDeviceArrivalEvent;
+   WDFDEVICE                  m_WdfDevice;
+   WDFWMIINSTANCE             m_WmiDeviceArrivalEvent;
 
-   BOOLEAN                 m_WmiPowerDeviceEnableRegistered;
-   BUS_INTERFACE_STANDARD  m_BusInterface;
+   BOOLEAN                    m_WmiPowerDeviceEnableRegistered;
+   BUS_INTERFACE_STANDARD     m_BusInterface;
 
-   PMDL                    m_pmdl;
+   PMDL                       m_pmdl;
 
-   WDFREQUEST              currReq;
+   WDFREQUEST                 currReq;
 
    // AAL queue
-   kosal_work_queue        m_workq;
-   work_object             task_handler;
-   pkosal_os_dev           m_dev;
+   kosal_work_queue           m_workq;
+   struct kosal_work_object   task_handler;
+   pkosal_os_dev              m_dev;
 
-//   struct uidrv_session *  m_uidrvsess;
-
-   BOOLEAN                 m_softdevice;
+   BOOLEAN                    m_softdevice;
 
 }  CCI_DEVICE, *PCCI_DEVICE;
 
