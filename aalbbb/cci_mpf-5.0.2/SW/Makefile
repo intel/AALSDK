@@ -37,11 +37,6 @@ CPPFLAGS ?=
 CXX      ?= g++
 LDFLAGS  ?=
 
-DEFS += -D VTP_VERSION_CURRENT=0 \
-        -D VTP_VERSION_REVISION=0 \
-	-D VTP_VERSION_AGE=0 \
-	-D VTP_VERSION=0
-
 ifeq (,$(CFLAGS))
 CFLAGS = -g -O2
 endif
@@ -84,7 +79,7 @@ libVTP.so.0.0.0: libVTP.o
 	$(CXX) -fPIC -shared -Wl,-soname -Wl,libVTP.so.0 libVTP.o $(LDFLAGS) -lOSAL -lAAS -laalrt -o libVTP.so.0.0.0
 
 libVTP.o: src/VTP.cpp src/VTP.h Makefile
-	$(CXX) $(CPPFLAGS) -I$(INCLUDE) $(DEFS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -o libVTP.o src/VTP.cpp
+	$(CXX) $(CPPFLAGS) -I$(INCLUDE) -DHAVE_CONFIG_H -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -o libVTP.o src/VTP.cpp
 
 clean:
 	$(RM) libVTP.so libVTP.so.0 libVTP.so.0.0.0 libVTP.o

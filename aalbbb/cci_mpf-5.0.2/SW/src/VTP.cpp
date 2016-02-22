@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file VTPService.cpp
+/// @file VTP.cpp
 /// @brief Implementation of IVTPService.
 /// @ingroup VTPService
 /// @verbatim
@@ -90,6 +90,11 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup VTPService
 /// @{
 
+//-----------------------------------------------------------------------------
+// Public functions
+//-----------------------------------------------------------------------------
+
+// TODO: turn into doxygen comments
 //=============================================================================
 // Name: init()
 // Description: Initialize the Service
@@ -171,7 +176,7 @@ btBool VTP::init( IBase               *pclientBase,
                                                  "Feature GUID does not match VTP GUID."));
       return true;
    }
-   
+
    AAL_INFO(LM_AFU, "Found and successfully identified VTP feature." << std::endl);
 
    // Allocate the page table.  The size of the page table is a function
@@ -181,7 +186,6 @@ btBool VTP::init( IBase               *pclientBase,
    ASSERT(err == ali_errnumOK && m_pPageTable);
 
    // clear table
-   // FIXME: might not be necessary
    memset(m_pPageTable, 0, pt_size);
 
    // FIXME: bufferGetIOVA should take a btVirtAddr to be consistent
@@ -206,15 +210,18 @@ btBool VTP::init( IBase               *pclientBase,
 
 btBool VTP::Release(TransactionID const &rTranID, btTime timeout)
 {
-   // freedom to all buffers!
+   // FIXME: not yet implemented, clean up VTP data stuctures
+   // Note that this shold also include the buffer allocated for the page table
    // bufferFreeAll();
+   // bufferFree( m_PageTable );
    return ServiceBase::Release(rTranID, timeout);
 }
 
 ali_errnum_e VTP::bufferAllocate( btWSSize             Length,
-                                         btVirtAddr          *pBufferptr,
-                                         NamedValueSet const &rInputArgs,
-                                         NamedValueSet       &rOutputArgs ) {
+                                  btVirtAddr          *pBufferptr,
+                                  NamedValueSet const &rInputArgs,
+                                  NamedValueSet       &rOutputArgs )
+{
    AutoLock(this);
 
    // FIXME: Input/OUtputArgs are ignored here...
@@ -321,76 +328,87 @@ ali_errnum_e VTP::bufferAllocate( btWSSize             Length,
    return ali_errnumOK;
 }
 
-ali_errnum_e VTP::bufferFreeAll() {
+ali_errnum_e VTP::bufferFree( btVirtAddr Address)
+{
+   // TODO: not implemented
    AAL_ERR(LM_All, "NOT IMPLEMENTED" << std::endl);
    return ali_errnumNoMem;
 }
 
-ali_errnum_e VTP::bufferFree( btVirtAddr Address) {
+ali_errnum_e VTP::bufferFreeAll()
+{
+   // TODO: not implemented
    AAL_ERR(LM_All, "NOT IMPLEMENTED" << std::endl);
    return ali_errnumNoMem;
 }
 
-btPhysAddr VTP::bufferGetIOVA(  btVirtAddr     Address) {
+btPhysAddr VTP::bufferGetIOVA( btVirtAddr Address)
+{
+   // Get the hash index and VA tag
+   uint64_t tag;
+   uint64_t idx;
+   uint64_t offset;
+   AddrComponentsFromVA(Address, tag, idx, offset);
+
+   // The idx field is the hash bucket in which the VA will be found.
+   uint8_t* pte = m_pPageTable + idx * CL(1);
+
+   // Search for a matching tag in the hash bucket.  The bucket is a set
+   // of vectors PTEs chained in a linked list.
+   while (true)
    {
-       // Get the hash index and VA tag
-       uint64_t tag;
-       uint64_t idx;
-       uint64_t offset;
-       AddrComponentsFromVA(Address, tag, idx, offset);
+      // Walk through one vector in one line
+      for (int n = 0; n < ptesPerLine; n += 1)
+      {
+         uint64_t va_tag;
+         uint64_t pa_idx;
+         ReadPTE(pte, va_tag, pa_idx);
 
-       // The idx field is the hash bucket in which the VA will be found.
-       uint8_t* pte = m_pPageTable + idx * CL(1);
+         if (va_tag == tag)
+         {
+            // Found it!
+            return (pa_idx << CCI_PT_PAGE_OFFSET_BITS) | offset;
+         }
 
-       // Search for a matching tag in the hash bucket.  The bucket is a set
-       // of vectors PTEs chained in a linked list.
-       while (true)
-       {
-           // Walk through one vector in one line
-           for (int n = 0; n < ptesPerLine; n += 1)
-           {
-               uint64_t va_tag;
-               uint64_t pa_idx;
-               ReadPTE(pte, va_tag, pa_idx);
+         // End of the PTE list?
+         if (va_tag == 0)
+         {
+            // Failed to find an entry for VA
+            return 0;
+         }
 
-               if (va_tag == tag)
-               {
-                   // Found it!
-                   return (pa_idx << CCI_PT_PAGE_OFFSET_BITS) | offset;
-               }
+         pte += pteBytes;
+      }
 
-               // End of the PTE list?
-               if (va_tag == 0)
-               {
-                   // Failed to find an entry for VA
-                   return 0;
-               }
+      // VA not found in current line.  Does this line of PTEs link to
+      // another?
+      pte = m_pPageTable + ReadTableIdx(pte) * CL(1);
 
-               pte += pteBytes;
-           }
-
-           // VA not found in current line.  Does this line of PTEs link to
-           // another?
-           pte = m_pPageTable + ReadTableIdx(pte) * CL(1);
-
-           // End of list?  (Table index was NULL.)
-           if (pte == m_pPageTable)
-           {
-               return 0;
-           }
-       }
+      // End of list?  (Table index was NULL.)
+      if (pte == m_pPageTable)
+      {
+         return 0;
+      }
    }
 }
 
-
-
-//// All taken from cci_mpf_shim_vtp.cpp
-
-void
-VTP::InsertPageMapping(const void* va, btPhysAddr pa)
+btBool VTP::vtpReset( void )
 {
-    AAL_DEBUG(LM_AFU, "Map " << std::hex << std::setw(2) << std::setfill('0') << 
-                      va << " at " << pa << std::endl);
+   // FIXME: this is likely to change or disappear in beta!
+   AAL_WARNING(LM_AFU, "Using vtpReset(). This interface is likely to change in future AAL releases." << std::endl);
+
+   // Write page table physical address CSR
+   return m_pALIMMIO->mmioWrite64(m_dfhOffset + CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR, m_PageTablePA / CL(1));
+}
+
+//-----------------------------------------------------------------------------
+// Private functions
+//-----------------------------------------------------------------------------
+
+void VTP::InsertPageMapping( const void* va, btPhysAddr pa )
+{
+    AAL_DEBUG(LM_AFU, "Map " << std::hex << std::setw(2) <<
+                      std::setfill('0') << va << " at " << pa << std::endl);
 
     //
     // VA components are the offset within the 2MB-aligned page, the index
@@ -471,12 +489,7 @@ VTP::InsertPageMapping(const void* va, btPhysAddr pa)
     WritePTE(p, va_tag, pa_idx);
 }
 
-
-void
-VTP::ReadPTE(
-    const uint8_t* pte,
-    uint64_t& vaTag,
-    uint64_t& paIdx)
+void VTP::ReadPTE( const uint8_t* pte, uint64_t& vaTag, uint64_t& paIdx )
 {
     // Might not be a natural size so use memcpy
     uint64_t e = 0;
@@ -495,10 +508,7 @@ VTP::ReadPTE(
     }
 }
 
-
-uint64_t
-VTP::ReadTableIdx(
-    const uint8_t* p)
+uint64_t VTP::ReadTableIdx( const uint8_t* p )
 {
     // Might not be a natural size
     uint64_t e = 0;
@@ -507,12 +517,7 @@ VTP::ReadTableIdx(
     return e & ((1LL << CCI_PT_LINE_IDX_BITS) - 1);
 }
 
-
-void
-VTP::WritePTE(
-    uint8_t* pte,
-    uint64_t vaTag,
-    uint64_t paIdx)
+void VTP::WritePTE( uint8_t* pte, uint64_t vaTag, uint64_t paIdx )
 {
     uint64_t p = AddrToPTE(vaTag, paIdx);
 
@@ -520,24 +525,18 @@ VTP::WritePTE(
     memcpy(pte, &p, pteBytes);
 }
 
-
-void
-VTP::WriteTableIdx(
-    uint8_t* p,
-    uint64_t idx)
+void VTP::WriteTableIdx( uint8_t* p, uint64_t idx )
 {
     // Might not be a natural size
     memcpy(p, &idx, (CCI_PT_LINE_IDX_BITS + 7) / 8);
 }
 
-
-void
-VTP::DumpPageTable()
+void VTP::DumpPageTable()
 {
      AAL_DEBUG(LM_AFU, "Page table dump: " << std::endl);
-     AAL_DEBUG(LM_AFU, (1LL << CCI_PT_LINE_IDX_BITS) << " lines " << 
+     AAL_DEBUG(LM_AFU, (1LL << CCI_PT_LINE_IDX_BITS) << " lines " <<
                        ptesPerLine << " PTEs per line, max memory represented in PTE " <<
-                       ((1LL << CCI_PT_LINE_IDX_BITS) * ptesPerLine * 2) / 1024 << 
+                       ((1LL << CCI_PT_LINE_IDX_BITS) * ptesPerLine * 2) / 1024 <<
                        " GB" << std::endl);
 //std::hex << std::setw(2) << std::setfill('0') << (void*)buffer << " to " << va_alloc << std::endl);
 
@@ -570,10 +569,10 @@ VTP::DumpPageTable()
                 // The PA in a PTE is stored as the index of the 2MB-aligned
                 // physical address.
                 AAL_DEBUG(LM_AFU, "    " << std::dec << hash_idx << "/" << cur_idx <<
-                          ":\t\tVA " << std::hex << std::setw(2) << std::setfill('0') << 
+                          ":\t\tVA " << std::hex << std::setw(2) << std::setfill('0') <<
                           ((va_tag << (CCI_PT_VA_IDX_BITS + CCI_PT_PAGE_OFFSET_BITS)) |
                           (uint64_t(hash_idx) << CCI_PT_PAGE_OFFSET_BITS)) << " -> PA " <<
-                          std::hex << std::setw(2) << std::setfill('0') << 
+                          std::hex << std::setw(2) << std::setfill('0') <<
                           pa_idx << CCI_PT_PAGE_OFFSET_BITS << std::endl);
                 pte += pteBytes;
             }
@@ -592,17 +591,69 @@ VTP::DumpPageTable()
     }
 }
 
-// FIXME: this is likely to change or disappear in beta!
-btBool
-VTP::vtpReset( void ) {
+inline void VTP::AddrComponentsFromVA( uint64_t va,
+                                       uint64_t& tag,
+                                       uint64_t& idx,
+                                       uint64_t& byteOffset )
+{
+   uint64_t v = va;
 
-   AAL_WARNING(LM_AFU, "Using vtpReset(). This interface is likely to change in future AAL releases." << std::endl);
+   byteOffset = v & ((1LL << CCI_PT_PAGE_OFFSET_BITS) - 1);
+   v >>= CCI_PT_PAGE_OFFSET_BITS;
 
-   // Write page table physical address CSR
-   return m_pALIMMIO->mmioWrite64(m_dfhOffset + CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR, m_PageTablePA / CL(1));
+   idx = v & ((1LL << CCI_PT_VA_IDX_BITS) - 1);
+   v >>= CCI_PT_VA_IDX_BITS;
+
+   tag = v & ((1LL << vaTagBits) - 1);
+
+   // Make sure no address bits were lost in the conversion.  The high bits
+   // beyond CCI_PT_VA_BITS are sign extended.
+   if (CCI_PT_VA_BITS != 64)
+   {
+      int64_t va_check = va;
+      // Shift all but the high bit of the VA range to the right.  All the
+      // resulting bits must match.
+      va_check >>= (CCI_PT_VA_BITS - 1);
+      ASSERT((va_check == 0) || (va_check == -1));
+   }
 }
 
 
+inline void VTP::AddrComponentsFromVA( const void *va,
+                                       uint64_t& tag,
+                                       uint64_t& idx,
+                                       uint64_t& byteOffset )
+{
+   AddrComponentsFromVA(uint64_t(va), tag, idx, byteOffset);
+}
+
+inline void VTP::AddrComponentsFromPA( uint64_t pa,
+                                       uint64_t& idx,
+                                       uint64_t& byteOffset )
+{
+   uint64_t p = pa;
+
+   byteOffset = p & ((1LL << CCI_PT_PAGE_OFFSET_BITS) - 1);
+   p >>= CCI_PT_PAGE_OFFSET_BITS;
+
+   idx = p & ((1LL << CCI_PT_PA_IDX_BITS) - 1);
+   p >>= CCI_PT_PA_IDX_BITS;
+
+   // PA_IDX_BITS must be large enough to represent all physical pages
+   ASSERT(p == 0);
+}
+
+inline uint64_t VTP::AddrToPTE( uint64_t va, uint64_t pa )
+{
+   ASSERT((pa & ~((1LL << CCI_PT_PA_IDX_BITS) - 1)) == 0);
+
+   return ((va << CCI_PT_PA_IDX_BITS) | pa);
+}
+
+inline uint64_t VTP::AddrToPTE( const void* va, uint64_t pa )
+{
+   return AddrToPTE(uint64_t(va), pa);
+}
 /// @} group VTPService
 
 END_NAMESPACE(AAL)
