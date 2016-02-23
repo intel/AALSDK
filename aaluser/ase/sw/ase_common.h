@@ -625,6 +625,7 @@ FILE *fp_workspace_log;
 // Memory access debug log
 #ifdef ASE_DEBUG
 FILE *fp_memaccess_log;
+FILE *fp_pagetable_log;
 #endif
 
 // Physical address mask - used to constrain generated addresses

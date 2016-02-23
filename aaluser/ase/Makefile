@@ -45,7 +45,7 @@
 include ase_sources.mk
 
 ## ASE Version
-ASE_VERSION = 5.0.1
+ASE_VERSION = 5.0.2
 
 # ASE switches (these tend to increase log sizes)
 ASE_DEBUG ?= 1

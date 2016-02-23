@@ -317,22 +317,6 @@ module ccip_logger
 		    print_channel(C1TxHdr.vc),
 		    C1TxHdr.mdata);
 	 end
-	 // if (C1TxWrValid && (C1TxHdr.reqtype == ASE_ATOMIC_REQ)) begin
-	 //    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%x\t%x",
-	 // 				     $time,
-	 // 				     print_channel(C1TxHdr.vc),
-	 // 				     print_reqtype(C1TxHdr.reqtype),
-	 // 				     C1TxHdr.mdata,
-	 // 				     C1TxHdr.addr,
-	 // 				     C1TxData);
-	 //    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%x\t%x\n",
-	 // 	    $time,
-	 // 	    print_channel(C1TxHdr.vc),
-	 // 	    print_reqtype(C1TxHdr.reqtype),
-	 // 	    C1TxHdr.mdata,
-	 // 	    C1TxHdr.addr,
-	 // 	    C1TxData);
-	 // end
 	 //////////////////////// C2 TX CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* AFU -> SW MMIO Read Response *****************/
 	 if (C2TxMmioRdValid) begin
