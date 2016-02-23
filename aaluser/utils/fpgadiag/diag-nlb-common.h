@@ -49,16 +49,11 @@ BEGIN_C_DECLS
 #define HIGH 0xffffffff
 #define LOW  0x00000000
 
-# define NLB_TESTMODE_LPBK1 	   "TestMode_lpbk1"
-# define NLB_TESTMODE_READ  	   "TestMode_read"
-# define NLB_TESTMODE_WRITE 	   "TestMode_write"
-# define NLB_TESTMODE_TRPUT 	   "TestMode_trput"
-# define NLB_TESTMODE_SW    	   "TestMode_sw"
-# define NLB_TESTMODE_CCIP_LPBK1 "TestMode_cciplpbk1"
-# define NLB_TESTMODE_CCIP_READ  "TestMode_ccipread"
-# define NLB_TESTMODE_CCIP_WRITE "TestMode_ccipwrite"
-# define NLB_TESTMODE_CCIP_TRPUT "TestMode_cciptrput"
-# define NLB_TESTMODE_CCIP_SW    "TestMode_ccipsw"
+# define NLB_TESTMODE_LPBK1 "TestMode_lpbk1"
+# define NLB_TESTMODE_READ  "TestMode_read"
+# define NLB_TESTMODE_WRITE "TestMode_write"
+# define NLB_TESTMODE_TRPUT "TestMode_trput"
+# define NLB_TESTMODE_SW    "TestMode_sw"
 
 struct NLBDefaults
 {
@@ -102,6 +97,16 @@ struct NLBDefaults
    const char     *vl0;
    const char     *vh0;
    const char     *vh1;
+
+   cmp_xchg_type  mincx;
+   cmp_xchg_type  maxcx;
+   cmp_xchg_type  cx;
+   quad_word_type hqw;
+   quad_word_type sqw;
+   quad_word_type minhqw;
+   quad_word_type maxhqw;
+   quad_word_type minsqw;
+   quad_word_type maxsqw;
 };
 
 struct NLBBandwidth
@@ -126,7 +131,7 @@ struct NLBBandwidth
 struct NLBCmdLine
 {
    const char              *copyright;
-   const char              *mode;    // "LPBK1", "READ", "WRITE", "TRPUT", "LPBK2", "LPBK3", "SW1", "CCIP-LPBK1"
+   const char              *mode;    // "LPBK1", "READ", "WRITE", "TRPUT", "SW"
    const char              *title;
    u64_type                 cmdflags;
 #define NLB_CMD_PARSE_ERROR       		(u64_type)0x00000001  /* Command parser error, invalid option, etc.                       */
@@ -200,6 +205,9 @@ struct NLBCmdLine
    phys_type                srcphys;
    phys_type                dstphys;
    freq_type                clkfreq;
+   cmp_xchg_type            cx;
+   quad_word_type           hqw;
+   quad_word_type           sqw;
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
 #elif defined( __AAL_LINUX__ )
