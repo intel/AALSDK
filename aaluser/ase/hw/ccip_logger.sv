@@ -106,6 +106,10 @@ module ccip_logger
    UMsgHdr_t C0RxUMsgHdr;
    assign C0RxUMsgHdr = UMsgHdr_t'(C0RxHdr);
 
+   // Atomics header
+   Atomics_t C0RxAtomicHdr;
+   assign C0RxAtomicHdr = Atomics_t'(C0RxHdr);
+
 
    /*
     * Buffer channels, request and response types
@@ -126,13 +130,14 @@ module ccip_logger
    function string print_reqtype (ccip_reqtype_t req);
       begin
 	 case (req)
-	   ASE_RDLINE_S  : return "RdLine_S   ";
-	   ASE_RDLINE_I  : return "RdLine_I   ";
-	   ASE_WRLINE_I  : return "WrLine_I   ";
-	   ASE_WRLINE_M  : return "WrLine_M   ";
-	   ASE_WRFENCE   : return "WrFence    ";
-	   ASE_INTR_REQ  : return "IntrReq    ";
-	   default       : return "** ERROR %m : Request type unindentified **" ;
+	   ASE_RDLINE_S   : return "RdLine_S   ";
+	   ASE_RDLINE_I   : return "RdLine_I   ";
+	   ASE_WRLINE_I   : return "WrLine_I   ";
+	   ASE_WRLINE_M   : return "WrLine_M   ";
+	   ASE_WRFENCE    : return "WrFence    ";
+	   ASE_ATOMIC_REQ : return "AtomicReq  ";
+	   ASE_INTR_REQ   : return "IntrReq    ";
+	   default        : return "** ERROR %m : Request type unindentified **" ;
 	 endcase
       end
    endfunction
@@ -145,6 +150,7 @@ module ccip_logger
 	   ASE_WR_RSP      : return "WrResp     ";
 	   ASE_WRFENCE_RSP : return "WrFenceRsp ";
 	   ASE_INTR_RSP    : return "IntrResp   ";
+	   ASE_ATOMIC_RSP  : return "AtomicRsp  ";
 	   default         : return "** ERROR %m : Request type unindentified **" ;
 	 endcase
       end
@@ -232,7 +238,7 @@ module ccip_logger
 	 end
 	 // Buffer messages
 	 if (log_string_en) begin
-	    $fwrite(log_fd, "-----------------------------------------------------\n");	    
+	    $fwrite(log_fd, "-----------------------------------------------------\n");
 	    $fwrite(log_fd, "%d\t%s\n", $time, log_string);
 	 end
 	 /////////////////////// CONFIG CHANNEL TRANSACTIONS //////////////////////////
@@ -305,12 +311,28 @@ module ccip_logger
 	    if (cfg.enable_cl_view) $display("%d\t%s\tWrFence \t%x\n",
 					     $time,
 					     print_channel(C1TxHdr.vc),
-					     C1TxHdr.mdata);	    
+					     C1TxHdr.mdata);
 	    $fwrite(log_fd, "%d\t%s\tWrFence \t%x\n",
 		    $time,
 		    print_channel(C1TxHdr.vc),
-		    C1TxHdr.mdata);	    
+		    C1TxHdr.mdata);
 	 end
+	 // if (C1TxWrValid && (C1TxHdr.reqtype == ASE_ATOMIC_REQ)) begin
+	 //    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%x\t%x",
+	 // 				     $time,
+	 // 				     print_channel(C1TxHdr.vc),
+	 // 				     print_reqtype(C1TxHdr.reqtype),
+	 // 				     C1TxHdr.mdata,
+	 // 				     C1TxHdr.addr,
+	 // 				     C1TxData);
+	 //    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%x\t%x\n",
+	 // 	    $time,
+	 // 	    print_channel(C1TxHdr.vc),
+	 // 	    print_reqtype(C1TxHdr.reqtype),
+	 // 	    C1TxHdr.mdata,
+	 // 	    C1TxHdr.addr,
+	 // 	    C1TxData);
+	 // end
 	 //////////////////////// C2 TX CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* AFU -> SW MMIO Read Response *****************/
 	 if (C2TxMmioRdValid) begin
@@ -325,7 +347,7 @@ module ccip_logger
 	 end
 	 //////////////////////// C0 RX CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* MEM -> AFU Read Response *****************/
-	 if (C0RxRdValid) begin
+	 if (C0RxRdValid && (C0RxHdr.resptype == ASE_RD_RSP)) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%s\t%x",
 	 				     $time,
 	 				     print_channel(C0RxHdr.vc_used),
@@ -342,23 +364,25 @@ module ccip_logger
 		    print_clnum(C0RxHdr.clnum),
 		    // ret_spaces(12),
 	 	    C0RxData);
+	 end // if (C0RxRdValid && (C0RxHdr.resptype == ASE_RD_RSP))
+	 /*********** SW -> MEM -> AFU Atomic responses on C0Rx  **********/
+	 if (C0RxRdValid && (C0RxHdr.resptype == ASE_ATOMIC_RSP)) begin
+	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%s\t%x",
+					     $time,
+					     print_channel(C0RxAtomicHdr.vc_used),
+					     print_resptype(C0RxAtomicHdr.resptype),
+					     C0RxAtomicHdr.mdata,
+					     ((C0RxAtomicHdr.success == 1) ? "Success" : "Fail   "),
+					     C0RxData);
+	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%s\t%x\n",
+		    $time,
+		    print_channel(C0RxAtomicHdr.vc_used),
+		    print_resptype(C0RxAtomicHdr.resptype),
+		    C0RxAtomicHdr.mdata,
+		    ((C0RxAtomicHdr.success == 1) ? "Success" : "Fail   "),
+		    C0RxData);
 	 end
-	 /****************** MEM -> AFU Write Response *****************/
-	 // if (C0RxWrValid) begin
-	 //    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%s",
-	 // 				     $time,
-	 // 				     print_channel(C0RxHdr.vc_used),
-	 // 				     print_resptype(C0RxHdr.resptype),
-	 // 				     C0RxHdr.mdata,
-	 // 				     print_clnum(C0RxHdr.clnum) );
-	 //    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%s\n",
-	 // 	    $time,
-	 // 	    print_channel(C0RxHdr.vc_used),
-	 // 	    print_resptype(C0RxHdr.resptype),
-	 // 	    C0RxHdr.mdata,
-	 // 	    print_clnum(C0RxHdr.clnum));
-	 // end
-	 // /************* SW -> MEM -> AFU Unordered Message  ************/
+	 /*************** SW -> MEM -> AFU Unordered Message  *************/
 	 if (C0RxUMsgValid) begin
 	    if (C0RxUMsgHdr.umsg_type) begin
 	       if (cfg.enable_cl_view) $display("%d\t   \tUMsgHint   \t%d\n",
@@ -406,11 +430,11 @@ module ccip_logger
 	    if (cfg.enable_cl_view) $display("%d\t%s\tWrFenceRsp\t%x\n",
 					     $time,
 					     print_channel(C1RxHdr.vc_used),
-					     C1RxHdr.mdata);	    
+					     C1RxHdr.mdata);
 	    $fwrite(log_fd, "%d\t%s\tWrFenceRsp\t%x\n",
 		    $time,
 		    print_channel(C1RxHdr.vc_used),
-		    C1RxHdr.mdata);	    
+		    C1RxHdr.mdata);
 	 end
 	 // /**************** MEM -> AFU Interrupt Response  **************/
 	 // if (C1RxIntrValid) begin

@@ -124,7 +124,7 @@ package ase_pkg;
    // TxHdr
    typedef struct packed {
       //--------- CCIP standard header --------- //
-      logic [79:77]   qw_start;  // 79:77  // Qword start (no end, sets a cmp QW index)
+      logic [79:77]   qword_idx; // 79:77  // Qword start (no end, sets a cmp QW index)
       logic [76:74]   rsvd76_74; // 76:74  // X
       ccip_vc_t       vc;        // 73:72  // Virtual channel select
       logic 	      sop;       // 71     // Start of packet
@@ -139,10 +139,10 @@ package ase_pkg;
 
    // CfgHdr   
    typedef struct packed {
-      logic [15:0] index;
-      logic [1:0]  len;
-      logic 	   poison;
-      logic [8:0]  tid;
+      logic [15:0] index;  // 27:12
+      logic [1:0]  len;    // 11:10
+      logic 	   rsvd9;  // 9
+      logic [8:0]  tid;    // 8:0
       } CfgHdr_t;
    parameter CCIP_CFG_HDR_WIDTH    = $bits(CfgHdr_t);
 
@@ -155,7 +155,7 @@ package ase_pkg;
    // Umsg header (received when UMsg is received)
    typedef struct packed {
       logic [1:0] rsvd_27_26;  // 27:26 // Reserved
-      logic 	  poison;      // 25    // Poison bit
+      logic 	  rsvd25;      // 25    // Poison bit
       logic [4:0] rsvd_24_20;  // 24:20 // Reserved
       logic [3:0] resp_type;   // 19:16 // Response type
       logic       umsg_type;   // 15    // Umsg type
@@ -166,15 +166,15 @@ package ase_pkg;
 
    // CmpXchg header (received from a Compare-Exchange operation)
    typedef struct packed {
-      ccip_vc_t       vc;
-      logic           poison;
-      logic 	      hitmiss;
-      logic 	      rsvd_23_21;
-      logic 	      matched;
-      ccip_resptype_t resp_type;
-      logic [15:0]    mdata;    
-   } CmpXchg_t;
-   parameter CCIP_CMPXCHG_HDR_WIDTH = $bits(CmpXchg_t);
+      ccip_vc_t       vc_used;    // 27:26
+      logic 	      rsvd25;     // 25
+      logic 	      hitmiss;    // 24
+      logic 	      success;    // 23
+      logic [2:0]     rsvd_22_20; // 22:20
+      ccip_resptype_t resptype;   // 19:16
+      logic [15:0]    mdata;      // 15:0
+   } Atomics_t;
+   parameter CCIP_CMPXCHG_HDR_WIDTH = $bits(Atomics_t);
       
    // Config channel
    parameter CCIP_MMIO_ADDR_WIDTH   = 16;
@@ -227,13 +227,12 @@ package ase_pkg;
     */
    typedef struct {
       int 	  mode;
-      // int         write_en;
-      int 	  vc;
+      int 	  qw_start;
       int 	  mdata;
       longint 	  cl_addr;
       longint     qword[8];
-      int 	  resp_en;
       int 	  resp_channel;
+      int 	  success;
    } cci_pkt;
 
    parameter CCIPKT_WRITE_MODE   = 32'h1000;   
