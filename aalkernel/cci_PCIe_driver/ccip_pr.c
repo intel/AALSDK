@@ -85,17 +85,17 @@
 #include "cci_pcie_driver_PIPsession.h"
 
 // Maximum  PR timeout  4 seconds
-#define  PR_OUTSTADREQ_TIMEOUT   4000
-#define  PR_OUTSTADREQ_DELAY     10
+#define  PR_OUTSTADREQ_TIMEOUT   10000000
+#define  PR_OUTSTADREQ_DELAY     1
 
 // PR revoke Maximum try count
-#define PR_AFU_REVOKE_MAX_TRY 40
+#define PR_AFU_REVOKE_MAX_TRY 400
 
 // PR revoke work queue timeout in milliseconds
 #define PR_WQ_REVOKE_TIMEOUT 10
 
 // PR AFU Deactive work queue timeout in milliseconds
-#define PR_WQ_TIMEOUT 1
+#define PR_WQ_TIMEOUT 0
 
 
 extern btUnsigned32bitInt sim;
@@ -523,8 +523,12 @@ void program_afu_callback(struct kosal_work_object * pwork)
    // ---------------------------------------------------------------------------
    PVERBOSE("Setting up PR access mode to FME initiated PR \n");
 
+   Get64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_dev->ccip_fme_pr_control.csr);
+
    // Disable PORT PR access ,SW use the FME to PR
    pr_dev->ccip_fme_pr_control.enable_pr_port_access=0x0;
+
+   Set64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_dev->ccip_fme_pr_control.csr);
 
    // Step 1 - Check FME_PR_STATUS[27:24] == 4'h0
    // -------------------------------------------
@@ -534,7 +538,7 @@ void program_afu_callback(struct kosal_work_object * pwork)
    totaldelay=0;
    do {
 
-       Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_dev->ccip_fme_pr_status.csr);
+      Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_dev->ccip_fme_pr_status.csr);
        // Sleep
       kosal_udelay(delay);
 
@@ -605,6 +609,7 @@ void program_afu_callback(struct kosal_work_object * pwork)
       PVERBOSE("NO Previous PR errors \n ");
    }
 
+   Set64CSR(&pr_dev->ccip_fme_pr_err.csr,&pr_dev->ccip_fme_pr_err.csr);
  
    // Step 4 - Write PR Region ID to FME_PR_CONTROL[9:8]
    // --------------------------------------------------
@@ -622,6 +627,7 @@ void program_afu_callback(struct kosal_work_object * pwork)
    // PR Start Request
    pr_dev->ccip_fme_pr_control.pr_start_req=0x1;
 
+   Set64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_dev->ccip_fme_pr_control.csr);
 
    // Step 6 - Check available credits: FME_PR_STATUS[8:0] for PR data push and push Data to FME_PR_DATA[31:0]
    // -------------------------------------------------------------------------------------------------------
@@ -642,6 +648,7 @@ void program_afu_callback(struct kosal_work_object * pwork)
              Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_dev->ccip_fme_pr_status.csr);
              PR_FIFO_credits = pr_dev->ccip_fme_pr_status.pr_credit;
 
+             /*
              kosal_udelay(delay);
 
              // total delay
@@ -653,6 +660,7 @@ void program_afu_callback(struct kosal_work_object * pwork)
                errnum=uid_errnumPRTimeout;
                goto ERR;
              }
+             */
 
           }
           while (PR_FIFO_credits <=1);
@@ -712,6 +720,8 @@ void program_afu_callback(struct kosal_work_object * pwork)
    // FME_PR_STATUS[16] = 1 implies PR Failed. Read FME_PR_ERROR for more info upon failure
    // TODO: This step is different from SAS. Update SAS
    // NOTE: Error Register updating/ clearing may change based on SKX RAS requirement
+
+   Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_dev->ccip_fme_pr_status.csr);
 
    if(0x1 == pr_dev->ccip_fme_pr_status.pr_status)  {
 

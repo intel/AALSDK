@@ -803,7 +803,7 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
    // What state should the AFU be left in?
    if(rNVS.Has(AALCONF_REACTIVATE_DISABLED)){
       btBool bDisabled = true;   // Asssume if the key present it probably true
-      rNVS.Get(AALCONF_RECONF_ACTION, &bDisabled);
+      rNVS.Get(AALCONF_REACTIVATE_DISABLED, &bDisabled);
 
       if(bDisabled == true){
          req->u.pr_config.reconfAction |= ReConf_Action_InActive;
