@@ -49,7 +49,7 @@ ASE_VERSION = 5.0.1
 
 # ASE switches (these tend to increase log sizes)
 ASE_DEBUG ?= 1
-ASE_PROFILE_ENABLE ?= 0
+ASE_PROFILE_ENABLE ?= 1
 ASE_DISABLE_LOGGER = 0
 
 GLS_SIM = 1
