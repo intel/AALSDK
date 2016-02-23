@@ -36,6 +36,7 @@ typedef logic [CCIP_TID_WIDTH-1:0]      t_ccip_tid;
 
 typedef logic [CCIP_MDATA_WIDTH-1:0]    t_ccip_mdata;
 typedef logic [1:0]                     t_ccip_clNum;
+typedef logic [2:0]                     t_ccip_qwIdx;
 
   
 // Request Type  Encodings
@@ -118,7 +119,7 @@ typedef struct packed {
 parameter CCIP_C1TX_MEMHDR_WIDTH = $bits(t_ccip_c1_ReqMemHdr);
 
 typedef struct packed {
-    logic [2:0]     qword_en;
+    t_ccip_qwIdx    qw_idx;
     logic [2:0]     rsvd2;
     t_ccip_vc       vc_sel;       // only eVC_VL0 is legal
     logic           sop;
@@ -151,10 +152,10 @@ parameter CCIP_C0RX_MEMHDR_WIDTH = $bits(t_ccip_c0_RspMemHdr);
 
 typedef struct packed {
     t_ccip_vc       vc_used;
-    logic           rsvd1;
+    logic           rsvd1;  
     logic           hit_miss;
-    logic [2:0]     rsvd0;
     logic           success;
+    logic [2:0]     rsvd0;
     t_ccip_c0_rsp   resp_type;
     t_ccip_mdata    mdata;
 } t_ccip_c0_RspAtomicHdr;

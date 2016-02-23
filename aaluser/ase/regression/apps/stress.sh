@@ -1,5 +1,7 @@
 #!/bin/sh
 
+rm output.*.log
+
 ./build.sh
 
 vc_arr[0]="0"

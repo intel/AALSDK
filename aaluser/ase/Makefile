@@ -49,7 +49,7 @@ ASE_VERSION = 5.0.1
 
 # ASE switches (these tend to increase log sizes)
 ASE_DEBUG ?= 1
-ASE_PROFILE_ENABLE ?= 1
+ASE_PROFILE_ENABLE ?= 0
 ASE_DISABLE_LOGGER = 0
 
 GLS_SIM = 1
@@ -166,7 +166,8 @@ MENT_VCOM_OPT = -nologo -work $(WORK)
 
 ## VLOG compile
 MENT_VLOG_OPT = -64 -nologo +librescan -work $(WORK)
-MENT_VLOG_OPT+= +incdir+$(ASE_INCDIR)+$(DUT_INCDIR)
+MENT_VLOG_OPT+= -dpiheader work/dpiheader.h
+MENT_VLOG_OPT+= +incdir+$(ASE_INCDIR)+$(DUT_INCDIR)+$(WORK)
 MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
 MENT_VLOG_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
 

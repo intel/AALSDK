@@ -879,6 +879,9 @@ module outoforder_wrf_channel
 	    else if ( (txhdr.reqtype == ASE_WRLINE_I) || (txhdr.reqtype == ASE_WRLINE_M) ) begin
 	       rxhdr.resptype        = ASE_WR_RSP;
 	    end
+	    else if (txhdr.reqtype == ASE_ATOMIC_REQ) begin
+	       rxhdr.resptype        = ASE_ATOMIC_RSP;	       
+	    end
             `ifdef ASE_DEBUG
 	    else begin
 	       `BEGIN_RED_FONTCOLOR;

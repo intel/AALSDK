@@ -134,8 +134,7 @@ module ccip_emulator
 	C0TxRdValid <= 0;
       // --------------------------------------------------------- //
       // Write Request
-      if (C1TxValid &&
-	  ( (C1TxHdr.reqtype == ASE_WRFENCE)||(C1TxHdr.reqtype == ASE_WRLINE_I)||(C1TxHdr.reqtype == ASE_WRLINE_M)) )
+      if (C1TxValid && ( (C1TxHdr.reqtype == ASE_WRFENCE)||(C1TxHdr.reqtype == ASE_WRLINE_I)||(C1TxHdr.reqtype == ASE_WRLINE_M)||(C1TxHdr.reqtype == ASE_ATOMIC_REQ)) )
 	C1TxWrValid <= 1;
       else
 	C1TxWrValid <= 0;
@@ -605,7 +604,7 @@ module ccip_emulator
 	 else begin
 	    if (mmio_pkt.write_en == MMIO_WRITE_REQ) begin
 	       hdr.index  = {2'b0, mmio_pkt.addr[15:2]};
-	       hdr.poison = 1'b0;
+	       hdr.rsvd9  = 1'b0;
 	       hdr.tid    = 9'b0;
 	       if (mmio_pkt.width == MMIO_WIDTH_32) begin
 		  hdr.len = 2'b00;
@@ -633,7 +632,7 @@ module ccip_emulator
 	       else if (mmio_pkt.width == MMIO_WIDTH_64) begin
 		  hdr.len      = 2'b01;
 	       end
-	       hdr.poison   = 1'b0;
+	       hdr.rsvd9    = 1'b0;
 	       hdr.tid      = mmio_tid_counter;
 	       cwlp_header  = CCIP_CFG_HDR_WIDTH'(hdr);
 	       cwlp_wrvalid = 0;
@@ -1067,7 +1066,7 @@ module ccip_emulator
 
 	   UPopHint:
 	     begin
-   		umsgfifo_hdr_in.poison              <= 1'b0;
+   		umsgfifo_hdr_in.rsvd25              <= 1'b0;
    		umsgfifo_hdr_in.resp_type           <= ASE_UMSG;
    		umsgfifo_hdr_in.umsg_type           <= 1'b1;
    		umsgfifo_hdr_in.umsg_id             <= umsg_hint_slot;
@@ -1079,7 +1078,7 @@ module ccip_emulator
 
 	   UPopData:
 	     begin
-   		umsgfifo_hdr_in.poison              <= 1'b0;
+   		umsgfifo_hdr_in.rsvd25              <= 1'b0;
    		umsgfifo_hdr_in.resp_type           <= ASE_UMSG;
    		umsgfifo_hdr_in.umsg_type           <= 1'b0;
    		umsgfifo_hdr_in.umsg_id             <= umsg_data_slot;
@@ -1553,7 +1552,7 @@ module ccip_emulator
       else if (Tx1_pkt.mode == CCIPKT_ATOMIC_MODE) begin
 	 wr1rsp_write                 <= 0;
 	 atomics_hdr_in               <= Atomics_t'(cf2as_latbuf_rx1hdr_q);
-	 atomics_hdr_in.success_fail  <= Tx1_pkt.success[0];        // Return success bit from atomics
+	 atomics_hdr_in.success       <= Tx1_pkt.success[0];        // Return success bit from atomics
 	 atomics_data_in              <= unpack_ccipkt_to_vector(Tx1_pkt);
 	 atomics_write                <= Tx1_pkt_vld;
       end
