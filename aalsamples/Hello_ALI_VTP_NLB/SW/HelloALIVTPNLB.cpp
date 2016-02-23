@@ -63,6 +63,9 @@
 // #define  HWAFU
 #define  ASEAFU
 
+// uncomment to also run negative tests (test the test) - runs a bit longer
+#define TEST_NEGATIVE
+
 using namespace std;
 using namespace AAL;
 
@@ -91,7 +94,7 @@ using namespace AAL;
 # define MB(x)                     ((x) * 1024 * 1024)
 #endif // MBA
 
-#define LPBK1_BUFFER_SIZE        MB(512)
+#define LPBK1_BUFFER_SIZE        MB(2048)
 #define LPBK1_DSM_SIZE           MB(4)
 
 //
@@ -241,7 +244,7 @@ HelloALIVTPNLBApp::HelloALIVTPNLBApp() :
    // Start the Runtime and wait for the callback by sitting on the semaphore.
    //   the runtimeStarted() or runtimeStartFailed() callbacks should set m_bIsOK appropriately.
    if(!m_Runtime.start(configArgs)){
-	   m_bIsOK = false;
+      m_bIsOK = false;
       return;
    }
    m_Sem.Wait();
@@ -438,7 +441,7 @@ btInt HelloALIVTPNLBApp::run()
       };
       struct CacheLine *pCL = reinterpret_cast<struct CacheLine *>(m_pInput);
       for ( btUnsigned32bitInt i = 0; i < (m_InputSize) / CL(1) ; ++i ) {
-         pCL[i].uint[15] = i;
+         pCL[i].uint[15] = i+1;     // avoid zero lines in test patterns
       };                         // Cache-Line[n] is zero except last uint = n
 
       // Initiate AFU Reset
@@ -452,30 +455,56 @@ btInt HelloALIVTPNLBApp::run()
       // Set DSM base (virtual, since we have allocated using VTP), high then low
       m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, (btUnsigned64bitInt)m_pDSM);
 
-      // //-----------------------------------------------------------------------
-      // // First test: run a copy across two consecutive pages (2 MB)
-      // //-----------------------------------------------------------------------
-      // bufferSize = 2 * MB(2);
-      //
-      // if ( false == runNLB( m_pInput, m_pOutput, bufferSize, 0 ) ) {
-      //    MSG("Test failed.");
-      // }
-      // if ( false == checkBuffers ( m_pInput, m_pOutput, bufferSize ) ) {
-      //    MSG("Check failed.");
-      // }
-
       //-----------------------------------------------------------------------
-      // Second test: copy one cacheline on the beginning of each 2MB page
+      // First test: copy one cacheline on the beginning of each 2MB page
       //-----------------------------------------------------------------------
-      ::memset( m_pOutput, 0, m_OutputSize);    // Output initialized to 0
       bufferSize = CL(1);
+
       for (btUnsigned64bitInt i = 0; i < m_InputSize / MB(2); i++) {
+         MSG("---------- Iteration " << std::dec << i+1 << "/" << m_InputSize / MB(2) << " ---------");
+#ifdef TEST_NEGATIVE
+         // This check should fail, since we didn't run NLB yet
+         if ( true == checkBuffers ( m_pInput+i*MB(2), m_pOutput+i*MB(2), bufferSize ) ) {
+            ERR("Negative check failed.");
+            ++m_Result;
+            break;
+         }
+#endif
          if ( false == runNLB( m_pInput+i*MB(2), m_pOutput+i*MB(2), bufferSize, 0 ) ) {
-            MSG("Test failed.");
+            ERR("Test failed.");
+            ++m_Result;
+            break;
          }
          if ( false == checkBuffers ( m_pInput+i*MB(2), m_pOutput+i*MB(2), bufferSize ) ) {
-            MSG("Check failed.");
+            ERR("Check failed.");
+            ++m_Result;
+            break;
          }
+      }
+
+      //-----------------------------------------------------------------------
+      // Second test: run a copy across two consecutive pages (2 MB)
+      //-----------------------------------------------------------------------
+      ::memset( m_pOutput, 0, m_OutputSize);    // Output initialized to 0
+      bufferSize = 2 * MB(2);
+
+#ifdef TEST_NEGATIVE
+      // This check should fail, since we didn't run NLB yet
+      if ( true == checkBuffers ( m_pInput, m_pOutput, bufferSize ) ) {
+         ERR("Negative check failed.");
+         ++m_Result;
+         goto done_5;
+      }
+#endif
+      if ( false == runNLB( m_pInput, m_pOutput, bufferSize, 0 ) ) {
+         MSG("Test failed.");
+         ++m_Result;
+         goto done_5;
+      }
+      if ( false == checkBuffers ( m_pInput, m_pOutput, bufferSize ) ) {
+         MSG("Check failed.");
+         ++m_Result;
+         goto done_5;
       }
 
    }
@@ -522,12 +551,10 @@ btBool HelloALIVTPNLBApp::checkBuffers( btVirtAddr bufA,
    }
 
    if ( errpos != -1 ) {
-      ERR("Output does NOT Match input, at offset " << errpos << "!");
-      printf("Expected 0x%x but got 0x%0x\n", *((unsigned char *)p1), *((unsigned char *)p2));
-      ++m_Result;
+      MSG("Output does NOT Match input, at offset " << errpos << ".");
       return false;
    } else {
-      MSG("Output matches Input!");
+      MSG("Output matches input");
       return true;
    }
 }
@@ -536,10 +563,13 @@ btBool HelloALIVTPNLBApp::checkBuffers( btVirtAddr bufA,
 btBool HelloALIVTPNLBApp::runNLB( btVirtAddr pInput, btVirtAddr pOutput, size_t size,
       btUnsigned32bitInt mode )
 {
-   ::memset( m_pDSM, 0, m_DSMSize);
+   ::memset( m_pDSM, 0, m_DSMSize);             // clear DSM
 
    MSG("-> Running NLB. Size: " << size << " Mode: " << mode);
-   MSG("->   Offset: " << pInput-m_pInput);
+   MSG("->   Offset  : " << std::dec << pInput-m_pInput);
+   MSG("->   Virtual : 0x" << std::hex << (btUnsigned64bitInt)pInput);
+   MSG("->   Physical: 0x" << std::hex <<
+         (btUnsigned64bitInt)m_pVTPService->bufferGetIOVA(pInput));
    // Assert NLB reset
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
@@ -767,6 +797,12 @@ int main(int argc, char *argv[])
    btInt Result = theApp.run();
 
    MSG("Done");
+   if (0 == Result) {
+      MSG("======= SUCCESS =======");
+   } else {
+      MSG("!!!!!!! FAILURE !!!!!!!");
+   }
+
    return Result;
 }
 
