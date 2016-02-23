@@ -121,24 +121,67 @@ void wr_memline_dex(cci_pkt *pkt)
 
   uint64_t phys_addr;
   uint64_t *wr_target_vaddr = (uint64_t*)NULL;
+  uint64_t *rd_target_vaddr = (uint64_t*)NULL;
   int ret_fd;
+  long long cmp_qword;  // Data to be compared
+  long long new_qword;  // Data to be writen if compare passes
 
   if (pkt->mode == CCIPKT_WRITE_MODE) 
     {
+      /* 
+       * Normal write operation
+       * Takes Write request and performs verbatim
+       */
       // Get cl_addr, deduce wr_target_vaddr
       phys_addr = (uint64_t)pkt->cl_addr << 6;
       wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr, &ret_fd); 
-
+      
       // Write to memory
       memcpy(wr_target_vaddr, (char*)pkt->qword, CL_BYTE_WIDTH);
-   }
+      
+      // Success
+      pkt->success = 1;
+    }
+  else if (pkt->mode == CCIPKT_ATOMIC_MODE)
+    {
+      /*
+       * This is a special mode in which read response goes back 
+       * WRITE request is responded with a READ response
+       */
+      // Specifics of the requested compare operation
+      cmp_qword = pkt->qword[0];
+      new_qword = pkt->qword[4];
+      
+      // Get cl_addr, deduce rd_target_vaddr
+      phys_addr = (uint64_t)pkt->cl_addr << 6;
+      rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr, &ret_fd); 
+      
+      // Perform read first and set response packet accordingly
+      memcpy((char*)pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);      
+
+      // Get cl_addr, deduct wr_target, use qw_start to determine exact qword
+      wr_target_vaddr = (uint64_t*)( (uint64_t)rd_target_vaddr + pkt->qw_start*8 );
+      
+      // CmpXchg output
+      pkt->success = (int)__sync_bool_compare_and_swap (wr_target_vaddr, cmp_qword, new_qword);
+      
+      // Debug output
+#ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [DEBUG]  CmpXchg_op=%d\n", pkt->success);
+      END_YELLOW_FONTCOLOR;
+#endif
+    }
   
-  // Enable response
-  pkt->resp_en = 1;
+#if 0
+  int slowdown;
+  printf("  [DEBUG][slowdown]  Waiting for keyboard input...\n");    
+  scanf("%d", &slowdown);
+#endif
 
   FUNC_CALL_EXIT;
 }
-
+      
 
 /*
  * DPI: ReadLine Data exchange
@@ -157,9 +200,6 @@ void rd_memline_dex(cci_pkt *pkt )
 
   // Read from memory
   memcpy((char*)pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);
-
-  // Enable response
-  pkt->resp_en = 1;
 
   FUNC_CALL_EXIT;
 }
