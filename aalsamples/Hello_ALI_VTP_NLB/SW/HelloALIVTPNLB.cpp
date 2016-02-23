@@ -91,8 +91,7 @@ using namespace AAL;
 # define MB(x)                     ((x) * 1024 * 1024)
 #endif // MBA
 
-#define LPBK1_BUFFER_SIZE        (MB(64)-CL(1))
-#define LPBK1_BUFFER_OFFSET      (0)
+#define LPBK1_BUFFER_SIZE        MB(512)
 #define LPBK1_DSM_SIZE           MB(4)
 
 //
@@ -182,6 +181,11 @@ protected:
    btWSSize       m_InputSize;              ///< Input workspace size in bytes.
    btVirtAddr     m_pOutput;                ///< Output workspace virtual address.
    btWSSize       m_OutputSize;             ///< Output workspace size in bytes.
+
+private:
+   btBool         checkBuffers( btVirtAddr, btVirtAddr, size_t );
+                                            ///< Convenience function to check test outcome.
+   btBool         runNLB( btVirtAddr, btVirtAddr, size_t, btUnsigned32bitInt );
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -275,10 +279,7 @@ btInt HelloALIVTPNLBApp::run()
    NamedValueSet featureFilter;
    btcString sGUID = VTP_BBB_GUID;
 
-   // test counters
-   bt64bitInt errpos = -1;
-   btVirtAddr p1;
-   btVirtAddr p2;
+   unsigned int bufferSize;
 
 #if defined( HWAFU )                /* Use FPGA hardware */
    // Service Library to use
@@ -397,7 +398,7 @@ btInt HelloALIVTPNLBApp::run()
    m_DSMSize = LPBK1_DSM_SIZE;
 
    // Repeat for the Input and Output Buffers
-   if( ali_errnumOK != m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE+LPBK1_BUFFER_OFFSET, &m_pInput)){
+   if( ali_errnumOK != m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_pInput)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -406,7 +407,7 @@ btInt HelloALIVTPNLBApp::run()
 
    m_InputSize = LPBK1_BUFFER_SIZE;
 
-   if( ali_errnumOK !=  m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE+LPBK1_BUFFER_OFFSET, &m_pOutput)){
+   if( ali_errnumOK !=  m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_pOutput)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -419,9 +420,10 @@ btInt HelloALIVTPNLBApp::run()
    // Now we have the NLB Service
    //   now we can use it
    //=============================
-   MSG("Running Test");
-   MSG("  Test size:   " << m_InputSize);
-   MSG("  Test offset: " << LPBK1_BUFFER_OFFSET);
+   MSG("Running Tests");
+   MSG("  Shared buffer allocated for test:   " << m_InputSize / (1024*1024) <<
+         " MBytes");
+
    if(true == m_bIsOK){
 
       // Clear the DSM
@@ -435,7 +437,7 @@ btInt HelloALIVTPNLBApp::run()
          btUnsigned32bitInt uint[16];
       };
       struct CacheLine *pCL = reinterpret_cast<struct CacheLine *>(m_pInput);
-      for ( btUnsigned32bitInt i = 0; i < (m_InputSize+LPBK1_BUFFER_OFFSET) / CL(1) ; ++i ) {
+      for ( btUnsigned32bitInt i = 0; i < (m_InputSize) / CL(1) ; ++i ) {
          pCL[i].uint[15] = i;
       };                         // Cache-Line[n] is zero except last uint = n
 
@@ -450,53 +452,32 @@ btInt HelloALIVTPNLBApp::run()
       // Set DSM base (virtual, since we have allocated using VTP), high then low
       m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, (btUnsigned64bitInt)m_pDSM);
 
-      // Assert NLB reset
-      m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
+      // //-----------------------------------------------------------------------
+      // // First test: run a copy across two consecutive pages (2 MB)
+      // //-----------------------------------------------------------------------
+      // bufferSize = 2 * MB(2);
+      //
+      // if ( false == runNLB( m_pInput, m_pOutput, bufferSize, 0 ) ) {
+      //    MSG("Test failed.");
+      // }
+      // if ( false == checkBuffers ( m_pInput, m_pOutput, bufferSize ) ) {
+      //    MSG("Check failed.");
+      // }
 
-      //De-Assert NLB reset
-      m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
-
-      // Set input workspace address
-      m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, (btUnsigned64bitInt)(m_pInput+LPBK1_BUFFER_OFFSET) / CL(1));
-
-      // Set output workspace address
-      m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, (btUnsigned64bitInt)(m_pOutput+LPBK1_BUFFER_OFFSET) / CL(1));
-
-      // Set the number of cache lines for the test
-      m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
-
-      // Set the test mode
-      m_pALIMMIOService->mmioWrite32(CSR_CFG,0);
-
-      volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
-                                         (m_pDSM  + DSM_STATUS_TEST_COMPLETE);
-      // Start the test
-      m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
-
-      // Wait for test completion
-      while( 0 == ((*StatusAddr)&0x1) ) {
-         SleepMicro(100);
-      }
-      MSG("Done Running Test");
-
-      // Stop the device
-      m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
-
-      errpos = -1;
-      // Check that output buffer now contains what was in input buffer, e.g. 0xAF
-      for (p1 = m_pInput+LPBK1_BUFFER_OFFSET, p2 = m_pOutput+LPBK1_BUFFER_OFFSET; p1 < m_pInput + m_InputSize + LPBK1_BUFFER_OFFSET; p1++, p2++) {
-         if ( *((unsigned char *)p1) != *((unsigned char *)p2)) {
-           errpos = p1-m_pInput;
-           break;
+      //-----------------------------------------------------------------------
+      // Second test: copy one cacheline on the beginning of each 2MB page
+      //-----------------------------------------------------------------------
+      ::memset( m_pOutput, 0, m_OutputSize);    // Output initialized to 0
+      bufferSize = CL(1);
+      for (btUnsigned64bitInt i = 0; i < m_InputSize / MB(2); i++) {
+         if ( false == runNLB( m_pInput+i*MB(2), m_pOutput+i*MB(2), bufferSize, 0 ) ) {
+            MSG("Test failed.");
+         }
+         if ( false == checkBuffers ( m_pInput+i*MB(2), m_pOutput+i*MB(2), bufferSize ) ) {
+            MSG("Check failed.");
          }
       }
 
-      if ( errpos != -1 ) {
-         ERR("Output does NOT Match input, at offset " << errpos << "!");
-         ++m_Result;
-      } else {
-         MSG("Output matches Input!");
-      }
    }
    MSG("Done Running Test");
 
@@ -523,6 +504,75 @@ done_0:
    m_Sem.Wait();
 
    return m_Result;
+}
+
+
+btBool HelloALIVTPNLBApp::checkBuffers( btVirtAddr bufA,
+                                        btVirtAddr bufB,
+                                        size_t     size )
+{
+   btVirtAddr p1, p2;
+   int errpos = -1;
+   // Check that output buffer now contains what was in input buffer, e.g. 0xAF
+   for (p1 = bufA, p2 = bufB; p1 < bufA + size; p1++, p2++) {
+      if ( *((unsigned char *)p1) != *((unsigned char *)p2)) {
+         errpos = p1-bufA;
+         break;
+      }
+   }
+
+   if ( errpos != -1 ) {
+      ERR("Output does NOT Match input, at offset " << errpos << "!");
+      printf("Expected 0x%x but got 0x%0x\n", *((unsigned char *)p1), *((unsigned char *)p2));
+      ++m_Result;
+      return false;
+   } else {
+      MSG("Output matches Input!");
+      return true;
+   }
+}
+
+
+btBool HelloALIVTPNLBApp::runNLB( btVirtAddr pInput, btVirtAddr pOutput, size_t size,
+      btUnsigned32bitInt mode )
+{
+   ::memset( m_pDSM, 0, m_DSMSize);
+
+   MSG("-> Running NLB. Size: " << size << " Mode: " << mode);
+   MSG("->   Offset: " << pInput-m_pInput);
+   // Assert NLB reset
+   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
+
+   //De-Assert NLB reset
+   m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
+
+   // Set input workspace address
+   m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, (btUnsigned64bitInt)(pInput) / CL(1));
+
+   // Set output workspace address
+   m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, (btUnsigned64bitInt)(pOutput) / CL(1));
+
+   // Set the number of cache lines for the test
+   m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, size / CL(1));
+
+   // Set the test mode
+   m_pALIMMIOService->mmioWrite32(CSR_CFG, mode);
+
+   volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
+      (m_pDSM  + DSM_STATUS_TEST_COMPLETE);
+   // Start the test
+   m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
+
+   // Wait for test completion
+   while( 0 == ((*StatusAddr)&0x1) ) {
+      SleepMicro(100);
+   }
+   MSG("Done Running NLB.");
+
+   // Stop the device
+   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
+
+   return true;
 }
 
 //=================
