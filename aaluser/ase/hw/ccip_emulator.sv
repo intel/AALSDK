@@ -169,7 +169,7 @@ module ccip_emulator
 	   eREQ_WRLINE_I : txasehdr.txhdr.reqtype = ASE_WRLINE_I;
 	   eREQ_WRLINE_M : txasehdr.txhdr.reqtype = ASE_WRLINE_M;
 	   eREQ_WRFENCE  : txasehdr.txhdr.reqtype = ASE_WRFENCE;
-	   eREQ_ATOMIC   : txasehdr.txhdr.reqtype = ASE_ATOMIC_REQ;	   
+	   eREQ_ATOMIC   : txasehdr.txhdr.reqtype = ASE_ATOMIC_REQ;
 	   eREQ_INTR     : txasehdr.txhdr.reqtype = ASE_INTR_REQ;
 	 endcase // case (inhdr.req_type)
 	 return txasehdr;
@@ -367,7 +367,7 @@ module ccip_emulator
    int mmiowr_credit;
    int mmiord_credit;
    int umsg_credit;
-
+   int atomic_credit;
 
 
    /* ***************************************************************************
@@ -866,12 +866,20 @@ module ccip_emulator
    int 			       umsg_data_slot_old = 255;
    int 			       umsg_hint_slot_old = 255;
 
+   logic [0:NUM_UMSG_PER_AFU-1] umsg_hint_enable_array;
+   logic [0:NUM_UMSG_PER_AFU-1] umsg_data_enable_array;
+
+   logic [4:0] 			umsgfifo_cnt;
+
    // UMSG Hint-to-Data time emulator (toaster style)
    // New Umsg hints to same location are ignored
    // If Data is same, hints dont get generated
    genvar ii;
    generate
       for ( ii = 0; ii < NUM_UMSG_PER_AFU; ii = ii + 1 ) begin : umsg_engine
+
+	 assign umsg_hint_enable_array[ii] = umsg_array[ii].hint_ready;
+	 assign umsg_data_enable_array[ii] = umsg_array[ii].data_ready;
 
 	 // State machine
 	 always @(posedge clk) begin
@@ -1030,7 +1038,7 @@ module ccip_emulator
    end
 
    // Pop HINT/DATA
-   typedef enum {UPopIdle, UPopHint, UPopData, UPopWait} UmsgPopStateMachine;
+   typedef enum {UPopIdle, UPopHint, UPopData, UPopWait, UPopSleep} UmsgPopStateMachine;
    UmsgPopStateMachine upop_state;
 
    always @(posedge clk) begin : umsgfifo_pop_write
@@ -1039,19 +1047,20 @@ module ccip_emulator
    	 umsgfifo_data_in   <= {UMSG_FIFO_WIDTH{1'b0}};
    	 umsgfifo_write     <= 0;
    	 for(int jj = 0; jj < NUM_UMSG_PER_AFU; jj = jj + 1) begin
-   	    umsg_array[jj].hint_pop <= 1'b0;
-   	    umsg_array[jj].data_pop <= 1'b0;
+   	    umsg_array[jj].hint_pop <= 0;
+   	    umsg_array[jj].data_pop <= 0;
    	 end
 	 upop_state <= UPopIdle;
       end
       else begin
 	 case (upop_state)
+	   // UMsg Pop idle
 	   UPopIdle:
 	     begin
    		umsgfifo_write     <= 0;
    		for(int jj = 0; jj < NUM_UMSG_PER_AFU; jj = jj + 1) begin
-   		   umsg_array[jj].hint_pop <= 1'b0;
-   		   umsg_array[jj].data_pop <= 1'b0;
+   		   umsg_array[jj].hint_pop <= 0;
+   		   umsg_array[jj].data_pop <= 0;
    		end
 		if (~umsgfifo_full && (umsg_hint_slot != 255)) begin
 		   upop_state <= UPopHint;
@@ -1064,46 +1073,56 @@ module ccip_emulator
 		end
 	     end
 
+	   // Pop UMsg hint
 	   UPopHint:
 	     begin
-   		umsgfifo_hdr_in.rsvd25              <= 1'b0;
+   		umsgfifo_hdr_in.rsvd25              <= 0;
    		umsgfifo_hdr_in.resp_type           <= ASE_UMSG;
-   		umsgfifo_hdr_in.umsg_type           <= 1'b1;
+   		umsgfifo_hdr_in.umsg_type           <= 1;
    		umsgfifo_hdr_in.umsg_id             <= umsg_hint_slot;
    		umsgfifo_data_in                    <= {CCIP_DATA_WIDTH{1'b0}};
-   		umsgfifo_write                      <= 1'b1;
-   		umsg_array[umsg_hint_slot].hint_pop <= 1'b1;
+   		umsgfifo_write                      <= 1;
+   		umsg_array[umsg_hint_slot].hint_pop <= 1;
 		upop_state                          <= UPopWait;
 	     end
 
+	   // Pop Umsg data
 	   UPopData:
 	     begin
-   		umsgfifo_hdr_in.rsvd25              <= 1'b0;
+   		umsgfifo_hdr_in.rsvd25              <= 0;
    		umsgfifo_hdr_in.resp_type           <= ASE_UMSG;
-   		umsgfifo_hdr_in.umsg_type           <= 1'b0;
+   		umsgfifo_hdr_in.umsg_type           <= 0;
    		umsgfifo_hdr_in.umsg_id             <= umsg_data_slot;
    		umsgfifo_data_in                    <= umsg_latest_data_array[umsg_data_slot];
-   		umsgfifo_write                      <= 1'b1;
-   		umsg_array[umsg_data_slot].data_pop <= 1'b1;
+   		umsgfifo_write                      <= 1;
+   		umsg_array[umsg_data_slot].data_pop <= 1;
 		upop_state                          <= UPopWait;
 	     end
 
+	   // UMsg wait machine
 	   UPopWait:
 	     begin
    		umsgfifo_write     <= 0;
    		for(int jj = 0; jj < NUM_UMSG_PER_AFU; jj = jj + 1) begin
-   		   umsg_array[jj].hint_pop <= 1'b0;
-   		   umsg_array[jj].data_pop <= 1'b0;
+   		   umsg_array[jj].hint_pop <= 0;
+   		   umsg_array[jj].data_pop <= 0;
    		end
+		upop_state         <= UPopSleep;
+	     end
+
+	   // Stabilize, before moving on
+	   UPopSleep:
+	     begin
+   		umsgfifo_write     <= 0;
 		upop_state         <= UPopIdle;
 	     end
 
 	   default:
 	     begin
-   		umsgfifo_write                      <= 1'b0;
+   		umsgfifo_write             <= 0;
    		for(int jj = 0; jj < NUM_UMSG_PER_AFU; jj = jj + 1) begin
-   		   umsg_array[jj].hint_pop <= 1'b0;
-   		   umsg_array[jj].data_pop <= 1'b0;
+   		   umsg_array[jj].hint_pop <= 0;
+   		   umsg_array[jj].data_pop <= 0;
    		end
 		upop_state <= UPopIdle;
 	     end
@@ -1131,10 +1150,14 @@ module ccip_emulator
       .alm_full   ( umsgfifo_full ),
       .full       (  ),
       .empty      ( umsgfifo_empty ),
-      .count      (  ),
+      .count      ( umsgfifo_cnt ),
       .overflow   (  ),
       .underflow  (  )
       );
+
+   // UMSG Debug header
+   UMsgHdr_t C0RxUMsgHdr;
+   assign C0RxUMsgHdr = UMsgHdr_t'(C0RxHdr);
 
 
    /* ******************************************************************
@@ -1171,6 +1194,9 @@ module ccip_emulator
    int ase_rx1_wrfence_cnt   ;
    int ase_rx0_umsghint_cnt  ;
    int ase_rx0_umsgdata_cnt  ;
+   int ase_tx1_atomic_cnt;
+   int ase_rx0_atomic_cnt;
+
 
    // Remap UmsgHdr for count purposes
    UMsgHdr_t ase_umsghdr_map;
@@ -1190,34 +1216,41 @@ module ccip_emulator
 	 ase_rx1_wrfence_cnt <= 0 ;
 	 ase_rx0_umsghint_cnt <= 0 ;
 	 ase_rx0_umsgdata_cnt <= 0 ;
+	 ase_tx1_atomic_cnt <= 0;
+	 ase_rx0_atomic_cnt <= 0;
       end
       else begin
 	 // MMIO counts
 	 if (C0RxMmioWrValid)
-	   ase_rx0_mmiowrreq_cnt = ase_rx0_mmiowrreq_cnt + 1;
+	   ase_rx0_mmiowrreq_cnt <= ase_rx0_mmiowrreq_cnt + 1;
 	 if (C0RxMmioRdValid)
-	   ase_rx0_mmiordreq_cnt = ase_rx0_mmiordreq_cnt + 1;
+	   ase_rx0_mmiordreq_cnt <= ase_rx0_mmiordreq_cnt + 1;
 	 if (C2TxMmioRdValid)
-	   ase_tx2_mmiordrsp_cnt = ase_tx2_mmiordrsp_cnt + 1;
+	   ase_tx2_mmiordrsp_cnt <= ase_tx2_mmiordrsp_cnt + 1;
 	 // Read counts
 	 if (C0TxRdValid)
-	   ase_tx0_rdvalid_cnt = ase_tx0_rdvalid_cnt + (C0TxHdr.len + 1);
-	 if (C0RxRdValid)
-	   ase_rx0_rdvalid_cnt = ase_rx0_rdvalid_cnt + 1;
+	   ase_tx0_rdvalid_cnt <= ase_tx0_rdvalid_cnt + (C0TxHdr.len + 1);
+	 if (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP))
+	   ase_rx0_rdvalid_cnt <= ase_rx0_rdvalid_cnt + 1;
 	 // Write counts
-	 if (C1TxWrValid && (C1TxHdr.reqtype != ASE_WRFENCE))
-	   ase_tx1_wrvalid_cnt = ase_tx1_wrvalid_cnt + 1;
+	 if (C1TxWrValid && (C1TxHdr.reqtype != ASE_WRFENCE) && (C1TxHdr.reqtype != ASE_ATOMIC_REQ))
+	   ase_tx1_wrvalid_cnt <= ase_tx1_wrvalid_cnt + 1;
 	 if (C1RxWrValid && (C1RxHdr.resptype == ASE_WR_RSP) )
-	   ase_rx1_wrvalid_cnt = ase_rx1_wrvalid_cnt + 1;
+	   ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + 1;
 	 if (C1TxWrValid && (C1TxHdr.reqtype == ASE_WRFENCE))
-	   ase_tx1_wrfence_cnt = ase_tx1_wrfence_cnt + 1;
+	   ase_tx1_wrfence_cnt <= ase_tx1_wrfence_cnt + 1;
 	 if (C1RxWrValid && (C1RxHdr.resptype == ASE_WRFENCE_RSP))
-	   ase_rx1_wrfence_cnt = ase_rx1_wrfence_cnt + 1;
+	   ase_rx1_wrfence_cnt <= ase_rx1_wrfence_cnt + 1;
 	 // UMsg counts
 	 if (C0RxUMsgValid && ase_umsghdr_map.umsg_type )
-	   ase_rx0_umsghint_cnt = ase_rx0_umsghint_cnt + 1;
+	   ase_rx0_umsghint_cnt <= ase_rx0_umsghint_cnt + 1;
 	 if (C0RxUMsgValid && ~ase_umsghdr_map.umsg_type )
-	   ase_rx0_umsgdata_cnt = ase_rx0_umsgdata_cnt + 1;
+	   ase_rx0_umsgdata_cnt <= ase_rx0_umsgdata_cnt + 1;
+	 // Atomics' counts
+	 if (C1TxWrValid && (C1TxHdr.reqtype == ASE_ATOMIC_REQ))
+	   ase_tx1_atomic_cnt <= ase_tx1_atomic_cnt + 1;
+	 if (C0RxRdValid && (C0RxHdr.resptype == ASE_ATOMIC_RSP))
+	   ase_rx0_atomic_cnt <= ase_rx0_atomic_cnt + 1;
       end
    end
 
@@ -1499,7 +1532,7 @@ module ccip_emulator
       .full             ( C1TxAlmFull )
       );
 
-   
+
    // Read TX1
    always @(posedge clk) begin
       if (~cf2as_latbuf_ch1_empty && ~wr1rsp_full) begin
@@ -1575,8 +1608,8 @@ module ccip_emulator
    logic [CCIP_RX_HDR_WIDTH-1:0] rdrsp_hdr_out_vec;
    logic [CCIP_RX_HDR_WIDTH-1:0] wr1rsp_hdr_out_vec;
    logic [CCIP_RX_HDR_WIDTH-1:0] atomics_hdr_out_vec;
-   
-   
+
+
    /*
     * RX0 Read Response staging
     */
@@ -2169,6 +2202,8 @@ module ccip_emulator
 	 $display("\tWrFenceRsp = %d", ase_rx1_wrfence_cnt   );
 	 $display("\tUMsgHint   = %d", ase_rx0_umsghint_cnt  );
 	 $display("\tUMsgData   = %d", ase_rx0_umsgdata_cnt  );
+	 $display("\tAtomicReq  = %d", ase_tx1_atomic_cnt    );
+	 $display("\tAtomicRsp  = %d", ase_rx0_atomic_cnt    );
 	 `END_YELLOW_FONTCOLOR;
 
 	 // Valid Count
@@ -2224,7 +2259,7 @@ module ccip_emulator
    always @(posedge clk) begin
       // ---------------------------------------------------- //
       // Read credit counter
-      case ( {C0TxRdValid, C0RxRdValid} )
+      case (  {C0TxRdValid, (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP)) } )
 	2'b10   : rd_credit <= rd_credit + C0TxHdr.len + 1;
 	2'b01   : rd_credit <= rd_credit - 1;
 	2'b11   : rd_credit <= rd_credit + C0TxHdr.len + 1 - 1;
@@ -2232,7 +2267,7 @@ module ccip_emulator
       endcase // case ( {C0TxRdValid, C0RxRdValid} )
       // ---------------------------------------------------- //
       // Write credit counter
-      case ( {C1TxWrValid, C1RxWrValid} )
+      case ( { (C1TxWrValid && (C1TxHdr.reqtype != ASE_ATOMIC_REQ)), C1RxWrValid} )
 	2'b10   : wr_credit <= wr_credit + 1;
 	2'b01   : wr_credit <= wr_credit - 1;
 	default : wr_credit <= wr_credit;
@@ -2253,16 +2288,20 @@ module ccip_emulator
       endcase // case ( {cwlp_rdvalid, mmioresp_valid} )
       // ---------------------------------------------------- //
       // Umsg valid counter
-      // *FIXME*
+      umsg_credit <= $countones(umsg_hint_enable_array) + $countones(umsg_data_enable_array) + umsgfifo_cnt;
       // ---------------------------------------------------- //
       // Atomics CmpXchg counter
-      // *FIXME*
+      case ( { (C1TxWrValid && (C1TxHdr.reqtype==ASE_ATOMIC_REQ)), (C0RxRdValid && (C0RxHdr.resptype==ASE_ATOMIC_RSP)) } )
+	2'b10   : atomic_credit <= atomic_credit + 1;
+	2'b01   : atomic_credit <= atomic_credit - 1;
+	default : atomic_credit <= atomic_credit;
+      endcase
       // ---------------------------------------------------- //
    end
 
    // Global dealloc flag enable
    always @(posedge clk) begin
-      glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit;
+      glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit + atomic_credit;
    end
 
    // Register for changes

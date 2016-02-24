@@ -230,8 +230,7 @@ void ase_alloc_action(struct buffer_t *mem)
       // *FIXME*: Maybe BB DFH has to be updated here
     }
 
-#ifdef ASE_DEBUG
-  
+#ifdef ASE_DEBUG  
   if (fp_pagetable_log != NULL) 
     {
       if (mem->index % 20 == 0) 

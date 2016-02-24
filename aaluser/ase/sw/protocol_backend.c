@@ -449,7 +449,8 @@ int ase_listener()
       // Hint trigger
       umsg_pkt->hint = (glbl_umsgmode >> umsg_pkt->id) & 0x1;
 
-    #ifdef ASE_DEBUG
+    #if 0
+      // #ifdef ASE_DEBUG
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [DEBUG] umsg_pkt %d %d %llx\n", umsg_pkt->id, umsg_pkt->hint, umsg_pkt->qword[0]);
       END_YELLOW_FONTCOLOR;
