@@ -5,4 +5,3 @@
 %1 %2\rm\RRMService.h.in %2\rm\RRMService.h @RRM_SVC_MOD@ libAASRes
 %1 %2\uaia\AIAService.h.in %2\uaia\AIAService.h @AIASERVICE_SVC_MOD@ libAAService
 %1 %2\service\HWALIAFUService.h.in %2\service\HWALIAFUService.h @HWALIAFU_SVC_MOD@ libHWALIAFU
-%1 %2\service\ALIAFUService.h.in %2\service\ALIAFUService.h @ALIAFU_SVC_MOD@ libALIAFU

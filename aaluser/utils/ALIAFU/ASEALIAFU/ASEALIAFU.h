@@ -49,7 +49,6 @@
 #include <aalsdk/aas/AALService.h>
 #include <aalsdk/ase/ase_common.h>
 
-#include <aalsdk/service/ALIAFUService.h>
 #include <aalsdk/service/ASEALIAFUService.h>
 
 BEGIN_NAMESPACE(AAL)
