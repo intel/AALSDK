@@ -449,7 +449,8 @@ int ase_listener()
       // Hint trigger
       umsg_pkt->hint = (glbl_umsgmode >> umsg_pkt->id) & 0x1;
 
-    #ifdef ASE_DEBUG
+    #if 0
+      // #ifdef ASE_DEBUG
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [DEBUG] umsg_pkt %d %d %llx\n", umsg_pkt->id, umsg_pkt->hint, umsg_pkt->qword[0]);
       END_YELLOW_FONTCOLOR;
@@ -556,7 +557,11 @@ int ase_init()
 {
   FUNC_CALL_ENTRY;
 
+  // Set stdout bufsize to empty immediately
   setvbuf(stdout, NULL, _IONBF, 0);
+
+  // Shutdown if ASE_READY file exists
+  // *FIXME*
 
   // Register SIGINT and listen to it
   signal(SIGTERM, start_simkill_countdown);
@@ -603,8 +608,8 @@ int ase_init()
   // Create IPC cleanup setup
   create_ipc_listfile();
 
-  // Create a memory access log
 #ifdef ASE_DEBUG
+  // Create a memory access log
   fp_memaccess_log = fopen("aseafu_access.log", "w");
   if (fp_memaccess_log == NULL)
     {
@@ -618,6 +623,22 @@ int ase_init()
       printf("SIM-C : Memory access debug logger initialized\n");
       END_YELLOW_FONTCOLOR;
     }
+
+  // Page table tracker
+  fp_pagetable_log = fopen("ase_pagetable.log", "w");
+  if (fp_pagetable_log == NULL) 
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("SIM-C : ASE pagetable logger initialization failed !\n");
+      END_RED_FONTCOLOR;
+    }
+  else
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("SIM-C : ASE pagetable logger initialized\n");
+      END_YELLOW_FONTCOLOR;
+    }
+  
 #endif
 
   // Set up message queues

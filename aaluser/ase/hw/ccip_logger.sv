@@ -130,10 +130,10 @@ module ccip_logger
    function string print_reqtype (ccip_reqtype_t req);
       begin
 	 case (req)
-	   ASE_RDLINE_S   : return "RdLine_S   ";
-	   ASE_RDLINE_I   : return "RdLine_I   ";
-	   ASE_WRLINE_I   : return "WrLine_I   ";
-	   ASE_WRLINE_M   : return "WrLine_M   ";
+	   ASE_RDLINE_S   : return "Rd_S       ";
+	   ASE_RDLINE_I   : return "Rd_I       ";
+	   ASE_WRLINE_I   : return "Wr_I       ";
+	   ASE_WRLINE_M   : return "Wr_M       ";
 	   ASE_WRFENCE    : return "WrFence    ";
 	   ASE_ATOMIC_REQ : return "AtomicReq  ";
 	   ASE_INTR_REQ   : return "IntrReq    ";
@@ -148,7 +148,7 @@ module ccip_logger
 	 case (resp)
 	   ASE_RD_RSP      : return "RdResp     ";
 	   ASE_WR_RSP      : return "WrResp     ";
-	   ASE_WRFENCE_RSP : return "WrFenceRsp ";
+	   ASE_WRFENCE_RSP : return "WrFenceResp";
 	   ASE_INTR_RSP    : return "IntrResp   ";
 	   ASE_ATOMIC_RSP  : return "AtomicRsp  ";
 	   default         : return "** ERROR %m : Request type unindentified **" ;
@@ -317,22 +317,6 @@ module ccip_logger
 		    print_channel(C1TxHdr.vc),
 		    C1TxHdr.mdata);
 	 end
-	 // if (C1TxWrValid && (C1TxHdr.reqtype == ASE_ATOMIC_REQ)) begin
-	 //    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%x\t%x",
-	 // 				     $time,
-	 // 				     print_channel(C1TxHdr.vc),
-	 // 				     print_reqtype(C1TxHdr.reqtype),
-	 // 				     C1TxHdr.mdata,
-	 // 				     C1TxHdr.addr,
-	 // 				     C1TxData);
-	 //    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%x\t%x\n",
-	 // 	    $time,
-	 // 	    print_channel(C1TxHdr.vc),
-	 // 	    print_reqtype(C1TxHdr.reqtype),
-	 // 	    C1TxHdr.mdata,
-	 // 	    C1TxHdr.addr,
-	 // 	    C1TxData);
-	 // end
 	 //////////////////////// C2 TX CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* AFU -> SW MMIO Read Response *****************/
 	 if (C2TxMmioRdValid) begin
@@ -354,7 +338,6 @@ module ccip_logger
 	 				     print_resptype(C0RxHdr.resptype),
 	 				     C0RxHdr.mdata,
 					     print_clnum(C0RxHdr.clnum),
-					     // ret_spaces(12),
 	 				     C0RxData);
 	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%s\t%x\n",
 	 	    $time,
@@ -362,7 +345,6 @@ module ccip_logger
 	 	    print_resptype(C0RxHdr.resptype),
 	 	    C0RxHdr.mdata,
 		    print_clnum(C0RxHdr.clnum),
-		    // ret_spaces(12),
 	 	    C0RxData);
 	 end // if (C0RxRdValid && (C0RxHdr.resptype == ASE_RD_RSP))
 	 /*********** SW -> MEM -> AFU Atomic responses on C0Rx  **********/

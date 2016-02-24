@@ -46,7 +46,7 @@
  * certain cache line
  *
  * All warnings are logged in warnings.log
- * 
+ *
  * FIXME list
  * - Sop & cllen pattern matching
  * - Atomic must pass through VL0 only, else error out
@@ -103,7 +103,7 @@ module ccip_sniffer
    // File descriptors
    int 					     fd_warn;
    //int 					     fd_err;
-   
+
    // FD open
    initial begin
       $display ("SIM-SV : Protocol Checker initialized");
@@ -111,36 +111,36 @@ module ccip_sniffer
       // Open log files
       fd_warn = $fopen(WARN_LOGNAME, "w");
       // fd_err  = $fopen(ERROR_LOGNAME, "w");
-      
+
       // Wait until finish logger
       wait (finish_logger == 1);
-      
+
       // Close loggers
       $display ("SIM-SV : Closing Protocol checker");
       $fclose(fd_warn);
    end
-   
+
    // any valid signals
    logic tx_valid;
    logic rx_valid;
 
-   assign tx_valid = C0TxRdValid    | 
-		     C1TxWrValid    | 
+   assign tx_valid = C0TxRdValid    |
+		     C1TxWrValid    |
 		     C1TxIntrValid  |
 		     C2TxMmioRdValid;
-   
-   assign rx_valid = C0RxRdValid     | 
-		     C0RxUMsgValid   |  
-		     C0RxMmioRdValid | 
-		     C0RxMmioWrValid | 
+
+   assign rx_valid = C0RxRdValid     |
+		     C0RxUMsgValid   |
+		     C0RxMmioRdValid |
+		     C0RxMmioWrValid |
 		     C1RxWrValid     |
 		     C1RxIntrValid;
-   
+
    // If reset is high, and transactions are asserted
    always @(posedge clk) begin
       if (SoftReset) begin
 	 if (tx_valid | rx_valid) begin
-	    `BEGIN_RED_FONTCOLOR;	    
+	    `BEGIN_RED_FONTCOLOR;
 	    $display("SIM-SV: [WARN] Transaction was sent when SoftReset was HIGH, this will be ignored");
 	    $fwrite(fd_warn, "%d | Transaction was sent when SoftReset was HIGH, this will be ignored\n", $time);
 	    `END_RED_FONTCOLOR;
@@ -148,10 +148,10 @@ module ccip_sniffer
       end
    end
 
-   
+
    /*
     * UNDEF & HIIMP checker
-    */ 
+    */
    // Z and X flags
    logic 			   xz_tx0_flag;
    logic 			   xz_tx1_flag;
@@ -163,19 +163,19 @@ module ccip_sniffer
    /*
     * TX checker files
     */
-   CfgHdr_t C0RxCfg;   
+   CfgHdr_t C0RxCfg;
    assign C0RxCfg = CfgHdr_t'(C0RxHdr);
-      
+
    assign xz_tx0_flag = ( ^{C0TxHdr.vc,              C0TxHdr.len, C0TxHdr.reqtype, C0TxHdr.mdata} )   && C0TxRdValid ;
    assign xz_tx1_flag = ( ^{C1TxHdr.vc, C1TxHdr.sop, C1TxHdr.len, C1TxHdr.reqtype, C1TxHdr.mdata} )   && C1TxWrValid ;
    assign xz_tx2_flag = ( ^{C2TxHdr.tid, C2TxData})                                                   && C2TxMmioRdValid ;
-   
+
    assign xz_rx0_flag = ( ^{C0RxHdr.vc_used, C0RxHdr.hitmiss,                 C0RxHdr.clnum, C0RxHdr.resptype, C0RxHdr.mdata, C0RxData} ) && (C0RxRdValid | C0RxUMsgValid);
    assign xz_rx1_flag = ( ^{C1RxHdr.vc_used, C1RxHdr.hitmiss, C1RxHdr.format, C1RxHdr.clnum, C1RxHdr.resptype, C1RxHdr.mdata}           ) && (C1RxWrValid | C1RxIntrValid);
 
    assign xz_cfg_flag = ( ^{C0RxCfg.index, C0RxCfg.len, C0RxCfg.tid, C0RxData} ) && (C0RxMmioWrValid | C0RxMmioRdValid);
 
-   
+
    // FUNCTION: XZ message
    function void print_xz_message ( string channel_name );
       begin
@@ -202,17 +202,55 @@ module ccip_sniffer
       if ((xz_rx1_flag == `VLOG_HIIMP) || (xz_rx1_flag == `VLOG_UNDEF))
    	print_xz_message ( "C1Rx" );
       if ((xz_cfg_flag == `VLOG_HIIMP) || (xz_cfg_flag == `VLOG_UNDEF))
-   	print_xz_message ( "C0RxMmio" );      
+   	print_xz_message ( "C0RxMmio" );
    end
+
+   
+   /*
+    * SOP & clnum protocol not followed
+    */
+   // C1TxHdr structure printout
+   function void print_c1txhdr_format();
+      begin
+	 
+      end
+   endfunction
+
+   
+   // logic [1:0] expected_clnum;
+   // logic       expected_sop;
+   logic       c1tx_beat_in_progress;
+
+   // always @(posedge clk) begin
+   //    if (rst) begin
+   // 	 c1tx_beat_in_progress <= 0;
+   //    end
+   //    else if (C1TxWrValid) begin
+   // 	 if (C1TxHdr.sop && C1TxHdr.len != ASE_1CL) begin
+   // 	    c1tx_beat_in_progress <= 0;
+   // 	 end
+   // 	 else if (C1TxHdr.sop && C1TxHdr.len == ASE_3CL) begin
+   // 	    c1tx_beat_in_progress <= 0;
+   // 	 end
+   // 	 else if (C1TxHdr.sop && ((C1TxHdr.len == ASE_2CL)||(C1TxHdr.len == ASE_4CL))) begin
+   // 	    c1tx_beat_in_progress <= 1;	    
+   // 	 end
+   // 	 else if (c1tx_beat_in_progress) begin
+   // 	 end
+   //    end
+   //    else begin
+   // 	 c1tx_beat_in_progress <= 0;
+   //    end
+   // end
 
    /*
     * Illegal request type
-    */ 
+    */
    always @(posedge clk) begin
    end
-   
+
    /*
-    * Multi-cache line request checks
+    * Multi-cache READ line request checks
     */
    always @(posedge clk) begin
       // ------------------------------------------------------------ //
@@ -221,23 +259,19 @@ module ccip_sniffer
 	 `BEGIN_RED_FONTCOLOR;
 	 $display("SIM-SV: [ERROR] %d | Read Request on C0Tx for 3 cachelines is ILLEGAL !", $time);
 	 $display("        [ERROR] %d | In CCI-P specificaton document, please see Multi-cacheline requests", $time);
-	 $display("        [ERROR] %d | Simulator will shut down now !\n", $time);	 
+	 $display("        [ERROR] %d | Simulator will shut down now !\n", $time);
 	 `END_RED_FONTCOLOR;
-	 $display(fd_warn, " %d | Read Request on C0Tx for 3 cachelines is ILLEGAL !", $time);
-	 $display(fd_warn, "    | In CCI-P specificaton document, please see Multi-cacheline requests");
-	 $display(fd_warn, "    | Simulator will shut down now !\n");	 	 
-	 start_simkill_countdown();	 
+	 $fwrite(fd_warn, " %d | Read Request on C0Tx for 3 cachelines is ILLEGAL !", $time);
+	 $fwrite(fd_warn, "    | In CCI-P specificaton document, please see Multi-cacheline requests");
+	 $fwrite(fd_warn, "    | Simulator will shut down now !\n");
+	 start_simkill_countdown();
       end // if (C0TxWrValid && (C0TxHdr.clnum == ASE_3CL))
       // ------------------------------------------------------------ //
-      // Checking a C1Tx Write Request beat
-      // SOP must be HIGH on first packet, and low everywhere else
-      // 
-
    end
-   
+
    /*
     * Check memory transactions in flight, maintain active list
-    */ 
+    */
 
 
 endmodule // cci_sniffer

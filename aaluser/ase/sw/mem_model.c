@@ -230,6 +230,29 @@ void ase_alloc_action(struct buffer_t *mem)
       // *FIXME*: Maybe BB DFH has to be updated here
     }
 
+#ifdef ASE_DEBUG  
+  if (fp_pagetable_log != NULL) 
+    {
+      if (mem->index % 20 == 0) 
+	{
+	  fprintf(fp_pagetable_log, 
+		  "Index\tfd_app\tfd_ase\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
+	}
+      
+      fprintf(fp_pagetable_log, 
+	      "%d\t%d\t%d\t%p\t%p\t%x\t%s\t\t%p\n",
+	      mem->index,
+	      mem->fd_app,
+	      mem->fd_ase,
+	      (void*)mem->vbase, 
+	      (void*)mem->pbase,
+	      mem->memsize,
+	      mem->memname,
+	      (void*)mem->fake_paddr
+	      );
+    }
+#endif
+
   FUNC_CALL_EXIT;
 }
 
