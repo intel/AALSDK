@@ -285,11 +285,6 @@
 # else
 #    define UAIA_API                      __declspec(dllimport)
 # endif // UAIA_EXPORTS
-# ifdef AASEDS_EXPORTS
-#    define AASEDS_API                    __declspec(dllexport)
-# else
-#    define AASEDS_API                    __declspec(dllimport)
-# endif // AASEDS_EXPORTS
 # ifdef AALRESMGR_EXPORTS
 #     define AALRESOURCEMANAGERCLIENT_API __declspec(dllexport)
 #     define AALRESOURCEMANAGER_API       __declspec(dllexport)
@@ -321,8 +316,6 @@
 # define AIASERVICE_API                   __declspec(0)
 // uAIA
 # define UAIA_API                         __declspec(0)
-// AASEDS
-# define AASEDS_API                       __declspec(0)
 // Resource Manager Client
 # define AALRESOURCEMANAGERCLIENT_API     __declspec(0)
 // Resource Manager

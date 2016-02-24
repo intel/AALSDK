@@ -45,7 +45,6 @@
 #include <aalsdk/aalclp/aalclp.h>
 
 #include <aalsdk/service/IALIAFU.h>
-#include <aalsdk/service/ALIAFUService.h>
 //#include <aalsdk/service/IALIClient.h>
 
 //#include <aalsdk/utils/SingleAFUApp.h>
