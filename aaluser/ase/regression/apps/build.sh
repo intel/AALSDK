@@ -32,7 +32,16 @@ gcc -g -o nlb_test \
 #     -lrt -lm -I ../../sw/ \
 #     -D ASE_DEBUG
 
-# gcc -g -o alloc_dealloc alloc_dealloc.c \
+gcc -g -o alloc_dealloc alloc_dealloc.c \
+    ../../sw/tstamp_ops.c \
+    ../../sw/ase_ops.c \
+    ../../sw/app_backend.c \
+    ../../sw/mqueue_ops.c \
+    ../../sw/error_report.c \
+    -lrt -lm -I ../../sw/ \
+    -D ASE_DEBUG
+
+# gcc -g -o umsg_test umsg_test.c \
 #     ../../sw/tstamp_ops.c \
 #     ../../sw/ase_ops.c \
 #     ../../sw/app_backend.c \
@@ -40,4 +49,3 @@ gcc -g -o nlb_test \
 #     ../../sw/error_report.c \
 #     -lrt -lm -I ../../sw/ \
 #     -D ASE_DEBUG
-

@@ -37,9 +37,9 @@ do
 	mcl_set=${mcl_arr[$index]}
 	mcl_cnt=$(($mcl_set + 1))
 
-	num_cl=`shuf -i 12000-16000 -n 1`
+#	num_cl=`shuf -i 12000-16000 -n 1`
 #	num_cl=`shuf -i 256-1024 -n 1`
-#	echo $mcl_cnt $num_cl
+	num_cl=`shuf -i 4-8 -n 1`
 	num_cl=$(($num_cl * $mcl_cnt))
 	
 	echo ./nlb_test $num_cl $vc_set $mcl_set

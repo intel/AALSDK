@@ -74,14 +74,14 @@ int main(int argc, char *argv[])
   // usleep(100);
   // sleep(2);
   // Send umsg
-  /* uint64_t umsgdata; */
-  /* for(i= 0; i < 10000; i++) */
-  /*   { */
-  /*     umsgdata = 0xCAFEBABEDECAFBAD; */
-  /*     umsg_send (1, &umsgdata); */
-  /*     umsgdata = 0xBABABABADEDEDADE; */
-  /*     umsg_send (7, &umsgdata); */
-  /*   } */
+  uint64_t umsgdata;
+  for(i= 0; i < 1000; i++)
+    {
+      umsgdata = 0xCAFEBABEDECAFBAD;
+      umsg_send (1, &umsgdata);
+      umsgdata = 0xBABABABADEDEDADE;
+      umsg_send (7, &umsgdata);
+    }
 
   struct buffer_t *dsm, *src, *dst;
   

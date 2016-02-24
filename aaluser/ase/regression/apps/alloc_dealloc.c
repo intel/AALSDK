@@ -10,7 +10,7 @@ int main()
 
   while(1)
     {
-      allocate_buffer(test);
+      allocate_buffer(test, NULL);
       usleep(10000);
       deallocate_buffer(test);
       usleep(10000);

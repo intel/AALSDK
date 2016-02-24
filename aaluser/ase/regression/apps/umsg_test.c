@@ -19,7 +19,7 @@ int main()
   umas = (struct buffer_t *)malloc(sizeof(struct buffer_t));
   
   dsm->memsize  = 4*1024;
-  allocate_buffer(dsm);
+  allocate_buffer(dsm, NULL);
 
   umas_init(0xFFFFFFFF);
 
@@ -99,7 +99,7 @@ int main()
   
   for(count = 0; count < 10; count++)
     {
-      for(slot = 0; slot < 32; slot++)
+      for(slot = 0; slot < 8; slot++)
       	{
 	  for(ii = 0 ; ii < 16 ; ii++)
 	    data[ii] = 0 ;
