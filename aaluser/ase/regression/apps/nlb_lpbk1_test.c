@@ -74,15 +74,16 @@ int main(int argc, char *argv[])
   // usleep(100);
   // sleep(2);
   // Send umsg
+#if 0
   uint64_t umsgdata;
   for(i= 0; i < 1000; i++)
     {
-      umsgdata = 0xCAFEBABEDECAFBAD;
+      umsgdata = 0x0000000000000000 + i;
       umsg_send (1, &umsgdata);
-      umsgdata = 0xBABABABADEDEDADE;
+      umsgdata = 0x7777777700000000 + i;
       umsg_send (7, &umsgdata);
     }
-
+#endif
   struct buffer_t *dsm, *src, *dst;
   
   dsm = (struct buffer_t *)malloc(sizeof(struct buffer_t));
@@ -119,8 +120,7 @@ int main(int argc, char *argv[])
 		       dsm->memsize, 
 		       PROT_READ | PROT_WRITE,
 		       MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-  allocate_buffer(dsm, dsm_sugg_addr);  
-  
+  allocate_buffer(dsm, dsm_sugg_addr);    
   allocate_buffer(src, NULL);
   allocate_buffer(dst, NULL);
 #endif

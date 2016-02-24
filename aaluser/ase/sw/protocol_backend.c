@@ -557,7 +557,11 @@ int ase_init()
 {
   FUNC_CALL_ENTRY;
 
+  // Set stdout bufsize to empty immediately
   setvbuf(stdout, NULL, _IONBF, 0);
+
+  // Shutdown if ASE_READY file exists
+  // *FIXME*
 
   // Register SIGINT and listen to it
   signal(SIGTERM, start_simkill_countdown);

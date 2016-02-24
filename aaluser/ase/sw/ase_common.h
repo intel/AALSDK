@@ -593,7 +593,7 @@ void update_glbl_dealloc(int);
  * ASE Ready session control files, for wrapping with autorun script
  */
 FILE *ase_ready_fd;
-#define ASE_READY_FILENAME ".ase_ready"
+#define ASE_READY_FILENAME ".ase_ready.pid"
 
 // ASE seed 
 uint64_t ase_addr_seed;

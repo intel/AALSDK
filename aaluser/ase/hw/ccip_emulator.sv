@@ -2004,6 +2004,11 @@ module ccip_emulator
     */
    initial begin : ase_entry_point
       $display("SIM-SV: Simulator started...");
+
+      // Check if simulator is already running in this directory:
+      // If YES, kill simulator, post message
+      // If NO, continue
+      
       // Initialize data-structures
       mmio_dispatch (1, '{0, 0, 0, '{0,0,0,0,0,0,0,0}, 0});
       umsg_dispatch (1, '{0, 0, '{0,0,0,0,0,0,0,0}});
