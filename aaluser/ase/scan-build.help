@@ -3,25 +3,25 @@ USAGE: scan-build [options] <build command> [build options]
 OPTIONS:
 
  -analyze-headers
-
+ 
    Also analyze functions in #included files.  By default, such functions
    are skipped unless they are called by functions within the main source file.
-
+ 
  -o <output location>
-
+  
    Specifies the output directory for analyzer reports. Subdirectories will be
    created as needed to represent separate "runs" of the analyzer. If this
    option is not specified, a directory is created in /tmp (TMPDIR on Mac OS X)
    to store the reports.
 
- -h
+ -h             
  --help
 
    Display this message.
 
  -k
  --keep-going
-
+				  
    Add a "keep on going" option to the specified build command. This option
    currently supports make and xcodebuild. This is a convenience option; one
    can specify this behavior directly using build options.
@@ -33,41 +33,41 @@ OPTIONS:
    title will be used.
 
  -plist
-
+ 
    By default the output of scan-build is a set of HTML files. This option
    outputs the results as a set of .plist files.
-
+ 
  -plist-html
-
+ 
    By default the output of scan-build is a set of HTML files. This option
    outputs the results as a set of HTML and .plist files.
-
+ 
  --status-bugs
-
+ 
    By default, the exit status of scan-build is the same as the executed build
    command. Specifying this option causes the exit status of scan-build to be 1
    if it found potential bugs and 0 otherwise.
 
- --use-cc [compiler path]
+ --use-cc [compiler path]   
  --use-cc=[compiler path]
-
+  
    scan-build analyzes a project by interposing a "fake compiler", which
    executes a real compiler for compilation and the static analyzer for analysis.
    Because of the current implementation of interposition, scan-build does not
    know what compiler your project normally uses.  Instead, it simply overrides
    the CC environment variable, and guesses your default compiler.
-
+   
    In the future, this interposition mechanism to be improved, but if you need
    scan-build to use a specific compiler for *compilation* then you can use
    this option to specify a path to that compiler.
 
  --use-c++ [compiler path]
  --use-c++=[compiler path]
-
+ 
    This is the same as "-use-cc" but for C++ code.
-
+ 
  -v
-
+ 
    Enable verbose output from scan-build. A second and third '-v' increases
    verbosity.
 
@@ -79,26 +79,26 @@ OPTIONS:
 ADVANCED OPTIONS:
 
  -no-failure-reports
-
+ 
    Do not create a 'failures' subdirectory that includes analyzer crash reports
    and preprocessed source files.
 
  -stats
-
+ 
    Generates visitation statistics for the project being analyzed.
 
  -maxloop <loop count>
-
+ 
    Specifiy the number of times a block can be visited before giving up.
    Default is 4. Increase for more comprehensive coverage at a cost of speed.
-
+  
  -internal-stats
-
+ 
    Generate internal analyzer statistics.
-
- --use-analyzer [Xcode|path to clang]
+ 
+ --use-analyzer [Xcode|path to clang] 
  --use-analyzer=[Xcode|path to clang]
-
+ 
    scan-build uses the 'clang' executable relative to itself for static
    analysis. One can override this behavior with this option by using the
    'clang' packaged with Xcode (on OS X) or from the PATH.
@@ -107,21 +107,10 @@ ADVANCED OPTIONS:
 
    Don't remove the build results directory even if no issues were reported.
 
- --override-compiler
-   Always resort to the ccc-analyzer even when better interposition methods
+ --override-compiler 
+   Always resort to the ccc-analyzer even when better interposition methods 
    are available.
-
- -analyzer-config <options>
-
-   Provide options to pass through to the analyzer's -analyzer-config flag.
-   Several options are separated with comma: 'key1=val1,key2=val2'
-
-   Available options:
-     * stable-report-filename=true or false (default)
-       Switch the page naming to:
-       report-<filename>-<function/method name>-<id>.html
-       instead of report-XXXXXX.html
-
+   
 CONTROLLING CHECKERS:
 
  A default group of checkers are always run unless explicitly disabled.
@@ -129,7 +118,7 @@ CONTROLLING CHECKERS:
 
  -enable-checker [checker name]
  -disable-checker [checker name]
-
+ 
 LOADING CHECKERS:
 
  Loading external checkers using the clang plugin interface:
@@ -139,8 +128,6 @@ LOADING CHECKERS:
 AVAILABLE CHECKERS:
 
    alpha.core.BoolAssignment       Warn about assigning non-{0,1} values to Boolean variables
-   alpha.core.CallAndMessageUnInitRefArg
-                                   Check for logical errors for function calls and Objective-C message expressions (e.g., uninitialized arguments, null function pointers, and pointer to undefined variables)
    alpha.core.CastSize             Check when casting a malloc'ed type T, whether the size is a multiple of the size of T
    alpha.core.CastToStruct         Check for cast from non-struct pointer to struct pointer
    alpha.core.FixedAddr            Check for assignment of a fixed address to a pointer
@@ -148,8 +135,10 @@ AVAILABLE CHECKERS:
    alpha.core.PointerArithm        Check for pointer arithmetic on locations other than array elements
    alpha.core.PointerSub           Check for pointer subtractions on two pointers pointing to different memory chunks
    alpha.core.SizeofPtr            Warn about unintended use of sizeof() on pointer expressions
-   alpha.core.TestAfterDivZero     Check for division by variable that is later compared against 0. Either the comparison is useless or there is division by zero.
+   alpha.cplusplus.NewDeleteLeaks  Check for memory leaks. Traces memory managed by new/delete.
    alpha.cplusplus.VirtualCall     Check virtual function calls during construction or destruction
+   alpha.deadcode.IdempotentOperations
+                                   Warn about idempotent operations
    alpha.deadcode.UnreachableCode  Check unreachable code
    alpha.osx.cocoa.Dealloc         Warn about Objective-C classes that lack a correct implementation of -dealloc
    alpha.osx.cocoa.DirectIvarAssignment
@@ -160,6 +149,8 @@ AVAILABLE CHECKERS:
                                    Check that the invalidatable instance variables are invalidated in the methods annotated with objc_instance_variable_invalidator
    alpha.osx.cocoa.MissingInvalidationMethod
                                    Check that the invalidation methods are present in classes that contain invalidatable instance variables
+   alpha.osx.cocoa.MissingSuperCall
+                                   Warn about Objective-C methods that lack a necessary call to super
    alpha.security.ArrayBound       Warn about buffer overflows (older checker)
    alpha.security.ArrayBoundV2     Warn about buffer overflows (newer checker)
    alpha.security.MallocOverflow   Check for overflows in the arguments to malloc()
@@ -196,7 +187,6 @@ AVAILABLE CHECKERS:
                                    Check for blocks that capture uninitialized values
  + core.uninitialized.UndefReturn  Check for uninitialized values being returned to the caller
  + cplusplus.NewDelete             Check for double-free and use-after-free problems. Traces memory managed by new/delete.
- + cplusplus.NewDeleteLeaks        Check for memory leaks. Traces memory managed by new/delete.
  + deadcode.DeadStores             Check for values stored to variables that are never read afterwards
    debug.ConfigDumper              Dump config table
    debug.DumpCFG                   Display Control-Flow Graphs
@@ -219,7 +209,6 @@ AVAILABLE CHECKERS:
    osx.cocoa.IncompatibleMethodTypes
                                    Warn about Objective-C method signatures with type incompatibilities
    osx.cocoa.Loops                 Improved modeling of loops using Cocoa collection types
-   osx.cocoa.MissingSuperCall      Warn about Objective-C methods that lack a necessary call to super
    osx.cocoa.NSAutoreleasePool     Warn for suboptimal uses of NSAutoreleasePool in Objective-C GC mode
    osx.cocoa.NSError               Check usage of NSError** parameters
    osx.cocoa.NilArg                Check for prohibited nil arguments to ObjC method calls
@@ -262,7 +251,7 @@ BUILD OPTIONS
 EXAMPLE
 
  scan-build -o /tmp/myhtmldir make -j4
-
+     
 The above example causes analysis reports to be deposited into a subdirectory
 of "/tmp/myhtmldir" and to run "make" with the "-j4" option. A different
 subdirectory is created each time scan-build analyzes a project. The analyzer
