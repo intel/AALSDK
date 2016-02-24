@@ -52,7 +52,6 @@ btInt CNLBAtomic::RunTest(const NLBCmdLine &cmd)
 {
    btInt res = 0;
    btWSSize  sz = CL(cmd.begincls);
-   uint_type  mcl = cmd.multicls;
 
    volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 
@@ -76,7 +75,7 @@ btInt CNLBAtomic::RunTest(const NLBCmdLine &cmd)
 
    pOutput    = (volatile btUnsigned32bitInt *)pOutputUsrVirt;
    pEndOutput = (volatile btUnsigned32bitInt *)pOutput +
-				 (m_pMyApp->OutputSize() / sizeof(btUnsigned32bitInt));
+				    (m_pMyApp->OutputSize() / sizeof(btUnsigned32bitInt));
 
    // Initiate AFU Reset
    if (0 != m_pALIResetService->afuReset())
@@ -123,18 +122,14 @@ btInt CNLBAtomic::RunTest(const NLBCmdLine &cmd)
    const btInt StopTimeoutMillis = 250;
    btInt MaxPoll = StopTimeoutMillis;
 
-
-   ReadPerfMonitors();
-   SavePerfMonitors();
-
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-		 	   //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
-		cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
-		 << Normalized(cmd) << ")'";
+		 	   //0123456789 0123456789 01234567890 0123456789012
+		cout << "Cachelines Read_Count Write_Count 'Clocks(@"
+		 << Normalized(cmd) << ")' Total_CPU_CX ";
 
 		if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-				  // 01234567890123 01234567890123
+				     // 01234567890123 01234567890123
 			cout << "   Rd_Bandwidth   Wr_Bandwidth";
 		}
 		cout << endl;
@@ -167,12 +162,15 @@ btInt CNLBAtomic::RunTest(const NLBCmdLine &cmd)
 	   numSWCx = input_numCX;
 	   numHWCx = input_numCX;
    }
-
+#if 0
    m_pALIMMIOService->mmioWrite32(CSR_CFG_H, (csr_type)numHWCx);
+
+   // Set the number of cache lines for the test
+   m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
 
    // Start the test
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
-
+#endif
 //SW Thread Execution
 
    pOutput += cmd.sqw;
@@ -211,7 +209,7 @@ btInt CNLBAtomic::RunTest(const NLBCmdLine &cmd)
 	   cmp_val += (sw_add_val + 1);
 	   new_val += (sw_add_val + 1);
    }
-
+#if 0
    // Wait for test completion
    while ( 0 == pAFUDSM->test_complete ) {
 	   SleepNano(10);
@@ -226,11 +224,10 @@ btInt CNLBAtomic::RunTest(const NLBCmdLine &cmd)
 	   MaxPoll -= 1;
 	   SleepMilli(1);
    }
+#endif
+   PrintOutput(cmd, (sz / CL(1)), total_cpu_numCX);
 
-   ReadPerfMonitors();
-
-   PrintOutput(cmd, (sz / CL(1)));
-
+#if 0
    // Check the device status
    if ( MaxPoll < 0 ) {
 	  cerr << "The maximum timeout for test stop was exceeded." << endl;
@@ -241,7 +238,7 @@ btInt CNLBAtomic::RunTest(const NLBCmdLine &cmd)
 	  cerr << "Error bit set in DSM.\n";
 	  ++res;
    }
-
+#endif
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
    // Initiate AFU Reset
@@ -254,7 +251,7 @@ btInt CNLBAtomic::RunTest(const NLBCmdLine &cmd)
    return res;
 }
 
-void  CNLBAtomic::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
+void  CNLBAtomic::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls, const btInt cpu_cx)
 {
 	nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 	bt64bitCSR ticks;
@@ -263,8 +260,8 @@ void  CNLBAtomic::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 	bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
 
 	cout << setw(10) << cls 							<< ' '
-		 << setw(10) << pAFUDSM->num_reads    			<< ' '
-		 << setw(11) << pAFUDSM->num_writes   			<< ' ';
+	     << setw(10) << pAFUDSM->num_reads    	<< ' '
+		  << setw(11) << pAFUDSM->num_writes   	<< ' ';
 
 	if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
 		ticks = rawticks - startpenalty;
@@ -279,9 +276,11 @@ void  CNLBAtomic::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 	double rdbw = 0.0;
 	double wrbw = 0.0;
 
+	cout << setw(15) << cpu_cx << ' ';
+
 	cout << "  "
-		 << setw(14) << CalcReadBandwidth(cmd) << ' '
-		 << setw(14) << CalcWriteBandwidth(cmd);
+		 << setw(13) << CalcReadBandwidth(cmd) << ' '
+		 << setw(13) << CalcWriteBandwidth(cmd);
 	}
 
 	cout << endl;
