@@ -66,6 +66,10 @@ int userbuf_index_count = 0;   // User count/index
 // Timestamp char array
 char *tstamp_string;
 
+#ifdef ASE_DEBUG
+FILE *fp_pagetable_log;
+#endif
+
 /*
  * Send SIMKILL
  */
@@ -149,6 +153,23 @@ void session_init()
   app2sim_portctrl_tx = mqueue_open( mq_array[6].name, mq_array[6].perm_flag );
   app2sim_dealloc_tx  = mqueue_open( mq_array[7].name, mq_array[7].perm_flag );
   sim2app_dealloc_rx  = mqueue_open( mq_array[8].name, mq_array[8].perm_flag );
+
+#ifdef ASE_DEBUG
+  // Page table tracker
+  fp_pagetable_log = fopen("app_pagetable.log", "w");
+  if (fp_pagetable_log == NULL) 
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("  [APP]  APP pagetable logger initialization failed !\n");
+      END_RED_FONTCOLOR;
+    }
+  else
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  APP pagetable logger initialized\n");
+      END_YELLOW_FONTCOLOR;
+    }
+#endif
 
   // Message queues have been established
   mq_exist_status = MQ_ESTABLISHED;
@@ -239,6 +260,10 @@ void session_deinit()
   sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
   mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
   
+#ifdef ASE_DEBUG
+  fclose(fp_pagetable_log);
+#endif
+
   mqueue_close(app2sim_mmioreq_tx);
   mqueue_close(sim2app_mmiorsp_rx);
   mqueue_close(app2sim_alloc_tx);
@@ -635,6 +660,29 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   append_wsmeta(ws);
 
   // pthread_mutex_unlock(&app_lock);
+
+#ifdef ASE_DEBUG  
+  if (fp_pagetable_log != NULL) 
+    {
+      if (mem->index % 20 == 0) 
+	{
+	  fprintf(fp_pagetable_log, 
+		  "Index\tfd_app\tfd_ase\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
+	}
+      
+      fprintf(fp_pagetable_log, 
+	      "%d\t%d\t%d\t%p\t%p\t%x\t%s\t\t%p\n",
+	      mem->index,
+	      mem->fd_app,
+	      mem->fd_ase,
+	      (void*)mem->vbase, 
+	      (void*)mem->pbase,
+	      mem->memsize,
+	      mem->memname,
+	      (void*)mem->fake_paddr
+	      );
+    }
+#endif
 
   FUNC_CALL_EXIT;
 }
