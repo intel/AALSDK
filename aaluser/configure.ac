@@ -39,7 +39,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
 
-AC_INIT([aalsdk], [5.0.1], [joe.grecco@intel.com])
+AC_INIT([aalsdk], [5.0.2], [joe.grecco@intel.com])
 AC_COPYRIGHT([Copyright(c) 2003-2016, Intel Corporation])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -218,5 +218,5 @@ Linker       : ${LD} ${LDFLAGS} ${LIBS}
 
 To build     : make
 To install   : make install <install options>
-   : Please refer to the Software Installation Guide for installation instructions.
+               Please refer to the Software Installation Guide for installation instructions.
 "
