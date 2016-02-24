@@ -42,6 +42,7 @@ diag_read.cpp \
 diag_sw.cpp \
 diag_trput.cpp \
 diag_write.cpp \
+diag_atomic.cpp \
 diag_defaults.h \
 diag-common.h \
 diag-nlb-common.cpp \

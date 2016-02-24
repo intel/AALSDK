@@ -34,7 +34,6 @@
 ##     07/20/2015    TSW   Initial version
 ##******************************************************************************
 SUBDIRS=\
-VTP \
 ASEALIAFU \
 HWALIAFU \
 SWSimALIAFU

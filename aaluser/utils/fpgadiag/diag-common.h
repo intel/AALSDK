@@ -339,4 +339,14 @@ public:
    virtual btInt RunTest(const NLBCmdLine &cmd);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
+
+class CNLBAtomic : public INLB
+{
+public:
+	CNLBAtomic(CMyApp *pMyApp) :
+      INLB(pMyApp)
+    {}
+   virtual btInt RunTest(const NLBCmdLine &cmd);
+   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls, const btInt cpu_cx);
+};
 #endif

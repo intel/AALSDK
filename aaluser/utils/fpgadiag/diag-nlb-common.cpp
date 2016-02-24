@@ -102,6 +102,10 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FEATURE0);
    } else if ( 0 == strcmp("--1", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FEATURE1);
+   } else if ((0 == strcmp("--shared-token", option)) || (0 == strcmp("--st", option))) {
+	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_ST);
+   } else if ((0 == strcmp("--separate-token", option)) || (0 == strcmp("--ut", option))) {
+     flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UT);
    } else {
       printf("Invalid option: %s\n", option);
       flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
@@ -145,6 +149,8 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
 			nlbcl->TestMode = std::string(NLB_TESTMODE_TRPUT);
           } else if ( 0 == strcasecmp("sw", value) ) {
 			nlbcl->TestMode = std::string(NLB_TESTMODE_SW);
+          } else if ( 0 == strcasecmp("atomic", value) ) {
+          nlbcl->TestMode = std::string(NLB_TESTMODE_ATOMIC);
           } else {
              cout << "Invalid value for --mode : " << value << endl;
              return 4;
@@ -192,7 +198,36 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
          } else {
             flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_MULTICL);
          }
+   } else if ( (0 == strcmp("--hardware-qw", option)) || (0 == strcmp("--hqw", option)) ) {
 
+		 nlbcl->hqw = strtoul(value, &endptr, 0);
+		 if ( value + strlen(value) != endptr ) {
+			nlbcl->hqw = nlbcl->defaults.hqw;
+			flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_HQW);
+			printf("Invalid value for --hardware-qw : %s. Defaulting to %llu.\n", value, nlbcl->hqw);
+		 } else {
+			flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_HQW);
+		 }
+   } else if ( (0 == strcmp("--software-qw", option)) || (0 == strcmp("--sqw", option)) ) {
+
+		 nlbcl->sqw = strtoul(value, &endptr, 0);
+		 if ( value + strlen(value) != endptr ) {
+			nlbcl->sqw = nlbcl->defaults.sqw;
+			flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_SQW);
+			printf("Invalid value for --software-qw : %s. Defaulting to %llu.\n", value, nlbcl->sqw);
+		 } else {
+			flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_SQW);
+		 }
+   } else if ( (0 == strcmp("--cmp-xchg", option)) || (0 == strcmp("--cx", option)) ) {
+
+	  nlbcl->cx = strtoul(value, &endptr, 0);
+	  if ( value + strlen(value) != endptr ) {
+		 nlbcl->cx = nlbcl->defaults.cx;
+		 flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_CX);
+		 printf("Invalid value for --cmp-xchg : %s. Defaulting to %llu.\n", value, nlbcl->cx);
+	  } else {
+		 flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CX);
+	  }
    } else if ( 0 == strcmp("--dsm-phys", option) ) {
 
       nlbcl->dsmphys = strtoul(value, &endptr, 0);
@@ -799,10 +834,10 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    if ( 0 == strcasecmp(test.c_str(), "ATOMIC"))
    {
       fprintf(fp, "      <SUB-MODE>  = --shared-token    OR --st,    CmpXchg is lock-stepped between SW and HW,      ");
-      fprintf(fp, "HW Quad Word value should NOT be equal to SW Quad Word value\n");
+      fprintf(fp, "Default=%s\n", nlbcl->defaults.st);
 
-      fprintf(fp, "                  = --unshared-token  OR --ut,    CmpXchg is independent on SW and HW,            ");
-      fprintf(fp, "HW Quad Word value may be equal to SW Quad Word value\n");
+      fprintf(fp, "                  = --separate-token  OR --ut,    CmpXchg is independent on SW and HW,            ");
+      fprintf(fp, "Default=%s\n", nlbcl->defaults.ut);
 
       fprintf(fp, "      <QUAD-WORD> = --hardware-qw=H   OR --hqw=H, where %llu <= H <= %llu,                              ",
               nlbcl->defaults.minhqw, nlbcl->defaults.maxhqw);
@@ -942,6 +977,58 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
       os << "--dst-phys and --dst-capcm are mutually exclusive." << endl;
       return false;
    }
+
+   // --hqw
+   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_HQW)) {
+		 if ( ((cmd.hqw) < cmd.defaults.minhqw) ||
+			  ((cmd.hqw) > cmd.defaults.maxhqw) ) {
+		   os << cmd.TestMode << " requires --hardware-qw to be in the range of "<< cmd.defaults.minhqw <<" to " << cmd.defaults.maxhqw << endl;
+		   return false;
+		}
+   }
+
+   // --sqw
+   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_SQW)) {
+		 if ( ((cmd.hqw) < cmd.defaults.minsqw) ||
+			  ((cmd.hqw) > cmd.defaults.maxsqw) ) {
+	   os << cmd.TestMode << " requires --software-qw to be in the range of " << cmd.defaults.minsqw <<" to " << cmd.defaults.maxsqw <<endl;
+	   return false;
+	}
+  }
+
+   // --sqw
+   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_CX)) {
+		 if ( ((cmd.cx) < cmd.defaults.mincx) ||
+			  ((cmd.cx) > cmd.defaults.maxcx) ) {
+	   os << cmd.TestMode << " requires --cmp-xchg to be in the range of " << cmd.defaults.mincx <<" to " << cmd.defaults.maxcx <<endl;
+	   return false;
+	}
+  }
+
+   // --st, --ut
+   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_ST|NLB_CMD_FLAG_UT)) {
+	  os << "--shared-token and --seperate-token are mutually exclusive." << endl;
+	  return false;
+   }
+
+   // --shared-token
+   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_ST)) {
+	   if ( (cmd.hqw) == (cmd.sqw)) {
+	  	   os << " Shared-token sub-mode requires --software-qw NOT equal to --hardware-qw. " <<endl;
+	  	   return false;
+	  	}
+   }
+
+   if (  !flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_ST)) {
+      if	((flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_UT))  ||
+           (flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_HQW)) ||
+           (flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_SQW))) {
+            if ( (cmd.hqw) != (cmd.sqw)) {
+               os << " Separate-token sub-mode requires --software-qw to be equal to --hardware-qw. " <<endl;
+               return false;
+            }
+       }
+	 }
 
    // --rdi, --rds, --rdo
 

@@ -49,12 +49,12 @@ BEGIN_C_DECLS
 #define HIGH 0xffffffff
 #define LOW  0x00000000
 
-# define NLB_TESTMODE_LPBK1 "TestMode_lpbk1"
-# define NLB_TESTMODE_READ  "TestMode_read"
-# define NLB_TESTMODE_WRITE "TestMode_write"
-# define NLB_TESTMODE_TRPUT "TestMode_trput"
-# define NLB_TESTMODE_SW    "TestMode_sw"
-
+# define NLB_TESTMODE_LPBK1  "TestMode_lpbk1"
+# define NLB_TESTMODE_READ   "TestMode_read"
+# define NLB_TESTMODE_WRITE  "TestMode_write"
+# define NLB_TESTMODE_TRPUT  "TestMode_trput"
+# define NLB_TESTMODE_SW     "TestMode_sw"
+# define NLB_TESTMODE_ATOMIC "TestMode_atomic"
 struct NLBDefaults
 {
    wkspc_size_type mincls;
@@ -98,6 +98,8 @@ struct NLBDefaults
    const char     *vh0;
    const char     *vh1;
 
+   const char     *st;
+   const char     *ut;
    cmp_xchg_type  mincx;
    cmp_xchg_type  maxcx;
    cmp_xchg_type  cx;
@@ -191,7 +193,13 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_VH0	   			(u64_type)0x8000000000 /* --vh0		    Data transferred on PCIe0  channel					        */
 #define NLB_CMD_FLAG_VH1   				(u64_type)0x10000000000/* --vh1		    Data transferred on PCIe1  channel			   	        */
 
-#define NLB_CMD_FLAG_MULTICL           (u64_type)0x20000000000/* --multi-cl X  (number of cache lines)                                */
+#define NLB_CMD_FLAG_MULTICL            (u64_type)0x20000000000/* --multi-cl X  (number of cache lines)                                */
+
+#define NLB_CMD_FLAG_ST		            (u64_type)0x40000000000/*  --shared-token (Sub-mode for atomic tests) */
+#define NLB_CMD_FLAG_UT		            (u64_type)0x80000000000/*  --seperate-token (Sub-mode for atomic tests) */
+#define NLB_CMD_FLAG_HQW	            (u64_type)0x100000000000/* --hardware-qw  (QWord number on the Hardware thread) */
+#define NLB_CMD_FLAG_SQW	            (u64_type)0x200000000000/* --software-qw  (QWord number on the Software thread)*/
+#define NLB_CMD_FLAG_CX		            (u64_type)0x400000000000/* --cmp-xchg     (Number of Cmp-Xchg operations)*/
 
 #define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   /* --0 */
 #define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  /* --1 */

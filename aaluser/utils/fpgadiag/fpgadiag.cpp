@@ -166,6 +166,8 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_VL0,
       DEFAULT_VH0,
       DEFAULT_VH1,
+      DEFAULT_ST,
+	  DEFAULT_UT,
       DEFAULT_MINCX,
       DEFAULT_MAXCX,
       DEFAULT_CX,
@@ -344,6 +346,14 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
 
  		   ConfigRecord.Add(keyRegAFU_ID,"A944F6E7-15D3-4D95-9452-15DBD47C76BD");
  		   Manifest.Add(keyRegAFU_ID,"A944F6E7-15D3-4D95-9452-15DBD47C76BD");
+
+  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_atomic")){
+
+		   /*ConfigRecord.Add(keyRegAFU_ID,"41BAFB9D-D97E-43CF-967D-22E837CD2182");
+		   Manifest.Add(keyRegAFU_ID,"41BAFB9D-D97E-43CF-967D-22E837CD2182");*/
+
+         ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+         Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612"); //TODO: Remove me and uncomment about lines
 
  	   }else{
 
@@ -808,6 +818,23 @@ int main(int argc, char *argv[])
    	   cout << NORMAL << endl
    			<< endl;
      }
+	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_ATOMIC)))
+		{
+	   	   // Run an SW Test..
+	   	   // * report bandwidth in GiB/s
+	   	   CNLBAtomic nlb_atomic(&myapp);
+
+	   	   cout << " * Atomic test " << flush;
+	   	   res = nlb_atomic.RunTest(gCmdLine);
+	   	   totalres += res;
+	   	   if ( 0 == res ) {
+	   		  cout << PASS << "PASS";
+	   	   } else {
+	   		  cout << FAIL << "ERROR";
+	   	   }
+	   	   cout << NORMAL << endl
+	   			<< endl;
+	     }
 
    INFO("Stopping the AAL Runtime");
    myapp.Stop();
