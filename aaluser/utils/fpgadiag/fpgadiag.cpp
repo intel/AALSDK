@@ -347,14 +347,13 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
  		   ConfigRecord.Add(keyRegAFU_ID,"A944F6E7-15D3-4D95-9452-15DBD47C76BD");
  		   Manifest.Add(keyRegAFU_ID,"A944F6E7-15D3-4D95-9452-15DBD47C76BD");
 
-  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_sw")){
+  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_atomic")){
 
 		   /*ConfigRecord.Add(keyRegAFU_ID,"41BAFB9D-D97E-43CF-967D-22E837CD2182");
 		   Manifest.Add(keyRegAFU_ID,"41BAFB9D-D97E-43CF-967D-22E837CD2182");*/
 
-  		 ConfigRecord.Add(keyRegAFU_ID,"751E795F-7DA4-4CC6-8309-935132BCA9B6"); //TODO: Remove me and uncomment about lines
-  		 Manifest.Add(keyRegAFU_ID,"751E795F-7DA4-4CC6-8309-935132BCA9B6");
-
+         ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+         Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612"); //TODO: Remove me and uncomment about lines
 
  	   }else{
 

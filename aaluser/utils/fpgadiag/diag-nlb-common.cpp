@@ -104,6 +104,8 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FEATURE1);
    } else if ((0 == strcmp("--shared-token", option)) || (0 == strcmp("--st", option))) {
 	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_ST);
+   } else if ((0 == strcmp("--separate-token", option)) || (0 == strcmp("--ut", option))) {
+     flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UT);
    } else {
       printf("Invalid option: %s\n", option);
       flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
@@ -147,6 +149,8 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
 			nlbcl->TestMode = std::string(NLB_TESTMODE_TRPUT);
           } else if ( 0 == strcasecmp("sw", value) ) {
 			nlbcl->TestMode = std::string(NLB_TESTMODE_SW);
+          } else if ( 0 == strcasecmp("atomic", value) ) {
+          nlbcl->TestMode = std::string(NLB_TESTMODE_ATOMIC);
           } else {
              cout << "Invalid value for --mode : " << value << endl;
              return 4;
@@ -832,7 +836,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       fprintf(fp, "      <SUB-MODE>  = --shared-token    OR --st,    CmpXchg is lock-stepped between SW and HW,      ");
       fprintf(fp, "Default=%s\n", nlbcl->defaults.st);
 
-      fprintf(fp, "                  = --unshared-token  OR --ut,    CmpXchg is independent on SW and HW,            ");
+      fprintf(fp, "                  = --separate-token  OR --ut,    CmpXchg is independent on SW and HW,            ");
       fprintf(fp, "Default=%s\n", nlbcl->defaults.ut);
 
       fprintf(fp, "      <QUAD-WORD> = --hardware-qw=H   OR --hqw=H, where %llu <= H <= %llu,                              ",
@@ -1003,7 +1007,7 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
 
    // --st, --ut
    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_ST|NLB_CMD_FLAG_UT)) {
-	  os << "--shared-token --seperate-token are mutually exclusive." << endl;
+	  os << "--shared-token and --seperate-token are mutually exclusive." << endl;
 	  return false;
    }
 
@@ -1015,15 +1019,16 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
 	  	}
    }
 
-   if (  !flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_ST)   &&
-		 (flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_UT))  ||
-		 (flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_HQW)) ||
-		 (flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_SQW))) {
-	   if ( (cmd.hqw) != (cmd.sqw)) {
-		   os << " Separate-token sub-mode requires --software-qw to be equal to --hardware-qw. " <<endl;
-		   return false;
-		}
-	  }
+   if (  !flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_ST)) {
+      if	((flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_UT))  ||
+           (flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_HQW)) ||
+           (flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_SQW))) {
+            if ( (cmd.hqw) != (cmd.sqw)) {
+               os << " Separate-token sub-mode requires --software-qw to be equal to --hardware-qw. " <<endl;
+               return false;
+            }
+       }
+	 }
 
    // --rdi, --rds, --rdo
 
