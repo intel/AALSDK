@@ -119,6 +119,7 @@ AC_C_INLINE
 dnl ############################################################################
 dnl ## Makefile substitutions ##################################################
 dnl ############################################################################
+AC_SUBST([KBUILD_OPTS], [''])
 
 AC_CONFIG_FILES([insdrv:build/insdrv.in], [chmod 'a+x' insdrv])
 AC_CONFIG_FILES([rmdrv:build/rmdrv.in],   [chmod 'a+x' rmdrv])
