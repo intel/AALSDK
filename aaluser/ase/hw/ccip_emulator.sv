@@ -2020,7 +2020,7 @@ module ccip_emulator
 	 $display("SIM-SV: An ASE instance is probably still running in current directory !");
 	 $display("        Check for PID %d", ase_ready_pid);
 	 $display("        Simulation will exit... you may use a SIGKILL to kill the simulation process.");
-	 $display("        Also check if .ase_ready.pid file is removed before proceeding.");	 
+	 $display("        Also check if '.ase_ready.pid' file is removed before proceeding.");
 	 `END_RED_FONTCOLOR;
 	 $finish;	 
       end	

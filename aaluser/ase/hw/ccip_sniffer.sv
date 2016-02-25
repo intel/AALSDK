@@ -89,12 +89,14 @@ module ccip_sniffer
     input logic [CCIP_DATA_WIDTH-1:0] 	     C0RxData,
     input 				     RxHdr_t C0RxHdr,
     input logic 			     C0RxRdValid,
-    // input logic 			     C0RxWrValid,
     input logic 			     C0RxUMsgValid,
     // Rx1 channel
     input 				     RxHdr_t C1RxHdr,
     input logic 			     C1RxWrValid,
     input logic 			     C1RxIntrValid,
+    // Channel overflow/real_full checks
+    input logic 			     cf2as_ch0_overflow,
+    input logic 			     cf2as_ch1_overflow,
     // Almost full signals
     input logic 			     C0TxAlmFull,
     input logic 			     C1TxAlmFull

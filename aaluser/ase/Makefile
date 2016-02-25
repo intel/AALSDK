@@ -200,7 +200,6 @@ CLANG_OPT+= --use-analyzer=/usr/bin/clang
 CLANG_OPT+= \
 	-enable-checker alpha.core.BoolAssignment \
 	-enable-checker alpha.core.CastSize \
-	-enable-checker alpha.core.CastToStruct \
 	-enable-checker alpha.core.FixedAddr \
 	-enable-checker alpha.core.IdenticalExpr \
 	-enable-checker alpha.core.PointerArithm \
@@ -267,6 +266,7 @@ CLANG_OPT+= \
 
    # debug.DumpCallGraph \
    # debug.DumpCalls \
+#	-enable-checker alpha.core.CastToStruct \
 
 #########################################################################
 #                            Build Targets                              #

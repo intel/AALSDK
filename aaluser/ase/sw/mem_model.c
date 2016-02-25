@@ -531,9 +531,12 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr, int *ret_fd )
     {
       BEGIN_RED_FONTCOLOR;
       printf("@ERROR: ASE has detected a memory operation to an unallocated memory region.\n");
-      printf("@ERROR: Simulation cannot continue, please check the code.\n");
-      printf("@ERROR: Failure @ phys_addr = %016lx \n", req_paddr );
-      printf("@ERROR: See ERROR log file => ase_error.log");
+      printf("        Simulation cannot continue, please check the code.\n");
+      printf("        Failure @ phys_addr = %016lx \n", req_paddr );
+      printf("        See ERROR log file => ase_error.log");
+      printf("@ERROR: Please check that previously requested memories have not been deallocated before an AFU transaction could access them\n");
+      printf("        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n");
+      printf("              The simulator may be committing AFU transactions out of order\n");
       END_RED_FONTCOLOR;
 
       // Write error to file
@@ -544,6 +547,9 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr, int *ret_fd )
 	  fprintf(error_fp, "        AFU requested access @ physical memory %p\n", (void*)req_paddr);
 	  fprintf(error_fp, "        Address not found in requested workspaces\n");
 	  fprintf(error_fp, "        Timestamped transaction to this address is listed in ccip_transactions.tsv\n");
+	  fprintf(error_fp, "        Check that previously requested memories have not been deallocated before an AFU transaction could access them");
+	  fprintf(error_fp, "        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n");
+	  fprintf(error_fp, "              The simulator may be committing AFU transactions out of order\n");
 	  fflush(error_fp);
 	  fclose(error_fp);
 	}
