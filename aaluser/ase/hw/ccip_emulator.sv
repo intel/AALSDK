@@ -2014,7 +2014,6 @@ module ccip_emulator
       // Check if simulator is already running in this directory:
       // If YES, kill simulator, post message
       // If NO, continue
-<<<<<<< HEAD
       ase_ready_pid = ase_instance_running();      
       if (ase_ready_pid != 0) begin
 	 `BEGIN_RED_FONTCOLOR;	 
@@ -2025,8 +2024,6 @@ module ccip_emulator
 	 `END_RED_FONTCOLOR;
 	 $finish;	 
       end	
-=======
->>>>>>> master
       
       // Initialize data-structures
       mmio_dispatch (1, '{0, 0, 0, '{0,0,0,0,0,0,0,0}, 0});
