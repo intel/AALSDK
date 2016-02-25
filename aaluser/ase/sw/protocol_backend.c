@@ -88,6 +88,11 @@ int ase_instance_running()
 	}
     }
 
+  if (fp_ready_check != NULL)
+    {
+      fclose(fp_ready_check);
+    }
+
   return ase_simv_pid;
   FUNC_CALL_EXIT;
 }
@@ -750,11 +755,11 @@ int ase_ready()
   sprintf(ase_ready_filepath, "%s/%s", ase_workdir_path, ASE_READY_FILENAME);
 
   // Write .ase_ready file
-  ase_ready_fd = fopen( ase_ready_filepath, "w");
-  if (ase_ready_fd != NULL) 
+  fp_ase_ready = fopen( ase_ready_filepath, "w");
+  if (fp_ase_ready != NULL) 
     {
-      fprintf(ase_ready_fd, "%d", ase_pid);
-      fclose(ase_ready_fd);
+      fprintf(fp_ase_ready, "%d", ase_pid);
+      fclose(fp_ase_ready);
     }
   else
     {
@@ -820,6 +825,7 @@ void start_simkill_countdown()
   // Close and unlink message queue
   printf("SIM-C : Closing message queue and unlinking...\n");
   ase_mqueue_teardown();
+  free(mq_array);
 
   // Destroy all open shared memory regions
   printf("SIM-C : Unlinking Shared memory regions.... \n");
@@ -937,7 +943,7 @@ void ase_config_parse(char *filename)
 {
   FUNC_CALL_ENTRY;
 
-  FILE *fp;
+  FILE *fp = (FILE *)NULL;
   char *line;
   size_t len = 0;
   ssize_t read;

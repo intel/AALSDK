@@ -67,7 +67,7 @@ int userbuf_index_count = 0;   // User count/index
 char *tstamp_string;
 
 #ifdef ASE_DEBUG
-FILE *fp_pagetable_log;
+FILE *fp_pagetable_log = (FILE *)NULL;
 #endif
 
 /*
