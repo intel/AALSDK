@@ -288,6 +288,9 @@ module ccip_emulator
    export "DPI-C" task count_error_flag_ping;
    import "DPI-C" function void count_error_flag_pong(int flag);
 
+   // ASE instance check
+   import "DPI-C" function int ase_instance_running();
+      
    // Global dealloc allowed flag
    import "DPI-C" function void update_glbl_dealloc(int flag);
 
@@ -318,6 +321,9 @@ module ccip_emulator
 
    // Scope generator
    initial scope_function();
+
+   // Ready PID
+   int 	 ase_ready_pid;      
 
 
    /*
@@ -2008,6 +2014,19 @@ module ccip_emulator
       // Check if simulator is already running in this directory:
       // If YES, kill simulator, post message
       // If NO, continue
+<<<<<<< HEAD
+      ase_ready_pid = ase_instance_running();      
+      if (ase_ready_pid != 0) begin
+	 `BEGIN_RED_FONTCOLOR;	 
+	 $display("SIM-SV: An ASE instance is probably still running in current directory !");
+	 $display("        Check for PID %d", ase_ready_pid);
+	 $display("        Simulation will exit... you may use a SIGKILL to kill the simulation process.");
+	 $display("        Also check if .ase_ready.pid file is removed before proceeding.");	 
+	 `END_RED_FONTCOLOR;
+	 $finish;	 
+      end	
+=======
+>>>>>>> master
       
       // Initialize data-structures
       mmio_dispatch (1, '{0, 0, 0, '{0,0,0,0,0,0,0,0}, 0});
