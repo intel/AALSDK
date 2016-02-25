@@ -75,4 +75,6 @@ EXTRA_CFLAGS=\
 obj-m                  :=@CCIPCIEDRV_DRV_NAME@.o
 @CCIPCIEDRV_DRV_NAME@-objs:= cci_pcie_driver_main.o cci_pcie_driver_simulator.o ccip_sim_mmio.o cci_pcie_common.o cci_pcie_driver_pdde_linux.o \
                              cci_pcie_driver_PIPsession.o cci_pcie_driver_umapi_linux.o cci_pcie_driver_umapi_common.o kOSAL.o ccip_fme.o ccip_port.o \
-                             ccip_afu.o ccip_stap.o ccip_pr.o ccip_perfmon.o\
+                             ccip_afu.o ccip_stap.o ccip_pr.o ccip_perfmon.o
+
+@KBUILD_OPTS@

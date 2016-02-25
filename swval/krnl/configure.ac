@@ -36,6 +36,8 @@ AALKERNEL_MOD_INSTALL_PATH
 AALKERNEL_MODPROBE_CONF_PATH
 AALKERNEL_UDEV_RULES_PATH
 
+WITH_GCOV_ANALYSIS
+
 dnl ############################################################################
 dnl ## Optional Features #######################################################
 dnl ############################################################################
@@ -64,6 +66,7 @@ AC_C_INLINE
 dnl ############################################################################
 dnl ## Makefile substitutions ##################################################
 dnl ############################################################################
+VERIFY_OPTIONS
 
 AC_CONFIG_FILES([insdrv:build/insdrv.in], [chmod 'a+x' insdrv])
 AC_CONFIG_FILES([rmdrv:build/rmdrv.in],   [chmod 'a+x' rmdrv])
@@ -137,4 +140,4 @@ echo \
 ${ac_cv_aal_copyright}
 
 AALSDK Validation Project"
-
+SHOW_OPTIONS
