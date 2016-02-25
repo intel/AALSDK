@@ -252,3 +252,39 @@ char* ase_malloc (size_t size)
 }
 
 
+/*
+ * ASE instance already running 
+ * - If instance is found, return its process ID, else return 0 
+ */
+int ase_instance_running()
+{
+  FUNC_CALL_ENTRY;
+
+  // If Ready file does not exist
+  if ( access(ASE_READY_FILENAME, F_OK) == -1)
+    {
+      return 0;
+    }
+  // If ready file exists
+  else
+    {
+      FILE *fp_ready_check;
+      int ase_simv_pid;
+
+      // Read contents of file and send to 
+      fp_ready_check = fopen(ASE_READY_FILENAME, "r");
+      // If success
+      if (fp_ready_check != NULL)
+	{
+	  fscanf(fp_ready_check, "%d", &ase_simv_pid);
+	  return ase_simv_pid;
+	}
+      // If failed
+      else
+	{
+	  return -1;
+	}
+    }
+  
+  FUNC_CALL_EXIT;
+}

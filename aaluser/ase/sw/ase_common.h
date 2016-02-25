@@ -342,6 +342,7 @@ uint64_t ase_rand64();
 // void ase_eval_session_directory(char *);
 void ase_eval_session_directory();
 char* ase_malloc (size_t);
+int ase_instance_running();
 
 // Message queue operations
 void ipc_init();
