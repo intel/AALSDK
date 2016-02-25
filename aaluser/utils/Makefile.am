@@ -37,4 +37,6 @@ SUBDIRS=\
 aalscan \
 fpgadiag \
 data_model \
-ALIAFU
+ALIAFU/ASEALIAFU \
+ALIAFU/HWALIAFU \
+ALIAFU/SWSimALIAFU

@@ -45,7 +45,6 @@
 #ifndef __HWALIAFU_H__
 #define __HWALIAFU_H__
 #include <aalsdk/AALLoggerExtern.h>
-#include <aalsdk/service/ALIAFUService.h>
 #include <aalsdk/service/HWALIAFUService.h>
 #include <aalsdk/service/IALIAFU.h>
 

@@ -148,7 +148,6 @@ include/aalsdk/rm/InstanceRecord.h
 
 servicehdrs_HEADERS=\
 include/aalsdk/service/IALIAFU.h \
-include/aalsdk/service/ALIAFUService.h \
 include/aalsdk/service/HWALIAFUService.h \
 include/aalsdk/service/ASEALIAFUService.h \
 include/aalsdk/service/SWSimALIAFUService.h
@@ -218,7 +217,7 @@ include/aalsdk/rm/ResMgrService.h.in \
 include/aalsdk/rm/RRMService.h.in
 
 SERVICE_EXTRA=\
-include/aalsdk/service/ALIAFUService.h.in \
+include/aalsdk/service/VTPService.h.in \
 include/aalsdk/service/HWALIAFUService.h.in \
 include/aalsdk/service/ASEALIAFUService.h.in \
 include/aalsdk/service/SWSimALIAFUService.h.in
