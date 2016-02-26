@@ -176,7 +176,7 @@ endif
 header:
 	@echo "############################################################"
 	@echo "#                                                          #"
-	@echo "# Intel QuickAssist FPGA AFU Simulation Environment $(ASE_VERSION)  #"
+	@echo "# Intel Xeon+FPGA BDX-P AFU Simulation Environment $(ASE_VERSION)   #"
 	@echo "#                                                          #"
 	@echo "############################################################"
 
