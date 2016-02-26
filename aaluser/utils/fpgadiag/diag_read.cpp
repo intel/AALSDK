@@ -293,6 +293,14 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
 	      ++res;
 	      break;
 	   }
+
+	   //Checking for num_clocks underflow.
+	   if(pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead))
+	   {
+	      cerr << "Number of Clocks is negative.\n";
+         ++res;
+         break;
+	   }
    }
 
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
