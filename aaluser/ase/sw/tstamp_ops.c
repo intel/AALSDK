@@ -65,10 +65,13 @@ void put_timestamp()
   FUNC_CALL_ENTRY;
 
   FILE *fp = (FILE *)NULL;
-  char tstamp_path[ASE_FILEPATH_LEN];
 
+  /* char tstamp_path[ASE_FILEPATH_LEN]; */
+  /* memset(tstamp_path, 0, ASE_FILEPATH_LEN); */
 
-  memset(tstamp_path, 0, ASE_FILEPATH_LEN);
+  char *tstamp_path;
+  tstamp_path = (char*) ase_malloc(ASE_FILEPATH_LEN);
+
   sprintf(tstamp_path, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
   fp = fopen(tstamp_path, "wb");
@@ -81,9 +84,16 @@ void put_timestamp()
 #endif
       exit(1);
     }
-  fprintf(fp, "%lld", (unsigned long long)rdtsc() );
+  else
+    {
+      // Write session code
+      fprintf(fp, "%lld", (unsigned long long)rdtsc() );
+      
+      // Close file
+      fclose(fp);
+    }
 
-  fclose(fp);
+  free(tstamp_path);
 
   FUNC_CALL_EXIT;
 }
