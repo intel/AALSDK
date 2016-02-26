@@ -33,7 +33,7 @@
  */
 void ase_write_seed(uint64_t seed)
 {
-  FILE *fp_seed;
+  FILE *fp_seed = (FILE *)NULL;
   fp_seed = fopen(ASE_SEED_FILE, "w");
   if (fp_seed == NULL)
     {
@@ -55,7 +55,7 @@ uint64_t ase_read_seed()
 {
   uint64_t readback_seed;
   uint64_t new_seed;
-  FILE *fp_seed;
+  FILE *fp_seed = (FILE *)NULL;
   fp_seed = fopen(ASE_SEED_FILE, "r");
   if (fp_seed == NULL)
     {

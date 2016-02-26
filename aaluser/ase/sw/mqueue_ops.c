@@ -43,7 +43,11 @@ void ipc_init()
   FUNC_CALL_ENTRY;
 
   int ipc_iter;
-
+  
+  // Malloc mq_array
+  mq_array = (struct ipc_t *)ase_malloc(ASE_MQ_INSTANCES * sizeof(struct ipc_t) );
+  
+  // Create names
   strncpy(mq_array[0].name, "app2sim_alloc_ping_smq"	, ASE_MQ_NAME_LEN);
   strncpy(mq_array[1].name, "app2sim_mmioreq_smq"	, ASE_MQ_NAME_LEN);
   strncpy(mq_array[2].name, "app2sim_umsg_smq"	        , ASE_MQ_NAME_LEN);

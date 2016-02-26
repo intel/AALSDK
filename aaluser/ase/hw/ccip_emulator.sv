@@ -112,6 +112,10 @@ module ccip_emulator
    logic 			      Clk8UI;
    logic 			      clk   ;
 
+   // Real Full ch2as
+   logic 			      cf2as_ch0_realfull;
+   logic 			      cf2as_ch1_realfull;
+   
 
    /*
     * Local valid/debug breakout signals
@@ -1455,7 +1459,8 @@ module ccip_emulator
       .valid_out	( cf2as_latbuf_ch0_valid ),
       .read_en		( cf2as_latbuf_ch0_read ),
       .empty		( cf2as_latbuf_ch0_empty ),
-      .full             ( C0TxAlmFull )
+      .almfull          ( C0TxAlmFull ),
+      .full             ( cf2as_ch0_realfull )
       );
 
    // Read TX0
@@ -1535,7 +1540,8 @@ module ccip_emulator
       .valid_out	( cf2as_latbuf_ch1_valid),
       .read_en		( cf2as_latbuf_ch1_read  ),
       .empty		( cf2as_latbuf_ch1_empty ),
-      .full             ( C1TxAlmFull )
+      .almfull          ( C1TxAlmFull ),
+      .full             ( cf2as_ch1_realfull )
       );
 
 
@@ -2014,19 +2020,16 @@ module ccip_emulator
       // Check if simulator is already running in this directory:
       // If YES, kill simulator, post message
       // If NO, continue
-<<<<<<< HEAD
       ase_ready_pid = ase_instance_running();      
       if (ase_ready_pid != 0) begin
 	 `BEGIN_RED_FONTCOLOR;	 
 	 $display("SIM-SV: An ASE instance is probably still running in current directory !");
 	 $display("        Check for PID %d", ase_ready_pid);
 	 $display("        Simulation will exit... you may use a SIGKILL to kill the simulation process.");
-	 $display("        Also check if .ase_ready.pid file is removed before proceeding.");	 
+	 $display("        Also check if '.ase_ready.pid' file is removed before proceeding.");
 	 `END_RED_FONTCOLOR;
 	 $finish;	 
       end	
-=======
->>>>>>> master
       
       // Initialize data-structures
       mmio_dispatch (1, '{0, 0, 0, '{0,0,0,0,0,0,0,0}, 0});
@@ -2102,29 +2105,31 @@ module ccip_emulator
       // Buffer message injection
       // .log_string_en    (buffer_msg_en     ),
       // .log_string       (buffer_msg        ),
+      // ----------------------------------------- //
       // CCIP ports
-      .clk              (clk             ),
-      .SoftReset        (SoftReset       ),
-      .C0TxHdr          (C0TxHdr         ),
-      .C0TxRdValid      (C0TxRdValid     ),
-      .C1TxHdr          (C1TxHdr         ),
-      .C1TxData         (C1TxData        ),
-      .C1TxWrValid      (C1TxWrValid     ),
-      .C1TxIntrValid    (1'b0   ),
-      .C2TxHdr          (C2TxHdr         ),
-      .C2TxMmioRdValid  (C2TxMmioRdValid ),
-      .C2TxData         (C2TxData        ),
-      .C0RxMmioWrValid  (C0RxMmioWrValid ),
-      .C0RxMmioRdValid  (C0RxMmioRdValid ),
-      .C0RxData         (C0RxData        ),
-      .C0RxHdr          (C0RxHdr         ),
-      .C0RxRdValid      (C0RxRdValid     ),
-      .C0RxUMsgValid    (C0RxUMsgValid   ),
-      .C1RxHdr          (C1RxHdr         ),
-      .C1RxWrValid      (C1RxWrValid     ),
-      .C1RxIntrValid    (C1RxIntrValid   ),
-      .C0TxAlmFull      (C0TxAlmFull     ),
-      .C1TxAlmFull      (C1TxAlmFull     )
+      .clk                ( clk             ),
+      .SoftReset          ( SoftReset       ),
+      .C0TxHdr            ( C0TxHdr         ),
+      .C0TxValid          ( C0TxValid       ),
+      .C1TxHdr            ( C1TxHdr         ),
+      .C1TxData           ( C1TxData        ),
+      .C1TxValid          ( C1TxValid       ),
+      .C2TxHdr            ( C2TxHdr         ),
+      .C2TxMmioRdValid    ( C2TxMmioRdValid ),
+      .C2TxData           ( C2TxData        ),
+      .C0RxMmioWrValid    ( C0RxMmioWrValid ),
+      .C0RxMmioRdValid    ( C0RxMmioRdValid ),
+      .C0RxData           ( C0RxData        ),
+      .C0RxHdr            ( C0RxHdr         ),
+      .C0RxRspValid       ( C0RxRspValid    ),
+      .C1RxHdr            ( C1RxHdr         ),
+      .C1RxRspValid       ( C1RxRspValid    ),
+      .C0TxAlmFull        ( C0TxAlmFull     ),
+      .C1TxAlmFull        ( C1TxAlmFull     ),
+      // ----------------------------------------- //
+      // Overflow check signals
+      .cf2as_ch0_realfull ( cf2as_ch0_realfull ),
+      .cf2as_ch1_realfull ( cf2as_ch1_realfull )
       );
 
 

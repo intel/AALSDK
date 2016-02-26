@@ -64,11 +64,14 @@ void put_timestamp()
 {
   FUNC_CALL_ENTRY;
 
-  FILE *fp;
-  char tstamp_path[ASE_FILEPATH_LEN];
+  FILE *fp = (FILE *)NULL;
 
+  /* char tstamp_path[ASE_FILEPATH_LEN]; */
+  /* memset(tstamp_path, 0, ASE_FILEPATH_LEN); */
 
-  memset(tstamp_path, 0, ASE_FILEPATH_LEN);
+  char *tstamp_path;
+  tstamp_path = (char*) ase_malloc(ASE_FILEPATH_LEN);
+
   sprintf(tstamp_path, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
   fp = fopen(tstamp_path, "wb");
@@ -81,9 +84,16 @@ void put_timestamp()
 #endif
       exit(1);
     }
-  fprintf(fp, "%lld", (unsigned long long)rdtsc() );
+  else
+    {
+      // Write session code
+      fprintf(fp, "%lld", (unsigned long long)rdtsc() );
+      
+      // Close file
+      fclose(fp);
+    }
 
-  fclose(fp);
+  free(tstamp_path);
 
   FUNC_CALL_EXIT;
 }
@@ -96,7 +106,7 @@ char* get_timestamp(int dont_kill)
 {
   FUNC_CALL_ENTRY;
 
-  FILE *fp;
+  FILE *fp = (FILE *)NULL;
 
   // unsigned long long readback;
 
@@ -104,16 +114,6 @@ char* get_timestamp(int dont_kill)
   tstamp_str = ase_malloc(20);
 
   int ret;
-
-  /* if (tstamp_str == NULL) */
-  /*   { */
-  /*     ase_error_report("malloc", errno, ASE_OS_MALLOC_ERR); */
-  /*   #ifdef SIM_SIDE */
-  /*     start_simkill_countdown(); */
-  /*   #else */
-  /*     exit(1); */
-  /*   #endif		        */
-  /*   } */
 
   char *tstamp_filepath;
   tstamp_filepath = (char*)ase_malloc(ASE_FILEPATH_LEN);
@@ -130,6 +130,7 @@ char* get_timestamp(int dont_kill)
   if (access(tstamp_filepath, F_OK) != -1) // File exists
     {
       fp = fopen(tstamp_filepath, "r");
+      // fopen failed
       if (fp == NULL)
 	{
   	  ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
@@ -139,24 +140,26 @@ char* get_timestamp(int dont_kill)
   	  exit(1);
         #endif
 	}
-	
-      // Read timestamp file
-      ret = fread(tstamp_str, sizeof(char), 20, fp);
-      if (ret == 0)
+      else
 	{
-	  ase_error_report("fread", errno, ASE_OS_MALLOC_ERR);
-        #ifdef SIM_SIDE
-	  start_simkill_countdown();
-        #else
-	  exit(1);
+	  // Read timestamp file
+	  ret = fread(tstamp_str, sizeof(char), 20, fp);
+	  if (ret == 0)
+	    {
+	      ase_error_report("fread", errno, ASE_OS_MALLOC_ERR);
+            #ifdef SIM_SIDE
+	      start_simkill_countdown();
+            #else
+	      exit(1);
+            #endif
+	    }
+	  
+        #ifdef ASE_DEBUG
+	  printf("  [DEBUG] tstamp_str = %s\n", tstamp_str);
         #endif
+	  
+	  fclose(fp);
 	}
-
-      #ifdef ASE_DEBUG
-	printf("  [DEBUG] tstamp_str = %s\n", tstamp_str);
-      #endif
-	
-      fclose(fp);
     }
   else   // File doesnt exist
     {

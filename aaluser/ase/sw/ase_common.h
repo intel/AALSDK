@@ -97,14 +97,7 @@
 #define MMIO_LENGTH                512*1024   // 512 KB MMIO size
 #define MMIO_AFU_OFFSET            256*1024
 
-/*
- * Unordered Message (UMSG) Address space
- */
-// UMSG specific CSRs
-/* #define ASE_UMSGBASE_CSROFF            0x3F4  // UMSG base address */
-/* #define ASE_UMSGMODE_CSROFF            0x3F8  // UMSG mode */
-/* #define ASE_CIRBSTAT_CSROFF            0x278  // CIRBSTAT */
-
+// Number of UMsgs per AFU
 #define NUM_UMSG_PER_AFU               8
 
 // UMAS region
@@ -429,7 +422,8 @@ struct ipc_t
   char path[ASE_FILEPATH_LEN];
   int  perm_flag;
 };
-struct ipc_t mq_array[ASE_MQ_INSTANCES];
+// struct ipc_t mq_array[ASE_MQ_INSTANCES];
+struct ipc_t *mq_array;
 
 
 /* ********************************************************************
@@ -593,21 +587,21 @@ void update_glbl_dealloc(int);
 /*
  * ASE Ready session control files, for wrapping with autorun script
  */
-FILE *ase_ready_fd;
+FILE *fp_ase_ready; // = (FILE *)NULL;
 #define ASE_READY_FILENAME ".ase_ready.pid"
 
 // ASE seed 
 uint64_t ase_addr_seed;
 
 // ASE error file
-FILE *error_fp;
+FILE *error_fp; // = (FILE *)NULL;
 
 
 /*
  * IPC cleanup on catastrophic errors
  */
 #define IPC_LOCAL_FILENAME ".ase_ipc_local"
-FILE *local_ipc_fp;
+FILE *local_ipc_fp; // = (FILE *)NULL;
 
 /*
  * Physical Memory ranges for PrivMem & SysMem
@@ -621,12 +615,12 @@ uint64_t sysmem_phys_hi;
 int ase_pid;
 
 // Workspace information log (information dump of 
-FILE *fp_workspace_log;
+FILE *fp_workspace_log; // = (FILE *)NULL;
 
 // Memory access debug log
 #ifdef ASE_DEBUG
-FILE *fp_memaccess_log;
-FILE *fp_pagetable_log;
+FILE *fp_memaccess_log; // = (FILE *)NULL;
+FILE *fp_pagetable_log; // = (FILE *)NULL;
 #endif
 
 // Physical address mask - used to constrain generated addresses

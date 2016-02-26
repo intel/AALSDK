@@ -114,6 +114,7 @@ module outoforder_wrf_channel
     input logic 		       read_en,
     // Status signals
     output logic 		       empty,
+    output logic 		       almfull,
     output logic 		       full
     );
 
@@ -238,35 +239,48 @@ module outoforder_wrf_channel
    assign vh0_array_empty = (vh0_array_cnt == 0) ? 1 : 0;
    assign vh1_array_empty = (vh1_array_cnt == 0) ? 1 : 0;
 
-   // Full signal
-   always @(posedge clk) begin : full_proc
+   // Almfull signal
+   always @(posedge clk) begin : almfull_proc
       if (rst) begin
-	 full <= 1;
+	 almfull <= 1;
       end
       else if (infifo_cnt > VISIBLE_FULL_THRESH ) begin
-	 full <= 1;
+	 almfull <= 1;
       end
       else begin
-	 full <= 0;
+	 almfull <= 0;
       end
    end
 
-   // Full tracking
-   logic full_q;
+   // Almfull tracking
+   logic almfull_q;
    always @(posedge clk) begin
-      full_q <= full;
+      almfull_q <= almfull;
    end
 
    // If Full toggles, log the event
    `ifdef ASE_DEBUG
    always @(posedge clk) begin
-      if (full_q != full) begin
-	 $fwrite(log_fd, "%d | Module full toggled from %b to %b\n", $time, full_q, full);
+      if (almfull_q != almfull) begin
+	 $fwrite(log_fd, "%d | Module full toggled from %b to %b\n", $time, almfull_q, almfull);
       end
    end
    `endif
    
-
+   // Full signal
+   always @(posedge clk) begin : full_proc
+      if (rst) begin
+	 full <= 0;	 
+      end
+      else if (infifo_cnt == VISIBLE_DEPTH-1) begin
+	 full <= 1;	 
+      end
+      else begin
+	 full <= 0;	 
+      end
+   end
+   
+   
    //////////////////////////////////////////////////////////////
    // Scoreboard logic
    //////////////////////////////////////////////////////////////
@@ -868,7 +882,7 @@ module outoforder_wrf_channel
 	    base_addr               = txhdr.addr;
 	    // RxHdr
 	    rxhdr.vc_used           = txhdr.vc;
-	    rxhdr.poison            = 0;
+	    rxhdr.rsvd25            = 0;
 	    rxhdr.hitmiss           = 0; // *FIXME*
 	    rxhdr.format            = 0;
 	    rxhdr.rsvd22            = 0 ;

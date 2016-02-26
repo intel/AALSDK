@@ -111,7 +111,7 @@ package ase_pkg;
    typedef struct packed {
       //--------- CCIP standard header --------- //      
       ccip_vc_t       vc_used;  // 27:26  // Virtual channel select
-      logic           poison;   // 25     // Poison bit // Reserved in BDX-P
+      logic           rsvd25;   // 25     // Poison bit // Reserved in BDX-P
       logic           hitmiss;  // 24     // Hit/miss indicator
       logic           format;   // 23     // Multi-CL enable (write packing only)
       logic           rsvd22;   // 22     // X
