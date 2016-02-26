@@ -690,14 +690,14 @@ AFUDeactivateTransaction::AFUDeactivateTransaction(AAL::TransactionID const &rTr
    if(rInputArgs.Has(AALCONF_MILLI_TIMEOUT)){
 
       rInputArgs.Get(AALCONF_MILLI_TIMEOUT, &reconfTimeout);
-      printf("reconfTimeout= %lld \n",reconfTimeout);
+      //printf("reconfTimeout= %lld \n",reconfTimeout);
    }
 
    // ReConfiguration Action Flags
    if(rInputArgs.Has(AALCONF_RECONF_ACTION)){
 
       rInputArgs.Get(AALCONF_RECONF_ACTION, &reconfAction);
-      printf("reconfAction= %lld \n",reconfAction);
+      //printf("reconfAction= %lld \n",reconfAction);
 
       if((AALCONF_RECONF_ACTION_HONOR_REQUEST_ID != reconfAction ) &&
         (AALCONF_RECONF_ACTION_HONOR_OWNER_ID != reconfAction ))    {
@@ -782,7 +782,7 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
    if(rNVS.Has(AALCONF_MILLI_TIMEOUT)){
 
       rNVS.Get(AALCONF_MILLI_TIMEOUT, &reconfTimeout);
-      printf("reconfTimeout= %lld \n",reconfTimeout);
+      //printf("reconfTimeout= %lld \n",reconfTimeout);
    }
 
    // ReConfiguration Action Flags
@@ -793,7 +793,7 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
 
       btUnsigned64bitInt reconfAction =0;
       rNVS.Get(AALCONF_RECONF_ACTION, &reconfAction);
-      printf("reconfAction= %lld \n",reconfAction);
+      //printf("reconfAction= %lld \n",reconfAction);
 
       if(reconfAction == AALCONF_RECONF_ACTION_HONOR_OWNER_ID){
          req->u.pr_config.reconfAction = ReConf_Action_Honor_Owner;

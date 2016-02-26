@@ -1010,6 +1010,7 @@ void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
                                                                                                                reasUnknown,
                                                                                                                "Error: Failed transaction")));
 
+      free(bufptr);
       return;
    }
    free(bufptr);
@@ -1052,15 +1053,15 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
 
    ASSERT(NULL != puidEvent);
 
-   std::cerr << "Got AFU event type " << puidEvent->MessageID() << "\n" << std::endl;
+  // std::cerr << "Got AFU event type " << puidEvent->MessageID() << "\n" << std::endl;
 
    switch(puidEvent->MessageID())
    {
 
    case rspid_AFU_PR_Revoke_Event:
    {
-      std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Revoked_Event \n" << std::endl;
-      std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
+      //std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Revoked_Event \n" << std::endl;
+     // std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
 
       getRuntime()->schedDispatchable( new ServiceRevoke(dynamic_ptr<IServiceRevoke>(iidServiceRevoke,this)) );
 

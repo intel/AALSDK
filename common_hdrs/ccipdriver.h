@@ -109,7 +109,7 @@ typedef enum
    uid_errnumDeviceBusy,                         // 26
    uid_errnumTimeout,                            // 27
    uid_errnumNoAFU,                              // 28
-   uid_errnumAFUActivated,                       // 29
+   uid_errnumAFUNotActivated,                    // 29
    uid_errnumDeActiveTimeout,                    // 30
    uid_errnumPRTimeout,                          // 31
    uid_errnumPROperation,                        // 32
