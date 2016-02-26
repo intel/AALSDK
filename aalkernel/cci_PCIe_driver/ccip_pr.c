@@ -507,6 +507,7 @@ void program_afu_callback(struct kosal_work_object * pwork)
 
       PDEBUG("Simulated reprogram \n");
       kosal_free_user_buffer(ppr_program_ctx->m_kbufferptr, ppr_program_ctx->m_bufferlen);
+      if(!ppr_program_ctx->m_leaveDeactivated)
       reconfigure_activateAFU(ppr_program_ctx->m_pportdev,ppr_program_ctx->m_pPR_dev);
       pafuws_evt =ccipdrv_event_afu_aysnc_pr_release_create( uid_afurespConfigureComplete,
                                                              ppr_program_ctx->m_pownerSess->m_device,
@@ -1230,9 +1231,9 @@ struct cci_aal_device   *
    //
 
    // Initialize the worker thread
-   cci_dev_workq_deactimeout( pcci_aaldev ) = kosal_create_workqueue( "ReconfTimeOut", cci_aaldev_to_aaldev( pcci_aaldev ) );
-   cci_dev_workq_prcconfigure( pcci_aaldev ) = kosal_create_workqueue( "PRreconfiguration", cci_aaldev_to_aaldev( pcci_aaldev ) );
-   cci_dev_workq_revokeafu( pcci_aaldev ) = kosal_create_workqueue( "RevokeAFU", cci_aaldev_to_aaldev( pcci_aaldev ) );
+   cci_dev_workq_deactimeout( pcci_aaldev )   = kosal_create_workqueue( "ReconfTimeOut", cci_aaldev_to_aaldev( pcci_aaldev ) );
+   cci_dev_workq_prcconfigure( pcci_aaldev )  = kosal_create_workqueue( "PRreconfiguration", cci_aaldev_to_aaldev( pcci_aaldev ) );
+   cci_dev_workq_revokeafu( pcci_aaldev )     = kosal_create_workqueue( "RevokeAFU", cci_aaldev_to_aaldev( pcci_aaldev ) );
 
    // Set how many owners are allowed access to this device simultaneously
    cci_aaldev_to_aaldev(pcci_aaldev)->m_maxowners = 1;
@@ -1450,7 +1451,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                      pownerSess->m_device,
                                                                      &Message->m_tranID,
                                                                      Message->m_context,
-                                                                     uid_errnumAFUActivated);
+                                                                     uid_errnumAFUNotActivated);
 
             ccidrv_sendevent(pownerSess,
                              AALQIP(pafuws_evt));
@@ -1467,7 +1468,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                               pownerSess->m_device,
                                                                               &Message->m_tranID,
                                                                               Message->m_context,
-                                                                              uid_errnumAFUActivated);
+                                                                              uid_errnumAFUNotActivated);
 
                      ccidrv_sendevent(pownerSess,
                                       AALQIP(pafuws_evt));
