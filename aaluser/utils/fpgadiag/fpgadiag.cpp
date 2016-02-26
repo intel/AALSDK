@@ -561,11 +561,12 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 	   // Documentation says HWALIAFU Service publishes
 	   //    IALIBuffer as subclass interface. Used in Buffer Allocation and Free
 	   m_pALIPerf = dynamic_ptr<IALIPerf>(iidALI_PERF_Service, pServiceBase);
-	   ASSERT(NULL != m_pALIPerf);
+	  /* ASSERT(NULL != m_pALIPerf);
 	   if ( NULL == m_pALIPerf ) {
 		  m_bIsOK = false;
 		  return;
 	   }
+	   */
    }
 
    if( m_pFMEService && m_pNLBService){
@@ -1012,56 +1013,58 @@ void INLB::ReadPerfMonitors()
 	NamedValueSet PerfMon;
 	btUnsigned64bitInt     value;
 
-	m_pALIPerf->performanceCountersGet(&PerfMon);
+	if (NULL != m_pALIPerf){
+		m_pALIPerf->performanceCountersGet(&PerfMon);
 
-    if (PerfMon.Has(AALPERF_VERSION)) {
-       PerfMon.Get( AALPERF_VERSION, &value);
-       m_PerfMonitors[VERSION] = value;
-    }
-    if (PerfMon.Has(AALPERF_READ_HIT)) {
-       PerfMon.Get( AALPERF_READ_HIT, &value);
-       m_PerfMonitors[READ_HIT] = value;
-    }
-    if (PerfMon.Has(AALPERF_WRITE_HIT)) {
-       PerfMon.Get( AALPERF_WRITE_HIT, &value);
-       m_PerfMonitors[WRITE_HIT] = value;
-    }
-    if (PerfMon.Has(AALPERF_READ_MISS)) {
-       PerfMon.Get( AALPERF_READ_MISS, &value);
-       m_PerfMonitors[READ_MISS] = value;
-    }
-    if (PerfMon.Has(AALPERF_WRITE_MISS)) {
-       PerfMon.Get( AALPERF_WRITE_MISS, &value);
-       m_PerfMonitors[WRITE_MISS] = value;
-    }
-    if (PerfMon.Has(AALPERF_EVICTIONS)) {
-        PerfMon.Get( AALPERF_EVICTIONS, &value);
-        m_PerfMonitors[EVICTIONS] = value;
-    }
-    if (PerfMon.Has(AALPERF_PCIE0_READ)) {
-        PerfMon.Get( AALPERF_PCIE0_READ, &value);
-        m_PerfMonitors[PCIE0_READ] = value;
-    }
-    if (PerfMon.Has(AALPERF_PCIE0_WRITE)) {
-        PerfMon.Get( AALPERF_PCIE0_WRITE, &value);
-        m_PerfMonitors[PCIE0_WRITE] = value;
-    }
-    if (PerfMon.Has(AALPERF_PCIE1_READ)) {
-        PerfMon.Get( AALPERF_PCIE1_READ, &value);
-        m_PerfMonitors[PCIE1_READ] = value;
-    }
-    if (PerfMon.Has(AALPERF_PCIE1_WRITE)) {
-        PerfMon.Get( AALPERF_PCIE1_WRITE, &value);
-        m_PerfMonitors[PCIE1_WRITE] = value;
-    }
-    if (PerfMon.Has(AALPERF_UPI_READ)) {
-        PerfMon.Get( AALPERF_UPI_READ, &value);
-        m_PerfMonitors[UPI_READ] = value;
-    }
-    if (PerfMon.Has(AALPERF_UPI_WRITE)) {
-	    PerfMon.Get( AALPERF_UPI_WRITE, &value);
-	    m_PerfMonitors[UPI_WRITE] = value;
-    }
+		if (PerfMon.Has(AALPERF_VERSION)) {
+		   PerfMon.Get( AALPERF_VERSION, &value);
+		   m_PerfMonitors[VERSION] = value;
+		}
+		if (PerfMon.Has(AALPERF_READ_HIT)) {
+		   PerfMon.Get( AALPERF_READ_HIT, &value);
+		   m_PerfMonitors[READ_HIT] = value;
+		}
+		if (PerfMon.Has(AALPERF_WRITE_HIT)) {
+		   PerfMon.Get( AALPERF_WRITE_HIT, &value);
+		   m_PerfMonitors[WRITE_HIT] = value;
+		}
+		if (PerfMon.Has(AALPERF_READ_MISS)) {
+		   PerfMon.Get( AALPERF_READ_MISS, &value);
+		   m_PerfMonitors[READ_MISS] = value;
+		}
+		if (PerfMon.Has(AALPERF_WRITE_MISS)) {
+		   PerfMon.Get( AALPERF_WRITE_MISS, &value);
+		   m_PerfMonitors[WRITE_MISS] = value;
+		}
+		if (PerfMon.Has(AALPERF_EVICTIONS)) {
+			PerfMon.Get( AALPERF_EVICTIONS, &value);
+			m_PerfMonitors[EVICTIONS] = value;
+		}
+		if (PerfMon.Has(AALPERF_PCIE0_READ)) {
+			PerfMon.Get( AALPERF_PCIE0_READ, &value);
+			m_PerfMonitors[PCIE0_READ] = value;
+		}
+		if (PerfMon.Has(AALPERF_PCIE0_WRITE)) {
+			PerfMon.Get( AALPERF_PCIE0_WRITE, &value);
+			m_PerfMonitors[PCIE0_WRITE] = value;
+		}
+		if (PerfMon.Has(AALPERF_PCIE1_READ)) {
+			PerfMon.Get( AALPERF_PCIE1_READ, &value);
+			m_PerfMonitors[PCIE1_READ] = value;
+		}
+		if (PerfMon.Has(AALPERF_PCIE1_WRITE)) {
+			PerfMon.Get( AALPERF_PCIE1_WRITE, &value);
+			m_PerfMonitors[PCIE1_WRITE] = value;
+		}
+		if (PerfMon.Has(AALPERF_UPI_READ)) {
+			PerfMon.Get( AALPERF_UPI_READ, &value);
+			m_PerfMonitors[UPI_READ] = value;
+		}
+		if (PerfMon.Has(AALPERF_UPI_WRITE)) {
+			PerfMon.Get( AALPERF_UPI_WRITE, &value);
+			m_PerfMonitors[UPI_WRITE] = value;
+		}
+	}
 }
 
 void INLB::SavePerfMonitors()
