@@ -118,7 +118,7 @@ public:
    ~HelloALIHSSIApp();
 
    btInt run();            ///< Return 0 if success
-   btInt getHSSIStatus();  ///< Return 0 if success
+   btBool getHSSIStatus();  ///< Return true if success
    btUnsigned64bitInt getHSSICounter();
 
    // <begin IServiceClient interface>
@@ -228,7 +228,7 @@ HelloALIHSSIApp::HelloALIHSSIApp() :
    // Start the Runtime and wait for the callback by sitting on the semaphore.
    //   the runtimeStarted() or runtimeStartFailed() callbacks should set m_bIsOK appropriately.
    if(!m_Runtime.start(configArgs)){
-	   m_bIsOK = false;
+      m_bIsOK = false;
       return;
    }
    m_Sem.Wait();
@@ -269,7 +269,7 @@ btInt HelloALIHSSIApp::run()
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
 
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
-   ConfigRecord.Add(keyRegAFU_ID,"3EAC8EC1-D729-43E8-9EAD-46777DCDBD14");
+   ConfigRecord.Add(keyRegAFU_ID,"3EAC8EC1-D729-43E8-9E8D-46777DCDBD14");
 
 
    // indicate that this service needs to allocate an AIAService, too to talk to the HW
@@ -315,7 +315,8 @@ btInt HelloALIHSSIApp::run()
    //   now we can use it
    //=============================
 
-   btInt init_ctr;
+   btUnsigned64bitInt init_ctr;
+   btUnsigned64bitInt compare_ctr;
 
    struct timespec ts; //TODO get timeout value from Cmd line
    ts.tv_sec = 2;
@@ -334,7 +335,12 @@ btInt HelloALIHSSIApp::run()
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
       init_ctr = getHSSICounter();
-      if(0 != getHSSIStatus())
+      if(0x0 == init_ctr)
+      {
+         ERR("No Transactions recorded - FAIL.");
+         goto done_1;
+      }
+      if(!getHSSIStatus())
       {
          ERR("Initial HSSI Status - FAIL.");
          goto done_1;
@@ -343,16 +349,22 @@ btInt HelloALIHSSIApp::run()
       MSG("Initial HSSI Status - PASS.");
 
       while(Timer() < absolute){
-         if(0 != getHSSIStatus())
+         if(!getHSSIStatus())
          {
             ERR("HSSI Status - FAIL.");
             break;
          }
-         if(init_ctr != getHSSICounter())
+
+         compare_ctr = getHSSICounter();
+
+         if(init_ctr == compare_ctr)
          {
             ERR("No Transactions recorded - FAIL.");
             break;
          }
+
+         init_ctr = compare_ctr;
+
          SleepMicro(100);
       }
 
@@ -387,13 +399,13 @@ btUnsigned64bitInt HelloALIHSSIApp::getHSSICounter()
       }csr_hssi_counter; // end struct CSR_HSSI_COUNTER
 
       csr_hssi_counter.csr = 0;
-      m_pALIMMIOService->mmioRead32(CSR_HSSI_STATUS_L32, &csr_hssi_counter.low);
-      m_pALIMMIOService->mmioRead32(CSR_HSSI_STATUS_H32, &csr_hssi_counter.high);
+      m_pALIMMIOService->mmioRead32(CSR_HSSI_COUNTER_L32, &csr_hssi_counter.low);
+      m_pALIMMIOService->mmioRead32(CSR_HSSI_COUNTER_H32, &csr_hssi_counter.high);
 
       return csr_hssi_counter.csr;
 }
 
-btInt HelloALIHSSIApp::getHSSIStatus()
+btBool HelloALIHSSIApp::getHSSIStatus()
 {
 
    // HSSI Status values
@@ -423,32 +435,39 @@ btInt HelloALIHSSIApp::getHSSIStatus()
    if(EP_DEVICE_ID != csr_hssi_status.ep_device_id)
    {
       cerr << "Bad Device ID. Test failed.\n";
-      return 1;
+      return false;
    }
 
    if(EP_VENDOR_ID != csr_hssi_status.ep_vendor_id)
    {
       cerr << "Bad Vendor ID. Test failed.\n";
-      return 1;
+      return false;
    }
 
    if(0 != csr_hssi_status.rp_error)
    {
       cerr << "RP Errors detected. Test failed.\n";
-      return 1;
+      return false;
+   }
+
+   if(RP_LINK_WIDTH != csr_hssi_status.rp_link_width)
+   {
+      cerr << "RP Link Width Mismatch. Test failed.\n";
+      return false;
    }
 
    if(RP_SPEED != csr_hssi_status.rp_speed)
    {
       cerr << "RP not at gen3 speed. Test failed.\n";
-      return 1;
+      return false;
    }
 
    if(RP_LTSSM_STATE != csr_hssi_status.rp_ltssm_state)
    {
      cerr << "Link out of L0. Test failed.\n";
-     return 1;
+     return false;
    }
+   return true;
 }
 
 //=================
@@ -610,6 +629,12 @@ int main(int argc, char *argv[])
    }
    btInt Result = theApp.run();
 
+   if (0 == Result){
+      MSG("TEST PASS");
+   }
+   else{
+      ERR("TEST FAIL");
+   }
    MSG("Done");
    return Result;
 }
