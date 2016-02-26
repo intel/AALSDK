@@ -62,41 +62,38 @@ module ccip_sniffer
     )
    (
     // Configure enable
-    // input int 				     enable_logger,
     input int 				     finish_logger,
     // Buffer message injection
     // input logic 			     log_string_en,
-    // ref string 			     log_string,
-    //////////////////////////////////////////////////////////
-    // CCI interface
+    // ref string 				     log_string,
+    // -------------------------------------------------------- //
+    // Channel overflow/realfull checks
+    input logic 			     cf2as_ch0_realfull,
+    input logic 			     cf2as_ch1_realfull,
+    // -------------------------------------------------------- //
+    ///////////////////// CCI interface //////////////////////////
     input logic 			     clk,
     input logic 			     SoftReset,
     // Tx0 channel
     input 				     TxHdr_t C0TxHdr,
-    input logic 			     C0TxRdValid,
+    input logic 			     C0TxValid,
     // Tx1 channel
     input 				     TxHdr_t C1TxHdr,
     input logic [CCIP_DATA_WIDTH-1:0] 	     C1TxData,
-    input logic 			     C1TxWrValid,
-    input logic 			     C1TxIntrValid,
+    input logic 			     C1TxValid,
     // Tx2 channel
     input 				     MMIOHdr_t C2TxHdr,
     input logic 			     C2TxMmioRdValid,
     input logic [CCIP_MMIO_RDDATA_WIDTH-1:0] C2TxData,
     // Rx0 channel
+    input 				     RxHdr_t C0RxHdr,
+    input logic [CCIP_DATA_WIDTH-1:0] 	     C0RxData,
     input logic 			     C0RxMmioWrValid,
     input logic 			     C0RxMmioRdValid,
-    input logic [CCIP_DATA_WIDTH-1:0] 	     C0RxData,
-    input 				     RxHdr_t C0RxHdr,
-    input logic 			     C0RxRdValid,
-    input logic 			     C0RxUMsgValid,
+    input logic 			     C0RxRspValid,
     // Rx1 channel
     input 				     RxHdr_t C1RxHdr,
-    input logic 			     C1RxWrValid,
-    input logic 			     C1RxIntrValid,
-    // Channel overflow/real_full checks
-    input logic 			     cf2as_ch0_overflow,
-    input logic 			     cf2as_ch1_overflow,
+    input logic 			     C1RxRspValid,
     // Almost full signals
     input logic 			     C0TxAlmFull,
     input logic 			     C1TxAlmFull
@@ -104,8 +101,8 @@ module ccip_sniffer
 
    // File descriptors
    int 					     fd_warn;
-   //int 					     fd_err;
-
+   //int 				     fd_err;
+   
    // FD open
    initial begin
       $display ("SIM-SV : Protocol Checker initialized");
@@ -126,17 +123,15 @@ module ccip_sniffer
    logic tx_valid;
    logic rx_valid;
 
-   assign tx_valid = C0TxRdValid    |
-		     C1TxWrValid    |
-		     C1TxIntrValid  |
+   assign tx_valid = C0TxValid    |
+		     C1TxValid    |
 		     C2TxMmioRdValid;
 
-   assign rx_valid = C0RxRdValid     |
-		     C0RxUMsgValid   |
+   assign rx_valid = C0RxRspValid    |
 		     C0RxMmioRdValid |
 		     C0RxMmioWrValid |
-		     C1RxWrValid     |
-		     C1RxIntrValid;
+		     C1RxRspValid;
+      
 
    // If reset is high, and transactions are asserted
    always @(posedge clk) begin
@@ -163,17 +158,29 @@ module ccip_sniffer
    logic 			   xz_cfg_flag;
 
    /*
+    * Rd/Wr Valid signals
+   //  */ 
+   // logic 			   C0TxRdValid;
+   // logic 			   C1TxWrValid;
+   
+   // always @(*) begin
+   //    if (C0TxValid && (C0TxHdr.reqtype == ASE_RDLINE_S))
+   // 	C0TxRdValid <= 
+   // end
+   
+   
+   /*
     * TX checker files
     */
    CfgHdr_t C0RxCfg;
    assign C0RxCfg = CfgHdr_t'(C0RxHdr);
 
-   assign xz_tx0_flag = ( ^{C0TxHdr.vc,              C0TxHdr.len, C0TxHdr.reqtype, C0TxHdr.mdata} )   && C0TxRdValid ;
-   assign xz_tx1_flag = ( ^{C1TxHdr.vc, C1TxHdr.sop, C1TxHdr.len, C1TxHdr.reqtype, C1TxHdr.mdata} )   && C1TxWrValid ;
+   assign xz_tx0_flag = ( ^{C0TxHdr.vc,              C0TxHdr.len, C0TxHdr.reqtype, C0TxHdr.addr, C0TxHdr.mdata} )   && C0TxValid ;
+   assign xz_tx1_flag = ( ^{C1TxHdr.vc, C1TxHdr.sop, C1TxHdr.len, C1TxHdr.reqtype, C1TxHdr.addr, C1TxHdr.mdata} )   && C1TxValid ;
    assign xz_tx2_flag = ( ^{C2TxHdr.tid, C2TxData})                                                   && C2TxMmioRdValid ;
 
-   assign xz_rx0_flag = ( ^{C0RxHdr.vc_used, C0RxHdr.hitmiss,                 C0RxHdr.clnum, C0RxHdr.resptype, C0RxHdr.mdata, C0RxData} ) && (C0RxRdValid | C0RxUMsgValid);
-   assign xz_rx1_flag = ( ^{C1RxHdr.vc_used, C1RxHdr.hitmiss, C1RxHdr.format, C1RxHdr.clnum, C1RxHdr.resptype, C1RxHdr.mdata}           ) && (C1RxWrValid | C1RxIntrValid);
+   assign xz_rx0_flag = ( ^{C0RxHdr.vc_used, C0RxHdr.hitmiss,                 C0RxHdr.clnum, C0RxHdr.resptype, C0RxHdr.mdata, C0RxData}  && C0RxRspValid );
+   assign xz_rx1_flag = ( ^{C1RxHdr.vc_used, C1RxHdr.hitmiss, C1RxHdr.format, C1RxHdr.clnum, C1RxHdr.resptype, C1RxHdr.mdata}            && C1RxRspValid );
 
    assign xz_cfg_flag = ( ^{C0RxCfg.index, C0RxCfg.len, C0RxCfg.tid, C0RxData} ) && (C0RxMmioWrValid | C0RxMmioRdValid);
 
@@ -193,18 +200,24 @@ module ccip_sniffer
 
    // Message call
    always @(posedge clk) begin
-      if ((xz_tx0_flag == `VLOG_HIIMP) || (xz_tx0_flag == `VLOG_UNDEF))
-   	print_xz_message ( "C0Tx" );
-      if ((xz_tx1_flag == `VLOG_HIIMP) || (xz_tx1_flag == `VLOG_UNDEF))
-   	print_xz_message ( "C1Tx" );
-      if ((xz_tx2_flag == `VLOG_HIIMP) || (xz_tx2_flag == `VLOG_UNDEF))
-   	print_xz_message ( "C2Tx" );
-      if ((xz_rx0_flag == `VLOG_HIIMP) || (xz_rx0_flag == `VLOG_UNDEF))
-   	print_xz_message ( "C0Rx" );
-      if ((xz_rx1_flag == `VLOG_HIIMP) || (xz_rx1_flag == `VLOG_UNDEF))
-   	print_xz_message ( "C1Rx" );
-      if ((xz_cfg_flag == `VLOG_HIIMP) || (xz_cfg_flag == `VLOG_UNDEF))
-   	print_xz_message ( "C0RxMmio" );
+      if ((xz_tx0_flag == `VLOG_HIIMP) || (xz_tx0_flag == `VLOG_UNDEF)) begin
+   	 print_xz_message ( "C0Tx" );
+      end
+      if ((xz_tx1_flag == `VLOG_HIIMP) || (xz_tx1_flag == `VLOG_UNDEF)) begin	 
+   	 print_xz_message ( "C1Tx" );
+      end
+      if ((xz_tx2_flag == `VLOG_HIIMP) || (xz_tx2_flag == `VLOG_UNDEF)) begin
+   	 print_xz_message ( "C2Tx" );
+      end
+      if ((xz_rx0_flag == `VLOG_HIIMP) || (xz_rx0_flag == `VLOG_UNDEF)) begin
+   	 print_xz_message ( "C0Rx" );
+      end
+      if ((xz_rx1_flag == `VLOG_HIIMP) || (xz_rx1_flag == `VLOG_UNDEF)) begin
+   	 print_xz_message ( "C1Rx" );
+      end
+      if ((xz_cfg_flag == `VLOG_HIIMP) || (xz_cfg_flag == `VLOG_UNDEF)) begin
+   	 print_xz_message ( "C0RxMmio" );
+      end
    end
 
    
@@ -212,13 +225,38 @@ module ccip_sniffer
     * SOP & clnum protocol not followed
     */
    // C1TxHdr structure printout
-   function void print_c1txhdr_format();
-      begin
+   // function void print_c1txhdr_format();
+   //    begin
 	 
-      end
-   endfunction
+   //    end
+   // endfunction
 
+   /*
+    * Full {0,1} signaling
+    */ 
+   always @(posedge clk) begin
+      if (cf2as_ch0_realfull && C0TxValid) begin
+	 `BEGIN_RED_FONTCOLOR;
+	 $display("SIM-SV: [WARNING] Transaction was possibly dropped due to C0Tx Overflow");	 
+	 $display("        [WARNING] Transaction was pushed in when port was full");	     
+	 `END_RED_FONTCOLOR;
+	 $fwrite(fd_warn, "SIM-SV: [WARNING] Transaction was possibly dropped due to C0Tx Overflow");
+	 $fwrite(fd_warn, "        [WARNING] Transaction was pushed in when port was full");         
+      end
+      if (cf2as_ch1_realfull && C1TxValid) begin
+	 `BEGIN_RED_FONTCOLOR;
+	 $display("SIM-SV: [WARNING] Transaction was possibly dropped due to C1Tx Overflow");	 
+	 $display("        [WARNING] Transaction was pushed in when port was full");	 
+	 `END_RED_FONTCOLOR;
+	 $fwrite(fd_warn, "SIM-SV: [WARNING] Transaction was possibly dropped due to C1Tx Overflow");
+	 $fwrite(fd_warn, "        [WARNING] Transaction was pushed in when port was full");         
+      end
+   end
    
+
+   /* 
+    * C1TX beat check
+    */ 
    // logic [1:0] expected_clnum;
    // logic       expected_sop;
    logic       c1tx_beat_in_progress;
@@ -254,23 +292,48 @@ module ccip_sniffer
    /*
     * Multi-cache READ line request checks
     */
-   always @(posedge clk) begin
+   always @(posedge clk) begin : c0tx_mcl_check
       // ------------------------------------------------------------ //
-      // Tx0 - 3 CL request illegal
-      if (C0TxRdValid && (C0TxHdr.len == ASE_3CL)) begin
-	 `BEGIN_RED_FONTCOLOR;
-	 $display("SIM-SV: [ERROR] %d | Read Request on C0Tx for 3 cachelines is ILLEGAL !", $time);
-	 $display("        [ERROR] %d | In CCI-P specificaton document, please see Multi-cacheline requests", $time);
-	 $display("        [ERROR] %d | Simulator will shut down now !\n", $time);
-	 `END_RED_FONTCOLOR;
-	 $fwrite(fd_warn, " %d | Read Request on C0Tx for 3 cachelines is ILLEGAL !", $time);
-	 $fwrite(fd_warn, "    | In CCI-P specificaton document, please see Multi-cacheline requests");
-	 $fwrite(fd_warn, "    | Simulator will shut down now !\n");
-	 start_simkill_countdown();
-      end // if (C0TxWrValid && (C0TxHdr.clnum == ASE_3CL))
-      // ------------------------------------------------------------ //
-   end
+      // If Read request
+      if ( C0TxValid && ((C1TxHdr.reqtype == ASE_RDLINE_S)||(C0TxHdr.reqtype == ASE_RDLINE_S)) )  begin
+	 // ------------------------------------------------------------ //
+	 // Tx0 - 3 CL request illegal
+	 if (C0TxHdr.len == ASE_3CL) begin
+	    `BEGIN_RED_FONTCOLOR;
+	    $display(" [ERROR] %d | Read Request on C0Tx for 3 cachelines is ILLEGAL !", $time);
+	    $display(" [ERROR] %d | In CCI-P specificaton document, please see Multi-cacheline requests", $time);
+	    $display(" [ERROR] %d | Simulator will shut down now !\n", $time);
+	    `END_RED_FONTCOLOR;
+	    $fwrite(fd_warn, "%d | Read Request on C0Tx for 3 cachelines is ILLEGAL !", $time);
+	    $fwrite(fd_warn, "%d | In CCI-P specificaton document, please see Multi-cacheline requests", $time);
+	    $fwrite(fd_warn, "%d | Simulator will shut down now !\n", $time);
+	    start_simkill_countdown();
+	 end // if (C0TxWrValid && (C0TxHdr.clnum == ASE_3CL))
+	 // ------------------------------------------------------------ //
+	 // Address alignment check
+	 if ( (C0TxHdr.addr[0] != 1'b0) && (C0TxHdr.len == ASE_2CL) ) begin
+	    `BEGIN_RED_FONTCOLOR;	    
+	    $display(" [ERROR] %d | Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned ", $time);
+	    $display(" [ERROR] %d | Simulator will shut down now !\n", $time);
+	    `END_RED_FONTCOLOR;
+	    $fwrite(fd_warn, " %d | Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned ", $time);
+	    $fwrite(fd_warn, " %d | Simulator will shut down now !\n", $time);
+	    start_simkill_countdown();	    
+	 end
+	 else if ( (C0TxHdr.addr[1:0] != 2'b0) && (C0TxHdr.len == ASE_4CL) ) begin
+	    `BEGIN_RED_FONTCOLOR;	    
+	    $display(" [ERROR] %d | Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned ", $time);
+	    $display(" [ERROR] %d | Simulator will shut down now !\n", $time);
+	    `END_RED_FONTCOLOR;
+	    $fwrite(fd_warn, " %d | Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned ", $time);
+	    $fwrite(fd_warn, " %d | Simulator will shut down now !\n", $time);
+	    start_simkill_countdown();	    
+	 end
+	 // ------------------------------------------------------------ //
+      end // if (C0TxValid && ((C1TxHdr.reqtype == ASE_RDLINE_S)||(C1TxHdr.reqtype == ASE_RDLINE_S)))
+   end // block: c0tx_mcl_check
 
+   
    /*
     * Check memory transactions in flight, maintain active list
     */
