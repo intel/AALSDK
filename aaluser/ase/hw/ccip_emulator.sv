@@ -173,7 +173,9 @@ module ccip_emulator
 	   eREQ_WRLINE_I : txasehdr.txhdr.reqtype = ASE_WRLINE_I;
 	   eREQ_WRLINE_M : txasehdr.txhdr.reqtype = ASE_WRLINE_M;
 	   eREQ_WRFENCE  : txasehdr.txhdr.reqtype = ASE_WRFENCE;
+`ifdef DEFEATRUE_ATOMIC
 	   eREQ_ATOMIC   : txasehdr.txhdr.reqtype = ASE_ATOMIC_REQ;
+`endif
 	   eREQ_INTR     : txasehdr.txhdr.reqtype = ASE_INTR_REQ;
 	 endcase // case (inhdr.req_type)
 	 return txasehdr;
@@ -188,7 +190,9 @@ module ccip_emulator
 	 case (inhdr.rxhdr.resptype)
 	   ASE_RD_RSP     : rxasehdr.resp_type = eRSP_RDLINE;
 	   ASE_UMSG       : rxasehdr.resp_type = eRSP_UMSG;
+`ifdef DEFEATRUE_ATOMIC
 	   ASE_ATOMIC_RSP : rxasehdr.resp_type = eRSP_ATOMIC;
+`endif
 	 endcase
 	 return rxasehdr;
       end

@@ -558,9 +558,6 @@ void mmio_response(struct mmio_t *mmio_pkt);
 // UMSG functions
 void umsg_dispatch(int init, struct umsgcmd_t *umsg_pkt);
 
-// PORT control functions
-
-
 // Buffer message injection
 void buffer_msg_inject (char *);
 
@@ -654,6 +651,9 @@ int app2sim_dealloc_tx;
 int sim2app_dealloc_rx;
 #endif // End SIM_SIDE
 
+// Defeature Atomics for BDX releases 
+// There is no global fixes for this
+#define DEFEATURE_ATOMICS
 
 #endif // End _ASE_COMMON_H_
 
