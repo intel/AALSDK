@@ -164,10 +164,12 @@ void wr_memline_dex(cci_pkt *pkt)
 
   uint64_t phys_addr;
   uint64_t *wr_target_vaddr = (uint64_t*)NULL;
-  uint64_t *rd_target_vaddr = (uint64_t*)NULL;
   int ret_fd;
+#ifndef DEFEATURE_ATOMICS
+  uint64_t *rd_target_vaddr = (uint64_t*)NULL;
   long long cmp_qword;  // Data to be compared
   long long new_qword;  // Data to be writen if compare passes
+#endif
 
   if (pkt->mode == CCIPKT_WRITE_MODE) 
     {
@@ -185,6 +187,7 @@ void wr_memline_dex(cci_pkt *pkt)
       // Success
       pkt->success = 1;
     }
+#ifndef DEFEATURE_ATOMICS
   else if (pkt->mode == CCIPKT_ATOMIC_MODE)
     {
       /*
@@ -215,12 +218,7 @@ void wr_memline_dex(cci_pkt *pkt)
       END_YELLOW_FONTCOLOR;
 #endif
     }
-  
-#if 0
-  int slowdown;
-  printf("  [DEBUG][slowdown]  Waiting for keyboard input...\n");    
-  scanf("%d", &slowdown);
-#endif
+#endif  
 
   FUNC_CALL_EXIT;
 }

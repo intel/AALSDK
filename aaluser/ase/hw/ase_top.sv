@@ -88,8 +88,8 @@ module ase_top();
       .pck_cp2af_sRx          (pck_cp2af_sRx       )
       );
 
-   t_ccip_c0_RspAtomicHdr DBG_C0RxAtomic;
-   assign DBG_C0RxAtomic = t_ccip_c0_RspAtomicHdr'(pck_cp2af_sRx.c0.hdr);
+   // t_ccip_c0_RspAtomicHdr DBG_C0RxAtomic;
+   // assign DBG_C0RxAtomic = t_ccip_c0_RspAtomicHdr'(pck_cp2af_sRx.c0.hdr);
 
    t_ccip_c0_ReqMmioHdr DBG_C0RxMMIO;
    assign DBG_C0RxMMIO  = t_ccip_c0_ReqMmioHdr'(pck_cp2af_sRx.c0.hdr);   

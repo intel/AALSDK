@@ -105,10 +105,11 @@ module ccip_logger
    UMsgHdr_t C0RxUMsgHdr;
    assign C0RxUMsgHdr = UMsgHdr_t'(C0RxHdr);
 
+`ifndef DEFEATURE_ATOMICS
    // Atomics header
    Atomics_t C0RxAtomicHdr;
    assign C0RxAtomicHdr = Atomics_t'(C0RxHdr);
-
+`endif
 
    /*
     * Buffer channels, request and response types
@@ -134,7 +135,9 @@ module ccip_logger
 	   ASE_WRLINE_I   : return "Wr_I       ";
 	   ASE_WRLINE_M   : return "Wr_M       ";
 	   ASE_WRFENCE    : return "WrFence    ";
+`ifndef DEFEATURE_ATOMICS
 	   ASE_ATOMIC_REQ : return "AtomicReq  ";
+`endif
 	   ASE_INTR_REQ   : return "IntrReq    ";
 	   default        : return "** ERROR %m : Request type unindentified **" ;
 	 endcase
@@ -149,7 +152,9 @@ module ccip_logger
 	   ASE_WR_RSP      : return "WrResp     ";
 	   ASE_WRFENCE_RSP : return "WrFenceResp";
 	   ASE_INTR_RSP    : return "IntrResp   ";
+`ifndef DEFEATURE_ATOMICS
 	   ASE_ATOMIC_RSP  : return "AtomicRsp  ";
+`endif
 	   default         : return "** ERROR %m : Request type unindentified **" ;
 	 endcase
       end
@@ -347,6 +352,7 @@ module ccip_logger
 	 	    C0RxData);
 	 end // if (C0RxRdValid && (C0RxHdr.resptype == ASE_RD_RSP))
 	 /*********** SW -> MEM -> AFU Atomic responses on C0Rx  **********/
+`ifndef DEFEATURE_ATOMICS
 	 if (C0RxRdValid && (C0RxHdr.resptype == ASE_ATOMIC_RSP)) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%s\t%x",
 					     $time,
@@ -362,7 +368,8 @@ module ccip_logger
 		    C0RxAtomicHdr.mdata,
 		    ((C0RxAtomicHdr.success == 1) ? "Success" : "Fail   "),
 		    C0RxData);
-	 end
+	 end // if (C0RxRdValid && (C0RxHdr.resptype == ASE_ATOMIC_RSP))
+`endif
 	 /*************** SW -> MEM -> AFU Unordered Message  *************/
 	 if (C0RxUMsgValid) begin
 	    if (C0RxUMsgHdr.umsg_type) begin

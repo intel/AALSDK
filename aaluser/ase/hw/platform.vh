@@ -45,7 +45,9 @@
  * 
  */ 
  `define BDX_FPGA
-
+ `ifdef BDX_FPGA
+  `define DEFEATURE_ATOMICS
+ `endif
 
 /*
  * Relevant CSRs that control CCI or AFU behaviour

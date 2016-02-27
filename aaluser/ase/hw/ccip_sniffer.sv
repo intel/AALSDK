@@ -57,8 +57,7 @@ import ase_pkg::*;
 
 module ccip_sniffer
   #(
-    parameter ERROR_LOGNAME = "ase_errors.log",
-    parameter WARN_LOGNAME  = "ase_warnings.log"
+    parameter ERR_LOGNAME  = "ccip_warning_and_errors.log"
     )
    (
     // Configure enable
@@ -109,7 +108,7 @@ module ccip_sniffer
       $display ("SIM-SV : Protocol Checker initialized");
 
       // Open log files
-      fd_errlog = $fopen(WARN_LOGNAME, "w");
+      fd_errlog = $fopen(ERR_LOGNAME, "w");
 
       // Wait until finish logger
       wait (finish_logger == 1);
@@ -147,9 +146,10 @@ module ccip_sniffer
    function void print_and_simkill();
       begin
 	 `BEGIN_RED_FONTCOLOR;
-	 $display(" [ERROR] %d : Simulation will end now");	 
+	 $display(" [ERROR] %d : Simulation will end now", $time);	 
 	 `END_RED_FONTCOLOR;
-	 $fwrite(fd_errlog, " [ERROR] %d : Simulation will end now");	 
+	 $fwrite(fd_errlog, " [ERROR] %d : Simulation will end now\n", $time);
+	 start_simkill_countdown();	 
       end
    endfunction; // print_and_simkill
       
@@ -262,18 +262,57 @@ module ccip_sniffer
 
 
    /*
+    * Illegal transaction checker
+    */
+   logic c0tx_illegal;
+   logic c1tx_illegal;   
+   
+   // Check illegal transaction IDs in C0Tx
+   always @(posedge clk) begin : c0tx_illegal_proc
+      if (C0TxValid) begin
+	 if ((C0TxHdr.reqtype == ASE_RDLINE_S)||(C0TxHdr.reqtype == ASE_RDLINE_I)) begin
+	    c0tx_illegal <= 0;
+	 end
+	 else begin
+	    c0tx_illegal <= 1;
+	    print_message_and_log(1, "Illegal transaction request type noticed on C0TxHdr");
+	    print_and_simkill();	 
+	 end
+      end
+      else begin
+	 c0tx_illegal <= 0;
+      end	
+   end
+
+   // Check illegal transaction IDs in C1Tx
+   always @(posedge clk) begin : c1tx_illegal_proc
+      if (C1TxValid) begin
+	 if ((C1TxHdr.reqtype == ASE_WRLINE_M)||(C1TxHdr.reqtype == ASE_RDLINE_I)||(C1TxHdr.reqtype == ASE_WRFENCE)) begin
+	    c1tx_illegal <= 0;
+	 end
+	 else begin
+	    c1tx_illegal <= 1;
+	    print_message_and_log(1, "Illegal transaction request type noticed on C1TxHdr");
+	    print_and_simkill();	 
+	 end
+      end
+      else begin
+	 c1tx_illegal <= 0;
+      end	
+   end
+   
+   
+   /*
     * Incoming transaction checker
     */ 
    typedef enum {
-		 Pkt1,
-		 Pkt2,
-		 Pkt3,
-		 Pkt4
+		 Exp_1CL,
+		 Exp_2CL,
+		 Exp_3CL,
+		 Exp_4CL
 		 } ExpTxState;
-   // ExpTxState exp_c0state;
    ExpTxState exp_c1state;
 
-   // logic [PHYSCLADDR_WIDTH-1:0] exp_c0addr;
    logic [PHYSCLADDR_WIDTH-1:0] exp_c1addr;
    ccip_vc_t                    exp_c1vc;
    ccip_len_t                   exp_c1len;
@@ -283,11 +322,23 @@ module ccip_sniffer
     * Write TX beat check
     */
    logic 			c1tx_beat_in_progress;
-      
+   logic 			wrline_en;
+
+   // Wrline_en
+   always @(*) begin
+      if (C1TxValid && ((C1TxHdr.reqtype==ASE_WRLINE_M)||(C1TxHdr.reqtype==ASE_WRLINE_I))) begin
+	 wrline_en <= 1;	 
+      end
+      else begin
+	 wrline_en <= 0;
+      end
+   end   
+
+/*   
    // Checker state machine
    always @(posedge clk) begin
       if (SoftReset) begin
-	 exp_c1state            <= Exp_Idle;
+	 exp_c1state            <= Exp_1CL;
 	 exp_c1addr             <= {PHYSCLADDR_WIDTH{1'b0}};	 
 	 c1tx_beat_in_progress  <= 0;	 
       end
@@ -296,94 +347,51 @@ module ccip_sniffer
 	   // Waiting for a C1Tx transaction
 	   Exp_1CL:
 	     begin
-		// ------------------------------------------------------------------------- //
-		// 4-CL request
-		if (C1TxValid && 
-		    ((C1TxHdr.reqtype==ASE_WRLINE_M)||(C1TxHdr.reqtype==ASE_WRLINE_I)) && 
-		    (C1TxHdr.len == ASE_4CL)) begin
-		   // SOP bit not set
+		if (wrline_en && (C1TxHdr.len == ASE_4CL)) begin
 		   if (~C1TxHdr.sop) begin
-		      print_message_and_log("C1TxHdr SOP field is not HIGH in the first transaction of multi-line request !");		      
-		      print_and_simkill();		      
-		   end		   
-		   // All is well, set up expectation
-		   else if (C1TxHdr.sop) begin
-		      c1tx_beat_in_progress  <= 1;	 
-		      exp_c1addr             <= C1TxHdr.addr;
-		      exp_c1vc               <= C1TxHdr.vc;
-		      exp_c1len              <= C1TxHdr.len;		      
-		   end
-		   exp_c1state <= Exp_4CL;
-		end
-		// ------------------------------------------------------------------------- //
-		// 2-CL request
-		else if (C1TxValid && 
-			 ((C1TxHdr.reqtype==ASE_WRLINE_M)||(C1TxHdr.reqtype==ASE_WRLINE_I)) && 
-			 (C1TxHdr.len == ASE_2CL)) begin
-		   // SOP bit not set (error)
-		   if (~C1TxHdr.sop && ~c1tx_beat_in_progress) begin
-		      print_message_and_log("C1TxHdr SOP field is not HIGH in the first transaction of multi-line request !");		      
+		      print_message_and_log(0, "C1TxHdr SOP field is not HIGH in the first transaction of multi-line request !");		      
 		      print_and_simkill();		      
 		   end
-		   else if (c1tx_beat_in_progress) begin
-		      if (~C1TxHdr.sop) begin
-			 print_message_and_log("C1TxHdr SOP field must be LOW AFTER first transaction of multi-line request !");
-			 print_and_simkill();			 
-		      end 		      
+		   else begin
+		      exp_c1addr <= C1TxHdr.addr;
+		      exp_c1vc   <= C1TxHdr.vc;
+		      exp_c1len  <= C1TxHdr.len;		      
 		   end
-		   // All is well, set up expectation
-		   else if (C1TxHdr.sop) begin
-		      c1tx_beat_in_progress  <= 1;	 
-		      exp_c1addr             <= C1TxHdr.addr;
-		      exp_c1vc               <= C1TxHdr.vc;
-		      exp_c1len              <= C1TxHdr.len;		      
-		   end		   		   
-		   exp_c1state <= Exp_2CL;
-		end
-		// ------------------------------------------------------------------------- //
-		// 1-CL request
-		else if (C1TxValid && 
-			 ((C1TxHdr.reqtype==ASE_WRLINE_M)||(C1TxHdr.reqtype==ASE_WRLINE_I)) && 
-			 (C1TxHdr.len == ASE_1CL)) begin
-		   exp_c1state <= Exp_1CL;		   
-		   // SOP bit not set & beat not started
-		   if (~C1TxHdr.sop && ~c1tx_beat_in_progress) begin
-		      print_message_and_log("C1TxHdr SOP field is not HIGH in the first transaction of multi-line request !");		      
+		   exp_c1state <= Exp_2CL;		   
+		end // if (wrline_en && (C1TxHdr.len == ASE_4CL))
+		else if (wrline_en && (C1TxHdr.len == ASE_2CL)) begin
+		   if (~C1TxHdr.sop) begin
+		      print_message_and_log(0, "C1TxHdr SOP field is not HIGH in the first transaction of multi-line request !");		      
 		      print_and_simkill();		      
 		   end
-		   // All is well, set up expectation
-		   else if (C1TxHdr.sop) begin
-		      c1tx_beat_in_progress  <= 1;	 
-		      exp_c1addr             <= C1TxHdr.addr;
-		      exp_c1vc               <= C1TxHdr.vc;
-		      exp_c1len              <= C1TxHdr.len;		      
-		   end		   		   
-		   exp_c1state <= Exp_1CL;		   
-		end
-		// ------------------------------------------------------------------------- //
-		// Idle
+		   else begin
+		      exp_c1addr <= C1TxHdr.addr;
+		      exp_c1vc   <= C1TxHdr.vc;
+		      exp_c1len  <= C1TxHdr.len;		      
+		   end
+		   exp_c1state <= Exp_2CL;		   
+		end // if (wrline_en && (C1TxHdr.len == ASE_2CL))		
 		else begin
-		   c1tx_beat_in_progress  <= 0;	 
-		   exp_c1state <= Exp_Idle;
-		end
+		   exp_c1state <= Exp_1CL;		   
+		end		
 	     end
 
 	   // 3CL state
-	   Exp_3CL:
+	   Exp_2CL:
 	     begin
-		exp_c1state <= Exp_2CL;
+		exp_c1state <= Exp_3CL;
 	     end
 
 	   // 2CL state
-	   Exp_2CL:
+	   Exp_3CL:
 	     begin
-		exp_c1state <= Exp_1CL;
+		exp_c1state <= Exp_4CL;
 	     end
 
 	   // 1CL state
-	   Exp_1CL:
+	   Exp_4CL:
 	     begin
-		exp_c1state <= Exp_4CL;		
+		exp_c1state <= Exp_1CL;		
 	     end
 
 	   // lala land
@@ -394,16 +402,7 @@ module ccip_sniffer
 	 endcase
       end
    end
-
-
-   //
-
-
-   /*
-    * Illegal request type
-    */
-   always @(posedge clk) begin
-   end
+*/
 
    /*
     * Multi-cache READ line request checks
@@ -415,35 +414,21 @@ module ccip_sniffer
 	 // ------------------------------------------------------------ //
 	 // Tx0 - 3 CL request illegal
 	 if (C0TxHdr.len == ASE_3CL) begin
-	    `BEGIN_RED_FONTCOLOR;
-	    $display(" [ERROR] %d | Request on C0Tx for 3 cachelines is ILLEGAL !", $time);
-	    $display(" [ERROR] %d | In CCI-P specificaton document, please see Multi-cacheline requests", $time);
-	    $display(" [ERROR] %d | Simulator will shut down now !\n", $time);
-	    `END_RED_FONTCOLOR;
-	    $fwrite(fd_errlog, "%d | Request on C0Tx for 3 cachelines is ILLEGAL !", $time);
-	    $fwrite(fd_errlog, "%d | In CCI-P specificaton document, please see Multi-cacheline requests", $time);
-	    $fwrite(fd_errlog, "%d | Simulator will shut down now !\n", $time);
-	    start_simkill_countdown();
+	    print_message_and_log(1, "Request on C0Tx for 3 cachelines is ILLEGAL !");
+	    print_message_and_log(1, "In CCI-P specificaton document, see Section on Multi-cacheline requests");
+	    print_and_simkill();	    
 	 end
 	 // ------------------------------------------------------------ //
 	 // Address alignment check
 	 if ( (C0TxHdr.addr[0] != 1'b0) && (C0TxHdr.len == ASE_2CL) ) begin
-	    `BEGIN_RED_FONTCOLOR;
-	    $display(" [ERROR] %d | Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned ", $time);
-	    $display(" [ERROR] %d | Simulator will shut down now !\n", $time);
-	    `END_RED_FONTCOLOR;
-	    $fwrite(fd_errlog, " %d | Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned ", $time);
-	    $fwrite(fd_errlog, " %d | Simulator will shut down now !\n", $time);
-	    start_simkill_countdown();
+	    print_message_and_log(0, "Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned ");
+	    print_message_and_log(0, "Simulator will shut down now !\n");
+	    print_and_simkill();	    
 	 end
 	 else if ( (C0TxHdr.addr[1:0] != 2'b0) && (C0TxHdr.len == ASE_4CL) ) begin
-	    `BEGIN_RED_FONTCOLOR;
-	    $display(" [ERROR] %d | Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned ", $time);
-	    $display(" [ERROR] %d | Simulator will shut down now !\n", $time);
-	    `END_RED_FONTCOLOR;
-	    $fwrite(fd_errlog, " %d | Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned ", $time);
-	    $fwrite(fd_errlog, " %d | Simulator will shut down now !\n", $time);
-	    start_simkill_countdown();
+	    print_message_and_log(0, "Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned ");
+	    print_message_and_log(0, "Simulator will shut down now !\n");
+	    print_and_simkill();	    
 	 end
 	 // ------------------------------------------------------------ //
       end
@@ -457,40 +442,26 @@ module ccip_sniffer
       // ------------------------------------------------------------ //
       // If Write request
       if ( C1TxValid && ((C1TxHdr.reqtype == ASE_WRLINE_M)||(C1TxHdr.reqtype == ASE_RDLINE_I)) )  begin
-	 // ------------------------------------------------------------ //
-	 // Tx0 - 3 CL request illegal
-	 if ((C1TxHdr.len == ASE_3CL) && C1TxHdr.sop) begin
-	    `BEGIN_RED_FONTCOLOR;
-	    $display(" [ERROR] %d | Request on C1Tx for 3 cachelines is ILLEGAL !", $time);
-	    $display(" [ERROR] %d | In CCI-P specificaton document, please see Multi-cacheline requests", $time);
-	    $display(" [ERROR] %d | Simulator will shut down now !\n", $time);
-	    `END_RED_FONTCOLOR;
-	    $fwrite(fd_errlog, "%d | Request on C1Tx for 3 cachelines is ILLEGAL !", $time);
-	    $fwrite(fd_errlog, "%d | In CCI-P specificaton document, please see Multi-cacheline requests", $time);
-	    $fwrite(fd_errlog, "%d | Simulator will shut down now !\n", $time);
-	    start_simkill_countdown();
-	 end
-	 // ------------------------------------------------------------ //
-	 // Address alignment check
-	 if ( (C1TxHdr.addr[0] != 1'b0) && (C1TxHdr.len == ASE_2CL) ) begin
-	    `BEGIN_RED_FONTCOLOR;
-	    $display(" [ERROR] %d | Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned ", $time);
-	    $display(" [ERROR] %d | Simulator will shut down now !\n", $time);
-	    `END_RED_FONTCOLOR;
-	    $fwrite(fd_errlog, " %d | Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned ", $time);
-	    $fwrite(fd_errlog, " %d | Simulator will shut down now !\n", $time);
-	    start_simkill_countdown();
-	 end
-	 else if ( (C1TxHdr.addr[1:0] != 2'b0) && (C1TxHdr.len == ASE_4CL) ) begin
-	    `BEGIN_RED_FONTCOLOR;
-	    $display(" [ERROR] %d | Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned ", $time);
-	    $display(" [ERROR] %d | Simulator will shut down now !\n", $time);
-	    `END_RED_FONTCOLOR;
-	    $fwrite(fd_errlog, " %d | Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned ", $time);
-	    $fwrite(fd_errlog, " %d | Simulator will shut down now !\n", $time);
-	    start_simkill_countdown();
-	 end
-	 // ------------------------------------------------------------ //
+   	 // ------------------------------------------------------------ //
+   	 // Tx0 - 3 CL request illegal
+   	 if ((C1TxHdr.len == ASE_3CL) && C1TxHdr.sop) begin
+   	    print_message_and_log(0, "Request on C1Tx for 3 cachelines is ILLEGAL !");
+   	    print_message_and_log(0, "In CCI-P specificaton document, please see Multi-cacheline requests");
+	    print_and_simkill();	    
+   	 end
+   	 // ------------------------------------------------------------ //
+   	 // Address alignment check
+   	 if ( (C1TxHdr.addr[0] != 1'b0) && (C1TxHdr.len == ASE_2CL) && C1TxHdr.sop ) begin
+   	    print_message_and_log(0, "Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned ");
+   	    print_message_and_log(0, "Simulator will shut down now !\n");
+	    print_and_simkill();	    
+   	 end
+   	 else if ( (C1TxHdr.addr[1:0] != 2'b0) && (C1TxHdr.len == ASE_4CL) && C1TxHdr.sop ) begin
+   	    print_message_and_log(0, "Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned ");
+   	    print_message_and_log(0, "Simulator will shut down now !\n");
+	    print_and_simkill();	    
+   	 end
+   	 // ------------------------------------------------------------ //
       end
    end // block: c1tx_mcl_check
 
