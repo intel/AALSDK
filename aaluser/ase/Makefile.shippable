@@ -1,5 +1,5 @@
 # #############################################################################
-# Copyright (c) 2011-2014, Intel Corporation
+# Copyright (c) 2011-2016, Intel Corporation
 # 
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -176,7 +176,8 @@ endif
 header:
 	@echo "############################################################"
 	@echo "#                                                          #"
-	@echo "# Intel Xeon+FPGA BDX-P AFU Simulation Environment $(ASE_VERSION)   #"
+	@echo "#    Xeon(R) + FPGA Accelerator Abstraction Layer 5.0.3    #"
+	@echo "#             AFU Simulation Environment (ASE)             #"
 	@echo "#                                                          #"
 	@echo "############################################################"
 
@@ -207,22 +208,23 @@ help: header
 
 ## Build ASE Software objects and shared library ##
 sw_build:
+	make header
 	mkdir -p $(WORK)
-	cd $(WORK) ; $(CC) $(CC_OPT) -c $(ASESW_FILE_LIST) || exit 1 ; cd - 
+	cd $(WORK) ; $(CC) $(CC_OPT) -c $(ASESW_FILE_LIST) || exit 1 ; cd -
 	cd $(WORK) ; $(CC) -g -shared -o $(ASE_SHOBJ_SO) `ls *.o` $(ASE_LD_SWITCHES) ; cd -
 	nm $(WORK)/$(ASE_SHOBJ_SO) > $(WORK)/$(ASE_SHOBJ_NAME).nm
 
 ## VCS build template ##
-vcs_build: 
+vcs_build:
 	@echo "############################################################"
 	@echo "#                                                          #"
 	@echo "#                VCS-GCC build initiated                   #"
 	@echo "#                                                          #"
 	@echo "############################################################"
 	make sw_build
-	vlogan $(SNPS_VLOGAN_OPT) $(ASEHW_FILE_LIST) 
+	vlogan $(SNPS_VLOGAN_OPT) $(ASEHW_FILE_LIST)
 ifdef DUT_VHD_SRC_LIST
-	vhdlan $(SNPS_VHDLAN_OPT) -f $(DUT_VHD_SRC_LIST) 
+	vhdlan $(SNPS_VHDLAN_OPT) -f $(DUT_VHD_SRC_LIST)
 endif
 ifdef DUT_VLOG_SRC_LIST
 	vlogan $(SNPS_VLOGAN_OPT) -f $(DUT_VLOG_SRC_LIST)

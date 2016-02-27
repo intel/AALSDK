@@ -52,6 +52,7 @@ ASE_DEBUG ?= 1
 ASE_PROFILE_ENABLE ?= 1
 ASE_DISABLE_LOGGER = 0
 
+# Enable Altera gates library
 GLS_SIM = 1
 
 # Timescale
@@ -298,7 +299,8 @@ endif
 header:
 	@echo "############################################################"
 	@echo "#                                                          #"
-	@echo "# Intel Xeon+FPGA BDX-P AFU Simulation Environment $(ASE_VERSION)   #"
+	@echo "#    Xeon(R) + FPGA Accelerator Abstraction Layer 5.0.3    #"
+	@echo "#             AFU Simulation Environment (ASE)             #"
 	@echo "#                                                          #"
 	@echo "############################################################"
 
@@ -329,6 +331,7 @@ help: header
 
 ## Build ASE Software objects and shared library ##
 sw_build:
+	make header
 	mkdir -p $(WORK)
 	cd $(WORK) ; $(CC) $(CC_OPT) -c $(ASESW_FILE_LIST) || exit 1 ; cd -
 	cd $(WORK) ; $(CC) -g -shared -o $(ASE_SHOBJ_SO) `ls *.o` $(ASE_LD_SWITCHES) ; cd -
@@ -400,7 +403,6 @@ else
 	@echo "############################################################"
   endif
 endif
-#	python scripts/ipc_clean.py
 
 # Open Wave file
 wave: check
