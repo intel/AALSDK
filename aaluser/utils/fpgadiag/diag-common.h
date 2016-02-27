@@ -256,7 +256,7 @@ protected:
       ASSERT(NULL != m_pALIMMIOService);
       ASSERT(NULL != m_pALIBufferService);
       ASSERT(NULL != m_pALIResetService);
-      ASSERT(NULL != m_pALIPerf);
+      //ASSERT(NULL != m_pALIPerf);
 
       btInt i;
       for ( i = 0 ; i < sizeof(m_PerfMonitors) / sizeof(m_PerfMonitors[0]) ; ++i ) {

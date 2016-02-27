@@ -50,6 +50,10 @@
 
 btInt CNLBAtomic::RunTest(const NLBCmdLine &cmd)
 {
+	ERR("Atomic test NOT supported in this release. Exiting test.");
+	return 1;
+
+#if 0
    btInt res = 0;
    btWSSize  sz = CL(cmd.begincls);
 
@@ -249,6 +253,7 @@ btInt CNLBAtomic::RunTest(const NLBCmdLine &cmd)
    }
 
    return res;
+#endif
 }
 
 void  CNLBAtomic::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls, const btInt cpu_cx)

@@ -249,6 +249,14 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 	      break;
 	    }
 
+	    //Checking for num_clocks underflow.
+	    if(pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead))
+       {
+          cerr << "Number of Clocks is negative.\n";
+          ++res;
+          break;
+       }
+
 	   //Increment number of cachelines
 	   sz += CL(mcl);
 	   NumCacheLines += mcl;

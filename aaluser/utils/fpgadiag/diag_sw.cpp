@@ -284,6 +284,14 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
 		   ++res;
 		   break;
 	   }
+
+	   //Checking for num_clocks underflow.
+       if(pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead))
+       {
+          cerr << "Number of Clocks is negative.\n";
+          ++res;
+          break;
+       }
    }
    //Disable UMsgs upon test completion
    //m_pALIMMIOService->mmioWrite32(CSR_UMSG_BASE, 0);

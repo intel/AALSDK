@@ -117,7 +117,7 @@ public:
    HelloALIHSSIApp();
    ~HelloALIHSSIApp();
 
-   btInt run();            ///< Return 0 if success
+   btInt run(btInt timeout_secs);            ///< Return 0 if success
    btBool getHSSIStatus();  ///< Return true if success
    btUnsigned64bitInt getHSSICounter();
 
@@ -249,7 +249,7 @@ HelloALIHSSIApp::~HelloALIHSSIApp()
 ///             - Executes the NLB algorithm
 ///             - Cleans up.
 ///
-btInt HelloALIHSSIApp::run()
+btInt HelloALIHSSIApp::run(btInt timeout_secs)
 {
    cout <<"========================="<<endl;
    cout <<"= Hello ALI HSSI Sample ="<<endl;
@@ -319,7 +319,7 @@ btInt HelloALIHSSIApp::run()
    btUnsigned64bitInt compare_ctr;
 
    struct timespec ts; //TODO get timeout value from Cmd line
-   ts.tv_sec = 2;
+   ts.tv_sec = timeout_secs;
    Timer     absolute = Timer() + Timer(&ts);
 
    MSG("Running Test");
@@ -622,12 +622,24 @@ void HelloALIHSSIApp::serviceAllocateFailed(const IEvent &rEvent)
 //=============================================================================
 int main(int argc, char *argv[])
 {
+
+   if(argc < 2)
+   {
+      cout << "Usage: --ts=S              where S is timeout in seconds" << endl;
+      exit (1);
+   }
+
    HelloALIHSSIApp theApp;
+   btInt timeout_secs = 5;
+
    if(!theApp.isOK()){
       ERR("Runtime Failed to Start");
       exit(1);
    }
-   btInt Result = theApp.run();
+
+   sscanf(argv[1], "--ts=%d", &timeout_secs);
+
+   btInt Result = theApp.run(timeout_secs);
 
    if (0 == Result){
       MSG("TEST PASS");
