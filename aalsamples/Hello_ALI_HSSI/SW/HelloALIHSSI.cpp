@@ -305,6 +305,7 @@ btInt HelloALIHSSIApp::run(btInt timeout_secs)
    m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest);
    m_Sem.Wait();
    if(!m_bIsOK){
+      ++m_Result;
       ERR("Allocation failed\n");
       m_Runtime.stop();
       m_Sem.Wait();
@@ -322,7 +323,7 @@ btInt HelloALIHSSIApp::run(btInt timeout_secs)
    ts.tv_sec = timeout_secs;
    Timer     absolute = Timer() + Timer(&ts);
 
-   MSG("Running Test");
+   MSG("Running Initial Test");
    if(true == m_bIsOK){
 
       // Initiate AFU Reset
@@ -338,20 +339,24 @@ btInt HelloALIHSSIApp::run(btInt timeout_secs)
       if(0x0 == init_ctr)
       {
          ERR("No Transactions recorded - FAIL.");
+         ++m_Result;
          goto done_1;
       }
       if(!getHSSIStatus())
       {
          ERR("Initial HSSI Status - FAIL.");
+         ++m_Result;
          goto done_1;
       }
 
       MSG("Initial HSSI Status - PASS.");
+      MSG("Running long test for " << timeout_secs << " secs." );
 
       while(Timer() < absolute){
          if(!getHSSIStatus())
          {
             ERR("HSSI Status - FAIL.");
+            ++m_Result;
             break;
          }
 
@@ -360,6 +365,7 @@ btInt HelloALIHSSIApp::run(btInt timeout_secs)
          if(init_ctr == compare_ctr)
          {
             ERR("No Transactions recorded - FAIL.");
+            ++m_Result;
             break;
          }
 
@@ -369,7 +375,7 @@ btInt HelloALIHSSIApp::run(btInt timeout_secs)
       }
 
 
-      MSG("Done Running Test");
+      MSG("Finished long test");
    }
 
    // Clean-up and return
