@@ -122,9 +122,9 @@ void session_init()
     }
   
   // Initialize ase_workdir_path
-  ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
+  // ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
   // ase_workdir_path = ase_eval_session_directory();  
-  ase_eval_session_directory ();  
+  // ase_eval_session_directory ();  
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  ASE Session Directory located at =>\n");
   printf("         %s\n", ase_workdir_path);

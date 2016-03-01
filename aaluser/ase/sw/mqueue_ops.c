@@ -44,6 +44,10 @@ void ipc_init()
 
   int ipc_iter;
   
+  // Evaluate ase_workdir_path
+  ase_workdir_path = (char*) ase_malloc(ASE_FILEPATH_LEN);
+  ase_eval_session_directory();
+  
   // Malloc mq_array
   mq_array = (struct ipc_t *)ase_malloc(ASE_MQ_INSTANCES * sizeof(struct ipc_t) );
   
