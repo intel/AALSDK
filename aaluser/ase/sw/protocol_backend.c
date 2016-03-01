@@ -80,6 +80,7 @@ int ase_instance_running()
       if (fp_ready_check != NULL)
 	{
 	  fscanf(fp_ready_check, "%d", &ase_simv_pid);
+	  fclose(fp_ready_check);
 	}
       // If failed
       else
@@ -88,10 +89,10 @@ int ase_instance_running()
 	}
     }
 
-  if (fp_ready_check != NULL)
-    {
-      fclose(fp_ready_check);
-    }
+  /* if (fp_ready_check != NULL) */
+  /*   { */
+  /*     fclose(fp_ready_check); */
+  /*   } */
 
   return ase_simv_pid;
   FUNC_CALL_EXIT;
@@ -717,7 +718,7 @@ int ase_init()
 
   // Open Buffer info log
   fp_workspace_log = fopen("workspace_info.log", "wb");
-  if (fp_workspace_log == NULL)
+  if (fp_workspace_log == (FILE*)NULL)
     {
       ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
     }
@@ -849,6 +850,10 @@ void start_simkill_countdown()
     {
       fclose(fp_memaccess_log);
     }
+  if (fp_pagetable_log != NULL) 
+    {
+      fclose(fp_pagetable_log);
+    }
 #endif
 
   // Remove session files
@@ -865,7 +870,7 @@ void start_simkill_countdown()
   printf("SIM-C : Simulation generated log files\n");
   printf("        Transactions file   | $ASE_WORKDIR/ccip_transactions.tsv\n");
   printf("        Workspaces info     | $ASE_WORKDIR/workspace_info.log\n");
-  printf("        Protocol Warnings   | $ASE_WORKDIR/warnings.txt\n");
+  printf("        Protocol Warnings   | $ASE_WORKDIR/ccip_errors_and_warnings.txt\n");
   printf("        ASE seed            | $ASE_WORKDIR/ase_seed.txt\n");
   END_GREEN_FONTCOLOR;
 
