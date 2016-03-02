@@ -6,3 +6,4 @@
 %1 %2\uaia\AIAService.h.in %2\uaia\AIAService.h @AIASERVICE_SVC_MOD@ libAAService
 %1 %2\service\HWALIAFUService.h.in %2\service\HWALIAFUService.h @HWALIAFU_SVC_MOD@ libHWALIAFU
 %1 %2\service\ALIAFUService.h.in %2\service\ALIAFUService.h @ALIAFU_SVC_MOD@ libALIAFU
+%1 %2\aalclp\aalclp.h.in %2\aalclp\aalclp.h @PACKAGE@ aalsdk @PACKAGE_VERSION@  5.0.2 @AALSDK_COPYRIGHT@ "Copyright(c) 2003-2016, Intel Corporation" @PACKAGE_BUGREPORT@ joe.grecco@intel.com  @PACKAGE_URL@ ""  @GIT_COMMIT_ID@  "123 (HEAD ,origin/newkern, newKern)"
