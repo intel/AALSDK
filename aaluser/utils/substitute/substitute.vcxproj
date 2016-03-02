@@ -143,7 +143,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="substitute.c" />
+    <ClCompile Include="substitute.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="substitute.bat" />
