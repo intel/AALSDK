@@ -255,6 +255,9 @@ struct ccip_device
    // Head of the list of ports devices
    kosal_list_head            m_portlisthead;
 
+   int                        m_isVF;
+   int                        m_numVFs;
+   int                        m_maxVFs;
 
    struct fme_device         *m_pfme_dev;    // FME Device
 
@@ -279,6 +282,7 @@ struct ccip_device
    btPhysAddr                 m_phys_fme_mmio;  // Physical address of MMIO space
    size_t                     m_len_fme_mmio;   // Bytes
 
+   btUnsigned64bitInt         m_num_ports;
    btVirtAddr                 m_kvp_port_mmio[5];   // kv address of MMIO space
    btPhysAddr                 m_phys_port_mmio[5];  // Physical address of MMIO space
    size_t                     m_len_port_mmio[5];
@@ -305,6 +309,9 @@ struct ccip_device
 #define ccip_clr_simulated(pdev)             ((pdev)->m_simulated = 0)
 #define ccip_is_simulated(pdev)              ((pdev)->m_simulated == 1)
 
+#define ccip_set_VFdev(pdev)                 ((pdev)->m_isVF = 1)
+#define ccip_is_VFdev(pdev)                  ((pdev)->m_isVF == 1)
+
 #define ccip_set_resource(pdev,r)            ((pdev)->m_resources |= (1<<r))
 #define ccip_has_resource(pdev,r)            ((pdev)->m_resources & (1<<r))
 #define ccip_clr_resource(pdev,r)            ((pdev)->m_resources &= ~(1<<r))
@@ -322,9 +329,13 @@ struct ccip_device
 #define ccip_fmedev_kvp_afu_mmio(pdev)       ((pdev)->m_kvp_fme_mmio)
 #define ccip_fmedev_len_afu_mmio(pdev)       ((pdev)->m_len_fme_mmio)
 
+#define ccip_portdev_numports(pdev)          ((pdev)->m_num_ports)
 #define ccip_portdev_phys_afu_mmio(pdev,n)   ((pdev)->m_phys_port_mmio[n])
 #define ccip_portdev_kvp_afu_mmio(pdev,n)    ((pdev)->m_kvp_port_mmio[n])
 #define ccip_portdev_len_afu_mmio(pdev,n)    ((pdev)->m_len_port_mmio[n])
+
+#define ccip_portdev_maxVFs(pdev)            ((pdev)->m_maxVFs)
+#define ccip_portdev_numVFs(pdev)            ((pdev)->m_numVFs)
 
 #define ccip_dev_pcie_bustype(pdev)          ((pdev)->m_bustype)
 #define ccip_dev_pcie_busnum(pdev)           ((pdev)->m_busNum)

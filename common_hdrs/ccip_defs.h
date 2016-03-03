@@ -264,8 +264,13 @@ enum e_CCIP_PR_Megafun_status {
 #define PCIe_DEVICE_ID_RCiEP0       0xBCBD
 #define PCIe_DEVICE_ID_RCiEP1       0xBCBE
 
+/// VF Device
+#define PCIe_DEVICE_ID_VF           0xBCBF
+
 /// QPI Device ID
 #define PCIe_DEVICE_ID_RCiEP2       0xBCBC
+
+
 
 /// MMIO Space map
 #define FME_DFH_AFUIDL  0x8
