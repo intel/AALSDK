@@ -65,8 +65,19 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd)
    // Clear the DSM status fields
    ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
-   if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->InputPhys(), m_pMyApp->InputSize(), cmd) ) {
-      return 1;
+   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_COOL_FPGA_CACHE))
+   {
+      // Initiate AFU Reset
+      if (0 != m_pALIResetService->afuReset())
+      {
+         ERR("AFU reset failed. Exiting test.");
+         return 1;
+      }
+
+      if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->InputPhys(), m_pMyApp->InputSize(), cmd) ) {
+         ERR("Cool FPGA cache failed. Exiting test.");
+         return 1;
+      }
    }
 
    // Initiate AFU Reset
