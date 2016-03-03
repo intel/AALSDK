@@ -390,7 +390,19 @@ AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize             Length,
 
   buf->memsize = (uint32_t)Length;
   // ASECCIAFU::sm_ASEMtx.Lock();
-  allocate_buffer(buf, (uint64_t*)pTargetVirtAddr);
+
+  // FIXME: Retrying several times to work around ASE issue (Redmine #674)
+  int retriesLeft;
+  for ( retriesLeft = 3; retriesLeft > 0; retriesLeft-- ) {
+     allocate_buffer(buf, (uint64_t*)pTargetVirtAddr);
+     if ( ( ASE_BUFFER_VALID == buf->valid )   &&
+           ( MAP_FAILED != (void *)buf->vbase ) &&
+           ( 0 != buf->fake_paddr ) ) {
+        break;
+     }
+     AAL_WARNING(LM_AFU, "ASE buffer allocation failed, retrying...");
+  }
+
   //ASECCIAFU::sm_ASEMtx.Unlock();
   if ( ( ASE_BUFFER_VALID != buf->valid )   ||
        ( MAP_FAILED == (void *)buf->vbase ) ||
