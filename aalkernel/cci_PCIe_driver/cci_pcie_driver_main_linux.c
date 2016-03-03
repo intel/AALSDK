@@ -88,6 +88,9 @@ extern int print_sim_port_device(struct port_device *pport_dev);
 /// g_device_list - Global device list for this module.
 kosal_list_head g_device_list;
 
+static btBool isPFDriver = 0;
+
+
 //////////////////////////////////////////////////////////////////////////////////////
 
 MODULE_VERSION    (DRV_VERSION);
@@ -494,6 +497,10 @@ struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev
    pci_set_master(pcidev);
    pci_save_state(pcidev);
 
+   if(isPFDriver){
+      PINFO("VF Device detected on PF Driver.\nIgnoring.");
+   }
+
    // Create the CCI device object
    //  Allocate a new CCI board device object
    //  and populate it with its resource information
@@ -850,6 +857,8 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       }
    }
 
+   // This is a PF driver
+   isPFDriver = 1;
    return pccipdev;
 ERR:
 {
