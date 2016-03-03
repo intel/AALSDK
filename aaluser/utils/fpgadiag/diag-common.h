@@ -43,17 +43,10 @@
 
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aalclp/aalclp.h>
-
 #include <aalsdk/service/IALIAFU.h>
-//#include <aalsdk/service/IALIClient.h>
-
-//#include <aalsdk/utils/SingleAFUApp.h>
-//#include <aalsdk/utils/Utilities.h>
 #include <aalsdk/AAL.h>
 #include <aalsdk/Runtime.h>
-
 #include <aalsdk/utils/NLBVAFU.h>
-
 #include <string>
 #include "diag-nlb-common.h"
 

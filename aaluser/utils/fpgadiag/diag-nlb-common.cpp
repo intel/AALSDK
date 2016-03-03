@@ -228,60 +228,6 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
 	  } else {
 		 flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CX);
 	  }
-   } else if ( 0 == strcmp("--dsm-phys", option) ) {
-
-      nlbcl->dsmphys = strtoul(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-         nlbcl->dsmphys = nlbcl->defaults.dsmphys;
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_DSM_PHYS);
-         printf("Invalid value for --dsm-phys : %s. Defaulting to %" PRIuPHYS_ADDR ".\n", value, nlbcl->dsmphys);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_DSM_PHYS);
-      }
-
-   } else if ( 0 == strcmp("--src-phys", option) ) {
-
-      nlbcl->srcphys = strtoul(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-         nlbcl->srcphys = nlbcl->defaults.srcphys;
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_SRC_PHYS);
-         printf("Invalid value for --src-phys : %s. Defaulting to %" PRIuPHYS_ADDR ".\n", value, nlbcl->srcphys);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_SRC_PHYS);
-      }
-
-   } else if ( 0 == strcmp("--src-capcm", option) ) {
-
-      nlbcl->srcphys = strtoul(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-         nlbcl->srcphys = nlbcl->defaults.srcphys;
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_SRC_CAPCM);
-         printf("Invalid value for --src-capcm : %s. Defaulting to %" PRIuPHYS_ADDR ".\n", value, nlbcl->srcphys);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_SRC_CAPCM);
-      }
-
-   } else if ( 0 == strcmp("--dest-phys", option) ) {
-
-      nlbcl->dstphys = strtoul(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-         nlbcl->dstphys = nlbcl->defaults.dstphys;
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_DST_PHYS);
-         printf("Invalid value for --dest-phys : %s. Defaulting to %" PRIuPHYS_ADDR ".\n", value, nlbcl->dstphys);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_DST_PHYS);
-      }
-
-   } else if ( 0 == strcmp("--dest-capcm", option) ) {
-
-      nlbcl->dstphys = strtoul(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-         nlbcl->dstphys = nlbcl->defaults.dstphys;
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_DST_CAPCM);
-         printf("Invalid value for --dest-capcm : %s. Defaulting to %" PRIuPHYS_ADDR ".\n", value, nlbcl->dstphys);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_DST_CAPCM);
-      }
 
    } else if ( (0 == strcmp("--clock-freq", option)) ||  (0 == strcmp("--f", option))) {
 
@@ -966,18 +912,6 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
      }
    }
 
-   // --src-phys and --src-capcm
-   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_SRC_PHYS|NLB_CMD_FLAG_SRC_CAPCM) ) {
-      os << "--src-phys and --src-capcm are mutually exclusive." << endl;
-      return false;
-   }
-
-   // --dst-phys and --dst-capcm
-   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_DST_PHYS|NLB_CMD_FLAG_DST_CAPCM) ) {
-      os << "--dst-phys and --dst-capcm are mutually exclusive." << endl;
-      return false;
-   }
-
    // --hqw
    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_HQW)) {
 		 if ( ((cmd.hqw) < cmd.defaults.minhqw) ||
@@ -1150,8 +1084,6 @@ do                                                            \
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CLKFREQ) ) {
 	   //TODO cfg.SetFPGAClkFreqHz(cmd.clkfreq);
    }
-
-   //cmd.dispflags = NLBDisplayFlags(cmd);
 
    return true;
 }

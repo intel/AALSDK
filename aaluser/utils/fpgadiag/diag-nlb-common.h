@@ -311,42 +311,5 @@ END_C_DECLS
 bool         NLBVerifyCmdLine(NLBCmdLine       & ,
                               std::ostream     & ) throw();
 
-
-BEGIN_C_DECLS
-
-struct MemCpyTestDefaults
-{
-   phys_type       srcphys;
-   phys_type       dstphys;
-   wkspc_size_type wkspc_size_bytes;
-};
-
-struct MemCpyTestCmdLine
-{
-#define MCT_CMD_FLAG_SRC_PHYS  (u64_type)0x10000000000  /* --cpu-src-phys   X     (physical address of source workspace)      */
-#define MCT_CMD_FLAG_DST_PHYS  (u64_type)0x20000000000  /* --cpu-dest-phys  X     (physical address of destination workspace) */
-#define MCT_CMD_WKSPC_SIZE     (u64_type)0x40000000000  /* --cpu-wkspc-size X     (size of workspaces in bytes)               */
-
-   phys_type                       srcphys;
-   phys_type                       dstphys;
-   wkspc_size_type                 wkspc_size_bytes;
-
-   const struct MemCpyTestDefaults defaults;
-};
-
-struct NLBandMemCpyTestCmdLine
-{
-   struct NLBCmdLine        nlb;
-   struct MemCpyTestCmdLine mct;
-};
-
-void      HACALpbk1SetupCmdLineParser(aalclp * , struct NLBandMemCpyTestCmdLine * );
-void haca_lpbk1_help_message_callback(FILE   * , struct _aalclp_gcs_compliance_data * );
-void                HACALpbk1ShowHelp(FILE   * , aalclp_gcs_compliance_data * );
-
-END_C_DECLS
-
-
-
 #endif // __DIAG_NLB_COMMON_H__
 
