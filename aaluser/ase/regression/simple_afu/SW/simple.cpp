@@ -248,29 +248,14 @@ btInt HelloALIVTPNLBApp::run()
 
       m_pALIResetService->afuReset();
 
-      m_pALIMMIOService->mmioWrite32(4, (btUnsigned32bitInt)0xDEADBEEF);
+      m_pALIMMIOService->mmioWrite32(0, (btUnsigned32bitInt)0xDEADBEEF);
 
       SleepMicro(1000);
-
-      m_pALIMMIOService->mmioWrite32(0, (btUnsigned32bitInt)1);
-
-      SleepMicro(3000);
 
       x = 0;
 
-      m_pALIMMIOService->mmioRead32(4, &x);
-      m_pALIMMIOService->mmioWrite32(0, (btUnsigned32bitInt)2);
-      printf("Read x = 0x%0x\n", x);
+      m_pALIMMIOService->mmioRead32(0, &x);
 
-      SleepMicro(1000);
-
-      m_pALIMMIOService->mmioRead32(4, &x);
-      m_pALIMMIOService->mmioWrite32(0, (btUnsigned32bitInt)0);
-      printf("Read x = 0x%0x\n", x);
-
-      SleepMicro(3000);
-
-      m_pALIMMIOService->mmioRead32(4, &x);
       printf("Read x = 0x%0x\n", x);
 
       SleepMicro(500000);
