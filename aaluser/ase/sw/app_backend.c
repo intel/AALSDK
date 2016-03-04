@@ -888,7 +888,7 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
  * or race conditions
  *
  */
-void __attribute__((optimize("O0"))) ase_portctrl(char *ctrl_msg)
+void __attribute__((optimize("O0"))) ase_portctrl(const char *ctrl_msg)
 {
   mqueue_send(app2sim_portctrl_tx, ctrl_msg, ASE_MQ_MSGSIZE);
 

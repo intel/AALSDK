@@ -343,7 +343,7 @@ void mqueue_create(char*);
 int mqueue_open(char*, int);
 void mqueue_close(int);
 void mqueue_destroy(char*);
-void mqueue_send(int, char*, int);
+void mqueue_send(int, const char*, int);
 int mqueue_recv(int, char*, int);
 
 // Debug interface
@@ -388,7 +388,7 @@ extern "C" {
   void umsg_send (int umsg_id, uint64_t *umsg_data);
   void umsg_set_attribute(uint32_t hint_mask);
   // Driver activity
-  void ase_portctrl(char *);
+  void ase_portctrl(const char *);
 #ifdef __cplusplus
 }
 #endif // __cplusplus
