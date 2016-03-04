@@ -833,6 +833,7 @@ module ccip_emulator
    logic [0:NUM_UMSG_PER_AFU-1] umsg_hint_enable_array;
    logic [0:NUM_UMSG_PER_AFU-1] umsg_data_enable_array;
 
+   logic [4:0] 			umsgfifo_cnt_tmp;
    logic [4:0] 			umsgfifo_cnt;
 
    // UMSG Hint-to-Data time emulator (toaster style)
@@ -843,8 +844,6 @@ module ccip_emulator
       for ( ii = 0; ii < NUM_UMSG_PER_AFU; ii = ii + 1 ) begin : umsg_engine
 
 	 // Status board
-	 // assign umsg_hint_enable_array[ii] = umsg_array[ii].hint_ready;
-	 // assign umsg_data_enable_array[ii] = umsg_array[ii].data_ready;
 	 always @(*) begin
 	    umsg_hint_enable_array[ii] <= umsg_array[ii].hint_ready;
 	    umsg_data_enable_array[ii] <= umsg_array[ii].data_ready;
@@ -889,6 +888,7 @@ module ccip_emulator
 		   begin
 		      umsg_array[ii].hint_ready <= 0;
 		      umsg_array[ii].data_ready <= 0;
+		      umsg_array[ii].data_timer <= 0;
 		      if (umsg_array[ii].hint_timer <= 0) begin
 			 umsg_array[ii].state      <= UMsgSendHint;
 		      end
@@ -901,6 +901,8 @@ module ccip_emulator
 		 // Wait until hint popped by event queue
 		 UMsgSendHint:
 		   begin
+		      umsg_array[ii].hint_timer <= 0;
+		      umsg_array[ii].data_ready <= 0;
 		      if (umsg_array[ii].hint_pop) begin
 			 umsg_array[ii].hint_ready <= 0;
 			 umsg_array[ii].data_timer <= $urandom_range(`UMSG_HINT2DATA_LATRANGE);
@@ -916,6 +918,7 @@ module ccip_emulator
 		 // Wait to send out data, go to UMsgSendData after t_data ticks
 		 UMsgDataWait:
 		   begin
+		      umsg_array[ii].hint_timer <= 0;
 		      umsg_array[ii].hint_ready    <= 0;
 		      umsg_array[ii].data_ready    <= 0;
 		      if (umsg_array[ii].data_timer <= 0) begin
@@ -930,6 +933,8 @@ module ccip_emulator
 		 // Wait until popped by event queue
 		 UMsgSendData:
 		   begin
+		      umsg_array[ii].hint_timer <= 0;
+		      umsg_array[ii].data_timer <= 0;
 		      if (umsg_array[ii].data_pop) begin
 			 umsg_array[ii].hint_ready <= 0;
 			 umsg_array[ii].data_ready <= 0;
@@ -1120,7 +1125,7 @@ module ccip_emulator
       .alm_full   ( umsgfifo_full ),
       .full       (  ),
       .empty      ( umsgfifo_empty ),
-      .count      ( umsgfifo_cnt ),
+      .count      ( umsgfifo_cnt_tmp ),
       .overflow   (  ),
       .underflow  (  )
       );
@@ -1129,6 +1134,11 @@ module ccip_emulator
    UMsgHdr_t C0RxUMsgHdr;
    assign C0RxUMsgHdr = UMsgHdr_t'(C0RxHdr);
 
+   // Register UMSG fifo count
+   always @(posedge clk) begin
+      umsgfifo_cnt <= umsgfifo_cnt_tmp;      
+   end
+   
 
    /* ******************************************************************
     *

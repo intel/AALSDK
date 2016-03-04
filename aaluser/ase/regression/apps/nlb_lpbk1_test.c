@@ -74,11 +74,11 @@ int main(int argc, char *argv[])
   // usleep(100);
   // sleep(2);
   // Send umsg
-#if 0
+#if 1
   uint64_t umsgdata;
-  for(i= 0; i < 1000; i++)
+  for(i= 0; i < 100; i++)
     {
-      umsgdata = 0x0000000000000000 + i;
+      umsgdata = 0x1111111100000000 + i;
       umsg_send (1, &umsgdata);
       umsgdata = 0x7777777700000000 + i;
       umsg_send (7, &umsgdata);
