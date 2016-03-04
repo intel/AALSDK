@@ -842,12 +842,18 @@ module ccip_emulator
    generate
       for ( ii = 0; ii < NUM_UMSG_PER_AFU; ii = ii + 1 ) begin : umsg_engine
 
-	 assign umsg_hint_enable_array[ii] = umsg_array[ii].hint_ready;
-	 assign umsg_data_enable_array[ii] = umsg_array[ii].data_ready;
+	 // Status board
+	 // assign umsg_hint_enable_array[ii] = umsg_array[ii].hint_ready;
+	 // assign umsg_data_enable_array[ii] = umsg_array[ii].data_ready;
+	 always @(*) begin
+	    umsg_hint_enable_array[ii] <= umsg_array[ii].hint_ready;
+	    umsg_data_enable_array[ii] <= umsg_array[ii].data_ready;
+	 end
 
+	 
 	 // State machine
 	 always @(posedge clk) begin
-	    if (sys_reset) begin
+	    if (SoftReset) begin
 	       umsg_array[ii].hint_timer <= 0;
 	       umsg_array[ii].data_timer <= 0;
 	       umsg_array[ii].hint_ready <= 0;
@@ -1933,22 +1939,43 @@ module ccip_emulator
    end
 
    // Inactivity management - counter
-   counter
-     #(
-       .COUNT_WIDTH (32)
-       )
-   inact_ctr
-     (
-      .clk          (clk),
-      .rst          ( first_transaction_seen && any_valid ),
-      .cnt_en       (1'b1),
-      .load_cnt     (32'b0),
-      .max_cnt      (cfg.ase_timeout),
-      .count_out    (inactivity_counter),
-      .terminal_cnt (inactivity_found)
-      );
+   // counter
+   //   #(
+   //     .COUNT_WIDTH (32)
+   //     )
+   // inact_ctr
+   //   (
+   //    .clk          (clk),
+   //    .rst          ( first_transaction_seen && any_valid ),
+   //    .cnt_en       (1'b1),
+   //    .load_cnt     (32'b0),
+   //    .max_cnt      (cfg.ase_timeout),
+   //    .count_out    (inactivity_counter),
+   //    .terminal_cnt (inactivity_found)
+   //    );
 
+   always @(posedge clk) begin : inact_ctr
+      if (first_transaction_seen && any_valid) begin
+	 inactivity_counter <= 0;	 
+      end
+      else begin
+	 inactivity_counter <= inactivity_counter + 1;	 
+      end
+   end
 
+   always @(posedge clk) begin : inactivity_found_proc
+      if (sys_reset) begin
+	 inactivity_found <= 0;	 
+      end
+      else if (inactivity_counter > cfg.ase_timeout) begin
+	 inactivity_found <= 1;	 
+      end
+      else begin
+	 inactivity_found <= 0;	 
+      end
+   end
+
+   
    /*
     * Initialization procedure
     *
@@ -2003,8 +2030,8 @@ module ccip_emulator
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
       run_clocks(20);
-      sys_reset     = 0;
-      sw_reset_trig = 0;
+      sys_reset     <= 0;
+      sw_reset_trig <= 0;
       run_clocks(20);
 
       // Indicate to APP that ASE is ready
