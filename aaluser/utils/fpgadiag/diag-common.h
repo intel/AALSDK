@@ -142,10 +142,10 @@ public:
    btWSSize   OutputSize() const { return m_OutputSize; } ///< Accessor for the Output workspace.
    btWSSize   UMsgSize()   const { return m_UMsgSize;   } ///< Accessor for the UMsg workspace.
 
-   btBool isOK()  {return m_isOK;}
+   btBool isOK()  {	return m_isOK; }
 
-   void Wait() { m_Sem.Wait();  }
-   void Post() { m_Sem.Post(1); }
+   void Wait() 	  { m_Sem.Wait();  }
+   void Post() 	  { m_Sem.Post(1); }
    void Stop();
 
    /// @brief Routine to allocate input, output, DSM and Umsg workspaces.

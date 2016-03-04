@@ -40,10 +40,10 @@
 //****************************************************************************
 #ifndef __DIAG_NLB_COMMON_H__
 #define __DIAG_NLB_COMMON_H__
-#include <aalsdk/aalclp/aalclp.h>
 
+#include <aalsdk/aalclp/aalclp.h>
 #include "utils.h"
-//#include "nlb-inner.h"
+
 BEGIN_C_DECLS
 
 #define HIGH 0xffffffff
@@ -68,7 +68,7 @@ struct NLBDefaults
    freq_type       clkfreq;
    const char     *warmfpgacache;
    const char     *coolfpgacache;
-   const char	   *coolcpucache;
+   const char	  *coolcpucache;
    const char     *nobw;
    const char     *tabular;
    const char     *suppresshdr;
@@ -148,9 +148,6 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_SRC_PHYS     		(u64_type)0x00000080  /* --src-phys  X     (physical address of source workspace)         */
 #define NLB_CMD_FLAG_DST_PHYS     		(u64_type)0x00000100  /* --dest-phys X     (physical address of destination workspace)    */
 
-#define NLB_CMD_FLAG_SRC_CAPCM    		(u64_type)0x00000200  /* --src-capcm  X    (CA PCM offset of source workspace)            */
-#define NLB_CMD_FLAG_DST_CAPCM    		(u64_type)0x00000400  /* --dest-capcm X    (CA PCM offset of destination workspace)       */
-
 #define NLB_CMD_FLAG_BEGINCL      		(u64_type)0x00000800  /* --begin X         (number of cache lines)                        */
 #define NLB_CMD_FLAG_ENDCL        		(u64_type)0x00001000  /* --end X           (number of cache lines)                        */
 #define NLB_CMD_FLAG_WT           		(u64_type)0x00002000  /* --wt              (write-through caching)                        */
@@ -172,37 +169,37 @@ struct NLBCmdLine
                                         NLB_CMD_FLAG_TOMIN  | \
                                         NLB_CMD_FLAG_TOHOUR)
 
-#define NLB_CMD_FLAG_CSRS         		(u64_type)0x01000000  /* --csrs            (show CSR read/write)                          */
+#define NLB_CMD_FLAG_CSRS         		(u64_type)0x01000000  		/* --csrs            (show CSR read/write)                          	  */
 
-#define NLB_CMD_FLAG_WARM_FPGA_CACHE 	(u64_type)0x02000000  /* --warm-fpga-cache (attempt to load the cache with hits at init)  */
-#define NLB_CMD_FLAG_COOL_FPGA_CACHE 	(u64_type)0x04000000  /* --cool-fpga-cache (attempt to load the cache with misses at init)*/
+#define NLB_CMD_FLAG_WARM_FPGA_CACHE 	(u64_type)0x02000000  		/* --warm-fpga-cache (attempt to load the cache with hits at init)		  */
+#define NLB_CMD_FLAG_COOL_FPGA_CACHE 	(u64_type)0x04000000  		/* --cool-fpga-cache (attempt to load the cache with misses at init)	  */
 
-#define NLB_CMD_FLAG_RDS          		(u64_type)0x08000000  /* --rds             (readline - shared)                            */
-#define NLB_CMD_FLAG_RDI          		(u64_type)0x10000000  /* --rdi             (readline - invalidate)                        */
-#define NLB_CMD_FLAG_RDO         		(u64_type)0x20000000  /* --rdo             (readline - ownership)                         */
+#define NLB_CMD_FLAG_RDS          		(u64_type)0x08000000  		/* --rds             (readline - shared)                            	  */
+#define NLB_CMD_FLAG_RDI          		(u64_type)0x10000000  		/* --rdi             (readline - invalidate)                        	  */
+#define NLB_CMD_FLAG_RDO         		(u64_type)0x20000000  		/* --rdo             (readline - ownership)                         	  */
 
-#define NLB_CMD_FLAG_POLL         		(u64_type)0x40000000   /* --poll            notice sent from CPU to FPGA via poll         */
-#define NLB_CMD_FLAG_CSR_WRITE    		(u64_type)0x200000000  /* --csr-write       notice sent from CPU to FPGA via csr-write    */
-#define NLB_CMD_FLAG_UMSG_DATA    		(u64_type)0x400000000  /* --umsg-data       notice sent from CPU to FPGA via umsg-data    */
-#define NLB_CMD_FLAG_UMSG_HINT    		(u64_type)0x800000000  /* --umsg-hint       notice sent from CPU to FPGA via umsg-hint	   */
+#define NLB_CMD_FLAG_POLL         		(u64_type)0x40000000   		/* --poll            notice sent from CPU to FPGA via poll         		  */
+#define NLB_CMD_FLAG_CSR_WRITE    		(u64_type)0x200000000  		/* --csr-write       notice sent from CPU to FPGA via csr-write    		  */
+#define NLB_CMD_FLAG_UMSG_DATA    		(u64_type)0x400000000  		/* --umsg-data       notice sent from CPU to FPGA via umsg-data    		  */
+#define NLB_CMD_FLAG_UMSG_HINT    		(u64_type)0x800000000  		/* --umsg-hint       notice sent from CPU to FPGA via umsg-hint	   		  */
 
-#define NLB_CMD_FLAG_COOL_CPU_CACHE 	(u64_type)0x1000000000 /* --cool-cpu-cache  Cool CPU Cache							            */
+#define NLB_CMD_FLAG_COOL_CPU_CACHE 	(u64_type)0x1000000000 		/* --cool-cpu-cache  Cool CPU Cache							           	  */
 
-#define NLB_CMD_FLAG_VA       			(u64_type)0x2000000000 /* --va			 Distribute data among QPI, PCIe0 and PCIe1 channels    */
-#define NLB_CMD_FLAG_VL0		   		(u64_type)0x4000000000 /* --vl0			 Data transferred on QPI channel						        */
-#define NLB_CMD_FLAG_VH0	   			(u64_type)0x8000000000 /* --vh0		    Data transferred on PCIe0  channel					        */
-#define NLB_CMD_FLAG_VH1   				(u64_type)0x10000000000/* --vh1		    Data transferred on PCIe1  channel			   	        */
+#define NLB_CMD_FLAG_VA       			(u64_type)0x2000000000 		/* --va			 	 Distribute data among QPI, PCIe0 and PCIe1 channels  */
+#define NLB_CMD_FLAG_VL0		   		(u64_type)0x4000000000 		/* --vl0			 Data transferred on QPI channel					  */
+#define NLB_CMD_FLAG_VH0	   			(u64_type)0x8000000000 		/* --vh0		     Data transferred on PCIe0  channel					  */
+#define NLB_CMD_FLAG_VH1   				(u64_type)0x10000000000		/* --vh1		     Data transferred on PCIe1  channel			   	      */
 
-#define NLB_CMD_FLAG_MULTICL            (u64_type)0x20000000000/* --multi-cl X  (number of cache lines)                                */
+#define NLB_CMD_FLAG_MULTICL            (u64_type)0x20000000000		/* --multi-cl X  	 (number of cache lines)        					  */
 
-#define NLB_CMD_FLAG_ST		            (u64_type)0x40000000000/*  --shared-token (Sub-mode for atomic tests) */
-#define NLB_CMD_FLAG_UT		            (u64_type)0x80000000000/*  --seperate-token (Sub-mode for atomic tests) */
-#define NLB_CMD_FLAG_HQW	            (u64_type)0x100000000000/* --hardware-qw  (QWord number on the Hardware thread) */
-#define NLB_CMD_FLAG_SQW	            (u64_type)0x200000000000/* --software-qw  (QWord number on the Software thread)*/
-#define NLB_CMD_FLAG_CX		            (u64_type)0x400000000000/* --cmp-xchg     (Number of Cmp-Xchg operations)*/
+#define NLB_CMD_FLAG_ST		            (u64_type)0x40000000000		/*  --shared-token   (Sub-mode for atomic tests) 						  */
+#define NLB_CMD_FLAG_UT		            (u64_type)0x80000000000		/*  --seperate-token (Sub-mode for atomic tests) 						  */
+#define NLB_CMD_FLAG_HQW	            (u64_type)0x100000000000	/* 	--hardware-qw  	 (QWord number on the Hardware thread) 				  */
+#define NLB_CMD_FLAG_SQW	            (u64_type)0x200000000000	/* 	--software-qw    (QWord number on the Software thread)				  */
+#define NLB_CMD_FLAG_CX		            (u64_type)0x400000000000	/* 	--cmp-xchg       (Number of Cmp-Xchg operations)					  */
 
-#define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   /* --0 */
-#define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  /* --1 */
+#define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   		/* --0 */
+#define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  		/* --1 */
 
    uint_type                dispflags;
    uint_type                iter;
@@ -285,13 +282,11 @@ struct NLBCmdLine
                                      NLB_DISP_FLAG_CACHE_RD_MISS | \
                                      NLB_DISP_FLAG_RD_BW         | \
                                      NLB_DISP_FLAG_PEAK_RD_BW    | \
-                                     /*NLB_DISP_FLAG_AVG_RD_BW     |*/ \
                                      NLB_DISP_FLAG_WRITES        | \
                                      NLB_DISP_FLAG_CACHE_WR_HITS | \
                                      NLB_DISP_FLAG_CACHE_WR_MISS | \
                                      NLB_DISP_FLAG_WR_BW         | \
                                      NLB_DISP_FLAG_PEAK_WR_BW    | \
-                                     /*NLB_DISP_FLAG_AVG_WR_BW     |*/ \
                                      NLB_DISP_FLAG_CONT          | \
                                      NLB_DISP_FLAG_CSRS          | \
                                      NLB_DISP_FLAG_QLP_VERSION   | \
