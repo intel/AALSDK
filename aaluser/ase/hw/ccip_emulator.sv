@@ -619,7 +619,7 @@ module ccip_emulator
 	    if (mmio_pkt.write_en == MMIO_WRITE_REQ) begin
 	       hdr.index  = {2'b0, mmio_pkt.addr[15:2]};
 	       hdr.rsvd9  = 1'b0;
-	       hdr.tid    = 9'b0;
+	       hdr.tid    = mmio_tid_counter;	       
 	       if (mmio_pkt.width == MMIO_WIDTH_32) begin
 		  hdr.len = 2'b00;
 		  cwlp_data = {480'b0, mmio_pkt.qword[0][31:0]};
@@ -632,6 +632,7 @@ module ccip_emulator
 	       cwlp_wrvalid = 1;
 	       cwlp_rdvalid = 0;
 	       mmio_pkt.resp_en = 1;
+    	       mmio_tid_counter  = mmio_tid_counter + 1;
 	       @(posedge clk);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 0;
@@ -763,57 +764,6 @@ module ccip_emulator
       if (mmioresp_valid) begin
 	 mmio_rsp_mask(mmio_resp_pkt);
    	 mmio_response ( mmio_resp_pkt );
-      end
-   end
-
-   /*
-    * MMIO timeout/exit process
-    */
-   int mmioread_timeout_cnt;
-   logic mmioread_cycle;
-   logic mmioread_cycle_q;
-
-   // MMIO Read activity in progress
-   always @(posedge clk) begin : mmiocycle_proc
-      mmioread_cycle_q <= mmioread_cycle;
-      if (sys_reset) begin
-	 mmioread_cycle <= 0;
-      end
-      else begin
-	 if (C0RxMmioRdValid) begin
-	    mmioread_cycle <= 1;
-	 end
-	 else if (C2TxMmioRdValid) begin
-	    mmioread_cycle <= 0;
-	 end
-	 else begin
-	    mmioread_cycle <= mmioread_cycle_q;
-	 end
-      end
-   end
-
-   // MMIO counter
-   always @(posedge clk) begin : mmioread_timeout_ctr
-      if (sys_reset) begin
-	 mmioread_timeout_cnt <= 0;
-      end
-      else if (mmioread_cycle) begin
-	 mmioread_timeout_cnt <= mmioread_timeout_cnt + 1;
-      end
-      else begin
-	 mmioread_timeout_cnt <= 0;
-      end
-   end
-
-   // MMIO Timeout simkill
-   always @(posedge clk) begin : mmio_timeout_simkill
-      if (mmioread_timeout_cnt >= `MMIO_RESPONSE_TIMEOUT) begin
-	 `BEGIN_RED_FONTCOLOR;
-	 $display("SIM-SV: ASE timed out waiting for MMIO Read response to arrive !!");
-	 $display("        Please check CCI-spec, MMIO Read responses must return in %d cycles\n",
-		  `MMIO_RESPONSE_TIMEOUT);
-	 `END_RED_FONTCOLOR;
-	 start_simkill_countdown();
       end
    end
 

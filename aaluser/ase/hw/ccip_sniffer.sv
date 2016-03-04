@@ -139,7 +139,7 @@ module ccip_sniffer
 	    $fwrite(fd_errlog, " [ERROR] %d : %s\n", $time, logstr);
 	 end
       end
-   endfunction; // print_message_and_log
+   endfunction
 
    
    // Print and simkill
@@ -151,7 +151,7 @@ module ccip_sniffer
 	 $fwrite(fd_errlog, " [ERROR] %d : Simulation will end now\n", $time);
 	 start_simkill_countdown();	 
       end
-   endfunction; // print_and_simkill
+   endfunction
       
 
    /*
@@ -245,6 +245,68 @@ module ccip_sniffer
    end
 
 
+   /*
+    * MMIO Misbehaviour tracker
+    */
+   // MMIO Timeout management
+   int mmioread_timeout_cnt;
+   logic mmioread_cycle;
+
+   // Check if MMIO TID returned was correct
+   int 	 c0rx_mmiord_tid;
+   int 	 c2tx_mmiord_tid;    
+      
+   // MMIO Read activity in progress
+   always @(posedge clk) begin : mmiocycle_proc
+      if (SoftReset) begin
+	 mmioread_cycle <= 0;
+      end
+      else begin
+	 case ({C0RxMmioRdValid, C2TxMmioRdValid})
+	   2'b10   : mmioread_cycle <= 1;
+	   2'b01   : mmioread_cycle <= 0;
+	   default : mmioread_cycle <= mmioread_cycle;	   
+	 endcase	 
+      end
+   end
+
+   // Sample outgoing/incoming TID as current
+   // always @(posedge clk) begin
+   //    if (C0RxMmioRdValid) begin
+   //    end
+   //    if (C2TxMmioRdValid) begin
+   //    end
+   // end
+
+   
+   // MMIO counter
+   always @(posedge clk) begin : mmioread_timeout_ctr
+      if (SoftReset) begin
+	 mmioread_timeout_cnt <= 0;
+      end
+      else if (mmioread_cycle) begin
+	 mmioread_timeout_cnt <= mmioread_timeout_cnt + 1;
+      end
+      else begin
+	 mmioread_timeout_cnt <= 0;
+      end
+   end
+
+   // MMIO misbehaviour check
+   always @(posedge clk) begin : mmio_timeout_simkill
+      if (mmioread_timeout_cnt >= `MMIO_RESPONSE_TIMEOUT) begin
+	 print_message_and_log(0, "ASE timed out waiting for MMIO Read response to arrive !!");
+	 print_message_and_log(0, "MMIO Read responses must return in 512 cycles");
+	 print_and_simkill();	 
+      end
+      if (~mmioread_cycle && C2TxMmioRdValid) begin
+      	 print_message_and_log(0, "ASE detected an unsolicited MMIO Read response !!\n");
+      	 print_message_and_log(0, "In system, this can cause a crash");
+      	 print_and_simkill();	 
+      end
+   end
+
+   
 
    /*
     * Full {0,1} signaling
