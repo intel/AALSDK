@@ -1,0 +1,37 @@
+#!/bin/bash
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+shopt -o -s nounset
+
+declare -r SCRIPT_NAME='lcov-bat'
+
+. ./lcov-common
+
+declare -r D='bat'
+
+declare    ARGS=''
+declare    WANTDISTCC=false
+
+while [ $# -gt 0 ]; do
+   case $1 in
+#      --gtest_*)
+#         ARGS="${ARGS} --gtest-opt=$1"
+#      ;;
+      --distcc)
+         WANTDISTCC=true
+      ;;
+      *)
+         ARGS="${ARGS} $1"
+      ;;
+   esac
+   shift
+done
+
+setup "$D" ${WANTDISTCC}
+
+# WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --bat --gtest-opt=--vpath=${VPATH} --gtest-opt=--gtest_print_time=0 ${AUTO_COLOR} ${ARGS}"
+
+WHAT_TO_MEASURE="${SUDO} ./test-case ${VPATH}"
+
+run_lcov "$D"
+exit $?
