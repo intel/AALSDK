@@ -560,9 +560,9 @@ btBool HWALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt 
 //
 // mmioGetFeature. Get pointer to feature's DFH, if found.
 //
-btBool  HWALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
-                                         NamedValueSet const &rInputArgs,
-                                         NamedValueSet       &rOutputArgs )
+btBool HWALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+                                        NamedValueSet const &rInputArgs,
+                                        NamedValueSet       &rOutputArgs )
 {
    struct CCIP_DFH    dfh;
    btUnsigned64bitInt guid[2];
@@ -606,18 +606,32 @@ btBool  HWALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
       }
    }
 
-   // Sanity check - can't search for GUID in private features
-   ASSERT ( ! (filterByType && filterByGUID && (filterType == ALI_DFH_TYPE_PRIVATE)) );
-   if ((filterByType && filterByGUID && (filterType == ALI_DFH_TYPE_PRIVATE))) {
+   //
+   // Spec and sanity checks
+   //
+
+   // BBB GUIDs are only meant for matching HW and SW implementations, not to
+   // identify features.
+   // We provided it for convenience, but will output a warning.
+   if (filterByGUID) {
+      AAL_WARNING(LM_AFU, "Searching for GUID is not recommended to discover "
+                       << "features.");
+      AAL_WARNING(LM_AFU, "Please use featureID instead.");
+   }
+
+   // Can't search for GUID in private features
+   if ((filterByGUID && filterByType && (filterType == ALI_DFH_TYPE_PRIVATE))) {
       AAL_ERR(LM_AFU, "Can't search for GUIDs in private features");
       return false;
    }
+
 
    // walk DFH
    AAL_DEBUG(LM_AFU, "Walking DFH list..." << std::endl);
    // look at AFU CSR (mandatory) to get first feature header offset
    ASSERT(mmioRead64(0, (btUnsigned64bitInt *)&dfh));
-   AAL_DEBUG(LM_AFU, "Type: " << std::hex << std::setw(2) << std::setfill('0') << dfh.Type <<
+   AAL_DEBUG(LM_AFU, "Type: " << std::hex << std::setw(2) << std::setfill('0')
+                              << dfh.Type <<
                      ", Next DFH offset: " << dfh.next_DFH_offset <<
                      ", Feature Rev: " << dfh.Feature_rev <<
                      ", Feature ID: " << dfh.Feature_ID <<
@@ -625,12 +639,12 @@ btBool  HWALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
    offset = dfh.next_DFH_offset;
 
    // look at chained DFHs until end of list bit is set or next offset is 0
-   // FIXME: why do we need both?
    while (dfh.eol == 0 && dfh.next_DFH_offset != 0) {
 
       // read feature header
       ASSERT(mmioRead64(offset, (btUnsigned64bitInt *)&dfh));
-      AAL_DEBUG(LM_AFU, "Type: " << std::hex << std::setw(2) << std::setfill('0') << dfh.Type <<
+      AAL_DEBUG(LM_AFU, "Type: " << std::hex << std::setw(2)
+                                 << std::setfill('0') << dfh.Type <<
                         ", Next DFH offset: " << dfh.next_DFH_offset <<
                         ", Feature Rev: " << dfh.Feature_rev <<
                         ", Feature ID: " << dfh.Feature_ID <<
@@ -649,8 +663,8 @@ btBool  HWALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
                                           ).c_str() << std::endl);
 
       if (
-            ( !filterByID   || (dfh.Feature_ID == filterID  )                     ) &&
-            ( !filterByType || (dfh.Type       == filterType)                     ) &&
+            ( !filterByID   || (dfh.Feature_ID == filterID  )              ) &&
+            ( !filterByType || (dfh.Type       == filterType)              ) &&
             ( !filterByGUID || ( (dfh.Type != ALI_DFH_TYPE_PRIVATE) &&
                                  ( 0 == strncmp(filterGUID,
                                           GUIDStringFromStruct(
