@@ -125,7 +125,7 @@ ifeq ($(ASE_DEBUG), 1)
   ifeq ($(ASE_DISABLE_LOGGER), 1)
    SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
   endif
-  SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +lint=TFIPC-L
+  SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +lint=TFIPC-L +warn
 endif
 ifdef GLS_SIM
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
@@ -144,11 +144,12 @@ SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK)
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
+  SNPS_VCS_OPT+=  -race
   ifeq ($(ASE_PROFILE_ENABLE), 1)
     SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
     SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
     SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
-    SNPS_VCS_OPT+= -simprofile +prof -race
+    SNPS_VCS_OPT+= -simprofile +prof
   endif
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 endif
@@ -219,7 +220,6 @@ CLANG_OPT+= \
 	-enable-checker alpha.security.ArrayBoundV2 \
 	-enable-checker alpha.security.MallocOverflow \
 	-enable-checker alpha.security.ReturnPtrRange \
-	-enable-checker alpha.security.taint.TaintPropagation \
 	-enable-checker alpha.unix.Chroot \
 	-enable-checker alpha.unix.MallocWithAnnotations \
 	-enable-checker alpha.unix.PthreadLock \
@@ -229,15 +229,11 @@ CLANG_OPT+= \
 	-enable-checker alpha.unix.cstring.NotNullTerminated \
 	-enable-checker alpha.unix.cstring.OutOfBounds \
 	-enable-checker debug.ConfigDumper \
-	-enable-checker debug.DumpCFG \
 	-enable-checker debug.DumpDominators \
 	-enable-checker debug.DumpLiveVars \
 	-enable-checker debug.DumpTraversal \
 	-enable-checker debug.ExprInspection \
 	-enable-checker debug.Stats \
-	-enable-checker debug.TaintTest \
-	-enable-checker debug.ViewCFG \
-	-enable-checker debug.ViewCallGraph \
 	-enable-checker debug.ViewExplodedGraph \
 	-enable-checker llvm.Conventions \
 	-enable-checker osx.API \
@@ -262,10 +258,11 @@ CLANG_OPT+= \
 	-enable-checker security.FloatLoopCounter \
 	-enable-checker security.insecureAPI.rand \
 	-enable-checker security.insecureAPI.strcpy \
-
-
-   # debug.DumpCallGraph \
-   # debug.DumpCalls \
+	-enable-checker debug.TaintTest \
+	-enable-checker alpha.security.taint.TaintPropagation \
+#	-enable-checker debug.ViewCallGraph \
+	-enable-checker debug.DumpCFG \
+	-enable-checker debug.ViewCFG \
 
 #########################################################################
 #                            Build Targets                              #
@@ -452,3 +449,9 @@ test: all sim
 # On long regression runs, dont create a run.log
 long_sim:
 	cd ./$(WORK)/; ./ase_simv -ucli -do $(ASE_SRCDIR)/vcs_run.tcl +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
+
+splint:
+	cd sw ; splint -standard +posixlib -preproc -syntax -limit 10000 -nullassign -formatconst -retvalint +gnuextensions *.c | tee ../splint.log ; cd -
+
+cppcheck:
+	cd sw ; cppcheck *.c -DSIM_SIDE=1 -D__x86_64__ --enable=all -v --check-config | tee ../lint.log ; cd -

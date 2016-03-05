@@ -56,8 +56,8 @@ struct buffer_t *mmio_region;
 struct buffer_t *umas_region;
 
 // Workspace metadata table
-struct wsmeta_t *wsmeta_head = (struct wsmeta_t *) NULL;
-struct wsmeta_t *wsmeta_end = (struct wsmeta_t *) NULL;
+struct wsmeta_t *wsmeta_head = (struct wsmeta_t *) NULL; 
+struct wsmeta_t *wsmeta_end = (struct wsmeta_t *) NULL;  
 
 // Buffer index count
 int asebuf_index_count = 0;    // global count/index
@@ -78,7 +78,7 @@ void send_simkill()
   // Simkill
   char ase_simkill_msg[ASE_MQ_MSGSIZE];
   memset(ase_simkill_msg, 0, ASE_MQ_MSGSIZE);
-  sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
+  snprintf(ase_simkill_msg, ASE_MQ_MSGSIZE, "%u", ASE_SIMKILL_MSG);
   mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
 
   BEGIN_YELLOW_FONTCOLOR;
@@ -108,7 +108,7 @@ void session_init()
 {
   FUNC_CALL_ENTRY;
 
-  setvbuf(stdout, NULL, _IONBF, 0);
+  setvbuf(stdout, NULL, (int)_IONBF, (size_t)0);
 
   ipc_init();
 
@@ -118,7 +118,7 @@ void session_init()
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  Lock initialization failed, EXIT\n");
       END_YELLOW_FONTCOLOR;
-      exit (1);
+      exit (EXIT_FAILURE);
     }
   
   // Initialize ase_workdir_path
@@ -792,7 +792,7 @@ void deallocate_buffer_by_index(int search_index)
 
   // pthread_mutex_lock (&app_lock);
 
-  int wsid;
+  //int wsid;
   uint64_t *bufptr = (uint64_t*) NULL;
   struct wsmeta_t *wsptr;
   BEGIN_YELLOW_FONTCOLOR;
@@ -804,7 +804,7 @@ void deallocate_buffer_by_index(int search_index)
     {
       if (wsptr->index == search_index)
 	{
-	  wsid = wsptr->index;
+	  //wsid = wsptr->index;
 	  bufptr = wsptr->buf_structaddr;
 	  printf("FOUND\n");
 	  break;
@@ -839,7 +839,7 @@ void deallocate_buffer_by_index(int search_index)
 uint64_t* umsg_get_address(int umsg_id) 
 {
   uint64_t* ret_vaddr;
-  if ((umsg_id >= 0) || (umsg_id < NUM_UMSG_PER_AFU))
+  if ((umsg_id >= 0) && (umsg_id < NUM_UMSG_PER_AFU))
     {
       ret_vaddr = (uint64_t*)( (uint64_t)umsg_umas_vbase + (uint64_t)(umsg_id*(ASE_PAGESIZE + 64)) );
     }

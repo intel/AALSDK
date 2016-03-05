@@ -949,7 +949,7 @@ void ase_config_parse(char *filename)
   FILE *fp = (FILE *)NULL;
   char *line;
   size_t len = 0;
-  ssize_t read;
+  // ssize_t read;
   char *parameter;
   int value;
 
@@ -995,7 +995,8 @@ void ase_config_parse(char *filename)
       fp = fopen(ase_cfg_filepath, "r");
 
       // Parse file line by line
-      while ((read = getline(&line, &len, fp)) != -1)
+      // while ((read = getline(&line, &len, fp)) != -1)
+      while (getline(&line, &len, fp) != -1)
 	{
 	  // Remove all invalid characters
 	  remove_spaces (line);
