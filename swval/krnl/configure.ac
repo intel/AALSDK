@@ -28,6 +28,8 @@ AALKERNEL_DRIVER_VERSION([AALRMS],     [aalrms],     [1],[1],[1])
 AALKERNEL_DRIVER_VERSION([AALRMC],     [aalrmc],     [1],[1],[1])
 AALKERNEL_DRIVER_VERSION([CCIPCIEDRV], [ccipciedrv], [1],[1],[1])
 
+AALKERNEL_DRIVER_VERSION([AALKTE],     [aalkte],     [0],[0],[0])
+
 dnl ############################################################################
 dnl ## Optional Packages #######################################################
 dnl ############################################################################
@@ -124,11 +126,19 @@ AC_CONFIG_LINKS([cci_PCIe_driver/kbuild/cci_pcie_driver_main.c:cci_PCIe_driver/c
                  cci_PCIe_driver/kbuild/ccip_perfmon.c:cci_PCIe_driver/ccip_perfmon.c
                  cci_PCIe_driver/kbuild/kOSAL.c:kOSAL/kOSAL.c])
 
+AC_CONFIG_FILES([aalkte/kbuild/Makefile:aalkte/Kbuild.in])
+AC_CONFIG_LINKS([aalkte/kbuild/aalkte-main.c:aalkte/aalkte-main.c
+                 aalkte/kbuild/aalkte.h:aalkte/aalkte.h
+                 aalkte/kbuild/aalkte-control.c:aalkte/aalkte-control.c
+                 aalkte/kbuild/aalkte-status.c:aalkte/aalkte-status.c
+                 aalkte/kbuild/aalkte-thr.c:aalkte/aalkte-thr.c])
+
 AC_CONFIG_FILES([Makefile
                  aalbus/Makefile
                  aalresourcemgr_server/Makefile
                  aalresourcemgr_client/Makefile
-                 cci_PCIe_driver/Makefile])
+                 cci_PCIe_driver/Makefile
+                 aalkte/Makefile])
 
 AC_OUTPUT
 
