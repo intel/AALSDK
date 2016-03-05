@@ -200,7 +200,7 @@ int SigTapApp::run(mmlink_server *server, char* filename)
 
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
-   ConfigRecord.Add(keyRegAFU_ID,"BFAF2AE9-4A52-46E3-82FE-38F0F9E17764"); //FME AFU ID
+   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612"); //LPBK1 AFU ID
 
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Signal Tap");
