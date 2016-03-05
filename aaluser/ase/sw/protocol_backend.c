@@ -956,7 +956,8 @@ void ase_config_parse(char *filename)
   char *ase_cfg_filepath;
   ase_cfg_filepath = ase_malloc(256);
   memset (ase_cfg_filepath, 0, 256);
-  if ( strlen(sv2c_config_filepath) != 0 )
+  // if ( strlen(sv2c_config_filepath) != 0 )
+  if ( sv2c_config_filepath != (char*)NULL )
     {
       sprintf(ase_cfg_filepath, "%s", sv2c_config_filepath);
     }

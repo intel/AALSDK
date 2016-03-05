@@ -443,6 +443,7 @@ uint64_t get_range_checked_physaddr(uint32_t size)
   uint64_t ret_fake_paddr;
   uint32_t search_flag;
   uint32_t opposite_flag;  
+  uint32_t zero_pbase_flag;
 
   // Generate a new address
   while(unique_physaddr_needed)
@@ -462,8 +463,13 @@ uint64_t get_range_checked_physaddr(uint32_t size)
       if ((ret_fake_paddr + (uint64_t)size) < ret_fake_paddr) 
 	opposite_flag = 1;
 
+      // Zero base flag
+      zero_pbase_flag = 0;
+      if (ret_fake_paddr == 0)
+	zero_pbase_flag = 1;
+
       // If all OK
-      unique_physaddr_needed = search_flag | opposite_flag;
+      unique_physaddr_needed = search_flag | opposite_flag | zero_pbase_flag;
     }
   
   return ret_fake_paddr;
