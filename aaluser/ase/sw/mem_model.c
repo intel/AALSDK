@@ -476,7 +476,10 @@ uint64_t get_range_checked_physaddr(uint32_t size)
     }
   
 #ifdef ASE_DEBUG
-  printf("  [DEBUG]  ASE took %d tries to generate phyaddr\n", tries);
+  if (fp_memaccess_log != NULL)
+    {
+      fprintf(fp_memaccess_log, "  [DEBUG]  ASE took %d tries to generate phyaddr\n", tries);
+    }
 #endif
 
   return ret_fake_paddr;

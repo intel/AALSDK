@@ -196,7 +196,7 @@ CLANG_VERSION=3.6
 CLANG_OPT = -v -v -v -k -analyze-headers --use-cc=gcc -stats
 CLANG_OPT+= -maxloop 100
 CLANG_OPT+= -o $(PWD)/scanbuild/
-CLANG_OPT+= --use-analyzer=/usr/bin/clang
+CLANG_OPT+= --use-analyzer=/usr/bin/clang-3.6
 CLANG_OPT+= \
 	-enable-checker alpha.core.BoolAssignment \
 	-enable-checker alpha.core.CastSize \
@@ -206,16 +206,13 @@ CLANG_OPT+= \
 	-enable-checker alpha.core.PointerArithm \
 	-enable-checker alpha.core.PointerSub \
 	-enable-checker alpha.core.SizeofPtr \
-	-enable-checker alpha.cplusplus.NewDeleteLeaks \
 	-enable-checker alpha.cplusplus.VirtualCall \
-	-enable-checker alpha.deadcode.IdempotentOperations \
 	-enable-checker alpha.deadcode.UnreachableCode \
 	-enable-checker alpha.osx.cocoa.Dealloc \
 	-enable-checker alpha.osx.cocoa.DirectIvarAssignment \
 	-enable-checker alpha.osx.cocoa.DirectIvarAssignmentForAnnotatedFunctions \
 	-enable-checker alpha.osx.cocoa.InstanceVariableInvalidation \
 	-enable-checker alpha.osx.cocoa.MissingInvalidationMethod \
-	-enable-checker alpha.osx.cocoa.MissingSuperCall \
 	-enable-checker alpha.security.ArrayBound \
 	-enable-checker alpha.security.ArrayBoundV2 \
 	-enable-checker alpha.security.MallocOverflow \
@@ -260,9 +257,14 @@ CLANG_OPT+= \
 	-enable-checker security.insecureAPI.strcpy \
 	-enable-checker debug.TaintTest \
 	-enable-checker alpha.security.taint.TaintPropagation \
+
+
 #	-enable-checker debug.ViewCallGraph \
 	-enable-checker debug.DumpCFG \
 	-enable-checker debug.ViewCFG \
+	-enable-checker alpha.cplusplus.NewDeleteLeaks \
+	-enable-checker alpha.deadcode.IdempotentOperations \
+	-enable-checker alpha.osx.cocoa.MissingSuperCall \
 
 #########################################################################
 #                            Build Targets                              #
@@ -431,8 +433,9 @@ distclean: header clean
 #########################################################################
 # Source scan-build
 scan-build:
+	rm -rf scanbuild
 	mkdir -p scanbuild
-	scan-build $(CLANG_OPT) make sw_build | tee scan-build.log
+	scan-build-3.6 $(CLANG_OPT) make sw_build | tee scan-build.log
 
 # Coverage
 coverage:
@@ -451,7 +454,7 @@ long_sim:
 	cd ./$(WORK)/; ./ase_simv -ucli -do $(ASE_SRCDIR)/vcs_run.tcl +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 
 splint:
-	cd sw ; splint -standard +posixlib -preproc -syntax -limit 10000 -nullassign -formatconst -retvalint +gnuextensions *.c | tee ../splint.log ; cd -
+	cd sw ; splint -standard +posixlib -preproc -syntax -limit 10000 -nullassign -formatconst -retvalint +gnuextensions protocol_backend.c | tee ../splint.log ; cd -
 
 cppcheck:
 	cd sw ; cppcheck *.c -DSIM_SIDE=1 -D__x86_64__ --enable=all -v --check-config | tee ../lint.log ; cd -
