@@ -335,15 +335,6 @@ btBool  ASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
    // Spec and sanity checks
    //
 
-   // BBB GUIDs are only meant for matching HW and SW implementations, not to
-   // identify features.
-   // We provided it for convenience, but will output a warning.
-   if (filterByGUID) {
-      AAL_WARNING(LM_AFU, "Searching for GUID is not recommended to discover "
-                       << "features." << std::endl);
-      AAL_WARNING(LM_AFU, "Please use featureID instead." << std::endl);
-   }
-
    // Can't search for GUID in private features
    if ((filterByGUID && filterByType && (filterType == ALI_DFH_TYPE_PRIVATE))) {
       AAL_ERR(LM_AFU, "Can't search for GUIDs in private features." << std::endl);
