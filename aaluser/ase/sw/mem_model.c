@@ -181,6 +181,7 @@ void ase_alloc_action(struct buffer_t *mem)
       start_simkill_countdown(); // RRS: exit(1);
     }
   ftruncate(mem->fd_ase, (off_t)mem->memsize);
+  close(mem->fd_ase);
 
   // Record fake address
   mem->fake_paddr = get_range_checked_physaddr(mem->memsize);
@@ -195,7 +196,7 @@ void ase_alloc_action(struct buffer_t *mem)
 
   // Append to linked list
   ll_append_buffer(new_buf);
-#ifdef ASE_DEBUG
+#ifdef ASE_LL_VIEW
   BEGIN_YELLOW_FONTCOLOR;
   ll_traverse_print();
   END_YELLOW_FONTCOLOR;
@@ -297,7 +298,7 @@ void ase_dealloc_action(struct buffer_t *buf)
     #endif
 
       // Remove fd
-      close(dealloc_ptr->fd_ase);
+      //close(dealloc_ptr->fd_ase);
     }
   else
     {

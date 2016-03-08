@@ -684,6 +684,8 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
     }
 #endif
 
+  close(mem->fd_app);
+
   FUNC_CALL_EXIT;
 }
 
@@ -732,7 +734,7 @@ void deallocate_buffer(struct buffer_t *mem)
       exit(1);
     }
 
-  close(mem->fd_app);
+  //  close(mem->fd_app);
   free(mem);
 
   // Print if successful

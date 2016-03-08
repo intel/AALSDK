@@ -40,7 +40,7 @@
 void ase_error_report(char *err_func, int err_num, int err_code)
 {
   BEGIN_RED_FONTCOLOR;
-  backtrace_wrapper();
+  //  backtrace_wrapper();
 
   // Report error
   printf("@ERROR in %s CODE %d | %s\n", err_func, err_num, strerror(err_num) );
