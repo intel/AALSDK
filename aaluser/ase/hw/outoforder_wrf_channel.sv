@@ -735,7 +735,8 @@ module outoforder_wrf_channel
 	    $finish;
 	 end
 	 `endif
-	 return $urandom_range(15, 60);
+	 // return $urandom_range(15, 60);
+	 return $urandom_range(75, 90);
 	 // return 10;
       end
    endfunction

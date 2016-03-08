@@ -295,6 +295,7 @@ int ase_listener()
 {
   //   FUNC_CALL_ENTRY;
 
+  // ---------------------------------------------------------------------- //
   /*
    * Port Control message
    * Format: <cmd> <value>
@@ -305,6 +306,9 @@ int ase_listener()
    * AFU_RESET  <0,1>         | AFU reset handle
    * UMSG_MODE  <8-bit mask>  | UMSG mode control
    *
+   * ASE responds with "COMPLETED" as a string, there is no
+   * expectation of a string check
+   * 
    */
   char portctrl_msgstr[ASE_MQ_MSGSIZE];
   char portctrl_cmd[ASE_MQ_MSGSIZE];
@@ -315,7 +319,7 @@ int ase_listener()
   // Simulator is not in lockdown mode (simkill not in progress)
   if (self_destruct_in_progress == 0)
     {
-      if (mqueue_recv(app2sim_portctrl_rx, (char*)portctrl_msgstr, ASE_MQ_MSGSIZE) == ASE_MSG_PRESENT)
+      if (mqueue_recv(app2sim_portctrl_req_rx, (char*)portctrl_msgstr, ASE_MQ_MSGSIZE) == ASE_MSG_PRESENT)
 	{
 	  sscanf(portctrl_msgstr, "%s %d", portctrl_cmd, &portctrl_value);
 	  // while(1);
@@ -325,12 +329,18 @@ int ase_listener()
 	      portctrl_value = (portctrl_value != 0) ? 1 : 0 ;
 	      afu_softreset_trig ( portctrl_value );
 	      printf("SIM-C : Soft Reset set to %d\n", portctrl_value);
+	     
+	      // Send portctrl_rsp message
+	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
 	    }
 	  else if ( memcmp(portctrl_cmd, "UMSG_MODE", 9) == 0)
 	    {
 	      // Umsg mode setting here
 	      glbl_umsgmode = portctrl_value & 0xFF;
 	      printf("SIM-C : UMSG Mode mask set to 0x%x\n", glbl_umsgmode);
+
+	      // Send portctrl_rsp message
+	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
 	    }
 	  else if ( memcmp(portctrl_cmd, "ASE_INIT", 8) == 0)
 	    {
@@ -341,16 +351,22 @@ int ase_listener()
 	      sprintf(tstamp_filepath, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 	      // Print timestamp
 	      printf("SIM-C : Session ID => %s\n", get_timestamp(0) );	  
+
+	      // Send portctrl_rsp message
+	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
 	    }
 	  else
 	    {
 	      BEGIN_RED_FONTCOLOR;
 	      printf("SIM-C : Undefined Port Control function ... IGNORING\n");
 	      END_RED_FONTCOLOR;
+
+	      // Send portctrl_rsp message
+	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
 	    }
 	}
+
       // ------------------------------------------------------------------------------- //
- 
 
       /*
        * Buffer Allocation Replicator
@@ -414,11 +430,11 @@ int ase_listener()
 	    }
 
 	  // Debug only
-#ifdef ASE_DEBUG
+        #ifdef ASE_DEBUG
 	  BEGIN_YELLOW_FONTCOLOR;
 	  ase_buffer_info(&ase_buffer);
 	  END_YELLOW_FONTCOLOR;
-#endif
+        #endif
 	}
       // ------------------------------------------------------------------------------- //
 
@@ -443,11 +459,11 @@ int ase_listener()
 	      ase_buffer_oneline(&ase_buffer);
 
 	      // Debug only
-#ifdef ASE_DEBUG
+            #ifdef ASE_DEBUG
 	      BEGIN_YELLOW_FONTCOLOR;
 	      ase_buffer_info(&ase_buffer);
 	      END_YELLOW_FONTCOLOR;
-#endif
+            #endif
 	    }
 	}
   
@@ -459,16 +475,13 @@ int ase_listener()
       char mmio_str[ASE_MQ_MSGSIZE];
       struct mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(mmio_t) );
-      // memset (mmio_pkt, 0, sizeof(mmio_t));
 
       // Cleanse receptacle string
       memset(mmio_str, 0, ASE_MQ_MSGSIZE);
   
       // Receive csr_write packet
-      //  if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_str)==ASE_MSG_PRESENT)
       if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_pkt, sizeof(mmio_t) )==ASE_MSG_PRESENT)
 	{
-	  /* memcpy(mmio_pkt, (mmio_t *)mmio_str, sizeof(struct mmio_t)); */
 	  mmio_dispatch (0, mmio_pkt);
 
 	  // *FIXME*: Synchronizer must go here... TEST CODE
@@ -495,12 +508,12 @@ int ase_listener()
 	  // Hint trigger
 	  umsg_pkt->hint = (glbl_umsgmode >> umsg_pkt->id) & 0x1;
 
-#if 0
-	  // #ifdef ASE_DEBUG
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("  [DEBUG] umsg_pkt %d %d %llx\n", umsg_pkt->id, umsg_pkt->hint, umsg_pkt->qword[0]);
-	  END_YELLOW_FONTCOLOR;
-#endif
+        /* #ifdef ASE_DEBUG */
+	/*   BEGIN_YELLOW_FONTCOLOR; */
+	/*   printf("  [DEBUG] umsg_pkt %d %d %llx\n", umsg_pkt->id, umsg_pkt->hint, umsg_pkt->qword[0]); */
+	/*   END_YELLOW_FONTCOLOR; */
+        /* #endif */
+
 	  // dispatch to event processing
 	  umsg_dispatch(0, umsg_pkt);
 	}
@@ -640,12 +653,17 @@ int ase_init()
     {
       BEGIN_RED_FONTCOLOR;
       printf("SIM-C : getenv(PWD) evaluated NULL -- this is unexpected !\n");
+      printf("        Needs Debug here\n");
+      start_simkill_countdown();
       END_RED_FONTCOLOR;
     }
 #endif
 
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
+
+  // Evaluate IPCs
+  ipc_init();
 
   // Evaluate Session directory
   // ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
@@ -654,11 +672,8 @@ int ase_init()
   // sprintf(ase_workdir_path, "%s/", ase_run_path);
   printf("SIM-C : ASE Session Directory located at =>\n");
   printf("        %s\n", ase_workdir_path);
-  printf("SIM-C : ASE Run path =>\n");
+  printf("SIM-C : Current Working Directory =>\n");
   printf("        %s\n", ase_run_path);
-
-  // Evaluate IPCs
-  ipc_init();
 
   // Create IPC cleanup setup
   create_ipc_listfile();
@@ -709,9 +724,10 @@ int ase_init()
   app2sim_simkill_rx  = mqueue_open(mq_array[3].name,  mq_array[3].perm_flag);
   sim2app_alloc_tx    = mqueue_open(mq_array[4].name,  mq_array[4].perm_flag);
   sim2app_mmiorsp_tx  = mqueue_open(mq_array[5].name,  mq_array[5].perm_flag);
-  app2sim_portctrl_rx = mqueue_open(mq_array[6].name,  mq_array[6].perm_flag);
+  app2sim_portctrl_req_rx = mqueue_open(mq_array[6].name,  mq_array[6].perm_flag);
   app2sim_dealloc_rx  = mqueue_open(mq_array[7].name,  mq_array[7].perm_flag);
   sim2app_dealloc_tx  = mqueue_open(mq_array[8].name,  mq_array[8].perm_flag);
+  sim2app_portctrl_rsp_tx = mqueue_open(mq_array[9].name,  mq_array[9].perm_flag);
 
   // Calculate memory map regions
   printf("SIM-C : Calculating memory map...\n");
@@ -844,7 +860,7 @@ void start_simkill_countdown()
   mqueue_close(sim2app_mmiorsp_tx);
   mqueue_close(app2sim_umsg_rx);
   mqueue_close(app2sim_simkill_rx);
-  mqueue_close(app2sim_portctrl_rx);
+  mqueue_close(app2sim_portctrl_req_rx);
   mqueue_close(app2sim_dealloc_rx);       
   mqueue_close(sim2app_dealloc_tx);       
 

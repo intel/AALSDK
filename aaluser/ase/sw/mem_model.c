@@ -54,7 +54,7 @@ void ase_mqueue_teardown()
   mqueue_close(sim2app_mmiorsp_tx);
   mqueue_close(app2sim_umsg_rx);
   mqueue_close(app2sim_simkill_rx);
-  mqueue_close(app2sim_portctrl_rx);
+  mqueue_close(app2sim_portctrl_req_rx);
   mqueue_close(app2sim_dealloc_rx);       
   mqueue_close(sim2app_dealloc_tx);       
 

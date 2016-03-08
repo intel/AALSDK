@@ -92,9 +92,10 @@ void send_simkill()
   mqueue_close(sim2app_alloc_rx);
   mqueue_close(app2sim_umsg_tx);
   mqueue_close(app2sim_simkill_tx);
-  mqueue_close(app2sim_portctrl_tx); 
+  mqueue_close(app2sim_portctrl_req_tx); 
   mqueue_close(app2sim_dealloc_tx);
   mqueue_close(sim2app_dealloc_rx);
+  mqueue_close(sim2app_portctrl_rsp_rx);
 
   exit(0);
 }
@@ -150,9 +151,10 @@ void session_init()
   app2sim_simkill_tx  = mqueue_open( mq_array[3].name, mq_array[3].perm_flag );
   sim2app_alloc_rx    = mqueue_open( mq_array[4].name, mq_array[4].perm_flag );
   sim2app_mmiorsp_rx  = mqueue_open( mq_array[5].name, mq_array[5].perm_flag );
-  app2sim_portctrl_tx = mqueue_open( mq_array[6].name, mq_array[6].perm_flag );
+  app2sim_portctrl_req_tx = mqueue_open( mq_array[6].name, mq_array[6].perm_flag );
   app2sim_dealloc_tx  = mqueue_open( mq_array[7].name, mq_array[7].perm_flag );
   sim2app_dealloc_rx  = mqueue_open( mq_array[8].name, mq_array[8].perm_flag );
+  sim2app_portctrl_rsp_rx = mqueue_open( mq_array[9].name, mq_array[9].perm_flag );
 
 #ifdef ASE_DEBUG
   // Page table tracker
@@ -270,7 +272,7 @@ void session_deinit()
   mqueue_close(sim2app_alloc_rx);
   mqueue_close(app2sim_umsg_tx);
   mqueue_close(app2sim_simkill_tx);
-  mqueue_close(app2sim_portctrl_tx);
+  mqueue_close(app2sim_portctrl_req_tx);
   mqueue_close(app2sim_dealloc_tx);
   mqueue_close(sim2app_dealloc_rx);
 
@@ -892,7 +894,14 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
  */
 void __attribute__((optimize("O0"))) ase_portctrl(const char *ctrl_msg)
 {
-  mqueue_send(app2sim_portctrl_tx, ctrl_msg, ASE_MQ_MSGSIZE);
+  char dummy_rxstr[ASE_MQ_MSGSIZE];
+  memset(dummy_rxstr, 0, ASE_MQ_MSGSIZE);
+
+  // Send message
+  mqueue_send(app2sim_portctrl_req_tx, ctrl_msg, ASE_MQ_MSGSIZE);
+
+  // Receive message
+  mqueue_recv(sim2app_portctrl_rsp_rx, dummy_rxstr, ASE_MQ_MSGSIZE);
 
   // Allow simulator to parse message and sort itself out
   usleep(1000);

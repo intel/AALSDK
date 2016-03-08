@@ -410,7 +410,7 @@ extern "C" {
 #define ASE_MQ_MAXMSG     8
 #define ASE_MQ_MSGSIZE    1024
 #define ASE_MQ_NAME_LEN   64
-#define ASE_MQ_INSTANCES  9
+#define ASE_MQ_INSTANCES  10
 
 // Message presence setting
 #define ASE_MSG_PRESENT 0xD33D
@@ -473,7 +473,7 @@ struct ipc_t *mq_array;
 
 // Print buffers as they are being alloc/dealloc
 // *FIXME*: Connect to ase.cfg
-#define ASE_BUFFER_VIEW
+// #define ASE_BUFFER_VIEW
 
 // Backtrace data
 int bt_j, bt_nptrs;  
@@ -645,9 +645,10 @@ int app2sim_mmioreq_rx;   // MMIO Request path
 int sim2app_mmiorsp_tx;   // MMIO Response path
 int app2sim_umsg_rx;      // UMSG    message queue in RX mode
 int app2sim_simkill_rx;   // app2sim message queue in RX mode
-int app2sim_portctrl_rx;  // Port Control messages in Rx mode
+int app2sim_portctrl_req_rx;  // Port Control messages in Rx mode
 int app2sim_dealloc_rx;
 int sim2app_dealloc_tx;
+int sim2app_portctrl_rsp_tx;
 #else
 int app2sim_alloc_tx;           // app2sim mesaage queue in RX mode
 int sim2app_alloc_rx;           // sim2app mesaage queue in TX mode
@@ -655,9 +656,10 @@ int app2sim_mmioreq_tx;   // MMIO Request path
 int sim2app_mmiorsp_rx;   // MMIO Response path
 int app2sim_umsg_tx;      // UMSG    message queue in RX mode
 int app2sim_simkill_tx;   // app2sim message queue in RX mode
-int app2sim_portctrl_tx;  // Port Control message in TX mode 
+int app2sim_portctrl_req_tx;  // Port Control message in TX mode 
 int app2sim_dealloc_tx;
 int sim2app_dealloc_rx;
+int sim2app_portctrl_rsp_rx;
 #endif // End SIM_SIDE
 
 // Defeature Atomics for BDX releases 
