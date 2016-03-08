@@ -165,7 +165,7 @@ void wr_memline_dex(cci_pkt *pkt)
 
   uint64_t phys_addr;
   uint64_t *wr_target_vaddr = (uint64_t*)NULL;
-  int ret_fd;
+  //int ret_fd;
 #ifndef DEFEATURE_ATOMICS
   uint64_t *rd_target_vaddr = (uint64_t*)NULL;
   long long cmp_qword;  // Data to be compared
@@ -180,7 +180,7 @@ void wr_memline_dex(cci_pkt *pkt)
        */
       // Get cl_addr, deduce wr_target_vaddr
       phys_addr = (uint64_t)pkt->cl_addr << 6;
-      wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr, &ret_fd); 
+      wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr); 
       
       // Write to memory
       memcpy(wr_target_vaddr, (char*)pkt->qword, CL_BYTE_WIDTH);
@@ -201,7 +201,7 @@ void wr_memline_dex(cci_pkt *pkt)
       
       // Get cl_addr, deduce rd_target_vaddr
       phys_addr = (uint64_t)pkt->cl_addr << 6;
-      rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr, &ret_fd); 
+      rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr); 
       
       // Perform read first and set response packet accordingly
       memcpy((char*)pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);      
@@ -234,11 +234,11 @@ void rd_memline_dex(cci_pkt *pkt )
 
   uint64_t phys_addr;
   uint64_t *rd_target_vaddr = (uint64_t*)NULL;
-  int ret_fd;
+  // int ret_fd;
 
   // Get cl_addr, deduce rd_target_vaddr
   phys_addr = (uint64_t)pkt->cl_addr << 6;
-  rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr, &ret_fd);
+  rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr);
 
   // Read from memory
   memcpy((char*)pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);

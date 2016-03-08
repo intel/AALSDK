@@ -502,55 +502,62 @@ uint64_t get_range_checked_physaddr(uint32_t size)
  * Takes in a simulated physical address from AFU, converts it 
  *   to virtual address
  */
-uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr, int *ret_fd )
+uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 {
   FUNC_CALL_ENTRY; 
 
-  // Clean up address of signed-ness
-  req_paddr = req_paddr & 0x0000003FFFFFFFFF;
-
-  // DPI pbase address
-  uint64_t *ase_pbase;
- 
-  // This is the real offset to perform read/write
-  uint64_t real_offset, calc_pbase;
-  
   // Traversal ptr
-  struct buffer_t *trav_ptr;
+  struct buffer_t *trav_ptr = (struct buffer_t *)NULL;
 
-  // For debug only
-#ifdef ASE_DEBUG
-  if (fp_memaccess_log != NULL) 
+  if (req_paddr != 0)
     {
-      fprintf(fp_memaccess_log, "req_paddr = %p | ", (void *)req_paddr);
-    }
+      // Clean up address of signed-ness
+      req_paddr = req_paddr & 0x0000003FFFFFFFFF;
+
+      // DPI pbase address
+      uint64_t *ase_pbase;
+ 
+      // This is the real offset to perform read/write
+      uint64_t real_offset, calc_pbase;
+  
+      // For debug only
+#ifdef ASE_DEBUG
+      if (fp_memaccess_log != NULL) 
+	{
+	  fprintf(fp_memaccess_log, "req_paddr = %p | ", (void *)req_paddr);
+	}
 #endif
 
-  // Search which buffer offset_from_pin lies in
-  trav_ptr = head;
-  while(trav_ptr != NULL)
-    {
-      if((req_paddr >= trav_ptr->fake_paddr) && (req_paddr < trav_ptr->fake_paddr_hi))
+      // Search which buffer offset_from_pin lies in
+      trav_ptr = head;
+      while(trav_ptr != NULL)
 	{
-	  real_offset = (uint64_t)req_paddr - (uint64_t)trav_ptr->fake_paddr;
-	  calc_pbase = trav_ptr->pbase;
-	  ase_pbase = (uint64_t*)(calc_pbase + real_offset);
-	  *ret_fd = trav_ptr->fd_ase;
-
-	  // Debug only
-        #ifdef ASE_DEBUG
-	  if (fp_memaccess_log != NULL)
+	  if((req_paddr >= trav_ptr->fake_paddr) && (req_paddr < trav_ptr->fake_paddr_hi))
 	    {
-	      fprintf(fp_memaccess_log, "offset=0x%016lx | pbase=%p | ret_fd = %d\n", 
-		      real_offset, (void *)ase_pbase, *ret_fd);
+	      real_offset = (uint64_t)req_paddr - (uint64_t)trav_ptr->fake_paddr;
+	      calc_pbase = trav_ptr->pbase;
+	      ase_pbase = (uint64_t*)(calc_pbase + real_offset);
+	      // *ret_fd = trav_ptr->fd_ase;
+
+	      // Debug only
+#ifdef ASE_DEBUG
+	      if (fp_memaccess_log != NULL)
+		{
+		  fprintf(fp_memaccess_log, "offset=0x%016lx | pbase=%p\n", real_offset, (void *)ase_pbase);
+		}
+#endif
+	      return ase_pbase;
 	    }
-        #endif
-	  return ase_pbase;
+	  else
+	    {
+	      trav_ptr = trav_ptr->next;
+	    }
 	}
-      else
-	{
-	  trav_ptr = trav_ptr->next;
-	}
+  
+    }
+  else 
+    {
+      trav_ptr = NULL;
     }
 
   // If accesses are correct, ASE should not reach this point
@@ -559,7 +566,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr, int *ret_fd )
       BEGIN_RED_FONTCOLOR;
       printf("@ERROR: ASE has detected a memory operation to an unallocated memory region.\n");
       printf("        Simulation cannot continue, please check the code.\n");
-      printf("        Failure @ phys_addr = %016lx \n", req_paddr );
+      printf("        Failure @ phys_addr = %p \n", (void*)req_paddr );
       printf("        See ERROR log file => ase_error.log");
       printf("@ERROR: Please check that previously requested memories have not been deallocated before an AFU transaction could access them\n");
       printf("        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n");
@@ -567,7 +574,8 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr, int *ret_fd )
       END_RED_FONTCOLOR;
 
       // Write error to file
-      error_fp = fopen("ase_error.log", "wb");
+      error_fp = (FILE*) NULL;
+      error_fp = fopen("ase_error.log", "w");
       if (error_fp != NULL) 
 	{
 	  fprintf(error_fp, "*** ASE stopped on an illegal memory access ERROR ***\n");
@@ -577,7 +585,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr, int *ret_fd )
 	  fprintf(error_fp, "        Check that previously requested memories have not been deallocated before an AFU transaction could access them");
 	  fprintf(error_fp, "        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n");
 	  fprintf(error_fp, "              The simulator may be committing AFU transactions out of order\n");
-	  fflush(error_fp);
+	  //fflush(error_fp);
 	  fclose(error_fp);
 	}
 
