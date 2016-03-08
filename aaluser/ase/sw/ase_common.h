@@ -310,7 +310,7 @@ struct buffer_t* ll_search_buffer(int);
 
 // Mem-ops functions
 // void ase_mqueue_setup();
-void ase_mqueue_teardown();
+// void ase_mqueue_teardown();
 int ase_recv_msg(struct buffer_t *);
 void ase_alloc_action(struct buffer_t *);
 void ase_dealloc_action(struct buffer_t *);

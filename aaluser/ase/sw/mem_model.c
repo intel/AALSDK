@@ -42,6 +42,7 @@
 // ase_mqueue_teardown(): Teardown DPI message queues
 // Close and unlink DPI message queues
 // ---------------------------------------------------------------------
+#if 0
 void ase_mqueue_teardown()
 {
   FUNC_CALL_ENTRY;
@@ -63,7 +64,7 @@ void ase_mqueue_teardown()
 
   FUNC_CALL_EXIT;
 }
-
+#endif
 
 // ---------------------------------------------------------------
 // ASE graceful shutdown - Called if: error() occurs 
@@ -81,7 +82,7 @@ void ase_perror_teardown()
   ase_destroy();
   
   // Unlink all opened message queues
-  ase_mqueue_teardown();
+  // ase_mqueue_teardown();
   /* } */
 
   FUNC_CALL_EXIT;
@@ -291,7 +292,7 @@ void ase_dealloc_action(struct buffer_t *buf)
       ll_remove_buffer(dealloc_ptr);
       memcpy(buf_str, dealloc_ptr, sizeof(struct buffer_t));
       mqueue_send(sim2app_dealloc_tx, buf_str, ASE_MQ_MSGSIZE);
-    #ifdef ASE_DEBUG
+    #ifdef ASE_LL_VIEW
       BEGIN_YELLOW_FONTCOLOR;
       ll_traverse_print();
       END_YELLOW_FONTCOLOR;
@@ -351,13 +352,14 @@ void ase_destroy()
 #endif
 
   struct buffer_t *ptr;
-  ptr = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
+  // ptr = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
 
 /* #ifdef ASE_DEBUG */
 /*   ll_traverse_print(); */
 /* #endif */
 
-  ptr = end;  
+//  ptr = end;  
+#if 0
   while((head != NULL)||(end != NULL))
     {
       ptr = end;
@@ -370,6 +372,14 @@ void ase_destroy()
 	  ll_remove_buffer(ptr);
 	}
     } 
+#else
+  while (head != (struct buffer_t*)NULL)
+    {
+      ptr = head;
+      ase_dealloc_action(ptr);
+      ll_remove_buffer(ptr);
+    }
+#endif
 
 /* #ifdef ASE_DEBUG */
 /*   ll_traverse_print(); */

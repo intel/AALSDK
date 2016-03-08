@@ -53,6 +53,7 @@ void ase_write_seed(uint64_t seed)
  */
 uint64_t ase_read_seed()
 {
+#if 0
   uint64_t readback_seed;
   uint64_t new_seed;
   FILE *fp_seed = (FILE *)NULL;
@@ -72,6 +73,41 @@ uint64_t ase_read_seed()
       fclose(fp_seed);
       return readback_seed;
     }
+#else
+
+  // Check if file already exists (FALSE)
+  if (access(ASE_SEED_FILE, F_OK) == -1)
+    {
+      printf("SIM-C : ASE Seed file could not be read\n");
+      printf("        Old seed unusable --- creating a new seed\n");
+
+      // Generate seed 
+      uint64_t new_seed;
+      new_seed = time(NULL);
+
+      // Write seed to file
+      ase_write_seed(new_seed);      
+
+      // Return seed
+      return new_seed;      
+    }
+  // If TRUE, read seed file
+  else
+    {
+      // Open file (known to exist)
+      FILE *fp_seed = (FILE *)NULL;
+      fp_seed = fopen(ASE_SEED_FILE, "r");
+
+      // Read conents, post on log, close, return
+      uint64_t readback_seed;
+      fscanf(fp_seed, "%lu", &readback_seed);
+      printf("SIM-C : Readback seed %lu\n", readback_seed);
+      fclose(fp_seed);
+
+      // Return seed
+      return readback_seed;
+    }
+#endif
 }
 
 
