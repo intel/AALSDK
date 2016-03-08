@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -59,8 +57,7 @@
 //     CREATED: 07/28/2015
 //      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
 //
-// PURPOSE: Internal private definitions and constants for the Intel(R)
-//          Intel QuickAssist Technology CCCIV4 PIP Session.
+// PURPOSE: Internal private definitions and constants for the CCCIV4 PIP Session.
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:

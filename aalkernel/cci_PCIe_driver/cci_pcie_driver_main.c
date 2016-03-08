@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -59,8 +57,7 @@
 //     CREATED: 10/14/2015
 //      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
 // PURPOSE: This file implements init/exit entry points for the
-//          Intel(R) Intel QuickAssist Technology AAL FPGA device driver for
-//          CCI protocol compliant devices.
+//          AAL FPGA device driver for CCI protocol compliant devices.
 // HISTORY:
 // COMMENTS: Linux specific
 // WHEN:          WHO:     WHAT:
@@ -101,7 +98,7 @@ ccidrv_init(void)
    //--------------------
    // Display the sign-on
    //--------------------
-   PINFO("Intel(R) QuickAssist Technology Accelerator Abstraction Layer\n");
+   PINFO("Accelerator Abstraction Layer\n");
    PINFO("-> %s\n",         DRV_DESCRIPTION);
    PINFO("-> Version %s\n", DRV_VERSION);
    PINFO("-> License %s\n", DRV_LICENSE);

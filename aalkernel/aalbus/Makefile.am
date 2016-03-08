@@ -1,6 +1,4 @@
 ##******************************************************************************
-## Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-##
 ## This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 ##         redistributing this file, you may do so under either license.
 ##
@@ -56,8 +54,8 @@
 ##******************************************************************************
 ##****************************************************************************
 ##  FILE: Makefile
-##     Intel(R) QuickAssist Technology Accelerator Abstraction Layer (AAL)
-##     Intel(R) QuickAssist Technology AAL Logical Bus Driver Module for Linux
+##     Accelerator Abstraction Layer (AAL)
+##     AAL Logical Bus Driver Module for Linux
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
 ##  Created:

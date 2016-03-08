@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -60,8 +58,7 @@
 //      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
 //              Ananda Ravuri, Intel <ananda.ravuri@intel.com>
 // PURPOSE: This file implements the Physical Device Discovery and Enumeration
-//          functionality of the Intel(R) Intel QuickAssist Technology AAL
-//          FPGA device driver.
+//          functionality of the AAL FPGA device driver.
 // HISTORY:
 // COMMENTS: Linux specific
 // WHEN:          WHO:     WHAT:

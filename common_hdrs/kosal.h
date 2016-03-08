@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -59,8 +57,8 @@
 /// @brief Defines the scalar type abstraction used by AAL.
 /// @ingroup kOSAL
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-///          OS Kernel Abstraction Layer library definitions
+/// Accelerator Abstraction Layer
+/// OS Kernel Abstraction Layer library definitions
 ///
 ///  AUTHORS:  Joseph Grecco, Intel Corporation
 ///            Tim Whisonant, Intel Corporation

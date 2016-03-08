@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -60,7 +58,7 @@
 //      AUTHOR: Henry Mitchel
 //
 // PURPOSE:  This file contains external definitions for the
-//           Intel(R) QuickAssist Technology Accelerator Abstraction Layer (AAL)
+//           Accelerator Abstraction Layer (AAL)
 //           SPL 2 CCI HW interface.
 //
 //           CCI User Mode fundamental definitions file

@@ -1617,48 +1617,43 @@ _verify_kernel_copyright() {
    local    line_five
    local    line_six
    local    line_seven
-   local    line_eight
-   local    line_nine
 
 #  1 //******************************************************************************
-#  2 // Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-#  3 //
-#  4 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
-#  5 //         redistributing this file, you may do so under either license.
+#  2 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
+#  3 //         redistributing this file, you may do so under either license.
+#  4 //
+#  5 //                            GPL LICENSE SUMMARY
 #  6 //
-#  7 //                            GPL LICENSE SUMMARY
+#  7 //  Copyright(c) 2008-2016, Intel Corporation.
 #  8 //
-#  9 //  Copyright(c) 2008-2016, Intel Corporation.
-# 10 //
-# 11 //  This program  is  free software;  you  can redistribute it  and/or  modify
-# 12 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
-# 13 //  published by the Free Software Foundation.
-# 14 //
-# 15 //  This  program  is distributed  in the  hope that it  will  be useful,  but
-# 16 //  WITHOUT   ANY   WARRANTY;   without   even  the   implied   warranty    of
-# 17 //  MERCHANTABILITY  or  FITNESS  FOR  A  PARTICULAR  PURPOSE.  See  the   GNU
-# 18 //  General Public License for more details.
-# 19 //
-# 20 //  The  full  GNU  General Public License is  included in  this  distribution
-# 21 //  in the file called README.GPLV2-LICENSE.TXT.
-# 22 //
-# 23 //  Contact Information:
-# 24 //  Henry Mitchel, henry.mitchel at intel.com
-# 25 //  77 Reed Rd., Hudson, MA  01749
+#  9 //  This program  is  free software;  you  can redistribute it  and/or  modify
+# 10 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
+# 11 //  published by the Free Software Foundation.
+# 12 //
+# 13 //  This  program  is distributed  in the  hope that it  will  be useful,  but
+# 14 //  WITHOUT   ANY   WARRANTY;   without   even  the   implied   warranty    of
+# 15 //  MERCHANTABILITY  or  FITNESS  FOR  A  PARTICULAR  PURPOSE.  See  the   GNU
+# 16 //  General Public License for more details.
+# 17 //
+# 18 //  The  full  GNU  General Public License is  included in  this  distribution
+# 19 //  in the file called README.GPLV2-LICENSE.TXT.
+# 20 //
+# 21 //  Contact Information:
+# 22 //  Henry Mitchel, henry.mitchel at intel.com
+# 23 //  77 Reed Rd., Hudson, MA  01749
+# 24 //
+# 25 //                                BSD LICENSE
 # 26 //
-# 27 //                                BSD LICENSE
-# 28 //
-# 29 //  Copyright(c) 2008-2016, Intel Corporation.
+# 27 //  Copyright(c) 2008-2016, Intel Corporation.
 
    local -r line_blank_regex='(##|//|dnl)'
 
    local -r   line_one_regex='(##|//|dnl)[*#]+'
-   local -r   line_two_regex='(##|//|dnl)[[:space:]]+Part[[:space:]]+of[[:space:]]+the[[:space:]]+Intel[(]R[)][[:space:]]+QuickAssist[[:space:]]+Technology[[:space:]]+Accelerator[[:space:]]+Abstraction[[:space:]]+Layer'
 
-   local -r  line_four_regex='(##|//|dnl)[[:space:]]+This[[:space:]]+file[[:space:]]+is[[:space:]]+provided[[:space:]]+under[[:space:]]+a[[:space:]]+dual[[:space:]]+BSD/GPLv2[[:space:]]+license[.][[:space:]]+When[[:space:]]+using[[:space:]]+or'
-   local -r  line_five_regex='(##|//|dnl)[[:space:]]+redistributing[[:space:]]+this[[:space:]]+file[,][[:space:]]+you[[:space:]]+may[[:space:]]+do[[:space:]]+so[[:space:]]+under[[:space:]]+either[[:space:]]+license[.]'
+   local -r   line_two_regex='(##|//|dnl)[[:space:]]+This[[:space:]]+file[[:space:]]+is[[:space:]]+provided[[:space:]]+under[[:space:]]+a[[:space:]]+dual[[:space:]]+BSD/GPLv2[[:space:]]+license[.][[:space:]]+When[[:space:]]+using[[:space:]]+or'
+   local -r line_three_regex='(##|//|dnl)[[:space:]]+redistributing[[:space:]]+this[[:space:]]+file[,][[:space:]]+you[[:space:]]+may[[:space:]]+do[[:space:]]+so[[:space:]]+under[[:space:]]+either[[:space:]]+license[.]'
 
-   local -r line_seven_regex='(##|//|dnl)[[:space:]]+GPL[[:space:]]+LICENSE[[:space:]]+SUMMARY'
+   local -r  line_five_regex='(##|//|dnl)[[:space:]]+GPL[[:space:]]+LICENSE[[:space:]]+SUMMARY'
 
    local -r date_isolation_regex='(##|//|dnl)[[:space:]]+Copyright([[:space:]])?[(]c[)][[:space:]]+(20[[:digit:]]{2})(-20[[:digit:]]{2})?[,][[:space:]]+Intel[[:space:]]+Corporation[.]?'
    # first half of date in ${BASH_REMATCH[3]}, second half (if any) in ${BASH_REMATCH[4]}.
@@ -1692,7 +1687,7 @@ _verify_kernel_copyright() {
 
    read -r -u ${fd} line_three
    str="${line_three}"
-   if [[ $str =~ $line_blank_regex ]]; then
+   if [[ $str =~ $line_three_regex ]]; then
       :
    else
       die "bad kernel copyright at '$f' line 3.\n"
@@ -1700,7 +1695,7 @@ _verify_kernel_copyright() {
 
    read -r -u ${fd} line_four
    str="${line_four}"
-   if [[ $str =~ $line_four_regex ]]; then
+   if [[ $str =~ $line_blank_regex ]]; then
       :
    else
       die "bad kernel copyright at '$f' line 4.\n"
@@ -1724,22 +1719,6 @@ _verify_kernel_copyright() {
 
    read -r -u ${fd} line_seven
    str="${line_seven}"
-   if [[ $str =~ $line_seven_regex ]]; then
-      :
-   else
-      die "bad kernel copyright at '$f' line 7.\n"
-   fi
-
-   read -r -u ${fd} line_eight
-   str="${line_eight}"
-   if [[ $str =~ $line_blank_regex ]]; then
-      :
-   else
-      die "bad kernel copyright at '$f' line 8.\n"
-   fi
-
-   read -r -u ${fd} line_nine
-   str="${line_nine}"
    if [[ $str =~ $date_isolation_regex ]]; then
       str="${BASH_REMATCH[4]}"
       if [ x"${str}" != x ]; then
@@ -1749,11 +1728,11 @@ _verify_kernel_copyright() {
          date1="${BASH_REMATCH[3]}"
       fi
    else
-      die "bad kernel copyright at '$f' line 9.\n"
+      die "bad kernel copyright at '$f' line 7.\n"
    fi
 
-   # Read and discard lines 10-28, leaving line 29 in str (2nd date).
-   for (( i = 10 ; i <= 29 ; ++i )); do
+   # Read and discard lines 8-26, leaving line 27 in str (2nd date).
+   for (( i = 8 ; i <= 27 ; ++i )); do
       read -r -u ${fd} str
    done
 
@@ -1769,7 +1748,7 @@ _verify_kernel_copyright() {
          date2="${BASH_REMATCH[3]}"
       fi
    else
-      die "bad kernel copyright at '$f' line 29.\n"
+      die "bad kernel copyright at '$f' line 27.\n"
    fi
 
    if [ "${date1}" != "${THIS_YEAR}" ] || [ "${date2}" != "${THIS_YEAR}" ]; then

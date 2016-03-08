@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -58,8 +56,7 @@
 //        FILE: cci_PIPsession.c
 //     CREATED: 07/28/2015
 //      AUTHOR: Joseph Grecco, Intel
-// PURPOSE: This file implements the Intel(R) QuickAssist Technology AAL
-//          CCIv4 PIP Session.
+// PURPOSE: This file implements the AAL CCIv4 PIP Session.
 // HISTORY:
 // COMMENTS: The CCIv4 PIP Session is an an object which maintains state and
 //           context between an CCIv4 AAL Device and a user mode application
