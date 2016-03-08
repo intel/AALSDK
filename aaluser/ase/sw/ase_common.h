@@ -63,7 +63,7 @@
 #include <sys/un.h>
 #include <sys/file.h>
 #include <dirent.h>
-
+#include <execinfo.h>
 
 #ifdef SIM_SIDE 
 #include "svdpi.h"
@@ -356,6 +356,7 @@ char* generate_tstamp_path(char*);
 
 // Error report functions
 void ase_error_report(char *, int , int );
+void backtrace_wrapper();
 
 // IPC management functions
 void final_ipc_cleanup();
@@ -473,6 +474,11 @@ struct ipc_t *mq_array;
 // Print buffers as they are being alloc/dealloc
 // *FIXME*: Connect to ase.cfg
 #define ASE_BUFFER_VIEW
+
+// Backtrace data
+int bt_j, bt_nptrs;  
+void *bt_buffer[4096];
+char **bt_strings;
 
 
 /* *********************************************************************
@@ -622,6 +628,9 @@ FILE *fp_pagetable_log; // = (FILE *)NULL;
 
 // Physical address mask - used to constrain generated addresses
 uint64_t PHYS_ADDR_PREFIX_MASK;
+
+// '1' indicates that teardown is in progress
+int self_destruct_in_progress;
 
 #endif
 
