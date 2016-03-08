@@ -68,11 +68,11 @@
 /// WHEN:          WHO:     WHAT:
 /// 12/27/2012     JG       Initial version
 //****************************************************************************
-#include <linux/vmalloc.h>
 #include "aalsdk/kernel/kosal.h"
 #define MODULE_FLAGS KOSAL_DBG_MOD
 
 #if defined( __AAL_LINUX__ )
+#include <linux/vmalloc.h>
 # include <linux/delay.h>
 #endif // __AAL_LINUX__
 

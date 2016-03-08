@@ -85,6 +85,7 @@
 #include "cci_pcie_driver_PIPsession.h"
 
 
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
@@ -95,10 +96,9 @@
 
 static int CommandHandler( struct aaldev_ownerSession *,
                            struct aal_pipmessage*);
-static int cci_mmap( struct aaldev_ownerSession *pownerSess,
+extern int cci_mmap( struct aaldev_ownerSession *pownerSess,
                      struct aal_wsid *wsidp,
                      btAny os_specific);
-
 
 //=============================================================================
 // cci_FMEpip
@@ -223,7 +223,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          // Set up the return payload
          WSID.evtID           = uid_wseventMMIOMap;
-         WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
+         WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
          WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
          WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
 
@@ -289,202 +289,6 @@ ERROR:
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
-//=============================================================================
-// Name: cci_mmap
-// Description: Method used for mapping kernel memory to user space. Called by
-//              uidrv.
-// Interface: public
-// Inputs: none.
-// Outputs: none.
-// Comments: This method front ends all operations that require mapping shared
-//           memory. It examines the wsid to determine the appropriate service
-//           to perform the map operation.
-//=============================================================================
-int
-cci_mmap(struct aaldev_ownerSession *pownerSess,
-               struct aal_wsid *wsidp,
-               btAny os_specific)
-{
-
-   struct vm_area_struct     *pvma = (struct vm_area_struct *) os_specific;
-
-   struct cci_PIPsession   *pSess = NULL;
-   struct cci_aal_device       *pdev = NULL;
-   unsigned long              max_length = 0; // mmap length requested by user
-   int                        res = -EINVAL;
-
-   ASSERT(pownerSess);
-   ASSERT(wsidp);
-
-   // Get the spl2 aal_device and the memory manager session
-   pSess = (struct cci_PIPsession *) aalsess_pipHandle(pownerSess);
-   ASSERT(pSess);
-   if ( NULL == pSess ) {
-      PDEBUG("CCIV4 Simulator mmap: no Session");
-      goto ERROR;
-   }
-
-   pdev = cci_PIPsessionp_to_ccidev(pSess);
-   ASSERT(pdev);
-   if ( NULL == pdev ) {
-      PDEBUG("CCIV4 Simulator mmap: no device");
-      goto ERROR;
-   }
-
-   PINFO("WS ID = 0x%llx.\n", wsidp->m_id);
-
-   pvma->vm_ops = NULL;
-
-   // Special case - check the wsid type for WSM_TYPE_CSR. If this is a request to map the
-   // CSR region, then satisfy the request by mapping PCIe BAR 0.
-   if ( WSM_TYPE_MMIO == wsidp->m_type ) {
-      void *ptr;
-      size_t size;
-      switch ( wsidp->m_id )
-      {
-            case WSID_CSRMAP_WRITEAREA:
-            case WSID_CSRMAP_READAREA:
-            case WSID_MAP_MMIOR:
-            case WSID_MAP_UMSG:
-            break;
-         default:
-            PERR("Attempt to map invalid WSID type %d\n", (int) wsidp->m_id);
-            goto ERROR;
-      }
-
-      // Verify that we can fulfill the request - we set flags at create time.
-      if ( WSID_CSRMAP_WRITEAREA == wsidp->m_id ) {
-         ASSERT(cci_dev_allow_map_csr_write_space(pdev));
-
-         if ( !cci_dev_allow_map_csr_write_space(pdev) ) {
-            PERR("Denying request to map CSR Write space for device 0x%p.\n", pdev);
-            goto ERROR;
-         }
-      }
-
-      if ( WSID_CSRMAP_READAREA == wsidp->m_id ) {
-         ASSERT(cci_dev_allow_map_csr_read_space(pdev));
-
-         if ( !cci_dev_allow_map_csr_read_space(pdev) ) {
-            PERR("Denying request to map CSR Read space for device 0x%p.\n", pdev);
-            goto ERROR;
-         }
-      }
-
-      if ( WSID_MAP_MMIOR == wsidp->m_id )
-      {
-         if ( !cci_dev_allow_map_mmior_space(pdev) ) {
-            PERR("Denying request to map cci_dev_allow_map_mmior_space Read space for device 0x%p.\n", pdev);
-            goto ERROR;
-         }
-
-         ptr = (void *) cci_dev_phys_afu_mmio(pdev);
-         size = cci_dev_len_afu_mmio(pdev);
-
-         PVERBOSE("Mapping CSR %s Aperture Physical=0x%p size=%" PRIuSIZE_T " at uvp=0x%p\n",
-            ((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),
-            ptr,
-            size,
-            (void *)pvma->vm_start);
-
-         // Map the region to user VM
-         res = remap_pfn_range(pvma,               // Virtual Memory Area
-            pvma->vm_start,                        // Start address of virtual mapping
-            ((unsigned long) ptr) >> PAGE_SHIFT,   // Pointer in Pages (Page Frame Number)
-            size,
-            pvma->vm_page_prot);
-
-         if ( unlikely(0 != res) ) {
-            PERR("remap_pfn_range error at CSR mmap %d\n", res);
-            goto ERROR;
-         }
-
-         // Successfully mapped MMR region.
-         return 0;
-      }
-
-      if ( WSID_MAP_UMSG == wsidp->m_id )
-      {
-         if ( !cci_dev_allow_map_umsg_space(pdev) ) {
-            PERR("Denying request to map cci_dev_allow_map_umsg_space Read space for device 0x%p.\n", pdev);
-            goto ERROR;
-         }
-
-         ptr = (void *) cci_dev_phys_afu_umsg(pdev);
-         size = cci_dev_len_afu_umsg(pdev);
-
-         PVERBOSE("Mapping CSR %s Aperture Physical=0x%p size=%" PRIuSIZE_T " at uvp=0x%p\n",
-            ((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),
-            ptr,
-            size,
-            (void *)pvma->vm_start);
-
-         // Map the region to user VM
-         res = remap_pfn_range(pvma,                             // Virtual Memory Area
-            pvma->vm_start,                   // Start address of virtual mapping
-            ((unsigned long) ptr) >> PAGE_SHIFT, // Pointer in Pages (Page Frame Number)
-            size,
-            pvma->vm_page_prot);
-
-         if ( unlikely(0 != res) ) {
-            PERR("remap_pfn_range error at CSR mmap %d\n", res);
-            goto ERROR;
-         }
-
-         // Successfully mapped UMSG region.
-         return 0;
-      }
-
-      // TO REST OF CHECKS
-
-      // Map the PCIe BAR as the CSR region.
-      ptr = (void *) cci_dev_phys_afu_mmio(pdev);
-      size = cci_dev_len_afu_mmio(pdev);
-
-      PVERBOSE("Mapping CSR %s Aperture Physical=0x%p size=%" PRIuSIZE_T " at uvp=0x%p\n",
-         ((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),
-         ptr,
-         size,
-         (void *)pvma->vm_start);
-
-      // Map the region to user VM
-      res = remap_pfn_range(pvma,                             // Virtual Memory Area
-         pvma->vm_start,                   // Start address of virtual mapping
-         ((unsigned long) ptr) >> PAGE_SHIFT, // Pointer in Pages (Page Frame Number)
-         size,
-         pvma->vm_page_prot);
-
-      if ( unlikely(0 != res) ) {
-         PERR("remap_pfn_range error at CSR mmap %d\n", res);
-         goto ERROR;
-      }
-
-      // Successfully mapped CSR region.
-      return 0;
-   }
-
-   //------------------------
-   // Map normal workspace
-   //------------------------
-
-   max_length = min(wsidp->m_size, (btWSSize)(pvma->vm_end - pvma->vm_start));
-
-   PVERBOSE( "MMAP: start 0x%lx, end 0x%lx, KVP 0x%p, size=%" PRIu64 " 0x%" PRIx64 " max_length=%ld flags=0x%lx\n",
-      pvma->vm_start, pvma->vm_end, (btVirtAddr)wsidp->m_id, wsidp->m_size, wsidp->m_size, max_length, pvma->vm_flags);
-
-   res = remap_pfn_range(pvma,                              // Virtual Memory Area
-      pvma->vm_start,                    // Start address of virtual mapping, from OS
-      (kosal_virt_to_phys((btVirtAddr) wsidp->m_id) >> PAGE_SHIFT),   // physical memory backing store in pfn
-      max_length,                        // size in bytes
-      pvma->vm_page_prot);               // provided by OS
-   if ( unlikely(0 != res) ) {
-      PERR("remap_pfn_range error at workspace mmap %d\n", res);
-      goto ERROR;
-   }
-
-   ERROR:
-   return res;
-}
 /////////////////           GENERIC FME FUNCTIONS           ///////////////////
 ////////////////////                                     //////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -500,7 +304,9 @@ cci_mmap(struct aaldev_ownerSession *pownerSess,
 /// @param[in]  value value  going to be write in CSR.
 /// @return   void
 ///============================================================================
-int write_ccip_csr64(btVirtAddr baseAddress, btCSROffset offset,bt64bitCSR value)
+int write_ccip_csr64( btVirtAddr baseAddress, 
+                      btUnsigned64bitInt offset, 
+                      bt64bitCSR value )
 {
 
    ASSERT(baseAddress);
@@ -510,9 +316,9 @@ int write_ccip_csr64(btVirtAddr baseAddress, btCSROffset offset,bt64bitCSR value
       *up            = value;
    } else {
       //PERR("baseAddress is NULL, could not write CSR 0x%X with value 0x%X\n",offset, value);
-      return false;
+      return 0;
    }
-   return true;
+   return 1;
 }
 
 ///============================================================================
@@ -523,7 +329,7 @@ int write_ccip_csr64(btVirtAddr baseAddress, btCSROffset offset,bt64bitCSR value
 /// @param[in]  offset offset of CSR  .
 /// @return    64 bit CSR value
 ///============================================================================
-bt64bitCSR read_ccip_csr64(btVirtAddr baseAddress ,  btCSROffset offset )
+bt64bitCSR read_ccip_csr64( btVirtAddr baseAddress, btUnsigned64bitInt offset )
 {
    if(baseAddress)
    {
@@ -536,7 +342,7 @@ bt64bitCSR read_ccip_csr64(btVirtAddr baseAddress ,  btCSROffset offset )
 
       PERR("baseAddress is NULL, \n");
 
-      return  -1;                          // typical value for undefined CSR
+      return  ( bt64bitCSR )- 1;          // typical value for undefined CSR
    }
 
 }

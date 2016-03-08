@@ -213,6 +213,9 @@ static void ccidrv_exit(void);
 module_init(ccidrv_init);
 module_exit(ccidrv_exit);
 
+extern int ccidrv_initDriver(void/*callback*/);
+extern int ccidrv_initUMAPI(void);
+void ccidrv_exitUMAPI(void);
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1152,6 +1155,7 @@ ccidrv_exitDriver(void)
    PINFO("<- %s removed.\n", DRV_DESCRIPTION);
    PTRACEOUT;
 }
+
 
 
 //=============================================================================

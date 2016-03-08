@@ -370,6 +370,200 @@ int verifycmds(struct ALIConfigCommandLine *cl)
    return 0;
 }
 
+int aliconigafu_on_nix_long_option_only(AALCLP_USER_DEFINED , const char * );
+int aliconigafu_on_nix_long_option(AALCLP_USER_DEFINED , const char * , const char * );
+
+void help_msg_callback(FILE * , struct _aalclp_gcs_compliance_data * );
+void showhelp(FILE * , struct _aalclp_gcs_compliance_data * );
+
+struct  ALIConfigCommandLine
+{
+   btUIntPtr          flags;
+#define ALICONIFG_CMD_FLAG_HELP      0x00000001
+#define ALICONIFG_CMD_FLAG_VERSION   0x00000002
+#define ALICONIFG_CMD_PARSE_ERROR    0x00000003
+
+   char    bitstream_file[100];
+   int     reconftimeout;
+   int     reconfAction;
+   bool    reactivateDisabled;
+
+};
+struct ALIConfigCommandLine configCmdLine = { 0, 5,0,0,0 };
+
+
+int aliconigafu_on_non_option(AALCLP_USER_DEFINED user, const char *nonoption) {
+   struct ALIConfigCommandLine *cl = (struct ALIConfigCommandLine *)user;
+   flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
+   printf("Invalid: %s\n", nonoption);
+   return 0;
+}
+
+int aliconigafu_on_dash_only(AALCLP_USER_DEFINED user) {
+   struct ALIConfigCommandLine *cl = (struct ALIConfigCommandLine *)user;
+   flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
+   printf("Invalid option: -\n");
+   return 0;
+}
+
+int aliconigafu_on_dash_dash_only(AALCLP_USER_DEFINED user) {
+   struct ALIConfigCommandLine *cl = (struct ALIConfigCommandLine *)user;
+   flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
+   printf("Invalid option: --\n");
+   return 0;
+}
+
+int aliconigafu_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option)
+{
+   struct ALIConfigCommandLine *cl = (struct ALIConfigCommandLine *)user;
+   if ( 0 == strcmp("--help", option) ) {
+      flag_setf(cl->flags, ALICONIFG_CMD_FLAG_HELP);
+   } else if ( 0 == strcmp("--version", option) ) {
+      flag_setf(cl->flags, ALICONIFG_CMD_FLAG_VERSION);
+   }else  if(0 != strcmp("--bitstream=", option))  {
+      printf("Invalid option  : %s\n", option);
+      flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
+
+   }else if(0 != strcmp("--reconftimeout=", option))  {
+      printf("Invalid option : %s\n", option);
+      flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
+      return 0;
+   }
+   return 0;
+}
+
+
+int aliconigafu_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char *value)
+{
+   struct ALIConfigCommandLine *pcmdline     = (struct ALIConfigCommandLine *)user;
+
+   // Bitstream file name
+   if ( 0 == strcmp("--bitstream", option)) {
+      strcpy(pcmdline->bitstream_file ,value);
+      return 0;
+   }
+
+   // Reconfigure  timeout
+   if ( 0 == strcmp("--reconftimeout", option)) {
+      char *endptr = NULL;
+      pcmdline->reconftimeout = strtoul(value, &endptr, 0);
+      return 0;
+   }
+
+   // Reconfigure  action
+   if ( 0 == strcmp("--reconfaction", option)) {
+
+      if ( 0 == strcmp("ACTION_HONOR_OWNER", value)) {
+         pcmdline->reconfAction =AALCONF_RECONF_ACTION_HONOR_OWNER_ID;
+      } else  {
+      // Default
+         pcmdline->reconfAction =AALCONF_RECONF_ACTION_HONOR_REQUEST_ID;
+      }
+      return 0;
+   }
+
+   // Reactive disabled
+   if ( 0 == strcmp("--reactivateDisabled", option)) {
+
+      if ( 0 == strcmp("TRUE", value))  {
+         pcmdline->reactivateDisabled =true;
+      } else {
+      // Default
+         pcmdline->reactivateDisabled =false;
+      }
+      return 0;
+   }
+
+   return 0;
+}
+
+aalclp_option_only  aliconigafu_nix_long_option_only  = { aliconigafu_on_nix_long_option_only,  };
+aalclp_option       aliconigafu_nix_long_option       = { aliconigafu_on_nix_long_option,       };
+aalclp_non_option   aliconigafu_non_option            = { aliconigafu_on_non_option,            };
+aalclp_dash_only    aliconigafu_dash_only             = { aliconigafu_on_dash_only,             };
+aalclp_dash_only    aliconigafu_dash_dash_only        = { aliconigafu_on_dash_dash_only,        };
+
+AALCLP_DECLARE_GCS_COMPLIANT(stdout,
+                             "aliconfafu",
+                             "0",
+                             "",
+                             help_msg_callback,
+                             &configCmdLine)
+
+int ParseCmds(struct ALIConfigCommandLine *pconfigcmd, int argc, char *argv[])
+{
+   int    res;
+   int    clean;
+   aalclp clp;
+
+   res = aalclp_init(&clp);
+   if ( 0 != res ) {
+      cerr << "aalclp_init() failed : " << res << ' ' << strerror(res) << endl;
+      return res;
+   }
+
+   aliconigafu_nix_long_option_only.user = pconfigcmd;
+   aalclp_add_nix_long_option_only(&clp, &aliconigafu_nix_long_option_only);
+
+   aliconigafu_nix_long_option.user = pconfigcmd;
+   aalclp_add_nix_long_option(&clp, &aliconigafu_nix_long_option);
+
+   aliconigafu_non_option.user = pconfigcmd;
+   aalclp_add_non_option(&clp, &aliconigafu_non_option);
+
+   aliconigafu_dash_only.user             = pconfigcmd;
+   aalclp_add_dash_only(&clp,             &aliconigafu_dash_only);
+
+   aliconigafu_dash_dash_only.user        = pconfigcmd;
+   aalclp_add_dash_dash_only(&clp,        &aliconigafu_dash_dash_only);
+
+   res = aalclp_add_gcs_compliance(&clp);
+   if ( 0 != res ) {
+      cerr << "aalclp_add_gcs_compliance() failed : " << res << ' ' << strerror(res) << endl;
+      goto CLEANUP;
+   }
+
+   res = aalclp_scan_argv(&clp, argc, argv);
+   if ( 0 != res ) {
+      cerr << "aalclp_scan_argv() failed : " << res << ' ' << strerror(res) << endl;
+   }
+
+CLEANUP:
+   clean = aalclp_destroy(&clp);
+   if ( 0 != clean ) {
+      cerr << "aalclp_destroy() failed : " << clean << ' ' << strerror(clean) << endl;
+   }
+
+   return res;
+}
+
+
+void help_msg_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
+{
+   fprintf(fp, "Usage:\n");
+   fprintf(fp, "   aliconfafu [--bitstream=<FILENAME>] [--reconftimeout=<MILLISECONDS>]  \
+                [--reconfaction=<ACTION_HONOR_REQUEST or ACTION_HONOR_OWNER >]        \
+                [--reactivateDisabled=< TRUE or FLASE>]\n");
+   fprintf(fp, "\n");
+
+}
+
+void showhelp(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
+{
+   help_msg_callback(fp, gcs);
+}
+
+int verifycmds(struct ALIConfigCommandLine *cl)
+{
+   std::ifstream bitfile(cl->bitstream_file,std::ios::binary);
+
+   if(!bitfile.good()) {
+      printf("Invalid File : %s\n", cl->bitstream_file);
+      return 3;
+   }
+   return 0;
+}
+
 END_C_DECLS
 
 /// @addtogroup ALIConfAFU
@@ -623,11 +817,11 @@ btInt ALIConfAFUApp::run()
       //  m_pALIReconfService->reconfDeactivate(TransactionID(), nvsDeactv);
       //  m_Sem.Wait();
 
-      //nvs.Add(AALCONF_FILENAMEKEY,"/home/joe/sources/ccipTest_PR.cpp");
+      nvsDeactv.Add(AALCONF_FILENAMEKEY,"/home/joe/sources/ccipTest_PR.rbf");
 
-      //std::cout <<"BitStream File Name="<< configCmdLine.bitstream_file << std::endl;
-      nvs.Add(AALCONF_FILENAMEKEY,configCmdLine.bitstream_file);
+      // nvsDeactv.Add(AALCONF_FILENAMEKEY,"/home/aravuri/kernelperf/10.rbf");
 
+      m_pALIReconfService->reconfConfigure(TransactionID(), nvsDeactv);
       m_pALIReconfService->reconfConfigure(TransactionID(), nvsDeactv);
       m_Sem.Wait();
 
@@ -863,6 +1057,8 @@ void ALIConfAFUApp::activateFailed( IEvent const &rEvent )
 //=============================================================================
 int main(int argc, char *argv[])
 {
+
+
    if ( argc < 2 ) {
       showhelp(stdout, &_aalclp_gcs_data);
       return 1;
@@ -873,8 +1069,6 @@ int main(int argc, char *argv[])
       return 0;
    } else if ( verifycmds(&configCmdLine) ) {
       return 3;
-   }
-
    }
 
 

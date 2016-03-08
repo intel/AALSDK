@@ -366,7 +366,6 @@ bt64bitCSR read_ccip_csr64( btVirtAddr baseAddress, btUnsigned64bitInt offset );
 struct ccip_device;   // forward reference
 struct port_device;
 
-
 struct ccip_device * create_ccidevice(void);
 void  destroy_ccidevice(struct ccip_device *pccidev);
 extern btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device *);

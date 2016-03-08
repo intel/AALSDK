@@ -1002,6 +1002,8 @@ void kosal_queue_delayed_work(kosal_work_queue wq, struct kosal_work_object* pwo
 
 // Name not currently used
 #define kosal_create_workqueue(name, pd)     IoAllocateWorkItem(aaldev_to_basedev(pd))
+
+#define kosal_destroy_workqueue(wq)          IoFreeWorkItem(wq)
 //kosal_create_workqueue
 
 typedef void (*osfunc)(PDEVICE_OBJECT,PVOID);

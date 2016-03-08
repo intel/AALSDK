@@ -45,7 +45,7 @@ Hello_ALI_NLB/SW \
 Hello_ALI_HSSI/SW \
 ALI_Multi_AFU_with_PerfMon/SW \
 Temp_Power_Monitor/SW \
-MMLink/SW \
+ALI_Configure_AFU/SW
 ALI_Configure_AFU/SW
 
 #Removed SUBDIRS

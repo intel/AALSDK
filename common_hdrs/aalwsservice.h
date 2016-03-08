@@ -148,7 +148,9 @@ struct aal_wsid
 
 #  if   defined ( __AAL_WINDOWS__ )
 // Do nothing for Windows
-#     define wsidobjp_to_wid(id)    ( (btWSID)(id) )
+#     define wsid_to_wsidHandle(id) ( (btWSID)(id) )
+#     define pwsid_to_wsidHandle( pwsid ) ( (btWSID)( pwsid->m_handle ) )
+
 #     define wsid_to_wsidobjp(id)      ( (struct aal_wsid *)id )
 
 #     define pgoff_to_wsidobj(off)     ( (struct aal_wsid *)(off))
@@ -162,7 +164,7 @@ struct aal_wsid
 //#     define pgoff_to_wsid(off)        ( ((btWSID)(off)) >>19 )
 #     define pgoff_to_wsidHandle(off)  ((btWSID)off<<12)
 
-#     define pwsid_to_wsidhandle(pwsid) ((btWSID)(pwsid->m_handle))
+#     define pwsid_to_wsidHandle(pwsid) ((btWSID)(pwsid->m_handle))
 
 
 // DEPRECATING

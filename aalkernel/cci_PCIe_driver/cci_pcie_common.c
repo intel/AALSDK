@@ -465,7 +465,7 @@ int cci_destroy_aal_device( struct cci_aal_device* pcci_aaldev)
 
    if(NULL != pcci_aaldev->m_workq_prconifg) {
       kosal_destroy_workqueue(pcci_aaldev->m_workq_prconifg);
-     }
+   }
 
    if(NULL != pcci_aaldev->m_workq_revokeafu) {
       kosal_destroy_workqueue(pcci_aaldev->m_workq_revokeafu);

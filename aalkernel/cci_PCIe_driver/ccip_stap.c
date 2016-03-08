@@ -333,4 +333,3 @@ ERROR:
    return retval;
 }
 
-      goto ERROR;
