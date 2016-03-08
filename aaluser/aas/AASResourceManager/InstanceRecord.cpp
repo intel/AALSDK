@@ -28,7 +28,7 @@
 /// @brief Encapsulate Instance record processing for the ResourceManager.
 /// @ingroup ResMgr
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Henry Mitchel, Intel Corporation.
 ///

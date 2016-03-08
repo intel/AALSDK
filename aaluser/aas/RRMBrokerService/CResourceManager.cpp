@@ -28,7 +28,7 @@
 /// @brief Implementation of the Remote Resource Manager Service
 /// @ingroup ResMgr
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///

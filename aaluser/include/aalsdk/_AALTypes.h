@@ -28,7 +28,7 @@
 /// @brief Defines the scalar type abstraction used by AAL.
 /// @ingroup BasicTypes
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 ///  AUTHORS: Joseph Grecco, Intel Corporation
 ///           Henry Mitchel, Intel Corporation

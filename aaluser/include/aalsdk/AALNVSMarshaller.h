@@ -29,7 +29,7 @@
 ///        AAL Marshaller/Unmarshallers used for RPC
 /// @ingroup BasicTypes
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Joseph Grecco, Intel Corporation
 ///

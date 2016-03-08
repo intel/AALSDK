@@ -28,8 +28,7 @@
 /// @brief IResConfig definition.
 /// @ingroup IResConfig
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample
-/// Application
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///

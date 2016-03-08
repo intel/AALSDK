@@ -28,7 +28,7 @@
 /// @brief Definitions for AFU interface.
 /// @ingroup AFU
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Joseph Grecco, Intel Corporation.
 ///         Henry Mitchel, Intel Corporation

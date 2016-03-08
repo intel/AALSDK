@@ -25,10 +25,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 /// @file AASystem.h
-/// @brief Public defines for the Intel(R) QuickAssist Technology System Services
+/// @brief Public defines for the System Services
 /// @ingroup AALRUNTIME
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///          Henry Mitchel, Intel Corporation

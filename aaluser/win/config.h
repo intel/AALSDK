@@ -27,7 +27,7 @@
 // @file config.h
 // @brief config.h for Windows
 // @verbatim
-// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+// Accelerator Abstraction Layer
 //
 //  AUTHORS: Tim Whisonant, Intel Corporation
 //

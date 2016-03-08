@@ -24,10 +24,10 @@
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 ##****************************************************************************
-##     Intel(R) Accelerator Abstraction Layer Library Software Developer
-##        Kit (SDK)
+##  Accelerator Abstraction Layer Library Software Developer Kit (SDK)
+##
 ##  Content:
-##     libaalrt: Intel(R) Accelerator Abstraction Layer Library
+##     libaalrt: Accelerator Abstraction Layer Library
 ##        Accelerator Abstraction Services AAL (accelerator) Runtime Library
 ##     aas/AALRuntime/Makefile.am
 ##  Author:

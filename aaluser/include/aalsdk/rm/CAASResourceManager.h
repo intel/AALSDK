@@ -28,7 +28,7 @@
 /// @brief Defines internal datastructures for Resource Manager Subsystem
 /// @ingroup ResMgr
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Henry Mitchel, Intel Corporation.
 ///

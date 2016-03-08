@@ -28,7 +28,7 @@
 /// @brief Implement the more complex algorithms of the ResourceManager class.
 /// @ingroup ResMgr
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Henry Mitchel, Intel Corporation.
 ///          Joseph Grecco, Intel Corporation.
