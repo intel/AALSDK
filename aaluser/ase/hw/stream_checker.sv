@@ -5,8 +5,7 @@ import ase_pkg::*;
 module stream_checker
   #(
     parameter int HDR_WIDTH     = CCIP_TX_HDR_WIDTH,
-    parameter int TID_WIDTH     = 32,
-    parameter int UNROLL_ENABLE = 1
+    parameter int TID_WIDTH     = 32
     )
    (
     input logic 		clk,

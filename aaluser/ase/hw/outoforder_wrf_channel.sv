@@ -97,7 +97,7 @@ module outoforder_wrf_channel
     parameter int    COUNT_WIDTH         = 8,
     parameter int    VISIBLE_DEPTH_BASE2 = 4,
     parameter int    VISIBLE_FULL_THRESH = 8,
-    parameter int    UNROLL_ENABLE       = 1
+    parameter int    WRITE_CHANNEL       = 0
     )
    (
     input logic 		       clk,
@@ -914,8 +914,8 @@ module outoforder_wrf_channel
 	    data                    = records[ptr].data;
 	    // Dumbing down Unroll multi-line
 	    line_i = 0;
-
-	    if (UNROLL_ENABLE == 1) begin
+	    
+	    if (WRITE_CHANNEL == 0) begin // If classified as a read channel, unrolling must happen
 	       case (txhdr.len)
 		 // Single cache line
 		 ASE_1CL:
@@ -1003,7 +1003,7 @@ module outoforder_wrf_channel
 		      outfifo_write_en        = 0;
 		   end
 	       endcase // case (txhdr.len)
-	    end // if (UNROLL_ENABLE == 1)
+	    end // if (WRITE_CHANNEL == 1)
 	    else begin
 	       outfifo_write_en        = 1;
 	       rxhdr.clnum             = txhdr.len;
@@ -1234,7 +1234,7 @@ module outoforder_wrf_channel
     * Sniffs dropped transactions
     */
 `ifdef ASE_DEBUG
-   stream_checker #(CCIP_TX_HDR_WIDTH, TID_WIDTH, UNROLL_ENABLE)
+   stream_checker #(CCIP_TX_HDR_WIDTH, TID_WIDTH)
    checkunit (clk, write_en, hdr_in, tid_in, valid_out, txhdr_out, rxhdr_out,tid_out);
 `endif
 

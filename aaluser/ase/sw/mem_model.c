@@ -567,7 +567,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
       printf("@ERROR: ASE has detected a memory operation to an unallocated memory region.\n");
       printf("        Simulation cannot continue, please check the code.\n");
       printf("        Failure @ phys_addr = %p \n", (void*)req_paddr );
-      printf("        See ERROR log file => ase_error.log");
+      printf("        See ERROR log file => ase_memory_error.log");
       printf("@ERROR: Please check that previously requested memories have not been deallocated before an AFU transaction could access them\n");
       printf("        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n");
       printf("              The simulator may be committing AFU transactions out of order\n");
@@ -575,7 +575,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 
       // Write error to file
       error_fp = (FILE*) NULL;
-      error_fp = fopen("ase_error.log", "w");
+      error_fp = fopen("ase_memory_error.log", "w");
       if (error_fp != NULL) 
 	{
 	  fprintf(error_fp, "*** ASE stopped on an illegal memory access ERROR ***\n");

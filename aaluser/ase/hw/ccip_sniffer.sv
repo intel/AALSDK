@@ -247,11 +247,12 @@ module ccip_sniffer
 
    /*
     * MMIO Misbehaviour tracker
-    */
+    */  
    // MMIO Timeout management
    int mmioread_timeout_cnt;
    logic mmioread_cycle;
-
+   logic mmioread_cycle_q;
+   
    // Check if MMIO TID returned was correct
    int 	 c0rx_mmiord_tid;
    int 	 c2tx_mmiord_tid;
@@ -263,22 +264,44 @@ module ccip_sniffer
       end
       else begin
 	 case ({C0RxMmioRdValid, C2TxMmioRdValid})
-	   2'b10   : mmioread_cycle <= 1;
-	   2'b01   : mmioread_cycle <= 0;
-	   default : mmioread_cycle <= mmioread_cycle;
+	   // MMIO Read request
+	   2'b10   : 
+	     begin
+		// c0rx_mmiord_tid <= C0RxCfg.tid;	 
+		mmioread_cycle  <= 1;
+	     end
+
+	   // MMIO Read response
+	   2'b01   : 
+	     begin
+		// c2tx_mmiord_tid <= C2TxHdr.tid;	 
+		mmioread_cycle  <= 0;
+	     end
+	   
+	   default :
+	     begin		
+		mmioread_cycle <= mmioread_cycle;
+	     end
 	 endcase
       end
    end
 
    // Sample outgoing/incoming TID as current
-   // always @(posedge clk) begin
-   //    if (C0RxMmioRdValid) begin
-   //    end
-   //    if (C2TxMmioRdValid) begin
-   //    end
-   // end
+   always @(posedge clk) begin
+   // always @(*) begin
+      if (C0RxMmioRdValid) begin
+	 c0rx_mmiord_tid <= C0RxCfg.tid;	 	 
+      end
+      if (C2TxMmioRdValid) begin
+	 c2tx_mmiord_tid <= C2TxHdr.tid;	 
+      end
+   end
 
-
+   // MMIO Cycle REG
+   always @(posedge clk) begin
+      mmioread_cycle_q <= mmioread_cycle;      
+   end  
+   
    // MMIO counter
    always @(posedge clk) begin : mmioread_timeout_ctr
       if (SoftReset) begin
@@ -303,6 +326,11 @@ module ccip_sniffer
       	 print_message_and_log(0, "ASE detected an unsolicited MMIO Read response !!\n");
       	 print_message_and_log(0, "In system, this can cause a crash");
       	 print_and_simkill();
+      end
+      if (~mmioread_cycle && mmioread_cycle_q && (c0rx_mmiord_tid != c2tx_mmiord_tid)) begin
+	 print_message_and_log(0, "ASE detected wrong TID returned on MMIO Read response !!\n");
+	 print_message_and_log(0, "In system, this can cause a crash");
+	 print_and_simkill();	 
       end
    end
 
@@ -435,7 +463,8 @@ module ccip_sniffer
    		      print_message_and_log(0, "Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned !");
 		      print_and_simkill();		      
 		   end 
-		end
+		end // if (wrline_en && (C1TxHdr.len == ASE_2CL))
+		// If 3-cacheline request is made, thats ILLEGAL
 		else if (wrline_en && (C1TxHdr.len == ASE_3CL)) begin
 		   print_message_and_log(0, "Multi-cacheline request of length=3 is ILLEGAL !");
 		   print_and_simkill();		   
@@ -492,10 +521,10 @@ module ccip_sniffer
 		   print_and_simkill();		   
 		end
 		// LEN enforcement *FIXME*
-		if (wrline_en && (C1TxHdr.len != exp_c1len)) begin
-		   print_message_and_log(0, "C1TxHdr LEN field must not change while multi-line Write Request is in progress");
-		   // print_and_simkill();		   
-		end
+		// if (wrline_en && (C1TxHdr.len != exp_c1len)) begin
+		//    print_message_and_log(0, "C1TxHdr LEN field must not change while multi-line Write Request is in progress");
+		//    // print_and_simkill();		   
+		// end
 	     end
 
 	   // ----------------------------------------------------------- //
@@ -529,11 +558,11 @@ module ccip_sniffer
 		   print_message_and_log(0, "C1TxHdr VC field must not change while multi-line Write Request is in progress");
 		   print_and_simkill();		   
 		end
-		// LEN enforcement *FIXME*
-		if (wrline_en && (C1TxHdr.len != exp_c1len)) begin
-		   print_message_and_log(0, "C1TxHdr LEN field must not change while multi-line Write Request is in progress");
-		   // print_and_simkill();		  
-		end
+		// // LEN enforcement *FIXME*
+		// if (wrline_en && (C1TxHdr.len != exp_c1len)) begin
+		//    print_message_and_log(0, "C1TxHdr LEN field must not change while multi-line Write Request is in progress");
+		//    // print_and_simkill();		  
+		// end
 	     end
 
 	   // ----------------------------------------------------------- //
@@ -567,11 +596,11 @@ module ccip_sniffer
 		   print_message_and_log(0, "C1TxHdr VC field must not change while multi-line Write Request is in progress");
 		   print_and_simkill();		   
 		end
-		// LEN enforcement *FIXME*
-		if (wrline_en && (C1TxHdr.len != exp_c1len)) begin
-		   print_message_and_log(0, "C1TxHdr LEN field must not change while multi-line Write Request is in progress");
-		   // print_and_simkill();		   
-		end
+		// // LEN enforcement *FIXME*
+		// if (wrline_en && (C1TxHdr.len != exp_c1len)) begin
+		//    print_message_and_log(0, "C1TxHdr LEN field must not change while multi-line Write Request is in progress");
+		//    // print_and_simkill();		   
+		// end
 	     end
 
 	   // ----------------------------------------------------------- //

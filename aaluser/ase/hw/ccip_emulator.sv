@@ -1414,7 +1414,7 @@ module ccip_emulator
        .DEBUG_LOGNAME       ("latbuf_ch0.log"),
        .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
        .COUNT_WIDTH         (LATBUF_COUNT_WIDTH),
-       .UNROLL_ENABLE       (1)
+       .WRITE_CHANNEL       (0)
        )
    cf2as_latbuf_ch0
      (
@@ -1495,7 +1495,7 @@ module ccip_emulator
        .DEBUG_LOGNAME       ("latbuf_ch1.log"),
        .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
        .COUNT_WIDTH         (LATBUF_COUNT_WIDTH),
-       .UNROLL_ENABLE       (0)
+       .WRITE_CHANNEL       (1)
        )
    cf2as_latbuf_ch1
      (
