@@ -28,7 +28,7 @@
 /// @brief Public Interface to Event Delivery Service
 /// @ingroup EDS
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///          Henry Mitchel, Intel Corporation

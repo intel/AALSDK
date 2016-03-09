@@ -30,7 +30,7 @@
 ///        string conversion routines
 /// @ingroup OSAL
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Charlie Lasswell, Intel Corporation
 ///          Joseph Grecco, Intel Corporation

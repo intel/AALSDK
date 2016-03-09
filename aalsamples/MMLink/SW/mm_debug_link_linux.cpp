@@ -31,7 +31,7 @@
 /// @brief Basic AFU interaction.
 /// @ingroup SigTap
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
+/// Accelerator Abstraction Layer Sample Application
 ///
 ///    This application is for example purposes only.
 ///    It is not intended to represent a model for developing commercially-deployable applications.
@@ -66,17 +66,17 @@
 #define MAP_SIZE 4096UL
 #define MAP_MASK (MAP_SIZE - 1)
 
-#define MM_DEBUG_LINK_DATA_WRITE        0x6100
-#define MM_DEBUG_LINK_WRITE_CAPACITY    0x6104
-#define MM_DEBUG_LINK_DATA_READ         0x6108
-#define MM_DEBUG_LINK_READ_CAPACITY     0x610C
-#define MM_DEBUG_LINK_FIFO_WRITE_COUNT  0x6120
-#define MM_DEBUG_LINK_FIFO_READ_COUNT   0x6140
-#define MM_DEBUG_LINK_ID_ROM            0x6160
-#define MM_DEBUG_LINK_SIGNATURE         0x6170
-#define MM_DEBUG_LINK_VERSION           0x6174
-#define MM_DEBUG_LINK_DEBUG_RESET       0x6178
-#define MM_DEBUG_LINK_MGMT_INTF         0x617C
+#define MM_DEBUG_LINK_DATA_WRITE        0x4100
+#define MM_DEBUG_LINK_WRITE_CAPACITY    0x4104
+#define MM_DEBUG_LINK_DATA_READ         0x4108
+#define MM_DEBUG_LINK_READ_CAPACITY     0x410C
+#define MM_DEBUG_LINK_FIFO_WRITE_COUNT  0x4120
+#define MM_DEBUG_LINK_FIFO_READ_COUNT   0x4140
+#define MM_DEBUG_LINK_ID_ROM            0x4160
+#define MM_DEBUG_LINK_SIGNATURE         0x4170
+#define MM_DEBUG_LINK_VERSION           0x4174
+#define MM_DEBUG_LINK_DEBUG_RESET       0x4178
+#define MM_DEBUG_LINK_MGMT_INTF         0x417C
 
 //#define DEBUG_FLAG 1 //Uncomment to enable read/write information
 

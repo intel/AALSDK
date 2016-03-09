@@ -28,7 +28,7 @@
 /// @brief Public Interface to Logger Facility
 /// @ingroup Debugging
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Abstraction Layer
 ///
 ///     AUTHOR: Henry Mitchel, Intel Corporation.
 ///

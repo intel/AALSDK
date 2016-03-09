@@ -28,7 +28,7 @@
 /// @brief Env interface.
 /// @ingroup OSAL
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Sadruta Chandrashekar, Intel Corporation
 /// 		 Tim Whisonant, Intel Corporation

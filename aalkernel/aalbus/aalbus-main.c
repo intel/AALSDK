@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -61,7 +59,7 @@
 //              Alvin Chen
 //
 // PURPOSE:  This file contains the main startup and shutdown code for the
-//           Intel(R) QuickAssist Technology Accelerator Abstraction Layer (AAL)
+//           Accelerator Abstraction Layer (AAL)
 //           Accelerator Hardware Module bus driver module
 // HISTORY:
 // COMMENTS:
@@ -428,7 +426,7 @@ aalbus_init(void)
 {
    int ret;
 
-   kosal_printk_level(KERN_INFO, "Intel(R) QuickAssist Technology Accelerator Abstraction Layer\n");
+   kosal_printk_level(KERN_INFO, "Accelerator Abstraction Layer\n");
    kosal_printk_level(KERN_INFO, "-> %s\n", DRV_DESCRIPTION);
    kosal_printk_level(KERN_INFO, "-> Version %s\n",DRV_VERSION);
    kosal_printk_level(KERN_INFO, "-> %s\n", DRV_COPYRIGHT);

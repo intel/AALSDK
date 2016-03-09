@@ -28,7 +28,7 @@
 /// @brief AFU Link Interface (ALI)
 /// @ingroup IALIAFU
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 /// AFU Link Interface (ALI) definition
 ///
 /// This header defines the various interfaces exposed by the AFU Link

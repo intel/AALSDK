@@ -28,7 +28,7 @@
 /// @brief Basic SPL AFU interaction.
 /// @ingroup HelloSPLLB
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
+/// Accelerator Abstraction Layer Sample Application
 ///
 ///    This application is for example purposes only.
 ///    It is not intended to represent a model for developing commercially-deployable applications.
@@ -66,7 +66,7 @@
 //    DEFAULT is to use Software Simulation.
 //****************************************************************************
 // #define  HWAFU
-// #define  ASEAFU
+#define  ASEAFU
 
 using namespace std;
 using namespace AAL;

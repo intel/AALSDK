@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -59,7 +57,7 @@
 /// @brief Definition of the shared(user/kernel) Workspace enums and structures.
 /// @ingroup AALCore
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Henry Mitchel, Intel Corporation
 ///          Joseph Grecco, Intel Corporation

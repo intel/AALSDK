@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -59,7 +57,7 @@
 //     CREATED: 02/20/2008
 //      AUTHOR: Joseph Grecco - Intel
 //
-// PURPOSE: This file containe public definitions for the
+// PURPOSE: This file contains public definitions for the
 //          AAL Resource Manager Kernel Module Service Interfaces
 // HISTORY:
 // COMMENTS:

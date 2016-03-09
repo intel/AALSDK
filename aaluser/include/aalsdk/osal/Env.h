@@ -28,7 +28,7 @@
 /// @brief Object for manipulating the environment variables.
 /// @ingroup OSAL
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///          Sadruta Chandrashekar, Intel Corporation

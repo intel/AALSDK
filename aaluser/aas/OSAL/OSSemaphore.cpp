@@ -28,7 +28,7 @@
 /// @brief Implementation of the CSemaphore class.
 /// @ingroup OSAL
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///          Henry Mitchel, Intel Corporation

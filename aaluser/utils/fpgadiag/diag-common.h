@@ -28,7 +28,7 @@
 // @brief Functionality common to all NLB utils.
 // @ingroup
 // @verbatim
-// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+// Accelerator Abstraction Layer
 //
 // AUTHORS: Tim Whisonant, Intel Corporation
 // 			Sadruta Chandrashekar, Intel Corporation
@@ -43,17 +43,10 @@
 
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aalclp/aalclp.h>
-
 #include <aalsdk/service/IALIAFU.h>
-//#include <aalsdk/service/IALIClient.h>
-
-//#include <aalsdk/utils/SingleAFUApp.h>
-//#include <aalsdk/utils/Utilities.h>
 #include <aalsdk/AAL.h>
 #include <aalsdk/Runtime.h>
-
 #include <aalsdk/utils/NLBVAFU.h>
-
 #include <string>
 #include "diag-nlb-common.h"
 
@@ -149,10 +142,10 @@ public:
    btWSSize   OutputSize() const { return m_OutputSize; } ///< Accessor for the Output workspace.
    btWSSize   UMsgSize()   const { return m_UMsgSize;   } ///< Accessor for the UMsg workspace.
 
-   btBool isOK()  {return m_isOK;}
+   btBool isOK()  {	return m_isOK; }
 
-   void Wait() { m_Sem.Wait();  }
-   void Post() { m_Sem.Post(1); }
+   void Wait() 	  { m_Sem.Wait();  }
+   void Post() 	  { m_Sem.Post(1); }
    void Stop();
 
    /// @brief Routine to allocate input, output, DSM and Umsg workspaces.

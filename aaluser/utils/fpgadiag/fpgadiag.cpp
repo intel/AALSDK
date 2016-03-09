@@ -28,7 +28,7 @@
 /// @brief Uses XL and IALIAFU to interact with ALI.
 /// @ingroup
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
+/// Accelerator Abstraction Layer Sample Application
 ///
 ///    This application is for example purposes only.
 ///    It is not intended to represent a model for developing commercially-deployable applications.
@@ -690,7 +690,7 @@ int main(int argc, char *argv[])
       }
 
    cout << endl
-        << "FpgaDiag - Intel QuickAssist FPGA Diagnostics Test:" << endl;
+        << "FpgaDiag - FPGA Diagnostics Test:" << endl;
 
 #if DBG_HOOK
    cerr << "Waiting for debugger attach.." << endl;

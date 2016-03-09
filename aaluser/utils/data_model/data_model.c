@@ -28,7 +28,7 @@
 /// @brief Display the Data Model employed by the current compiler.
 /// @ingroup data_model
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
+/// Accelerator Abstraction Layer Sample Application
 ///
 ///    This application is for example purposes only.
 ///    It is not intended to represent a model for developing

@@ -619,7 +619,7 @@ module ccip_emulator
 	    if (mmio_pkt.write_en == MMIO_WRITE_REQ) begin
 	       hdr.index  = {2'b0, mmio_pkt.addr[15:2]};
 	       hdr.rsvd9  = 1'b0;
-	       hdr.tid    = 9'b0;
+	       hdr.tid    = mmio_tid_counter;	       
 	       if (mmio_pkt.width == MMIO_WIDTH_32) begin
 		  hdr.len = 2'b00;
 		  cwlp_data = {480'b0, mmio_pkt.qword[0][31:0]};
@@ -632,6 +632,7 @@ module ccip_emulator
 	       cwlp_wrvalid = 1;
 	       cwlp_rdvalid = 0;
 	       mmio_pkt.resp_en = 1;
+    	       mmio_tid_counter  = mmio_tid_counter + 1;
 	       @(posedge clk);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 0;
@@ -766,57 +767,6 @@ module ccip_emulator
       end
    end
 
-   /*
-    * MMIO timeout/exit process
-    */
-   int mmioread_timeout_cnt;
-   logic mmioread_cycle;
-   logic mmioread_cycle_q;
-
-   // MMIO Read activity in progress
-   always @(posedge clk) begin : mmiocycle_proc
-      mmioread_cycle_q <= mmioread_cycle;
-      if (sys_reset) begin
-	 mmioread_cycle <= 0;
-      end
-      else begin
-	 if (C0RxMmioRdValid) begin
-	    mmioread_cycle <= 1;
-	 end
-	 else if (C2TxMmioRdValid) begin
-	    mmioread_cycle <= 0;
-	 end
-	 else begin
-	    mmioread_cycle <= mmioread_cycle_q;
-	 end
-      end
-   end
-
-   // MMIO counter
-   always @(posedge clk) begin : mmioread_timeout_ctr
-      if (sys_reset) begin
-	 mmioread_timeout_cnt <= 0;
-      end
-      else if (mmioread_cycle) begin
-	 mmioread_timeout_cnt <= mmioread_timeout_cnt + 1;
-      end
-      else begin
-	 mmioread_timeout_cnt <= 0;
-      end
-   end
-
-   // MMIO Timeout simkill
-   always @(posedge clk) begin : mmio_timeout_simkill
-      if (mmioread_timeout_cnt >= `MMIO_RESPONSE_TIMEOUT) begin
-	 `BEGIN_RED_FONTCOLOR;
-	 $display("SIM-SV: ASE timed out waiting for MMIO Read response to arrive !!");
-	 $display("        Please check CCI-spec, MMIO Read responses must return in %d cycles\n",
-		  `MMIO_RESPONSE_TIMEOUT);
-	 `END_RED_FONTCOLOR;
-	 start_simkill_countdown();
-      end
-   end
-
 
    /* ******************************************************************
     *
@@ -883,6 +833,7 @@ module ccip_emulator
    logic [0:NUM_UMSG_PER_AFU-1] umsg_hint_enable_array;
    logic [0:NUM_UMSG_PER_AFU-1] umsg_data_enable_array;
 
+   logic [4:0] 			umsgfifo_cnt_tmp;
    logic [4:0] 			umsgfifo_cnt;
 
    // UMSG Hint-to-Data time emulator (toaster style)
@@ -892,12 +843,16 @@ module ccip_emulator
    generate
       for ( ii = 0; ii < NUM_UMSG_PER_AFU; ii = ii + 1 ) begin : umsg_engine
 
-	 assign umsg_hint_enable_array[ii] = umsg_array[ii].hint_ready;
-	 assign umsg_data_enable_array[ii] = umsg_array[ii].data_ready;
+	 // Status board
+	 always @(*) begin
+	    umsg_hint_enable_array[ii] <= umsg_array[ii].hint_ready;
+	    umsg_data_enable_array[ii] <= umsg_array[ii].data_ready;
+	 end
 
+	 
 	 // State machine
 	 always @(posedge clk) begin
-	    if (sys_reset) begin
+	    if (SoftReset) begin
 	       umsg_array[ii].hint_timer <= 0;
 	       umsg_array[ii].data_timer <= 0;
 	       umsg_array[ii].hint_ready <= 0;
@@ -933,6 +888,7 @@ module ccip_emulator
 		   begin
 		      umsg_array[ii].hint_ready <= 0;
 		      umsg_array[ii].data_ready <= 0;
+		      umsg_array[ii].data_timer <= 0;
 		      if (umsg_array[ii].hint_timer <= 0) begin
 			 umsg_array[ii].state      <= UMsgSendHint;
 		      end
@@ -945,6 +901,8 @@ module ccip_emulator
 		 // Wait until hint popped by event queue
 		 UMsgSendHint:
 		   begin
+		      umsg_array[ii].hint_timer <= 0;
+		      umsg_array[ii].data_ready <= 0;
 		      if (umsg_array[ii].hint_pop) begin
 			 umsg_array[ii].hint_ready <= 0;
 			 umsg_array[ii].data_timer <= $urandom_range(`UMSG_HINT2DATA_LATRANGE);
@@ -960,6 +918,7 @@ module ccip_emulator
 		 // Wait to send out data, go to UMsgSendData after t_data ticks
 		 UMsgDataWait:
 		   begin
+		      umsg_array[ii].hint_timer <= 0;
 		      umsg_array[ii].hint_ready    <= 0;
 		      umsg_array[ii].data_ready    <= 0;
 		      if (umsg_array[ii].data_timer <= 0) begin
@@ -974,6 +933,8 @@ module ccip_emulator
 		 // Wait until popped by event queue
 		 UMsgSendData:
 		   begin
+		      umsg_array[ii].hint_timer <= 0;
+		      umsg_array[ii].data_timer <= 0;
 		      if (umsg_array[ii].data_pop) begin
 			 umsg_array[ii].hint_ready <= 0;
 			 umsg_array[ii].data_ready <= 0;
@@ -1164,7 +1125,7 @@ module ccip_emulator
       .alm_full   ( umsgfifo_full ),
       .full       (  ),
       .empty      ( umsgfifo_empty ),
-      .count      ( umsgfifo_cnt ),
+      .count      ( umsgfifo_cnt_tmp ),
       .overflow   (  ),
       .underflow  (  )
       );
@@ -1173,6 +1134,11 @@ module ccip_emulator
    UMsgHdr_t C0RxUMsgHdr;
    assign C0RxUMsgHdr = UMsgHdr_t'(C0RxHdr);
 
+   // Register UMSG fifo count
+   always @(posedge clk) begin
+      umsgfifo_cnt <= umsgfifo_cnt_tmp;      
+   end
+   
 
    /* ******************************************************************
     *
@@ -1983,22 +1949,43 @@ module ccip_emulator
    end
 
    // Inactivity management - counter
-   counter
-     #(
-       .COUNT_WIDTH (32)
-       )
-   inact_ctr
-     (
-      .clk          (clk),
-      .rst          ( first_transaction_seen && any_valid ),
-      .cnt_en       (1'b1),
-      .load_cnt     (32'b0),
-      .max_cnt      (cfg.ase_timeout),
-      .count_out    (inactivity_counter),
-      .terminal_cnt (inactivity_found)
-      );
+   // counter
+   //   #(
+   //     .COUNT_WIDTH (32)
+   //     )
+   // inact_ctr
+   //   (
+   //    .clk          (clk),
+   //    .rst          ( first_transaction_seen && any_valid ),
+   //    .cnt_en       (1'b1),
+   //    .load_cnt     (32'b0),
+   //    .max_cnt      (cfg.ase_timeout),
+   //    .count_out    (inactivity_counter),
+   //    .terminal_cnt (inactivity_found)
+   //    );
 
+   always @(posedge clk) begin : inact_ctr
+      if (first_transaction_seen && any_valid) begin
+	 inactivity_counter <= 0;	 
+      end
+      else begin
+	 inactivity_counter <= inactivity_counter + 1;	 
+      end
+   end
 
+   always @(posedge clk) begin : inactivity_found_proc
+      if (sys_reset) begin
+	 inactivity_found <= 0;	 
+      end
+      else if (inactivity_counter > cfg.ase_timeout) begin
+	 inactivity_found <= 1;	 
+      end
+      else begin
+	 inactivity_found <= 0;	 
+      end
+   end
+
+   
    /*
     * Initialization procedure
     *
@@ -2053,8 +2040,8 @@ module ccip_emulator
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
       run_clocks(20);
-      sys_reset     = 0;
-      sw_reset_trig = 0;
+      sys_reset     <= 0;
+      sw_reset_trig <= 0;
       run_clocks(20);
 
       // Indicate to APP that ASE is ready

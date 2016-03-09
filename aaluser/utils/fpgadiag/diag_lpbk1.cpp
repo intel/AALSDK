@@ -28,7 +28,7 @@
 // @brief NLB LPBK1 test application file.
 // @ingroup
 // @verbatim
-// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+// Accelerator Abstraction Layer
 //
 // AUTHORS: Tim Whisonant, Intel Corporation
 //			Sadruta Chandrashekar, Intel Corporation
@@ -52,7 +52,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 {
    btInt 	 res = 0;
    btWSSize  sz = CL(cmd.begincls);
-   uint_type  mcl = cmd.multicls;
+   uint_type mcl = cmd.multicls;
    uint_type NumCacheLines = cmd.begincls;
 
    const btInt StopTimeoutMillis = 250;
@@ -68,7 +68,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
    btUnsigned32bitInt  InputData = 0x00000000;
    volatile btUnsigned32bitInt *pInput    = (volatile btUnsigned32bitInt *)pInputUsrVirt;
    volatile btUnsigned32bitInt *pEndInput = (volatile btUnsigned32bitInt *)pInput +
-                                     (m_pMyApp->InputSize() / sizeof(btUnsigned32bitInt));
+                                     	 	(m_pMyApp->InputSize() / sizeof(btUnsigned32bitInt));
 
    for ( ; pInput < pEndInput ; ++pInput ) {
       *pInput = InputData++;
@@ -85,8 +85,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
    ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
    // Initiate AFU Reset
-   if (0 != m_pALIResetService->afuReset())
-   {
+   if (0 != m_pALIResetService->afuReset()){
       ERR("AFU reset failed. Exiting test.");
       return 1;
    }
@@ -100,8 +99,6 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
    // De-assert Device Reset
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
-   //__sync_synchronize();
-
    // Set input workspace address
    m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
 
@@ -110,37 +107,34 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 
    // Set the test mode
    csr_type cfg = (csr_type)NLB_TEST_MODE_LPBK1;
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
-   {
-	   cfg |= (csr_type)NLB_TEST_MODE_CONT;
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT)){
+	  cfg |= (csr_type)NLB_TEST_MODE_CONT;
    }
+
    // Check for write through mode and add to CSR_CFG
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WT))
-   {
-	   cfg |= (csr_type)NLB_TEST_MODE_WT;
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WT)){
+	  cfg |= (csr_type)NLB_TEST_MODE_WT;
    }
+
    // Set the read flags.
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI))
-   {
-	   cfg |= (csr_type)NLB_TEST_MODE_RDI;
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI)){
+	  cfg |= (csr_type)NLB_TEST_MODE_RDI;
    }
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDO))
-   {
-	   cfg |= (csr_type)NLB_TEST_MODE_RDO;
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDO)){
+	  cfg |= (csr_type)NLB_TEST_MODE_RDO;
    }
+
    // Select the channel.
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0))
-   {
-    cfg |= (csr_type)NLB_TEST_MODE_VL0;
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0)){
+	  cfg |= (csr_type)NLB_TEST_MODE_VL0;
    }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH0))
-   {
-    cfg |= (csr_type)NLB_TEST_MODE_VH0;
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH0)){
+	  cfg |= (csr_type)NLB_TEST_MODE_VH0;
    }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1))
-   {
-    cfg |= (csr_type)NLB_TEST_MODE_VH1;
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1)){
+	  cfg |= (csr_type)NLB_TEST_MODE_VH1;
    }
+
    // Set Multi CL CSR.
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_MULTICL))
    {
@@ -161,10 +155,10 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
 		 	   //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
 		cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
-		 << Normalized(cmd) << ")'";
+			 << Normalized(cmd) << ")'";
 
 		if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-				  // 01234567890123 01234567890123
+				  	 // 01234567890123 01234567890123
 			cout << "   Rd_Bandwidth   Wr_Bandwidth";
 		}
 		cout << endl;
@@ -208,20 +202,19 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 		   //wait for DSM register update or timeout
 		   while ( 0 == pAFUDSM->test_complete &&
 				 ( MaxPoll >= 0 )) {
-			   MaxPoll -= 1;
-			   SleepMilli(1);
+			   	 MaxPoll -= 1;
+			   	 SleepMilli(1);
 		   }
 
 		   //Update timer.
 		   absolute = Timer() + Timer(&ts);
 	    }
-	    else	//In non-cont mode, wait till test completes and then stop the device.
-	    {
-		   // Wait for test completion or timeout
+	    else{	//In non-cont mode, wait till test completes and then stop the device.
+	    		// Wait for test completion or timeout
 		   while ( 0 == pAFUDSM->test_complete &&
 				 ( MaxPoll >= 0 )) {
-			   MaxPoll -= 1;
-			   SleepMilli(1);
+			   	 MaxPoll -= 1;
+			   	 SleepMilli(1);
 		   }
 
 		   // Stop the device
@@ -235,8 +228,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 	    SavePerfMonitors();
 
 	    // Verify the buffers
-	    if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, NumCacheLines) != 0 )
-	    {
+	    if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, NumCacheLines) != 0 ){
 	 	   cerr << "Data mismatch in Input and Output buffers.\n";
 	       ++res;
 	       break;
@@ -250,8 +242,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 	    }
 
 	    //Checking for num_clocks underflow.
-	    if(pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead))
-       {
+	    if(pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead)){
           cerr << "Number of Clocks is negative.\n";
           ++res;
           break;
@@ -274,8 +265,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
    // Initiate AFU Reset
-   if (0 != m_pALIResetService->afuReset())
-   {
+   if (0 != m_pALIResetService->afuReset()){
       ERR("AFU reset failed after test completion.");
       ++res;
    }
@@ -291,9 +281,9 @@ void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 	bt32bitCSR startpenalty = pAFUDSM->start_overhead;
 	bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
 
-	cout << setw(10) << cls 								<< ' '
-		 << setw(10) << pAFUDSM->num_reads    			<< ' '
-		 << setw(11) << pAFUDSM->num_writes   			<< ' '
+	cout << setw(10) << cls 						 << ' '
+		 << setw(10) << pAFUDSM->num_reads    		 << ' '
+		 << setw(11) << pAFUDSM->num_writes   		 << ' '
 		 << setw(12) << GetPerfMonitor(READ_HIT)     << ' '
 		 << setw(12) << GetPerfMonitor(WRITE_HIT)    << ' '
 		 << setw(13) << GetPerfMonitor(READ_MISS)    << ' '
@@ -303,21 +293,19 @@ void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 	if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
 		ticks = rawticks - startpenalty;
 	}
-	else
-	{
-	ticks = rawticks - (startpenalty + endpenalty);
+	else{
+		ticks = rawticks - (startpenalty + endpenalty);
 	}
 	cout  << setw(16) << ticks;
 
 	if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-	double rdbw = 0.0;
-	double wrbw = 0.0;
+		 double rdbw = 0.0;
+		 double wrbw = 0.0;
 
-	cout << "  "
-		<< setw(14) << CalcReadBandwidth(cmd) << ' '
-		<< setw(14) << CalcWriteBandwidth(cmd);
+		 cout << "  "
+			  << setw(14) << CalcReadBandwidth(cmd) << ' '
+			  << setw(14) << CalcWriteBandwidth(cmd);
 	}
-
 	cout << endl;
 }
 

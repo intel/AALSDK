@@ -1,6 +1,4 @@
 ##******************************************************************************
-## Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-##
 ## This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 ##         redistributing this file, you may do so under either license.
 ##
@@ -56,9 +54,8 @@
 ##******************************************************************************
 ##****************************************************************************
 ##  FILE: aalkernel/aal_uidriver/Makefile
-##     Intel(R) QuickAssist Technology Accelerator Abstraction Layer (AAL)
-##     Intel(R) QuickAssist Technology AAL UIDrv
-##        Driver Module for Linux
+##     Accelerator Abstraction Layer (AAL)
+##     AAL UIDrv Driver Module for Linux
 ##  Author:
 ##     Joseph Grecco, Intel Corporation
 ##  Created:

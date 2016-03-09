@@ -29,7 +29,7 @@
 ///        interface and the portable AAL framework..
 /// @ingroup AIA
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Joseph Grecco, Intel Corporation.
 ///

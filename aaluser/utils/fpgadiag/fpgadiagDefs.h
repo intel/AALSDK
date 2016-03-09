@@ -28,7 +28,7 @@
 // @brief <brief>
 // @ingroup
 // @verbatim
-// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+// Accelerator Abstraction Layer
 //
 // AUTHORS: Tim Whisonant, Intel Corporation
 //			Sadruta Chandrashekar, Intel Corporation
@@ -93,8 +93,6 @@ using namespace std;
 #define DEFAULT_NLB_CONT_TIMEOUT_NS  NANOSEC_PER_MILLI(1)
 #define DEFAULT_NLB_DSM_SIZE         ((wkspc_size_type)MB(4))
 #define DEFAULT_NLB_WKSPC_SIZE       CL(1)
-//#define DEFAULT_NLB_CACHE_INIT       INLBVAFU::eNLBCI_FILL_NONE
-//#define DEFAULT_NLB_WRITE_TYPE       INLBVAFU::eNLBWT_WRITE_BACK
 #define DEFAULT_NLB_POSTED_WRITES    false
 
 #define NULL_WKSPC_TAGNAME           "<NULL Wkspc>"

@@ -63,7 +63,7 @@
 #include <sys/un.h>
 #include <sys/file.h>
 #include <dirent.h>
-
+#include <execinfo.h>
 
 #ifdef SIM_SIDE 
 #include "svdpi.h"
@@ -83,7 +83,7 @@
 /* #define FPGA_ADDR_WIDTH       48 */
 /* #define PHYS_ADDR_PREFIX_MASK 0x0000FFFFFFE00000 */
 #define CL_ALIGN          6
-#define MEMBUF_2MB_ALIGN  22
+#define MEMBUF_2MB_ALIGN  21
 
 // Width of a cache line in bytes
 #define CL_BYTE_WIDTH        64
@@ -343,7 +343,7 @@ void mqueue_create(char*);
 int mqueue_open(char*, int);
 void mqueue_close(int);
 void mqueue_destroy(char*);
-void mqueue_send(int, char*, int);
+void mqueue_send(int, const char*, int);
 int mqueue_recv(int, char*, int);
 
 // Debug interface
@@ -356,6 +356,7 @@ char* generate_tstamp_path(char*);
 
 // Error report functions
 void ase_error_report(char *, int , int );
+void backtrace_wrapper();
 
 // IPC management functions
 void final_ipc_cleanup();
@@ -388,7 +389,7 @@ extern "C" {
   void umsg_send (int umsg_id, uint64_t *umsg_data);
   void umsg_set_attribute(uint32_t hint_mask);
   // Driver activity
-  void ase_portctrl(char *);
+  void ase_portctrl(const char *);
 #ifdef __cplusplus
 }
 #endif // __cplusplus
@@ -473,6 +474,11 @@ struct ipc_t *mq_array;
 // Print buffers as they are being alloc/dealloc
 // *FIXME*: Connect to ase.cfg
 #define ASE_BUFFER_VIEW
+
+// Backtrace data
+int bt_j, bt_nptrs;  
+void *bt_buffer[4096];
+char **bt_strings;
 
 
 /* *********************************************************************
@@ -622,6 +628,9 @@ FILE *fp_pagetable_log; // = (FILE *)NULL;
 
 // Physical address mask - used to constrain generated addresses
 uint64_t PHYS_ADDR_PREFIX_MASK;
+
+// '1' indicates that teardown is in progress
+int self_destruct_in_progress;
 
 #endif
 

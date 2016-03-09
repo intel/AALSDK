@@ -24,8 +24,8 @@
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 ##****************************************************************************
-##     Intel(R) Accelerator Abstraction Layer Library Software Developer
-##        Kit (SDK)
+##  Accelerator Abstraction Layer Library Software Developer Kit (SDK)
+##
 ##  Content:
 ##     samples/Hello_ALI_NLB/Makefile
 ##  Author:
@@ -44,7 +44,7 @@ endif
 
 ifneq (,$(ndebug))
 else
-CPPFLAGS += -DENABLE_DEBUG=1
+CPPFLAGS += -DENABLE_DEBUG=1 -D ASE_DEBUG=1
 endif
 ifneq (,$(nassert))
 else

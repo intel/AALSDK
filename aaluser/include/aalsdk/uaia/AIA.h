@@ -28,7 +28,7 @@
 /// @brief AIA - Defines for AIA packages.
 /// @ingroup uAIA
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation.
 ///          Henry Mitchel, Intel Corporation.

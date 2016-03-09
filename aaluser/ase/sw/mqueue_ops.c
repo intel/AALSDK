@@ -44,6 +44,10 @@ void ipc_init()
 
   int ipc_iter;
   
+  // Evaluate ase_workdir_path
+  ase_workdir_path = (char*) ase_malloc(ASE_FILEPATH_LEN);
+  ase_eval_session_directory();
+  
   // Malloc mq_array
   mq_array = (struct ipc_t *)ase_malloc(ASE_MQ_INSTANCES * sizeof(struct ipc_t) );
   
@@ -254,7 +258,7 @@ void mqueue_destroy(char* mq_name_suffix)
 // mqueue_send(): Easy send function
 // - Typecast any message as a character array and ram it in.
 // ------------------------------------------------------------
-void mqueue_send(int mq, char* str, int size)
+void mqueue_send(int mq, const char* str, int size)
 {
   FUNC_CALL_ENTRY;
   // int ret_tx;

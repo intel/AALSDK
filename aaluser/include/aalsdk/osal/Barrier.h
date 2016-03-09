@@ -28,7 +28,7 @@
 /// @brief Interface for the Barrier synchronization primitive class.
 /// @ingroup OSAL
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Tim Whisonant, Intel Corporation
 ///

@@ -1,6 +1,4 @@
 dnl*****************************************************************************
-dnl  Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-dnl 
 dnl  This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 dnl          redistributing this file, you may do so under either license.
 dnl 
@@ -54,9 +52,9 @@ dnl   THEORY  OF  LIABILITY,  WHETHER  IN  CONTRACT,  STRICT LIABILITY,  OR TORT
 dnl   (INCLUDING  NEGLIGENCE  OR OTHERWISE) ARISING  IN ANY WAY  OUT  OF THE USE
 dnl   OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 dnl*****************************************************************************
-dnl  Intel(R) Accelerator Abstraction Layer Library Software Developer Kit (SDK)
+dnl  Accelerator Abstraction Layer Library Software Developer Kit (SDK)
 dnl   Content:
-dnl      Intel(R) Accelerator Abstraction Layer Library
+dnl      Accelerator Abstraction Layer Library
 dnl      m4/aalkernel.m4
 dnl   Author:
 dnl      Tim Whisonant, Intel Corporation

@@ -222,7 +222,7 @@ void poll_for_session_id()
   char tstamp_filepath[ASE_FILEPATH_LEN];
   sprintf(tstamp_filepath, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
-  printf("SIM-C : Waiting till session ID is created by ASE ... ");
+  printf("  [APP]  Waiting till session ID is created by ASE ... ");
 
   while ( access(tstamp_filepath, F_OK) == -1 )
     {

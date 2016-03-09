@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -59,8 +57,8 @@
 //     CREATED: 10/23/2015
 //      AUTHOR: Joseph Grecco
 //
-// PURPOSE:  This file contains the OS independent code for the Intel(R)
-//           QuickAssist Technology Accelerator Abstraction Layer (AAL)
+// PURPOSE:  This file contains the OS independent code for the
+//           Accelerator Abstraction Layer (AAL)
 //           User Mode Interface for the AAL CCI device driver
 // HISTORY:
 // COMMENTS:

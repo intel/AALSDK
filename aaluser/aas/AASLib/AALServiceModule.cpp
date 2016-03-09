@@ -36,7 +36,7 @@
 ///                It is up to the Service to track these sub-objects.
 /// @ingroup Services
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///          Tim Whisonant, Intel Corporation

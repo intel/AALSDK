@@ -28,7 +28,7 @@
 /// @brief AALResourceManagerClient - Public Interface to ResourceManagerClient
 /// @ingroup ResMgr
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Joseph Grecco, Intel Corporation.
 ///          

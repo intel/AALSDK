@@ -29,7 +29,7 @@
 ///        level message structure used by the driver interface.
 /// @ingroup uAIA
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Tim Whisonant, Intel Corporation.
 ///         Joseph Grecco, Intel Corporation.
