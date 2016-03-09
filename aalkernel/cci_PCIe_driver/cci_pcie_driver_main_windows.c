@@ -93,13 +93,6 @@ btUnsignedInt debug = 0
 //================================================================
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME( CCI_DEVICE, CCIFdoGetCCIDev );
 
-//=============================================================
-// DriverEntry is discardable and the other entry points can be 
-//  placed in pagable memory
-EVT_WDF_DEVICE_FILE_CREATE  CCIPDrvDeviceFileCreate;
-EVT_WDF_FILE_CLEANUP CCIPDrvDeviceFileCleanup;
-EVT_WDF_FILE_CLOSE CCIPDrvDeviceFileClose;
-
 #ifdef ALLOC_PRAGMA
 #pragma alloc_text (INIT, DriverEntry)
 //#pragma alloc_text (PAGE, CCIPDrvEvtDeviceAdd)
@@ -199,11 +192,6 @@ CCIPDrvEvtDeviceAdd( IN WDFDRIVER       Driver,
    WDFDEVICE                       hDevice;
 
    WDF_PNPPOWER_EVENT_CALLBACKS    pnpPowerCallbacks;
-   WDF_FILEOBJECT_CONFIG           fileObjectConfig;
-
-//   UPDATECONFIG_INTERFACE_STANDARD interface;
-
-//   struct spl2_device             *pspl2dev = NULL;
 
    // Used to remove compiler warnings
    UNREFERENCED_PARAMETER(Driver);
@@ -222,6 +210,7 @@ CCIPDrvEvtDeviceAdd( IN WDFDRIVER       Driver,
    //   but we are at least interested in the ones that will
    //   allow us to initialize and disable the HW
    WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&pnpPowerCallbacks);
+
 
    // The EvtDevicePrepareHardware callback function accesses the device's raw and translated hardware resources by using the ResourcesRaw and 
    // ResourcesTranslated handles that it receives. The callback function can call WdfCmResourceListGetCount and WdfCmResourceListGetDescriptor 
@@ -246,23 +235,17 @@ CCIPDrvEvtDeviceAdd( IN WDFDRIVER       Driver,
    WdfDeviceInitSetPnpPowerEventCallbacks(DeviceInit, &pnpPowerCallbacks);
 
    //
-   // Register File object callbacks
-   //
-   WDF_FILEOBJECT_CONFIG_INIT(&fileObjectConfig,
-                               CCIPDrvDeviceFileCreate,
-                               CCIPDrvDeviceFileClose,
-                               CCIPDrvDeviceFileCleanup
-                               );
-
-
-   WdfDeviceInitSetFileObjectConfig( DeviceInit,
-                                     &fileObjectConfig,
-                                     WDF_NO_OBJECT_ATTRIBUTES);
-
-
-   //
    // Initialize attributes and a context area for the device object.
    WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE( &fdoAttributes, CCI_DEVICE );
+
+   //
+   // Setup the file object that enables access to the device.
+   status = ccidrv_initUMAPIFileObject( DeviceInit );
+   if( !NT_SUCCESS( status ) ) {
+      PERR( "ccidrv_initUMAPIFileObject failed with status code 0x%x\n", status );
+      PTRACEOUT_LINT( status );
+      return status;
+   }
 
 
    // Create a framework device object. This call will in-turn create
@@ -296,9 +279,20 @@ CCIPDrvEvtDeviceAdd( IN WDFDRIVER       Driver,
                                      NULL); //InterfaceSpecificData
    pWinccidev->m_softdevice = 0; // Assume hardware
    if ( !NT_SUCCESS(status) ) {
-      PERR("Failed to get the BUS_INTERFACE_STANDARD. Assuming soft device\n");
+      int ret = 0;
+
+      PERR("Failed to get the BUS_INTERFACE_STANDARD. Assuming simulated device\n");
       PTRACEOUT_LINT(status);
       pWinccidev->m_softdevice = true;    
+
+      // Enumerate and Instantiate 2 Simulated Devices
+      ret = cci_sim_discover_devices( 2, &pWinccidev->g_device_list );
+      ASSERT(0 == ret);
+      if(0 >ret){
+         PERR("Failed to create simulated CCI devices.\n");
+         // If cci_sim_discover_devices() fails it will have cleaned up.
+         return STATUS_UNSUCCESSFUL;
+      }
    }else{
 #if 0 
       // Save the OS specific PCI device object in the OS independent CCIPDrv 
@@ -1004,200 +998,6 @@ CCIPDrvEvtDeviceReleaseHardware(IN  WDFDEVICE    Device,
    return status;
 }
 
-
-
-//=============================================================================
-// Name: CCIPDrvDeviceFileClose
-// Description:  Called when the framework receives IRP_MJ_DEVICE_CONTROL
-//               requests from the system.
-// Interface: public
-// Inputs: FileObject - A handle to a framework file object, which was 
-//                      previously received by the driver's EvtDeviceFileCreate 
-//                      callback function.
-// Outputs: None.
-// Comments: The framework calls a driver's EvtFileCleanup callback function 
-//           when the last handle to the specified file object has been closed.
-//           (Because of outstanding I/O requests, this handle might not have 
-//            been released.)
-//            After the framework calls a driver's EvtFileCleanup callback 
-//            function, it calls the driver's EvtFileClose callback function.
-//            The EvtFileCleanup callback function is called synchronously, 
-//            in the context of the thread that closed the last file object 
-//            handle.
-//=============================================================================
-VOID CCIPDrvDeviceFileCleanup(  _In_  WDFFILEOBJECT FileObject)
-{
-   UNREFERENCED_PARAMETER( FileObject );
-#if 0
-   WDFDEVICE  hDevice = WdfFileObjectGetDevice(FileObject);
-   PWIN_CCIPDrv_DEVICE        pWinccidev    = NULL;
-   struct spl2_device *pspl2dev  = NULL, *tmp = NULL;
-   struct aal_device     * pdev       = NULL;
-//      struct memmgr_session   *pmem_sess  = NULL;
-   struct spl2_session     *sessp      = NULL;
-   struct aaldev_ownerSession *  pownerSess =NULL;
-#if 0
-   PDEBUG("CCIPDrvDeviceFileCleanup() entered\n");
-
-   pWinccidev = CCIFdoGetCCIDev(hDevice);
-  
-//   pspl2dev =  PWIN_CCIPDrv_DEVICE_TO_PCCIPDrv_DEVICE(pWinccidev);
-
-
-   // Clean-up in case of dirty close
-   if(NULL != puisess){
-
-      // Release all devices since this device is as good as uidrv in Linux (HACK)
-      kosal_list_for_each_entry_safe(pspl2dev, tmp, &g_device_list, m_session_list, struct spl2_device){
-
-         // Clean up after device
-         pdev = spl2_dev_to_aaldev(pspl2dev);
-         if(likely(pdev) ){           
-
-            pownerSess = dev_OwnerSession(pdev,kosal_get_pid());
-            if(NULL!=pownerSess){
-               sessp = (struct spl2_session *)aalsess_pipHandle(pownerSess);
-
-               // Free all memmory mapped
-               if(NULL != sessp){
-
-                  // Protect access to activesess
-                  kosal_sem_get_user( spl2_dev_semp(pdev) );
-               
-                  // If a session is active stop it
-                  if ( NULL != spl2_dev_activesess(pspl2dev) ) {
-                     // Wait for complete
-                     spl2_trans_end(pspl2dev);
-                  };
-                  // Done accessing activesess
-                  kosal_sem_put( spl2_dev_semp(pdev) );
-
-                  // Unmap CSR memory
-                  if(NULL != sessp->m_csruvAddr){
-                     if(NULL != sessp->m_csrmap){
-                        MmUnmapLockedPages( sessp->m_csruvAddr, sessp->m_csrmap);
-                        IoFreeMdl(sessp->m_csrmap);
-                     }
-                  }
-               
-                  // Unmap DSM memory
-                  if(NULL != sessp->m_wsuvAddr){
-                     if(NULL != sessp->m_wsmap){
-                        MmUnmapLockedPages( sessp->m_wsuvAddr, sessp->m_wsmap);
-                        IoFreeMdl(sessp->m_wsmap);
-                     }
-                  }
-
-                  flush_all_wsids(sessp);
-                  session_destroy(sessp);
-
-               }// End NULL != sessp
-               // Remove it from the owner list  
-               if( dev_removeOwner( pdev, puisess->m_pid) != aaldev_addowner_OK)  {
-
-                  PERR("failed to claim the device\n");
-               }
-            }//End NULL != pownersession
-         }// End likely(pdev)
-      }// Kosal for
-
-      // Unblock any waiting threads
-      // TODO MAKE SURE EVENT QUEUE EMPTY BEFORE FREE
-      if(puisess->m_waitq){
-         kosal_wake_up_interruptible(puisess->m_waitq);
-         puisess->m_waitq = NULL;
-      }  
-      if(--numdevicesOpen == 0){
-         kosal_kfree(puisess, sizeof(struct uidrv_session));
-         puisess = NULL;
-      }
-   }// End NULL !=puisess
-#endif
-#endif
-}
-
-
-
-//=============================================================================
-// Name: CCIPDrvDeviceFileClose
-// Description:  Called when the framework receives IRP_MJ_DEVICE_CONTROL
-//               requests from the system.
-// Interface: public
-// Inputs: FileObject - A handle to a framework file object, which was 
-//                      previously received by the driver's EvtDeviceFileCreate 
-//                      callback function.
-// Outputs: None.
-// Comments: 
-//=============================================================================
-VOID CCIPDrvDeviceFileClose( _In_  WDFFILEOBJECT FileObject)
-{
-      UNREFERENCED_PARAMETER(FileObject);
-//      PDEBUG("CCIPDrvDeviceFileClose() entered\n");
-
-}
-
-//=============================================================================
-// Name: CCIPDrvDeviceFileCreate
-// Description:  Called when the framework receives IRP_MJ_DEVICE_CONTROL
-//               requests from the system.
-// Interface: public
-// Inputs: hDevice - Handle to the framework device object that is associated
-//                with the I/O request.
-//         Request - Handle to a framework request object.
-//          FileObject - A handle to a framework file object, which was 
-//                      previously received by the driver's EvtDeviceFileCreate 
-//                      callback function.
-// Outputs: None.
-// Comments: 
-//=============================================================================
-VOID CCIPDrvDeviceFileCreate ( IN WDFDEVICE  hDevice,
-                            IN WDFREQUEST  Request,
-                            IN WDFFILEOBJECT  FileObject)
-{
-   UNREFERENCED_PARAMETER( hDevice );
-   UNREFERENCED_PARAMETER( FileObject );
-   UNREFERENCED_PARAMETER( Request );
-
-#if 0
-   PWIN_CCIPDrv_DEVICE        pWinccidev    = NULL;
-   struct spl2_device      *pspl2dev  = NULL;
-   struct aal_device     * pdev       = NULL;
-
-   UNREFERENCED_PARAMETER(Request);
-   UNREFERENCED_PARAMETER(FileObject);
-#if 0   
-   PDEBUG("CCIPDrvDeviceFileCreate() entered\n");
-
-   // Create the uisession  ALL HAC RIGHT NOW
-   if ( NULL == puisess ) {     
-      puisess = uidrv_session_create(kosal_get_pid());
-   }
-   
-   pWinccidev = CCIFdoGetCCIDev(hDevice);
-   pspl2dev =  PWIN_CCIPDrv_DEVICE_TO_PCCIPDrv_DEVICE(pWinccidev);
-         
-   pdev = spl2_dev_to_aaldev(pspl2dev);
-#if 0 
-   if(likely(pdev) ){
-      aaldev_AddOwner_e ret;
-      if( unlikely( (ret=dev_addOwner( pdev,
-                                       puisess->m_pid,
-                                       puisess, // TODO MANIFEST ON OWNER NOT SUPPORTED YET
-                                       &puisess->m_devicelist)) != aaldev_addowner_OK)  ) {
-
-         PERR("failed to claim the device\n");
-         WdfRequestComplete(Request, STATUS_DEVICE_DATA_ERROR);
-         return;
-      }
-   }   
-#endif   
-   // Count the device
-   numdevicesOpen++;
-#endif
-   WdfRequestComplete(Request, STATUS_SUCCESS);
-//   PDEBUG("Device Owned by pid %d\n",puisess->m_pid);
-#endif
-}
 
 
 void

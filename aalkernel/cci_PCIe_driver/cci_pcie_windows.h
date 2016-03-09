@@ -104,6 +104,7 @@ EVT_WDF_DEVICE_RELEASE_HARDWARE CCIPDrvEvtDeviceReleaseHardware;
 EVT_WDF_DEVICE_SELF_MANAGED_IO_INIT CCIPDrvEvtDeviceSelfManagedIoInit;
 
 NTSTATUS ccidrv_initUMAPI( WDFDEVICE );
+NTSTATUS ccidrv_initUMAPIFileObject( PWDFDEVICE_INIT DeviceInit );
 
 //
 // Io events callbacks.
