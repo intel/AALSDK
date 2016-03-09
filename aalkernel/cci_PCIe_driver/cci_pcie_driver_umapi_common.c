@@ -456,7 +456,7 @@ process_send_message(struct ccidrv_session  *psess,
          //
          ownSessp = dev_OwnerSession(pdev,psess->m_pid);
          if ( NULL == ownSessp ) {
-            PERR("Not owner or no message handler.\n");
+            PERR("Not owner or no message handler during Process Send Message.\n");
             ret = -EACCES;
             PTRACEOUT_INT(ret);
             return ret;
@@ -685,7 +685,7 @@ process_bind_request(struct ccidrv_session  *psess,
          ownerSessp = dev_OwnerSession(pdev, psess->m_pid);
          if ( NULL == ownerSessp ) {
             // TODO: no error event here?
-            PERR("Not owner or no message handler.\n");
+            PERR("Not owner or no message handler during UnBind Request.\n");
             ret = -EACCES;
             PTRACEOUT_INT(ret);
             return ret;

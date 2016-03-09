@@ -561,7 +561,7 @@ btInt aalrm_processmsg(struct aalrm_ioctlreq    *preq,
 
           // Get the default message interface
           if(ownerSessp == NULL){
-                DPRINTF (AALRMC_DBG_IOCTL, ": Not owner or no message handler.\n");
+                DPRINTF (AALRMC_DBG_IOCTL, ": Not owner or no message handler during Release Device.\n");
                 return -EACCES;
           }
 
