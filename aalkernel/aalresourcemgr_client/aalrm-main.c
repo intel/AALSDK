@@ -393,7 +393,7 @@ btInt resourcemgr_init()
    }
 
    if(driver_create_file(&rm_driver.m_driver,&driver_attr_debug)){
-       DPRINTF (AHMPIP_DBG_MOD, ": Failed to create debug attribute - Unloading module\n");
+       DPRINTF (AALRMC_DBG_MOD, ": Failed to create debug attribute - Unloading module\n");
        // Unregister the driver with the bus
        aalbus_get_bus()->unregister_driver( &rm_driver );
        return -EIO;
