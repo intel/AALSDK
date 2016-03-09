@@ -199,9 +199,9 @@ module ccip_sniffer
    CfgHdr_t C0RxCfg;
    assign C0RxCfg = CfgHdr_t'(C0RxHdr);
 
-   assign xz_tx0_flag = ( ^{C0TxHdr.vc,              C0TxHdr.len, C0TxHdr.reqtype, C0TxHdr.addr, C0TxHdr.mdata} )   && C0TxValid ;
-   assign xz_tx1_flag = ( ^{C1TxHdr.vc, C1TxHdr.sop, C1TxHdr.len, C1TxHdr.reqtype, C1TxHdr.addr, C1TxHdr.mdata} )   && C1TxValid ;
-   assign xz_tx2_flag = ( ^{C2TxHdr.tid, C2TxData})                                                   && C2TxMmioRdValid ;
+   assign xz_tx0_flag = ( ^{C0TxHdr.vc,              C0TxHdr.len, C0TxHdr.reqtype, C0TxHdr.addr, C0TxHdr.mdata} )                        && C0TxValid ;
+   assign xz_tx1_flag = ( ^{C1TxHdr.vc, C1TxHdr.sop, C1TxHdr.len, C1TxHdr.reqtype, C1TxHdr.addr, C1TxHdr.mdata} )                        && C1TxValid ;
+   assign xz_tx2_flag = ( ^{C2TxHdr.tid, C2TxData})                                                                                      && C2TxMmioRdValid ;
 
    assign xz_rx0_flag = ( ^{C0RxHdr.vc_used, C0RxHdr.hitmiss,                 C0RxHdr.clnum, C0RxHdr.resptype, C0RxHdr.mdata, C0RxData}  && C0RxRspValid );
    assign xz_rx1_flag = ( ^{C1RxHdr.vc_used, C1RxHdr.hitmiss, C1RxHdr.format, C1RxHdr.clnum, C1RxHdr.resptype, C1RxHdr.mdata}            && C1RxRspValid );
@@ -396,7 +396,6 @@ module ccip_sniffer
       end
    end   
 
-/*   
    // Checker state machine
    always @(posedge clk) begin
       if (SoftReset) begin
@@ -432,28 +431,53 @@ module ccip_sniffer
 		      exp_c1len  <= C1TxHdr.len;		      
 		   end
 		   exp_c1state <= Exp_2CL;		   
-		end // if (wrline_en && (C1TxHdr.len == ASE_2CL))		
+		end // if (wrline_en && (C1TxHdr.len == ASE_2CL))
+		else if (wrline_en && (C1TxHdr.len == ASE_1CL)) begin
+		   if (~C1TxHdr.sop) begin
+		      print_message_and_log(0, "C1TxHdr SOP field is not HIGH in the first transaction of multi-line request !");		      
+		      print_and_simkill();		      
+		   end
+		   exp_c1state <= Exp_1CL;		   
+		end
 		else begin
 		   exp_c1state <= Exp_1CL;		   
 		end		
 	     end
 
-	   // 3CL state
+	   // 2nd cache line of multiline request
 	   Exp_2CL:
 	     begin
-		exp_c1state <= Exp_3CL;
+		if (wrline_en && (exp_c1len == ASE_2CL)) begin
+		   exp_c1state <= Exp_1CL;		   
+		end
+		else if (wrline_en && (exp_c1len == ASE_4CL)) begin
+		   exp_c1state <= Exp_3CL;
+		end
+		else begin
+		   exp_c1state <= Exp_2CL;		   
+		end
 	     end
 
-	   // 2CL state
+	   // 3rd cache line of multiline request -- no return to base from here
 	   Exp_3CL:
 	     begin
-		exp_c1state <= Exp_4CL;
+		if (wrline_en && (exp_c1len == ASE_4CL)) begin
+		   exp_c1state <= Exp_4CL;
+		end
+		else begin
+		   exp_c1state <= Exp_3CL;		   
+		end
 	     end
 
-	   // 1CL state
+	   // 4th cacheline of multiline request
 	   Exp_4CL:
 	     begin
-		exp_c1state <= Exp_1CL;		
+		if (wrline_en && (exp_c1len == ASE_4CL)) begin
+		   exp_c1state <= Exp_1CL;		
+		end
+		else begin
+		   exp_c1state <= Exp_4CL;		   
+		end		
 	     end
 
 	   // lala land
@@ -464,7 +488,6 @@ module ccip_sniffer
 	 endcase
       end
    end
-*/
 
    /*
     * Multi-cache READ line request checks
@@ -531,6 +554,44 @@ module ccip_sniffer
    /*
     * Check memory transactions in flight, maintain active list
     */
+   longint rd_active_addr_array[*];
+   longint wr_active_addr_array[*];
+   string  rd_addr_str;
+   string  wr_addr_str;
 
+   // Directory process
+   always @(posedge clk) begin
+      // Channel 0 valid transaction
+      if (C0TxValid) begin
+	 // If Valid read request
+	 if ((C0TxHdr.reqtype == ASE_RDLINE_I)||(C0TxHdr.reqtype == ASE_RDLINE_S)) begin
+	    // If transaction address exists in active list
+	    if  ( rd_active_addr_array.exists(C0TxHdr.addr)||wr_active_addr_array.exists(C0TxHdr.addr) ) begin
+	       rd_addr_str = {"A request to Address ", (C0TxHdr.addr << 6), " is already in flight, potential condition for data hazard"};	       
+	       print_message_and_log(1, rd_addr_str);	       
+	    end
+	    else begin
+	       rd_active_addr_array[C0TxHdr.addr] = C0TxHdr.addr;	       
+	    end
+	 end	 
+      end
+      // Channel 1 valid transaction
+      if (C1TxValid) begin
+	 // If valid write request
+	 if ((C1TxHdr.reqtype == ASE_WRLINE_I)||(C1TxHdr.reqtype == ASE_WRLINE_M)) begin
+	    // If transaction address exists in active list
+	    if  ( rd_active_addr_array.exists(C1TxHdr.addr)||wr_active_addr_array.exists(C1TxHdr.addr) ) begin
+	       wr_addr_str = {"A request to Address ", (C1TxHdr.addr << 6), " is already in flight, potential condition for data hazard"};	       
+	       print_message_and_log(1, wr_addr_str);	       
+	    end
+	    else begin
+	       wr_active_addr_array[C1TxHdr.addr] = C1TxHdr.addr;	       
+	    end
+	    
+	 end
+      end      
+   end
+   
+   
 
 endmodule // cci_sniffer
