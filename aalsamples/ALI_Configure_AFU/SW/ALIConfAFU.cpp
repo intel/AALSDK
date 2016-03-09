@@ -295,6 +295,7 @@ public:
    virtual void activateFailed( IEvent const &rEvent );
    // <end IALIReconfigure_Client interface>
 
+   void PrintReconfExceptionDescription(IEvent const &theEvent);
 protected:
    Runtime               m_Runtime;           ///< AAL Runtime
    IBase                *m_pAALService;       ///< The generic AAL Service interface for the AFU.
@@ -536,35 +537,41 @@ void ALIConfAFUApp::serviceAllocateFailed(const IEvent &rEvent)
 
 void ALIConfAFUApp::deactivateSucceeded( TransactionID const &rTranID )
 {
+   MSG("deactivateSucceeded");
    m_Sem.Post(1);
 }
 void ALIConfAFUApp::deactivateFailed( IEvent const &rEvent )
 {
    ERR("Failed deactivate");
    PrintExceptionDescription(rEvent);
+   PrintReconfExceptionDescription(rEvent);
    m_bIsOK = false;
    m_Sem.Post(1);
 }
 
 void ALIConfAFUApp::configureSucceeded( TransactionID const &rTranID )
 {
+   MSG("configureSucceeded");
    m_Sem.Post(1);
 }
 void ALIConfAFUApp::configureFailed( IEvent const &rEvent )
 {
    ERR("configureFailed");
    PrintExceptionDescription(rEvent);
+   PrintReconfExceptionDescription(rEvent);
    m_bIsOK = false;
    m_Sem.Post(1);
 }
 void ALIConfAFUApp::activateSucceeded( TransactionID const &rTranID )
 {
+   MSG("activateSucceeded");
    m_Sem.Post(1);
 }
 void ALIConfAFUApp::activateFailed( IEvent const &rEvent )
 {
    ERR("activateFailed");
    PrintExceptionDescription(rEvent);
+   PrintReconfExceptionDescription(rEvent);
    m_bIsOK = false;
    m_Sem.Post(1);
 }
@@ -621,6 +628,18 @@ void ALIConfAFUApp::activateFailed( IEvent const &rEvent )
  void ALIConfAFUApp::runtimeEvent(const IEvent &rEvent)
  {
      MSG("Generic message handler (runtime)");
+ }
+
+ void ALIConfAFUApp::PrintReconfExceptionDescription(IEvent const &rEvent)
+ {
+
+    if ( rEvent.Has(iidExTranEvent) ) {
+
+      std::cerr << "Description  " << dynamic_ref<IExceptionTransactionEvent>(iidExTranEvent, rEvent).Description() << std::endl;
+      std::cerr << "ExceptionNumber:  " << dynamic_ref<IExceptionTransactionEvent>(iidExTranEvent, rEvent).ExceptionNumber() << std::endl;
+      std::cerr << "Reason:  " << dynamic_ref<IExceptionTransactionEvent>(iidExTranEvent, rEvent).Reason() << std::endl;
+
+     }
  }
  // <begin IRuntimeClient interface>
 

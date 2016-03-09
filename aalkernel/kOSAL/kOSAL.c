@@ -221,7 +221,7 @@ btInt _kosal_udelay(__ASSERT_HERE_PROTO btTime delay)
 
 #if   defined( __AAL_LINUX__ )
 
-   mdelay(delay);
+   udelay(delay);
    res = 1;
 
 #elif defined( __AAL_WINDOWS__ )

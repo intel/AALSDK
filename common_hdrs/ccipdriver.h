@@ -107,7 +107,15 @@ typedef enum
    uid_errnumDeviceBusy,                         // 26
    uid_errnumTimeout,                            // 27
    uid_errnumNoAFU,                              // 28
-   uid_errnumAFUActivated                        //29
+   uid_errnumAFUActivated,                       // 29
+   uid_errnumPRTimeout,                          // 30
+   uid_errnumPROperation,                        // 31
+   uid_errnumPRCRC,                              // 32
+   uid_errnumPRIncompatibleBitstream,            // 33
+   uid_errnumPRIPProtocal,                       // 34
+   uid_errnumPRFIFO                              // 35
+
+
 } uid_errnum_e;
 
 typedef enum

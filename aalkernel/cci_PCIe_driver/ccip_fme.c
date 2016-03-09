@@ -757,7 +757,7 @@ bt32bitInt get_fme_dev_featurelist( struct fme_device *pfme_dev,
 
          default :
          {
-            PERR(" invalid FME Feature ID\n");
+            PWARN(" Invalid FME Feature ID %d  0x%X \n",fme_dfh.Feature_ID,fme_dfh.Feature_ID);
          }
          break ;
       } // end switch
