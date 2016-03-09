@@ -470,6 +470,7 @@ int cci_destroy_aal_device( struct cci_aal_device* pcci_aaldev)
    if(NULL != pcci_aaldev->m_workq_revokeafu) {
       kosal_destroy_workqueue(pcci_aaldev->m_workq_revokeafu);
     }
+
    kosal_list_del( &cci_dev_list_head(pcci_aaldev));
 
    kosal_kfree(pcci_aaldev, sizeof(struct cci_aal_device));

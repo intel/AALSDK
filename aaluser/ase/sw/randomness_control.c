@@ -33,7 +33,7 @@
  */
 void ase_write_seed(uint64_t seed)
 {
-  FILE *fp_seed;
+  FILE *fp_seed = (FILE *)NULL;
   fp_seed = fopen(ASE_SEED_FILE, "w");
   if (fp_seed == NULL)
     {
@@ -44,7 +44,7 @@ void ase_write_seed(uint64_t seed)
     {
       fprintf(fp_seed, "%lu", seed);
       fclose(fp_seed);
-    }
+    }  
 }
 
 
@@ -55,7 +55,7 @@ uint64_t ase_read_seed()
 {
   uint64_t readback_seed;
   uint64_t new_seed;
-  FILE *fp_seed;
+  FILE *fp_seed = (FILE *)NULL;
   fp_seed = fopen(ASE_SEED_FILE, "r");
   if (fp_seed == NULL)
     {
@@ -69,6 +69,7 @@ uint64_t ase_read_seed()
     {
       fscanf(fp_seed, "%lu", &readback_seed);
       printf("SIM-C : Readback seed %lu\n", readback_seed);
+      fclose(fp_seed);
       return readback_seed;
     }
 }

@@ -35,11 +35,10 @@
 //
 // HISTORY:
 // WHEN:          WHO:     WHAT:
-// 05/30/2013     TSW      Initial version.
-// 07/30/2105     SC	   fpgadiag version@endverbatim
+// 09/17/2015     SC      Initial version.@endverbatim
 //****************************************************************************
 
-//LPBK1: This is a memory copy test. AFU copies CSR_NUM_LINES from source buffer to destination buffer.
+//CCIP: This is a memory copy test. AFU copies CSR_NUM_LINES from source buffer to destination buffer.
 //On test completion, the software compares the source and destination buffers.
 #include <aalsdk/kernel/ccipdriver.h>
 #include "diag_defaults.h"
@@ -53,36 +52,23 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 {
    btInt 	 res = 0;
    btWSSize  sz = CL(cmd.begincls);
-   uint_type NumCacheLines = (cmd.endcls - cmd.begincls) + 1;
+   uint_type mcl = cmd.multicls;
+   uint_type NumCacheLines = cmd.begincls;
 
-
-   /*if( uid_errnumOK != m_pALIBufferService->bufferAllocate(NLB_DSM_SIZE, &m_DSMVirt)){
-      return 1;
-   }
-   if( uid_errnumOK != m_pALIBufferService->bufferAllocate(wssize, &(m_pMyApp->InputVirtRef()))){
-       return 1;
-    }
-   if( uid_errnumOK !=  m_pALIBufferService->bufferAllocate(wssize, &(m_pMyApp->OutputVirtRef()))){
-      return 1;
-   }
-
-   // Synchronize with the workspace allocation event notifications.
-   m_pMyApp->Wait();
-cout<<"Wkspcs created\n";
-   if ( !m_pMyApp->isOK() ) {
-      ERR("Workspace allocation failed");
-      return 1;
-   }
+   const btInt StopTimeoutMillis = 250;
+   btInt MaxPoll = StopTimeoutMillis;
 
    // We need to initialize the input and output buffers, so we need addresses suitable
    // for dereferencing in user address space.
    // volatile, because the FPGA will be updating the buffers, too.
    volatile btVirtAddr pInputUsrVirt = m_pMyApp->InputVirt();
 
-   volatile btUnsigned32bitInt  InputData = 0x00000000;
+   ::memset((void *)pInputUsrVirt, 0, m_pMyApp->InputSize());
+
+   btUnsigned32bitInt  InputData = 0x00000000;
    volatile btUnsigned32bitInt *pInput    = (volatile btUnsigned32bitInt *)pInputUsrVirt;
    volatile btUnsigned32bitInt *pEndInput = (volatile btUnsigned32bitInt *)pInput +
-                                     (m_pMyApp->InputSize() / sizeof(btUnsigned32bitInt));
+                                     	 	(m_pMyApp->InputSize() / sizeof(btUnsigned32bitInt));
 
    for ( ; pInput < pEndInput ; ++pInput ) {
       *pInput = InputData++;
@@ -95,152 +81,233 @@ cout<<"Wkspcs created\n";
 
    volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 
-   if ( 0 != ResetHandshake() ) {
+   // Clear the DSM status fields
+   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
+
+   // Initiate AFU Reset
+   if (0 != m_pALIResetService->afuReset()){
+      ERR("AFU reset failed. Exiting test.");
       return 1;
    }
-   cout<<"Handshake reset\n";
-   ReadQLPCounters();
-   SaveQLPCounters();
+
+   //Set DSM base, high then low
+   m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
 
    // Assert Device Reset
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
-
-   // Clear the DSM status fields
-   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
    // De-assert Device Reset
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
    // Set input workspace address
-   m_pALIMMIOService->mmioWrite32(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
+   m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
 
    // Set output workspace address
-   m_pALIMMIOService->mmioWrite32(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
+   m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
 
    // Set the test mode
    csr_type cfg = (csr_type)NLB_TEST_MODE_LPBK1;
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT)){
+	  cfg |= (csr_type)NLB_TEST_MODE_CONT;
+   }
 
    // Check for write through mode and add to CSR_CFG
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WT))
-   {
-	   cfg |= (csr_type)NLB_TEST_MODE_WT;
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WT)){
+	  cfg |= (csr_type)NLB_TEST_MODE_WT;
    }
+
    // Set the read flags.
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI))
-   {
-	   cfg |= (csr_type)NLB_TEST_MODE_RDI;
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI)){
+	  cfg |= (csr_type)NLB_TEST_MODE_RDI;
    }
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDO))
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDO)){
+	  cfg |= (csr_type)NLB_TEST_MODE_RDO;
+   }
+
+   // Select the channel.
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0)){
+	  cfg |= (csr_type)NLB_TEST_MODE_VL0;
+   }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH0)){
+	  cfg |= (csr_type)NLB_TEST_MODE_VH0;
+   }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1)){
+	  cfg |= (csr_type)NLB_TEST_MODE_VH1;
+   }
+
+   // Set Multi CL CSR.
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_MULTICL))
    {
-	   cfg |= (csr_type)NLB_TEST_MODE_RDO;
+      if(2 == cmd.multicls){
+         cfg |= (csr_type)NLB_TEST_MODE_MCL2;
+      }
+      else if(4 == cmd.multicls){
+         cfg |= (csr_type)NLB_TEST_MODE_MCL4;
+      }
    }
 
    m_pALIMMIOService->mmioWrite32(CSR_CFG, cfg);
 
+   ReadPerfMonitors();
+   SavePerfMonitors();
+
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-		     //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
-	  cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
-		 << Normalized(cmd) << ")'";
+		 	   //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
+		cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
+			 << Normalized(cmd) << ")'";
 
-	  cout << endl;
+		if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
+				  	 // 01234567890123 01234567890123
+			cout << "   Rd_Bandwidth   Wr_Bandwidth";
+		}
+		cout << endl;
    }
 
+#if   defined( __AAL_WINDOWS__ )
+#error TODO
+#elif defined( __AAL_LINUX__ )
+   struct timespec ts       = cmd.timeout;
+   Timer     absolute = Timer() + Timer(&ts);
+#endif // OS
 
    while ( sz <= CL(cmd.endcls) )
    {
-	   // Set the number of cache lines for the test
-	   m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
-
-	   // Start the test
-	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
-
-	   // Wait for test completion
-	   while ( 0 == pAFUDSM->test_complete ) {
-		  SleepMicro(100);
-	   }
-
-	   // Stop the device
-	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
-
-	   ReadQLPCounters();
-
-	   PrintOutput(cmd, (sz / CL(1)));
-
-	   SaveQLPCounters();
-
-	   //Increment number of cachelines
-	   sz += CL(1);
-
-	   // Assert Device Reset
-	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
+	    // Assert Device Reset
+	    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
 		// Clear the DSM status fields
 		::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
 		// De-assert Device Reset
 		m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
+
+	    // Set the number of cache lines for the test
+		m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
+
+	    // Start the test
+		m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
+
+	    // In cont mode, send a stop signal after timeout. Wait till DSM complete register goes high
+	    if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
+	    {
+		   //Wait till timeout.
+		   while(Timer() < absolute){
+			   SleepNano(10);
+		   }
+
+		   // Stop the device
+		   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
+
+		   //wait for DSM register update or timeout
+		   while ( 0 == pAFUDSM->test_complete &&
+				 ( MaxPoll >= 0 )) {
+			   	 MaxPoll -= 1;
+			   	 SleepMilli(1);
+		   }
+
+		   //Update timer.
+		   absolute = Timer() + Timer(&ts);
+	    }
+	    else{	//In non-cont mode, wait till test completes and then stop the device.
+	    		// Wait for test completion or timeout
+		   while ( 0 == pAFUDSM->test_complete &&
+				 ( MaxPoll >= 0 )) {
+			   	 MaxPoll -= 1;
+			   	 SleepMilli(1);
+		   }
+
+		   // Stop the device
+		   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
+	    }
+
+	    ReadPerfMonitors();
+
+	    PrintOutput(cmd, NumCacheLines);
+
+	    SavePerfMonitors();
+
+	    // Verify the buffers
+	    if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, NumCacheLines) != 0 ){
+	 	   cerr << "Data mismatch in Input and Output buffers.\n";
+	       ++res;
+	       break;
+	    }
+
+	    // Verify the device
+	    if ( 0 != pAFUDSM->test_error ) {
+	 	  cerr << "Error bit is in the DSM.\n";
+	      ++res;
+	      break;
+	    }
+
+	    //Checking for num_clocks underflow.
+	    if(pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead)){
+          cerr << "Number of Clocks is negative.\n";
+          ++res;
+          break;
+       }
+
+	   //Increment number of cachelines
+	   sz += CL(mcl);
+	   NumCacheLines += mcl;
+
+	   // Check the device status
+	   if ( MaxPoll < 0 ) {
+		  cerr << "The maximum timeout for test stop was exceeded." << endl;
+		  ++res;
+		  break;
+	   }
+
+	   MaxPoll = StopTimeoutMillis;
    }
 
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
-   // Verify the buffers
-   if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, NumCacheLines) != 0 )
-   {
+   // Initiate AFU Reset
+   if (0 != m_pALIResetService->afuReset()){
+      ERR("AFU reset failed after test completion.");
       ++res;
    }
-
-   // Verify the device
-   if ( 0 != pAFUDSM->test_error ) {
-      ++res;
-   }
-
-
-   // Clean up..
-
-   // Release the Workspaces
-   m_pALIBufferService->bufferFree(m_pMyApp->InputVirt());
-   m_pALIBufferService->bufferFree(m_pMyApp->OutputVirt());
-   m_pALIBufferService->bufferFree(m_pMyApp->DSMVirt());
-
-   // Synchronize with the workspace free event notifications.
-   m_pMyApp->Wait();
-
-   if ( !m_pMyApp->isOK() ) {
-      ERR("Workspace free failed");
-      return 1;
-   }*/
 
    return res;
 }
 
 void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 {
-#if 0
 	nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 	bt64bitCSR ticks;
-    bt64bitCSR rawticks     = pAFUDSM->num_clocks;
-    bt32bitCSR startpenalty = pAFUDSM->start_overhead;
-    bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
+	bt64bitCSR rawticks     = pAFUDSM->num_clocks;
+	bt32bitCSR startpenalty = pAFUDSM->start_overhead;
+	bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
 
-	  cout << setw(10) << cls					<< ' '
-	       << setw(10) << pAFUDSM->num_reads    << ' '
-	       << setw(11) << pAFUDSM->num_writes   << ' '
-	       << setw(12) << GetQLPCounter(0)      << ' '
-	       << setw(12) << GetQLPCounter(1)      << ' '
-	       << setw(13) << GetQLPCounter(2)      << ' '
-	       << setw(13) << GetQLPCounter(3)      << ' '
-	       << setw(10) << GetQLPCounter(10)     << ' ';
+	cout << setw(10) << cls 						 << ' '
+		 << setw(10) << pAFUDSM->num_reads    		 << ' '
+		 << setw(11) << pAFUDSM->num_writes   		 << ' '
+		 << setw(12) << GetPerfMonitor(READ_HIT)     << ' '
+		 << setw(12) << GetPerfMonitor(WRITE_HIT)    << ' '
+		 << setw(13) << GetPerfMonitor(READ_MISS)    << ' '
+		 << setw(13) << GetPerfMonitor(WRITE_MISS)   << ' '
+		 << setw(10) << GetPerfMonitor(EVICTIONS)    << ' ';
 
-	  if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
-		  ticks = rawticks - startpenalty;
-	  }
-	  else
-	  {
-		  ticks = rawticks - (startpenalty + endpenalty);
-	  }
-	  cout  << setw(16) << ticks;
+	if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
+		ticks = rawticks - startpenalty;
+	}
+	else{
+		ticks = rawticks - (startpenalty + endpenalty);
+	}
+	cout  << setw(16) << ticks;
 
-	    cout << endl;
-#endif
+	if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
+		 double rdbw = 0.0;
+		 double wrbw = 0.0;
+
+		 cout << "  "
+			  << setw(14) << CalcReadBandwidth(cmd) << ' '
+			  << setw(14) << CalcWriteBandwidth(cmd);
+	}
+	cout << endl;
 }
+
+
+

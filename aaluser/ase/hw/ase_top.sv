@@ -41,43 +41,58 @@ import ccip_if_pkg::*;
 `timescale 1ns/1ns
 
 module ase_top();
+   
+   
+   logic pClkDiv4;
+   logic pClkDiv2;
+   logic pClk;
+   logic pck_cp2af_softReset;
 
-
-   logic vl_clk_LPdomain_64ui;
-   logic vl_clk_LPdomain_32ui;
-   logic vl_clk_LPdomain_16ui;
-   logic ffs_LP16ui_afu_SoftReset_n;
-   t_if_ccip_Tx ffs_LP16ui_sTxData_afu;
-   t_if_ccip_Rx ffs_LP16ui_sRxData_afu;
-
-   logic [1:0] ffs_LP16ui_afu_PwrState;   // CCI-P AFU Power State
-   logic       ffs_LP16ui_afu_Error;      // CCI-P Protocol Error Detected
+   logic uClk_usr;
+   logic uClk_usrDiv2;
+      
+   t_if_ccip_Tx pck_af2cp_sTx;
+   t_if_ccip_Rx pck_cp2af_sRx;
+   
+   logic [1:0] pck_cp2af_pwrState;   // CCI-P AFU Power State
+   logic       pck_cp2af_error;      // CCI-P Protocol Error Detected
    
    // CCI-P emulator
    ccip_emulator ccip_emulator
      (
-      .vl_clk_LPdomain_64ui               (vl_clk_LPdomain_64ui         ),
-      .vl_clk_LPdomain_32ui               (vl_clk_LPdomain_32ui         ),
-      .vl_clk_LPdomain_16ui               (vl_clk_LPdomain_16ui         ),
-      .ffs_LP16ui_afu_SoftReset_n         (ffs_LP16ui_afu_SoftReset_n   ),
-      .ffs_LP16ui_afu_PwrState            (ffs_LP16ui_afu_PwrState      ),
-      .ffs_LP16ui_afu_Error               (ffs_LP16ui_afu_Error         ),
-      .ffs_LP16ui_sTxData_afu		  (ffs_LP16ui_sTxData_afu       ),
-      .ffs_LP16ui_sRxData_afu             (ffs_LP16ui_sRxData_afu       )
+      .pClkDiv4               (pClkDiv4            ),
+      .pClkDiv2               (pClkDiv2            ),
+      .pClk                   (pClk                ),
+      .uClk_usr               (uClk_usr            ),
+      .uClk_usrDiv2           (uClk_usrDiv2        ),
+      .pck_cp2af_softReset    (pck_cp2af_softReset ),
+      .pck_cp2af_pwrState     (pck_cp2af_pwrState  ),
+      .pck_cp2af_error        (pck_cp2af_error     ),
+      .pck_af2cp_sTx	      (pck_af2cp_sTx       ),
+      .pck_cp2af_sRx          (pck_cp2af_sRx       )
       );
 
 
    // CCIP AFU
    ccip_std_afu ccip_std_afu
      (
-      .vl_clk_LPdomain_64ui               (vl_clk_LPdomain_64ui         ),
-      .vl_clk_LPdomain_32ui               (vl_clk_LPdomain_32ui         ),
-      .vl_clk_LPdomain_16ui		  (vl_clk_LPdomain_16ui         ),
-      .ffs_LP16ui_afu_SoftReset_n         (ffs_LP16ui_afu_SoftReset_n   ),
-      .ffs_LP16ui_afu_PwrState            (ffs_LP16ui_afu_PwrState      ),
-      .ffs_LP16ui_afu_Error               (ffs_LP16ui_afu_Error         ),
-      .ffs_LP16ui_sTxData_afu		  (ffs_LP16ui_sTxData_afu       ),
-      .ffs_LP16ui_sRxData_afu		  (ffs_LP16ui_sRxData_afu       )
+      .pClkDiv4               (pClkDiv4            ),
+      .pClkDiv2               (pClkDiv2            ),
+      .pClk                   (pClk                ),
+      .uClk_usr               (uClk_usr            ),
+      .uClk_usrDiv2           (uClk_usrDiv2        ),
+      .pck_cp2af_softReset    (pck_cp2af_softReset ),
+      .pck_cp2af_pwrState     (pck_cp2af_pwrState  ),
+      .pck_cp2af_error        (pck_cp2af_error     ),
+      .pck_af2cp_sTx	      (pck_af2cp_sTx       ),
+      .pck_cp2af_sRx          (pck_cp2af_sRx       )
       );
 
-endmodule
+   // t_ccip_c0_RspAtomicHdr DBG_C0RxAtomic;
+   // assign DBG_C0RxAtomic = t_ccip_c0_RspAtomicHdr'(pck_cp2af_sRx.c0.hdr);
+
+   t_ccip_c0_ReqMmioHdr DBG_C0RxMMIO;
+   assign DBG_C0RxMMIO  = t_ccip_c0_ReqMmioHdr'(pck_cp2af_sRx.c0.hdr);   
+   
+endmodule // ase_top
+

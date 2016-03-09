@@ -49,10 +49,33 @@
 #include <aalsdk/aas/AALService.h>
 #include <aalsdk/ase/ase_common.h>
 
-#include <aalsdk/service/ALIAFUService.h>
 #include <aalsdk/service/ASEALIAFUService.h>
 
 BEGIN_NAMESPACE(AAL)
+
+// FIXME: move or reference this properly
+#ifndef CCIP_DFH
+/// Device Feature Header CSR
+struct CCIP_DFH {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt Feature_ID :12;     // Feature ID
+         btUnsigned64bitInt Feature_rev :4;     // Feature revision
+         btUnsigned64bitInt next_DFH_offset :24;// Next Device Feature header offset
+         btUnsigned16bitInt eol :1;             // end of header bit
+         btUnsigned64bitInt rsvd :19;           // Reserved
+         btUnsigned64bitInt Type :4;            // Type of Device
+
+         //enum e_CCIP_DEVTPPE_ID Type :4;
+
+      }; //end struct
+   }; // end union
+
+}; //end struct CCIP_DFH
+#endif
+
 
 /// @addtogroup ASEALIAFU
 /// @{
@@ -120,6 +143,18 @@ public:
    virtual btBool  mmioWrite32( const btCSROffset Offset, const btUnsigned32bitInt Value);
    virtual btBool   mmioRead64( const btCSROffset Offset,       btUnsigned64bitInt * const pValue);
    virtual btBool  mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value);
+   virtual btBool  mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+                                          NamedValueSet const &rInputArgs,
+                                          NamedValueSet       &rOutputArgs );
+   // overloaded version without rOutputArgs
+   virtual btBool  mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+                                          NamedValueSet const &rInputArgs );
+   virtual btBool  mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
+                                         NamedValueSet const &rInputArgs,
+                                         NamedValueSet       &rOutputArgs );
+   // overloaded version without rOutputArgs
+   virtual btBool  mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
+                                         NamedValueSet const &rInputArgs );
    // </IALIMMIO>
 
    // <IALIBuffer>
@@ -184,10 +219,23 @@ protected:
 
    // Map to store workspace parameters
    typedef std::map<btVirtAddr, struct aalui_WSMParms> mapWkSpc_t;
-   mapWkSpc_t m_mapWkSpc;  
+   mapWkSpc_t m_mapWkSpc;
+
+   // List to cache device feature metadata
+   typedef struct {
+      btCSROffset        offset;    //< MMIO offset of feature
+      struct CCIP_DFH    dfh;       //< Associated device feature header
+      btUnsigned64bitInt guid[2];   //< GUID (for BBBs/private features)
+   } FeatureDefinition;
+   typedef std::vector<FeatureDefinition> FeatureList;
+   FeatureList m_featureList;
 
    static CriticalSection sm_ASEMtx;
+
+private:
+   void _printDFH( const struct CCIP_DFH &dfh );
 };
+
 
 /// @}
 

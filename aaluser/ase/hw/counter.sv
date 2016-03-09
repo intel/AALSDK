@@ -56,7 +56,13 @@ module counter
    assign count_out = cnt_reg;
 
    // Terminal count
-   assign terminal_cnt = (cnt_reg == max_cnt) ? 1'b1 : 1'b0;
+   always @(*) begin
+      if (cnt_reg == max_cnt)
+	terminal_cnt <= 1;
+      else
+	terminal_cnt <= 0;      
+   end
+   // assign terminal_cnt = (cnt_reg == max_cnt) ? 1'b1 : 1'b0;
    
    // Counter process
    always @(posedge clk) begin

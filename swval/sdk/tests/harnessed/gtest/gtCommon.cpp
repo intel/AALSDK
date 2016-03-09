@@ -5,7 +5,7 @@
 #include "gtCommon.h"
 
 GlobalTestConfig GlobalTestConfig::sm_Instance;
-const GlobalTestConfig & GlobalTestConfig::GetInstance()
+GlobalTestConfig & GlobalTestConfig::GetInstance()
 {
    return GlobalTestConfig::sm_Instance;
 }
@@ -387,6 +387,88 @@ int RequireLD_LIBRARY_PATH(const char *path)
 _DONE:
    free(psavecopy);
 
+   return res;
+}
+
+int UnRequireLD_LIBRARY_PATH(const char *path)
+{
+   int   res  = 0;
+   char *pvar = getenv("LD_LIBRARY_PATH");
+
+   if ( NULL == pvar ) {
+      // not found, so nothing can possibly be removed.
+      return 1;
+   }
+
+   if ( NULL == strchr(pvar, ':') ) {
+      // There is only one path present.
+      if ( 0 == strcmp(pvar, path) ) {
+         // The variable is set to the one path to remove. Unset LD_LIBRARY_PATH.
+         return unsetenv("LD_LIBRARY_PATH");
+      } else {
+         // path is not found in LD_LIBRARY_PATH. Nothing to do.
+         return 2;
+      }
+   }
+
+   // LD_LIBRARY_PATH contains a list of paths separated by :
+
+   char *pnewval = (char *) malloc(strlen(pvar) + 1);
+   *pnewval = 0;
+
+   char *pcopyvar  = strdup(pvar);
+   char *psavecopy = pcopyvar;
+
+   int   cnt = 0;
+   char *pcolon;
+
+   if ( NULL == pcopyvar ) {
+      res = 3;
+      goto _DONE;
+   }
+
+   while ( NULL != (pcolon = strchr(pcopyvar, ':')) ) {
+
+      *pcolon = 0;
+
+      if ( 0 != strcmp(pcopyvar, path) ) {
+         // This one is not an instance of path, so copy it into the new value..
+
+         if ( cnt > 0 ) {
+            strcat(pnewval, ":");
+         }
+
+         strcat(pnewval, pcopyvar);
+
+         ++cnt;
+      }
+
+      pcopyvar = pcolon + 1;
+
+   }
+
+   // Check the last instance..
+   if ( 0 != strcmp(pcopyvar, path) ) {
+      if ( cnt > 0 ) {
+         strcat(pnewval, ":");
+      }
+      strcat(pnewval, pcopyvar);
+   }
+
+   if ( 0 == strlen(pnewval) ) {
+      // There were multiple copies of path, but nothing else.
+      res = unsetenv("LD_LIBRARY_PATH");
+   } else {
+      res = setenv("LD_LIBRARY_PATH", pnewval, 1);
+   }
+
+_DONE:
+   if ( NULL != psavecopy ) {
+      free(psavecopy);
+   }
+   if ( NULL != pnewval ) {
+      free(pnewval);
+   }
    return res;
 }
 

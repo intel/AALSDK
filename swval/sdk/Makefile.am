@@ -149,7 +149,6 @@ include/aalsdk/rm/InstanceRecord.h
 
 servicehdrs_HEADERS=\
 include/aalsdk/service/IALIAFU.h \
-include/aalsdk/service/ALIAFUService.h \
 include/aalsdk/service/HWALIAFUService.h \
 include/aalsdk/service/ASEALIAFUService.h \
 include/aalsdk/service/SWSimALIAFUService.h
@@ -192,7 +191,6 @@ ase/ase_regress.sh \
 ase/hw/outoforder_wrf_channel.sv \
 ase/hw/counter.sv \
 ase/hw/ccip_if_pkg.sv \
-ase/hw/ase_global.vh \
 ase/hw/ase_fifo.sv \
 ase/hw/latency_pipe.sv \
 ase/hw/ccip_emulator.sv \
@@ -220,13 +218,17 @@ include/aalsdk/rm/ResMgrService.h.in \
 include/aalsdk/rm/RRMService.h.in
 
 SERVICE_EXTRA=\
-include/aalsdk/service/ALIAFUService.h.in \
+include/aalsdk/service/VTPService.h.in \
 include/aalsdk/service/HWALIAFUService.h.in \
 include/aalsdk/service/ASEALIAFUService.h.in \
 include/aalsdk/service/SWSimALIAFUService.h.in
 
 UAIA_EXTRA=\
 include/aalsdk/uaia/AIAService.h.in 
+
+UTILS_EXTRA=\
+utils/fpgadiag/fpgasane_nlb400_0.sh \
+utils/fpgadiag/fpgasane_nlb400_3.sh
 
 EXTRA_DIST=\
 $(AAS_EXTRA) \
@@ -236,5 +238,6 @@ $(CLP_EXTRA) \
 $(OSAL_EXTRA) \
 $(RM_EXTRA) \
 $(SERVICE_EXTRA) \
-$(UAIA_EXTRA)
+$(UAIA_EXTRA) \
+$(UTILS_EXTRA)
 

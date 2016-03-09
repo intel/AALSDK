@@ -44,7 +44,7 @@ endif
 
 ifneq (,$(ndebug))
 else
-CPPFLAGS += -DENABLE_DEBUG=1
+CPPFLAGS += -DENABLE_DEBUG=1 -D ASE_DEBUG=1
 endif
 ifneq (,$(nassert))
 else

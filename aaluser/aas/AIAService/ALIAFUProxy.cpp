@@ -141,9 +141,9 @@ btBool ALIAFUProxy::SendTransaction(IAIATransaction *pAFUmessage)
 
 
 
-AAL::btBool ALIAFUProxy::MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet)
+AAL::btBool ALIAFUProxy::MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet, AAL::NamedValueSet const &optArgs)
 {
-   return m_pAIA->MapWSID(Size, wsid, pRet);
+   return m_pAIA->MapWSID(Size, wsid, pRet, optArgs);
 }
 
 void ALIAFUProxy::UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size)

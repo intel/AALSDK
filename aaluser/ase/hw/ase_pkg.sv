@@ -50,48 +50,57 @@ package ase_pkg;
   `include "platform.vh"
  `endif
 
-   // `define GRAM_AUTO "no_rw_check"                         // defaults to auto
-   // `define GRAM_STYLE RAM_STYLE
-   // `define SYNC_RESET_POLARITY 0
-
    // Address widths
    parameter PHYSCLADDR_WIDTH   =  42;
-
-   /*
-    * CCI Transactions
-    */
-   // Read Request/Response
-   parameter CCIP_TX0_RDLINE_S   =  4'h4;
-   parameter CCIP_TX0_RDLINE_I   =  4'h6;
-   parameter CCIP_TX0_RDLINE_E   =  4'h7;
-   parameter CCIP_RX0_RD_RESP    =  4'h4;
-
-   // Write request/response
-   parameter CCIP_TX1_WRLINE_I   =  4'h1;
-   parameter CCIP_TX1_WRLINE_M   =  4'h2;
-   parameter CCIP_TX1_WRFENCE    =  4'h5;
-   parameter CCIP_RX0_WR_RESP    =  4'h1;
-   parameter CCIP_RX1_WR_RESP    =  4'h1;
-
-   // MSI-X request/response
-   parameter CCIP_TX1_INTRVALID  =  4'h8;
-   parameter CCIP_RX0_INTR_CMPLT =  4'h8;
-   parameter CCIP_RX1_INTR_CMPLT =  4'h8;
-
-   // CSR Write/Rread
-   parameter CCIP_MMIO_RD        =  4'h0;
-   parameter CCIP_MMIO_WR        =  4'hC;
-
-   // UMsg // TBD
-   parameter CCIP_RX0_UMSG       =  4'hF;
 
 
    /*
     * CCI specifications
     */
    parameter CCIP_DATA_WIDTH       = 512;
-   parameter CCIP_UMSG_BITINDEX    = 12;
+   // parameter ASE_UMSG_BITINDEX    = 12;
    parameter CCIP_CFG_RDDATA_WIDTH = 64;
+
+   /*
+    * Sub-structures
+    * Request type, response types, VC types
+    */ 
+   // Request types {channel_id, ccip_if_pkg::req_type}
+   typedef enum logic [3:0] {
+			     ASE_RDLINE_S   = 4'h1,
+			     ASE_RDLINE_I   = 4'h2,			     
+			     ASE_WRLINE_I   = 4'h3,
+			     ASE_WRLINE_M   = 4'h4,
+			     ASE_WRFENCE    = 4'h5,
+			     ASE_INTR_REQ   = 4'h6, 
+			     ASE_ATOMIC_REQ = 4'h7 
+			     } ccip_reqtype_t;  		
+
+   // Response types
+   typedef enum logic [3:0] {
+			     ASE_RD_RSP      = 4'h1,			     
+			     ASE_WR_RSP      = 4'h2,
+			     ASE_INTR_RSP    = 4'h3,
+			     ASE_WRFENCE_RSP = 4'h4,
+			     ASE_ATOMIC_RSP  = 4'h5,
+			     ASE_UMSG        = 4'h6
+			     } ccip_resptype_t;
+   
+   // Virtual channel type
+   typedef enum logic [1:0] {
+			     VC_VA  = 2'b00,
+			     VC_VL0 = 2'b01,
+			     VC_VH0 = 2'b10,
+			     VC_VH1 = 2'b11
+			     } ccip_vc_t;
+   
+   // Length type
+   typedef enum logic [1:0] {
+			     ASE_1CL = 2'b00,
+			     ASE_2CL = 2'b01,
+			     ASE_3CL = 2'b10,
+			     ASE_4CL = 2'b11
+			     } ccip_len_t;  
 
    
    /* ***********************************************************
@@ -100,36 +109,40 @@ package ase_pkg;
     * ***********************************************************/
    // RxHdr
    typedef struct packed {
-      logic [1:0] vc;       // 27:26  // Virtual channel select
-      logic       poison;   // 25     // Poison bit
-      logic       hitmiss;  // 24     // Hit/miss indicator
-      logic       format;   // 23     // Multi-CL enable
-      logic       rsvd22;   // 22     // X
-      logic [1:0] clnum;    // 21:20  // Cache line number
-      logic [3:0] resptype; // 19:16  // Response type
-      logic [15:0] mdata;   // 15:0   // Metadata
+      //--------- CCIP standard header --------- //      
+      ccip_vc_t       vc_used;  // 27:26  // Virtual channel select
+      logic           rsvd25;   // 25     // Poison bit // Reserved in BDX-P
+      logic           hitmiss;  // 24     // Hit/miss indicator
+      logic           format;   // 23     // Multi-CL enable (write packing only)
+      logic           rsvd22;   // 22     // X
+      ccip_len_t      clnum;    // 21:20  // Cache line number
+      ccip_resptype_t resptype; // 19:16  // Response type
+      logic [15:0]    mdata;    // 15:0   // Metadata
    } RxHdr_t;
    parameter CCIP_RX_HDR_WIDTH     = $bits(RxHdr_t);
-
+   
    // TxHdr
    typedef struct packed {
-      logic [1:0]  vc;       // 73:72  // Virtual channel select
-      logic 	   sop;      // 71     // Start of packet
-      logic 	   rsvd70;   // 70     // X
-      logic [1:0]  len;      // 69:68  // Length
-      logic [3:0]  reqtype;  // 67:64  // Request Type
-      logic [5:0]  rsvd63_58;// 63:58  // X
-      logic [41:0] addr;     // 57:16  // Address
-      logic [15:0] mdata;    // 15:0   // Metadata
+      //--------- CCIP standard header --------- //
+      logic [79:77]   qword_idx; // 79:77  // Qword start (no end, sets a cmp QW index)
+      logic [76:74]   rsvd76_74; // 76:74  // X
+      ccip_vc_t       vc;        // 73:72  // Virtual channel select
+      logic 	      sop;       // 71     // Start of packet
+      logic 	      rsvd70;    // 70     // X
+      ccip_len_t      len;       // 69:68  // Length
+      ccip_reqtype_t  reqtype;   // 67:64  // Request Type
+      logic [5:0]     rsvd63_58; // 63:58  // X
+      logic [41:0]    addr;      // 57:16  // Address
+      logic [15:0]    mdata;     // 15:0   // Metadata
    } TxHdr_t;
    parameter CCIP_TX_HDR_WIDTH     = $bits(TxHdr_t);
 
-   // CfgHdr
+   // CfgHdr   
    typedef struct packed {
-      logic [15:0] index;
-      logic [1:0]  len;
-      logic 	   poison;
-      logic [8:0]  tid;
+      logic [15:0] index;  // 27:12
+      logic [1:0]  len;    // 11:10
+      logic 	   rsvd9;  // 9
+      logic [8:0]  tid;    // 8:0
       } CfgHdr_t;
    parameter CCIP_CFG_HDR_WIDTH    = $bits(CfgHdr_t);
 
@@ -139,49 +152,60 @@ package ase_pkg;
       } MMIOHdr_t;
    parameter CCIP_MMIO_TID_WIDTH    = $bits(MMIOHdr_t);
 
+   // Umsg header (received when UMsg is received)
+   typedef struct packed {
+      logic [1:0] rsvd_27_26;  // 27:26 // Reserved
+      logic 	  rsvd25;      // 25    // Poison bit
+      logic [4:0] rsvd_24_20;  // 24:20 // Reserved
+      logic [3:0] resp_type;   // 19:16 // Response type
+      logic       umsg_type;   // 15    // Umsg type
+      logic [8:0] rsvd_14_6;   // 14:6  // Reserved
+      logic [5:0] umsg_id;     // 5:0   // Umsg Id
+   } UMsgHdr_t;
+   parameter ASE_UMSG_HDR_WIDTH    = $bits(UMsgHdr_t);
 
+   // CmpXchg header (received from a Compare-Exchange operation)
+   typedef struct packed {
+      ccip_vc_t       vc_used;    // 27:26
+      logic 	      rsvd25;     // 25
+      logic 	      hitmiss;    // 24
+      logic 	      success;    // 23
+      logic [2:0]     rsvd_22_20; // 22:20
+      ccip_resptype_t resptype;   // 19:16
+      logic [15:0]    mdata;      // 15:0
+   } Atomics_t;
+   parameter CCIP_CMPXCHG_HDR_WIDTH = $bits(Atomics_t);
+      
    // Config channel
    parameter CCIP_MMIO_ADDR_WIDTH   = 16;
    parameter CCIP_MMIO_INDEX_WIDTH  = 14;
    parameter CCIP_MMIO_RDDATA_WIDTH = 64;
 
-
    
-   /*
-    * TX header deconstruction
-    */
-   // SPL (CCI-extended additions)
-   //parameter TX_HDR_NUMCL_BITRANGE      98:93
-   //parameter TX_HDR_CLADDR_BITRANGE     92:67
-   //parameter TX_HDR_PV_BIT              66
-   // CCI only
- `define TX_META_TYPERANGE          67:64
- `define TX_CLADDR_BITRANGE         57:16
- `define TX_MDATA_BITRANGE          15:0
-
-   /*
-    * RX header deconstruction
-    */
-   // RX header (SPL/CCI common response)
- `define RX_META_TYPERANGE          19:16
- `define RX_MDATA_BITRANGE          15:0
- `define RX_CSR_BITRANGE            13:0
- `define RX_CSR_DATARANGE           64:0
-
+   /* **********************************************************
+    * Wrapped headers with channel Id
+    * ASE's internal datatype used for bookkeeping
+    * *********************************************************/  
+   // Wrap TxHdr_t with channel_id
+   typedef struct packed {
+      logic 	  channel_id;
+      TxHdr_t     txhdr;
+   } ASETxHdr_t;
+   parameter ASE_TX_HDR_WIDTH     = $bits(ASETxHdr_t);
+      
+   // Wrap RxHdr_t with channel_id
+   typedef struct packed {
+      logic 	  channel_id;
+      RxHdr_t     rxhdr;
+   } ASERxHdr_t;
+   parameter ASE_RX_HDR_WIDTH     = $bits(ASERxHdr_t);
+   
 
    /*
     * FIFO depth bit-width
     * Enter 'n' here, where n = log_2(FIFO_DEPTH) & n is an integer
     */
    parameter ASE_FIFO_DEPTH_NUMBITS = 8;
-
-
-   /*
-    * SIMKILL_ON_UNDEFINED: A switch to kill simulation if on a valid
-    * signal, 'X' or 'Z' is not allowed, gracious closedown on same
-    */
- `define VLOG_UNDEF                   1'bx
- `define VLOG_HIIMP                   1'bz
 
 
    /*
@@ -197,35 +221,25 @@ package ase_pkg;
    parameter LATBUF_DEPTH_BASE2      = $clog2(LATBUF_NUM_TRANSACTIONS);
 
 
-   /*
-    * Print in Color
-    */
-   // Error in RED color
- `define BEGIN_RED_FONTCOLOR   $display("\033[1;31m");
- `define END_RED_FONTCOLOR     $display("\033[1;m");
-
-   // Info in GREEN color
- `define BEGIN_GREEN_FONTCOLOR $display("\033[32;1m");
- `define END_GREEN_FONTCOLOR   $display("\033[0m");
-
-   // Warnings/ASEDBGDUMP in YELLOW color
- `define BEGIN_YELLOW_FONTCOLOR $display("\033[0;33m");
- `define END_YELLOW_FONTCOLOR   $display("\033[0m");
-
 
    /*
     * CCI Transaction packet
     */
    typedef struct {
-      int         write_en;
-      int 	  vc;
+      int 	  mode;
+      int 	  qw_start;
       int 	  mdata;
       longint 	  cl_addr;
       longint     qword[8];
-      int 	  resp_en;
-      int 	  resp_channel;	  
+      int 	  resp_channel;
+      int 	  success;
    } cci_pkt;
 
+   parameter CCIPKT_WRITE_MODE   = 32'h1000;   
+   parameter CCIPKT_READ_MODE    = 32'h2000;   
+   parameter CCIPKT_WRFENCE_MODE = 32'hFFFF;   
+   parameter CCIPKT_ATOMIC_MODE  = 32'h8000;
+      
 
    /*
     * ASE config structure
@@ -236,11 +250,8 @@ package ase_pkg;
       int 	  ase_timeout;
       int 	  ase_num_tests;
       int 	  enable_reuse_seed;
-      // int 	  num_umsg_log2;
       int 	  enable_cl_view;
       int 	  phys_memory_available_gb;
-      // int 	  enable_capcm;
-      // int 	  memmap_sad_setting;
    } ase_cfg_t;
    ase_cfg_t cfg;
 
@@ -254,8 +265,7 @@ package ase_pkg;
       longint 	  qword[8];
       int 	  resp_en;
       } mmio_t;
-
-
+   
    // Request types
    parameter int  MMIO_WRITE_REQ    = 32'hAA88;
    parameter int  MMIO_READ_REQ     = 32'hBB88;
@@ -268,23 +278,29 @@ package ase_pkg;
    /*
     * UMSG Hint/Data state machine
     */
+   // Number of UMSGs per AFU
+   parameter int  NUM_UMSG_PER_AFU = 8;
+   
+   // Umsg command packet
+   typedef struct {
+      int 	  id;
+      int 	  hint;
+      longint 	  qword[8];	  
+   } umsgcmd_t;
+   
 
    // UMSG control states
-   typedef enum   {UMsg_Idle, UMsg_ChangeOccured, UMsg_SendHint, UMsg_Waiting, UMsg_SendData}
+   typedef enum   {UMsgIdle, UMsgHintWait, UMsgSendHint, UMsgDataWait, UMsgSendData}
 		  UMsg_StateEnum;
 
    // UMSG control structure
    typedef struct {
       logic [`UMSG_DELAY_TIMER_LOG2-1:0] hint_timer;
       logic [`UMSG_DELAY_TIMER_LOG2-1:0] data_timer;
-      logic [CCIP_DATA_WIDTH-1:0] 	 data;
-      logic [CCIP_DATA_WIDTH-1:0] 	 data_q;
-      logic 				 change;
+      logic 				 line_accessed;
       logic 				 hint_enable;
-      logic 				 hint_timer_started;
       logic 				 hint_ready;
       logic 				 hint_pop;
-      logic 				 data_timer_started;
       logic 				 data_ready;
       logic 				 data_pop;
       UMsg_StateEnum                     state;

@@ -46,12 +46,12 @@
 
 #define DEFAULT_BEGINCL     	NLB_MIN_CL
 #define DEFAULT_ENDCL       	NLB_MIN_CL
-#define DEFAULT_MULTICL       1
+#define DEFAULT_MULTICL       	1
 #define DEFAULT_DSMPHYS     	0
 #define DEFAULT_SRCPHYS     	0
 #define DEFAULT_DSTPHYS     	0
-#define DEFAULT_WARMFPGACACHE "off"
-#define DEFAULT_COOLFPGACACHE "on"
+#define DEFAULT_WARMFPGACACHE 	"off"
+#define DEFAULT_COOLFPGACACHE 	"off"
 #define DEFAULT_COOLCPUCACHE 	"off"
 #define DEFAULT_NOBW        	"off"
 #define DEFAULT_TABULAR     	"on"
@@ -68,14 +68,25 @@
 #define DEFAULT_TOSEC       	0
 #define DEFAULT_TOMIN       	0
 #define DEFAULT_TOHOUR      	0
-#define DEFAULT_POLL       	"on"
-#define DEFAULT_CSR_WRITE  	"off"
-#define DEFAULT_UMSG_DATA  	"off"
-#define DEFAULT_UMSG_HINT  	"off"
+#define DEFAULT_POLL       		"on"
+#define DEFAULT_CSR_WRITE  		"off"
+#define DEFAULT_UMSG_DATA  		"off"
+#define DEFAULT_UMSG_HINT  		"off"
 #define DEFAULT_VA   			"on"
 #define DEFAULT_VL0				"off"
-#define DEFAULT_VH0		   	"off"
-#define DEFAULT_VH1		   	"off"
+#define DEFAULT_VH0		   		"off"
+#define DEFAULT_VH1		   		"off"
+#define DEFAULT_ST		   		"off"
+#define DEFAULT_UT		   		"on"
+#define DEFAULT_CX            	2
+#define DEFAULT_MINCX         	2
+#define DEFAULT_MAXCX         	0xFFFE
+#define DEFAULT_HQW           	0
+#define DEFAULT_SQW           	0
+#define DEFAULT_MINHQW        	0
+#define DEFAULT_MAXHQW        	7
+#define DEFAULT_MINSQW        	0
+#define DEFAULT_MAXSQW        	7
 //#define DEFAULT_FPGA_CLK_FREQ 	200000000ULL
 
 #endif

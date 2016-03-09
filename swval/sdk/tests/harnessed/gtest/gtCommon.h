@@ -39,7 +39,7 @@ END_NAMESPACE(AAL)
 class GlobalTestConfig
 {
 public:
-   static const GlobalTestConfig & GetInstance();
+   static GlobalTestConfig & GetInstance();
 
    // Certain thread tests require entering a tight loop, yielding the cpu in order
    // to allow other threads to reach some state. Defines the max number of polls
@@ -60,9 +60,14 @@ public:
       return (AAL::btUnsigned32bitInt) ::testing::UnitTest::GetInstance()->random_seed();
    }
 
+   void        Vpath(const std::string &s) { m_Vpath = s;    }
+   std::string Vpath() const               { return m_Vpath; }
+
 protected:
    GlobalTestConfig();
    virtual ~GlobalTestConfig();
+
+   std::string m_Vpath; // Root dir of the configure'd build tree.
 
    static GlobalTestConfig sm_Instance;
 };
@@ -327,6 +332,10 @@ protected:
 // Make sure that the given path appears in LD_LIBRARY_PATH, preventing duplication.
 // Return non-zero on error.
 int RequireLD_LIBRARY_PATH(const char *path);
+
+// Remove the given path from LD_LIBRARY_PATH.
+// Return non-zero on error.
+int UnRequireLD_LIBRARY_PATH(const char *path);
 
 // Print streamer for LD_LIBRARY_PATH.
 // Ex.

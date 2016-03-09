@@ -45,9 +45,9 @@ void create_ipc_listfile()
   FUNC_CALL_ENTRY;
 
   ipclist_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  strcpy(ipclist_filepath, ase_workdir_path);
-  strcat(ipclist_filepath, IPC_LOCAL_FILENAME);
   
+  sprintf(ipclist_filepath, "%s/%s", ase_workdir_path, IPC_LOCAL_FILENAME);
+
   // local_ipc_fp = fopen(IPC_LOCAL_FILENAME, "w");
   local_ipc_fp = fopen(ipclist_filepath, "w");
   if (local_ipc_fp == NULL) 
@@ -133,6 +133,7 @@ void final_ipc_cleanup()
       	  printf("        Removing SHM %s ... ", ipc_name);
       	  if ( shm_unlink(ipc_name) == -1 )
       	    {
+	      printf("\n");
       	    }
       	  else
       	    {
@@ -140,8 +141,7 @@ void final_ipc_cleanup()
       	    }
       	}
     }
-  
-  
+
   // Close both files
   fclose(local_ipc_fp);
 

@@ -36,6 +36,7 @@
 SUBDIRS=\
 aalscan \
 fpgadiag \
-remoteSTP \
 data_model \
-ALIAFU
+ALIAFU/ASEALIAFU \
+ALIAFU/HWALIAFU \
+ALIAFU/SWSimALIAFU

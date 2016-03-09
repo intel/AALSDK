@@ -21,7 +21,7 @@ done
 
 setup "$D" ${WANTDISTCC}
 
-WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --bat --gtest-opt=--gtest_color=yes --nightly --weekly --standalone"
+WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --bat --gtest-opt=--vpath=${VPATH} --gtest-opt=--gtest_color=yes --nightly --weekly --standalone"
 
 GCDA_DIRS=(\
 "--directory ${VPATH}/aas/OSAL/.libs" \
