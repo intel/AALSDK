@@ -36,7 +36,8 @@
 ///
 /// AUTHORS: Henry Mitchel, Intel Corporation
 ///          Joseph Grecco, Intel Corporation
-///          
+///          Enno Luebbers, Intel Corporation
+///
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
@@ -232,6 +233,8 @@ protected:
    static CriticalSection sm_ASEMtx;
 
 private:
+   btBool _discoverFeatures();
+   btBool _validateDFL();
    void _printDFH( const struct CCIP_DFH &dfh );
 };
 

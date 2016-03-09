@@ -36,7 +36,8 @@
 ///
 /// AUTHORS: Henry Mitchel, Intel Corporation
 ///          Joseph Grecco, Intel Corporation
-///          
+///          Enno Luebbers, Intel Corporation
+///
 ///
 /// This sample demonstrates how to create an AFU Service that uses a host-based AFU engine.
 ///  This design also applies to AFU Services that use hardware via a
@@ -93,6 +94,27 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
    m_MMIORmap = mmioGetAddress();
    m_MMIORsize = (MMIO_LENGTH - MMIO_AFU_OFFSET);
 
+   // Populate internal data structures for feature discovery
+   if (! _discoverFeatures() ) {
+      // FIXME: use correct error classes
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 TranID,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Failed to discover features."));
+      return true;
+   }
+
+   // Print warnings for malformed device feature lists
+   _validateDFL();
+
+   initComplete(TranID);
+   return true;
+}
+
+
+btBool ASEALIAFU::_discoverFeatures() {
+
    // walk DFH list and populate internal data structure
    // also do some sanity checking
    AAL_DEBUG(LM_AFU, "Populating feature list from DFH list..." << std::endl);
@@ -135,6 +157,12 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
       offset += feat.dfh.next_DFH_offset;
    }
 
+   return true;
+}
+
+// This currently only prints warnings.
+btBool ASEALIAFU::_validateDFL()
+{
    // check for ambiguous featureID/GUID
    AAL_DEBUG(LM_AFU, "Checking detected features for ambiguous IDs..." <<
          std::endl);
@@ -185,10 +213,9 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
          }
       }
    }
-
-   initComplete(TranID);
    return true;
 }
+
 
 
 void ASEALIAFU::_printDFH( const struct CCIP_DFH &dfh )
