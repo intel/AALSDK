@@ -34,9 +34,6 @@
 
 #include "ase_common.h"
 
-// Message queue attribute (optional use)
-// struct mq_attr attr;
-
 /*
  * ipc_init: Initialize IPC messaging structure
  *           DOES not create or open the IPC, simply initializes the structures
@@ -46,15 +43,26 @@ void ipc_init()
   FUNC_CALL_ENTRY;
 
   int ipc_iter;
-
-  strcpy(mq_array[0].name, "app2sim_bufping_smq");
-  strcpy(mq_array[1].name, "app2sim_mmioreq_smq");
-  strcpy(mq_array[2].name, "app2sim_umsg_smq");
-  strcpy(mq_array[3].name, "app2sim_simkill_smq");
-  strcpy(mq_array[4].name, "sim2app_bufpong_smq");
-  strcpy(mq_array[5].name, "sim2app_mmiorsp_smq");
   
-  // Calculate path 
+  // Evaluate ase_workdir_path
+  ase_workdir_path = (char*) ase_malloc(ASE_FILEPATH_LEN);
+  ase_eval_session_directory();
+  
+  // Malloc mq_array
+  mq_array = (struct ipc_t *)ase_malloc(ASE_MQ_INSTANCES * sizeof(struct ipc_t) );
+  
+  // Create names
+  strncpy(mq_array[0].name, "app2sim_alloc_ping_smq"	, ASE_MQ_NAME_LEN);
+  strncpy(mq_array[1].name, "app2sim_mmioreq_smq"	, ASE_MQ_NAME_LEN);
+  strncpy(mq_array[2].name, "app2sim_umsg_smq"	        , ASE_MQ_NAME_LEN);
+  strncpy(mq_array[3].name, "app2sim_simkill_smq"	, ASE_MQ_NAME_LEN);
+  strncpy(mq_array[4].name, "sim2app_alloc_pong_smq"	, ASE_MQ_NAME_LEN);
+  strncpy(mq_array[5].name, "sim2app_mmiorsp_smq"	, ASE_MQ_NAME_LEN);
+  strncpy(mq_array[6].name, "app2sim_portctrl_smq"	, ASE_MQ_NAME_LEN);
+  strncpy(mq_array[7].name, "app2sim_dealloc_ping_smq"	, ASE_MQ_NAME_LEN);
+  strncpy(mq_array[8].name, "app2sim_dealloc_pong_smq"	, ASE_MQ_NAME_LEN);
+
+  // Calculate path
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
     sprintf(mq_array[ipc_iter].path, "%s/%s", ase_workdir_path, mq_array[ipc_iter].name);
 
@@ -65,14 +73,20 @@ void ipc_init()
   mq_array[3].perm_flag = O_RDONLY|O_NONBLOCK;
   mq_array[4].perm_flag = O_WRONLY;
   mq_array[5].perm_flag = O_WRONLY;
+  mq_array[6].perm_flag = O_RDONLY|O_NONBLOCK;
+  mq_array[7].perm_flag = O_RDONLY|O_NONBLOCK;
+  mq_array[8].perm_flag = O_WRONLY;
 #else
   mq_array[0].perm_flag = O_WRONLY;
   mq_array[1].perm_flag = O_WRONLY;
   mq_array[2].perm_flag = O_WRONLY;
   mq_array[3].perm_flag = O_WRONLY;
-  mq_array[4].perm_flag = O_RDONLY;  
-  mq_array[5].perm_flag = O_RDONLY;  
-#endif 
+  mq_array[4].perm_flag = O_RDONLY;
+  mq_array[5].perm_flag = O_RDONLY;
+  mq_array[6].perm_flag = O_WRONLY;
+  mq_array[7].perm_flag = O_WRONLY;
+  mq_array[8].perm_flag = O_RDONLY;
+#endif
 
   // Remove IPCs if already there
 #ifdef SIM_SIDE
@@ -93,7 +107,7 @@ void mqueue_create(char* mq_name_suffix)
 
   char *mq_path;
   int ret;
-  
+
   mq_path = ase_malloc (ASE_FILEPATH_LEN);
   sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
 
@@ -101,7 +115,6 @@ void mqueue_create(char* mq_name_suffix)
 /*   printf("mq_path = %s\n", mq_path); */
 /* #endif */
 
-  // ret = mkfifo(mq_path, 0666);
   ret = mkfifo(mq_path, S_IRUSR|S_IWUSR );
   if (ret == -1)
     {
@@ -125,9 +138,9 @@ void mqueue_create(char* mq_name_suffix)
  *
  * NOTES:
  * - Named pipes require reader to be ready for non-blocking open to
- *   proceed. This may not be possible in an ASE environment.       
+ *   proceed. This may not be possible in an ASE environment.
  * - This may be solved by having a dummy reader the WRONLY fifo, then
- *   close it after ASE's real fd is created successfully. 
+ *   close it after ASE's real fd is created successfully.
  *
  */
 int mqueue_open(char *mq_name, int perm_flag)
@@ -138,12 +151,14 @@ int mqueue_open(char *mq_name, int perm_flag)
   char *mq_path;
 
   mq_path = ase_malloc (ASE_FILEPATH_LEN);
-  memset (mq_path, '\0', ASE_FILEPATH_LEN);
+  memset (mq_path, 0, ASE_FILEPATH_LEN);
   sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name);
-  
-/* #ifdef ASE_DEBUG */
-/*   printf("mq_path = %s\n", mq_path); */
-/* #endif */
+
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [DEBUG]  mq_path = %s\n", mq_path);
+  END_YELLOW_FONTCOLOR;
+#endif
 
   // Dummy function to open WRITE only MQs
   // Named pipe requires non-blocking write-only move on from here
@@ -152,13 +167,17 @@ int mqueue_open(char *mq_name, int perm_flag)
   int dummy_fd;
   if (perm_flag == O_WRONLY)
     {
-      // printf("Opening IPC in write-only mode with dummy fd\n");
+    #ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("Opening IPC in write-only mode with dummy fd\n");
+      END_YELLOW_FONTCOLOR;
+    #endif
       dummy_fd = open(mq_path, O_RDONLY|O_NONBLOCK);
     }
 #endif
 
   mq = open(mq_path, perm_flag);
-  if (mq == -1) 
+  if (mq == -1)
     {
       printf("Error opening IPC\n");
 #ifdef SIM_SIDE
@@ -169,7 +188,7 @@ int mqueue_open(char *mq_name, int perm_flag)
       exit(1);
 #endif
     }
-  
+
 #ifdef SIM_SIDE
   if (perm_flag == O_WRONLY)
     {
@@ -178,7 +197,7 @@ int mqueue_open(char *mq_name, int perm_flag)
 #endif
 
   FUNC_CALL_EXIT;
-  
+
   return mq;
 }
 
@@ -192,7 +211,7 @@ void mqueue_close(int mq)
 
   int ret;
   ret = close (mq);
-  if (ret == -1) 
+  if (ret == -1)
     {
 #ifdef SIM_SIDE
  #ifdef ASE_DEBUG
@@ -216,12 +235,12 @@ void mqueue_destroy(char* mq_name_suffix)
   int ret;
 
   mq_path = ase_malloc (ASE_FILEPATH_LEN);
-  if (mq_path != NULL) 
+  if (mq_path != NULL)
     {
-      memset (mq_path, '\0', ASE_FILEPATH_LEN);
-      sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix); 
+      memset (mq_path, 0, ASE_FILEPATH_LEN);
+      sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
       ret = unlink ( mq_path );
-      if (ret == -1) 
+      if (ret == -1)
 	{
 	  printf("Message queue %s could not be removed, please remove manually\n", mq_name_suffix);
 	}
@@ -230,7 +249,7 @@ void mqueue_destroy(char* mq_name_suffix)
     {
       printf("Could not remove MQ, please clean by removing work directory\n");
     }
-  
+
   FUNC_CALL_EXIT;
 }
 
@@ -239,16 +258,20 @@ void mqueue_destroy(char* mq_name_suffix)
 // mqueue_send(): Easy send function
 // - Typecast any message as a character array and ram it in.
 // ------------------------------------------------------------
-void mqueue_send(int mq, char* str)
+void mqueue_send(int mq, const char* str, int size)
 {
   FUNC_CALL_ENTRY;
-  int ret;
-  
-  ret = write(mq, str, ASE_MQ_MSGSIZE);  
-/* #ifdef ASE_MSG_VIEW */
-/*   printf("ASEmsg TX => %s\n", str); */
-/* #endif */
-  
+  // int ret_tx;
+
+  /* char msg[ASE_MQ_MSGSIZE]; */
+  /* memset(msg, '0', ASE_MQ_MSGSIZE); */
+  /* memcpy(msg, str, size); */
+  /* write(mq, msg, ASE_MQ_MSGSIZE); */
+
+  //ret_tx = 
+  write(mq, (void*)str, size);
+  //  printf("status %s\n", strerror(errno)); 
+
   FUNC_CALL_EXIT;
 }
 
@@ -257,21 +280,20 @@ void mqueue_send(int mq, char* str)
 // mqueue_recv(): Easy receive function
 // - Typecast message back to a required type
 // ------------------------------------------------------------------
-
-int mqueue_recv(int mq, char* str)
+int mqueue_recv(int mq, char* str, int size)
 {
   FUNC_CALL_ENTRY;
-  
+
   int ret;
 
-  ret = read(mq, str, ASE_MQ_MSGSIZE);
+  ret = read(mq, str, size);
   FUNC_CALL_EXIT;
   if (ret > 0)
     {
-       return ASE_MSG_PRESENT;       
+       return ASE_MSG_PRESENT;
     }
   else
     {
       return ASE_MSG_ABSENT;
-    }   
+    }
 }

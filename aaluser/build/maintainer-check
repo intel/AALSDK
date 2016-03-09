@@ -1147,10 +1147,10 @@ declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
 'Makefile.am' \
 'OSALService.h.in' \
 'AALRuntimeModule.h.in' \
-'ALIAFUService.h.in' \
 'ASEALIAFUService.h.in' \
 'HWALIAFUService.h.in' \
 'SWSimALIAFUService.h.in' \
+'VTPService.h.in' \
 'RRMService.h.in' \
 'ResMgrService.h.in'\
 )
@@ -1170,10 +1170,10 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'Readme.MultiPackage.txt' \
 'uAIAService.h' \
 'AALRuntimeModule.h' \
-'ALIAFUService.h' \
 'ASEALIAFUService.h' \
 'HWALIAFUService.h' \
 'SWSimALIAFUService.h' \
+'VTPService.h' \
 'RRMService.h' \
 'ResMgrService.h' \
 'aalbus-device.h' \

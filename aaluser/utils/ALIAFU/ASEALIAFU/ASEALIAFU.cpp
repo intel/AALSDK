@@ -61,6 +61,8 @@
 
 BEGIN_NAMESPACE(AAL)
 
+
+
 /// @addtogroup ASEALIAFU
 /// @{
 
@@ -85,9 +87,118 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
 //      return false;
 //   }
 
-  session_init();
-  initComplete(TranID);
-  return true;
+   session_init();
+
+   // update member variables that cache parameters
+   m_MMIORmap = mmioGetAddress();
+   m_MMIORsize = (MMIO_LENGTH - MMIO_AFU_OFFSET);
+
+   // walk DFH list and populate internal data structure
+   // also do some sanity checking
+   AAL_DEBUG(LM_AFU, "Populating feature list from DFH list..." << std::endl);
+   FeatureDefinition feat;
+   btUnsigned32bitInt offset = 0;         // offset that we are currently at
+
+   // look at AFU CSR (mandatory) to get first feature header offset
+   ASSERT( mmioRead64(0, (btUnsigned64bitInt *)&feat.dfh) );
+   _printDFH(feat.dfh);
+   feat.offset = offset;
+
+   // read AFUID
+   ASSERT( mmioRead64(offset +  8, &feat.guid[0]) );
+   ASSERT( mmioRead64(offset + 16, &feat.guid[1]) );
+
+   // Add AFU feature to list
+   m_featureList.push_back(feat);
+   offset = feat.dfh.next_DFH_offset;
+
+   // look at chained DFHs until end of list bit is set or next offset is 0
+   while (feat.dfh.eol == 0 && feat.dfh.next_DFH_offset != 0) {
+
+      // populate fields
+      feat.offset = offset;
+      // read feature header
+      ASSERT(mmioRead64(offset, (btUnsigned64bitInt *)&feat.dfh));
+      _printDFH(feat.dfh);
+      // read guid, if present
+      if (feat.dfh.Type == ALI_DFH_TYPE_BBB) {
+         ASSERT( mmioRead64(offset +  8, &feat.guid[0]) );
+         ASSERT( mmioRead64(offset + 16, &feat.guid[1]) );
+      } else {
+         feat.guid[0] = feat.guid[1] = 0;
+      }
+
+      // create new list entry
+      m_featureList.push_back(feat);          // copy dfh to list
+
+      // check for next header
+      offset += feat.dfh.next_DFH_offset;
+   }
+
+   // check for ambiguous featureID/GUID
+   AAL_DEBUG(LM_AFU, "Checking detected features for ambiguous IDs..." <<
+         std::endl);
+   for (FeatureList::iterator a = m_featureList.begin(); a !=
+         m_featureList.end(); ++a) {
+      for (FeatureList::iterator b = a+1; b != m_featureList.end(); ++b ) {
+
+         AAL_DEBUG(LM_AFU, "Comparing features at 0x" << std::hex << a->offset <<
+                  " and 0x" << b->offset << std::endl);
+
+         if (a->dfh.Feature_ID == b->dfh.Feature_ID) {
+            AAL_INFO(LM_AFU, "Features at 0x" << std::hex << a->offset <<
+                  " and 0x" << b->offset << " share feature ID " <<
+                  std::dec << a->dfh.Feature_ID << std::endl);
+
+            if (a->dfh.Type != b->dfh.Type) {
+               AAL_INFO(LM_AFU, "   Features can be disambiguated by type - OK."
+                     << std::endl);
+            } else {
+               if (a->dfh.Type == ALI_DFH_TYPE_BBB) {
+                  if (a->guid[0] != b->guid[0] || a->guid[1] != b->guid[1]) {
+               AAL_INFO(LM_AFU, "   Features can be disambiguated by BBB GUID - OK."
+                     << std::endl);
+                  } else {
+                     AAL_WARNING(LM_AFU,
+                           "   Features have same BBB GUID! This is not recommended,"
+                           << std::endl);
+                     AAL_WARNING(LM_AFU,
+                           "   as it complicates disambiguation." << std::endl);
+                     AAL_WARNING(LM_AFU,
+                           "   Please consider giving out separate feature IDs for"
+                           << std::endl);
+                     AAL_WARNING(LM_AFU, "   each." << std::endl);
+                  }
+               } else {
+                  AAL_WARNING(LM_AFU,
+                        "   Features have same feature ID and no other standard"
+                        << std::endl);
+                  AAL_WARNING(LM_AFU,
+                        "   mechanism for disambiguation! This is not recommended."
+                        << std::endl);
+                  AAL_WARNING(LM_AFU,
+                        "   Please consider giving out separate feature IDs for"
+                        << std::endl);
+                  AAL_WARNING(LM_AFU, "   each." << std::endl);
+               }
+            }
+         }
+      }
+   }
+
+   initComplete(TranID);
+   return true;
+}
+
+
+void ASEALIAFU::_printDFH( const struct CCIP_DFH &dfh )
+{
+   AAL_DEBUG(LM_AFU, "Type: " << std::hex << std::setw(2)
+         << std::setfill('0') << dfh.Type <<
+         ", Next DFH offset: " << dfh.next_DFH_offset <<
+         ", Feature Rev: " << dfh.Feature_rev <<
+         ", Feature ID: " << dfh.Feature_ID <<
+         ", eol: " << std::dec << dfh.eol << std::endl);
 }
 
 
@@ -125,6 +236,10 @@ btCSROffset ASEALIAFU::mmioGetLength( void )
 //
 btBool ASEALIAFU::mmioRead32(const btCSROffset Offset, btUnsigned32bitInt * const pValue)
 {
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
+
   mmio_read32(Offset, pValue);
   return true;
 }
@@ -134,6 +249,10 @@ btBool ASEALIAFU::mmioRead32(const btCSROffset Offset, btUnsigned32bitInt * cons
 //
 btBool ASEALIAFU::mmioWrite32(const btCSROffset Offset, const btUnsigned32bitInt Value)
 {
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
+
   mmio_write32(Offset, Value);
   return true;
 }
@@ -143,6 +262,10 @@ btBool ASEALIAFU::mmioWrite32(const btCSROffset Offset, const btUnsigned32bitInt
 //
 btBool ASEALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * const pValue)
 {
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
+
   mmio_read64(Offset, (uint64_t*)pValue);
   return true;
 }
@@ -152,9 +275,161 @@ btBool ASEALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * cons
 //
 btBool ASEALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt Value)
 {
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
+
   mmio_write64(Offset, Value);
   return true;
 }
+
+//
+// mmioGetFeature. Get pointer to feature's DFH, if found.
+//
+btBool  ASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+                                          NamedValueSet const &rInputArgs,
+                                          NamedValueSet       &rOutputArgs )
+{
+   btBool             filterByID;
+   btUnsigned64bitInt filterID;
+   btBool             filterByType;
+   btUnsigned64bitInt filterType;
+   btBool             filterByGUID;
+   btcString          filterGUID;
+
+   // extract filters
+   filterByID = false;
+   if (rInputArgs.Has(ALI_GETFEATURE_ID_KEY)) {
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_ID_KEY, &filterID)) {
+         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_ID) failed -- " <<
+                         "wrong datatype?" << std::endl);
+         return false;
+      } else {
+         filterByID = true;
+      }
+   }
+
+   filterByType = false;
+   if (rInputArgs.Has(ALI_GETFEATURE_TYPE_KEY)) {
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_TYPE_KEY, &filterType)) {
+         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_TYPE) failed -- " <<
+                         "wrong datatype?" << std::endl);
+         return false;
+      } else {
+         filterByType = true;
+      }
+   }
+
+   filterByGUID = false;
+   if (rInputArgs.Has(ALI_GETFEATURE_GUID_KEY)) {
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_GUID_KEY, &filterGUID)) {
+         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_GUID) failed -- " <<
+                         "wrong datatype?" << std::endl);
+         return false;
+      } else {
+         filterByGUID = true;
+      }
+   }
+
+   //
+   // Spec and sanity checks
+   //
+
+   // BBB GUIDs are only meant for matching HW and SW implementations, not to
+   // identify features.
+   // We provided it for convenience, but will output a warning.
+   if (filterByGUID) {
+      AAL_WARNING(LM_AFU, "Searching for GUID is not recommended to discover "
+                       << "features." << std::endl);
+      AAL_WARNING(LM_AFU, "Please use featureID instead." << std::endl);
+   }
+
+   // Can't search for GUID in private features
+   if ((filterByGUID && filterByType && (filterType == ALI_DFH_TYPE_PRIVATE))) {
+      AAL_ERR(LM_AFU, "Can't search for GUIDs in private features." << std::endl);
+      return false;
+   }
+
+
+   // walk features
+   AAL_DEBUG(LM_AFU, "Walking feature list..." << std::endl);
+   for ( FeatureList::iterator iter = m_featureList.begin();
+         iter != m_featureList.end(); ++iter ) {
+      // NOTE: if we had C++1 or later, we coud do:
+      // for ( FeatureDefinition feat : m_featureList )
+      // and work with "feat" directly.
+      FeatureDefinition &feat = *iter;
+
+      // return first matching feature
+      if (
+            ( !filterByID   || (feat.dfh.Feature_ID == filterID  )              ) &&
+            ( !filterByType || (feat.dfh.Type       == filterType)              ) &&
+            ( !filterByGUID || ( (feat.dfh.Type != ALI_DFH_TYPE_PRIVATE) &&
+                                 ( 0 == strncmp(filterGUID,
+                                          GUIDStringFromStruct(
+                                            GUIDStructFrom2xU64(
+                                              feat.guid[1],
+                                              feat.guid[0]
+                                            )
+                                          ).c_str(),
+                                          16
+                                        )
+                                 )
+                               )
+            )
+         ) {
+
+         AAL_INFO(LM_AFU, "Found matching feature." << std::endl);
+         *pFeatureAddress = (btVirtAddr)(m_MMIORmap + feat.offset);   // return pointer to DFH
+         // populate output args
+         rOutputArgs.Add(ALI_GETFEATURE_ID_KEY, feat.dfh.Feature_ID);
+         rOutputArgs.Add(ALI_GETFEATURE_TYPE_KEY, feat.dfh.Type);
+         if (feat.dfh.Type != ALI_DFH_TYPE_PRIVATE) {
+            rOutputArgs.Add(ALI_GETFEATURE_GUID_KEY, GUIDStringFromStruct(
+                                                       GUIDStructFrom2xU64(
+                                                         feat.guid[1],
+                                                         feat.guid[0]
+                                                       )
+                                                     ).c_str()
+                           );
+         }
+         return true;
+      }
+   }
+
+   // if not found, do not modify ppFeature, return false.
+   AAL_INFO(LM_AFU, "No matching feature found." << std::endl);
+   return false;
+}
+
+btBool ASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+                                         NamedValueSet const &rInputArgs )
+{
+   NamedValueSet temp;
+   return mmioGetFeatureAddress(pFeatureAddress, rInputArgs, temp);
+}
+
+btBool ASEALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
+                                        NamedValueSet const &rInputArgs,
+                                        NamedValueSet       &rOutputArgs )
+{
+   btVirtAddr pFeatAddr;
+   if (true == mmioGetFeatureAddress(&pFeatAddr, rInputArgs, rOutputArgs)) {
+      *pFeatureOffset = pFeatAddr - mmioGetAddress();
+      return true;
+   }
+   return false;
+}
+
+// overloaded version without rOutputArgs
+btBool  ASEALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
+                                         NamedValueSet const &rInputArgs )
+{
+   NamedValueSet temp;
+   return mmioGetFeatureOffset(pFeatureOffset, rInputArgs, temp);
+}
+
+
 
 // -----------------------------------------------------
 // Buffer allocation API
@@ -167,16 +442,36 @@ AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize             Length,
   struct buffer_t *buf;
   int ret;
 
+  ALI_MMAP_TARGET_VADDR_DATATYPE pTargetVirtAddr;       // requested virtual address for the mapping
+
+  // extract target VA from optArgs
+  if ( ENamedValuesOK != rInputArgs.Get(ALI_MMAP_TARGET_VADDR_KEY, &pTargetVirtAddr) ) {
+     pTargetVirtAddr = NULL;    // no mapping requested
+  }
+
   buf = (struct buffer_t *) malloc (sizeof(struct buffer_t));
   memset(buf, 0, sizeof(buffer_t));
 
   buf->memsize = (uint32_t)Length;
   // ASECCIAFU::sm_ASEMtx.Lock();
-  allocate_buffer(buf);
+
+  // FIXME: Retrying several times to work around ASE issue (Redmine #674)
+  int retriesLeft;
+  for ( retriesLeft = 3; retriesLeft > 0; retriesLeft-- ) {
+     allocate_buffer(buf, (uint64_t*)pTargetVirtAddr);
+     if ( ( ASE_BUFFER_VALID == buf->valid )   &&
+           ( MAP_FAILED != (void *)buf->vbase ) &&
+           ( 0 != buf->fake_paddr ) ) {
+        break;
+     }
+     AAL_WARNING(LM_AFU, "ASE buffer allocation failed, retrying..." <<
+           std::endl);
+  }
+
   //ASECCIAFU::sm_ASEMtx.Unlock();
   if ( ( ASE_BUFFER_VALID != buf->valid )   ||
        ( MAP_FAILED == (void *)buf->vbase ) ||
-       ( 0 == buf->fake_paddr ) ) 
+       ( 0 == buf->fake_paddr ) )
     {
       std::cout << "Error Allocating ASE buffer ... EXITING\n";
       return ali_errnumNoMem;
@@ -190,7 +485,7 @@ AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize             Length,
   wsParms.ptr = (btVirtAddr)buf->vbase;
   wsParms.physptr = buf->fake_paddr;
   wsParms.size = buf->memsize;
-  
+
   m_mapWkSpc[(btVirtAddr)buf->vbase] = wsParms;
 
   return ali_errnumOK;
@@ -272,6 +567,32 @@ void ASEALIAFU::umsgTrigger64( const btVirtAddr pUMsg,
 bool ASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 {
    return true;
+}
+
+
+IALIReset::e_Reset ASEALIAFU::afuQuiesceAndHalt( NamedValueSet const &rInputArgs )
+{
+   // NOT IMPLEMENTED
+
+   return e_OK;
+}
+
+IALIReset::e_Reset ASEALIAFU::afuEnable( NamedValueSet const &rInputArgs)
+{
+   // DOES NOTHING
+
+   return e_OK;
+
+}
+
+IALIReset::e_Reset ASEALIAFU::afuReset( NamedValueSet const &rInputArgs )
+{
+   // Port control
+   ase_portctrl("AFU_RESET 1");
+   usleep(10000);
+   ase_portctrl("AFU_RESET 0");
+
+   return e_OK;
 }
 
 

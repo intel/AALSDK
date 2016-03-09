@@ -44,7 +44,6 @@
 //****************************************************************************
 #ifndef __SWSIMALIAFU_H__
 #define __SWSIMALIAFU_H__
-#include <aalsdk/service/ALIAFUService.h>
 #include <aalsdk/service/SWSimALIAFUService.h>
 #include <aalsdk/service/IALIAFU.h>
 #include <aalsdk/aas/AALService.h>

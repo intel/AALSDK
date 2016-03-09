@@ -1,4 +1,4 @@
-## Copyright(c) 2015-2016, Intel Corporation
+## Copyright (c) 2005-2015, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -27,34 +27,47 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     aalutils/remoteSTP/Makefile
+##     samples/AllocDealloc_StressTest/Makefile
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
-##     Sadruta Chandrashekar, Intel Corporation
 ##  History:
-##     07/21/2015    TSW   Initial version
-##     01/19/2016    SC    remoteSTP version
+##     11/18/2014    TSW   Initial version
 ##******************************************************************************
-bin_PROGRAMS=remoteSTP
+CPPFLAGS ?=
+CXX      ?= g++
+LDFLAGS  ?=
 
-remoteSTP_SOURCES=\
-SigTap.cpp \
-mm_debug_link_linux.cpp \
-mmlink_connection.cpp \
-mmlink_server.cpp \
-mm_debug_link_interface.h \
-mm_debug_link_linux.h \
-mmlink_connection.h \
-mmlink_server.h
+ifneq (,$(ndebug))
+else
+CPPFLAGS += -DENABLE_DEBUG=1
+endif
+ifneq (,$(nassert))
+else
+CPPFLAGS += -DENABLE_ASSERT=1
+endif
 
-remoteSTP_CPPFLAGS=\
--I$(top_srcdir)/include \
--I$(top_builddir)/include
+ifeq (,$(DESTDIR))
+ifneq (,$(prefix))
+CPPFLAGS += -I$(prefix)/include
+LDFLAGS  += -L$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(prefix)/lib
+endif
+else
+ifeq (,$(prefix))
+prefix = /usr/local
+endif
+CPPFLAGS += -I$(DESTDIR)$(prefix)/include
+LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(DESTDIR)$(prefix)/lib -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib
+endif
 
-remoteSTP_LDADD=\
-$(top_builddir)/aas/OSAL/libOSAL.la \
-$(top_builddir)/aas/AASLib/libAAS.la \
-$(top_builddir)/aas/AALRuntime/libaalrt.la \
-$(top_builddir)/aas/AIAService/libaia.la \
-$(top_builddir)/clp/libaalclp.la
+all: AllocDealloc_StressTest
 
+AllocDealloc_StressTest: AllocDealloc_StressTest.o
+	$(CXX) -g -O2 -o AllocDealloc_StressTest AllocDealloc_StressTest.o $(LDFLAGS) -L../CCILib -lCCI -laalclp
+
+AllocDealloc_StressTest.o: AllocDealloc_StressTest.cpp ../CCILib/CCILib.h Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -I../CCILib -g -O2 -c -o AllocDealloc_StressTest.o AllocDealloc_StressTest.cpp
+
+clean:
+	$(RM) AllocDealloc_StressTest AllocDealloc_StressTest.o
+
+.PHONY:all clean

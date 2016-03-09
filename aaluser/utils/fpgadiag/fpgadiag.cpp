@@ -50,7 +50,6 @@
 #include <aalsdk/kernel/ccipdriver.h>
 
 #include <aalsdk/service/IALIAFU.h>
-#include <aalsdk/service/ALIAFUService.h>
 //#include <aalsdk/service/IALIClient.h>
 
 #include <aalsdk/AAL.h>
@@ -111,6 +110,9 @@ struct NLBCmdLine gCmdLine =
    DEFAULT_SRCPHYS,
    DEFAULT_DSTPHYS,
    DEFAULT_FPGA_CLK_FREQ,
+   DEFAULT_CX,
+   DEFAULT_HQW,
+   DEFAULT_SQW,
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
 #elif defined( __AAL_LINUX__ )
@@ -162,7 +164,18 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_VA,
       DEFAULT_VL0,
       DEFAULT_VH0,
-      DEFAULT_VH1
+      DEFAULT_VH1,
+      DEFAULT_ST,
+	  DEFAULT_UT,
+      DEFAULT_MINCX,
+      DEFAULT_MAXCX,
+      DEFAULT_CX,
+      DEFAULT_HQW,
+      DEFAULT_SQW,
+      DEFAULT_MINHQW,
+      DEFAULT_MAXHQW,
+      DEFAULT_MINSQW,
+      DEFAULT_MAXSQW
    },
    0,
    {
@@ -316,22 +329,30 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
 
-  	   if(0 == strcmp(TestMode().c_str(), "TestMode_ccipread") ||
-		  0 == strcmp(TestMode().c_str(), "TestMode_ccipwrite") ||
-		  0 == strcmp(TestMode().c_str(), "TestMode_cciptrput")){
+  	   if(0 == strcmp(TestMode().c_str(), "TestMode_read") ||
+		  0 == strcmp(TestMode().c_str(), "TestMode_write") ||
+		  0 == strcmp(TestMode().c_str(), "TestMode_trput")){
 
   		   ConfigRecord.Add(keyRegAFU_ID,"751E795F-7DA4-4CC6-8309-935132BCA9B6");
   		   Manifest.Add(keyRegAFU_ID,"751E795F-7DA4-4CC6-8309-935132BCA9B6");
 
-  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_cciplpbk1")){
+  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_lpbk1")){
 
   		   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
   		   Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
 
-  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_ccipsw")){
+  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_sw")){
 
  		   ConfigRecord.Add(keyRegAFU_ID,"A944F6E7-15D3-4D95-9452-15DBD47C76BD");
  		   Manifest.Add(keyRegAFU_ID,"A944F6E7-15D3-4D95-9452-15DBD47C76BD");
+
+  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_atomic")){
+
+		   /*ConfigRecord.Add(keyRegAFU_ID,"41BAFB9D-D97E-43CF-967D-22E837CD2182");
+		   Manifest.Add(keyRegAFU_ID,"41BAFB9D-D97E-43CF-967D-22E837CD2182");*/
+
+         ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+         Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612"); //TODO: Remove me and uncomment about lines
 
  	   }else{
 
@@ -540,11 +561,12 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 	   // Documentation says HWALIAFU Service publishes
 	   //    IALIBuffer as subclass interface. Used in Buffer Allocation and Free
 	   m_pALIPerf = dynamic_ptr<IALIPerf>(iidALI_PERF_Service, pServiceBase);
-	   ASSERT(NULL != m_pALIPerf);
+	  /* ASSERT(NULL != m_pALIPerf);
 	   if ( NULL == m_pALIPerf ) {
 		  m_bIsOK = false;
 		  return;
 	   }
+	   */
    }
 
    if( m_pFMEService && m_pNLBService){
@@ -719,96 +741,13 @@ int main(int argc, char *argv[])
       return 5;
    }
 
-   /*if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_LPBK1)))
-   {
-	   // Run NLB Lpbk1, which performs sw data verification.
-	   CNLBLpbk1 nlblpbk1(&myapp);
-
-	   cout << " * Data Copy " << flush;
-	   res = nlblpbk1.RunTest(gCmdLine);
-	   totalres += res;
-	   if ( 0 == res ) {
-		  cout << PASS << "PASS - DATA VERIFIED";
-	   } else {
-		  cout << FAIL << "ERROR";
-	   }
-	   cout << NORMAL << endl;
-   }
-   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_READ)))
-   {
-	   // Run an NLB Read bandwidth measurement..
-	   // * cold cache (a la, --prefill-misses)
-	   // * report read bandwidth in GiB/s
-	   CNLBRead nlbread(&myapp);
-
-	   cout << " * Read Bandwidth from Memory " << flush;
-	   res = nlbread.RunTest(gCmdLine);
-	   totalres += res;
-	   if ( 0 == res ) {
-		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-	   } else {
-		  cout << FAIL << "ERROR";
-	   }
-	   cout << NORMAL << endl;
-   }
-   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_WRITE)))
-   {
-	   // Run an NLB Write bandwidth measurement..
-	   // * cold cache (a la, --prefill-misses)
-	   // * report write bandwidth in GiB/s
-	   CNLBWrite nlbwrite(&myapp);
-
-	   cout << " * Write Bandwidth to Memory " << flush;
-	   res = nlbwrite.RunTest(gCmdLine);
-	   totalres += res;
-	   if ( 0 == res ) {
-		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-	   } else {
-		  cout << FAIL << "ERROR";
-	   }
-	   cout << NORMAL << endl;
-   }
-   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_TRPUT)))
-   {
-	   // Run an NLB Trput measurement..
-	   // * report bandwidth in GiB/s
-	   CNLBTrput nlbtrput(&myapp);
-
-	   cout << " * Simultaneous Read/Write Bandwidth " << flush;
-	   res = nlbtrput.RunTest(gCmdLine);
-	   totalres += res;
-	   if ( 0 == res ) {
-		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-	   } else {
-		  cout << FAIL << "ERROR";
-	   }
-	   cout << NORMAL << endl
-			<< endl;
-   }
-   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_SW)))
-   {
-	   // Run an SW Test..
-	   // * report bandwidth in GiB/s
-	   CNLBSW nlbsw(&myapp);
-
-	   cout << " * SW test " << flush;
-	   res = nlbsw.RunTest(gCmdLine);
-	   totalres += res;
-	   if ( 0 == res ) {
-		  cout << PASS << "PASS - DATA VERIFIED";
-	   } else {
-		  cout << FAIL << "ERROR";
-	   }
-	   cout << NORMAL << endl
-			<< endl;
-   }
-   else*/ if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
+   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_LPBK1)))
       {
-   		// Run NLB ccip test, which performs sw data verification.
-   		CNLBCcipLpbk1 nlbccip_lpbk1(&myapp);
+   		// Run NLB test, which performs sw data verification.
+   		CNLBLpbk1 nlb_lpbk1(&myapp);
 
-   		cout << " * Data Copy - CCIP LPBK1" << flush;
-   		res = nlbccip_lpbk1.RunTest(gCmdLine);
+   		cout << " * Data Copy - LPBK1" << flush;
+   		res = nlb_lpbk1.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
    		  cout << PASS << "PASS - DATA VERIFIED";
@@ -816,14 +755,14 @@ int main(int argc, char *argv[])
    		  cout << FAIL << "ERROR";
    		}
    		cout << NORMAL << endl;
-      }
-      else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_READ)))
-      {
-   		// Run NLB ccip read test.
-   		CNLBCcipRead nlbccip_read(&myapp);
+	}
+	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_READ)))
+	{
+   		// Run NLB read test.
+   		CNLBRead nlb_read(&myapp);
 
-   		cout << " * Read Bandwidth from Memory - CCIP READ" << flush;
-   		res = nlbccip_read.RunTest(gCmdLine);
+   		cout << " * Read Bandwidth from Memory - READ" << flush;
+   		res = nlb_read.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
    		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
@@ -831,14 +770,14 @@ int main(int argc, char *argv[])
    		  cout << FAIL << "ERROR";
    		}
    		cout << NORMAL << endl;
-     }
-     else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_WRITE)))
-     {
-   		// Run NLB ccip write test.
-   		CNLBCcipWrite nlbccip_write(&myapp);
+	}
+	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_WRITE)))
+	{
+   		// Run NLB write test.
+   		CNLBWrite nlb_write(&myapp);
 
-   		cout << " * Write Bandwidth from Memory - CCIP WRITE" << flush;
-   		res = nlbccip_write.RunTest(gCmdLine);
+   		cout << " * Write Bandwidth from Memory - WRITE" << flush;
+   		res = nlb_write.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
    		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
@@ -846,14 +785,14 @@ int main(int argc, char *argv[])
    		  cout << FAIL << "ERROR";
    		}
    		cout << NORMAL << endl;
-     }
-     else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_TRPUT)))
-     {
-   		// Run NLB ccip trput test.
-   		CNLBCcipTrput nlbccip_trput(&myapp);
+	}
+	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_TRPUT)))
+	{
+   		// Run NLB  trput test.
+   		CNLBTrput nlb_trput(&myapp);
 
-   		cout << " * Simultaneous Read/Write Bandwidth - CCIP TRPUT" << flush;
-   		res = nlbccip_trput.RunTest(gCmdLine);
+   		cout << " * Simultaneous Read/Write Bandwidth - TRPUT" << flush;
+   		res = nlb_trput.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
    		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
@@ -861,15 +800,15 @@ int main(int argc, char *argv[])
    		  cout << FAIL << "ERROR";
    		}
    		cout << NORMAL << endl;
-     }
-     else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_SW)))
-     {
+	}
+	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_SW)))
+	{
    	   // Run an SW Test..
    	   // * report bandwidth in GiB/s
-   	   CNLBCcipSW nlbccip_sw(&myapp);
+   	   CNLBSW nlb_sw(&myapp);
 
-   	   cout << " * CCIP-SW test " << flush;
-   	   res = nlbccip_sw.RunTest(gCmdLine);
+   	   cout << " * SW test " << flush;
+   	   res = nlb_sw.RunTest(gCmdLine);
    	   totalres += res;
    	   if ( 0 == res ) {
    		  cout << PASS << "PASS - DATA VERIFIED";
@@ -879,6 +818,23 @@ int main(int argc, char *argv[])
    	   cout << NORMAL << endl
    			<< endl;
      }
+	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_ATOMIC)))
+		{
+	   	   // Run an SW Test..
+	   	   // * report bandwidth in GiB/s
+	   	   CNLBAtomic nlb_atomic(&myapp);
+
+	   	   cout << " * Atomic test " << flush;
+	   	   res = nlb_atomic.RunTest(gCmdLine);
+	   	   totalres += res;
+	   	   if ( 0 == res ) {
+	   		  cout << PASS << "PASS";
+	   	   } else {
+	   		  cout << FAIL << "ERROR";
+	   	   }
+	   	   cout << NORMAL << endl
+	   			<< endl;
+	     }
 
    INFO("Stopping the AAL Runtime");
    myapp.Stop();
@@ -979,7 +935,7 @@ btInt INLB::ResetHandshake()
    return res;
 }
 
-btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize CoolSize)
+btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize CoolSize, const NLBCmdLine &cmd)
 {
    btInt res = 0;
 
@@ -1013,9 +969,24 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
    // Set the number of cache lines for the test
    m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, CoolSize / CL(1));
 
+   csr_type cfc_cfg = (csr_type)NLB_TEST_MODE_READ;
+   // Select the channel.
+    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0))
+    {
+       cfc_cfg |= (csr_type)NLB_TEST_MODE_VL0;
+    }
+    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH0))
+    {
+       cfc_cfg |= (csr_type)NLB_TEST_MODE_VH0;
+    }
+    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1))
+    {
+       cfc_cfg |= (csr_type)NLB_TEST_MODE_VH1;
+    }
+
    // Set the test mode
    m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
-   m_pALIMMIOService->mmioWrite32(CSR_CFG, NLB_TEST_MODE_READ); // non-continuous mode
+   m_pALIMMIOService->mmioWrite32(CSR_CFG, cfc_cfg); // non-continuous mode
 
    // Start the test
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
@@ -1042,56 +1013,58 @@ void INLB::ReadPerfMonitors()
 	NamedValueSet PerfMon;
 	btUnsigned64bitInt     value;
 
-	m_pALIPerf->performanceCountersGet(&PerfMon);
+	if (NULL != m_pALIPerf){
+		m_pALIPerf->performanceCountersGet(&PerfMon);
 
-    if (PerfMon.Has(AALPERF_VERSION)) {
-       PerfMon.Get( AALPERF_VERSION, &value);
-       m_PerfMonitors[VERSION] = value;
-    }
-    if (PerfMon.Has(AALPERF_READ_HIT)) {
-       PerfMon.Get( AALPERF_READ_HIT, &value);
-       m_PerfMonitors[READ_HIT] = value;
-    }
-    if (PerfMon.Has(AALPERF_WRITE_HIT)) {
-       PerfMon.Get( AALPERF_WRITE_HIT, &value);
-       m_PerfMonitors[WRITE_HIT] = value;
-    }
-    if (PerfMon.Has(AALPERF_READ_MISS)) {
-       PerfMon.Get( AALPERF_READ_MISS, &value);
-       m_PerfMonitors[READ_MISS] = value;
-    }
-    if (PerfMon.Has(AALPERF_WRITE_MISS)) {
-       PerfMon.Get( AALPERF_WRITE_MISS, &value);
-       m_PerfMonitors[WRITE_MISS] = value;
-    }
-    if (PerfMon.Has(AALPERF_EVICTIONS)) {
-        PerfMon.Get( AALPERF_EVICTIONS, &value);
-        m_PerfMonitors[EVICTIONS] = value;
-    }
-    if (PerfMon.Has(AALPERF_PCIE0_READ)) {
-        PerfMon.Get( AALPERF_PCIE0_READ, &value);
-        m_PerfMonitors[PCIE0_READ] = value;
-    }
-    if (PerfMon.Has(AALPERF_PCIE0_WRITE)) {
-        PerfMon.Get( AALPERF_PCIE0_WRITE, &value);
-        m_PerfMonitors[PCIE0_WRITE] = value;
-    }
-    if (PerfMon.Has(AALPERF_PCIE1_READ)) {
-        PerfMon.Get( AALPERF_PCIE1_READ, &value);
-        m_PerfMonitors[PCIE1_READ] = value;
-    }
-    if (PerfMon.Has(AALPERF_PCIE1_WRITE)) {
-        PerfMon.Get( AALPERF_PCIE1_WRITE, &value);
-        m_PerfMonitors[PCIE1_WRITE] = value;
-    }
-    if (PerfMon.Has(AALPERF_UPI_READ)) {
-        PerfMon.Get( AALPERF_UPI_READ, &value);
-        m_PerfMonitors[UPI_READ] = value;
-    }
-    if (PerfMon.Has(AALPERF_UPI_WRITE)) {
-	    PerfMon.Get( AALPERF_UPI_WRITE, &value);
-	    m_PerfMonitors[UPI_WRITE] = value;
-    }
+		if (PerfMon.Has(AALPERF_VERSION)) {
+		   PerfMon.Get( AALPERF_VERSION, &value);
+		   m_PerfMonitors[VERSION] = value;
+		}
+		if (PerfMon.Has(AALPERF_READ_HIT)) {
+		   PerfMon.Get( AALPERF_READ_HIT, &value);
+		   m_PerfMonitors[READ_HIT] = value;
+		}
+		if (PerfMon.Has(AALPERF_WRITE_HIT)) {
+		   PerfMon.Get( AALPERF_WRITE_HIT, &value);
+		   m_PerfMonitors[WRITE_HIT] = value;
+		}
+		if (PerfMon.Has(AALPERF_READ_MISS)) {
+		   PerfMon.Get( AALPERF_READ_MISS, &value);
+		   m_PerfMonitors[READ_MISS] = value;
+		}
+		if (PerfMon.Has(AALPERF_WRITE_MISS)) {
+		   PerfMon.Get( AALPERF_WRITE_MISS, &value);
+		   m_PerfMonitors[WRITE_MISS] = value;
+		}
+		if (PerfMon.Has(AALPERF_EVICTIONS)) {
+			PerfMon.Get( AALPERF_EVICTIONS, &value);
+			m_PerfMonitors[EVICTIONS] = value;
+		}
+		if (PerfMon.Has(AALPERF_PCIE0_READ)) {
+			PerfMon.Get( AALPERF_PCIE0_READ, &value);
+			m_PerfMonitors[PCIE0_READ] = value;
+		}
+		if (PerfMon.Has(AALPERF_PCIE0_WRITE)) {
+			PerfMon.Get( AALPERF_PCIE0_WRITE, &value);
+			m_PerfMonitors[PCIE0_WRITE] = value;
+		}
+		if (PerfMon.Has(AALPERF_PCIE1_READ)) {
+			PerfMon.Get( AALPERF_PCIE1_READ, &value);
+			m_PerfMonitors[PCIE1_READ] = value;
+		}
+		if (PerfMon.Has(AALPERF_PCIE1_WRITE)) {
+			PerfMon.Get( AALPERF_PCIE1_WRITE, &value);
+			m_PerfMonitors[PCIE1_WRITE] = value;
+		}
+		if (PerfMon.Has(AALPERF_UPI_READ)) {
+			PerfMon.Get( AALPERF_UPI_READ, &value);
+			m_PerfMonitors[UPI_READ] = value;
+		}
+		if (PerfMon.Has(AALPERF_UPI_WRITE)) {
+			PerfMon.Get( AALPERF_UPI_WRITE, &value);
+			m_PerfMonitors[UPI_WRITE] = value;
+		}
+	}
 }
 
 void INLB::SavePerfMonitors()

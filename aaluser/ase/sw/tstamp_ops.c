@@ -24,89 +24,15 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 // **************************************************************************
-/* 
+/*
  * Module Info: Timestamp based session control functions
  * Language   : System{Verilog} | C/C++
  * Owner      : Rahul R Sharma
  *              rahul.r.sharma@intel.com
  *              Intel Corporation
- */ 
+ */
 
 #include "ase_common.h"
-
-
-// Check if timestamp file (and by extension ase.cfg file) are located at:
-// - $PWD
-// - $ASE_WORKDIR
-/* char* generate_tstamp_path(char* filename) */
-/* { */
-/*   char *tstamp_filepath; */
-/*   char *pot_pwd_filepath; */
-/*   char *pot_asewd_filepath; */
-/*   FILE *fp_pwd; */
-/*   FILE *fp_asewd; */
-
-/*   tstamp_filepath = malloc(ASE_FILEPATH_LEN); */
-/*   pot_pwd_filepath = malloc(ASE_FILEPATH_LEN); */
-/*   pot_asewd_filepath = malloc(ASE_FILEPATH_LEN); */
-
-/*   memset(pot_pwd_filepath, '\0', ASE_FILEPATH_LEN); */
-/*   memset(pot_asewd_filepath, '\0', ASE_FILEPATH_LEN); */
-
-/*   // Create filepaths */
-/*   snprintf(pot_pwd_filepath, 256 , "%s/%s", getenv("PWD"), filename); // TSTAMP_FILENAME); */
-/*   fp_pwd = fopen(pot_pwd_filepath, "r"); */
-/*   if (getenv("ASE_WORKDIR") != NULL) */
-/*     { */
-/*       snprintf(pot_asewd_filepath, 256, "%s/%s", getenv("ASE_WORKDIR"), filename); // TSTAMP_FILENAME); */
-/*       fp_asewd = fopen(pot_asewd_filepath, "r"); */
-/*     } */
-
-/*   // Find the timestamp file */
-/*   // - Check $PWD for file, if found bug out */
-/*   // - Check $ASE_WORKDIR for file, if found bug out */
-/*   // - If not found, ERROR out */
-/*   // Record filename */
-/*   if ( fp_pwd != NULL )  */
-/*     { */
-/*       strcpy(tstamp_filepath, pot_pwd_filepath); */
-/*       fclose(fp_pwd); // checking */
-/*     } */
-/*   else if ( getenv("ASE_WORKDIR") != NULL )  */
-/*     { */
-/*       // *FIXME* Check if file exists */
-/*       if (fp_asewd != NULL) */
-/* 	{ */
-/* 	  strcpy(tstamp_filepath, pot_asewd_filepath);  */
-/* 	  fclose(fp_asewd); // checking */
-/* 	} */
-/*       else */
-/* 	{ */
-/* 	  BEGIN_RED_FONTCOLOR; */
-/* 	  printf("@ERROR: %s cannot be opened at %s ... EXITING !!\n", filename, getenv("ASE_WORKDIR")); */
-/* 	  printf("        Please check if simulator has been started\n"); */
-/* 	  printf("        Also, please check if you have followed the Simulator instructions printed in "); */
-/* 	  END_RED_FONTCOLOR; */
-/* 	  BEGIN_GREEN_FONTCOLOR; */
-/* 	  printf("GREEN\n"); */
-/* 	  END_GREEN_FONTCOLOR; */
-/* 	  fclose(fp_asewd); // checking */
-/* 	  exit(1); */
-/* 	} */
-/*     } */
-/*   else */
-/*     { */
-/*       BEGIN_RED_FONTCOLOR; */
-/*       printf("@ERROR: ASE_WORKDIR environment variable has not been set up.\n"); */
-/*       printf("        When the simulator starts up, ASE_WORKDIR setting is printed on screen\n"); */
-/*       printf("        Copy-paste the printed setting in this terminal before proceeding\n"); */
-/*       printf("        SW application will EXIT now !!\n"); */
-/*       END_RED_FONTCOLOR; */
-/*       exit(1); */
-/*     } */
-
-/*   return tstamp_filepath; */
-/* } */
 
 
 // -----------------------------------------------------------------------
@@ -137,21 +63,19 @@ static __inline__ unsigned long long rdtsc(void)
 void put_timestamp()
 {
   FUNC_CALL_ENTRY;
-  FILE *fp;
-  unsigned long long tstamp_long;
-  char tstamp_str[20];
-  char tstamp_path[ASE_FILEPATH_LEN];
 
-  memset(tstamp_str, '\0', sizeof(tstamp_str));
-  tstamp_long = rdtsc();
+  FILE *fp = (FILE *)NULL;
 
-  memset(tstamp_path, '\0', ASE_FILEPATH_LEN);
-  strcpy(tstamp_path, ase_workdir_path);
-  strcat(tstamp_path, TSTAMP_FILENAME);
+  /* char tstamp_path[ASE_FILEPATH_LEN]; */
+  /* memset(tstamp_path, 0, ASE_FILEPATH_LEN); */
 
-  // fp = fopen(TSTAMP_FILENAME, "wb");
+  char *tstamp_path;
+  tstamp_path = (char*) ase_malloc(ASE_FILEPATH_LEN);
+
+  sprintf(tstamp_path, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
+
   fp = fopen(tstamp_path, "wb");
-  if (fp == NULL) 
+  if (fp == NULL)
     {
 #ifdef SIM_SIDE
       ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
@@ -160,79 +84,149 @@ void put_timestamp()
 #endif
       exit(1);
     }
-  fprintf(fp, "%lld", tstamp_long);
+  else
+    {
+      // Write session code
+      fprintf(fp, "%lld", (unsigned long long)rdtsc() );
+      
+      // Close file
+      fclose(fp);
+    }
 
-  fclose(fp);
+  free(tstamp_path);
 
   FUNC_CALL_EXIT;
 }
 
 
 // -----------------------------------------------------------------------
-// Read timestamp 
+// Read timestamp
 // -----------------------------------------------------------------------
 char* get_timestamp(int dont_kill)
 {
   FUNC_CALL_ENTRY;
 
-  FILE *fp;
+  FILE *fp = (FILE *)NULL;
 
-  unsigned long long readback;
+  // unsigned long long readback;
 
   char *tstamp_str;
   tstamp_str = ase_malloc(20);
-  if (tstamp_str == NULL)
-    {
-      ase_error_report("malloc", errno, ASE_OS_MALLOC_ERR);
-    #ifdef SIM_SIDE
-      start_simkill_countdown();
-    #else
-      exit(1);
-    #endif		       
-    }
+
+  int ret;
 
   char *tstamp_filepath;
   tstamp_filepath = (char*)ase_malloc(ASE_FILEPATH_LEN);
 
   // Generate tstamp_filepath
-  // tstamp_filepath = generate_tstamp_path( TSTAMP_FILENAME );
-  memset(tstamp_filepath, '\0', ASE_FILEPATH_LEN);
-  /* strcpy(tstamp_filepath, ase_workdir_path); */
-  /* strcat(tstamp_filepath, "/"); */
-  /* strcat(tstamp_filepath, TSTAMP_FILENAME);   */
+  memset(tstamp_filepath, 0, ASE_FILEPATH_LEN);
   sprintf(tstamp_filepath, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
 #ifdef ASE_DEBUG
   printf("  [DEBUG] tstamp_filepath = %s\n", tstamp_filepath);
 #endif
 
-  fp = fopen(tstamp_filepath, "r");
-  if (dont_kill) 
+  // Check if file exists
+  if (access(tstamp_filepath, F_OK) != -1) // File exists
     {
-      BEGIN_YELLOW_FONTCOLOR;
-      printf(" Timestamp gone ! .. "); 
-      END_YELLOW_FONTCOLOR;
-    }
-  else
-    {
-      if (fp == NULL) 
+      fp = fopen(tstamp_filepath, "r");
+      // fopen failed
+      if (fp == NULL)
 	{
+  	  ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
         #ifdef SIM_SIDE
-	  ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
+	  start_simkill_countdown();
         #else
-	  perror("fopen");
+  	  exit(1);
         #endif
-	  exit(1);
+	}
+      else
+	{
+	  // Read timestamp file
+	  ret = fread(tstamp_str, sizeof(char), 20, fp);
+	  if (ret == 0)
+	    {
+	      ase_error_report("fread", errno, ASE_OS_MALLOC_ERR);
+            #ifdef SIM_SIDE
+	      start_simkill_countdown();
+            #else
+	      exit(1);
+            #endif
+	    }
+	  
+        #ifdef ASE_DEBUG
+	  printf("  [DEBUG] tstamp_str = %s\n", tstamp_str);
+        #endif
+	  
+	  fclose(fp);
 	}
     }
-  
-  fread(&readback, sizeof(unsigned long long), 1, fp);
-  fclose(fp);
-  
-  sprintf(tstamp_str, "%lld", readback);
+  else   // File doesnt exist
+    {
+      if (dont_kill != 0)  // Dont kill the process (dealloc side)
+	{
+        #ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf(" Timestamp gone ! .. ");
+	  END_YELLOW_FONTCOLOR;
+        #endif
+	}
+      else // Kill (alloc side problems
+	{
+        #ifdef SIM_SIDE
+  	  ase_error_report("access", errno, ASE_OS_FOPEN_ERR);
+	  start_simkill_countdown();
+        #else
+  	  perror("access");
+  	  exit(1);
+        #endif
+	}
+    }
+
+  /* fp = fopen(tstamp_filepath, "r"); */
+
+  /* if (dont_kill != 0)  */
+  /*   { */
+  /*     BEGIN_YELLOW_FONTCOLOR; */
+  /*     printf(" Timestamp gone ! .. ");  */
+  /*     END_YELLOW_FONTCOLOR; */
+  /*   } */
+  /* else */
+  /*   { */
+  /*     if (fp == NULL)  */
+  /* 	{ */
+  /*       #ifdef SIM_SIDE */
+  /* 	  ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR); */
+  /*       #else */
+  /* 	  perror("fopen"); */
+  /*       #endif */
+  /* 	  exit(1); */
+  /* 	} */
+  /*   } */
+
+  // fread(&readback, sizeof(unsigned long long), 1, fp);
+
+  // sprintf(tstamp_str, "%lld", readback);
 
   FUNC_CALL_EXIT;
 
   return tstamp_str;
 }
 
+// -----------------------------------------------------------------------
+// Check for session file to be created
+// Used by session_init() to wait until .ase_timestamp existance is confirm
+// -----------------------------------------------------------------------
+void poll_for_session_id()
+{
+  char tstamp_filepath[ASE_FILEPATH_LEN];
+  sprintf(tstamp_filepath, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
+
+  printf("  [APP]  Waiting till session ID is created by ASE ... ");
+
+  while ( access(tstamp_filepath, F_OK) == -1 )
+    {
+      usleep(1000);
+    }
+  printf("DONE\n");
+}

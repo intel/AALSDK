@@ -43,18 +43,10 @@
 
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aalclp/aalclp.h>
-
 #include <aalsdk/service/IALIAFU.h>
-#include <aalsdk/service/ALIAFUService.h>
-//#include <aalsdk/service/IALIClient.h>
-
-//#include <aalsdk/utils/SingleAFUApp.h>
-//#include <aalsdk/utils/Utilities.h>
 #include <aalsdk/AAL.h>
 #include <aalsdk/Runtime.h>
-
 #include <aalsdk/utils/NLBVAFU.h>
-
 #include <string>
 #include "diag-nlb-common.h"
 
@@ -151,10 +143,10 @@ public:
    btWSSize   OutputSize() const { return m_OutputSize; } ///< Accessor for the Output workspace.
    btWSSize   UMsgSize()   const { return m_UMsgSize;   } ///< Accessor for the UMsg workspace.
 
-   btBool isOK()  {return m_isOK;}
+   btBool isOK()  {	return m_isOK; }
 
-   void Wait() { m_Sem.Wait();  }
-   void Post() { m_Sem.Post(1); }
+   void Wait() 	  { m_Sem.Wait();  }
+   void Post() 	  { m_Sem.Post(1); }
    void Stop();
 
    /// @brief Routine to allocate input, output, DSM and Umsg workspaces.
@@ -190,7 +182,7 @@ protected:
 
    std::string  m_AFUTarget; 		 ///< The NVS value used to select the AFU Delegate (FPGA, ASE, or SWSim).
    btInt        m_DevTarget; 		 ///< The NVS value used to select the Sub Device.
-   std::string  m_TestMode; 		 ///< The NVS value used to select the Test mode (LPBK1, READ, WRITE, TRPUT, SW or CCIP_LPBK1).
+   std::string  m_TestMode; 		 ///< The NVS value used to select the Test mode (LPBK1, READ, WRITE, TRPUT, SW ).
    IRuntime    *m_pRuntime;
    IBase       *m_pNLBService;       ///< The generic AAL Service interface for the AFU.
    IBase       *m_pFMEService;       ///< The generic AAL Service interface for the AFU.
@@ -258,7 +250,7 @@ protected:
       ASSERT(NULL != m_pALIMMIOService);
       ASSERT(NULL != m_pALIBufferService);
       ASSERT(NULL != m_pALIResetService);
-      ASSERT(NULL != m_pALIPerf);
+      //ASSERT(NULL != m_pALIPerf);
 
       btInt i;
       for ( i = 0 ; i < sizeof(m_PerfMonitors) / sizeof(m_PerfMonitors[0]) ; ++i ) {
@@ -268,7 +260,7 @@ protected:
    }
 
    btInt ResetHandshake();
-   btInt CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize CoolSize);
+   btInt CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize CoolSize, const NLBCmdLine &cmd);
 
    void      			ReadPerfMonitors();
    void       			SavePerfMonitors();
@@ -297,17 +289,16 @@ class CNLBLpbk1 : public INLB
 public:
    CNLBLpbk1(CMyApp *pMyApp) :
       INLB(pMyApp)
-   {}
+    {}
    virtual btInt RunTest(const NLBCmdLine &cmd);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
-
 class CNLBRead : public INLB
 {
 public:
 	CNLBRead(CMyApp *pMyApp) :
       INLB(pMyApp)
-   {}
+    {}
    virtual btInt RunTest(const NLBCmdLine &cmd);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
@@ -315,80 +306,40 @@ public:
 class CNLBWrite : public INLB
 {
 public:
-	CNLBWrite(CMyApp *pMyApp) :
+   CNLBWrite(CMyApp *pMyApp) :
       INLB(pMyApp)
-   {}
+    {}
    virtual btInt RunTest(const NLBCmdLine &cmd);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
-
 
 class CNLBTrput : public INLB
 {
 public:
    CNLBTrput(CMyApp *pMyApp) :
       INLB(pMyApp)
-   {}
+    {}
    virtual btInt RunTest(const NLBCmdLine &cmd);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
-
 
 class CNLBSW : public INLB
 {
 public:
-	CNLBSW(CMyApp *pMyApp) :
-      INLB(pMyApp)
-    {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
-   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
-};
-class CNLBCcipLpbk1 : public INLB
-{
-public:
-	CNLBCcipLpbk1(CMyApp *pMyApp) :
-      INLB(pMyApp)
-    {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
-   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
-};
-class CNLBCcipRead : public INLB
-{
-public:
-	CNLBCcipRead(CMyApp *pMyApp) :
+   CNLBSW(CMyApp *pMyApp) :
       INLB(pMyApp)
     {}
    virtual btInt RunTest(const NLBCmdLine &cmd);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
 
-class CNLBCcipWrite : public INLB
+class CNLBAtomic : public INLB
 {
 public:
-	CNLBCcipWrite(CMyApp *pMyApp) :
+	CNLBAtomic(CMyApp *pMyApp) :
       INLB(pMyApp)
     {}
    virtual btInt RunTest(const NLBCmdLine &cmd);
-   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
-};
-
-class CNLBCcipTrput : public INLB
-{
-public:
-	CNLBCcipTrput(CMyApp *pMyApp) :
-      INLB(pMyApp)
-    {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
-   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
-};
-
-class CNLBCcipSW : public INLB
-{
-public:
-	CNLBCcipSW(CMyApp *pMyApp) :
-      INLB(pMyApp)
-    {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
-   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
+   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls, const btInt cpu_cx);
 };
 #endif

@@ -54,3 +54,4 @@ $(top_builddir)/aas/OSAL/libOSAL.la \
 $(top_builddir)/aas/AASLib/libAAS.la \
 $(top_builddir)/aas/AALRuntime/libaalrt.la \
 $(top_builddir)/aas/AIAService/libaia.la
+

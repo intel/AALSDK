@@ -44,17 +44,18 @@ void ll_print_info(struct buffer_t *print_ptr)
   FUNC_CALL_ENTRY;
 
   printf("%d  ", print_ptr->index);
-  if (print_ptr->valid == ASE_BUFFER_VALID) 
-    printf("ADDED   ");
-  else
-    printf("REMOVED ");
+  /* if (print_ptr->valid == ASE_BUFFER_VALID)  */
+  /*   printf("ADDED   "); */
+  /* else */
+  /*   printf("REMOVED "); */
   printf("%5s \t", print_ptr->memname);
+  printf("%5s  ", (print_ptr->valid == ASE_BUFFER_VALID) ? "VALID" : "INVLD");
   printf("%p  ", (void *)print_ptr->vbase);
   printf("%p  ", (void *)print_ptr->pbase);
   printf("%p  ", (void *)print_ptr->fake_paddr);
   printf("%x  ", print_ptr->memsize);
-  printf("%d  ", print_ptr->is_mmiomap);
-  printf("%d  ", print_ptr->is_privmem);
+  /* printf("%d  ", print_ptr->is_mmiomap); */
+  /* printf("%d  ", print_ptr->is_privmem); */
   printf("\n");
 
   FUNC_CALL_EXIT;
@@ -129,10 +130,9 @@ void ll_remove_buffer(struct buffer_t *ptr)
 	end = end->next;
 
       // Causes error here - hemce on #ifdef
-#ifdef ENABLE_FREE_STATEMENT
-      free((void*)temp);
-#endif
-
+/* #ifdef ENABLE_FREE_STATEMENT */
+/*       free((void*)temp); */
+/* #endif */
     }
   else // If not the first node
     {
@@ -148,9 +148,9 @@ void ll_remove_buffer(struct buffer_t *ptr)
 	end = prev;
 
       // Causes error here - hemce on #ifdef
-#ifdef ENABLE_FREE_STATEMENT
-      free((void*)temp);
-#endif
+/* #ifdef ENABLE_FREE_STATEMENT */
+/*       free((void*)temp); */
+/* #endif */
     }
 
   FUNC_CALL_EXIT;
@@ -163,7 +163,7 @@ void ll_remove_buffer(struct buffer_t *ptr)
 // --------------------------------------------------------------------
 struct buffer_t* ll_search_buffer(int search_index)
 {
-  FUNC_CALL_ENTRY;
+  // FUNC_CALL_ENTRY;
 
   struct buffer_t* search_ptr;
 
@@ -179,12 +179,17 @@ struct buffer_t* ll_search_buffer(int search_index)
     }
 
   // When found, return pointer to buffer
-  if (search_index == search_ptr->index)
-    return search_ptr;
+  if (search_ptr != NULL)
+    {
+      if (search_index == (int)search_ptr->index)
+	return search_ptr;
+      else
+	return (struct buffer_t *)NULL;
+    }
   else
-    return NULL;
-
-  FUNC_CALL_EXIT;
+    return (struct buffer_t *)NULL;
+  
+  // FUNC_CALL_EXIT;
 }
 
 

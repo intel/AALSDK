@@ -38,13 +38,11 @@
 struct buffer_t *head;
 struct buffer_t *end;
 
-uint64_t csr_fake_pin;
-struct timeval start;
-
 // -----------------------------------------------------------
 // ase_dump_to_file : Dumps a shared memory region into a file
 // Dump contents of shared memory to a file
 // -----------------------------------------------------------
+#if 0
 int ase_dump_to_file(struct buffer_t *mem, char *dump_file)
 {
   FILE *fileptr;
@@ -54,11 +52,11 @@ int ase_dump_to_file(struct buffer_t *mem, char *dump_file)
   fileptr = fopen(dump_file,"wb");
   if(fileptr == NULL)
     {
-#ifdef SIM_SIDE
+    #ifdef SIM_SIDE
       ase_error_report ("fopen", errno, ASE_OS_FOPEN_ERR);
-#else
+    #else
       perror("fopen");
-#endif
+    #endif
       return NOT_OK;
     }
 
@@ -70,7 +68,7 @@ int ase_dump_to_file(struct buffer_t *mem, char *dump_file)
   fclose(fileptr);
   return OK;
 }
-
+#endif
 
 // -------------------------------------------------------------
 // ase_buffer_info : Print out information about the buffer
@@ -80,18 +78,20 @@ void ase_buffer_info(struct buffer_t *mem)
   FUNC_CALL_ENTRY;  
   
   BEGIN_YELLOW_FONTCOLOR;
-  printf("Shared BUFFER parameters...\n");
+  printf("BUFFER parameters...\n");
   printf("\tfd_app      = %d \n",    mem->fd_app);
   printf("\tfd_ase      = %d \n",    mem->fd_ase);
   printf("\tindex       = %d \n",    mem->index);
-  printf("\tvalid       = %x \n",    mem->valid);
+  printf("\tvalid       = %s \n",    (mem->valid == 0xffff) ? "VALID" : "INVALID" );
   printf("\tAPPVirtBase = %p \n",    (void *)mem->vbase); 
   printf("\tSIMVirtBase = %p \n",    (void *)mem->pbase); 
   printf("\tBufferSize  = %x \n",    mem->memsize);  
   printf("\tBufferName  = \"%s\"\n", mem->memname);  
   printf("\tPhysAddr LO = %p\n",     (void *)mem->fake_paddr); 
   printf("\tPhysAddr HI = %p\n",     (void *)mem->fake_paddr_hi);
-  BEGIN_YELLOW_FONTCOLOR;
+  printf("\tisMMIOMap   = %s\n",     (mem->is_mmiomap == 1) ? "YES" : "NO");
+  printf("\tisUMAS      = %s\n",     (mem->is_umas == 1) ? "YES" : "NO");
+  END_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
 }
@@ -106,9 +106,9 @@ void ase_buffer_oneline(struct buffer_t *mem)
 
   printf("%d  ", mem->index);
   if (mem->valid == ASE_BUFFER_VALID) 
-    printf("ADDED   ");
+    printf("\tADDED   ");
   else
-    printf("REMOVED ");
+    printf("\tREMOVED ");
   printf("%5s \t", mem->memname);
   printf("\n");
 
@@ -124,24 +124,7 @@ void ase_buffer_t_to_str(struct buffer_t *buf, char *str)
 {
   FUNC_CALL_ENTRY;
 
-  // Initialise string to nulls
-  memset(str, '\0', ASE_MQ_MSGSIZE);// strlen(str));
-
-  if(buf->metadata == HDR_MEM_ALLOC_REQ)
-    {
-      // Form an allocate message request
-      sprintf(str, "%d %d %s %d %ld %d %ld", buf->metadata, buf->fd_app, buf->memname, buf->valid, (long int)buf->memsize, buf->index, (long int)buf->vbase);
-    }
-  else if (buf->metadata == HDR_MEM_ALLOC_REPLY)
-    {
-      // Form an allocate message reply
-      sprintf(str, "%d %d %ld %ld %ld", buf->metadata, buf->fd_ase, buf->pbase, buf->fake_paddr, buf->fake_paddr_hi);
-    }
-  else if (buf->metadata == HDR_MEM_DEALLOC_REQ)
-    {
-      // Form a deallocate request
-      sprintf(str, "%d %d %s", buf->metadata, buf->index, buf->memname);
-    }
+  memcpy(str, (char*)buf, sizeof(struct buffer_t));
 
   FUNC_CALL_EXIT;
 }
@@ -154,46 +137,8 @@ void ase_buffer_t_to_str(struct buffer_t *buf, char *str)
 void ase_str_to_buffer_t(char *str, struct buffer_t *buf)
 {
   FUNC_CALL_ENTRY;
-
-  char *pch;
   
-  pch = strtok(str, " ");
-  buf->metadata = atoi(pch);
-  if(buf->metadata == HDR_MEM_ALLOC_REQ)
-    {
-      // Tokenize remaining fields of ALLOC_MSG
-      pch = strtok(NULL, " ");
-      buf->fd_app = atoi(pch);     // APP-side file descriptor
-      pch = strtok(NULL, " ");
-      strcpy(buf->memname, pch);   // Memory name
-      pch = strtok(NULL, " ");
-      buf->valid = atoi(pch);      // Indicates buffer is valid
-      pch = strtok(NULL, " ");
-      buf->memsize = atoi(pch);    // Memory size
-      pch = strtok(NULL, " ");
-      buf->index = atoi(pch);      // Buffer ID
-      pch = strtok(NULL, " ");
-      buf->vbase = atol(pch);      // APP-side virtual base
-    }
-  else if(buf->metadata == HDR_MEM_ALLOC_REPLY)
-    {
-      // Tokenize remaining 2 field of ALLOC_REPLY
-      pch = strtok(NULL, " "); 
-      buf->fd_ase = atoi(pch);     // DPI-side file descriptor
-      pch = strtok(NULL, " "); 
-      buf->pbase = atol(pch);      // DPI sude virtual address
-      pch = strtok(NULL, " ");  
-      buf->fake_paddr = atol(pch); // Fake physical address
-      pch = strtok(NULL, " ");  
-      buf->fake_paddr_hi = atol(pch); // Fake high point in offsets
-    }
-  else if(buf->metadata == HDR_MEM_DEALLOC_REQ)
-    {
-      pch = strtok(NULL, " ");
-      buf->index = atoi(pch);      // Index
-      pch = strtok(NULL, " ");
-      strcpy(buf->memname, pch);   // Memory name
-    }
+  memcpy((char*)buf, str, sizeof(struct buffer_t));
 
   FUNC_CALL_EXIT;
 }
@@ -221,64 +166,57 @@ void ase_memory_barrier()
  *     - Check if "work" directory already exists, if not create one
  *   - If not Error out
  */
-char* ase_eval_session_directory()
+//char* ase_eval_session_directory()
+// void ase_eval_session_directory(char* env_path) 
+void ase_eval_session_directory() 
 {
   FUNC_CALL_ENTRY;
-  
-  char *workdir_path;
-  char *env_path;
-  /* struct stat s; */
-  /* int err; */
+
+  // char *workdir_path;
+  // char *env_path;
     
-  workdir_path = ase_malloc (ASE_FILEPATH_LEN);
-  if (!workdir_path) return NULL;
+  // workdir_path = ase_malloc (ASE_FILEPATH_LEN);
+  ase_workdir_path = ase_malloc (ASE_FILEPATH_LEN);
 
-  // Evaluate basename location
+  // Evaluate location of simulator or own location
 #ifdef SIM_SIDE
-  env_path = getenv ("PWD");
+  ase_workdir_path = getenv ("PWD");
 #else
-  env_path = getenv ("ASE_WORKDIR");
+  ase_workdir_path = getenv ("ASE_WORKDIR");
+  #ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [DEBUG]  env(ASE_WORKDIR) = %s\n", ase_workdir_path);
+  END_YELLOW_FONTCOLOR;
+  #endif
+  if (ase_workdir_path == NULL) 
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("  [APP]  **ERROR** Environment variable ASE_WORKDIR could not be evaluated !!\n");
+      printf("         **ERROR** ASE will exit now !!\n");
+      END_RED_FONTCOLOR;
+      perror("getenv");
+      exit(1);
+    }
+  else
+    {
+      // Check if directory exists here
+      DIR* ase_dir;  
+      ase_dir = opendir(ase_workdir_path);
+      if (!ase_dir)
+	{
+	  BEGIN_RED_FONTCOLOR;
+	  printf("  [APP]  ASE workdir path pointed by env(ASE_WORKDIR) does not exist !\n");
+	  printf("         Cannot continue execution... exiting !");
+	  END_RED_FONTCOLOR;
+	  perror("opendir");
+	  exit(1);
+	}
+    }
 #endif
-      
-  // Locate work directory
-  if( env_path) {
-     strcat( workdir_path, env_path );
-  } else {
-     *workdir_path = '\0';
-  }
-  // strcat( workdir_path, "/work/" );  || RRS:
-
-  // *FIXME*: Idiot-proof the work directory
-
-  FUNC_CALL_EXIT;
   
-  return workdir_path;
+  // return env_path;
+  // return ase_workdir_path;
 }
-//char* ase_eval_session_directory()
-//{
-//  FUNC_CALL_ENTRY;
-//
-//  char *workdir_path;
-//  /* struct stat s; */
-//  /* int err; */
-//
-//  workdir_path = malloc (ASE_FILEPATH_LEN);
-//  // Evaluate basename location
-//#ifdef SIM_SIDE
-//  workdir_path = getenv ("PWD");
-//#else
-//  workdir_path = getenv ("ASE_WORKDIR");
-//#endif
-//
-//  // Locate work directory
-//  strcat( workdir_path, "/work/" );
-//
-//  // *FIXME*: Idiot-proof the work directory
-//
-//  FUNC_CALL_EXIT;
-//
-//  return workdir_path;
-//}
 
 
 /*
@@ -290,7 +228,9 @@ char* ase_malloc (size_t size)
   FUNC_CALL_ENTRY;
 
   char *buffer;
+
   buffer = malloc (size);
+  // posix_memalign((void**)&buffer, (size_t)getpagesize(), size);
   if (buffer == NULL)
     {
       ase_error_report ("malloc", errno, ASE_OS_MALLOC_ERR);
@@ -304,7 +244,7 @@ char* ase_malloc (size_t size)
     }   
   else
     {
-      memset (buffer, '\0', size);
+      memset (buffer, 0, size);
     }
 
   FUNC_CALL_EXIT;

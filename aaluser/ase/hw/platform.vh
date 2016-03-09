@@ -1,6 +1,28 @@
 `ifndef _PLATFORM_VH_
  `define _PLATFORM_VH_
 
+   /*
+    * SIMKILL_ON_UNDEFINED: A switch to kill simulation if on a valid
+    * signal, 'X' or 'Z' is not allowed, gracious closedown on same
+    */
+ `define VLOG_UNDEF                   1'bx
+ `define VLOG_HIIMP                   1'bz
+
+   /*
+    * Print in Color
+    */
+   // Error in RED color
+ `define BEGIN_RED_FONTCOLOR   $display("\033[1;31m");
+ `define END_RED_FONTCOLOR     $display("\033[1;m");
+
+   // Info in GREEN color
+ `define BEGIN_GREEN_FONTCOLOR $display("\033[32;1m");
+ `define END_GREEN_FONTCOLOR   $display("\033[0m");
+
+   // Warnings/ASEDBGDUMP in YELLOW color
+ `define BEGIN_YELLOW_FONTCOLOR $display("\033[0;33m");
+ `define END_YELLOW_FONTCOLOR   $display("\033[0m");
+
 
 /*
  * ASE Channel randomization features
@@ -8,8 +30,8 @@
 // `define ASE_RANDOMIZE_TRANSACTIONS 
 
 // parameter CCI_AFU_LOW_OFFSET  = 14'h1000 / 4;
-parameter AFU_CSR_LO_BOUND    = 16'h1000;
-parameter AFU_CSR_HI_BOUND    = 16'hFFFF;
+// parameter AFU_CSR_LO_BOUND    = 16'h1000;
+// parameter AFU_CSR_HI_BOUND    = 16'hFFFF;
 
 
 /*
@@ -23,13 +45,15 @@ parameter AFU_CSR_HI_BOUND    = 16'hFFFF;
  * 
  */ 
  `define BDX_FPGA
-
+ `ifdef BDX_FPGA
+  `define DEFEATURE_ATOMICS
+ `endif
 
 /*
  * Relevant CSRs that control CCI or AFU behaviour
  */
-parameter CCI_RESET_CTRL_OFFSET = 14'h280;
-parameter CCI_RESET_CTRL_BITLOC = 24;
+// parameter CCI_RESET_CTRL_OFFSET = 14'h280;
+// parameter CCI_RESET_CTRL_BITLOC = 24;
 
 
 /*
@@ -40,11 +64,13 @@ parameter CCI_RESET_CTRL_BITLOC = 24;
  * LP_INITDONE_READINESS_LATENCY = Amount of time LP takes to be ready after reset is released 
  */
 
- `define UMSG_HINT2DATA_DELAY          40
- `define UMSG_NOHINT_DATADELAY         50
+ // `define UMSG_HINT2DATA_DELAY          40
+ // `define UMSG_NOHINT_DATADELAY         50
  `define UMSG_DELAY_TIMER_LOG2         8
- `define UMSG_MAX_MSG_LOG2             5
- `define UMSG_MAX_MSG                  2**`UMSG_MAX_MSG_LOG2
+ // `define UMSG_MAX_MSG_LOG2             5
+ // `define UMSG_MAX_MSG                  2**`UMSG_MAX_MSG_LOG2
+
+ `define SOFT_RESET_DURATION           20
 
 /* OME5 */
  `ifdef BDX_FPGA
@@ -79,11 +105,13 @@ parameter CCI_RESET_CTRL_BITLOC = 24;
 
  `endif
 
-parameter NUM_TOTAL_LINKS = `NUM_VL_LINKS + `NUM_VH_LINKS;
-parameter VL_LO_INDEX     = 0;
-parameter VL_HI_INDEX     = `NUM_VL_LINKS-1;
-parameter VH_LO_INDEX     = `NUM_VL_LINKS;
-parameter VH_HI_INDEX     = NUM_TOTAL_LINKS - 1;
+// parameter NUM_TOTAL_LINKS = `NUM_VL_LINKS + `NUM_VH_LINKS;
+// parameter VL_LO_INDEX     = 0;
+// parameter VL_HI_INDEX     = `NUM_VL_LINKS-1;
+// parameter VH_LO_INDEX     = `NUM_VL_LINKS;
+// parameter VH_HI_INDEX     = NUM_TOTAL_LINKS - 1;
+
+`define MMIO_RESPONSE_TIMEOUT      128
 
 
 /*

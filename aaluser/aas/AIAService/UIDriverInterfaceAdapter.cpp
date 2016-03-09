@@ -49,9 +49,26 @@
 
 BEGIN_NAMESPACE(AAL)
 
-btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet)
+btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet, AAL::NamedValueSet const &optArgs)
 {
+   void *pTargetVirtAddr;       // requested virtual address for the mapping
+   int mmapFlags;               // mmap flags
+
    ASSERT(NULL != pRet);
+#if defined( __AAL_LINUX__ )
+   // extract target VA from optArgs
+   if ( ENamedValuesOK == optArgs.Get(ALI_MMAP_TARGET_VADDR, &pTargetVirtAddr) ) {
+      mmapFlags = MAP_SHARED | MAP_FIXED;
+   } else {
+      pTargetVirtAddr = NULL;    // no mapping requested
+      mmapFlags = MAP_SHARED;
+   }
+#elif defined( __AAL_WINDOWS__ )
+#pragma message("***NEED A WINDOWS IMPLEMENTATION***")
+#else
+# error Implement kOSAL for unknown OS.
+#endif
+
 
 #if   defined( __AAL_WINDOWS__ )
    DWORD                 bytes = 0;
@@ -88,7 +105,7 @@ btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr 
    CloseHandle(hEvent);    
    return true;
 #elif defined( __AAL_LINUX__ )
-   *pRet = (btVirtAddr)mmap(NULL, Size, PROT_READ| PROT_WRITE, MAP_SHARED, m_fdClient, wsid);
+   *pRet = (btVirtAddr)mmap(pTargetVirtAddr, Size, PROT_READ | PROT_WRITE, mmapFlags, m_fdClient, wsid);
    if ( (btVirtAddr)MAP_FAILED == *pRet ) {
       *pRet = NULL;
       return false;

@@ -362,9 +362,9 @@ void AIAService::SendMessage( AAL::btHANDLE devHandle,
 }
 
 
-AAL::btBool AIAService::MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet)
+AAL::btBool AIAService::MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet, AAL::NamedValueSet const &optArgs)
 {
-   return m_uida.MapWSID(Size, wsid, pRet);
+   return m_uida.MapWSID(Size, wsid, pRet, optArgs);
 }
 
 void AIAService::UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size)

@@ -37,17 +37,13 @@ bin_PROGRAMS=fpgadiag
 
 fpgadiag_SOURCES=\
 fpgadiag.cpp \
-diag_ccip_lpbk1.cpp \
-diag_ccip_read.cpp \
-diag_ccip_sw.cpp \
-diag_ccip_trput.cpp \
-diag_ccip_write.cpp \
-diag_defaults.h \
 diag_lpbk1.cpp \
 diag_read.cpp \
 diag_sw.cpp \
 diag_trput.cpp \
 diag_write.cpp \
+diag_atomic.cpp \
+diag_defaults.h \
 diag-common.h \
 diag-nlb-common.cpp \
 diag-nlb-common.h \

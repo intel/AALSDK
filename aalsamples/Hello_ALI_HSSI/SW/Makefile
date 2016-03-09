@@ -1,4 +1,4 @@
-## Copyright(c) 2015-2016, Intel Corporation
+## Copyright(c) 2005-2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -27,33 +27,55 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     utils/ALIAFU/Makefile.am
+##     samples/Hello_ALI_HSSI/Makefile
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
+##     Joseph Grecco, Intel Corporation
+##     Sadruta Chandrashekar, Intel Corporation
 ##  History:
-##     07/20/2015    TSW   Initial version
+##     02/21/2015    SC   Initial version based off of canonical sample makefile
 ##******************************************************************************
-SUBDIRS=\
-ASEALIAFU \
-HWALIAFU \
-SWSimALIAFU
+CPPFLAGS ?=
+CXX      ?= g++
+LDFLAGS  ?=
 
-# No top ALIAFU defined
-#lib_LTLIBRARIES=libALIAFU.la
-#
-#libALIAFU_la_SOURCES=\
-#ALIAFU.cpp \
-#ALIAFU.h
-#
-#libALIAFU_la_CPPFLAGS=\
-#-I$(top_srcdir)/include \
-#-I$(top_builddir)/include
-#
-#libALIAFU_la_LDFLAGS=\
-#-module \
-#-version-info $(ALIAFU_VERSION_CURRENT):$(ALIAFU_VERSION_REVISION):$(ALIAFU_VERSION_AGE)
-#
-#libALIAFU_la_LIBADD=\
-#$(top_builddir)/aas/OSAL/libOSAL.la \
-#$(top_builddir)/aas/AASLib/libAAS.la \
-#$(top_builddir)/aas/AALRuntime/libaalrt.la
+ifeq (,$(CFLAGS))
+CFLAGS = -g -O2
+endif
+
+ifneq (,$(ndebug))
+else
+CPPFLAGS += -DENABLE_DEBUG=1
+endif
+ifneq (,$(nassert))
+else
+CPPFLAGS += -DENABLE_ASSERT=1
+endif
+
+ifeq (,$(DESTDIR))
+ifneq (,$(prefix))
+CPPFLAGS += -I$(prefix)/include
+LDFLAGS  += -L$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(prefix)/lib \
+            -L$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(prefix)/lib64
+endif
+else
+ifeq (,$(prefix))
+prefix = /usr/local
+endif
+CPPFLAGS += -I$(DESTDIR)$(prefix)/include
+LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib \
+            -L$(DESTDIR)$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib64
+endif
+
+all: helloALIhssi
+
+helloALIhssi: HelloALIHSSI.o
+	$(CXX) $(CFLAGS) -o helloALIhssi HelloALIHSSI.o $(LDFLAGS) -lOSAL -lAAS -laalrt
+
+HelloALIHSSI.o: HelloALIHSSI.cpp  Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  $(CFLAGS) -c -o HelloALIHSSI.o HelloALIHSSI.cpp
+
+clean:
+	$(RM) helloALIhssi HelloALIHSSI.o
+
+.PHONY:all clean
