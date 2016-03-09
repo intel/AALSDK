@@ -129,13 +129,13 @@ btUnsignedInt debug = 0
    | PINFO_FLAG
    | PNOTICE_FLAG
 /* Module selection flags */
-   | CCIV4_DBG_MOD
-   | CCIV4_DBG_DEV
-   | CCIV4_DBG_AFU
-   | CCIV4_DBG_MAFU
-   | CCIV4_DBG_MMAP
-   | CCIV4_DBG_CMD
-   | CCIV4_DBG_CFG
+   | CCIPCIE_DBG_MOD
+   | CCIPCIE_DBG_DEV
+   | CCIPCIE_DBG_AFU
+   | CCIPCIE_DBG_MAFU
+   | CCIPCIE_DBG_MMAP
+   | CCIPCIE_DBG_CMD
+   | CCIPCIE_DBG_CFG
 #endif
 ;
 
