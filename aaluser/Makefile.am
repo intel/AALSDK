@@ -288,7 +288,7 @@ ase/scripts/generate_ase_environment.py \
 ase/scripts/ipc_clean.py \
 ase/scripts/ase_functions.py \
 ase/scripts/env_check.sh \
-ase/scripts/ase_setup.csh
+ase/scripts/ase_setup.sh
 
 CLP_EXTRA=\
 include/aalsdk/aalclp/aalclp.h.in

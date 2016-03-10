@@ -188,7 +188,6 @@ ase/distclean.sh \
 ase/LICENSE.txt \
 ase/ase_regress.sh \
 ase/hw/outoforder_wrf_channel.sv \
-ase/hw/counter.sv \
 ase/hw/ccip_if_pkg.sv \
 ase/hw/ase_fifo.sv \
 ase/hw/latency_pipe.sv \
@@ -204,7 +203,8 @@ ase/scripts/generate_ase_environment.py \
 ase/scripts/vcs_icc.make \
 ase/scripts/ipc_clean.py \
 ase/scripts/ase_functions.py \
-ase/scripts/ase_setup.csh
+ase/scripts/env_setup.sh \
+ase/scripts/ase_setup.sh
 
 CLP_EXTRA=\
 include/aalsdk/aalclp/aalclp.h.in
