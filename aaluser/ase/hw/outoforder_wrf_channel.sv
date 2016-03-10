@@ -1204,6 +1204,20 @@ module outoforder_wrf_channel
    //////////////////////////////////////////////////////////////////////
    // Read guard *FIXME*
 
+   always @(posedge clk) begin : read_out_proc
+      if (rst) begin
+	 valid_out <= 0;	 
+      end
+      else if (read_en && (outfifo.size() != 0)) begin
+	 { tid_out, data_out, rxhdr_out_vec, txhdr_out_vec } <= outfifo.pop_front();
+	 valid_out <= 1;	 
+      end
+      else begin
+	 valid_out <= 0;	 
+      end
+   end
+   
+   /*
    typedef enum {RdPop_Idle, RdPop_Stream, RdPop_Toggle}  rdpop_state;
    rdpop_state rdstate;
 
@@ -1259,7 +1273,9 @@ module outoforder_wrf_channel
    	 endcase
       end
    end
+*/
 
+   
    // Log output pop
 `ifdef ASE_DEBUG
    always @(posedge clk) begin
