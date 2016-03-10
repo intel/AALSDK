@@ -25,20 +25,13 @@
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-uname=`uname -a`
-os=`uname -s | tr '[A-Z]' '[a-z]'`
-kernel_rel=`uname -r`
-arch=`uname -p`
-dist_id=`lsb_release -i -s | tr '[A-Z]' '[a-z]'`
-dist_ver=`lsb_release -r -s | tr '[A-Z]' '[a-z]'`
-dist_code=`lsb_release -c -s | tr '[A-Z]' '[a-z]'`
-shm_testfile=`echo /dev/shm/$USER.ase_envcheck`
-
-## Command exists
-command_exists()
-{
-    type "$1" &> /dev/null ;
-}
+os=$(uname -s | tr '\[A-Z\]' '\[a-z\]')
+kernel_rel=$(uname -r)
+arch=$(uname -p)
+dist_id=$(lsb_release -i -s | tr '\[A-Z\]' '\[a-z\]')
+dist_ver=$(lsb_release -r -s | tr '\[A-Z\]' '\[a-z\]')
+dist_code=$(lsb_release -c -s | tr '\[A-Z\]' '\[a-z\]')
+shm_testfile=$(/dev/shm/"$USER".ase_envcheck)
 
 
 ## Print header, and basic info
@@ -58,16 +51,16 @@ echo "Distro Code      = ${dist_code}"
 echo "-----------------------------------------------------------"
 
 ## If Machine is not 64-bit, flash message
-if [ $os == "linux" ]; then
-    if [ $arch == "x86_64" ]; then
+if [ "$os" == "linux" ]; then
+    if [ "$arch" == "x86_64" ]; then
 	echo "  [INFO] 64-bit Linux found"	
     else
 	echo "  [WARN] 32-bit Linux found --- ASE works best on 64-bit Linux !"
     fi
     # Check distro
-    if   [ $dist_id == "ubuntu" ] ; then	
+    if   [ "$dist_id" == "ubuntu" ] ; then	
     	echo "  [INFO] Ubuntu found "
-    elif [ $dist_id == "suse linux" ] ; then
+    elif [ "$dist_id" == "suse linux" ] ; then
     	echo "  [INFO] SLES found"
     else
     	echo "  [WARN] Machine is running an unknown Distro --- ASE compatibility unknown !"
@@ -80,16 +73,16 @@ fi
 echo "-----------------------------------------------------------"
 
 ## Check shell environment
-shell=`basename \`echo $SHELL\``
-echo "  [INFO] SHELL identified as ${shell} (located `echo $SHELL`)"
-if   [ $shell == "bash" ] ; then
-    echo "  [INFO] SHELL ${shell} version : `echo $BASH_VERSION`"
-elif [ $shell == "zsh" ] ; then
-    echo "  [INFO] SHELL ${shell} version : `zsh --version`"
-elif [ $shell == "tcsh" ] ; then
-    echo "  [INFO] SHELL ${shell} version : `tcsh --version`"
-elif [ $shell == "csh" ] ; then
-    echo "  [INFO] SHELL ${shell} version : `csh --version`"
+shell=$(basename "$SHELL")
+echo "  [INFO] SHELL identified as ${shell} (located \"$SHELL\")"
+if   [ "$shell" == "bash" ] ; then
+    echo "  [INFO] SHELL ${shell} version : \"$BASH_VERSION\""
+elif [ "$shell" == "zsh" ] ; then
+    echo "  [INFO] SHELL ${shell} version : $(zsh --version)"
+elif [ "$shell" == "tcsh" ] ; then
+    echo "  [INFO] SHELL ${shell} version : $(tcsh --version)"
+elif [ "$shell" == "csh" ] ; then
+    echo "  [INFO] SHELL ${shell} version : $(csh --version)"
 else
     echo "  [WARN] SHELL ${shell} is unknown !"
 fi
@@ -98,15 +91,15 @@ echo "-----------------------------------------------------------"
 ## Check if /dev/shm is mounted, try writing then deleting a file for access check
 if [ -d /dev/shm/ ]; then
     echo "  [INFO] /dev/shm is accessible ... testing further"
-    touch $shm_testfile
-    echo $USER >> $shm_testfile
-    readback_shmfile=`cat $shm_testfile`
-    if [ $readback_shmfile == $USER ] ; then
+    touch "$shm_testfile"
+    echo "$USER" >> "$shm_testfile"
+    readback_shmfile=$(cat "$shm_testfile")
+    if [ "$readback_shmfile" == "$USER" ] ; then
 	echo "  [INFO] SHM self-check completed successfully."
     else
 	echo "  [WARN] SHM self-check failed !"
     fi
-    rm $shm_testfile
+    rm "$shm_testfile"
 else
     echo "  [WARN] /dev/shm seems to be inaccessible ! "
     echo "  [WARN] ASE uses this location for data sharing between SW and simulator"
@@ -116,28 +109,28 @@ fi
 echo "-----------------------------------------------------------"
 
 ## GCC version check
-GCCVERSION=`gcc --version | grep ^gcc | sed 's/^.* //g'` 
+GCCVERSION=$(gcc --version | grep ^gcc | sed 's/^.* //g')
 echo "  [INFO] GCC version found : $GCCVERSION"
 echo "  [INFO] ASE recommends using GCC version > 4.4"
 echo "-----------------------------------------------------------"
 
 ## RTL tool check
-if [ $VCS_HOME ] ; then
+if [ "$VCS_HOME" ] ; then
     echo "  [INFO] env(VCS_HOME) is set."
     if [ -x "$(command -v vcs)" ] && [ -x "$(command -v vlogan)" ] && [ -x "$(command -v vhdlan)" ] ; then 
-	echo "  [INFO] `type vhdlan`"
-	echo "  [INFO] `type vlogan`"
-	echo "  [INFO] `type vcs`"
+	echo "  [INFO] $(type vhdlan)"
+	echo "  [INFO] $(type vlogan)"
+	echo "  [INFO] $(type vcs)"
     else
 	echo "  [WARN] VCS commands (vcs, vlogan, vhdlan) was not found !"
 	echo "  [WARN] Check VCS settings !"
     fi
-elif [ $QUESTA_HOME ] ; then
+elif [ "$QUESTA_HOME" ] ; then
     echo "  [INFO] env(QUESTA_HOME) is set."
     if [ -x "$(command -v vlog)" ] && [ -x "$(command -v vlib)" ] && [ -x "$(command -v vsim)" ] ; then 
-	echo "  [INFO] `type vlib`"
-	echo "  [INFO] `type vlog`"
-	echo "  [INFO] `type vsim`"
+	echo "  [INFO] $(type vlib)"
+	echo "  [INFO] $(type vlog)"
+	echo "  [INFO] $(type vsim)"
     else
 	echo "  [WARN] VCS commands (vcs, vlogan, vhdlan) was not found !"
 	echo "  [WARN] Check VCS settings !"
@@ -148,10 +141,10 @@ fi
 
 echo "-----------------------------------------------------------"
 ## Quartus version not available
-if [ $QUARTUS_HOME ] ; then
+if [ "$QUARTUS_HOME" ] ; then
     echo "  [INFO] env(QUARTUS_HOME) is set."
     if [ -x "$(command -v quartus)" ] ; then
-	echo "  [INFO] `type quartus`"
+	echo "  [INFO] $(type quartus)"
     else
 	echo "  [WARN] quartus command not found !"
 	echo "  [WARN] Check Quartus settings !"
