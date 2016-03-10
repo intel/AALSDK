@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -59,8 +57,8 @@
 //     CREATED: 10/23/2015
 //      AUTHOR: Joseph Grecco
 //
-// PURPOSE:  This file contains the OS independent code for the Intel(R)
-//           QuickAssist Technology Accelerator Abstraction Layer (AAL)
+// PURPOSE:  This file contains the OS independent code for the
+//           Accelerator Abstraction Layer (AAL)
 //           User Mode Interface for the AAL CCI device driver
 // HISTORY:
 // COMMENTS:
@@ -458,7 +456,7 @@ process_send_message(struct ccidrv_session  *psess,
          //
          ownSessp = dev_OwnerSession(pdev,psess->m_pid);
          if ( NULL == ownSessp ) {
-            PERR("Not owner or no message handler.\n");
+            PERR("Not owner or no message handler during Process Send Message.\n");
             ret = -EACCES;
             PTRACEOUT_INT(ret);
             return ret;
@@ -687,7 +685,7 @@ process_bind_request(struct ccidrv_session  *psess,
          ownerSessp = dev_OwnerSession(pdev, psess->m_pid);
          if ( NULL == ownerSessp ) {
             // TODO: no error event here?
-            PERR("Not owner or no message handler.\n");
+            PERR("Not owner or no message handler during UnBind Request.\n");
             ret = -EACCES;
             PTRACEOUT_INT(ret);
             return ret;

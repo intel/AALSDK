@@ -28,7 +28,7 @@
 /// @brief Definitions for the ALI AFU Proxy Class used by the AIA Service.
 /// @ingroup AIAService
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Joseph Grecco, Intel Corporation.
 ///

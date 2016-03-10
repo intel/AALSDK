@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -59,7 +57,7 @@
 /// @brief Implementation of the Kernel abstraction functions.
 /// @ingroup kOSAL
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS:  Joseph Grecco, Intel Corporation
 ///           Tim Whisonant, Intel Corporation
@@ -223,7 +221,7 @@ btInt _kosal_udelay(__ASSERT_HERE_PROTO btTime delay)
 
 #if   defined( __AAL_LINUX__ )
 
-   mdelay(delay);
+   udelay(delay);
    res = 1;
 
 #elif defined( __AAL_WINDOWS__ )

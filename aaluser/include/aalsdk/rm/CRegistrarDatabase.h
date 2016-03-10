@@ -28,7 +28,7 @@
 /// @brief Define AALRegistrar-specific interface to a Database object.
 /// @ingroup ResMgr
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Henry Mitchel, Intel Corporation.
 ///          Joseph Grecco, Intel Corporation.

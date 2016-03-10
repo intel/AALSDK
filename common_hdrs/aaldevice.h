@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -80,12 +78,6 @@
 #include <aalsdk/kernel/kosal.h>
 #include <aalsdk/kernel/iaaldevice.h>
 #include <aalsdk/kernel/aalbus-device.h>
-#if 0
-#ifdef __AAL_USER__
-# include <aalsdk/AALTypes.h>
-# define __user
-#endif
-#endif
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------

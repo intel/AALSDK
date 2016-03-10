@@ -40,7 +40,7 @@
 /// Service Modules use the SVC_ version of the macros.
 ///
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Tim Whisonant, Intel Corporation
 ///          Joseph Grecco, Intel Corporation

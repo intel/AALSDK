@@ -29,7 +29,7 @@
 ///          is an abstraction of the AFU.
 /// @ingroup uAIA
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Joseph Grecco, Intel Corporation.
 ///

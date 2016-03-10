@@ -28,7 +28,7 @@
 /// @brief OS Abstraction for Load-able Services (DLL's w/ well-known entry)
 /// @ingroup ServiceModule
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Tim Whisonant, Intel Corporation.
 ///

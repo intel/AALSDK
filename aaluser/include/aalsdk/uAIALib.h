@@ -28,7 +28,7 @@
 /// @brief Master include file for the Universal Accelerator Interface Adaptor.
 /// @ingroup uAIA
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Tim Whisonant, Intel Corporation
 ///

@@ -28,7 +28,7 @@
 /// @brief Handy little miscellaneous things needed in lots of places.
 /// @ingroup AASUtils
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Henry Mitchel, Intel Corporation
 ///          Joseph Grecco, Intel Corporation

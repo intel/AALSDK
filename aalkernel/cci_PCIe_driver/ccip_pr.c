@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -84,6 +82,12 @@
 
 #include "cci_pcie_driver_PIPsession.h"
 
+// Maximum  PR timeout  4 seconds
+#define  PR_OUTSTADREQ_TIMEOUT   4000000
+#define  PR_OUTSTADREQ_DELAY     1
+#define  PR_COUNTER_MAX_TRY      0xFFFFFFFFFFF
+
+
 extern ulong sim;
 
 extern struct cci_aal_device   *
@@ -152,6 +156,285 @@ inline void SetCSR(btUnsigned64bitInt *ptr, bt32bitCSR *csrval)
    *p32 = *csrval;
 }
 
+inline void Get64CSR(btUnsigned64bitInt *ptr, bt64bitCSR *pcsrval){
+
+   volatile bt64bitCSR *p64 = (bt64bitCSR *)ptr;
+   *pcsrval = *p64;
+}
+
+inline void Set64CSR(btUnsigned64bitInt *ptr, bt64bitCSR *csrval)
+{
+   volatile bt64bitCSR *p64 = (bt64bitCSR *)ptr;
+   *p64 = *csrval;
+}
+
+int program_afu_bitstream( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
+{
+
+   struct fme_device  *pfme_dev           = cci_dev_pfme(pdev);
+   struct CCIP_FME_DFL_PR *pr_dev         = ccip_fme_pr(pfme_dev);
+   btUnsigned64bitInt  PR_FIFO_credits    = 0;
+   btUnsigned32bitInt  *byteRead          = NULL;
+   uid_errnum_e  errnum                   = uid_errnumOK;
+   btTime  delay                          = PR_OUTSTADREQ_DELAY;
+   btTime  totaldelay                     = 0;
+   btUnsigned64bitInt counter             = 0;
+
+   PDEBUG("kptr =%p", kptr);
+   PDEBUG("len =%d\n", (unsigned)len);
+
+   // Don't do anything under simulation
+   if(0 != sim){
+
+    return 0 ;
+   }
+
+   // Program the AFU
+   // For BDX-P only FME initiated PR is supported. So, CSR_FME_PR_CONTROL[0] = 0
+   // ---------------------------------------------------------------------------
+   PVERBOSE("Setting up PR access mode to FME initiated PR \n");
+
+   Get64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_dev->ccip_fme_pr_control.csr);
+
+   // Disable PORT PR access ,SW use the FME to PR
+   pr_dev->ccip_fme_pr_control.enable_pr_port_access=0x0;
+
+   Set64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_dev->ccip_fme_pr_control.csr);
+
+   // Step 1 - Check FME_PR_STATUS[27:24] == 4'h0
+   // -------------------------------------------
+   // Both Initially as well as after PR, HW updates PR status to this state
+   PVERBOSE("Waiting for PR Resource in HW to be initialized and ready \n");
+
+   totaldelay=0;
+   do {
+
+      Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_dev->ccip_fme_pr_status.csr);
+       // Sleep
+      kosal_udelay(delay);
+
+      // total delay
+      totaldelay = totaldelay + delay;
+
+      // if total delay is more then PR_OUTSTADREQ_TIMEOUT, returns Timeout error.
+      if (totaldelay > PR_OUTSTADREQ_TIMEOUT)   {
+         PERR(" Maximum PR Timeout   \n");
+         errnum=uid_errnumPRTimeout;
+         goto ERR;
+      }
+
+   } while( CCIP_PORT_PR_Idle != pr_dev->ccip_fme_pr_status.pr_host_status);
+   PVERBOSE("HW is ready for PR \n");
+
+
+   // Step 2 - Check FME_PR_STATUS[16] for any previous PR errors
+   // --------------------------------------------------------------
+   // FME_PR_STATUS[16] is PR PASS or FAIL bit. Different from SAS.
+   // FME_PR_STATUS[16] is RO from SW point of view.
+   PVERBOSE("Checking for errors in previous PR operation");
+
+   if(0x1 == pr_dev->ccip_fme_pr_status.pr_status)  {
+
+      // Step 3 - Clear FME_PR_ERROR[5:0] - if needed based on Step - 2
+      // -----------------------------------------------------------------
+      // Upon failure, FME_PR_ERROR[5:0] gives additional error info.
+      // FME_PR_ERROR[5:0] - All 6 bits are RW1CS - HW writes 1 upon error to set the bit. SW writes 1 to clear the bit
+      // Once All error bits set in FME_PR_ERROR[5:0] are cleared by SW, HW will clear FME_PR_STATUS[16]
+      // TODO: This step is different from SAS flow. Update SAS
+      // NOTE: Error Logging and propagation might change based on SKX RAS
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_operation_err ) {
+         pr_dev->ccip_fme_pr_err.PR_operation_err =0x1;
+         PERR(" PR Previous PR Operation Error  Detected \n");
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_CRC_err ) {
+         pr_dev->ccip_fme_pr_err.PR_CRC_err =0x1;
+         PERR(" PR Previous CRC Error Detected \n");
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_bitstream_err ) {
+         pr_dev->ccip_fme_pr_err.PR_bitstream_err =0x1;
+         PERR(" PR Previous Incompatible bitstream Error  Detected \n");
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_IP_err ) {
+         pr_dev->ccip_fme_pr_err.PR_IP_err =0x1;
+         PERR(" PR Previous IP Protocol Error Detected \n");
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_FIFIO_err ) {
+         pr_dev->ccip_fme_pr_err.PR_FIFIO_err =0x1;
+         PERR(" PR Previous FIFO Overflow Error Detected \n");
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_timeout_err ) {
+         pr_dev->ccip_fme_pr_err.PR_timeout_err =0x1;
+         PERR(" PR Previous Timeout  Error Detected \n");
+      }
+      PVERBOSE("Previous PR errors cleared \n ");
+
+   } else   {
+
+      PVERBOSE("NO Previous PR errors \n ");
+   }
+
+   Set64CSR(&pr_dev->ccip_fme_pr_err.csr,&pr_dev->ccip_fme_pr_err.csr);
+
+   // Step 4 - Write PR Region ID to FME_PR_CONTROL[9:8]
+   // --------------------------------------------------
+   // NOTE: For BDX-P only 1 AFU is supported in HW. So, CSR_FME_PR_CONTROL[9:8] should always be 0
+   // This will change for SKX
+
+   // set PR Region ID
+   pr_dev->ccip_fme_pr_control.pr_regionid=0x0;
+
+
+   // Step 5 - Initiate PR - Write 1 to FME_PR_CONTROL[12]
+   // ---------------------------------------------------
+   // SW can only initiate PR. HW will auto clear this bit upon failure or success or timeout
+   PDEBUG("Initiate PR");
+   // PR Start Request
+   pr_dev->ccip_fme_pr_control.pr_start_req=0x1;
+
+   Set64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_dev->ccip_fme_pr_control.csr);
+
+   // Step 6 - Check available credits: FME_PR_STATUS[8:0] for PR data push and push Data to FME_PR_DATA[31:0]
+   // -------------------------------------------------------------------------------------------------------
+   // For instance,
+   // if FME_PR_STATUS[8:0] read yields 511, SW can perform 511 32-bit writes from rbf file to FME_PR_DATA[31:0] and check credits again
+
+   PR_FIFO_credits = pr_dev->ccip_fme_pr_status.pr_credit;
+   byteRead = (btUnsigned32bitInt  *)kptr;
+   PDEBUG("Pushing Data from rbf to HW \n");
+
+   while(len >0) {
+
+      if (PR_FIFO_credits <= 1)  {
+         do {
+
+            // counter increment
+            counter ++;
+
+            // if counter value is more then PR_COUNTER_MAX_TRY,returns Timeout error.
+            if (counter > PR_COUNTER_MAX_TRY)   {
+               PERR(" Maximum  try   \n");
+               errnum=uid_errnumPRTimeout;
+               goto ERR;
+            }
+
+             Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_dev->ccip_fme_pr_status.csr);
+             PR_FIFO_credits = pr_dev->ccip_fme_pr_status.pr_credit;
+          }while (PR_FIFO_credits <=1);
+      }
+      counter =0;
+      SetCSR(&pr_dev->ccip_fme_pr_data.csr, byteRead);
+      PR_FIFO_credits --;
+      byteRead++;
+      len -= 4;
+   }
+   // Step 7 - Notify the HW that bitstream push is complete
+   // ------------------------------------------------------
+   // Write 1 to CSR_FME_PR_CONTROL[13]. This bit is RW1S. SW writes 1 to set this bit.
+   // Hardware will auto clear this bit upon PR completion
+   // TODO: This step is currently not defined in SAS. Update SAS
+
+   pr_dev->ccip_fme_pr_control.pr_push_complete=0x1;
+
+   PVERBOSE("Green bitstream push complete \n");
+
+   // Step 8 - Once all data is pushed from rbf file, wait for PR completion
+   // ----------------------------------------------------------------------
+   // Check FME_PR_CONTROL[12] == 0.
+   // Note: PR status bits are valid only when FME_PR_CONTROL[12] == 0.
+   // FME_PR_CONTROL[12] is an atomic status check bit for initiating PR and also checking for PR completion
+   // This bit set to 0 essentially means that HW has released the PR resource either due to PR PASS or PR FAIL.
+
+   PVERBOSE("Waiting for HW to release PR resource \n");
+   // kosal_mdelay(10);        // Workaround for potential HW timing issue
+
+   totaldelay=0;
+   do {
+
+
+      Get64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_dev->ccip_fme_pr_control.csr);
+      kosal_udelay(delay);
+
+      // total delay
+      totaldelay = totaldelay + delay;
+
+      // if total delay is more then PR_OUTSTADREQ_TIMEOUT, returns Timeout error
+      if (totaldelay > PR_OUTSTADREQ_TIMEOUT)   {
+         PERR(" Maximum PR Timeout   \n");
+         errnum=uid_errnumPRTimeout;
+         goto ERR;
+      }
+   } while(0x0 != pr_dev->ccip_fme_pr_control.pr_start_req);
+   PVERBOSE("PR operation complete, checking Status \n");
+
+   // Step 9 - Check PR PASS / FAIL
+   // -----------------------------
+   // Read the FME_PR_STATUS[16] to check PR success / fail
+   // FME_PR_STATUS[16] = 0 implies PR Passed
+   // FME_PR_STATUS[16] = 1 implies PR Failed. Read FME_PR_ERROR for more info upon failure
+   // TODO: This step is different from SAS. Update SAS
+   // NOTE: Error Register updating/ clearing may change based on SKX RAS requirement
+
+   Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_dev->ccip_fme_pr_status.csr);
+
+   if(0x1 == pr_dev->ccip_fme_pr_status.pr_status)  {
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_operation_err ) {
+         PERR(" PR Previous PR Operation Error  Detected \n");
+         errnum=uid_errnumPROperation;
+         goto ERR;
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_CRC_err ) {
+         PERR(" PR CRC Error Detected \n");
+         errnum=uid_errnumPRCRC;
+         goto ERR;
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_bitstream_err ) {
+         PERR(" PR Incompatible bitstream Error  Detected \n");
+         errnum=uid_errnumPRIncompatibleBitstream;
+         goto ERR;
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_IP_err ) {
+         PERR(" PR IP Protocol Error Detected \n");
+         errnum=uid_errnumPRIPProtocal;
+         goto ERR;
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_FIFIO_err ) {
+         PERR(" PR  FIFO Overflow Error Detected \n");
+         errnum=uid_errnumPRFIFO;
+         goto ERR;
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_timeout_err ) {
+         PERR(" PR Timeout  Error Detected \n");
+         errnum=uid_errnumPRTimeout;
+         goto ERR;
+      }
+
+   } else  {
+
+      PVERBOSE("PR Done Successfully\n");
+   }
+
+   PTRACEOUT;
+   return uid_errnumOK ;
+
+ERR:
+
+   // Return PR Error to application
+   PTRACEOUT;
+   return errnum ;
+
+}
 //void program_afu( pwork_object pwork)
 int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
 {
@@ -685,6 +968,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          btWSSize buflen = preq->ahmreq.u.mem_uv2id.size;
          btVirtAddr uptr = preq->ahmreq.u.mem_uv2id.vaddr;
          btVirtAddr kptr = NULL;
+         int res         = 0;
 
          // Get a copy of the bitfile image from user space.
          //  This function returns a safe pointer to the user data.
@@ -719,13 +1003,15 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 */
 
             // Program the afu  TODO   kosal_queue_delayed_work(cci_dev_workq(pdev), cci_dev_task_handler(pdev), 0);
-               if(0 != program_afu(pdev,  kptr, buflen )){
+               //if(0 != program_afu(pdev,  kptr, buflen ))
+               res  = program_afu_bitstream(pdev,  kptr, buflen );
+               if(0 != res){
                   PERR("AFU reprogramming failed\n");
                   pafuws_evt = ccipdrv_event_reconfig_event_create(uid_afurespConfigureComplete,
                                                                    pownerSess->m_device,
                                                                    &Message->m_tranID,
                                                                    Message->m_context,
-                                                                   uid_errnumNoAFU);
+                                                                   res);
                }else {
                   pafuws_evt = ccipdrv_event_reconfig_event_create(uid_afurespConfigureComplete,
                                                                    pownerSess->m_device,

@@ -28,7 +28,7 @@
 /// @brief 
 /// @ingroup AALCore
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Tim Whisonant, Intel Corporation
 ///

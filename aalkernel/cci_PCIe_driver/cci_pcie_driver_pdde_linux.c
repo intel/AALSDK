@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -60,8 +58,7 @@
 //      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
 //              Ananda Ravuri, Intel <ananda.ravuri@intel.com>
 // PURPOSE: This file implements the Physical Device Discovery and Enumeration
-//          functionality of the Intel(R) Intel QuickAssist Technology AAL
-//          FPGA device driver.
+//          functionality of the AAL FPGA device driver.
 // HISTORY:
 // COMMENTS: Linux specific
 // WHEN:          WHO:     WHAT:
@@ -132,13 +129,13 @@ btUnsignedInt debug = 0
    | PINFO_FLAG
    | PNOTICE_FLAG
 /* Module selection flags */
-   | CCIV4_DBG_MOD
-   | CCIV4_DBG_DEV
-   | CCIV4_DBG_AFU
-   | CCIV4_DBG_MAFU
-   | CCIV4_DBG_MMAP
-   | CCIV4_DBG_CMD
-   | CCIV4_DBG_CFG
+   | CCIPCIE_DBG_MOD
+   | CCIPCIE_DBG_DEV
+   | CCIPCIE_DBG_AFU
+   | CCIPCIE_DBG_MAFU
+   | CCIPCIE_DBG_MMAP
+   | CCIPCIE_DBG_CMD
+   | CCIPCIE_DBG_CFG
 #endif
 ;
 

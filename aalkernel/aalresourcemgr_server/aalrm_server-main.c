@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -380,7 +378,7 @@ aalrm_server_init(void)
    //-------------------
    // Display the signon
    //-------------------
-   kosal_printk_level(KERN_INFO, "Intel(R) QuickAssist Technology Accelerator Abstraction Layer\n");
+   kosal_printk_level(KERN_INFO, "Accelerator Abstraction Layer\n");
    kosal_printk_level(KERN_INFO, "-> %s\n", DRV_DESCRIPTION);
    kosal_printk_level(KERN_INFO, "-> Version %s\n",DRV_VERSION);
    kosal_printk_level(KERN_INFO, "-> %s\n", DRV_COPYRIGHT);

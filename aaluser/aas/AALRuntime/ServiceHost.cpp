@@ -30,7 +30,7 @@
 ///
 // /@brief:   Wrapper class for Service Host plug-ins
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation.
 /// HISTORY:

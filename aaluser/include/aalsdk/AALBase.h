@@ -28,7 +28,7 @@
 /// @brief Defines IBase, IAALService, dynamic_ptr(), dynamic_ref(), subclass_ptr(), and subclass_ref().
 /// @ingroup CommonBase
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///          Henry Mitchel, Intel Corporation

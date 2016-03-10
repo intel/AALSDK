@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -61,7 +59,7 @@
 //
 // PURPOSE:  This file contains the definitions for AAL Physical Interface 
 //           Protocol (PIP).
-//           Intel(R) QuickAssist Technology Accelerator Abstraction Layer (AAL)
+//           Accelerator Abstraction Layer (AAL)
 //           Accelerator Hardware Module bus driver module
 // HISTORY:
 // COMMENTS:

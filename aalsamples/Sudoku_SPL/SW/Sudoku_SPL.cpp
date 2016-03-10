@@ -28,7 +28,7 @@
 /// @brief SPL enabled version of Sudoku.
 /// @ingroup Sudoku
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
+/// Accelerator Abstraction Layer Sample Application
 ///
 ///    This application is for example purposes only.
 ///    It is not intended to represent a model for developing commercially-deployable applications.

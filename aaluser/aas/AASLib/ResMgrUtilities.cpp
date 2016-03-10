@@ -29,7 +29,7 @@
 /// NVS Name, and GUID inter-conversion operators.
 /// @ingroup RMUtils
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Henry Mitchel, Intel Corporation
 ///

@@ -33,7 +33,7 @@
 /// and provides for some desirable functionality like IBase.
 ///
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///

@@ -28,7 +28,7 @@
 /// brief Unit Test for OSAL Semaphores
 /// ingroup OSAL_TestSem
 /// verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Test Application
+/// Accelerator Abstraction Layer Test Application
 ///
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation

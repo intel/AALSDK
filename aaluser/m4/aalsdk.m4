@@ -24,10 +24,10 @@ dnl CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
 dnl ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 dnl POSSIBILITY OF SUCH DAMAGE.
 dnl ****************************************************************************
-dnl      Intel(R) Accelerator Abstraction Layer Library Software Developer
-dnl         Kit (SDK)
+dnl   Accelerator Abstraction Layer Library Software Developer Kit (SDK)
+dnl
 dnl   Content:
-dnl      Intel(R) Accelerator Abstraction Layer Library
+dnl      Accelerator Abstraction Layer Library
 dnl      m4/aalsdk.m4
 dnl   Author:
 dnl      Tim Whisonant, Intel Corporation

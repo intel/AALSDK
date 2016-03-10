@@ -24,10 +24,9 @@
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 ##****************************************************************************
-##     Intel(R) Accelerator Abstraction Layer Library Software Developer
-##        Kit (SDK)
+##  Accelerator Abstraction Layer Library Software Developer Kit (SDK)
+##
 ##  Content:
-##     Intel(R) QuickAssist Technology
 ##     AALSDK/configure.ac
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
@@ -201,7 +200,7 @@ dnl ############################################################################
 echo \
 "
 ${ac_cv_aal_copyright}
-Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+Accelerator Abstraction Layer
 
 ${PACKAGE_NAME} ${PACKAGE_VERSION}
 
