@@ -273,7 +273,6 @@ ase/distclean.sh \
 ase/LICENSE.txt \
 ase/ase_regress.sh \
 ase/hw/outoforder_wrf_channel.sv \
-ase/hw/counter.sv \
 ase/hw/ccip_if_pkg.sv \
 ase/hw/ase_fifo.sv \
 ase/hw/latency_pipe.sv \
@@ -286,9 +285,9 @@ ase/hw/stream_checker.sv \
 ase/hw/ase_pkg.sv \
 ase/hw/platform.vh \
 ase/scripts/generate_ase_environment.py \
-ase/scripts/vcs_icc.make \
 ase/scripts/ipc_clean.py \
 ase/scripts/ase_functions.py \
+ase/scripts/env_check.sh \
 ase/scripts/ase_setup.csh
 
 CLP_EXTRA=\
