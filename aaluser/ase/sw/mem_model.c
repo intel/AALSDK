@@ -508,6 +508,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 
   // Traversal ptr
   struct buffer_t *trav_ptr = (struct buffer_t *)NULL;
+  int buffer_found = 0;
 
   if (req_paddr != 0)
     {
@@ -537,8 +538,8 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 	      real_offset = (uint64_t)req_paddr - (uint64_t)trav_ptr->fake_paddr;
 	      calc_pbase = trav_ptr->pbase;
 	      ase_pbase = (uint64_t*)(calc_pbase + real_offset);
-	      // *ret_fd = trav_ptr->fd_ase;
-
+	      buffer_found = 1;
+	      
 	      // Debug only
 #ifdef ASE_DEBUG
 	      if (fp_memaccess_log != NULL)
@@ -552,25 +553,27 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 	    {
 	      trav_ptr = trav_ptr->next;
 	    }
-	}
-  
+	}  
     }
   else 
     {
+      buffer_found = 0;
       trav_ptr = NULL;
     }
 
   // If accesses are correct, ASE should not reach this point
-  if(trav_ptr == NULL)
+  // if(trav_ptr == NULL)
+  if(buffer_found == 0)
     {
       BEGIN_RED_FONTCOLOR;
-      printf("@ERROR: ASE has detected a memory operation to an unallocated memory region.\n");
-      printf("        Simulation cannot continue, please check the code.\n");
-      printf("        Failure @ phys_addr = %p \n", (void*)req_paddr );
-      printf("        See ERROR log file => ase_memory_error.log");
-      printf("@ERROR: Please check that previously requested memories have not been deallocated before an AFU transaction could access them\n");
-      printf("        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n");
-      printf("              The simulator may be committing AFU transactions out of order\n");
+      printf("@ERROR: ASE has detected a memory operation to an unallocated memory region.\n"
+	     "        Simulation cannot continue, please check the code.\n"
+	     "        Failure @ phys_addr = %p \n"
+	     "        See ERROR log file => ase_memory_error.log"
+	     "@ERROR: Please check that previously requested memories have not been deallocated before an AFU transaction could access them\n"
+	     "        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n"
+	     "              The simulator may be committing AFU transactions out of order\n",
+	     (void*)req_paddr);
       END_RED_FONTCOLOR;
 
       // Write error to file
@@ -578,13 +581,15 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
       error_fp = fopen("ase_memory_error.log", "w");
       if (error_fp != NULL) 
 	{
-	  fprintf(error_fp, "*** ASE stopped on an illegal memory access ERROR ***\n");
-	  fprintf(error_fp, "        AFU requested access @ physical memory %p\n", (void*)req_paddr);
-	  fprintf(error_fp, "        Address not found in requested workspaces\n");
-	  fprintf(error_fp, "        Timestamped transaction to this address is listed in ccip_transactions.tsv\n");
-	  fprintf(error_fp, "        Check that previously requested memories have not been deallocated before an AFU transaction could access them");
-	  fprintf(error_fp, "        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n");
-	  fprintf(error_fp, "              The simulator may be committing AFU transactions out of order\n");
+	  fprintf(error_fp, 
+		  "*** ASE stopped on an illegal memory access ERROR ***\n"
+		  "        AFU requested access @ physical memory %p\n"
+		  "        Address not found in requested workspaces\n"
+		  "        Timestamped transaction to this address is listed in ccip_transactions.tsv\n"
+		  "        Check that previously requested memories have not been deallocated before an AFU transaction could access them"
+		  "        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n"
+		  "              The simulator may be committing AFU transactions out of order\n",
+		  (void*)req_paddr );
 	  //fflush(error_fp);
 	  fclose(error_fp);
 	}
