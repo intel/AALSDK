@@ -115,7 +115,7 @@ module ccip_emulator
    // Real Full ch2as
    logic 			      cf2as_ch0_realfull;
    logic 			      cf2as_ch1_realfull;
-   
+
 
    /*
     * Local valid/debug breakout signals
@@ -298,7 +298,7 @@ module ccip_emulator
 
    // ASE instance check
    import "DPI-C" function int ase_instance_running();
-      
+
    // Global dealloc allowed flag
    import "DPI-C" function void update_glbl_dealloc(int flag);
 
@@ -331,7 +331,7 @@ module ccip_emulator
    initial scope_function();
 
    // Ready PID
-   int 	 ase_ready_pid;      
+   int 	 ase_ready_pid;
 
 
    /*
@@ -619,7 +619,7 @@ module ccip_emulator
 	    if (mmio_pkt.write_en == MMIO_WRITE_REQ) begin
 	       hdr.index  = {2'b0, mmio_pkt.addr[15:2]};
 	       hdr.rsvd9  = 1'b0;
-	       hdr.tid    = mmio_tid_counter;	       
+	       hdr.tid    = mmio_tid_counter;
 	       if (mmio_pkt.width == MMIO_WIDTH_32) begin
 		  hdr.len = 2'b00;
 		  cwlp_data = {480'b0, mmio_pkt.qword[0][31:0]};
@@ -795,7 +795,7 @@ module ccip_emulator
 
    // Umsg engine
    umsg_t umsg_array[NUM_UMSG_PER_AFU];
-
+   
    // UMSG dispatch function
    task umsg_dispatch (int init, umsgcmd_t umsg_pkt);
       int ii;
@@ -849,7 +849,7 @@ module ccip_emulator
 	    umsg_data_enable_array[ii] <= umsg_array[ii].data_ready;
 	 end
 
-	 
+
 	 // State machine
 	 always @(posedge clk) begin
 	    if (SoftReset) begin
@@ -1136,9 +1136,9 @@ module ccip_emulator
 
    // Register UMSG fifo count
    always @(posedge clk) begin
-      umsgfifo_cnt <= umsgfifo_cnt_tmp;      
+      umsgfifo_cnt <= umsgfifo_cnt_tmp;
    end
-   
+
 
    /* ******************************************************************
     *
@@ -1966,26 +1966,26 @@ module ccip_emulator
 
    always @(posedge clk) begin : inact_ctr
       if (first_transaction_seen && any_valid) begin
-	 inactivity_counter <= 0;	 
+	 inactivity_counter <= 0;
       end
       else begin
-	 inactivity_counter <= inactivity_counter + 1;	 
+	 inactivity_counter <= inactivity_counter + 1;
       end
    end
 
    always @(posedge clk) begin : inactivity_found_proc
       if (sys_reset) begin
-	 inactivity_found <= 0;	 
+	 inactivity_found <= 0;
       end
       else if (inactivity_counter > cfg.ase_timeout) begin
-	 inactivity_found <= 1;	 
+	 inactivity_found <= 1;
       end
       else begin
-	 inactivity_found <= 0;	 
+	 inactivity_found <= 0;
       end
    end
 
-   
+
    /*
     * Initialization procedure
     *
@@ -2011,17 +2011,17 @@ module ccip_emulator
       // Check if simulator is already running in this directory:
       // If YES, kill simulator, post message
       // If NO, continue
-      ase_ready_pid = ase_instance_running();      
+      ase_ready_pid = ase_instance_running();
       if (ase_ready_pid != 0) begin
-	 `BEGIN_RED_FONTCOLOR;	 
+	 `BEGIN_RED_FONTCOLOR;
 	 $display("SIM-SV: An ASE instance is probably still running in current directory !");
 	 $display("        Check for PID %d", ase_ready_pid);
 	 $display("        Simulation will exit... you may use a SIGKILL to kill the simulation process.");
 	 $display("        Also check if '.ase_ready.pid' file is removed before proceeding.");
 	 `END_RED_FONTCOLOR;
-	 $finish;	 
-      end	
-      
+	 $finish;
+      end
+
       // Initialize data-structures
       mmio_dispatch (1, '{0, 0, 0, '{0,0,0,0,0,0,0,0}, 0});
       umsg_dispatch (1, '{0, 0, '{0,0,0,0,0,0,0,0}});
