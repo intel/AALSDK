@@ -801,7 +801,7 @@ int ase_ready()
   printf("        Run the following command into terminal where application will run (copy-and-paste) =>\n");
   printf("        $SHELL   | Run:\n");
   printf("        ---------+---------------------------------------------------\n");
-  printf("        bash     | export ASE_WORKDIR=%s\n", ase_run_path);
+  printf("        bash/zsh | export ASE_WORKDIR=%s\n", ase_run_path);
   printf("        tcsh/csh | setenv ASE_WORKDIR %s\n", ase_run_path);
   printf("        For any other $SHELL, consult your Linux administrator\n");
   printf("\n");

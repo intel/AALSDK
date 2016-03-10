@@ -1,4 +1,4 @@
-## Copyright(c) 2013-2016, Intel Corporation
+## Copyright(c) 2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -33,6 +33,7 @@ kernel_rel=`uname -r`
 kernel_ver=`uname -v`
 arch=`uname -p`
 distro=`lsb_release -a`
+shm_testfile=`echo /dev/shm/$USER.ase_envcheck`
 
 ## Print header, and basic info
 echo "############################################################"
@@ -48,37 +49,70 @@ echo "Kernel Version = ${kernel_ver}"
 echo "Machine        = ${arch}"
 echo "Distro         = "
 echo "${distro}"
+echo "-----------------------------------------------------------"
 
 ## If Machine is not 64-bit, flash message
 if [ $os == "Linux" ]; then
     if [ $arch == "x86_64" ]; then
-	echo "64-bit Linux found"	
+	echo "  [INFO] 64-bit Linux found"	
     else
-	echo "32-bit Linux found --- ASE works best on 64-bit Linux !"
+	echo "  [WARN] 32-bit Linux found --- ASE works best on 64-bit Linux !"
     fi
 else
-    echo "Non-Linux distro found --- ASE is not supported on non-Linux platforms !"
+    echo "  [WARN] Non-Linux distro found --- ASE is not supported on non-Linux platforms !"
+fi
+echo "-----------------------------------------------------------"
+
+## Check shell environment
+shell=`basename \`echo $SHELL\``
+echo "  [INFO] SHELL identified as ${shell} (located `echo $SHELL`)"
+if   [ $shell == "bash" ] ; then
+    echo "  [INFO] SHELL ${shell} version : `echo $BASH_VERSION`"
+elif [ $shell == "zsh" ] ; then
+    echo "  [INFO] SHELL ${shell} version : `zsh --version`"
+elif [ $shell == "tcsh" ] ; then
+    echo "  [INFO] SHELL ${shell} version : `tcsh --version`"
+elif [ $shell == "csh" ] ; then
+    echo "  [INFO] SHELL ${shell} version : `csh --version`"
+else
+    echo "  [WARN] SHELL ${shell} is unknown !"
+fi
+echo "-----------------------------------------------------------"
+
+## Check if /dev/shm is mounted, try writing then deleting a file for access check
+if [ -d /dev/shm/ ]; then
+    echo "  [INFO] /dev/shm is accessible ... testing further"
+    touch $shm_testfile
+    echo $USER >> $shm_testfile
+    readback_shmfile=`cat $shm_testfile`
+    if [ $readback_shmfile == $USER ] ; then
+	echo "  [INFO]  SHM self-check completed successfully."
+    else
+	echo "  [WARN]  SHM self-check failed !"
+    fi
+    rm $shm_testfile
+else
+    echo "  [WARN] /dev/shm seems to be inaccessible ! "
+    echo "  [WARN] ASE uses this location for data sharing between SW and simulator"
+    echo "  [WARN] Please mount this location before proceeding...  see 'man shm_overview'"
 fi
 
-## Check if /dev/shm is mounted
-if mountpoint -q /dev/shm ; then
-    echo "/dev/shm is mounted" 
-else
-    echo "/dev/shm is not mounted --- this is not preferable !"
-    echo "in case of simulation crashes, temp files may be stored here, and may be un-cleanable"
-    echo "Please contact your admin to make /dev/shm/ mount available"
-fi
+echo "-----------------------------------------------------------"
 
 ## GCC version check
 
+echo "-----------------------------------------------------------"
 
 ## VCS version check
 
+echo "-----------------------------------------------------------"
 
 ## Questasim version check
 
+echo "-----------------------------------------------------------"
 
 ## Quartus version not available
 
+echo "-----------------------------------------------------------"
 
 
