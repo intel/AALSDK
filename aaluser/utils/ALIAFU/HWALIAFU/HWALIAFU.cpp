@@ -1371,6 +1371,16 @@ btBool HWALIAFU::_validateDFL()
    return true;
 }
 
+void HWALIAFU::_printDFH( const struct CCIP_DFH &dfh )
+{
+   AAL_DEBUG(LM_AFU, "Type: " << std::hex << std::setw(2)
+         << std::setfill('0') << dfh.Type <<
+         ", Next DFH offset: " << dfh.next_DFH_offset <<
+         ", Feature Rev: " << dfh.Feature_rev <<
+         ", Feature ID: " << dfh.Feature_ID <<
+         ", eol: " << std::dec << dfh.eol << std::endl);
+}
+
 
 /// @} group HWALIAFU
 
