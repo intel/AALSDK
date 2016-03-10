@@ -1,8 +1,8 @@
 // INTEL CONFIDENTIAL - For Intel Internal Use Only
 
+// aalkte-main.c
 //
 // AAL Kernel Test Executor driver
-//
 
 #include "aalkte.h"
 

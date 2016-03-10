@@ -31,7 +31,8 @@ enum aalkte_state
 
 enum aalkte_command
 {
-   AALKTE_CMD_EXEC = 0,
+   AALKTE_CMD_INVALID = -1,
+   AALKTE_CMD_EXECUTE = 0,
    AALKTE_CMD_CANCEL,
    AALKTE_CMD_CLEARCANCEL,
    AALKTE_CMD_CLEARCOMPLETE,
@@ -45,12 +46,17 @@ struct aalkte_data
    struct task_struct *thr;
    struct semaphore    thrsem; // User process blocks on this until thr is done.
 
+   char                control_file_write_buf[32];
+
    bool                test_pass_or_fail;
 };
 
 struct aalkte_data * aalkte_get_data(void);
 
 const char * aalkte_state_to_string(enum aalkte_state );
+
+enum aalkte_command aalkte_command_from_string(const char * );
+const char * aalkte_command_to_string(enum aalkte_command );
 
 bool aalkte_thr_start(void);   // true if thread started
 void aalkte_thr_stop(bool bWait);
@@ -62,7 +68,7 @@ control/status State Machine
                                         \
    -----------------------------------------------------------------------------------
  |                                                                                    |
- |               AALKTE_CMD_EXEC             AALKTE_CMD_CANCEL                        |
+ |               AALKTE_CMD_EXECUTE          AALKTE_CMD_CANCEL                        |
  |                      \                            \                                |
  |     (control: IDLE)   \       (control: RUNNING)   \       (control: CANCELED)     |
  |     (status:  IDLE)    \      (status:  RUNNING)    \      (status:  CANCELED)     |

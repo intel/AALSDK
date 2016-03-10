@@ -12,52 +12,67 @@ static ssize_t aalkte_status_read(struct file *filp, char __user *buff, size_t c
 
    struct aalkte_data *data = (struct aalkte_data *) filp->f_inode->i_private;
 
-   enum aalkte_state st;
+   enum aalkte_state state;
    bool test_pass_or_fail;
 
-   const char *ans = NULL;
-   size_t      len = 0;
+   char        file_contents[32];
+   size_t      content_len = 0;
+   const char *str;
    ssize_t     res = 0;
 
    if ( down_interruptible(&data->sem) ) {
       return -ERESTARTSYS;
    }
 
-   st                = data->state;
+   state             = data->state;
    test_pass_or_fail = data->test_pass_or_fail;
 
-   if ( AALKTE_ST_COMPLETE == st ) {
-      ans = fail_pass[test_pass_or_fail];
-      len = 4;
-   } else {
-      ans = aalkte_state_to_string(st);
+   memset(file_contents, 0, sizeof(file_contents));
 
-      if ( NULL == ans ) {
+   if ( AALKTE_ST_COMPLETE == state ) {
+      strncpy(file_contents, fail_pass[test_pass_or_fail], 4);
+      strncat(file_contents, "\n", 1);
+      content_len = 5;
+   } else {
+      // printk(KERN_INFO "%s: status_read(): file offset is %llu\n", DRV_NAME, *offp);
+
+      str = aalkte_state_to_string(state);
+
+      if ( NULL == str ) {
          res = -EFAULT;
          goto _OUT;
       }
 
-      len = strlen(ans);
+      content_len = strlen(str);
+      // printk(KERN_INFO "%s: status_read(): state is \"%s\" len = %lu\n", DRV_NAME, str, content_len);
+      strncpy(file_contents, str, content_len);
+      strncat(file_contents, "\n", 1);
+      ++content_len;
+      // printk(KERN_INFO "%s: status_read(): buffer has %s len = %lu\n", DRV_NAME, file_contents, content_len);
    }
 
-   if ( *offp >= len ) {
+   if ( *offp >= content_len ) {
       // Requested offset is out of bounds.
       res = 0;
+      // printk(KERN_INFO "%s: status_read(): requested offset %llu is out of bounds (EOF)\n", DRV_NAME, *offp);
       goto _OUT;
    }
 
-   if ( *offp + count > len ) {
-      // Not that many remaining.
-      count = len - *offp;
+   if ( *offp + count > content_len ) {
+      // Not that many bytes remaining. Lop off the count..
+      count = content_len - *offp;
+      // printk(KERN_INFO "%s: status_read(): truncating count to %lu\n", DRV_NAME, count);
    }
 
-   if ( copy_to_user(buff, ans + *offp, count) ) {
+   if ( copy_to_user(buff, &file_contents[*offp], count) ) {
       res = -EFAULT;
       goto _OUT;
    }
 
    *offp += count;
    res = count;
+
+   // printk(KERN_INFO "%s: status_read(): new file offset / return is %llu / %lu\n", DRV_NAME, *offp, res);
 
 _OUT:
    up(&data->sem);
