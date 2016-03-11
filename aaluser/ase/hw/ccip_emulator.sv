@@ -384,28 +384,6 @@ module ccip_emulator
    int atomic_credit;
 
 
-   /* ***************************************************************************
-    * CCI signals declarations
-    * ***************************************************************************
-    *
-    *                          -------------------
-    *   tx0_header     ---61-->|                 |---18---> rx0_header
-    *   tx0_valid      ------->|                 |---512--> rx0_data
-    *   tx0_almostfull <-------|                 |--------> rx0_rdvalid
-    *   tx1_header     ---61-->|      ASE        |--------> rx0_wrvalid
-    *   tx1_data       --512-->|     BLOCK       |--------> rx0_cfgvalid
-    *   tx1_valid      ------->|                 |--------> rx0_umsgvalid (TBD)
-    *   tx1_almostfull <-------|                 |--------> rx0_intrvalid (TBD)
-    *   tx1_intrvalid  ------->|                 |---18---> rx1_header
-    *                          |                 |--------> rx1_intrvalid (TBD)
-    *                          |                 |--------> rx1_wrvalid
-    *                          |                 |--------> lp_initdone
-    *                          |                 |--------> reset
-    *                          |                 |--------> clk
-    *                          -------------------
-    *
-    * ***************************************************************************/
-
    /*
     * Overflow/underflow signal checks
     */
@@ -2277,7 +2255,7 @@ module ccip_emulator
     * - Dellocate requests will be queued but not executed
     * **************************************************************************/
    always @(posedge clk) begin
-      if (sys_reset) begin
+      if (SoftReset) begin
 	 rd_credit <= 0;
 	 wr_credit <= 0;
 	 mmiowr_credit <= 0;
@@ -2331,7 +2309,7 @@ module ccip_emulator
 
    // Global dealloc flag enable
    always @(posedge clk) begin
-      if (sys_reset) begin
+      if (SoftReset) begin
 	 glbl_dealloc_credit <= 0;	 
       end
       else begin
@@ -2346,13 +2324,19 @@ module ccip_emulator
 
    // Update process
    always @(posedge clk) begin
-      if ((glbl_dealloc_credit_q == 0) && (glbl_dealloc_credit != 0)) begin
+      // if ((glbl_dealloc_credit_q == 0) && (glbl_dealloc_credit != 0)) begin
+      // 	 update_glbl_dealloc(0);
+      // end
+      // else if ((glbl_dealloc_credit_q != 0) && (glbl_dealloc_credit == 0)) begin
+      // 	 update_glbl_dealloc(1);
+      // end
+      // else if (glbl_dealloc_credit == 0) begin
+      // 	 update_glbl_dealloc(1);
+      // end
+      if (glbl_dealloc_credit > 0) begin
 	 update_glbl_dealloc(0);
       end
-      else if ((glbl_dealloc_credit_q != 0) && (glbl_dealloc_credit == 0)) begin
-	 update_glbl_dealloc(1);
-      end
-      else if (glbl_dealloc_credit == 0) begin
+      else begin
 	 update_glbl_dealloc(1);
       end
    end

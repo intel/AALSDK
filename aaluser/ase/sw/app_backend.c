@@ -687,8 +687,7 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
 	{
 	  fprintf(fp_pagetable_log, 
 		  "Index\tfd_app\tfd_ase\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
-	}
-      
+	}      
       fprintf(fp_pagetable_log, 
 	      "%d\t%d\t%d\t%p\t%p\t%x\t%s\t\t%p\n",
 	      mem->index,
@@ -754,7 +753,7 @@ void deallocate_buffer(struct buffer_t *mem)
     }
 
   //  close(mem->fd_app);
-  free(mem);
+  // free(mem);
 
   // Print if successful
   BEGIN_YELLOW_FONTCOLOR;
@@ -784,7 +783,8 @@ void append_wsmeta(struct wsmeta_t *new)
   wsmeta_end->next = new;
   new->next = NULL;
   wsmeta_end = new;
-
+  wsmeta_end->valid = 1;
+ 
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
   struct wsmeta_t *wsptr;
@@ -838,8 +838,11 @@ void deallocate_buffer_by_index(int search_index)
   END_YELLOW_FONTCOLOR;
   
   // Call deallocate
-  if (bufptr != NULL)    
-    deallocate_buffer((struct buffer_t *)bufptr);
+  if ((bufptr != NULL) && (wsptr->valid == 1))
+    {
+      deallocate_buffer((struct buffer_t *)bufptr);
+      wsptr->valid = 0;
+    }
   else
     {
       BEGIN_RED_FONTCOLOR;

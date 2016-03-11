@@ -223,6 +223,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
 struct wsmeta_t 
 {
   int      index;
+  int      valid;
   uint64_t *buf_structaddr;
   struct wsmeta_t *next;
 };

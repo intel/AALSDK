@@ -89,13 +89,8 @@ int ase_instance_running()
 	}
     }
 
-  /* if (fp_ready_check != NULL) */
-  /*   { */
-  /*     fclose(fp_ready_check); */
-  /*   } */
-
-  return ase_simv_pid;
   FUNC_CALL_EXIT;
+  return ase_simv_pid;
 }
 
 
@@ -329,8 +324,15 @@ int ase_listener()
 	      portctrl_value = (portctrl_value != 0) ? 1 : 0 ;
 	      afu_softreset_trig ( portctrl_value );
 	      printf("SIM-C : Soft Reset set to %d\n", portctrl_value);
-	      run_clocks(20);
-	     
+	      run_clocks(16);
+	      
+	      // Wait until transactions clear
+	      if (portctrl_value == 1)
+		{
+		  while(glbl_dealloc_allowed != 1);
+		  printf("SIM-C : Transactions in flight completed\n");
+		}
+
 	      // Send portctrl_rsp message
 	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
 	    }
