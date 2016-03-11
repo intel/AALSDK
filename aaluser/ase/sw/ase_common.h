@@ -191,7 +191,8 @@ char *app_run_cmd;
 
 /* *******************************************************************************
  *
- * Shared buffer 
+ * Shared buffer structure
+ * Fri Mar 11 09:02:18 PST 2016 : Converted to dual-ended linked list
  * 
  * ******************************************************************************/
 // Buffer information structure
@@ -211,6 +212,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
   int is_privmem;                 // Flag memory as a private memory |    
   int is_mmiomap;                 // Flag memory as CSR map          |   
   int is_umas;                    // Flag memory as UMAS region      |
+  struct buffer_t *prev;
   struct buffer_t *next;
 };
 

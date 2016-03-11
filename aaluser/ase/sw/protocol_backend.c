@@ -329,6 +329,7 @@ int ase_listener()
 	      portctrl_value = (portctrl_value != 0) ? 1 : 0 ;
 	      afu_softreset_trig ( portctrl_value );
 	      printf("SIM-C : Soft Reset set to %d\n", portctrl_value);
+	      run_clocks(20);
 	     
 	      // Send portctrl_rsp message
 	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);

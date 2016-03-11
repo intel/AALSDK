@@ -111,6 +111,7 @@ void ll_append_buffer(struct buffer_t *new)
 // ll_remove_buffer : Remove a buffer (relink remaining)
 // Use ll_search_buffer() to pin-point the deletion target first.
 // --------------------------------------------------------------------
+// *FIXME* NULL ptr check needed
 void ll_remove_buffer(struct buffer_t *ptr)
 {
   FUNC_CALL_ENTRY;
@@ -118,21 +119,18 @@ void ll_remove_buffer(struct buffer_t *ptr)
   struct buffer_t *temp, *prev;
   // node to be deleted
   temp = ptr;
+
   // Reset linked list traversal
   prev = head;
+  
   // If first node is to be deleted
-  if(temp == prev)
+  if(temp == head)
     {
       // Move head to next node
       head = head->next;
       // If there is only one node in the linked list
       if(end == temp)
 	end = end->next;
-
-      // Causes error here - hemce on #ifdef
-/* #ifdef ENABLE_FREE_STATEMENT */
-/*       free((void*)temp); */
-/* #endif */
     }
   else // If not the first node
     {
@@ -146,11 +144,6 @@ void ll_remove_buffer(struct buffer_t *ptr)
       // If this is the end node, reset the end pointer
       if(end == temp)
 	end = prev;
-
-      // Causes error here - hemce on #ifdef
-/* #ifdef ENABLE_FREE_STATEMENT */
-/*       free((void*)temp); */
-/* #endif */
     }
 
   FUNC_CALL_EXIT;

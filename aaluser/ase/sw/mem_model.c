@@ -373,11 +373,12 @@ void ase_destroy()
 	}
     } 
 #else
-  while (head != (struct buffer_t*)NULL)
+  ptr = head;
+  while (ptr != (struct buffer_t*)NULL)
     {
-      ptr = head;
       ase_dealloc_action(ptr);
-      ll_remove_buffer(ptr);
+      // ll_remove_buffer(ptr);
+      ptr = ptr->next;
     }
 #endif
 

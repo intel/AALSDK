@@ -49,6 +49,9 @@ uint32_t mq_exist_status = MQ_NOT_ESTABLISHED;
 uint32_t mmio_exist_status = NOT_ESTABLISHED;
 uint32_t umas_exist_status = NOT_ESTABLISHED;
 
+// Session status
+uint32_t session_exis_status = NOT_ESTABLISHED;
+
 // CSR map storage
 struct buffer_t *mmio_region;
 
@@ -215,6 +218,9 @@ void session_init()
   umas_exist_status = ESTABLISHED;
   printf("  [APP]  UMAS Virtual Base address = %p\n", (void*)umsg_umas_vbase);
 
+  // Session status
+  session_exis_status = ESTABLISHED;
+
   END_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
@@ -229,65 +235,76 @@ void session_deinit()
 {
   FUNC_CALL_ENTRY;
 
-  // Unmap UMAS region
-  if (umas_exist_status == ESTABLISHED) 
+  if (session_exis_status == ESTABLISHED)
+    {
+      // Unmap UMAS region
+      if (umas_exist_status == ESTABLISHED) 
+	{
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("  [APP]  Deallocating UMAS\n");
+	  deallocate_buffer(umas_region);
+	  END_YELLOW_FONTCOLOR;
+	  umas_exist_status = NOT_ESTABLISHED;
+	}
+    #ifdef ASE_DEBUG
+      else
+	{
+	  BEGIN_RED_FONTCOLOR;
+	  printf("  [APP]  No UMAS established\n");
+	  END_RED_FONTCOLOR;
+	}
+    #endif
+
+      // Um-mapping CSR region
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  Deallocating MMIO map\n");
+      END_YELLOW_FONTCOLOR;
+      deallocate_buffer(mmio_region);
+      mmio_exist_status = NOT_ESTABLISHED;
+
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  Deinitializing simulation session ... ");
+      END_YELLOW_FONTCOLOR;
+
+      // Send SIMKILL
+      char ase_simkill_msg[ASE_MQ_MSGSIZE];
+      memset(ase_simkill_msg, 0, ASE_MQ_MSGSIZE);
+      sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
+      mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
+  
+#ifdef ASE_DEBUG
+      fclose(fp_pagetable_log);
+#endif
+
+      mqueue_close(app2sim_mmioreq_tx);
+      mqueue_close(sim2app_mmiorsp_rx);
+      mqueue_close(app2sim_alloc_tx);
+      mqueue_close(sim2app_alloc_rx);
+      mqueue_close(app2sim_umsg_tx);
+      mqueue_close(app2sim_simkill_tx);
+      mqueue_close(app2sim_portctrl_req_tx);
+      mqueue_close(app2sim_dealloc_tx);
+      mqueue_close(sim2app_dealloc_rx);
+
+
+      BEGIN_YELLOW_FONTCOLOR;
+      printf(" DONE\n");
+      printf("  [APP]  Session ended\n");
+      END_YELLOW_FONTCOLOR;
+
+      /* free(umas_region); */
+      /* free(mmio_region); */
+      // free(ase_workdir_path);
+  
+      // Lock deinit
+      pthread_mutex_destroy(&app_lock);
+    }
+  else 
     {
       BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  Deallocating UMAS\n");
-      deallocate_buffer(umas_region);
+      printf("  [APP]  Session already deinitialized, call ignored !\n");
       END_YELLOW_FONTCOLOR;
     }
-#ifdef ASE_DEBUG
-  else
-    {
-      BEGIN_RED_FONTCOLOR;
-      printf("  [APP]  No UMAS established\n");
-      END_RED_FONTCOLOR;
-    }
-#endif
-
-  // Um-mapping CSR region
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  Deallocating MMIO map\n");
-  END_YELLOW_FONTCOLOR;
-  deallocate_buffer(mmio_region);
-
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  Deinitializing simulation session ... ");
-  END_YELLOW_FONTCOLOR;
-
-  // Send SIMKILL
-  char ase_simkill_msg[ASE_MQ_MSGSIZE];
-  memset(ase_simkill_msg, 0, ASE_MQ_MSGSIZE);
-  sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
-  mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
-  
-#ifdef ASE_DEBUG
-  fclose(fp_pagetable_log);
-#endif
-
-  mqueue_close(app2sim_mmioreq_tx);
-  mqueue_close(sim2app_mmiorsp_rx);
-  mqueue_close(app2sim_alloc_tx);
-  mqueue_close(sim2app_alloc_rx);
-  mqueue_close(app2sim_umsg_tx);
-  mqueue_close(app2sim_simkill_tx);
-  mqueue_close(app2sim_portctrl_req_tx);
-  mqueue_close(app2sim_dealloc_tx);
-  mqueue_close(sim2app_dealloc_rx);
-
-
-  BEGIN_YELLOW_FONTCOLOR;
-  printf(" DONE\n");
-  printf("  [APP]  Session ended\n");
-  END_YELLOW_FONTCOLOR;
-
-  free(umas_region);
-  free(mmio_region);
-  // free(ase_workdir_path);
-  
-  // Lock deinit
-  pthread_mutex_destroy(&app_lock);
 
   FUNC_CALL_EXIT;
 }
