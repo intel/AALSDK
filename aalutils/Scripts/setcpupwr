@@ -55,15 +55,17 @@
 # === CONSTANTS AND GLOBALS ===================================================
 
 SCRIPTNAME=$(basename "$0")         # How we were called
-RDMSR=rdmsr
-WRMSR=wrmsr
+RDMSR=rdmsr                         # Name of rdmsr executable
+WRMSR=wrmsr                         # Name of wrmsr executable
 VERBOSE=0                           # Verbosity level
 
-MSR_PKG_POWER_LIMIT=0x610
-MSR_PKG_POWER_LIMIT_MASK=0x80FF800000FF8000 # used bits in MSR_PKG_POWER_LIMIT
-MSR_RAPL_POWER_UNIT=0x606
-POWER_UNIT=3
-POWER_UNIT_WATTS="0.125"
+MSR_PKG_POWER_LIMIT=0x610           # Register for package power limits
+POWER_LIMIT_MASK=0x80FF800000FF8000 # bits for limits in MSR_PKG_POWER_LIMIT
+MSR_RAPL_POWER_UNIT=0x606           # Register for conversion units
+POWER_UNIT=3                        # Expected Power Unit value in
+                                    # MSR_RAPL_POWER_UNIT
+POWER_UNIT_WATTS="0.125"            # Corresponding Watts per increment
+
 # === FUNCTIONS ===============================================================
 
 
@@ -188,7 +190,7 @@ function check_arguments()
 #
 # read_msr(): Read MSR value
 #
-# NOTE: For our purposes (i.e. reading/writing 0x610 and 0xc606), the MSRS
+# NOTE: For our purposes (i.e. reading/writing 0x610 and 0xc606), the MSRs
 #       are shared among all processors, so we will just read and write
 #       processor 0.
 function read_msr()
@@ -217,7 +219,7 @@ function read_msr()
 #
 # write_msr(): Read MSR value
 #
-# NOTE: For our purposes (i.e. reading/writing 0x610 and 0xc606), the MSRS
+# NOTE: For our purposes (i.e. reading/writing 0x610 and 0xc606), the MSRs
 #       are shared among all processors, so we will just read and write
 #       processor 0.
 function write_msr()
@@ -236,7 +238,7 @@ function write_msr()
 
    # read back and check against written value
    read_msr "${ADDRESS}" R
-   if [ $(( R )) -ne $(( VALUE )) ]; then
+   if [ "$(( R ))" -ne "$(( VALUE ))" ]; then
       echo "WARNING: Readback mismatch. Expected: $(( VALUE )), got: $(( R ))." >&2
    fi
 }
@@ -245,10 +247,10 @@ function write_msr()
 # === MAIN ====================================================================
 
 # check if we are root
-# if [ $EUID -ne 0 ]; then
-#    echo "ERROR: You want to be root to run ${SCRIPTNAME}."
-#    exit 1
-# fi
+if [ $EUID -ne 0 ]; then
+   echo "ERROR: You want to be root to run ${SCRIPTNAME}."
+   exit 1
+fi
 
 # check for rdmsr/wrmsr
 command -v "${RDMSR}" &> /dev/null || {
@@ -259,14 +261,13 @@ command -v "${RDMSR}" &> /dev/null || {
 
 # check for wrmsr
 command -v "${WRMSR}" &> /dev/null || {
-    echo "ERROR: ${WRMSR} not found." >&2
+    echo "ERROR: ${WRMSR} not found."
     echo "And yet ${RDMSR} was found. How can that be? There in the same package!"
     exit 1
  }
 
 parse_arguments "$@"
 check_arguments
-
 
 # check MSR_RAPL_POWER_UNIT for expected values
 # FIXME: if not expected, change
@@ -312,7 +313,7 @@ if [ "${SCRIPTNAME}" = "setcpupwr" ]; then
    fi
    NEW_T1_WATTS=$(echo "${NEW_T1} * ${POWER_UNIT_WATTS}" | bc )
    NEW_T2_WATTS=$(echo "${NEW_T2} * ${POWER_UNIT_WATTS}" | bc )
-   WRITE_VAL=$(( ( READ_VAL & MSR_PKG_POWER_LIMIT_MASK ) | ( NEW_T2 << 32 ) | ( NEW_T1 ) ))
+   WRITE_VAL=$(( ( READ_VAL & POWER_LIMIT_MASK ) | ( NEW_T2 << 32 ) | ( NEW_T1 ) ))
 
    if [ "${VERBOSE}" -gt 0 ]; then
       # Display new values
