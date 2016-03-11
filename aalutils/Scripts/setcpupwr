@@ -1,0 +1,364 @@
+#!/bin/bash
+# Copyright(c) 2015-2016, Intel Corporation
+#
+# Redistribution  and  use  in source  and  binary  forms,  with  or  without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of  source code  must retain the  above copyright notice,
+#   this list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   andor other materials provided with the distribution.
+# * Neither the name  of Intel Corporation  nor the names of its contributors
+#   may be used to  endorse or promote  products derived  from this  software
+#   without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE
+# IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
+# LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
+# CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF
+# SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS
+# INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN
+# CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#****************************************************************************
+# @file setcpupwr
+# @brief Set CPU RAPL power thresholds
+# @verbatim
+# Accelerator Abstraction Layer Utility Script
+#
+# Modifies CPU MSRs that define power limits.
+#
+# See 'setcpupwr -h' for usage.
+#
+# Invoke as 'getcpupwr' (via symlink) to read values only.
+#
+# Uses msr-tools for MSR access. Will fail if not found.
+#
+# Known issues: 
+#    - does not modify time windows
+#    - assumes default conversion units (checks CSR MSR_PKG_POWER_LIMIT). Will
+#      fail if modified.
+#
+# AUTHORS: Enno Luebbers, Intel Corporation
+#          Paul J. Gilliam, Mindlance for Intel Corporation
+#
+#
+# HISTORY:
+# WHEN:          WHO:     WHAT:
+# 03/11/2016     EL       Initial version.@endverbatim
+#****************************************************************************
+
+# === CONSTANTS AND GLOBALS ===================================================
+
+SCRIPTNAME=$(basename "$0")         # How we were called
+RDMSR=rdmsr
+WRMSR=wrmsr
+VERBOSE=0                           # Verbosity level
+
+MSR_PKG_POWER_LIMIT=0x610
+MSR_PKG_POWER_LIMIT_MASK=0x80FF800000FF8000 # used bits in MSR_PKG_POWER_LIMIT
+MSR_RAPL_POWER_UNIT=0x606
+POWER_UNIT=3
+POWER_UNIT_WATTS="0.125"
+# === FUNCTIONS ===============================================================
+
+
+#
+# print_usage(): print usage information
+#
+function print_usage ()
+{
+   if [ "${SCRIPTNAME}" = "setcpupwr" ]; then
+      echo "USAGE: ${SCRIPTNAME} [-v] [-1 <limit 1>] [-2 <limit 2>]"
+      echo ""
+      echo "       -1 <limit 1>    Set RAPL power target 1 value."
+      echo "                       Units of 0.125 W."
+      echo "       -2 <limit 2>    Set RAPL power target 2 value."
+      echo "                       Units of 0.125 W."
+      echo "       -v              Be verbose. Can be issued multiple times (-vv)."
+   elif [ "${SCRIPTNAME}" = "getcpupwr" ]; then
+      echo "USAGE: ${SCRIPTNAME} [-v] -d <device> [-1] [-2]"
+      echo ""
+      echo "       -1 <limit 1>    Get RAPL power target 1 value."
+      echo "                       Units of 0.125 W."
+      echo "       -2 <limit 2>    Get RAPL power target 2 value."
+      echo "                       Units of 0.125 W."
+      echo "       -v              Be verbose. Can be issued multiple times (-vv)."
+   fi
+}
+
+#
+# parse_arguments(): parse command line arguments
+#
+function parse_arguments()
+{
+   if [ "${SCRIPTNAME}" = "setcpupwr" ]; then
+
+      while getopts ":hv1:2:" OPT; do
+         case "${OPT}" in
+            1)
+               THRESHOLD_1="${OPTARG}"
+               if [ ! -z "${THRESHOLD_2}" ]; then
+                  echo "ERROR: Please do not specify Threshold 2 before Threshold 1."
+                  exit 1
+               fi
+               ;;
+            2)
+               THRESHOLD_2="${OPTARG}"
+               ;;
+            v)
+               VERBOSE=$(( VERBOSE + 1 ))
+               ;;
+            \?)
+               echo "ERROR: Invalid option -${OPTARG}" >&2
+               exit 1
+               ;;
+            :)
+               echo "ERROR: Option -${OPTARG} requires an argument." >&2
+               exit 1
+               ;;
+            h)
+               print_usage
+               exit 0
+               ;;
+         esac
+      done
+
+   elif [ "${SCRIPTNAME}" = "getcpupwr" ]; then
+
+      while getopts ":hv12" OPT; do
+         case "${OPT}" in
+            1)
+               THRESHOLD_1=1
+               if [ ! -z "${THRESHOLD_2}" ]; then
+                  echo "ERROR: Please do not specify Threshold 2 before Threshold 1."
+                  exit 1
+               fi
+               ;;
+            2)
+               THRESHOLD_2=1
+               ;;
+            v)
+               VERBOSE=$(( VERBOSE + 1 ))
+               ;;
+            \?)
+               echo "ERROR: Invalid option -${OPTARG}" >&2
+               exit 1
+               ;;
+            :)
+               echo "ERROR: Option -${OPTARG} requires an argument." >&2
+               exit 1
+               ;;
+            h)
+               print_usage
+               exit 0
+               ;;
+         esac
+      done
+
+   fi
+}
+
+#
+# check_arguments(): check parsed arguments for validity
+#
+function check_arguments()
+{
+   if [ "${SCRIPTNAME}" = "setcpupwr" ]; then
+
+      if [ -z "${THRESHOLD_1}" -a -z "${THRESHOLD_2}" ]; then
+         echo "ERROR: No power limit provided."
+         exit 1
+      fi
+
+   elif [ "${SCRIPTNAME}" = "getcpupwr" ]; then
+
+      if [ -z "${THRESHOLD_1}" -a -z "${THRESHOLD_2}" ]; then
+         echo "ERROR: No power limit to read specified."
+         exit 1
+      fi
+
+   fi
+}
+
+#
+# read_msr(): Read MSR value
+#
+# NOTE: For our purposes (i.e. reading/writing 0x610 and 0xc606), the MSRS
+#       are shared among all processors, so we will just read and write
+#       processor 0.
+function read_msr()
+{
+   local ADDRESS=$1
+   local RETVAL=$2
+
+   # execute rdmsr
+   local OUT=$(${RDMSR} -c0 -p 0 "${ADDRESS}")
+   if [ "$?" -ne 0 ]; then
+      echo "ERROR: Failed to read MSR."
+      exit 1
+   fi
+
+   # echo output in -vv
+   if [ "${VERBOSE}" -gt 1 ]; then
+      echo "${RDMSR} -c0 -p 0 ${ADDRESS}"
+      echo -e "${OUT}"
+   fi
+
+   # parse output and return read value
+   R=${OUT}     # nothing to parse, already in correct format
+   eval "${RETVAL}=${R}"
+}
+
+#
+# write_msr(): Read MSR value
+#
+# NOTE: For our purposes (i.e. reading/writing 0x610 and 0xc606), the MSRS
+#       are shared among all processors, so we will just read and write
+#       processor 0.
+function write_msr()
+{
+   local ADDRESS=$1
+   local VALUE=$2
+
+   # execute wdmsr
+   local OUT=$(${WRMSR} -p 0 "${ADDRESS}" "${VALUE}")
+
+   # echo output in -vv
+   if [ "${VERBOSE}" -gt 1 ]; then
+      echo "${WRMSR} -p 0 ${ADDRESS} ${VALUE}"
+      echo -e "${OUT}"
+   fi
+
+   # read back and check against written value
+   read_msr "${ADDRESS}" R
+   if [ $(( R )) -ne $(( VALUE )) ]; then
+      echo "WARNING: Readback mismatch. Expected: $(( VALUE )), got: $(( R ))." >&2
+   fi
+}
+
+
+# === MAIN ====================================================================
+
+# check if we are root
+# if [ $EUID -ne 0 ]; then
+#    echo "ERROR: You want to be root to run ${SCRIPTNAME}."
+#    exit 1
+# fi
+
+# check for rdmsr/wrmsr
+command -v "${RDMSR}" &> /dev/null || {
+    echo "ERROR: ${RDMSR} not found."
+    echo 'Please install the "msr" package.'
+    exit 1
+ }
+
+# check for wrmsr
+command -v "${WRMSR}" &> /dev/null || {
+    echo "ERROR: ${WRMSR} not found." >&2
+    echo "And yet ${RDMSR} was found. How can that be? There in the same package!"
+    exit 1
+ }
+
+parse_arguments "$@"
+check_arguments
+
+
+# check MSR_RAPL_POWER_UNIT for expected values
+# FIXME: if not expected, change
+read_msr "${MSR_RAPL_POWER_UNIT}" "READ_VAL"
+READ_VAL=$(( READ_VAL & 0x000000000000000F ))
+
+if [ "${READ_VAL}" -ne "${POWER_UNIT}" ]; then
+   echo "ERROR: Unexpected Power Unit. Expected: $(( POWER_UNIT )), got: $(( READ_VAL ))."
+   exit 1
+fi
+
+
+# --- SETCPUPWR: write values ----------------------------------------------------
+if [ "${SCRIPTNAME}" = "setcpupwr" ]; then
+
+   # Read MSR_PKG_POWER_LIMIT
+   read_msr "${MSR_PKG_POWER_LIMIT}" "READ_VAL"
+
+   # Extract limit values and derived representations
+   OLD_T1=$(( READ_VAL & 0x0000000000007FFF ))
+   OLD_T2=$(( ( READ_VAL >> 32 ) & 0x0000000000007FFF ))
+   OLD_T1_WATTS=$(echo "${OLD_T1} * ${POWER_UNIT_WATTS}" | bc )
+   OLD_T2_WATTS=$(echo "${OLD_T2} * ${POWER_UNIT_WATTS}" | bc )
+
+   if [ "${VERBOSE}" -gt 0 ]; then
+      # Display old values
+      echo -n "Old limit 1: "
+      printf "0x%02x (dec: %i) (%f W)\n" "${OLD_T1}" "${OLD_T1}" "${OLD_T1_WATTS}"
+      echo -n "Old limit 2: "
+      printf "0x%02x (dec: %i) (%f W)\n" "${OLD_T2}" "${OLD_T2}" "${OLD_T2_WATTS}"
+   fi
+
+   # Build register value to reflect new thresholds
+   if [ -z "${THRESHOLD_1}" ]; then
+      NEW_T1=$OLD_T1
+   else
+      NEW_T1=$(( THRESHOLD_1 & 0x0000000000007FFF ))
+   fi
+   if [ -z "${THRESHOLD_2}" ]; then
+      NEW_T2=$OLD_T2
+   else
+      NEW_T2=$(( THRESHOLD_2 & 0x0000000000007FFF ))
+   fi
+   NEW_T1_WATTS=$(echo "${NEW_T1} * ${POWER_UNIT_WATTS}" | bc )
+   NEW_T2_WATTS=$(echo "${NEW_T2} * ${POWER_UNIT_WATTS}" | bc )
+   WRITE_VAL=$(( ( READ_VAL & MSR_PKG_POWER_LIMIT_MASK ) | ( NEW_T2 << 32 ) | ( NEW_T1 ) ))
+
+   if [ "${VERBOSE}" -gt 0 ]; then
+      # Display new values
+      echo -n "New limit 1: "
+      printf "0x%02x (dec: %i) (%f W)\n" "${NEW_T1}" "${NEW_T1}" "${NEW_T1_WATTS}"
+      echo -n "New limit 2: "
+      printf "0x%02x (dec: %i) (%f W)\n" "${NEW_T2}" "${NEW_T2}" "${NEW_T2_WATTS}"
+   fi
+
+   # Write register contents back
+   write_msr "${MSR_PKG_POWER_LIMIT}" "${WRITE_VAL}"
+
+# --- GETCPUPWR: write values ----------------------------------------------------
+elif [ "${SCRIPTNAME}" = "getcpupwr" ]; then
+
+   # Read MSR_PKG_POWER_LIMIT
+   read_msr "${MSR_PKG_POWER_LIMIT}" "READ_VAL"
+
+   # Extract limit values and derived representations
+   OLD_T1=$(( READ_VAL & 0x0000000000007FFF ))
+   OLD_T2=$(( ( READ_VAL >> 32 ) & 0x0000000000007FFF ))
+   OLD_T1_WATTS=$(echo "${OLD_T1} * ${POWER_UNIT_WATTS}" | bc )
+   OLD_T2_WATTS=$(echo "${OLD_T2} * ${POWER_UNIT_WATTS}" | bc )
+
+   # Display values
+   if [ ! -z "${THRESHOLD_1}" ]; then
+      if [ "${VERBOSE}" -gt 0 ]; then
+         echo -n "Limit 1: "
+	 printf "0x%02x (dec: %i) (%f W)\n" "${OLD_T1}" "${OLD_T1}" "${OLD_T1_WATTS}"
+      else
+         printf "%i\n" "${OLD_T1}"
+      fi
+   fi
+   if [ ! -z "${THRESHOLD_2}" ]; then
+      if [ "${VERBOSE}" -gt 0 ]; then
+         echo -n "Limit 2: "
+	 printf "0x%02x (dec: %i) (%f W)\n" "${OLD_T2}" "${OLD_T2}" "${OLD_T2_WATTS}"
+      else
+         printf "%i\n" "${OLD_T2}"
+      fi
+   fi
+
+else
+
+   echo "ERROR: Script invoked with unexpected name: \"${SCRIPTNAME}\"."
+   exit 1
+
+fi
+
