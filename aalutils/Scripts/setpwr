@@ -290,7 +290,7 @@ function write32()
 
    # parse output and check against written value
    R=$(echo -e "${OUT}" | grep "; readback" | sed "s/^.*readback //")
-   if [ $(( "R" )) -ne $(( "VALUE" )) ]; then
+   if [ "$(( R ))" -ne "$(( VALUE ))" ]; then
       # print as warning only - could be that we just tripped a threshold
       echo "WARNING: Readback mismatch. Expected: $(( VALUE )), got: $(( R ))." >&2
    fi
