@@ -380,59 +380,74 @@ void ErrorMonApp::printPortError(btUnsigned64bitInt port_error_csr)
 
    ccip_port_error.csr=port_error_csr;
 
-   if(ccip_port_error.tx_ch0_overflow)
+   if(ccip_port_error.tx_ch0_overflow) {
       cout << "Tx Channel0 Overflow Set "<< endl;
-
-   if(ccip_port_error.tx_ch0_invalidreq)
+   }
+   if(ccip_port_error.tx_ch0_invalidreq) {
       cout << "Tx Channel0 Invalid request encoding Set " << endl;
-
-   if(ccip_port_error.tx_ch0_req_cl_len3)
+   }
+   if(ccip_port_error.tx_ch0_req_cl_len3) {
       cout << "Tx Channel0 Request with cl_len3 Set "<< endl;
-
-   if(ccip_port_error.tx_ch0_req_cl_len2)
+   }
+   if(ccip_port_error.tx_ch0_req_cl_len2) {
       cout << "Tx Channel0 Request with cl_len2 Set "<< endl;
-
-   if(ccip_port_error.tx_ch0_req_cl_len4)
+   }
+   if(ccip_port_error.tx_ch0_req_cl_len4) {
       cout << "Tx Channel0 Request with cl_len4 Set "<< endl;
-
-   if(ccip_port_error.tx_ch1_overflow)
+   }
+   if(ccip_port_error.tx_ch1_overflow) {
       cout << "Tx Channel1 Overflow Set "<< endl;
-
-   if(ccip_port_error.tx_ch1_invalidreq)
+   }
+   if(ccip_port_error.tx_ch1_invalidreq) {
       cout << "Tx Channel1 Invalid request encoding Set " << endl;
-
-   if(ccip_port_error.tx_ch1_req_cl_len3)
+   }
+   if(ccip_port_error.tx_ch1_req_cl_len3) {
       cout << "Tx Channel1 Request with cl_len3 Set "<< endl;
-
-   if(ccip_port_error.tx_ch1_req_cl_len2)
+   }
+   if(ccip_port_error.tx_ch1_req_cl_len2) {
       cout << "Tx Channel1 Request with cl_len2 Set " << endl;
-
-   if(ccip_port_error.tx_ch1_req_cl_len4)
+   }
+   if(ccip_port_error.tx_ch1_req_cl_len4) {
       cout << "Tx Channel1 Request with cl_len4 Set "<< endl;
-
-   if(ccip_port_error.tx_ch1_insuff_datapayload)
+   }
+   if(ccip_port_error.tx_ch1_insuff_datapayload) {
       cout << "Tx Channel1 Insufficient data payload Set "<< endl;
-
-   if(ccip_port_error.tx_ch1_datapayload_overrun)
+   }
+   if(ccip_port_error.tx_ch1_datapayload_overrun) {
       cout << "Tx Channel1 Data payload overrun Set " << endl;
-
-   if(ccip_port_error.tx_ch1_incorr_addr)
+   }
+   if(ccip_port_error.tx_ch1_incorr_addr) {
       cout << "Tx Channel1 Incorrect address Set "<< endl;
-
-   if(ccip_port_error.tx_ch1_sop_detcted)
+   }
+   if(ccip_port_error.tx_ch1_sop_detcted) {
       cout << "Tx Channel1 NON-Zero SOP Detected Set " << endl;
-
-   if(ccip_port_error.tx_ch1_atomic_req)
+   }
+   if(ccip_port_error.tx_ch1_atomic_req) {
       cout << "Tx Channel1 Atomic request VLO Set " << endl;
-
-   if(ccip_port_error.mmioread_timeout)
+   }
+   if(ccip_port_error.mmioread_timeout) {
       cout << "MMIO Read Timed out in AFU Set " << endl;
-
-   if(ccip_port_error.tx_ch2_fifo_overflow)
+   }
+   if(ccip_port_error.tx_ch2_fifo_overflow) {
       cout << "Tx Channel2 : FIFO overflow Set " << endl;
-
-   if(ccip_port_error.num_pending_req_overflow)
+   }
+   if(ccip_port_error.num_pending_req_overflow) {
       cout << "Number of pending Requests counter overflow Set " << endl;
+   }
+
+   if(ccip_port_error.rsvd) {
+      cout << "Reserved bit 15:5 Set " << endl;
+   }
+   if(ccip_port_error.rsvd1) {
+      cout << "Reserved bit 31:26 Set " << endl;
+   }
+   if(ccip_port_error.rsvd2) {
+      cout << "Reserved bit 39:34 Set " << endl;
+   }
+   if(ccip_port_error.rsvd3) {
+      cout << "Reserved bit 41:63 Set " << endl;
+   }
+
 }
 
 
@@ -503,12 +518,12 @@ btInt ErrorMonApp::run(btBool bClear)
    // Prints FME Errors
    res = getPortError();
    if(0 != res)
-      m_Result=res;
+       ++m_Result;   // record error
 
    // Prints PORT Errors
    res = getFMEError();
    if(0 != res)
-      m_Result=res;
+      ++m_Result;   // record error
 
    // Clean-up and return
    // Release() the Service through the Services IAALService::Release() method
@@ -536,7 +551,7 @@ void ErrorMonApp::serviceAllocated(IBase *pServiceBase,
 {
 
    if(rTranID.ID() == ErrorMonApp::FME) {
-
+      // FME Resource  Allocation
       m_pFMEService = pServiceBase;
       ASSERT(NULL != m_pFMEService);
       if ( NULL == m_pFMEService ) {
@@ -551,8 +566,8 @@ void ErrorMonApp::serviceAllocated(IBase *pServiceBase,
          return;
       }
 
-   } else {
-
+   } else if(rTranID.ID() == ErrorMonApp::PORT)  {
+      //PORT Resource  Allocation
       m_pPortService = pServiceBase;
       ASSERT(NULL != m_pPortService);
       if ( NULL == m_pPortService ) {
@@ -567,6 +582,11 @@ void ErrorMonApp::serviceAllocated(IBase *pServiceBase,
          return;
       }
 
+   } else {
+      // Wrong Transaction ID
+      ERR("Failed to allocate Service");
+      m_bIsOK = false;
+      return;
    }
 
    m_Sem.Post(1);
