@@ -1,3 +1,4 @@
+#!/bin/bash
 ## Copyright(c) 2013-2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
@@ -35,28 +36,28 @@
 #
 ##########################################################
 
-setenv WORKDIR ..
-
 # Step 1: Setup License Server
 #         Contact your EDA Admin and set this to required values
 #         Modify following line
-setenv LM_LICENSE_FILE ""
-if (!($?LM_LICENSE_FILE) || ($LM_LICENSE_FILE == "") )  then
-    echo "License variable not set, set this in line 7. Please check with your EDA admin"
+export LM_LICENSE_FILE=".."
+if ! [ $LM_LICENSE_FILE ] ; then
+    echo "License variable not set, set this in line 43. Please check with your EDA admin"
     exit
-endif
-
+elif [ $LM_LICENSE_FILE == "" ] ;  then
+    echo "License variable not set, set this in line 43. Please check with your EDA admin"
+    exit    
+fi
 
 # Step 2: Select one of the following tools
 #         - VCS
 #         - QuestaSim
 #         Uncomment setenv line with correct tool string
 #
-setenv MY_SIM_TOOL "VCS"
-if (!($?MY_SIM_TOOL) ) then
-    echo "MY_SIM_TOOL has not been set up, please set this in line 20"
+export MY_SIM_TOOL="VCS"
+if ! [ $MY_SIM_TOOL ] ; then
+    echo "MY_SIM_TOOL has not been set up, please set this in line 57"
     exit
-endif
+fi
 
 
 #
@@ -64,58 +65,50 @@ endif
 #         Follow your sub-case closely and fill in the details
 #         Contact your EDA admin for more details 
 #
-if ($MY_SIM_TOOL == "VCS" ) then
+if [ $MY_SIM_TOOL == "VCS" ] ; then
     # VCS setup
     echo "VCS Tool setup"
     # Modify this line
-    setenv VCS_HOME ""
-    setenv PATH  "${VCS_HOME}/bin:${PATH}"
-    if (!($?VCS_HOME) ) then
+    export VCS_HOME=""
+    export PATH="${VCS_HOME}/bin:${PATH}"
+    if ! [ $VCS_HOME ] ; then
 	echo "A) VCS_HOME has not been set up. Contact EDA Admin"
 	exit
-    else if ($VCS_HOME == "" ) then
+    elif [ $VCS_HOME == "" ] ; then
     	echo "B) VCS_HOME is empty. Contact EDA Admin"
     	exit    
-    endif
-    # Platform specifics
-    if (-e /etc/redhat-release) then
-	setenv VCS_PLATFORM amd64
-	setenv VCS_ARCH_OVERRIDE linux
-    else
-	setenv VCS_PLATFORM suse64
-    endif
-else if ($MY_SIM_TOOL == "QuestaSim" ) then
+    fi
+elif [ $MY_SIM_TOOL == "QuestaSim" ] ; then
     # QuestaSim setup
     echo "QuestaSim tool setup"
     # Modify this line. Contact EDA Admin
-    setenv QUESTA_HOME ""
-    if (!($?QUESTA_HOME) ) then
+    export QUESTA_HOME=""
+    if ! [ $QUESTA_HOME ] ; then
 	echo "A) QUESTA_HOME has not been set up. Contact EDA Admin"
 	exit
-    else if ($QUESTA_HOME == "" ) then
+    elif [ $QUESTA_HOME == "" ] ; then
     	echo "B) QUESTA_HOME is empty. Contact EDA Admin"
     	exit    
-    endif
+    fi
     # Modify this line. Contact EDA Admin
-    setenv MGLS_LICENSE_FILE "" 
-    if (!($?MGLS_LICENSE_FILE) ) then
+    export MGLS_LICENSE_FILE="" 
+    if ! [ $MGLS_LICENSE_FILE ] ; then
 	echo "A) MGLS_LICENSE_FILE has not been set up. Contact EDA Admin"
 	exit
-    else if ($MGLS_LICENSE_FILE == "" ) then
+    elif [ $MGLS_LICENSE_FILE == "" ] ; then
     	echo "B) MGLS_LICENSE_FILE is empty. Contact EDA Admin"
     	exit    
-    endif
+    fi
     # LM_PROJECT env
-    setenv LM_PROJECT APD
-    setenv MENTOR_TOP $QUESTA_HOME
-    setenv MDLTECH $QUESTA_HOME
-    setenv MTI_VCO_MODE 64
-    setenv COMP64 1
+    export LM_PROJECT="PutMyLM_PROJECThere"
+    export MENTOR_TOP=$QUESTA_HOME
+    export MDLTECH=$QUESTA_HOME
+    export MTI_VCO_MODE=64
+    export COMP64=1
 else
     echo "The Simulation toolname supplied is not supported"
     echo "ASE mode is supported in VCS and QuestaSim tools only"
-endif
+fi
 
-alias cdw 'cd $WORKDIR'
 
 

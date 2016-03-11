@@ -373,11 +373,15 @@ void ase_destroy()
 	}
     } 
 #else
-  while (head != (struct buffer_t*)NULL)
+  ptr = head;
+  if (head != NULL)
     {
-      ptr = head;
-      ase_dealloc_action(ptr);
-      ll_remove_buffer(ptr);
+      while (ptr != (struct buffer_t*)NULL)
+	{
+	  ase_dealloc_action(ptr);
+	  // ll_remove_buffer(ptr);
+	  ptr = ptr->next;
+	}
     }
 #endif
 
@@ -569,7 +573,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
       printf("@ERROR: ASE has detected a memory operation to an unallocated memory region.\n"
 	     "        Simulation cannot continue, please check the code.\n"
 	     "        Failure @ phys_addr = %p \n"
-	     "        See ERROR log file => ase_memory_error.log"
+	     "        See ERROR log file => ase_memory_error.log\n"
 	     "@ERROR: Please check that previously requested memories have not been deallocated before an AFU transaction could access them\n"
 	     "        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n"
 	     "              The simulator may be committing AFU transactions out of order\n",

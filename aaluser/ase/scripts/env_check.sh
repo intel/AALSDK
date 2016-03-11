@@ -1,4 +1,5 @@
-## Copyright(c) 2013-2016, Intel Corporation
+#!/bin/bash
+## Copyright(c) 2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -24,15 +25,14 @@
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-#!/bin/sh
+os=$(uname -s | tr '\[A-Z\]' '\[a-z\]')
+kernel_rel=$(uname -r)
+arch=$(uname -p)
+dist_id=$(lsb_release -i -s | tr '\[A-Z\]' '\[a-z\]')
+dist_ver=$(lsb_release -r -s | tr '\[A-Z\]' '\[a-z\]')
+dist_code=$(lsb_release -c -s | tr '\[A-Z\]' '\[a-z\]')
+shm_testfile=$(/dev/shm/"$USER".ase_envcheck)
 
-uname=`uname -a`
-os=`uname -s`
-nodename=`uname -n`
-kernel_rel=`uname -r`
-kernel_ver=`uname -v`
-arch=`uname -p`
-distro=`lsb_release -a`
 
 ## Print header, and basic info
 echo "############################################################"
@@ -42,43 +42,117 @@ echo "#         AFU Simulation Environment (ASE)                 #"
 echo "#                                                          #"
 echo "############################################################"
 echo "Checking Machine... "
-echo "OS             = ${os} "
-echo "Kernel Release = ${kernel_rel}"
-echo "Kernel Version = ${kernel_ver}"
-echo "Machine        = ${arch}"
-echo "Distro         = "
-echo "${distro}"
+echo "Operating System = ${os} "
+echo "Kernel Release   = ${kernel_rel}"
+echo "Machine          = ${arch}"
+echo "Distro ID        = ${dist_id}" 
+echo "Distro Version   = ${dist_ver}"
+echo "Distro Code      = ${dist_code}"
+echo "-----------------------------------------------------------"
 
 ## If Machine is not 64-bit, flash message
-if [ $os == "Linux" ]; then
-    if [ $arch == "x86_64" ]; then
-	echo "64-bit Linux found"	
+if [ "$os" == "linux" ]; then
+    if [ "$arch" == "x86_64" ]; then
+	echo "  [INFO] 64-bit Linux found"	
     else
-	echo "32-bit Linux found --- ASE works best on 64-bit Linux !"
+	echo "  [WARN] 32-bit Linux found --- ASE works best on 64-bit Linux !"
+    fi
+    # Check distro
+    if   [ "$dist_id" == "ubuntu" ] ; then	
+    	echo "  [INFO] Ubuntu found "
+    elif [ "$dist_id" == "suse linux" ] ; then
+    	echo "  [INFO] SLES found"
+    else
+    	echo "  [WARN] Machine is running an unknown Distro --- ASE compatibility unknown !"
     fi
 else
-    echo "Non-Linux distro found --- ASE is not supported on non-Linux platforms !"
+    echo "  [WARN] Non-Linux distro found --- ASE is not supported on non-Linux platforms !"
 fi
 
-## Check if /dev/shm is mounted
-if mountpoint -q /dev/shm ; then
-    echo "/dev/shm is mounted" 
+
+echo "-----------------------------------------------------------"
+
+## Check shell environment
+shell=$(basename "$SHELL")
+echo "  [INFO] SHELL identified as ${shell} (located \"$SHELL\")"
+if   [ "$shell" == "bash" ] ; then
+    echo "  [INFO] SHELL ${shell} version : \"$BASH_VERSION\""
+elif [ "$shell" == "zsh" ] ; then
+    echo "  [INFO] SHELL ${shell} version : $(zsh --version)"
+elif [ "$shell" == "tcsh" ] ; then
+    echo "  [INFO] SHELL ${shell} version : $(tcsh --version)"
+elif [ "$shell" == "csh" ] ; then
+    echo "  [INFO] SHELL ${shell} version : $(csh --version)"
 else
-    echo "/dev/shm is not mounted --- this is not preferable !"
-    echo "in case of simulation crashes, temp files may be stored here, and may be un-cleanable"
-    echo "Please contact your admin to make /dev/shm/ mount available"
+    echo "  [WARN] SHELL ${shell} is unknown !"
 fi
+echo "-----------------------------------------------------------"
+
+## Check if /dev/shm is mounted, try writing then deleting a file for access check
+if [ -d /dev/shm/ ]; then
+    echo "  [INFO] /dev/shm is accessible ... testing further"
+    touch "$shm_testfile"
+    echo "$USER" >> "$shm_testfile"
+    readback_shmfile=$(cat "$shm_testfile")
+    if [ "$readback_shmfile" == "$USER" ] ; then
+	echo "  [INFO] SHM self-check completed successfully."
+    else
+	echo "  [WARN] SHM self-check failed !"
+    fi
+    rm "$shm_testfile"
+else
+    echo "  [WARN] /dev/shm seems to be inaccessible ! "
+    echo "  [WARN] ASE uses this location for data sharing between SW and simulator"
+    echo "  [WARN] Please mount this location before proceeding...  see 'man shm_overview'"
+fi
+
+echo "-----------------------------------------------------------"
 
 ## GCC version check
+GCCVERSION=$(gcc --version | grep ^gcc | sed 's/^.* //g')
+echo "  [INFO] GCC version found : $GCCVERSION"
+echo "  [INFO] ASE recommends using GCC version > 4.4"
+echo "-----------------------------------------------------------"
 
+## RTL tool check
+if [ "$VCS_HOME" ] ; then
+    echo "  [INFO] env(VCS_HOME) is set."
+    if [ -x "$(command -v vcs)" ] && [ -x "$(command -v vlogan)" ] && [ -x "$(command -v vhdlan)" ] ; then 
+	echo "  [INFO] $(type vhdlan)"
+	echo "  [INFO] $(type vlogan)"
+	echo "  [INFO] $(type vcs)"
+    else
+	echo "  [WARN] VCS commands (vcs, vlogan, vhdlan) was not found !"
+	echo "  [WARN] Check VCS settings !"
+    fi
+elif [ "$QUESTA_HOME" ] ; then
+    echo "  [INFO] env(QUESTA_HOME) is set."
+    if [ -x "$(command -v vlog)" ] && [ -x "$(command -v vlib)" ] && [ -x "$(command -v vsim)" ] ; then 
+	echo "  [INFO] $(type vlib)"
+	echo "  [INFO] $(type vlog)"
+	echo "  [INFO] $(type vsim)"
+    else
+	echo "  [WARN] VCS commands (vcs, vlogan, vhdlan) was not found !"
+	echo "  [WARN] Check VCS settings !"
+    fi
+else
+    echo "  [WARN] No Compatible RTL tool seems to be available !"
+fi
 
-## VCS version check
-
-
-## Questasim version check
-
-
+echo "-----------------------------------------------------------"
 ## Quartus version not available
-
+if [ "$QUARTUS_HOME" ] ; then
+    echo "  [INFO] env(QUARTUS_HOME) is set."
+    if [ -x "$(command -v quartus)" ] ; then
+	echo "  [INFO] $(type quartus)"
+    else
+	echo "  [WARN] quartus command not found !"
+	echo "  [WARN] Check Quartus settings !"
+    fi
+else
+    echo "  [WARN] Quartus not found, ASE won't run Altera eda_lib library simulation !"
+    echo "  [INFO] Alternately, if you have a non-standard Quartus install, the Makefile may need editing"
+fi
+echo "-----------------------------------------------------------"
 
 

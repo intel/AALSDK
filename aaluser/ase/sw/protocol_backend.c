@@ -89,13 +89,8 @@ int ase_instance_running()
 	}
     }
 
-  /* if (fp_ready_check != NULL) */
-  /*   { */
-  /*     fclose(fp_ready_check); */
-  /*   } */
-
-  return ase_simv_pid;
   FUNC_CALL_EXIT;
+  return ase_simv_pid;
 }
 
 
@@ -329,7 +324,15 @@ int ase_listener()
 	      portctrl_value = (portctrl_value != 0) ? 1 : 0 ;
 	      afu_softreset_trig ( portctrl_value );
 	      printf("SIM-C : Soft Reset set to %d\n", portctrl_value);
-	     
+	      run_clocks(16);
+	      
+	      // Wait until transactions clear
+	      if (portctrl_value == 1)
+		{
+		  while(glbl_dealloc_allowed != 1);
+		  printf("SIM-C : Transactions in flight completed\n");
+		}
+
 	      // Send portctrl_rsp message
 	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
 	    }
@@ -801,7 +804,7 @@ int ase_ready()
   printf("        Run the following command into terminal where application will run (copy-and-paste) =>\n");
   printf("        $SHELL   | Run:\n");
   printf("        ---------+---------------------------------------------------\n");
-  printf("        bash     | export ASE_WORKDIR=%s\n", ase_run_path);
+  printf("        bash/zsh | export ASE_WORKDIR=%s\n", ase_run_path);
   printf("        tcsh/csh | setenv ASE_WORKDIR %s\n", ase_run_path);
   printf("        For any other $SHELL, consult your Linux administrator\n");
   printf("\n");
