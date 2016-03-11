@@ -66,6 +66,7 @@ PM_FTYPE="3"                        # Expected feature type for PM
 PM_FREV="0"                         # Expected feature revision for PM
 PM_FID="2"                          # Expected feature ID for PM
 VERBOSE=0                           # Versbosity level
+CORE_VOLTAGE=0.9                    # FPGA core voltage
 
 
 # === FUNCTIONS ===============================================================
@@ -289,7 +290,7 @@ function write32()
 
    # parse output and check against written value
    R=$(echo -e "${OUT}" | grep "; readback" | sed "s/^.*readback //")
-   if [ $(( "R" )) -ne $(( "VALUE" )) ]; then
+   if [ "$(( R ))" -ne "$(( VALUE ))" ]; then
       # print as warning only - could be that we just tripped a threshold
       echo "WARNING: Readback mismatch. Expected: $(( VALUE )), got: $(( R ))." >&2
    fi
@@ -332,10 +333,10 @@ function check_dfh
 # === MAIN ====================================================================
 
 # check if we are root
-# if [ $EUID -ne 0 ]; then
-#    echo "ERROR: You want to be root to run ${SCRIPTNAME}."
-#    exit 1
-# fi
+if [ $EUID -ne 0 ]; then
+   echo "ERROR: You want to be root to run ${SCRIPTNAME}."
+   exit 1
+fi
 
 # check for pcimem
 command -v "${PCIMEM}" &> /dev/null || {
@@ -374,13 +375,15 @@ if [ "${SCRIPTNAME}" = "setpwr" ]; then
    OLD_T2=$(( ( READ_VAL >> 8 ) & 0x0000007F ))
    OLD_T1_AMPS=$(echo "${OLD_T1} * 0.78125" | bc )
    OLD_T2_AMPS=$(echo "${OLD_T2} * 0.78125" | bc )
+   OLD_T1_WATTS=$(echo "${OLD_T1_AMPS} * ${CORE_VOLTAGE}" | bc )
+   OLD_T2_WATTS=$(echo "${OLD_T2_AMPS} * ${CORE_VOLTAGE}" | bc )
 
    if [ "${VERBOSE}" -gt 0 ]; then
       # Display old values
       echo -n "Old threshold 1 (AP1 state): "
-      printf "0x%02x (dec: %i) (%f A)\n" "${OLD_T1}" "${OLD_T1}" "${OLD_T1_AMPS}"
+      printf "0x%02x (dec: %i) (%f A, %f W)\n" "${OLD_T1}" "${OLD_T1}" "${OLD_T1_AMPS}" "${OLD_T1_WATTS}"
       echo -n "Old threshold 2 (AP2 state): "
-      printf "0x%02x (dec: %i) (%f A)\n" "${OLD_T2}" "${OLD_T2}" "${OLD_T2_AMPS}"
+      printf "0x%02x (dec: %i) (%f A, %f W)\n" "${OLD_T2}" "${OLD_T2}" "${OLD_T2_AMPS}" "${OLD_T2_WATTS}"
    fi
 
    # Build register value to reflect new thresholds
@@ -396,14 +399,16 @@ if [ "${SCRIPTNAME}" = "setpwr" ]; then
    fi
    NEW_T1_AMPS=$(echo "${NEW_T1} * 0.78125" | bc )
    NEW_T2_AMPS=$(echo "${NEW_T2} * 0.78125" | bc )
+   NEW_T1_WATTS=$(echo "${NEW_T1_AMPS} * ${CORE_VOLTAGE}" | bc )
+   NEW_T2_WATTS=$(echo "${NEW_T2_AMPS} * ${CORE_VOLTAGE}" | bc )
    WRITE_VAL=$(( ( READ_VAL & 0xFFFF0000 ) | ( NEW_T2 << 8 ) | ( NEW_T1 ) ))
 
    if [ "${VERBOSE}" -gt 0 ]; then
       # Display new values
       echo -n "New threshold 1 (AP1 state): "
-      printf "0x%02x (dec: %i) (%f A)\n" "${NEW_T1}" "${NEW_T1}" "${NEW_T1_AMPS}"
+      printf "0x%02x (dec: %i) (%f A, %f W)\n" "${NEW_T1}" "${NEW_T1}" "${NEW_T1_AMPS}" "${NEW_T1_WATTS}"
       echo -n "New threshold 2 (AP2 state): "
-      printf "0x%02x (dec: %i) (%f A)\n" "${NEW_T2}" "${NEW_T2}" "${NEW_T2_AMPS}"
+      printf "0x%02x (dec: %i) (%f A, %f W)\n" "${NEW_T2}" "${NEW_T2}" "${NEW_T2_AMPS}" "${NEW_T2_WATTS}"
    fi
 
    # Write register contents back
@@ -420,12 +425,14 @@ elif [ "${SCRIPTNAME}" = "getpwr" ]; then
    OLD_T2=$(( ( READ_VAL >> 8 ) & 0x0000007F ))
    OLD_T1_AMPS=$(echo "${OLD_T1} * 0.78125" | bc )
    OLD_T2_AMPS=$(echo "${OLD_T2} * 0.78125" | bc )
+   OLD_T1_WATTS=$(echo "${OLD_T1_AMPS} * ${CORE_VOLTAGE}" | bc )
+   OLD_T2_WATTS=$(echo "${OLD_T2_AMPS} * ${CORE_VOLTAGE}" | bc )
 
    # Display values
    if [ ! -z "${THRESHOLD_1}" ]; then
       if [ "${VERBOSE}" -gt 0 ]; then
          echo -n "Threshold 1 (AP1 state): "
-	 printf "0x%02x (dec: %i) (%f A)\n" "${OLD_T1}" "${OLD_T1}" "${OLD_T1_AMPS}"
+         printf "0x%02x (dec: %i) (%f A, %f W)\n" "${OLD_T1}" "${OLD_T1}" "${OLD_T1_AMPS}" "${OLD_T1_WATTS}"
       else
          printf "%i\n" "${OLD_T1}"
       fi
@@ -433,7 +440,7 @@ elif [ "${SCRIPTNAME}" = "getpwr" ]; then
    if [ ! -z "${THRESHOLD_2}" ]; then
       if [ "${VERBOSE}" -gt 0 ]; then
          echo -n "Threshold 2 (AP2 state): "
-	 printf "0x%02x (dec: %i) (%f A)\n" "${OLD_T2}" "${OLD_T2}" "${OLD_T2_AMPS}"
+         printf "0x%02x (dec: %i) (%f A, %f W)\n" "${OLD_T2}" "${OLD_T2}" "${OLD_T2_AMPS}" "${OLD_T2_WATTS}"
       else
          printf "%i\n" "${OLD_T2}"
       fi

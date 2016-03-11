@@ -591,7 +591,9 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          //   Enumerates the Port feature list, creates the Port object.
          //   Then add the new port object onto the list
          //-------------------------------------------------------------
-         pportdev = get_port_device( pbarPhyAddr + offset, ccip_portdev_kvp_afu_mmio(pccipdev,bar) + offset );
+         pportdev = get_port_device( pbarPhyAddr + offset,
+                                     ccip_portdev_kvp_afu_mmio(pccipdev,bar) + offset,
+                                     ccip_portdev_len_afu_mmio(pccipdev,bar));
          if ( NULL == pportdev ) {
             PERR("Could not allocate memory for FME object\n");
             res = -ENOMEM;

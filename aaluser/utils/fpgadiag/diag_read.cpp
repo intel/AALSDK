@@ -171,16 +171,41 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
    	   // Start the test
        m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
 
-   	   // Wait for test completion
-   	   while ( 0 == pAFUDSM->test_complete ) {
-   		   SleepNano(10);
-   	   }
+       // Wait for test completion or timeout
+       while ( 0 == pAFUDSM->test_complete &&
+             ( MaxPoll >= 0 )) {
+             MaxPoll -= 1;
+             SleepMilli(1);
+       }
 
-   	   // Stop the device
-   	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
+   	 // Stop the device
+   	 m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 
-   	   //Re-set the test mode
-   	   m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
+   	 //Re-set the test mode
+   	 m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
+
+   	 // Check the device status
+       if ( MaxPoll < 0 ) {
+            cerr << "The maximum timeout for test stop was exceeded during warm-fpga-cache." << endl;
+            return 1;
+       }
+       MaxPoll = StopTimeoutMillis;
+
+   	 // Initiate AFU Reset
+       if ( 0 != m_pALIResetService->afuReset()){
+            ERR("AFU reset failed post warm-fpga-cache. Exiting test.");
+            return 1;
+       }
+
+       //Set DSM base, high then low
+       m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
+
+       // Assert Device Reset
+       m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
+
+       // De-assert Device Reset
+       m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
+
     }
 
     m_pALIMMIOService->mmioWrite32(CSR_CFG, (csr_type)cfg);

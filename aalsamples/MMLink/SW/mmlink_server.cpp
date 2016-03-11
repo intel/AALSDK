@@ -387,13 +387,16 @@ void mmlink_server::get_welcome_message(char *msg, size_t msg_len)
   if (m_num_connections == 1)
   {
     ++m_server_id;
-    snprintf(msg, msg_len, "SystemConsole CONFIGROM IDENT=%08X%08X%08X%08X HANDLE=%08X\r\n",
-      ident[3], ident[2], ident[1], ident[0], m_server_id);
+    //snprintf(msg, msg_len, "SystemConsole CONFIGROM IDENT=%08X%08X%08X%08X HANDLE=%08X\r\n",
+    //         ident[3], ident[2], ident[1], ident[0], m_server_id);
+
+    snprintf(msg, msg_len, "SystemConsole CONFIGROM IDENT=0001000000007BF899BB8B9AA2D864C3 HANDLE=%08X\r\n", m_server_id);
   }
   else
   {
-    snprintf(msg, msg_len, "SystemConsole CONFIGROM IDENT=%08X%08X%08X%08X HANDLE\r\n",
-      ident[3], ident[2], ident[1], ident[0]);
+     snprintf(msg, msg_len, "SystemConsole CONFIGROM IDENT=0001000000007BF899BB8B9AA2D864C3 HANDLE\r\n");
+    //snprintf(msg, msg_len, "SystemConsole CONFIGROM IDENT=%08X%08X%08X%08X HANDLE\r\n",
+    //         ident[3], ident[2], ident[1], ident[0]);
   }
 }
 
