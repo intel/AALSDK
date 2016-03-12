@@ -214,7 +214,7 @@ module ccip_emulator
 
 
    // ASE's internal reset signal
-   logic 			      sys_reset = 1;
+   logic 			      ase_reset = 1;
 
    /*
     * Remapping ASE CCIP to cvl_pkg struct
@@ -319,6 +319,9 @@ module ccip_emulator
 
    // Software controlled process - Run AFU Reset
    export "DPI-C" task afu_softreset_trig;
+
+   // Software controlled reset response
+   import "DPI-C" function void sw_reset_response();
 
    // cci_logger buffer message
    export "DPI-C" task buffer_msg_inject;
@@ -437,13 +440,95 @@ module ccip_emulator
 
    // Reset management
    logic 			  sw_reset_trig = 1;
+   logic 			  app_reset_trig;   
+   int 				  rst_counter;
+
+   // Reset states
+   typedef enum {
+		 ResetIdle,
+		 ResetHoldHigh,
+		 ResetHoldLow,
+		 ResetWait
+		 } ResetStateEnum;
+   ResetStateEnum rst_state;
+
 
    // AFU Soft Reset Trigger
-   task afu_softreset_trig( int value );
+   task afu_softreset_trig(int init, int value );
       begin
-	 sw_reset_trig = value;
+	 if (init) begin
+	    app_reset_trig = 0;
+	 end
+	 else begin
+	    app_reset_trig = value[0];
+	 end
       end
    endtask
+
+   // Reset FSM
+   always @(posedge clk) begin
+      if (ase_reset) begin
+	 rst_state <= ResetIdle;
+	 rst_counter <= 0;
+      end
+      else begin
+	 case (rst_state)
+	   ResetIdle:
+	     begin
+		// 0 -> 1
+		if (~SoftReset && app_reset_trig) begin
+		   rst_state <= ResetHoldHigh;
+		end
+		// 1 -> 0
+		else if (SoftReset && ~app_reset_trig) begin
+		   rst_state <= ResetHoldLow;
+		end
+		else begin
+		   rst_state <= ResetIdle;
+		end
+	     end
+
+	   // Set to 1
+	   ResetHoldHigh:
+	     begin
+		if (glbl_dealloc_credit != 0) begin
+		   rst_state <= ResetHoldHigh;
+		end
+		else begin
+		   sw_reset_trig <= 1;
+		   rst_state <= ResetWait;
+		end
+	     end
+
+	   // Set to 0
+	   ResetHoldLow:
+	     begin
+		sw_reset_trig <= 0;
+		rst_state <= ResetWait;
+	     end
+
+	   // Wait few cycles
+	   ResetWait:
+	     begin
+		if (rst_counter < `SOFT_RESET_DURATION) begin
+		   rst_counter <= rst_counter + 1;
+		   rst_state <= ResetWait;
+		end
+		else begin
+		   rst_counter <= 0;
+		   rst_state <= ResetIdle;
+		   sw_reset_response();
+		end
+	     end
+
+	   default:
+	     begin
+		rst_state <= ResetIdle;
+	     end
+
+	 endcase
+      end
+   end
 
 
    /*
@@ -494,9 +579,9 @@ module ccip_emulator
 
    // always @(posedge clk) begin
    // always @(*) begin
-   //    SoftReset <= sys_reset | sw_reset_trig;
+   //    SoftReset <= ase_reset | sw_reset_trig;
    // end
-   assign SoftReset = sys_reset | sw_reset_trig;
+   assign SoftReset = ase_reset | sw_reset_trig;
 
 
    /* ******************************************************************
@@ -655,7 +740,7 @@ module ccip_emulator
    mmioreq_fifo
      (
       .clk        ( clk ),
-      .rst        ( sys_reset ),
+      .rst        ( ase_reset ),
       .wr_en      ( mmioreq_write ),
       .data_in    ( mmioreq_din ),
       .rd_en      ( mmioreq_read & ~mmioreq_empty ),
@@ -697,7 +782,7 @@ module ccip_emulator
    mmioresp_fifo
      (
       .clk        ( clk ),
-      .rst        ( sys_reset ),
+      .rst        ( ase_reset ),
       .wr_en      ( C2TxMmioRdValid ),
       .data_in    ( {CCIP_MMIO_TID_WIDTH'(C2TxHdr), C2TxData} ),
       .rd_en      ( mmioresp_read & ~mmioresp_empty ),
@@ -773,7 +858,7 @@ module ccip_emulator
 
    // Umsg engine
    umsg_t umsg_array[NUM_UMSG_PER_AFU];
-   
+
    // UMSG dispatch function
    task umsg_dispatch (int init, umsgcmd_t umsg_pkt);
       int ii;
@@ -995,7 +1080,7 @@ module ccip_emulator
    UmsgPopStateMachine upop_state;
 
    always @(posedge clk) begin : umsgfifo_pop_write
-      if (sys_reset) begin
+      if (ase_reset) begin
    	 umsgfifo_hdr_in    <= {ASE_UMSG_HDR_WIDTH{1'b0}};
    	 umsgfifo_data_in   <= {UMSG_FIFO_WIDTH{1'b0}};
    	 umsgfifo_write     <= 0;
@@ -1094,7 +1179,7 @@ module ccip_emulator
    umsg_fifo
      (
       .clk        ( clk ),
-      .rst        ( sys_reset ),
+      .rst        ( ase_reset ),
       .wr_en      ( umsgfifo_write ),
       .data_in    ( { ASE_UMSG_HDR_WIDTH'(umsgfifo_hdr_in), umsgfifo_data_in} ),
       .rd_en      ( umsgfifo_read & ~umsgfifo_empty ),
@@ -1162,7 +1247,7 @@ module ccip_emulator
 
    // process
    always @(posedge clk) begin : transact_cnt_proc
-      if (sys_reset) begin
+      if (ase_reset) begin
 	 ase_rx0_mmiowrreq_cnt <= 0 ;
 	 ase_rx0_mmiordreq_cnt <= 0 ;
 	 ase_tx2_mmiordrsp_cnt <= 0 ;
@@ -1218,7 +1303,7 @@ module ccip_emulator
     */
    int count_error_flag;
    always @(posedge clk) begin
-      if (sys_reset) begin
+      if (ase_reset) begin
 	 count_error_flag <= 0;
       end
       else begin
@@ -1397,7 +1482,7 @@ module ccip_emulator
    cf2as_latbuf_ch0
      (
       .clk		( clk ),
-      .rst		( sys_reset ),
+      .rst		( ase_reset ),
       .hdr_in		( C0TxHdr ),
       .data_in		( {CCIP_DATA_WIDTH{1'b0}} ),
       .write_en		( C0TxRdValid ),
@@ -1423,7 +1508,7 @@ module ccip_emulator
 
    // Tx0 process
    always @(posedge clk) begin
-      if (sys_reset) begin
+      if (ase_reset) begin
    	 Tx0_pkt_vld <= 0;
 	 rd_memline_dex_called <= 0;
       end
@@ -1450,7 +1535,7 @@ module ccip_emulator
 
    // RdRsp in
    always @(posedge clk) begin
-      if (sys_reset) begin
+      if (ase_reset) begin
    	 rdrsp_data_in <= {CCIP_DATA_WIDTH{1'b0}};
    	 rdrsp_hdr_in <= {CCIP_RX_HDR_WIDTH{1'b0}};
    	 rdrsp_write <= 0;
@@ -1478,7 +1563,7 @@ module ccip_emulator
    cf2as_latbuf_ch1
      (
       .clk		( clk ),
-      .rst		( sys_reset ),
+      .rst		( ase_reset ),
       .hdr_in		( C1TxHdr ),
       .data_in		( C1TxData ),
       .write_en		( C1TxWrValid ),
@@ -1511,7 +1596,7 @@ module ccip_emulator
 
    // TX1 process
    always @(posedge clk) begin
-      if (sys_reset) begin
+      if (ase_reset) begin
 	 Tx1_pkt_vld             <= 0;
 	 wr_memline_dex_called   <= 0;
       end
@@ -1532,7 +1617,7 @@ module ccip_emulator
 
    // Wr1Rsp_in
    always @(posedge clk) begin : latbuf1_rsp_marshal
-      if (sys_reset) begin
+      if (ase_reset) begin
    	 wr1rsp_hdr_in                <= {CCIP_RX_HDR_WIDTH{1'b0}};
    	 wr1rsp_write                 <= 0;
 	 atomics_write                <= 0;
@@ -1582,7 +1667,7 @@ module ccip_emulator
    rdrsp_fifo
      (
       .clk             ( clk ),
-      .rst             ( sys_reset ),
+      .rst             ( ase_reset ),
       .wr_en           ( rdrsp_write ),
       .data_in         ( { CCIP_RX_HDR_WIDTH'(rdrsp_hdr_in), rdrsp_data_in } ),
       .rd_en           ( ~rdrsp_empty && rdrsp_read ),
@@ -1610,7 +1695,7 @@ module ccip_emulator
    atomics_fifo
      (
       .clk             ( clk ),
-      .rst             ( sys_reset ),
+      .rst             ( ase_reset ),
       .wr_en           ( atomics_write ),
       .data_in         ( { CCIP_RX_HDR_WIDTH'(atomics_hdr_in), atomics_data_in } ),
       .rd_en           ( ~atomics_empty && atomics_read ),
@@ -1642,7 +1727,7 @@ module ccip_emulator
    wr1rsp_fifo
      (
       .clk             ( clk ),
-      .rst             ( sys_reset ),
+      .rst             ( ase_reset ),
       .wr_en           ( wr1rsp_write ),
       .data_in         ( CCIP_RX_HDR_WIDTH'(wr1rsp_hdr_in) ),
       .rd_en           ( ~wr1rsp_empty && wr1rsp_read ),
@@ -1952,7 +2037,7 @@ module ccip_emulator
    end
 
    always @(posedge clk) begin : inactivity_found_proc
-      if (sys_reset) begin
+      if (ase_reset) begin
 	 inactivity_found <= 0;
       end
       else if (inactivity_counter > cfg.ase_timeout) begin
@@ -2000,6 +2085,9 @@ module ccip_emulator
 	 $finish;
       end
 
+      // AFU reset
+      afu_softreset_trig(1, 0 );
+
       // Initialize data-structures
       mmio_dispatch (1, '{0, 0, 0, '{0,0,0,0,0,0,0,0}, 0});
       umsg_dispatch (1, '{0, 0, '{0,0,0,0,0,0,0,0}});
@@ -2018,7 +2106,7 @@ module ccip_emulator
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
       run_clocks(20);
-      sys_reset     <= 0;
+      ase_reset     <= 0;
       sw_reset_trig <= 0;
       run_clocks(20);
 
@@ -2255,15 +2343,15 @@ module ccip_emulator
     * - Dellocate requests will be queued but not executed
     * **************************************************************************/
    always @(posedge clk) begin
-      if (SoftReset) begin
-	 rd_credit <= 0;
-	 wr_credit <= 0;
-	 mmiowr_credit <= 0;
-	 mmiord_credit <= 0;
-	 umsg_credit <= 0;
-	 atomic_credit <= 0;	 
-      end
-      else begin
+      // if (SoftReset) begin
+      // 	 rd_credit <= 0;
+      // 	 wr_credit <= 0;
+      // 	 mmiowr_credit <= 0;
+      // 	 mmiord_credit <= 0;
+      // 	 umsg_credit <= 0;
+      // 	 atomic_credit <= 0;
+      // end
+      // else begin
 	 // ---------------------------------------------------- //
 	 // Read credit counter
 	 case (  {C0TxRdValid, (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP)) } )
@@ -2304,41 +2392,45 @@ module ccip_emulator
 	   default : atomic_credit <= atomic_credit;
 	 endcase
 	 // ---------------------------------------------------- //
-      end
+      // end
    end
 
    // Global dealloc flag enable
    always @(posedge clk) begin
-      if (SoftReset) begin
-	 glbl_dealloc_credit <= 0;	 
-      end
-      else begin
+      // if (SoftReset) begin
+      // 	 glbl_dealloc_credit <= 0;
+      // end
+      // else begin
 	 glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit + atomic_credit;
-      end
+      //end
    end
 
    // Register for changes
-   always @(posedge clk)
-     glbl_dealloc_credit_q <= glbl_dealloc_credit;
-
+   always @(posedge clk) begin
+      glbl_dealloc_credit_q <= glbl_dealloc_credit;
+   end
 
    // Update process
    always @(posedge clk) begin
-      // if ((glbl_dealloc_credit_q == 0) && (glbl_dealloc_credit != 0)) begin
+      if ((glbl_dealloc_credit_q == 0) && (glbl_dealloc_credit != 0)) begin
+      	 update_glbl_dealloc(0);
+      end
+      else if ((glbl_dealloc_credit_q != 0) && (glbl_dealloc_credit == 0)) begin
+      	 update_glbl_dealloc(1);
+      end
+      else if (glbl_dealloc_credit == 0) begin
+      	 update_glbl_dealloc(1);
+      end
+      else if ((glbl_dealloc_credit_q == 0) && (glbl_dealloc_credit == 0)) begin
+      	 update_glbl_dealloc(0);
+      end
+
+      // if (glbl_dealloc_credit > 0) begin
       // 	 update_glbl_dealloc(0);
       // end
-      // else if ((glbl_dealloc_credit_q != 0) && (glbl_dealloc_credit == 0)) begin
+      // else begin
       // 	 update_glbl_dealloc(1);
       // end
-      // else if (glbl_dealloc_credit == 0) begin
-      // 	 update_glbl_dealloc(1);
-      // end
-      if (glbl_dealloc_credit > 0) begin
-	 update_glbl_dealloc(0);
-      end
-      else begin
-	 update_glbl_dealloc(1);
-      end
    end
 
 

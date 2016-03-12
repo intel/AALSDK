@@ -254,6 +254,21 @@ void mmio_response (struct mmio_t *mmio_pkt)
   FUNC_CALL_EXIT;
 }
 
+
+/*
+ * DPI: Reset response
+ */
+void sw_reset_response ()
+{
+  FUNC_CALL_ENTRY;
+  
+  // Send portctrl_rsp message
+  mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
+  
+  FUNC_CALL_EXIT;
+}
+
+
 /*
  * Count error flag ping/pong
  */
@@ -322,19 +337,17 @@ int ase_listener()
 	    {
 	      // AFU Reset control
 	      portctrl_value = (portctrl_value != 0) ? 1 : 0 ;
-	      afu_softreset_trig ( portctrl_value );
-	      printf("SIM-C : Soft Reset set to %d\n", portctrl_value);
-	      run_clocks(16);
 	      
 	      // Wait until transactions clear
-	      if (portctrl_value == 1)
-		{
-		  while(glbl_dealloc_allowed != 1);
-		  printf("SIM-C : Transactions in flight completed\n");
-		}
-
+	      // AFU Reset trigger function will wait until channels clear up
+	      afu_softreset_trig (0, portctrl_value );
+	      
 	      // Send portctrl_rsp message
-	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
+	      // mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
+
+	      // Reset response is returned from simulator once queues are cleared
+	      // Simulator cannot be held up here.
+
 	    }
 	  else if ( memcmp(portctrl_cmd, "UMSG_MODE", 9) == 0)
 	    {

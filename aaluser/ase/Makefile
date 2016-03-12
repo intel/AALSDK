@@ -270,7 +270,7 @@ CLANG_OPT+= \
 #                            Build Targets                              #
 #########################################################################
 # Default
-all: check clean build
+all: check build
 
 # Check
 check: header

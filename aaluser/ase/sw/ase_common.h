@@ -552,7 +552,8 @@ void ase_config_parse(char*);
 // Simulation control function
 void start_simkill_countdown();
 void run_clocks(int num_clocks);
-void afu_softreset_trig( int value);
+void afu_softreset_trig(int init, int value);
+void sw_reset_response();
 
 // Read system memory line
 void rd_memline_dex( cci_pkt *pkt );
