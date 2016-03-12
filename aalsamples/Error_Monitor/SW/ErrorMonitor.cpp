@@ -287,52 +287,58 @@ btInt ErrorMonApp::getFMEError()
 
 btInt ErrorMonApp::getPortError()
 {
-   btUnsigned64bitInt port_csr = 0x0;
+   btUnsigned64bitInt port_error_csr = 0x0;
    int res                     = 0;
 
    // Read PORT  Error CSR
-   m_pPortMMIOService->mmioRead64(PORT_ERR, &port_csr);
+   m_pPortMMIOService->mmioRead64(PORT_ERR, &port_error_csr);
 
-   if(0x0 == port_csr) {
+   if(0x0 == port_error_csr) {
       cout << endl<<"No Port Errors Found "<< endl;
    } else {
       cout << "==== PORT ERRORS ===="<< endl;
-      cout << "Port Error CSR:0x"<< hex << port_csr << endl;
-      printPortError(port_csr);
+      cout << "Port Error CSR:0x"<< hex << port_error_csr << endl;
+      printPortError(port_error_csr);
       res =FOUND_ERR;
    }
 
    // Read PORT Fist Error CSR
-   port_csr=0x0;
-   m_pPortMMIOService->mmioRead64(PORT_FIRST_ERR, &port_csr);
-
-   if(0x0 == port_csr) {
+   port_error_csr=0x0;
+   m_pPortMMIOService->mmioRead64(PORT_FIRST_ERR, &port_error_csr);
+   if(0x0 == port_error_csr) {
       cout << endl << "No Port First Errors Found "<< endl;
    } else {
       cout  << endl <<"==== PORT FIRST  ERRORS ====" << endl;
-      cout << "Port First Error CSR:0x"<< hex << port_csr << endl;
-      printPortError(port_csr);
+      cout << "Port First Error CSR:0x"<< hex << port_error_csr << endl;
+      printPortError(port_error_csr);
       res =FOUND_ERR;
    }
 
-   // Read Port malformed Request0 Error CSR
-   port_csr=0x0;
-   m_pPortMMIOService->mmioRead64(PORT_MALFORM0, &port_csr);
+   // Print both MALFORMED REQ0 or REQ1 CSRs if any PORT_ERROR detects
+   port_error_csr=0x0;
+   m_pPortMMIOService->mmioRead64(PORT_ERR, &port_error_csr);
+   if(0x0 != port_error_csr) {
 
-   if(0x0 != port_csr) {
-      cout <<  endl<<"==== PORT MALFORMED REQ 0 ===="<< endl;
-      cout << "Port malformed request0 Error CSR:0x"<< hex << port_csr << endl;
-      res =FOUND_ERR;
-   }
+      // Read Port malformed Request0 Error CSR
+      port_error_csr=0x0;
+      m_pPortMMIOService->mmioRead64(PORT_MALFORM0, &port_error_csr);
 
-   // Read Port malformed Request1 Error CSR
-   port_csr =0x0;
-   m_pPortMMIOService->mmioRead64(PORT_MALFORM1, &port_csr);
-   if(0x0 != port_csr) {
-      cout << endl <<"==== PORT MALFORMED REQ 1 ===="<< endl;
-      cout << "Port malformed request1 Error CSR:0x"<< hex << port_csr << endl;
-      res =FOUND_ERR;
-   }
+      if(0x0 != port_error_csr) {
+         cout <<  endl<<"==== PORT MALFORMED REQ 0 ===="<< endl;
+         cout << "Port malformed request0 Error CSR:0x"<< hex << port_error_csr << endl;
+         res =FOUND_ERR;
+      }
+
+      // Read Port malformed Request1 Error CSR
+      port_error_csr =0x0;
+      m_pPortMMIOService->mmioRead64(PORT_MALFORM1, &port_error_csr);
+      if(0x0 != port_error_csr) {
+         cout << endl <<"==== PORT MALFORMED REQ 1 ===="<< endl;
+         cout << "Port malformed request1 Error CSR:0x"<< hex << port_error_csr << endl;
+         res =FOUND_ERR;
+      }
+
+   } // end of if
    return res ;
 }
 
