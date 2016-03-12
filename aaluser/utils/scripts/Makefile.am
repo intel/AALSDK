@@ -27,18 +27,15 @@
 ##  Accelerator Abstraction Layer Library Software Developer Kit (SDK)
 ##
 ##  Content:
-##     utils/Makefile.am
+##     aalutils/fpgadiag/Makefile
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
 ##  History:
-##     06/16/2015    TSW   Initial version
+##     07/21/2015    TSW   Initial version
 ##******************************************************************************
-SUBDIRS=\
-aalscan \
-fpgadiag \
-data_model \
-ALIAFU/ASEALIAFU \
-ALIAFU/HWALIAFU \
-ALIAFU/SWSimALIAFU \
-scripts
+bin_SCRIPTS=\
+setfpgapwr \
+getfpgapwr \
+setcpupwr \
+getcpupwr
 

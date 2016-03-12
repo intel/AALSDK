@@ -206,6 +206,9 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
        // De-assert Device Reset
        m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
+       // Set input workspace address
+       m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
+
     }
 
     m_pALIMMIOService->mmioWrite32(CSR_CFG, (csr_type)cfg);
