@@ -39,4 +39,6 @@ fpgadiag \
 data_model \
 ALIAFU/ASEALIAFU \
 ALIAFU/HWALIAFU \
-ALIAFU/SWSimALIAFU
+ALIAFU/SWSimALIAFU \
+scripts
+

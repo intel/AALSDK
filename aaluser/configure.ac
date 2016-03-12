@@ -189,7 +189,8 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/data_model/Makefile
                  utils/ALIAFU/HWALIAFU/Makefile
                  utils/ALIAFU/ASEALIAFU/Makefile
-                 utils/ALIAFU/SWSimALIAFU/Makefile])
+                 utils/ALIAFU/SWSimALIAFU/Makefile
+                 utils/scripts/Makefile])
 
 
 AC_OUTPUT
