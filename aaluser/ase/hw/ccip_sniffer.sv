@@ -448,6 +448,7 @@ module ccip_sniffer
 		   exp_c1len   <= C1TxHdr.len;
 		   exp_c1mdata <= C1TxHdr.mdata;
 		   exp_c1state <= Exp_2CL;
+		   c1tx_beat_in_progress <= 1;		   
 		   if (C1TxHdr.addr[1:0] != 2'b00) begin
    		      print_message_and_log(0, "Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned !");
 		      print_and_simkill();		      
@@ -459,6 +460,7 @@ module ccip_sniffer
 		   exp_c1len   <= C1TxHdr.len;
 		   exp_c1mdata <= C1TxHdr.mdata;
 		   exp_c1state <= Exp_2CL;
+		   c1tx_beat_in_progress <= 1;		   
 		   if (C1TxHdr.addr[0] != 1'b0) begin
    		      print_message_and_log(0, "Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned !");
 		      print_and_simkill();		      
@@ -466,10 +468,12 @@ module ccip_sniffer
 		end // if (wrline_en && (C1TxHdr.len == ASE_2CL))
 		// If 3-cacheline request is made, thats ILLEGAL
 		else if (wrline_en && (C1TxHdr.len == ASE_3CL)) begin
+		   c1tx_beat_in_progress <= 0;		   
 		   print_message_and_log(0, "Multi-cacheline request of length=3 is ILLEGAL !");
 		   print_and_simkill();		   
 		end
 		else if (wrline_en && (C1TxHdr.len == ASE_1CL)) begin
+		   c1tx_beat_in_progress <= 1;		   
 		   exp_c1addr  <= C1TxHdr.addr;
 		   exp_c1vc    <= C1TxHdr.vc;
 		   exp_c1len   <= C1TxHdr.len;
@@ -477,6 +481,7 @@ module ccip_sniffer
 		   exp_c1state <= Exp_1CL;
 		end
 		else begin
+		   c1tx_beat_in_progress <= 0;		   
 		   exp_c1state <= Exp_1CL;
 		end
 		// SOP bit check
@@ -490,6 +495,7 @@ module ccip_sniffer
 	   // 2nd cache line of multiline request
 	   Exp_2CL:
 	     begin
+		c1tx_beat_in_progress <= 1;		   
 		// State control
 		if (wrline_en && (exp_c1len == ASE_2CL)) begin
 		   exp_c1state <= Exp_1CL;
@@ -531,6 +537,7 @@ module ccip_sniffer
 	   // 3rd cache line of multiline request -- no return to base from here
 	   Exp_3CL:
 	     begin
+		c1tx_beat_in_progress <= 1;		   
 		// State control
 		if (wrline_en && (exp_c1len == ASE_4CL)) begin
 		   exp_c1state <= Exp_4CL;
@@ -569,6 +576,7 @@ module ccip_sniffer
 	   // 4th cacheline of multiline request
 	   Exp_4CL:
 	     begin
+		c1tx_beat_in_progress <= 1;		   
 		// State control
 		if (wrline_en && (exp_c1len == ASE_4CL)) begin
 		   exp_c1state <= Exp_1CL;
@@ -607,6 +615,7 @@ module ccip_sniffer
 	   // lala land
 	   default:
 	     begin
+		c1tx_beat_in_progress <= 0;		   
 		exp_c1state <= Exp_1CL;
 	     end
 
@@ -685,6 +694,9 @@ module ccip_sniffer
    string  rd_addr_str;
    string  wr_addr_str;
 
+   string  c0txaddr_str;
+   string  c1txaddr_str;
+   
    // Directory process
    always @(posedge clk) begin
       // Channel 0 valid transaction
@@ -692,8 +704,9 @@ module ccip_sniffer
 	 // If Valid read request
 	 if ((C0TxHdr.reqtype == ASE_RDLINE_I)||(C0TxHdr.reqtype == ASE_RDLINE_S)) begin
 	    // If transaction address exists in active list
-	    if  ( rd_active_addr_array.exists(C0TxHdr.addr)||wr_active_addr_array.exists(C0TxHdr.addr) ) begin
-	       rd_addr_str = {"A request to Address ", (C0TxHdr.addr << 6), " is already in flight, potential condition for data hazard"};
+	    if  ( wr_active_addr_array.exists(C0TxHdr.addr) ) begin
+	       c0txaddr_str.hextoa(C0TxHdr.addr);	       
+	       rd_addr_str = {"A request to CL Address ", c0txaddr_str, " is already in flight, potential for Read-after-Write data hazard !"};
 	       print_message_and_log(1, rd_addr_str);
 	    end
 	    else begin
@@ -706,8 +719,14 @@ module ccip_sniffer
 	 // If valid write request
 	 if ((C1TxHdr.reqtype == ASE_WRLINE_I)||(C1TxHdr.reqtype == ASE_WRLINE_M)) begin
 	    // If transaction address exists in active list
-	    if  ( rd_active_addr_array.exists(C1TxHdr.addr)||wr_active_addr_array.exists(C1TxHdr.addr) ) begin
-	       wr_addr_str = {"A request to Address ", (C1TxHdr.addr << 6), " is already in flight, potential condition for data hazard"};
+	    if  ( rd_active_addr_array.exists(C1TxHdr.addr) ) begin
+	       c1txaddr_str.hextoa(C1TxHdr.addr);	       
+	       wr_addr_str = {"A request to Address ", c1txaddr_str, " is already in flight, potential for Write-after-Read data hazard"};
+	       print_message_and_log(1, wr_addr_str);
+	    end
+	    else if (wr_active_addr_array.exists(C1TxHdr.addr) ) begin
+	       c1txaddr_str.hextoa(C1TxHdr.addr);	       
+	       wr_addr_str = {"A request to Address ", c1txaddr_str, " is already in flight, potential for Write-after-Write data hazard"};
 	       print_message_and_log(1, wr_addr_str);
 	    end
 	    else begin

@@ -778,7 +778,29 @@ module outoforder_wrf_channel
 	 // end
 	 // `endif
 	 // return $urandom_range(15, 60);
-	 return 10;
+	 case (hdr.vc)
+	   VC_VL0:
+	     begin
+		// {60, 305}
+		return $urandom_range(20, 118);		
+	     end
+	   VC_VH0:
+	     begin
+		return $urandom_range(240, 270);		
+	     end
+	   VC_VH1:
+	     begin
+		return $urandom_range(240, 270);		
+	     end
+	   VC_VA:
+	     begin
+		return 100;		
+	 `ifdef ASE_DEBUG
+		$fwrite(log_fd, "%d | *ERROR* => get_delay() must not get VC_VA", $time);		
+	 `endif
+	     end
+	 endcase
+	 // return 10;
       end
    endfunction
 

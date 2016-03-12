@@ -384,28 +384,6 @@ module ccip_emulator
    int atomic_credit;
 
 
-   /* ***************************************************************************
-    * CCI signals declarations
-    * ***************************************************************************
-    *
-    *                          -------------------
-    *   tx0_header     ---61-->|                 |---18---> rx0_header
-    *   tx0_valid      ------->|                 |---512--> rx0_data
-    *   tx0_almostfull <-------|                 |--------> rx0_rdvalid
-    *   tx1_header     ---61-->|      ASE        |--------> rx0_wrvalid
-    *   tx1_data       --512-->|     BLOCK       |--------> rx0_cfgvalid
-    *   tx1_valid      ------->|                 |--------> rx0_umsgvalid (TBD)
-    *   tx1_almostfull <-------|                 |--------> rx0_intrvalid (TBD)
-    *   tx1_intrvalid  ------->|                 |---18---> rx1_header
-    *                          |                 |--------> rx1_intrvalid (TBD)
-    *                          |                 |--------> rx1_wrvalid
-    *                          |                 |--------> lp_initdone
-    *                          |                 |--------> reset
-    *                          |                 |--------> clk
-    *                          -------------------
-    *
-    * ***************************************************************************/
-
    /*
     * Overflow/underflow signal checks
     */
@@ -2277,51 +2255,66 @@ module ccip_emulator
     * - Dellocate requests will be queued but not executed
     * **************************************************************************/
    always @(posedge clk) begin
-      // ---------------------------------------------------- //
-      // Read credit counter
-      case (  {C0TxRdValid, (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP)) } )
-	2'b10   : rd_credit <= rd_credit + C0TxHdr.len + 1;
-	2'b01   : rd_credit <= rd_credit - 1;
-	2'b11   : rd_credit <= rd_credit + C0TxHdr.len + 1 - 1;
-	default : rd_credit <= rd_credit;
-      endcase // case ( {C0TxRdValid, C0RxRdValid} )
-      // ---------------------------------------------------- //
-      // Write credit counter
-      case ( { (C1TxWrValid && (C1TxHdr.reqtype != ASE_ATOMIC_REQ)), C1RxWrValid} )
-	2'b10   : wr_credit <= wr_credit + 1;
-	2'b01   : wr_credit <= wr_credit - 1;
-	default : wr_credit <= wr_credit;
-      endcase // case ( {C1TxWrValid, C1RxWrValid} )
-      // ---------------------------------------------------- //
-      // MMIO Writevalid counter
-      case ( {cwlp_wrvalid, C0RxMmioWrValid} )
-	2'b10   : mmiowr_credit <= mmiowr_credit + 1;
-	2'b01   : mmiowr_credit <= mmiowr_credit - 1;
-	default : mmiowr_credit <= mmiowr_credit;
-      endcase // case ( {cwlp_wrvalid, C0RxMmioWrValid} )
-      // ---------------------------------------------------- //
-      // MMIO readvalid counter
-      case ( {cwlp_rdvalid, mmioresp_valid} )
-	2'b10   : mmiord_credit <= mmiord_credit + 1;
-	2'b01   : mmiord_credit <= mmiord_credit - 1;
-	default : mmiord_credit <= mmiord_credit;
-      endcase // case ( {cwlp_rdvalid, mmioresp_valid} )
-      // ---------------------------------------------------- //
-      // Umsg valid counter
-      umsg_credit <= $countones(umsg_hint_enable_array) + $countones(umsg_data_enable_array) + umsgfifo_cnt;
-      // ---------------------------------------------------- //
-      // Atomics CmpXchg counter
-      case ( { (C1TxWrValid && (C1TxHdr.reqtype==ASE_ATOMIC_REQ)), (C0RxRdValid && (C0RxHdr.resptype==ASE_ATOMIC_RSP)) } )
-	2'b10   : atomic_credit <= atomic_credit + 1;
-	2'b01   : atomic_credit <= atomic_credit - 1;
-	default : atomic_credit <= atomic_credit;
-      endcase
-      // ---------------------------------------------------- //
+      if (SoftReset) begin
+	 rd_credit <= 0;
+	 wr_credit <= 0;
+	 mmiowr_credit <= 0;
+	 mmiord_credit <= 0;
+	 umsg_credit <= 0;
+	 atomic_credit <= 0;	 
+      end
+      else begin
+	 // ---------------------------------------------------- //
+	 // Read credit counter
+	 case (  {C0TxRdValid, (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP)) } )
+	   2'b10   : rd_credit <= rd_credit + C0TxHdr.len + 1;
+	   2'b01   : rd_credit <= rd_credit - 1;
+	   2'b11   : rd_credit <= rd_credit + C0TxHdr.len + 1 - 1;
+	   default : rd_credit <= rd_credit;
+	 endcase // case ( {C0TxRdValid, C0RxRdValid} )
+	 // ---------------------------------------------------- //
+	 // Write credit counter
+	 case ( { (C1TxWrValid && (C1TxHdr.reqtype != ASE_ATOMIC_REQ)), C1RxWrValid} )
+	   2'b10   : wr_credit <= wr_credit + 1;
+	   2'b01   : wr_credit <= wr_credit - 1;
+	   default : wr_credit <= wr_credit;
+	 endcase // case ( {C1TxWrValid, C1RxWrValid} )
+	 // ---------------------------------------------------- //
+	 // MMIO Writevalid counter
+	 case ( {cwlp_wrvalid, C0RxMmioWrValid} )
+	   2'b10   : mmiowr_credit <= mmiowr_credit + 1;
+	   2'b01   : mmiowr_credit <= mmiowr_credit - 1;
+	   default : mmiowr_credit <= mmiowr_credit;
+	 endcase // case ( {cwlp_wrvalid, C0RxMmioWrValid} )
+	 // ---------------------------------------------------- //
+	 // MMIO readvalid counter
+	 case ( {cwlp_rdvalid, mmioresp_valid} )
+	   2'b10   : mmiord_credit <= mmiord_credit + 1;
+	   2'b01   : mmiord_credit <= mmiord_credit - 1;
+	   default : mmiord_credit <= mmiord_credit;
+	 endcase // case ( {cwlp_rdvalid, mmioresp_valid} )
+	 // ---------------------------------------------------- //
+	 // Umsg valid counter
+	 umsg_credit <= $countones(umsg_hint_enable_array) + $countones(umsg_data_enable_array) + umsgfifo_cnt;
+	 // ---------------------------------------------------- //
+	 // Atomics CmpXchg counter
+	 case ( { (C1TxWrValid && (C1TxHdr.reqtype==ASE_ATOMIC_REQ)), (C0RxRdValid && (C0RxHdr.resptype==ASE_ATOMIC_RSP)) } )
+	   2'b10   : atomic_credit <= atomic_credit + 1;
+	   2'b01   : atomic_credit <= atomic_credit - 1;
+	   default : atomic_credit <= atomic_credit;
+	 endcase
+	 // ---------------------------------------------------- //
+      end
    end
 
    // Global dealloc flag enable
    always @(posedge clk) begin
-      glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit + atomic_credit;
+      if (SoftReset) begin
+	 glbl_dealloc_credit <= 0;	 
+      end
+      else begin
+	 glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit + atomic_credit;
+      end
    end
 
    // Register for changes
@@ -2331,13 +2324,19 @@ module ccip_emulator
 
    // Update process
    always @(posedge clk) begin
-      if ((glbl_dealloc_credit_q == 0) && (glbl_dealloc_credit != 0)) begin
+      // if ((glbl_dealloc_credit_q == 0) && (glbl_dealloc_credit != 0)) begin
+      // 	 update_glbl_dealloc(0);
+      // end
+      // else if ((glbl_dealloc_credit_q != 0) && (glbl_dealloc_credit == 0)) begin
+      // 	 update_glbl_dealloc(1);
+      // end
+      // else if (glbl_dealloc_credit == 0) begin
+      // 	 update_glbl_dealloc(1);
+      // end
+      if (glbl_dealloc_credit > 0) begin
 	 update_glbl_dealloc(0);
       end
-      else if ((glbl_dealloc_credit_q != 0) && (glbl_dealloc_credit == 0)) begin
-	 update_glbl_dealloc(1);
-      end
-      else if (glbl_dealloc_credit == 0) begin
+      else begin
 	 update_glbl_dealloc(1);
       end
    end

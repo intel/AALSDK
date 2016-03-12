@@ -136,13 +136,13 @@ void* mm_debug_link_linux::read_mmr(btCSROffset target, int access_type)
 
 	  switch(access_type) {
 	 		case 'b':
-	 			read_result = (void *)((unsigned char *) virt_addr);
+	 			read_result = (void *)((uint8_t *) virt_addr);
 	 			break;
 	 		case 'h':
-	 			read_result = (void *)((unsigned short *) virt_addr);
+	 			read_result = (void *)((uint16_t *) virt_addr);
 	 			break;
 	 		case 'w':
-	 			read_result = (void *)((unsigned int *) virt_addr);
+	 			read_result = (void *)((uint32_t *) virt_addr);
 	 			break;
 	 		default:
 	 		   cerr << "Illegal data type '" << access_type << "'.\n";
@@ -162,13 +162,13 @@ void mm_debug_link_linux::write_mmr(off_t target, int access_type, unsigned int 
 
 	  switch(access_type) {
 	 		case 'b':
-	 			*((unsigned char *) virt_addr) = write_val;
+	 			*((uint8_t *) virt_addr) = write_val;
 	 			break;
 	 		case 'h':
-	 			*((unsigned short *) virt_addr) = write_val;
+	 			*((uint16_t *) virt_addr) = write_val;
 	 			break;
 	 		case 'w':
-	 			*((unsigned long *) virt_addr) = write_val;
+	 			*((uint32_t *) virt_addr) = write_val;
 	 			break;
 	 		default:
 	 			cerr << "Illegal data type '" << access_type << "'.\n";

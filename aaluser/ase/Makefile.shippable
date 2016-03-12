@@ -176,7 +176,7 @@ endif
 header:
 	@echo "############################################################"
 	@echo "#                                                          #"
-	@echo "#    Xeon(R) + FPGA Accelerator Abstraction Layer 5.0.3    #"
+	@echo "#       Xeon(R) + FPGA Accelerator Abstraction Layer       #"
 	@echo "#             AFU Simulation Environment (ASE)             #"
 	@echo "#                                                          #"
 	@echo "############################################################"

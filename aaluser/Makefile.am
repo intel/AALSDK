@@ -315,7 +315,12 @@ include/aalsdk/uaia/AIAService.h.in
 
 UTILS_EXTRA=\
 utils/fpgadiag/fpgasane_nlb400_0.sh \
-utils/fpgadiag/fpgasane_nlb400_3.sh
+utils/fpgadiag/fpgasane_nlb400_3.sh \
+utils/scripts/setcpupwr \
+utils/scripts/setfpgapwr \
+utils/scripts/getcpupwr \
+utils/scripts/getfpgapwr
+
 
 EXTRA_DIST=\
 $(AAS_EXTRA) \

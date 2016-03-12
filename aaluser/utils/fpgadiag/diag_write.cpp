@@ -54,6 +54,9 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd)
    btWSSize  sz = CL(cmd.begincls);
    uint_type  mcl = cmd.multicls;
 
+   const btInt StopTimeoutMillis = 250;
+   btInt MaxPoll = StopTimeoutMillis;
+
    volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 
    btVirtAddr pCoolOffUsrVirt = m_pMyApp->InputVirt();
@@ -154,17 +157,45 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd)
 	   // Start the test
 	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
 
-	   // Wait for test completion
-	   while ( 0 == pAFUDSM->test_complete ) {
-		   SleepNano(10);
-	   }
+	   // Wait for test completion or timeout
+      while ( 0 == pAFUDSM->test_complete &&
+             ( MaxPoll >= 0 )) {
+             MaxPoll -= 1;
+             SleepMilli(1);
+       }
 
-	   // Stop the device
-	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
+	    // Stop the device
+	    m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 
-	   //Re-set the test mode
-	   m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
-   }
+	    //Re-set the test mode
+	    m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
+
+	    // Check the device status
+       if ( MaxPoll < 0 ) {
+            cerr << "The maximum timeout for test stop was exceeded during warm-fpga-cache." << endl;
+            return 1;
+       }
+       MaxPoll = StopTimeoutMillis;
+
+       // Initiate AFU Reset
+       if ( 0 != m_pALIResetService->afuReset()){
+            ERR("AFU reset failed post warm-fpga-cache. Exiting test.");
+            return 1;
+       }
+
+       //Set DSM base, high then low
+       m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
+
+       // Assert Device Reset
+       m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
+
+       // De-assert Device Reset
+       m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
+
+       // Set output workspace address
+       m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
+
+    }
 
    m_pALIMMIOService->mmioWrite32(CSR_CFG, (csr_type)cfg);
 
@@ -174,9 +205,6 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd)
    struct timespec ts       = cmd.timeout;
    Timer     absolute = Timer() + Timer(&ts);
 #endif // OS
-
-   const btInt StopTimeoutMillis = 250;
-   btInt MaxPoll = StopTimeoutMillis;
 
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE)){
 	  char * c = (char *)malloc (MAX_CPU_CACHE_SIZE); //Allocate 100MB of space - TODO Increase Cache size when LLC is increased
