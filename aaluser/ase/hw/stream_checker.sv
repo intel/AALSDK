@@ -29,7 +29,7 @@ module stream_checker
 	 end
 	 // else if (hdr_in.reqtype != ASE_WRFENCE) begin
 	 else begin
-	    check_array[{tid_in, hdr_in.len}] = hdr_in;
+	    check_array[{tid_in, hdr_in.mdata}] = hdr_in;
 	 end
       end
       if (valid_out) begin

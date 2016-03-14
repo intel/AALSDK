@@ -164,11 +164,15 @@ struct buffer_t* ll_search_buffer(int search_index)
   search_ptr = head;
 
   // Traverse linked list starting from head
-  while(search_ptr->index != search_index)
+  if (search_ptr != NULL)
     {
-      search_ptr = search_ptr->next;
-      if(search_ptr == NULL)
-	break;
+      while(search_ptr->index != search_index)
+	{
+	  search_ptr = search_ptr->next;
+	  if(search_ptr == NULL)
+	    break;
+	}
+
     }
 
   // When found, return pointer to buffer

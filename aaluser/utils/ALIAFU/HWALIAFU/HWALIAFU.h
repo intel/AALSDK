@@ -119,10 +119,6 @@ DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
    {
       // TODO: at some point, these probably go into init() and be exposed based
       //       on the actual capabilities
-      if ( EObjOK !=  SetInterface(iidALI_MMIO_Service, dynamic_cast<IALIMMIO *>(this)) ) {
-         m_bIsOK = false;
-      }
-
       if ( EObjOK != SetInterface(iidALI_UMSG_Service, dynamic_cast<IALIUMsg *>(this)) ){
          m_bIsOK = false;
       }

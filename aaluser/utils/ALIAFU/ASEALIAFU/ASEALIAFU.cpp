@@ -94,6 +94,18 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
    m_MMIORmap = mmioGetAddress();
    m_MMIORsize = (MMIO_LENGTH - MMIO_AFU_OFFSET);
 
+   // If we have a valid MMIO region, expose IALIMMIO interface
+   if (m_MMIORmap != NULL && m_MMIORsize > 0) {
+      if ( EObjOK !=  SetInterface(iidALI_MMIO_Service, dynamic_cast<IALIMMIO *>(this)) ) {
+         initFailed(new CExceptionTransactionEvent( NULL,
+                                                    TranID,
+                                                    errCreationFailure,
+                                                    reasUnknown,
+                                                    "Error: Could not register interface."));
+         return true;
+      }
+   }
+
    // Populate internal data structures for feature discovery
    if (! _discoverFeatures() ) {
       // FIXME: use correct error classes
@@ -115,6 +127,8 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
 
 btBool ASEALIAFU::_discoverFeatures() {
 
+   btBool retVal;
+
    // walk DFH list and populate internal data structure
    // also do some sanity checking
    AAL_DEBUG(LM_AFU, "Populating feature list from DFH list..." << std::endl);
@@ -122,13 +136,16 @@ btBool ASEALIAFU::_discoverFeatures() {
    btUnsigned32bitInt offset = 0;         // offset that we are currently at
 
    // look at AFU CSR (mandatory) to get first feature header offset
-   ASSERT( mmioRead64(0, (btUnsigned64bitInt *)&feat.dfh) );
+   retVal = mmioRead64(0, (btUnsigned64bitInt *)&feat.dfh);
+   ASSERT( retVal );
    _printDFH(feat.dfh);
    feat.offset = offset;
 
    // read AFUID
-   ASSERT( mmioRead64(offset +  8, &feat.guid[0]) );
-   ASSERT( mmioRead64(offset + 16, &feat.guid[1]) );
+   retVal = mmioRead64(offset +  8, &feat.guid[0]);
+   ASSERT( retVal );
+   retVal = mmioRead64(offset + 16, &feat.guid[1]);
+   ASSERT( retVal );
 
    // Add AFU feature to list
    m_featureList.push_back(feat);
@@ -140,12 +157,15 @@ btBool ASEALIAFU::_discoverFeatures() {
       // populate fields
       feat.offset = offset;
       // read feature header
-      ASSERT(mmioRead64(offset, (btUnsigned64bitInt *)&feat.dfh));
+      retVal = mmioRead64(offset, (btUnsigned64bitInt *)&feat.dfh);
+      ASSERT( retVal );
       _printDFH(feat.dfh);
       // read guid, if present
       if (feat.dfh.Type == ALI_DFH_TYPE_BBB) {
-         ASSERT( mmioRead64(offset +  8, &feat.guid[0]) );
-         ASSERT( mmioRead64(offset + 16, &feat.guid[1]) );
+         retVal = mmioRead64(offset +  8, &feat.guid[0]);
+         ASSERT( retVal );
+         retVal = mmioRead64(offset + 16, &feat.guid[1]);
+         ASSERT( retVal );
       } else {
          feat.guid[0] = feat.guid[1] = 0;
       }
