@@ -342,11 +342,23 @@ btBool HWALIAFU::configureForAFU()
             // mmap
             if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr)) {
                AAL_ERR( LM_All, "FATAL: MapWSID failed");
+               initFailed(new CExceptionTransactionEvent( NULL,
+                        m_tidSaved,
+                        errCreationFailure,
+                        reasUnknown,
+                        "Error: MapWSID failed."));
+               return false;
             }
 
             // Remember workspace parameters associated with virtual ptr (if we ever need it)
             if (m_mapWkSpc.find(wsevt.wsParms.ptr) != m_mapWkSpc.end()) {
                AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
+               initFailed(new CExceptionTransactionEvent( NULL,
+                        m_tidSaved,
+                        errCreationFailure,
+                        reasUnknown,
+                        "Error: Duplicate WSID."));
+               return false;
             } else {
                // store entire aalui_WSParms struct in map
                m_mapWkSpc[wsevt.wsParms.ptr] = wsevt.wsParms;
@@ -354,8 +366,22 @@ btBool HWALIAFU::configureForAFU()
 
             m_MMIORmap = wsevt.wsParms.ptr;
             m_MMIORsize = wsevt.wsParms.size;
+
+            ASSERT( m_MMIORmap != NULL );
+            ASSERT( m_MMIORsize > 0 );
+
+            // Register MMIO interface
+            if ( EObjOK !=  SetInterface(iidALI_MMIO_Service, dynamic_cast<IALIMMIO *>(this)) ) {
+               initFailed(new CExceptionTransactionEvent( NULL,
+                        m_tidSaved,
+                        errCreationFailure,
+                        reasUnknown,
+                        "Error: Could not register interface."));
+               return false;
+            }
+
             return true;
-         }else {
+         } else {
             initFailed(new CExceptionTransactionEvent(NULL,
                                                       m_tidSaved,
                                                       errAFUWorkSpace,
@@ -415,19 +441,24 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
       return;
    }
 
-   // Populate internal data structures for feature discovery
-   if (! _discoverFeatures() ) {
-      // FIXME: use correct error classes
-      initFailed(new CExceptionTransactionEvent( NULL,
-                                                 m_tidSaved,
-                                                 errBadParameter,
-                                                 reasMissingInterface,
-                                                 "Failed to discover features."));
-      return;
-   }
+   // Populate internal data structures for feature discovery, if there is a
+   // valid MMIO space
+   if (m_MMIORmap != NULL && m_MMIORsize > 0) {
 
-   // Print warnings for malformed device feature lists
-   _validateDFL();
+      if (! _discoverFeatures() ) {
+         // FIXME: use correct error classes
+         initFailed(new CExceptionTransactionEvent( NULL,
+                  m_tidSaved,
+                  errBadParameter,
+                  reasMissingInterface,
+                  "Failed to discover features."));
+         return;
+      }
+
+      // Print warnings for malformed device feature lists
+      _validateDFL();
+
+   }
 
    initComplete(m_tidSaved);
 
@@ -1270,6 +1301,8 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
 
 btBool HWALIAFU::_discoverFeatures() {
 
+   btBool retVal;
+
    // walk DFH list and populate internal data structure
    // also do some sanity checking
    AAL_DEBUG(LM_AFU, "Populating feature list from DFH list..." << std::endl);
@@ -1277,13 +1310,16 @@ btBool HWALIAFU::_discoverFeatures() {
    btUnsigned32bitInt offset = 0;         // offset that we are currently at
 
    // look at AFU CSR (mandatory) to get first feature header offset
-   ASSERT( mmioRead64(0, (btUnsigned64bitInt *)&feat.dfh) );
+   retVal = mmioRead64(0, (btUnsigned64bitInt *)&feat.dfh);
+   ASSERT( retVal );
    _printDFH(feat.dfh);
    feat.offset = offset;
 
    // read AFUID
-   ASSERT( mmioRead64(offset +  8, &feat.guid[0]) );
-   ASSERT( mmioRead64(offset + 16, &feat.guid[1]) );
+   retVal = mmioRead64(offset +  8, &feat.guid[0]);
+   ASSERT( retVal );
+   retVal = mmioRead64(offset + 16, &feat.guid[1]);
+   ASSERT( retVal );
 
    // Add AFU feature to list
    m_featureList.push_back(feat);
@@ -1295,12 +1331,15 @@ btBool HWALIAFU::_discoverFeatures() {
       // populate fields
       feat.offset = offset;
       // read feature header
-      ASSERT(mmioRead64(offset, (btUnsigned64bitInt *)&feat.dfh));
+      retVal = mmioRead64(offset, (btUnsigned64bitInt *)&feat.dfh);
+      ASSERT( retVal );
       _printDFH(feat.dfh);
       // read guid, if present
       if (feat.dfh.Type == ALI_DFH_TYPE_BBB) {
-         ASSERT( mmioRead64(offset +  8, &feat.guid[0]) );
-         ASSERT( mmioRead64(offset + 16, &feat.guid[1]) );
+         retVal = mmioRead64(offset +  8, &feat.guid[0]);
+         ASSERT( retVal );
+         retVal = mmioRead64(offset + 16, &feat.guid[1]);
+         ASSERT( retVal );
       } else {
          feat.guid[0] = feat.guid[1] = 0;
       }
