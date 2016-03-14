@@ -700,7 +700,6 @@ module ccip_sniffer
    string  c0txaddr_str;
    string  c1txaddr_str;
 
-/*   
    // Directory process
    always @(posedge clk) begin
       // Channel 0 valid transaction
@@ -747,7 +746,6 @@ module ccip_sniffer
 	 end
       end
    end
-*/
 
 
 endmodule // cci_sniffer

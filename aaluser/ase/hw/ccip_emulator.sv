@@ -2332,10 +2332,10 @@ module ccip_emulator
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display("cf2as_latbuf_ch0 dropped =>");
-	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.checkunit.check_array);
-	 $display("cf2as_latbuf_ch1 dropped =>");
-	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.checkunit.check_array);
+	 // $display("cf2as_latbuf_ch0 dropped =>");
+	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.checkunit.check_array);
+	 // $display("cf2as_latbuf_ch1 dropped =>");
+	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.checkunit.check_array);
 	 $display("Read Response checker =>");
 	 $display(read_check_array);
 	 $display("Write Response checker =>");
