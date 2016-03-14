@@ -307,7 +307,7 @@ btBool HWALIAFU::configureForAFU()
                                                     errBadParameter,
                                                     reasMissingInterface,
                                                     "Client did not publish IALIReconfigure_Client Interface"));
-         return true;
+         return false;
       }
 
 

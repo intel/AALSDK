@@ -82,10 +82,10 @@
 
 #include "cci_pcie_driver_PIPsession.h"
 
-// Maximum  PR timeout  4 seconds
-#define  PR_OUTSTADREQ_TIMEOUT   4000000
-#define  PR_OUTSTADREQ_DELAY     1
-#define  PR_COUNTER_MAX_TRY      0xFFFFFFFFFFF
+// Maximum  PR timeout  15 seconds
+#define  PR_OUTSTANDREQ_TIMEOUT   15000000
+#define  PR_OUTSTANDREQ_DELAY     1
+#define  PR_COUNTER_MAX_TRY       0xFFFFFFFFFFFFLL
 
 
 extern ulong sim;
@@ -176,7 +176,7 @@ int program_afu_bitstream( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSi
    btUnsigned64bitInt  PR_FIFO_credits    = 0;
    btUnsigned32bitInt  *byteRead          = NULL;
    uid_errnum_e  errnum                   = uid_errnumOK;
-   btTime  delay                          = PR_OUTSTADREQ_DELAY;
+   btTime  delay                          = PR_OUTSTANDREQ_DELAY;
    btTime  totaldelay                     = 0;
    btUnsigned64bitInt counter             = 0;
 
@@ -186,7 +186,7 @@ int program_afu_bitstream( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSi
    // Don't do anything under simulation
    if(0 != sim){
 
-    return 0 ;
+      return 0 ;
    }
 
    // Program the AFU
@@ -217,7 +217,7 @@ int program_afu_bitstream( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSi
       totaldelay = totaldelay + delay;
 
       // if total delay is more then PR_OUTSTADREQ_TIMEOUT, returns Timeout error.
-      if (totaldelay > PR_OUTSTADREQ_TIMEOUT)   {
+      if (totaldelay > PR_OUTSTANDREQ_TIMEOUT)   {
          PERR(" Maximum PR Timeout   \n");
          errnum=uid_errnumPRTimeout;
          goto ERR;
@@ -364,7 +364,7 @@ int program_afu_bitstream( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSi
       totaldelay = totaldelay + delay;
 
       // if total delay is more then PR_OUTSTADREQ_TIMEOUT, returns Timeout error
-      if (totaldelay > PR_OUTSTADREQ_TIMEOUT)   {
+      if (totaldelay > PR_OUTSTANDREQ_TIMEOUT)   {
          PERR(" Maximum PR Timeout   \n");
          errnum=uid_errnumPRTimeout;
          goto ERR;
