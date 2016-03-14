@@ -166,9 +166,14 @@ module ccip_emulator
    // ccip_tx1_to_ase_tx1: Convert from CCIP -> ASE Tx1
    function ASETxHdr_t ccip_tx1_to_ase_tx1(t_ccip_c1_ReqMemHdr inhdr);
       ASETxHdr_t txasehdr;
+      logic [41:0]   c1tx_mcl_baseaddr;
+      ccip_reqtype_t c1tx_mcl_basetype;      
+      ccip_len_t     c1tx_mcl_baselen;
+      logic [15:0]   c1tx_mcl_basemdata;      
       begin
 	 txasehdr.txhdr = TxHdr_t'(inhdr);
 	 txasehdr.channel_id = 1;
+	 // Request type remap to ASE internal types
 	 case (inhdr.req_type)
 	   eREQ_WRLINE_I : txasehdr.txhdr.reqtype = ASE_WRLINE_I;
 	   eREQ_WRLINE_M : txasehdr.txhdr.reqtype = ASE_WRLINE_M;
@@ -178,6 +183,23 @@ module ccip_emulator
 `endif
 	   eREQ_INTR     : txasehdr.txhdr.reqtype = ASE_INTR_REQ;
 	 endcase // case (inhdr.req_type)
+	 // Accomodating MCL addr[41:2]=X when SOP=0
+	 if ((txasehdr.txhdr.reqtype==ASE_WRLINE_I)||(txasehdr.txhdr.reqtype == ASE_WRLINE_M)) begin
+	    if (inhdr.sop) begin
+	       c1tx_mcl_baseaddr  = txasehdr.txhdr.addr;
+	       c1tx_mcl_basetype  = txasehdr.txhdr.reqtype;
+	       c1tx_mcl_baselen   = txasehdr.txhdr.len;
+	       c1tx_mcl_basemdata = txasehdr.txhdr.mdata;	       
+	    end
+	    else begin
+	       txasehdr.txhdr.reqtype = c1tx_mcl_basetype;	       
+	       case (c1tx_mcl_baselen)
+		 ASE_2CL: txasehdr.txhdr.addr = {c1tx_mcl_baseaddr[41:1], inhdr.address[0]};		 
+		 ASE_4CL: txasehdr.txhdr.addr = {c1tx_mcl_baseaddr[41:2], inhdr.address[1:0]};
+	       endcase // case (c1tx_mcl_baselen)
+	       txasehdr.txhdr.mdata = c1tx_mcl_basemdata;	       
+	    end	
+	 end
 	 return txasehdr;
       end
    endfunction
