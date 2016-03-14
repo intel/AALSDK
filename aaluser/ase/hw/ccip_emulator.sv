@@ -170,6 +170,7 @@ module ccip_emulator
       ccip_reqtype_t c1tx_mcl_basetype;      
       ccip_len_t     c1tx_mcl_baselen;
       logic [15:0]   c1tx_mcl_basemdata;      
+      ccip_vc_t      c1tx_mcl_basevc;      
       begin
 	 txasehdr.txhdr = TxHdr_t'(inhdr);
 	 txasehdr.channel_id = 1;
@@ -189,7 +190,8 @@ module ccip_emulator
 	       c1tx_mcl_baseaddr  = txasehdr.txhdr.addr;
 	       c1tx_mcl_basetype  = txasehdr.txhdr.reqtype;
 	       c1tx_mcl_baselen   = txasehdr.txhdr.len;
-	       c1tx_mcl_basemdata = txasehdr.txhdr.mdata;	       
+	       c1tx_mcl_basemdata = txasehdr.txhdr.mdata;
+	       c1tx_mcl_basevc    = txasehdr.txhdr.vc;
 	    end
 	    else begin
 	       txasehdr.txhdr.reqtype = c1tx_mcl_basetype;	       
@@ -198,6 +200,7 @@ module ccip_emulator
 		 ASE_4CL: txasehdr.txhdr.addr = {c1tx_mcl_baseaddr[41:2], inhdr.address[1:0]};
 	       endcase // case (c1tx_mcl_baselen)
 	       txasehdr.txhdr.mdata = c1tx_mcl_basemdata;	       
+	       txasehdr.txhdr.vc    = c1tx_mcl_basevc;
 	    end	
 	 end
 	 return txasehdr;
