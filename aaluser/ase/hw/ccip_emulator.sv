@@ -705,7 +705,8 @@ module ccip_emulator
 	 end
 	 else begin
 	    if (mmio_pkt.write_en == MMIO_WRITE_REQ) begin
-	       hdr.index  = {2'b0, mmio_pkt.addr[15:2]};
+	       // hdr.index  = {2'b0, mmio_pkt.addr[15:2]};
+	       hdr.index  = {mmio_pkt.addr[17:2]};
 	       hdr.rsvd9  = 1'b0;
 	       hdr.tid    = mmio_tid_counter;
 	       if (mmio_pkt.width == MMIO_WIDTH_32) begin
@@ -1262,9 +1263,10 @@ module ccip_emulator
    int ase_rx1_wrfence_cnt   ;
    int ase_rx0_umsghint_cnt  ;
    int ase_rx0_umsgdata_cnt  ;
+`ifdef DEFEATRUE_ATOMIC
    int ase_tx1_atomic_cnt;
    int ase_rx0_atomic_cnt;
-
+`endif
 
    // Remap UmsgHdr for count purposes
    UMsgHdr_t ase_umsghdr_map;
@@ -1284,8 +1286,10 @@ module ccip_emulator
 	 ase_rx1_wrfence_cnt <= 0 ;
 	 ase_rx0_umsghint_cnt <= 0 ;
 	 ase_rx0_umsgdata_cnt <= 0 ;
+`ifdef DEFEATRUE_ATOMIC
 	 ase_tx1_atomic_cnt <= 0;
 	 ase_rx0_atomic_cnt <= 0;
+`endif
       end
       else begin
 	 // MMIO counts
@@ -1314,11 +1318,13 @@ module ccip_emulator
 	   ase_rx0_umsghint_cnt <= ase_rx0_umsghint_cnt + 1;
 	 if (C0RxUMsgValid && ~ase_umsghdr_map.umsg_type )
 	   ase_rx0_umsgdata_cnt <= ase_rx0_umsgdata_cnt + 1;
+`ifdef DEFEATRUE_ATOMIC
 	 // Atomics' counts
 	 if (C1TxWrValid && (C1TxHdr.reqtype == ASE_ATOMIC_REQ))
 	   ase_tx1_atomic_cnt <= ase_tx1_atomic_cnt + 1;
 	 if (C0RxRdValid && (C0RxHdr.resptype == ASE_ATOMIC_RSP))
 	   ase_rx0_atomic_cnt <= ase_rx0_atomic_cnt + 1;
+`endif
       end
    end
 
@@ -2313,8 +2319,10 @@ module ccip_emulator
 	 $display("\tWrFenceRsp = %d", ase_rx1_wrfence_cnt   );
 	 $display("\tUMsgHint   = %d", ase_rx0_umsghint_cnt  );
 	 $display("\tUMsgData   = %d", ase_rx0_umsgdata_cnt  );
+`ifdef DEFEATRUE_ATOMIC
 	 $display("\tAtomicReq  = %d", ase_tx1_atomic_cnt    );
 	 $display("\tAtomicRsp  = %d", ase_rx0_atomic_cnt    );
+`endif
 	 `END_YELLOW_FONTCOLOR;
 
 	 // Valid Count
