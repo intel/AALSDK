@@ -157,6 +157,7 @@ typedef void * kosal_ownermodule;
 #define AALBUS_DBG_FILE    ((KOSAL_UINT)1 <<  1)
 #define AALBUS_DBG_MMAP    ((KOSAL_UINT)1 <<  2)
 #define AALBUS_DBG_IOCTL   ((KOSAL_UINT)1 <<  3)
+#define AALBUS_DBG_POLL    ((KOSAL_UINT)1 <<  4)
 
 #define AALRMC_DBG_MOD     ((KOSAL_UINT)1 <<  0)
 #define AALRMC_DBG_FILE    ((KOSAL_UINT)1 <<  1)

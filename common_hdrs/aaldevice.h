@@ -131,7 +131,7 @@ struct aal_device {
    btUnsigned16bitInt m_flags;
 
    // Device interface used by AAL Bus
-   struct aaldevice_interface          i;
+   AAL_DEVICE_INTERFACE          i;
 
    // Device specific information
    struct aal_device_id m_devid;       // Device ID
@@ -197,6 +197,7 @@ struct aal_device {
 #define aaldev_pipid(d)                  ((d)->m_devid.m_pipGUID)                // PIP IID
 #define aaldev_pipp(d)                   ((d)->m_pip)                            // PIP pointer
 #define aaldev_pipmsgHandlerp(d)         ( &(aaldev_pipp(d))->m_messageHandler ) // Message handler
+#define aaldev_interface(d)              ((d)->i)                                // Device interface
 #define aaldev_pip_interface(d)          ((d)->m_ipip)                           // PIP interface container object
 #define aaldev_pip_context(d)            ((d)->m_pipContext)                     // Context
 #define aaldev_pip_context_to_obj(t,d)   ( (t) (d->m_pipContext) )               // Context cast to type
