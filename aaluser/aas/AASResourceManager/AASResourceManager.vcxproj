@@ -166,17 +166,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\AASResourceManager.cpp" />
-    <ClCompile Include="..\CAASResourceManager.cpp" />
-    <ClCompile Include="..\CRegistrarDatabase.cpp" />
-    <ClCompile Include="..\InstanceRecord.cpp" />
-    <ClCompile Include="..\RegDBSkeleton.cpp" />
-    <ClCompile Include="..\ResMgrAlgorithms.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\aalsdk\rm\CAASResourceManager.h" />
     <ClInclude Include="..\..\..\include\aalsdk\rm\CRegistrarDatabase.h" />
     <ClInclude Include="..\..\..\include\aalsdk\rm\InstanceRecord.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\rm\RegDBSkeleton.h" />
+    <ClInclude Include="..\..\include\aalsdk\rm\AALResourceManager.h" />
+    <ClInclude Include="..\..\include\aalsdk\rm\AALResourceManagerClient.h" />
+    <ClInclude Include="..\..\include\aalsdk\rm\AALResourceManagerProxy.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
