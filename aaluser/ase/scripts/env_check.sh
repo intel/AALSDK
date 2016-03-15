@@ -31,8 +31,13 @@ arch=$(uname -p)
 dist_id=$(lsb_release -i -s | tr '\[A-Z\]' '\[a-z\]')
 dist_ver=$(lsb_release -r -s | tr '\[A-Z\]' '\[a-z\]')
 dist_code=$(lsb_release -c -s | tr '\[A-Z\]' '\[a-z\]')
-shm_testfile=$(/dev/shm/"$USER".ase_envcheck)
+shm_testfile=$(echo /dev/shm/"$USER".ase_envcheck)
 
+## Version greater than tester function
+function version_check() 
+{ 
+    test "$(echo "$@" | tr " " "\n" | sort -V | head -n 1)" != "$1"; 
+}
 
 ## Print header, and basic info
 echo "############################################################"
@@ -91,6 +96,7 @@ echo "-----------------------------------------------------------"
 ## Check if /dev/shm is mounted, try writing then deleting a file for access check
 if [ -d /dev/shm/ ]; then
     echo "  [INFO] /dev/shm is accessible ... testing further"
+    echo "  [INFO] Testing with file \"$shm_testfile\""
     touch "$shm_testfile"
     echo "$USER" >> "$shm_testfile"
     readback_shmfile=$(cat "$shm_testfile")
@@ -108,10 +114,32 @@ fi
 
 echo "-----------------------------------------------------------"
 
+## Bash Version check
+# *FIXME*
+
+## CSH version check
+# *FIXME*
+
 ## GCC version check
 GCCVERSION=$(gcc --version | grep ^gcc | sed 's/^.* //g')
 echo "  [INFO] GCC version found : $GCCVERSION"
-echo "  [INFO] ASE recommends using GCC version > 4.4"
+if version_check $GCCVERSION "4.4"; then
+    echo "  [INFO] GCC version seems to be OK"
+else
+    echo "  [WARN] Possible incompatible GCC found in path"
+    echo "  [INFO] ASE recommends using GCC version > 4.4"
+fi
+echo "-----------------------------------------------------------"
+
+## Python version check
+PYTHONVER=$(python -c 'import sys; print(".".join(map(str, sys.version_info[:3])))')
+echo "  [INFO] Python version found : $PYTHONVER"
+if version_check $PYTHONVER "2.7"; then
+    echo "  [INFO] Python version seems to be OK"
+else
+    echo "  [WARN] Possible incompatible Python found in path"
+    echo "  [INFO] ASE recommends using Python version > 2.7"
+fi
 echo "-----------------------------------------------------------"
 
 ## RTL tool check
