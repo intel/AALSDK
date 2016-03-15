@@ -19,15 +19,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{030B951A-4889-4D08-BF99-898C75B5D22D}</ProjectGuid>
-    <RootNamespace>HWALIAFU</RootNamespace>
+    <ProjectGuid>{6F062186-3ADF-417F-A7FC-23AEF4530FB0}</ProjectGuid>
+    <RootNamespace>libaia</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
-    <CharacterSet>NotSet</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -43,6 +43,7 @@
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <PlatformToolset>v120</PlatformToolset>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -54,13 +55,14 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\bin\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\bin\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\obj\$(ProjectName)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\obj\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -88,21 +90,37 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)aaluser\include;$(SolutionDir)aaluser\win;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_AAL_USER__=1;ENABLE_DEBUG=1;ENABLE_ASSERT=1;ALIAFU_EXPORTS;HWALIAFU_EXPORTS;UAIA_EXPORTS;_NO_BUILD_MESSAGES_;HAVE_CONFIG_H;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)aaluser\win;$(SolutionDir)aaluser\include;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;AALRUNTIME_EXPORTS;AIASERVICE_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;UAIA_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libAALRuntime.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libaalrt.lib;Setupapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SolutionDir)aaluser\win;$(SolutionDir)aaluser\include;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=0;DEBUG_BEYOND_LOGGER=0;ENABLE_ASSERT=1;AALRUNTIME_EXPORTS;AIASERVICE_EXPORTS;UAIA_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libaalrt.lib;Setupapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ALIAIATransactions.cpp" />
-    <ClCompile Include="HWALIAFU.cpp" />
+    <ClCompile Include="AIADllMain.cpp" />
+    <ClCompile Include="AIAService.cpp" />
+    <ClCompile Include="AIATransactions.cpp" />
+    <ClCompile Include="ALIAFUProxy.cpp" />
+    <ClCompile Include="UIDriverInterfaceAdapter.cpp" />
+    <ClCompile Include="uidrvMessage.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ALIAIATransactions.h" />
-    <ClInclude Include="HWALIAFU.h" />
+    <ClInclude Include="AIA-internal.h" />
+    <ClInclude Include="AIATransactions.h" />
+    <ClInclude Include="ALIAFUProxy.h" />
+    <ClInclude Include="UIDriverInterfaceAdapter.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

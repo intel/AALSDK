@@ -34,98 +34,75 @@
 // PURPOSE:
 // HISTORY:
 // WHEN:          WHO:     WHAT:
-// 5/06/2014      TSW      Initial version.@endverbatim
+// 05/06/2014     TSW      Initial version.
+// 03/14/2016     TSW      Bringing Windows back online.@endverbatim
 //****************************************************************************
-#define AALSDK_PACKAGE                "aalsdk_splrm"
-#define AALSDK_PACKAGE_VERSION        "4.1.0"
-#define AALSDK_COPYRIGHT_STMNT        "Copyright(c) 2003-2016, Intel Corporation"
+#define PACKAGE                       "aalsdk"
+#define PACKAGE_VERSION               "5.0.2"
+#define AALSDK_COPYRIGHT              "Copyright(c) 2003-2016, Intel Corporation"
 #define PACKAGE_BUGREPORT             "joe.grecco@intel.com"
 #define PACKAGE_URL                   ""
 #define GIT_COMMIT_ID                 "unknown"
 
-#define OSAL_VERSION_CURRENT          4
-#define OSAL_VERSION_REVISION         1
-#define OSAL_VERSION_AGE              0
-#define OSAL_VERSION                  "4.1.0"
+#define AALCLP_VERSION                "0.0.0"
+#define AALCLP_VERSION_CURRENT        0
+#define AALCLP_VERSION_REVISION       0
+#define AALCLP_VERSION_AGE            0
 
-#define AAS_VERSION_CURRENT           4
-#define AAS_VERSION_REVISION          1
+#define AALRUNTIME_VERSION            "0.0.0"
+#define AALRUNTIME_VERSION_CURRENT    0
+#define AALRUNTIME_VERSION_REVISION   0
+#define AALRUNTIME_VERSION_AGE        0
+
+#define AAS_VERSION                   "0.0.0"
+#define AAS_VERSION_CURRENT           0
+#define AAS_VERSION_REVISION          0
 #define AAS_VERSION_AGE               0
-#define AAS_VERSION                   "4.1.0"
 
-#define AASEDS_VERSION_CURRENT        4
-#define AASEDS_VERSION_REVISION       1
-#define AASEDS_VERSION_AGE            0
-#define AASEDS_VERSION                "4.1.0"
+#define AIASERVICE_VERSION            "0.0.0"
+#define AIASERVICE_VERSION_CURRENT    0
+#define AIASERVICE_VERSION_REVISION   0
+#define AIASERVICE_VERSION_AGE        0
 
-#define AASUAIA_VERSION_CURRENT       4
-#define AASUAIA_VERSION_REVISION      1
-#define AASUAIA_VERSION_AGE           0
-#define AASUAIA_VERSION               "4.1.0"
-
-#define UTILSAFU_VERSION_CURRENT      0
-#define UTILSAFU_VERSION_REVISION     0
-#define UTILSAFU_VERSION_AGE          0
-#define UTILSAFU_VERSION              "0.0.0"
-
-#define AALRUNTIME_VERSION_CURRENT          0
-#define AALRUNTIME_VERSION_REVISION         0
-#define AALRUNTIME_VERSION_AGE              0
-#define AALRUNTIME_VERSION                  "0.0.0"
-
-#define SAMPLEAFU1_VERSION_CURRENT    0
-#define SAMPLEAFU1_VERSION_REVISION   0
-#define SAMPLEAFU1_VERSION_AGE        0
-#define SAMPLEAFU1_VERSION            "0.0.0"
-
-#define SAMPLEAFU2_VERSION_CURRENT    0
-#define SAMPLEAFU2_VERSION_REVISION   0
-#define SAMPLEAFU2_VERSION_AGE        0
-#define SAMPLEAFU2_VERSION            "0.0.0"
-
-#define ALIAFU_VERSION_CURRENT        0
-#define ALIAFU_VERSION_REVISION       0
-#define ALIAFU_VERSION_AGE            0
-#define ALIAFU_VERSION                "0.0.0"
-
-#define HWALIAFU_VERSION_CURRENT      0
-#define HWALIAFU_VERSION_REVISION     0
-#define HWALIAFU_VERSION_AGE          0
-#define HWALIAFU_VERSION              "0.0.0"
-
+#define ASEALIAFU_VERSION             "0.0.0"
 #define ASEALIAFU_VERSION_CURRENT     0
 #define ASEALIAFU_VERSION_REVISION    0
 #define ASEALIAFU_VERSION_AGE         0
-#define ASEALIAFU_VERSION             "0.0.0"
 
+#define ASE_VERSION                   "0.0.0"
+#define ASE_VERSION_CURRENT           0
+#define ASE_VERSION_REVISION          0
+#define ASE_VERSION_AGE               0
+
+#define HWALIAFU_VERSION              "0.0.0"
+#define HWALIAFU_VERSION_CURRENT      0
+#define HWALIAFU_VERSION_REVISION     0
+#define HWALIAFU_VERSION_AGE          0
+
+#define OSAL_VERSION                  "0.0.0"
+#define OSAL_VERSION_CURRENT          0
+#define OSAL_VERSION_REVISION         0
+#define OSAL_VERSION_AGE              0
+
+#define RESMGR_VERSION                "0.0.0"
+#define RESMGR_VERSION_CURRENT        0
+#define RESMGR_VERSION_REVISION       0
+#define RESMGR_VERSION_AGE            0
+
+#define RRMBROKER_VERSION             "0.0.0"
+#define RRMBROKER_VERSION_CURRENT     0
+#define RRMBROKER_VERSION_REVISION    0
+#define RRMBROKER_VERSION_AGE         0
+
+#define RRM_VERSION                   "0.0.0"
+#define RRM_VERSION_CURRENT           0
+#define RRM_VERSION_REVISION          0
+#define RRM_VERSION_AGE               0
+
+#define SWSIMALIAFU_VERSION           "0.0.0"
 #define SWSIMALIAFU_VERSION_CURRENT   0
 #define SWSIMALIAFU_VERSION_REVISION  0
 #define SWSIMALIAFU_VERSION_AGE       0
-#define SWSIMALIAFU_VERSION           "0.0.0"
-
-
-
-#define AIASERVICE_VERSION_CURRENT   0
-#define AIASERVICE_VERSION_REVISION  0
-#define AIASERVICE_VERSION_AGE       0
-#define AIASERVICE_VERSION           "0.0.0"
-
-
-#define RRMBROKER_VERSION_CURRENT   0
-#define RRMBROKER_VERSION_REVISION  0
-#define RRMBROKER_VERSION_AGE       0
-#define RRMBROKER_VERSION           "0.0.0"
-
-#define RRM_VERSION_CURRENT        0
-#define RRM_VERSION_REVISION       0
-#define RRM_VERSION_AGE            0
-#define RRM_VERSION                "0.0.0"
-
-#define RESMGR_VERSION_CURRENT     0
-#define RESMGR_VERSION_REVISION    0
-#define RESMGR_VERSION_AGE         0
-#define RESMGR_VERSION             "0.0.0"
-
 
 #define STDC_HEADERS  1
 #define HAVE_STDINT_H 1
