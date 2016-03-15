@@ -25,16 +25,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #****************************************************************************
-# @file setpwr
+# @file setfpgapwr
 # @brief Set FPGA power thresholds
 # @verbatim
 # Accelerator Abstraction Layer Utility Script
 #
 # Modifies FPGA FME registers that define power limits for thresholds 1 and 2.
 #
-# See 'setpwr -h' for usage.
+# See 'setfpgapwr -h' for usage.
 #
-# Invoke as 'getpwr' (via symlink) to read values only.
+# Invoke as 'getfpgapwr' (via symlink) to read values only.
 #
 # Uses pcimem for register access. If not found, the script will offer to
 # download and build.
@@ -59,7 +59,7 @@ SCRIPTNAME=$(basename "$0")         # How we were called
 PCIMEM=pcimem                       # Name of pcimem executable
 PCIMEM_URL="https://github.com/billfarrow/pcimem"
 PCIMEM_BUILDDIR=$(pwd)/build_pcimem # Path to build pcimem in
-PATH="${PATH}:${PCIMEM_BUILDDIR}"   # PATH including potentially built pcimem
+PATH="${PATH}:${PWD}:${PCIMEM_BUILDDIR}"  # PATH including PWD and built pcimem
 PM_THRESHOLD_OFFSET="0x2008"        # FIXME: hardcoded, should discover via DFL
 PM_DFH_OFFSET="0x2000"              # FIXME: hardcoded, should discover via DFL
 PM_FTYPE="3"                        # Expected feature type for PM
@@ -91,7 +91,7 @@ function get_and_build_pcimem()
       echo "ERROR: make failed. See make.log for details."
       echo ""
       echo "You might want to download and build pcimem manually and place it"
-      echo "in your PATH."
+      echo "in your PATH or the current working directory."
       cd "${OLDDIR}"
       exit 1
    }
@@ -111,7 +111,7 @@ function get_and_build_pcimem()
 #
 function print_usage ()
 {
-   if [ "${SCRIPTNAME}" = "setpwr" ]; then
+   if [ "${SCRIPTNAME}" = "setfpgapwr" ]; then
       echo "USAGE: ${SCRIPTNAME} [-v] -d <device> [-1 <pt 1>] [-2 <pt 2>]"
       echo ""
       echo "       -d <device>  Path to sysfs device resource associated with"
@@ -121,7 +121,7 @@ function print_usage ()
       echo "       -2 <pt 2>    Set core supply threshold 2 value."
       echo "                    Units of 0.78125 A. Default: 0x53 (64.8 A)"
       echo "       -v           Be verbose. Can be issued multiple times (-vv)."
-   elif [ "${SCRIPTNAME}" = "getpwr" ]; then
+   elif [ "${SCRIPTNAME}" = "getfpgapwr" ]; then
       echo "USAGE: ${SCRIPTNAME} [-v] -d <device> [-1] [-2]"
       echo ""
       echo "       -d <device>  Path to sysfs device resource associated with"
@@ -139,7 +139,7 @@ function print_usage ()
 #
 function parse_arguments()
 {
-   if [ "${SCRIPTNAME}" = "setpwr" ]; then
+   if [ "${SCRIPTNAME}" = "setfpgapwr" ]; then
 
       while getopts ":hv1:2:d:" OPT; do
          case "${OPT}" in
@@ -174,7 +174,7 @@ function parse_arguments()
          esac
       done
 
-   elif [ "${SCRIPTNAME}" = "getpwr" ]; then
+   elif [ "${SCRIPTNAME}" = "getfpgapwr" ]; then
 
       while getopts ":hv12d:" OPT; do
          case "${OPT}" in
@@ -217,14 +217,14 @@ function parse_arguments()
 #
 function check_arguments()
 {
-   if [ "${SCRIPTNAME}" = "setpwr" ]; then
+   if [ "${SCRIPTNAME}" = "setfpgapwr" ]; then
 
       if [ -z "${THRESHOLD_1}" -a -z "${THRESHOLD_2}" ]; then
          echo "ERROR: No power threshold provided."
          exit 1
       fi
 
-   elif [ "${SCRIPTNAME}" = "getpwr" ]; then
+   elif [ "${SCRIPTNAME}" = "getfpgapwr" ]; then
 
       if [ -z "${THRESHOLD_1}" -a -z "${THRESHOLD_2}" ]; then
          echo "ERROR: No threshold to read specified."
@@ -364,8 +364,8 @@ check_arguments
 # TODO: Also check FME GUID
 check_dfh ${PM_DFH_OFFSET} ${PM_FTYPE} ${PM_FREV} ${PM_FID}
 
-# --- SETPWR: write values ----------------------------------------------------
-if [ "${SCRIPTNAME}" = "setpwr" ]; then
+# --- SETFPGAPWR: write values ----------------------------------------------------
+if [ "${SCRIPTNAME}" = "setfpgapwr" ]; then
 
    # Read lower half of PM_THRESHOLD register
    read32 "${PM_THRESHOLD_OFFSET}" "READ_VAL"
@@ -414,8 +414,8 @@ if [ "${SCRIPTNAME}" = "setpwr" ]; then
    # Write register contents back
    write32 "${PM_THRESHOLD_OFFSET}" "${WRITE_VAL}"
 
-# --- GETPWR: write values ----------------------------------------------------
-elif [ "${SCRIPTNAME}" = "getpwr" ]; then
+# --- GETFPGAPWR: write values ----------------------------------------------------
+elif [ "${SCRIPTNAME}" = "getfpgapwr" ]; then
 
    # Read lower half of PM_THRESHOLD register
    read32 "${PM_THRESHOLD_OFFSET}" "READ_VAL"

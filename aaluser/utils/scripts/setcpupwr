@@ -83,7 +83,7 @@ function print_usage ()
       echo "                       Units of 0.125 W."
       echo "       -v              Be verbose. Can be issued multiple times (-vv)."
    elif [ "${SCRIPTNAME}" = "getcpupwr" ]; then
-      echo "USAGE: ${SCRIPTNAME} [-v] -d <device> [-1] [-2]"
+      echo "USAGE: ${SCRIPTNAME} [-v] [-1] [-2]"
       echo ""
       echo "       -1 <limit 1>    Get RAPL power target 1 value."
       echo "                       Units of 0.125 W."
