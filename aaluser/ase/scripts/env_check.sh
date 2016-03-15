@@ -31,7 +31,7 @@ arch=$(uname -p)
 dist_id=$(lsb_release -i -s | tr '\[A-Z\]' '\[a-z\]')
 dist_ver=$(lsb_release -r -s | tr '\[A-Z\]' '\[a-z\]')
 dist_code=$(lsb_release -c -s | tr '\[A-Z\]' '\[a-z\]')
-shm_testfile=$(echo /dev/shm/"$USER".ase_envcheck)
+shm_testfile="/dev/shm/\"$USER\".ase_envcheck"
 
 ## Version greater than tester function
 function version_check() 
@@ -46,13 +46,13 @@ echo "#   Xeon (R) + FPGA Accelerator Abstraction Layer 5.0.3    #"
 echo "#         AFU Simulation Environment (ASE)                 #"
 echo "#                                                          #"
 echo "############################################################"
-echo "Checking Machine... "
-echo "Operating System = ${os} "
-echo "Kernel Release   = ${kernel_rel}"
-echo "Machine          = ${arch}"
-echo "Distro ID        = ${dist_id}" 
-echo "Distro Version   = ${dist_ver}"
-echo "Distro Code      = ${dist_code}"
+echo "  Checking Machine... "
+echo "  Operating System = ${os} "
+echo "  Kernel Release   = ${kernel_rel}"
+echo "  Machine          = ${arch}"
+echo "  Distro ID        = ${dist_id}" 
+echo "  Distro Version   = ${dist_ver}"
+echo "  Distro Code      = ${dist_code}"
 echo "-----------------------------------------------------------"
 
 ## If Machine is not 64-bit, flash message
@@ -64,9 +64,18 @@ if [ "$os" == "linux" ]; then
     fi
     # Check distro
     if   [ "$dist_id" == "ubuntu" ] ; then	
-    	echo "  [INFO] Ubuntu found "
+	if version_check "$dist_ver" "12.04"; then
+    	    echo "  [INFO] Ubuntu $dist_ver found"
+	else
+	    echo "  [WARN] ASE behavior on Ubuntu $dist_ver is unknown !"
+	fi
     elif [ "$dist_id" == "suse linux" ] ; then
     	echo "  [INFO] SLES found"
+	if version_check "$dist_ver" "10"; then
+	    echo "  [INFO] SLES version seems to be OK"
+	else
+	    echo "  [WARN] ASE behaviour on SLES < 11 is unknown !"
+	fi
     else
     	echo "  [WARN] Machine is running an unknown Distro --- ASE compatibility unknown !"
     fi
@@ -123,7 +132,7 @@ echo "-----------------------------------------------------------"
 ## GCC version check
 GCCVERSION=$(gcc --version | grep ^gcc | sed 's/^.* //g')
 echo "  [INFO] GCC version found : $GCCVERSION"
-if version_check $GCCVERSION "4.4"; then
+if version_check "$GCCVERSION" "4.4"; then
     echo "  [INFO] GCC version seems to be OK"
 else
     echo "  [WARN] Possible incompatible GCC found in path"
@@ -134,7 +143,7 @@ echo "-----------------------------------------------------------"
 ## Python version check
 PYTHONVER=$(python -c 'import sys; print(".".join(map(str, sys.version_info[:3])))')
 echo "  [INFO] Python version found : $PYTHONVER"
-if version_check $PYTHONVER "2.7"; then
+if version_check "$PYTHONVER" "2.7"; then
     echo "  [INFO] Python version seems to be OK"
 else
     echo "  [WARN] Possible incompatible Python found in path"
