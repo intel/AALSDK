@@ -31,7 +31,7 @@ arch=$(uname -p)
 dist_id=$(lsb_release -i -s | tr '\[A-Z\]' '\[a-z\]')
 dist_ver=$(lsb_release -r -s | tr '\[A-Z\]' '\[a-z\]')
 dist_code=$(lsb_release -c -s | tr '\[A-Z\]' '\[a-z\]')
-shm_testfile="/dev/shm/\"$USER\".ase_envcheck"
+shm_testfile="/dev/shm/$USER.ase_envcheck"
 
 ## Version greater than tester function
 function version_check() 
