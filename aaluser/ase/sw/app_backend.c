@@ -633,7 +633,17 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   
   
   // Extend memory to required size
-  ftruncate(mem->fd_app, (off_t)mem->memsize);
+  int ret;
+  ret = ftruncate(mem->fd_app, (off_t)mem->memsize);
+#ifdef ASE_DEBUG
+  if (ret != 0)
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [DEBUG]  ftruncate failed");
+      perror("ftruncate");
+      END_YELLOW_FONTCOLOR;
+    }
+#endif
 
   // Autogenerate buffer index
   mem->index = asebuf_index_count;
@@ -912,7 +922,8 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
  * or race conditions
  *
  */
-void __attribute__((optimize("O0"))) ase_portctrl(const char *ctrl_msg)
+// void __attribute__((optimize("O0"))) ase_portctrl(const char *ctrl_msg)
+void ase_portctrl(const char *ctrl_msg)
 {
   char dummy_rxstr[ASE_MQ_MSGSIZE];
   memset(dummy_rxstr, 0, ASE_MQ_MSGSIZE);

@@ -264,17 +264,23 @@ void mqueue_destroy(char* mq_name_suffix)
 void mqueue_send(int mq, const char* str, int size)
 {
   FUNC_CALL_ENTRY;
-  // int ret_tx;
+  int ret_tx;
 
   /* char msg[ASE_MQ_MSGSIZE]; */
   /* memset(msg, '0', ASE_MQ_MSGSIZE); */
   /* memcpy(msg, str, size); */
   /* write(mq, msg, ASE_MQ_MSGSIZE); */
 
-  //ret_tx = 
-  write(mq, (void*)str, size);
   //  printf("status %s\n", strerror(errno)); 
 
+  ret_tx = write(mq, (void*)str, size);
+#if ASE_DEBUG
+  if ((ret_tx == 0) || (ret_tx != size))
+    {
+      printf("  [DEBUG]  write() returned wrong data size.");
+    }
+#endif
+  
   FUNC_CALL_EXIT;
 }
 
