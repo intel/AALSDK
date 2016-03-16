@@ -274,7 +274,11 @@ static inline struct aal_device *
       return NULL;
    }
 
-   DPRINTF(AALBUS_DBG_MOD," Preparing AAL device %s\n", szDevName);
+   // DPRINTF do not resolve properly in a header file because there is no well-defined
+   //   external linkage for the "debug" variable. This should be PINFO with the correct
+   //   module linkage defined in the calling .c file set up prior to including this file.
+   // See RedMine 566
+   //   DPRINTF(AALBUS_DBG_MOD," Preparing AAL device %s\n", szDevName);
 
     // Prepare the new device
    memset(paaldevice, 0, sizeof(struct aal_device));
@@ -321,8 +325,12 @@ static inline struct aal_device *
    // Used as part of the handle validation
    paaldevice->m_validator    = (__u64)virt_to_phys(paaldevice);
 
+   // DPRINTF do not resolve properly in a header file because there is no well-defined
+   //   external linkage for the "debug" variable. This should be PINFO with the correct
+   //   module linkage defined in the calling .c file set up prior to including this file.
+   // See RedMine 566
    // Initialize the device ID info
-   DPRINTF(AALBUS_DBG_MOD," Initializing AAL device %p\n", paaldevice);
+   // DPRINTF(AALBUS_DBG_MOD," Initializing AAL device %p\n", paaldevice);
 
    // The Context is a PIP defined data value
    //   The standard AAL PIP pointer is stored as well
