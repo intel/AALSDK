@@ -141,7 +141,9 @@ module ccip_sniffer
       end
    endfunction
 
-
+   logic simkill_en = 0;
+   int 	 simkill_cnt;
+      
    // Print and simkill
    function void print_and_simkill();
       begin
@@ -149,10 +151,58 @@ module ccip_sniffer
 	 $display(" [ERROR] %d : Simulation will end now", $time);
 	 `END_RED_FONTCOLOR;
 	 $fwrite(fd_errlog, " [ERROR] %d : Simulation will end now\n", $time);
-	 start_simkill_countdown();
+	 simkill_en = 1;	 
+	 // start_simkill_countdown();
       end
    endfunction
 
+   typedef enum {
+		 SimkillIdle,
+		 SimkillCountdown,
+		 SimkillNow
+		 } SimkillEnumStates;
+   SimkillEnumStates simkill_state;
+   
+   always @(posedge clk) begin
+      if (SoftReset) begin
+	 simkill_cnt <= 20;	 
+	 simkill_state <= SimkillIdle;	 
+      end
+      else begin
+	 case (simkill_state)
+	   SimkillIdle:
+	     begin
+		simkill_cnt <= 20;
+		if (simkill_en) begin
+		   simkill_state <= SimkillCountdown; 
+		end
+		else begin
+		   simkill_state <= SimkillIdle;	 
+		end
+	     end
+	   SimkillCountdown:
+	     begin
+		simkill_cnt <= simkill_cnt - 1;
+		if (simkill_cnt <= 0) begin
+		   simkill_state <= SimkillNow;	 
+		end
+		else begin
+		   simkill_state <= SimkillCountdown;	 
+		end
+	     end
+	   SimkillNow:
+	     begin
+		simkill_state <= SimkillNow;
+		start_simkill_countdown();		
+	     end
+	   default:
+	     begin
+		simkill_state <= SimkillIdle;		
+	     end
+	 endcase
+      end
+   end
+   
 
    /*
     * Valid aggregate for X, Z checking
@@ -377,20 +427,20 @@ module ccip_sniffer
    // Check illegal transaction IDs in C1Tx
    always @(posedge clk) begin : c1tx_illegal_proc
       if (C1TxValid) begin
-	 if ((C1TxHdr.reqtype == ASE_WRLINE_M)||(C1TxHdr.reqtype == ASE_RDLINE_I)||(C1TxHdr.reqtype == ASE_WRFENCE)) begin
-	    c1tx_illegal <= 0;
-	 end
-	 else begin
-	    c1tx_illegal <= 1;
-	    print_message_and_log(1, "Illegal transaction request type noticed on C1TxHdr");
-	    print_and_simkill();
-	 end
+   	 if ((C1TxHdr.reqtype == ASE_WRLINE_M)||(C1TxHdr.reqtype == ASE_RDLINE_I)||(C1TxHdr.reqtype == ASE_WRFENCE)) begin
+   	    c1tx_illegal <= 0;
+   	 end
+   	 else begin
+   	    c1tx_illegal <= 1;
+   	    print_message_and_log(1, "Illegal transaction request type noticed on C1TxHdr");
+   	    print_and_simkill();
+   	 end
       end
       else begin
-	 c1tx_illegal <= 0;
+   	 c1tx_illegal <= 0;
       end
    end
-
+   
 
    /*
     * Incoming transaction checker
@@ -414,14 +464,50 @@ module ccip_sniffer
     */
    logic 			c1tx_beat_in_progress;
    logic 			wrline_en;
+   logic 			wrfence_en;
 
+   // always @(*) begin
+   //    case (C1TxHdr.reqtype)
+   // 	ASE_WRLINE_M:
+   // 	  begin
+   // 	     wrfence_en <= 0;
+   // 	     wrline_en <= 1;	     
+   // 	  end
+   // 	ASE_WRLINE_I:
+   // 	  begin
+   // 	     wrfence_en <= 0;
+   // 	     wrline_en <= 1;	     
+   // 	  end
+   // 	ASE_WRFENCE:
+   // 	  begin
+   // 	     wrfence_en <= 1;
+   // 	     wrline_en <= 0;	     
+   // 	  end
+   // 	default:
+   // 	  begin
+   // 	     wrfence_en <= 1;
+   // 	     wrline_en <= 1;	     
+   // 	     `BEGIN_RED_FONTCOLOR;
+   // 	     $display ("  ** Potential error in request type ** ");	     
+   // 	     `END_RED_FONTCOLOR;	     
+   // 	  end
+   //    endcase
+   // end
+   
+   
    // Wrline_en
    always @(*) begin
       if (C1TxValid && ((C1TxHdr.reqtype==ASE_WRLINE_M)||(C1TxHdr.reqtype==ASE_WRLINE_I))) begin
-	 wrline_en <= 1;
+   	 wrline_en <= 1;
+	 wrfence_en <= 0;	 
       end
-      else begin
-	 wrline_en <= 0;
+      else if (C1TxValid && (C1TxHdr.reqtype==ASE_WRFENCE)) begin
+   	 wrline_en <= 0;
+	 wrfence_en <= 1;	 	 
+      end
+      else begin	 
+   	 wrline_en <= 0;
+	 wrfence_en <= 0;	 
       end
    end
 
