@@ -63,7 +63,7 @@ for rfile in ready_list:
 ## Kill all ase_simv processes started by by $USER
 cleanme_input = raw_input("Type 'y' to clean up all zombie ase_simv processes : ")
 if cleanme_input == "y":
-    print("Going ahead with cleaning up ASE processed opened by ", USER)
+    print("Going ahead with cleaning up ASE processes opened by ", USER)
     os.system("pgrep ase_simv -u " + USER + " | xargs kill -9 ")
 else:
     print("Skipping process removal")
