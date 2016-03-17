@@ -1065,6 +1065,9 @@ do                                            \
 # include <wdftypes.h>
 typedef WDFREQUEST        kosal_poll_object; 
 
+// Macro to hide relationship of Request to Poll Object
+#define AAL_WDFREQUEST_TO_POLLOBJ(po) (kosal_poll_object)(po)
+
 # define kosal_poll_object_is_valid(__kpo_ptr) ( (NULL != (__kpo_ptr)) && (NULL != *(__kpo_ptr)) )
 
 # define kosal_poll_object_consume(__kpo_ptr)  ( *(__kpo_ptr) = NULL )

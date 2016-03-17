@@ -57,8 +57,8 @@
     <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\bin\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -92,7 +92,7 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libAALRuntime.lib;$(OutDir)libaalclp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libaalrt.lib;$(OutDir)libaalclp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

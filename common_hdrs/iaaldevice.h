@@ -267,8 +267,8 @@ struct device_attributes {
    struct aal_device_id     device_id;                 // AAL Bus device Identifer
    btObjectType            *Handle;                    // Device Handle
 
-#define MAFU_MAX_BASENAME_LEN   256             // Maximum size of name base
-   btByte                  basename[MAFU_MAX_BASENAME_LEN + 1]; // Base name of device
+#define DEVICE_MAX_BASENAME_LEN   256                  // Maximum size of name base
+   btByte                  basename[DEVICE_MAX_BASENAME_LEN + 1]; // Base name of device
 
    btUnsignedInt           maxOwners;                 // Max number of owners
 

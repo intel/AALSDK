@@ -73,7 +73,7 @@
 #include "aalsdk/kernel/aalbus.h"              // for AAL_vendINTC
 #include "aalsdk/kernel/aalui-events.h"
 #include "aalsdk/kernel/aalids.h"
-#include "aalsdk/kernel/aalbus-device.h"
+//#include "aalsdk/kernel/aalbus-device.h"
 #include "aalsdk/kernel/spl2defs.h"
 
 #include "cci_pcie_driver_PIPsession.h"
