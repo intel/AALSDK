@@ -113,7 +113,7 @@ ifdef GLS_SIM
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
-  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
+#  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
@@ -137,6 +137,17 @@ MENT_VCOM_OPT = -nologo -work $(WORK)
 MENT_VLOG_OPT = -64 -novopt -nologo +librescan -work $(WORK) 
 MENT_VLOG_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR) 
 MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
+ifdef GLS_SIM
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
+#  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
+endif
 
 ## VSIM elaboration, and run options
 MENT_VSIM_OPT = -64 -c -novopt -l run.log
@@ -246,10 +257,10 @@ questa_build:
 ifdef DUT_VHD_SRC_LIST
 	vcom $(MENT_VCOM_OPT) -f $(DUT_VHD_SRC_LIST)
 endif
+	vlog $(MENT_VLOG_OPT) $(ASEHW_FILE_LIST)
 ifdef DUT_VLOG_SRC_LIST
 	vlog $(MENT_VLOG_OPT) -f $(DUT_VLOG_SRC_LIST)
 endif
-	vlog $(MENT_VLOG_OPT) $(ASEHW_FILE_LIST)
 
 
 ## Build Simulator objects ## 
