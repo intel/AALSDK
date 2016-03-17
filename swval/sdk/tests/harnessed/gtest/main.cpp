@@ -18,11 +18,11 @@ static const char *gAppName =
 
 static const char *gAppVersion =
 #if   defined( TEST_SUITE_BAT )
-   "1.1.1"
+   "0.0.0"
 #elif defined( TEST_SUITE_NIGHTLY )
-   "1.1.1"
+   "0.0.0"
 #elif defined( TEST_SUITE_WEEKLY )
-   "1.1.1"
+   "0.0.0"
 #endif // test suite
 ;
 
@@ -70,7 +70,9 @@ int main(int argc, char *argv[])
 
    SignalHelper::GetInstance().Install(SignalHelper::IDX_SIGSEGV);
    SignalHelper::GetInstance().Install(SignalHelper::IDX_SIGINT);
+#ifdef __AAL_LINUX__
    SignalHelper::GetInstance().Install(SignalHelper::IDX_SIGIO);
+#endif // __AAL_LINUX__
    SignalHelper::GetInstance().Install(SignalHelper::IDX_SIGUSR1);
 
    ::testing::InitGoogleTest(&argc, argv);
@@ -90,4 +92,42 @@ int main(int argc, char *argv[])
 
    return res;
 }
+
+#if 0
+// .\bat --version
+// .\bat --help
+// .\bat >test.txt
+
+TEST(AppBringup, DISABLED_SEGVHandler)
+{
+   // (Linux)   ./bat
+   // (Linux)   ./bat --halt-on-segv
+
+   // (Windows) .\bat --gtest_catch_exceptions=0
+   // (Windows) .\bat --gtest_catch_exceptions=0 --halt-on-segv
+   char *p = new char[32];
+   delete p;
+   *p = 0;
+}
+
+TEST(AppBringup, DISABLED_KeepAlive)
+{
+   // .\bat
+   // .\bat --halt-on-timeout
+   // .\bat --no-timeout
+   while (1) {
+#if   defined ( __AAL_WINDOWS__ )
+      Sleep(1000);
+#elif defined( __AAL_LINUX__ )
+      sleep(1);
+#endif // OS
+   }
+}
+
+TEST(AppBringup, DISABLED_FailTest)
+{
+   // .\bat
+   FAIL() << "AppBringup.FailTest is failing";
+}
+#endif // OS
 

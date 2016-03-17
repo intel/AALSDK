@@ -119,7 +119,6 @@ include/aalsdk/kernel/ahmpipdefs.h \
 include/aalsdk/kernel/ccidefs.h \
 include/aalsdk/kernel/fappip.h \
 include/aalsdk/kernel/spl2defs.h \
-include/aalsdk/kernel/aalui.h \
 include/aalsdk/kernel/ccipdriver.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \
@@ -218,7 +217,6 @@ include/aalsdk/rm/ResMgrService.h.in \
 include/aalsdk/rm/RRMService.h.in
 
 SERVICE_EXTRA=\
-include/aalsdk/service/VTPService.h.in \
 include/aalsdk/service/HWALIAFUService.h.in \
 include/aalsdk/service/ASEALIAFUService.h.in \
 include/aalsdk/service/SWSimALIAFUService.h.in

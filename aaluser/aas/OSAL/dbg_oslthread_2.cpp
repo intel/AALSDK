@@ -4,16 +4,14 @@
 
 #ifdef DBG_OSLTHREAD
 
-# if   defined( __AAL_WINDOWS__ )
+// Don't manipulate gOSLThreadCount here for Windows. See dbg_oslthread_0.cpp
 
-
-
-# elif defined( __AAL_LINUX__ )
+# if defined( __AAL_LINUX__ )
 
    pthread_cleanup_pop(0);
    {
-      AutoLock(&AAL::Testing::gOSLThreadCountLock);
-      --AAL::Testing::gOSLThreadCount;
+      AutoLock(&::AAL::Testing::gOSLThreadCountLock);
+      --::AAL::Testing::gOSLThreadCount;
    }
 
 # endif // OS

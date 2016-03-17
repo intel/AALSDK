@@ -41,7 +41,7 @@ AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     	[1],[1],[1])
 AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    	[1],[1],[1])
 AALSDK_LTLIB_VERSION([SWSIMALIAFU],  [libSWSimALIAFU],  	[1],[1],[1])
 
-AALSDK_LTLIB_VERSION([SWVALMOD],     [libswvalmod],      [3],[2],[1])
+AALSDK_LTLIB_VERSION([SWVALMOD],     [libswvalmod],         [3],[2],[1])
 AALSDK_LTLIB_VERSION([SWVALSVCMOD],  [libswvalsvcmod],  	[6],[5],[4])
 
 dnl ############################################################################

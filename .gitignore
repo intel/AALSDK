@@ -41,6 +41,7 @@ testsuite
 
 # microsoft visual studio
 .vs/
+*.sdf
 
 # google test
 gtest-1.6.0/
