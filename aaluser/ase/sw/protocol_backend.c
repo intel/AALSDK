@@ -879,6 +879,7 @@ void start_simkill_countdown()
   mqueue_close(app2sim_portctrl_req_rx);
   mqueue_close(app2sim_dealloc_rx);       
   mqueue_close(sim2app_dealloc_tx);       
+  mqueue_close(sim2app_portctrl_rsp_tx);
 
   int ipc_iter;
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)

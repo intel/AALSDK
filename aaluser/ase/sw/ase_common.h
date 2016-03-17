@@ -151,6 +151,7 @@ char *app_run_cmd;
 #define NOT_ESTABLISHED 0x0
 #define ESTABLISHED     0xBEEF
 
+
 /*
  * Console colors
  */
@@ -165,6 +166,10 @@ char *app_run_cmd;
 // WARNING codes in YELLOW color
 #define BEGIN_YELLOW_FONTCOLOR printf("\033[0;33m");
 #define END_YELLOW_FONTCOLOR   printf("\033[0m");
+
+// Wipeout current line in printf
+#define WIPEOUT_LINE           printf("]\n\033[F\033[J");
+
 
 /*
  * ASE Error codes

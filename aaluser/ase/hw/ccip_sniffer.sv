@@ -823,16 +823,11 @@ module ccip_sniffer
 	       print_message_and_log(1, wr_addr_str);
 	    end
 	    else begin
-	       // if (C1TxHdr.sop) begin
-	       // 	  c1tx_addr_mclbase <= C1TxHdr.addr;		  
 	       wr_active_addr_array[C1TxHdr.addr] = C1TxHdr.addr;
-	       // end
-	       // else begin
-	       // 	  wr_active_addr_array[ {c1tx_addr_mclbase[41:2], C1TxHdr.addr[1:0]} ] = {c1tx_addr_mclbase[41:2], C1TxHdr.addr[1:0]};
-	       // end		
 	    end
-	 end
-      end
+	 end	 
+      end // if (C1TxValid)
+      
    end
 
 
