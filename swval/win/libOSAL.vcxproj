@@ -1,0 +1,219 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{4C7A6B0B-E7CD-4866-B642-1909495B8682}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>libOSAL</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\obj\$(ProjectName)\</IntDir>
+    <ExtensionsToDeleteOnClean>$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\obj\$(ProjectName)\</IntDir>
+    <ExtensionsToDeleteOnClean>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aalclp\aalclp.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aalclp\aalclp.h.AALSDK_COPYRIGHT;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aalclp\aalclp.h.PACKAGE;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aalclp\aalclp.h.PACKAGE_BUGREPORT;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aalclp\aalclp.h.PACKAGE_URL;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aalclp\aalclp.h.PACKAGE_VERSION;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aas\AALRuntimeModule.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aas\AASService.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\osal\OSALService.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\rm\ResMgrService.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\rm\RRMService.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\service\ASEALIAFUService.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\service\ASEALIAFUService.h.SVC_MOD;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\service\HWALIAFUService.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\service\HWALIAFUService.h.SVC_MOD;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\service\SWSimALIAFUService.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\service\SWSimALIAFUService.h.SVC_MOD;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\uaia\AIAService.h;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\obj\$(ProjectName)\</IntDir>
+    <ExtensionsToDeleteOnClean>$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\obj\$(ProjectName)\</IntDir>
+    <ExtensionsToDeleteOnClean>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aalclp\aalclp.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aalclp\aalclp.h.AALSDK_COPYRIGHT;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aalclp\aalclp.h.PACKAGE;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aalclp\aalclp.h.PACKAGE_BUGREPORT;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aalclp\aalclp.h.PACKAGE_URL;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aalclp\aalclp.h.PACKAGE_VERSION;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aas\AALRuntimeModule.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\aas\AASService.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\osal\OSALService.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\rm\ResMgrService.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\rm\RRMService.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\service\ASEALIAFUService.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\service\ASEALIAFUService.h.SVC_MOD;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\service\HWALIAFUService.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\service\HWALIAFUService.h.SVC_MOD;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\service\SWSimALIAFUService.h;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\service\SWSimALIAFUService.h.SVC_MOD;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc\aalsdk\uaia\AIAService.h;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_ASSERT=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;OSAL_EXPORTS;__NO_BUILD_MESSAGES_;_CRT_RAND_S=1;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)aaluser\include;$(SolutionDir)aaluser\win</AdditionalIncludeDirectories>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BrowseInformation>true</BrowseInformation>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <PreBuildEvent>
+      <Command>$(SolutionDir)\substitute\substitute.bat $(TargetDir)substitute $(SolutionDir)aaluser\include\aalsdk</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>.h.in template substitution</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_ASSERT=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;OSAL_EXPORTS;_NO_BUILD_MESSAGES_;_CRT_RAND_S=1;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\..\aaluser\include;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <PreBuildEvent>
+      <Command>$(SolutionDir)..\..\aaluser\utils\substitute\substitute.bat $(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\substitute.exe $(SolutionDir)..\..\aaluser\include\aalsdk $(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>.h.in to .h template substitution</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_ASSERT=1;ENABLE_DEBUG=0;DEBUG_BEYOND_LOGGER=1;OSAL_EXPORTS;_NO_BUILD_MESSAGES_;_CRT_RAND_S=1;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <PreBuildEvent>
+      <Command>$(SolutionDir)..\substitute\substitute.bat $(TargetDir)substitute $(SolutionDir)..\include\aalsdk</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>.h.in template substitution</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_ASSERT=1;ENABLE_DEBUG=0;DEBUG_BEYOND_LOGGER=1;OSAL_EXPORTS;_NO_BUILD_MESSAGES_;_CRT_RAND_S=1;WIN32;NDEBUG;_WINDOWS;_USRDLL;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\..\aaluser\include;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <PreBuildEvent>
+      <Command>$(SolutionDir)..\..\aaluser\utils\substitute\substitute.bat $(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\substitute.exe $(SolutionDir)..\..\aaluser\include\aalsdk $(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>.h.in to .h template substitution</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\aaluser\aas\OSAL\Barrier.cpp" />
+    <ClCompile Include="..\..\aaluser\aas\OSAL\CriticalSection.cpp" />
+    <ClCompile Include="..\..\aaluser\aas\OSAL\DynLinkLibrary.cpp" />
+    <ClCompile Include="..\..\aaluser\aas\OSAL\Env.cpp" />
+    <ClCompile Include="..\..\aaluser\aas\OSAL\OSLib.cpp" />
+    <ClCompile Include="..\..\aaluser\aas\OSAL\OSSemaphore.cpp" />
+    <ClCompile Include="..\..\aaluser\aas\OSAL\OSServiceModule.c" />
+    <ClCompile Include="..\..\aaluser\aas\OSAL\Sleep.cpp" />
+    <ClCompile Include="..\..\aaluser\aas\OSAL\Thread.cpp" />
+    <ClCompile Include="..\..\aaluser\aas\OSAL\ThreadGroup.cpp" />
+    <ClCompile Include="..\..\aaluser\aas\OSAL\Timer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\aaluser\include\aalsdk\osal\Barrier.h" />
+    <ClInclude Include="..\..\aaluser\include\aalsdk\osal\CriticalSection.h" />
+    <ClInclude Include="..\..\aaluser\include\aalsdk\osal\DynLinkLibrary.h" />
+    <ClInclude Include="..\..\aaluser\include\aalsdk\osal\Env.h" />
+    <ClInclude Include="..\..\aaluser\include\aalsdk\osal\IDispatchable.h" />
+    <ClInclude Include="..\..\aaluser\include\aalsdk\osal\OSSemaphore.h" />
+    <ClInclude Include="..\..\aaluser\include\aalsdk\osal\OSServiceModule.h" />
+    <ClInclude Include="..\..\aaluser\include\aalsdk\osal\Sleep.h" />
+    <ClInclude Include="..\..\aaluser\include\aalsdk\osal\Thread.h" />
+    <ClInclude Include="..\..\aaluser\include\aalsdk\osal\ThreadGroup.h" />
+    <ClInclude Include="..\..\aaluser\include\aalsdk\osal\Timer.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
