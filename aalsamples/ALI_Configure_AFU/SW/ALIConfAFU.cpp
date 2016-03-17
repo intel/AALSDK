@@ -26,7 +26,7 @@
 //****************************************************************************
 /// @file ALIConfAFU.cpp
 /// @brief Basic ALI AFU interaction.
-/// @ingroup HelloALINLB
+/// @ingroup ALIConfAFU
 /// @verbatim
 /// Accelerator Abstraction Layer Sample Application
 ///
@@ -381,6 +381,7 @@ btInt ALIConfAFUApp::run()
    //  readily available and bound at run-time.
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
+   NamedValueSet nvs;
 
 #if defined( HWAFU )                /* Use FPGA hardware */
    // Service Library to use
@@ -428,34 +429,43 @@ btInt ALIConfAFUApp::run()
       goto done_0;
    }
 
-
-
    //=============================
-   // Now we have the NLB Service
+   // Now we have the Reconfigure Service
    //   now we can use it
    //=============================
    MSG("Running Test");
    if(true == m_bIsOK){
-      // FIXME: could reuse existing empty NVS for less overhead
+      // Deactivate AFU Resource
       m_pALIReconfService->reconfDeactivate(TransactionID(), NamedValueSet());
       m_Sem.Wait();
+      if(!m_bIsOK){
+         ERR("Deactivate failed\n");
+         goto done_1;
+      }
 
-      NamedValueSet nvs;
 
-      //nvs.Add(AALCONF_FILENAMEKEY,"/home/joe/sources/ccipTest_PR.cpp");
-
-      //std::cout <<"BitStream File Name="<< configCmdLine.bitstream_file << std::endl;
+      //nvs.Add(AALCONF_FILENAMEKEY,"/home/lab/pr/bitstream.rbf");
       nvs.Add(AALCONF_FILENAMEKEY,configCmdLine.bitstream_file);
 
+      // ReConfigure AFU Resource
       m_pALIReconfService->reconfConfigure(TransactionID(), nvs);
       m_Sem.Wait();
+      if(!m_bIsOK){
+         ERR("ReConfigure failed\n");
+         goto done_1;
+      }
 
-      // FIXME: could reuse existing empty NVS for less overhead
+      // Activate AFU Resource
       m_pALIReconfService->reconfActivate(TransactionID(), NamedValueSet());
       m_Sem.Wait();
+      if(!m_bIsOK){
+         ERR("Activate failed\n");
+         goto done_1;
+      }
    }
    MSG("Done Running Test");
 
+done_1:
    // Clean-up and return
    // Release() the Service through the Services IAALService::Release() method
    (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
@@ -545,6 +555,7 @@ void ALIConfAFUApp::deactivateFailed( IEvent const &rEvent )
    ERR("Failed deactivate");
    PrintExceptionDescription(rEvent);
    PrintReconfExceptionDescription(rEvent);
+   ++m_Result;                     // Remember the error
    m_bIsOK = false;
    m_Sem.Post(1);
 }
@@ -559,6 +570,7 @@ void ALIConfAFUApp::configureFailed( IEvent const &rEvent )
    ERR("configureFailed");
    PrintExceptionDescription(rEvent);
    PrintReconfExceptionDescription(rEvent);
+   ++m_Result;                     // Remember the error
    m_bIsOK = false;
    m_Sem.Post(1);
 }
@@ -572,6 +584,7 @@ void ALIConfAFUApp::activateFailed( IEvent const &rEvent )
    ERR("activateFailed");
    PrintExceptionDescription(rEvent);
    PrintReconfExceptionDescription(rEvent);
+   ++m_Result;                     // Remember the error
    m_bIsOK = false;
    m_Sem.Post(1);
 }
@@ -643,7 +656,7 @@ void ALIConfAFUApp::activateFailed( IEvent const &rEvent )
  }
  // <begin IRuntimeClient interface>
 
-/// @} group HelloALINLB
+/// @} group ALIConfAFU
 
 
 //=============================================================================
