@@ -222,7 +222,7 @@ void TempPowMonApp::getTemp()
       ccip_tmp_rdssensor_fm1.tmp_reading_seq_num << " \n";
 
    cout << "Temperature = " <<
-      ccip_tmp_rdssensor_fm1.tmp_reading << " Degrees Celcius.\n";
+      ccip_tmp_rdssensor_fm1.tmp_reading << " Degrees Celsius.\n";
 
 }
 
