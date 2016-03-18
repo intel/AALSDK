@@ -42,7 +42,6 @@ SUBDIRS=\
 Hello_AAL_Service/SW \
 Hello_AAL/SW \
 Hello_ALI_NLB/SW \
-Hello_ALI_HSSI/SW \
 ALI_Multi_AFU_with_PerfMon/SW \
 Temp_Power_Monitor/SW \
 MMLink/SW \
@@ -51,6 +50,7 @@ Error_Monitor/SW
 
 #Removed SUBDIRS
 #SUBDIRS=\
+#Hello_ALI_HSSI/SW \
 #Hello_CCI_NLB/SW \
 #Hello_SPL_LB/SW \
 #Sudoku_SPL/SW \
