@@ -1,5 +1,6 @@
 #!/bin/bash
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
+# Added garbage to get around hook block nonsense
 
 shopt -o -s nounset
 
