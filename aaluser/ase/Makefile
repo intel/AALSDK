@@ -283,7 +283,7 @@ ifeq ($(SIMULATOR), VCS)
 	cd ./$(WORK)/; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 else
   ifeq ($(SIMULATOR), QUESTA)
-	vsim $(MENT_VSIM_OPT) $(ASE_TOP) 
+	vsim $(MENT_VSIM_OPT) $(ASE_TOP) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh  
   else
 	@echo "############################################################"
 	@echo "#         SIMULATOR=$(SIMULATOR) not supported             #"

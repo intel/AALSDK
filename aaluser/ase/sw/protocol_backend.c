@@ -664,6 +664,7 @@ int ase_init()
   // Evaluate PWD
   ase_run_path = ase_malloc(ASE_FILEPATH_LEN);
   ase_run_path = getenv("PWD");
+
 #ifdef ASE_DEBUG
   if (ase_run_path == NULL)
     {
@@ -677,6 +678,7 @@ int ase_init()
 
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
+  printf("1\n");
 
   // Evaluate IPCs
   ipc_init();

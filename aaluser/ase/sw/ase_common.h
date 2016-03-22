@@ -37,10 +37,6 @@
 #ifndef _ASE_COMMON_H_
 #define _ASE_COMMON_H_
 
-#ifdef QUESTA
-#include "dpiheader.h"
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
