@@ -26,29 +26,56 @@ FILEMixin::~FILEMixin()
 
 FILE * FILEMixin::fopen_tmp()
 {
-   char tmplt[13] = { 'g', 't', 'e', 's', 't', '.', 'X', 'X', 'X', 'X', 'X', 'X', 0 };
+   int   fd;
+   FILE *fp = NULL;
 
-   int fd = ::mkstemp(tmplt);
+#if   defined( __AAL_WINDOWS__ )
+
+   char tmpdir[265];
+   char fname[MAX_PATH];
+   const char *prefix = "gtest";
+
+   if ( !GetTempPath(sizeof(tmpdir), tmpdir) ) {
+      return NULL;
+   }
+
+   if ( !GetTempFileName(tmpdir, prefix, 0, fname) ) {
+      return NULL;
+   }
+
+   if ( ::fopen_s(&fp, fname, "w+b") ) {
+      return NULL;
+   }
+
+   fd = _fileno(fp);
+
+#elif defined( __AAL_LINUX__ )
+
+   char fname[13] = { 'g', 't', 'e', 's', 't', '.', 'X', 'X', 'X', 'X', 'X', 'X', 0 };
+
+   fd = ::mkstemp(fname);
 
    if ( -1 == fd ) {
       return NULL;
    }
 
-   FILE *fp = ::fdopen(fd, "w+b");
+   fp = ::fdopen(fd, "w+b");
 
    if ( NULL == fp ) {
       ::close(fd);
-      ::remove(tmplt);
+      ::remove(fname);
       return NULL;
    }
 
-   FILEInfo info(tmplt, fd);
+#endif // OS
+
+   FILEInfo info(fname, fd);
 
    std::pair<iterator, bool> res = m_FileMap.insert(std::make_pair(fp, info));
 
    if ( !res.second ) {
       ::fclose(fp);
-      ::remove(tmplt);
+      ::remove(fname);
       return NULL;
    }
 
@@ -102,13 +129,183 @@ long FILEMixin::InputBytesRemaining(FILE *fp) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-const char TestStatus::sm_Red[]   = { 0x1b, '[', '1', ';', '3', '1', 'm', 0 };
-const char TestStatus::sm_Green[] = { 0x1b, '[', '1', ';', '3', '2', 'm', 0 };
-const char TestStatus::sm_Blue[]  = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };
-const char TestStatus::sm_Reset[] = { 0x1b, '[', '0', 'm', 0 };
+ConsoleColorizer ConsoleColorizer::sm_Instance;
+ConsoleColorizer & ConsoleColorizer::GetInstance()
+{
+   return ConsoleColorizer::sm_Instance;
+}
 
-bool       TestStatus::sm_HaltOnSegFault         = false;
-bool       TestStatus::sm_HaltOnKeepaliveTimeout = false;
+bool ConsoleColorizer::HasColors(ConsoleColorizer::Stream s)
+{
+#if   defined( __AAL_WINDOWS__ )
+   return _isatty((int)s) ? true : false;
+#elif defined( __AAL_LINUX__ )
+   return isatty((int)s) ? true : false;
+#endif // OS
+}
+
+void ConsoleColorizer::Red(ConsoleColorizer::Stream s)
+{
+   if ( HasColors(s) ) {
+#if defined( __AAL_WINDOWS__ )
+      HANDLE                     h;
+      CONSOLE_SCREEN_BUFFER_INFO buf_info;
+#endif // __AAL_WINDOWS__
+
+      switch ( s ) {
+         case STD_COUT :
+
+            fflush(stdout);
+
+#if   defined( __AAL_LINUX__ )
+            std::cout << ConsoleColorizer::sm_Red;
+#elif defined( __AAL_WINDOWS__ )
+            h = GetStdHandle(STD_OUTPUT_HANDLE);
+            GetConsoleScreenBufferInfo(h, &buf_info);
+            m_OldStdoutAttrs = buf_info.wAttributes;
+            SetConsoleTextAttribute(h, FOREGROUND_RED|FOREGROUND_INTENSITY);
+#endif // OS
+         break;
+
+         case STD_CERR :
+#if   defined( __AAL_LINUX__ )
+            std::cerr << ConsoleColorizer::sm_Red;
+#elif defined( __AAL_WINDOWS__ )
+            h = GetStdHandle(STD_ERROR_HANDLE);
+            GetConsoleScreenBufferInfo(h, &buf_info);
+            m_OldStderrAttrs = buf_info.wAttributes;
+            SetConsoleTextAttribute(h, FOREGROUND_RED|FOREGROUND_INTENSITY);
+#endif // OS
+         break;
+      }
+   }
+}
+
+void ConsoleColorizer::Green(ConsoleColorizer::Stream s)
+{
+   if ( HasColors(s) ) {
+#if defined( __AAL_WINDOWS__ )
+      HANDLE                     h;
+      CONSOLE_SCREEN_BUFFER_INFO buf_info;
+#endif // __AAL_WINDOWS__
+
+      switch ( s ) {
+         case STD_COUT:
+
+            fflush(stdout);
+
+#if   defined( __AAL_LINUX__ )
+            std::cout << ConsoleColorizer::sm_Green;
+#elif defined( __AAL_WINDOWS__ )
+            h = GetStdHandle(STD_OUTPUT_HANDLE);
+            GetConsoleScreenBufferInfo(h, &buf_info);
+            m_OldStdoutAttrs = buf_info.wAttributes;
+            SetConsoleTextAttribute(h, FOREGROUND_GREEN|FOREGROUND_INTENSITY);
+#endif // OS
+         break;
+
+         case STD_CERR:
+#if   defined( __AAL_LINUX__ )
+            std::cerr << ConsoleColorizer::sm_Green;
+#elif defined( __AAL_WINDOWS__ )
+            h = GetStdHandle(STD_ERROR_HANDLE);
+            GetConsoleScreenBufferInfo(h, &buf_info);
+            m_OldStderrAttrs = buf_info.wAttributes;
+            SetConsoleTextAttribute(h, FOREGROUND_GREEN|FOREGROUND_INTENSITY);
+#endif // OS
+         break;
+      }
+   }
+}
+
+void ConsoleColorizer::Blue(ConsoleColorizer::Stream s)
+{
+   if ( HasColors(s) ) {
+#if defined( __AAL_WINDOWS__ )
+      HANDLE                     h;
+      CONSOLE_SCREEN_BUFFER_INFO buf_info;
+#endif // __AAL_WINDOWS__
+
+      switch ( s ) {
+         case STD_COUT:
+
+            fflush(stdout);
+
+#if   defined( __AAL_LINUX__ )
+            std::cout << ConsoleColorizer::sm_Blue;
+#elif defined( __AAL_WINDOWS__ )
+            h = GetStdHandle(STD_OUTPUT_HANDLE);
+            GetConsoleScreenBufferInfo(h, &buf_info);
+            m_OldStdoutAttrs = buf_info.wAttributes;
+            SetConsoleTextAttribute(h, FOREGROUND_BLUE|FOREGROUND_INTENSITY);
+#endif // OS
+         break;
+
+         case STD_CERR:
+#if defined( __AAL_LINUX__ )
+            std::cerr << ConsoleColorizer::sm_Blue;
+#elif defined( __AAL_WINDOWS__ )
+            h = GetStdHandle(STD_ERROR_HANDLE);
+            GetConsoleScreenBufferInfo(h, &buf_info);
+            m_OldStderrAttrs = buf_info.wAttributes;
+            SetConsoleTextAttribute(h, FOREGROUND_BLUE|FOREGROUND_INTENSITY);
+#endif // OS
+         break;
+      }
+   }
+}
+
+void ConsoleColorizer::Reset(ConsoleColorizer::Stream s)
+{
+   if ( HasColors(s) ) {
+      switch ( s ) {
+         case STD_COUT:
+            fflush(stdout);
+
+#if   defined( __AAL_LINUX__ )
+            std::cout << ConsoleColorizer::sm_Reset;
+#elif defined( __AAL_WINDOWS__ )
+            SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), m_OldStdoutAttrs);
+#endif // OS
+
+            fflush(stdout);
+         break;
+
+         case STD_CERR:
+#if   defined( __AAL_LINUX__ )
+            std::cerr << ConsoleColorizer::sm_Reset;
+#elif defined( __AAL_WINDOWS__ )
+            SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE), m_OldStderrAttrs);
+#endif // OS
+         break;
+      }
+   }
+}
+
+ConsoleColorizer::ConsoleColorizer()
+{
+#if defined( __AAL_WINDOWS__ )
+   CONSOLE_SCREEN_BUFFER_INFO bufinfo;
+
+   GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &bufinfo);
+   m_OldStdoutAttrs = bufinfo.wAttributes;
+
+   GetConsoleScreenBufferInfo(GetStdHandle(STD_ERROR_HANDLE), &bufinfo);
+   m_OldStderrAttrs = bufinfo.wAttributes;
+#endif // __AAL_WINDOWS__
+}
+
+#ifdef __AAL_LINUX__
+const char ConsoleColorizer::sm_Red[]   = { 0x1b, '[', '1', ';', '3', '1', 'm', 0 };
+const char ConsoleColorizer::sm_Green[] = { 0x1b, '[', '1', ';', '3', '2', 'm', 0 };
+const char ConsoleColorizer::sm_Blue[]  = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };
+const char ConsoleColorizer::sm_Reset[] = { 0x1b, '[', '0', 'm', 0 };
+#endif // OS
+
+////////////////////////////////////////////////////////////////////////////////
+
+bool TestStatus::sm_HaltOnSegFault         = false;
+bool TestStatus::sm_HaltOnKeepaliveTimeout = false;
 
 void TestStatus::HaltOnSegFault(bool b)
 {
@@ -147,46 +344,28 @@ void TestStatus::Report(TestStatus::Status st)
 
 void TestStatus::OnPass()
 {
-   if ( ::isatty(1) ) {
-      std::cout << TestStatus::sm_Green;
-   }
-   if ( ::isatty(2) ) {
-      std::cerr << TestStatus::sm_Green;
-   }
+   ConsoleColorizer & color = ConsoleColorizer::GetInstance();
 
+   color.Green(ConsoleColorizer::STD_COUT);
    std::cout << "\nPASS\n";
+   color.Reset(ConsoleColorizer::STD_COUT);
+
+   color.Green(ConsoleColorizer::STD_CERR);
    std::cerr << "\nPASS\n";
-
-   if ( ::isatty(1) ) {
-      std::cout << TestStatus::sm_Reset;
-   }
-   if ( ::isatty(2) ) {
-      std::cerr << TestStatus::sm_Reset;
-   }
-
-   std::cout << std::flush;
+   color.Reset(ConsoleColorizer::STD_CERR);
 }
 
 void TestStatus::OnFail()
 {
-   if ( ::isatty(1) ) {
-      std::cout << TestStatus::sm_Red;
-   }
-   if ( ::isatty(2) ) {
-      std::cerr << TestStatus::sm_Red;
-   }
+   ConsoleColorizer & color = ConsoleColorizer::GetInstance();
 
+   color.Red(ConsoleColorizer::STD_COUT);
    std::cout << "\nFAIL\n";
+   color.Reset(ConsoleColorizer::STD_COUT);
+
+   color.Red(ConsoleColorizer::STD_CERR);
    std::cerr << "\nFAIL\n";
-
-   if ( ::isatty(1) ) {
-      std::cout << TestStatus::sm_Reset;
-   }
-   if ( ::isatty(2) ) {
-      std::cerr << TestStatus::sm_Reset;
-   }
-
-   std::cout << std::flush;
+   color.Reset(ConsoleColorizer::STD_CERR);
 }
 
 void TestStatus::OnSegFault()
@@ -196,24 +375,15 @@ void TestStatus::OnSegFault()
 
    TestCaseName(testcase, test);
 
-   if ( ::isatty(1) ) {
-      std::cout << TestStatus::sm_Red;
-   }
-   if ( ::isatty(2) ) {
-      std::cerr << TestStatus::sm_Red;
-   }
+   ConsoleColorizer & color = ConsoleColorizer::GetInstance();
 
+   color.Red(ConsoleColorizer::STD_COUT);
    std::cout << "\nSegmentation Fault during " << testcase << "." << test << std::endl;
+   color.Reset(ConsoleColorizer::STD_COUT);
+
+   color.Red(ConsoleColorizer::STD_CERR);
    std::cerr << "\nSegmentation Fault during " << testcase << "." << test << std::endl;
-
-   if ( ::isatty(1) ) {
-      std::cout << TestStatus::sm_Reset;
-   }
-   if ( ::isatty(2) ) {
-      std::cerr << TestStatus::sm_Reset;
-   }
-
-   std::cout << std::flush;
+   color.Reset(ConsoleColorizer::STD_CERR);
 
    if ( TestStatus::sm_HaltOnSegFault ) {
 
@@ -222,17 +392,13 @@ void TestStatus::OnSegFault()
       int i = 0;
       while ( TestStatus::sm_HaltOnSegFault ) {
          if ( 0 == (i % (5 * 60)) ) {
-            if ( ::isatty(2) ) {
-               std::cerr << TestStatus::sm_Blue;
-            }
+            color.Blue(ConsoleColorizer::STD_CERR);
             std::cerr << "Halted for debugger attach.\n";
-            if ( ::isatty(2) ) {
-               std::cerr << TestStatus::sm_Reset;
-            }
+            color.Reset(ConsoleColorizer::STD_CERR);
 
             i = 0;
          }
-         ::sleep(1);
+         sleep_sec(1);
          ++i;
       }
 
@@ -243,24 +409,15 @@ void TestStatus::OnSegFault()
 
 void TestStatus::OnTerminated()
 {
-   if ( ::isatty(1) ) {
-      std::cout << TestStatus::sm_Red;
-   }
-   if ( ::isatty(2) ) {
-      std::cerr << TestStatus::sm_Red;
-   }
+   ConsoleColorizer & color = ConsoleColorizer::GetInstance();
 
+   color.Red(ConsoleColorizer::STD_COUT);
    std::cout << "\nProcess Terminated\n";
+   color.Reset(ConsoleColorizer::STD_COUT);
+
+   color.Red(ConsoleColorizer::STD_CERR);
    std::cerr << "\nProcess Terminated\n";
-
-   if ( ::isatty(1) ) {
-      std::cout << TestStatus::sm_Reset;
-   }
-   if ( ::isatty(2) ) {
-      std::cerr << TestStatus::sm_Reset;
-   }
-
-   std::cout << std::flush;
+   color.Reset(ConsoleColorizer::STD_CERR);
 
    ::exit(98);
 }
@@ -272,39 +429,26 @@ void TestStatus::OnKeepaliveTimeout()
 
    TestCaseName(testcase, test);
 
-   if ( ::isatty(1) ) {
-      std::cout << TestStatus::sm_Red;
-   }
-   if ( ::isatty(2) ) {
-      std::cerr << TestStatus::sm_Red;
-   }
+   ConsoleColorizer & color = ConsoleColorizer::GetInstance();
 
+   color.Red(ConsoleColorizer::STD_COUT);
    std::cout << "\nKeep-alive Timer Expired during " << testcase << "." << test << std::endl;
+   color.Reset(ConsoleColorizer::STD_COUT);
+
+   color.Red(ConsoleColorizer::STD_CERR);
    std::cerr << "\nKeep-alive Timer Expired during " << testcase << "." << test << std::endl;
-
-   if ( ::isatty(1) ) {
-      std::cout << TestStatus::sm_Reset;
-   }
-   if ( ::isatty(2) ) {
-      std::cerr << TestStatus::sm_Reset;
-   }
-
-   std::cout << std::flush;
+   color.Reset(ConsoleColorizer::STD_CERR);
 
    int i = 0;
    while ( TestStatus::sm_HaltOnKeepaliveTimeout ) {
       if ( 0 == (i % (5 * 60)) ) {
-         if ( ::isatty(2) ) {
-            std::cerr << TestStatus::sm_Blue;
-         }
+         color.Blue(ConsoleColorizer::STD_CERR);
          std::cerr << "Halted for debugger attach.\n";
-         if ( ::isatty(2) ) {
-            std::cerr << TestStatus::sm_Reset;
-         }
+         color.Reset(ConsoleColorizer::STD_CERR);
 
          i = 0;
       }
-      ::sleep(1);
+      sleep_sec(1);
       ++i;
    }
 
@@ -488,6 +632,7 @@ std::ostream & LD_LIBRARY_PATH(std::ostream &os)
 
 #endif // __AAL_LINUX__
 
+////////////////////////////////////////////////////////////////////////////////
 
 ThreadRegistry::ThreadRegistry()
 {
@@ -521,9 +666,6 @@ void ThreadRegistry::RegistryReset()
    memset(&m_RegisteredThreads, 0, sizeof(m_RegisteredThreads));
 }
 
-#if   defined( __AAL_WINDOWS__ )
-# error TODO implement SignalHelper class for windows.
-#elif defined( __AAL_LINUX__ )
 
 SignalHelper SignalHelper::sm_Instance;
 SignalHelper & SignalHelper::GetInstance()
@@ -533,32 +675,50 @@ SignalHelper & SignalHelper::GetInstance()
 
 int SignalHelper::Install(SignalHelper::SigIndex i)
 {
-   if ( (i < IDX_FIRST) || (i >= IDX_COUNT) ) {
+   if ((i < IDX_FIRST) || (i >= IDX_COUNT)) {
       // Invalid SigIndex.
       return -1;
    }
 
-   if ( m_Tracker[i].installed ) {
+   if (m_Tracker[i].installed) {
       // attempt to double install.
       return -2;
    }
 
+#if   defined( __AAL_WINDOWS__ )
+
+   handler orig;
+
+   orig = ::signal(m_Tracker[i].signum, m_Tracker[i].h);
+
+   if ( SIG_ERR == orig ) {
+      return errno;
+   }
+
+   m_Tracker[i].orig      = orig;
+   m_Tracker[i].installed = true;
+
+#elif defined( __AAL_LINUX__ )
+
    struct sigaction act;
    memset(&act, 0, sizeof(act));
 
-   act.sa_flags     = SA_SIGINFO;
+   act.sa_flags = SA_SIGINFO;
    act.sa_sigaction = m_Tracker[i].h;
-   if ( ( IDX_SIGSEGV == i ) || ( IDX_SIGINT == i ) ) {
+   if ((IDX_SIGSEGV == i) || (IDX_SIGINT == i)) {
       act.sa_flags |= SA_RESETHAND;
    }
 
    int res = ::sigaction(m_Tracker[i].signum, &act, &m_Tracker[i].orig);
 
-   if ( 0 != res ) {
+   if (0 != res) {
       return res;
    }
 
    m_Tracker[i].installed = true;
+
+#endif // OS
+
    memset(&m_Tracker[i].Counts, 0, sizeof(m_Tracker[0].Counts));
 
    return 0;
@@ -566,29 +726,45 @@ int SignalHelper::Install(SignalHelper::SigIndex i)
 
 int SignalHelper::Uninstall(SignalHelper::SigIndex i)
 {
-   if ( (i < IDX_FIRST) || (i >= IDX_COUNT) ) {
+   if ((i < IDX_FIRST) || (i >= IDX_COUNT)) {
       // Invalid SigIndex.
       return -1;
    }
 
-   if ( !m_Tracker[i].installed ) {
+   if (!m_Tracker[i].installed) {
       // Not hooked.
       return -2;
    }
 
-   int res = ::sigaction(m_Tracker[i].signum, &m_Tracker[i].orig, NULL);
+   int res = 0;
+
+#if   defined( __AAL_WINDOWS__ )
+
+   handler orig;
+
+   orig = ::signal(m_Tracker[i].signum, m_Tracker[i].orig);
+
+   if ( SIG_ERR == orig ) {
+      res = errno;
+   }
+
+#elif defined( __AAL_LINUX__ )
+
+   res = ::sigaction(m_Tracker[i].signum, &m_Tracker[i].orig, NULL);
+
+#endif // OS
 
    m_Tracker[i].installed = false;
 
    return res;
 }
 
-btUIntPtr SignalHelper::GetCount(SigIndex i, btUnsignedInt thr)
+btUIntPtr SignalHelper::GetCount(SignalHelper::SigIndex i, btUnsignedInt thr)
 {
    return m_Tracker[i].Counts[thr];
 }
 
-void SignalHelper::PutCount(SigIndex i, btUnsignedInt thr)
+void SignalHelper::PutCount(SignalHelper::SigIndex i, btUnsignedInt thr)
 {
    ++m_Tracker[i].Counts[thr];
 }
@@ -603,6 +779,23 @@ SignalHelper::SignalHelper()
    m_Tracker[IDX_SIGSEGV].signum = SIGSEGV;
    m_Tracker[IDX_SIGSEGV].h      = SignalHelper::SIGSEGVHandler;
 
+#if   defined( __AAL_WINDOWS__ )
+
+   // According to https://msdn.microsoft.com/en-us/library/xdkz3x12.aspx
+   //
+   //    "The SIGILL and SIGTERM signals are not generated under Windows.
+   //    They are included for ANSI compatibility. Therefore, you can set
+   //    signal handlers for these signals by using signal, and you can also
+   //    explicitly generate these signals by calling raise."
+
+   m_Tracker[IDX_SIGUSR1].signum = SIGILL;
+   m_Tracker[IDX_SIGUSR1].h      = SignalHelper::SIGUSR1Handler;
+
+   m_Tracker[IDX_SIGUSR2].signum = SIGTERM;
+   m_Tracker[IDX_SIGUSR2].h      = SignalHelper::SIGUSR2Handler;
+
+#elif defined( __AAL_LINUX__ )
+
    m_Tracker[IDX_SIGIO].signum   = SIGIO;
    m_Tracker[IDX_SIGIO].h        = SignalHelper::SIGIOHandler;
 
@@ -611,14 +804,65 @@ SignalHelper::SignalHelper()
 
    m_Tracker[IDX_SIGUSR2].signum = SIGUSR2;
    m_Tracker[IDX_SIGUSR2].h      = SignalHelper::SIGUSR2Handler;
+
+#endif // OS
 }
 
 SignalHelper::~SignalHelper()
 {
    int i;
-   for ( i = (int)IDX_FIRST ; i < (int)IDX_COUNT ; ++i ) {
+   for (i = (int)IDX_FIRST; i < (int)IDX_COUNT; ++i) {
       Uninstall((SigIndex)i);
    }
+}
+
+
+#if   defined( __AAL_WINDOWS__ )
+
+void SignalHelper::SIGINTHandler(int /* unused */)
+{
+   TestStatus::Report(TestStatus::STATUS_TERMINATED);
+}
+
+void SignalHelper::SIGSEGVHandler(int /* unused */)
+{
+   TestStatus::Report(TestStatus::STATUS_SEGFAULT);
+}
+
+void SignalHelper::SIGUSR1Handler(int sig)
+{
+   EXPECT_EQ(SIGILL, sig);
+
+   btUnsignedInt i = SignalHelper::GetInstance().ThreadLookup(GetThreadID());
+
+   EXPECT_NE((btUnsignedInt)-1, i);
+   if ((btUnsignedInt)-1 != i) {
+      SignalHelper::GetInstance().PutCount(IDX_SIGUSR1, i);
+   }
+}
+
+void SignalHelper::SIGUSR2Handler(int sig)
+{
+   EXPECT_EQ(SIGTERM, sig);
+
+   btUnsignedInt i = SignalHelper::GetInstance().ThreadLookup(GetThreadID());
+
+   EXPECT_NE((btUnsignedInt)-1, i);
+   if ((btUnsignedInt)-1 != i) {
+      SignalHelper::GetInstance().PutCount(IDX_SIGUSR2, i);
+   }
+}
+
+#elif defined( __AAL_LINUX__ )
+
+void SignalHelper::SIGINTHandler(int sig, siginfo_t *info, void * /* unused */)
+{
+   TestStatus::Report(TestStatus::STATUS_TERMINATED);
+}
+
+void SignalHelper::SIGSEGVHandler(int sig, siginfo_t *info, void * /* unused */)
+{
+   TestStatus::Report(TestStatus::STATUS_SEGFAULT);
 }
 
 void SignalHelper::SIGIOHandler(int sig, siginfo_t *info, void * /* unused */)
@@ -663,16 +907,6 @@ void SignalHelper::SIGUSR2Handler(int sig, siginfo_t *info, void * /* unused */)
    }
 }
 
-void SignalHelper::SIGSEGVHandler(int sig, siginfo_t *info, void * /* unused */)
-{
-   TestStatus::Report(TestStatus::STATUS_SEGFAULT);
-}
-
-void SignalHelper::SIGINTHandler(int sig, siginfo_t *info, void * /* unused */)
-{
-   TestStatus::Report(TestStatus::STATUS_TERMINATED);
-}
-
 #endif // OS
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -691,8 +925,8 @@ KeepAliveTimerEnv::KeepAliveTimerEnv() :
    m_KeepAliveCounter(0),
    m_KeepAliveTimeouts(0)
 #if defined( __AAL_WINDOWS__ )
-   , m_hEvent(NULL),
-   m_hJoinEvent(NULL)
+   , m_hThread(NULL),
+   m_hEvent(NULL)
 #endif // __AAL_WINDOWS__
 {}
 
@@ -712,7 +946,7 @@ void KeepAliveTimerEnv::StopThread()
 #elif defined( __AAL_WINDOWS__ )
 
    SetEvent(m_hEvent);
-   WaitForSingleObject(m_hJoinEvent, INFINITE);
+   WaitForSingleObject(m_hThread, INFINITE);
 
 #endif // OS
 }
@@ -744,17 +978,17 @@ void KeepAliveTimerEnv::SetUp()
 
 #elif defined( __AAL_WINDOWS__ )
 
-   m_hEvent = CreateEvent(NULL,   // no inheritance
-                          FALSE,  // auto-reset event
-                          FALSE,  // not signaled
-                          NULL);  // no name
+   m_hEvent  =  CreateEvent(NULL,   // no inheritance
+                            FALSE,  // auto-reset event
+                            FALSE,  // not signaled
+                            NULL);  // no name
 
-   m_hJoinEvent = CreateEvent(NULL,   // no inheritance
-                              TRUE,   // manual-reset event
-                              FALSE,  // not signaled
-                              NULL);  // no name
-
-   _beginthread(KeepAliveTimerEnv::KeepAliveThread, 0, this);
+   m_hThread = CreateThread(NULL,   // no inheritance
+                            0,      // default stack size
+                            KeepAliveTimerEnv::KeepAliveThread, // fn
+                            this,                               // arg
+                            0,      // begin thread immediately
+                            NULL);  // don't retrieve tid
 
 #endif // OS
 }
@@ -770,10 +1004,10 @@ void KeepAliveTimerEnv::TearDown()
 
 #elif defined( __AAL_WINDOWS__ )
 
+   CloseHandle(m_hThread);
    CloseHandle(m_hEvent);
-   CloseHandle(m_hJoinEvent);
 
-   m_hEvent = m_hJoinEvent = NULL;
+   m_hThread = m_hEvent = NULL;
 
 #endif // OS
 }
@@ -790,7 +1024,7 @@ const btUnsignedInt KeepAliveTimerEnv::sm_MaxKeepAliveTimeouts = 3;
 //void KeepAliveTimerEnv::KeepAliveCleanup(void *arg) {}
 void * KeepAliveTimerEnv::KeepAliveThread(void *arg)
 #elif defined ( __AAL_WINDOWS__ )
-void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
+DWORD WINAPI KeepAliveTimerEnv::KeepAliveThread(LPVOID arg)
 #endif // OS
 {
    KeepAliveTimerEnv *e = reinterpret_cast<KeepAliveTimerEnv *>(arg);
@@ -816,8 +1050,6 @@ void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
    };
 
 //   pthread_cleanup_push(KeepAliveTimerEnv::KeepAliveCleanup, e);
-#elif defined( __AAL_WINDOWS__ )
-
 #endif // OS
 
    btUnsigned64bitInt LastKeepAliveCounter = e->m_KeepAliveCounter;
@@ -847,7 +1079,7 @@ void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
 
 #elif defined( __AAL_WINDOWS__ )
 
-      if ( WAIT_OBJECT_0 == WaitForSingleObject(m_hEvent, (DWORD)KeepAliveTimerEnv::sm_KeepAliveFreqMillis) ) {
+      if ( WAIT_OBJECT_0 == WaitForSingleObject(e->m_hEvent, (DWORD)KeepAliveTimerEnv::sm_KeepAliveFreqMillis) ) {
          if ( !e->m_KeepAliveRunning ) {
              break;
          }
@@ -873,8 +1105,7 @@ void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
 //   pthread_cleanup_pop(1);
    return NULL;
 #elif defined( __AAL_WINDOWS__ )
-   SetEvent(e->m_hJoinEvent);
-   return;
+   return 0;
 #endif // OS
 }
 
@@ -1015,7 +1246,7 @@ MethodCallLogEntry * MethodCallLog::AddToLog(btcString method) const
 unsigned MethodCallLog::LogEntries() const
 {
    AutoLock(this);
-   return m_LogList.size();
+   return (unsigned)m_LogList.size();
 }
 
 const MethodCallLogEntry & MethodCallLog::Entry(unsigned i) const

@@ -96,6 +96,7 @@ struct port_device
 
    btPhysAddr                    m_phys_port_mmio;    // Base physical address
    btVirtAddr                    m_kvp_port_mmio;     // Base kernel virtual address
+   btWSSize                      m_port_mmio_len;     // Base Workspace length
    struct ccip_device           *m_ccipdev;           // Parent board
 
    struct fme_device            *m_fme;               // Parent FME
@@ -137,6 +138,8 @@ struct port_device
 
 #define ccip_port_kvp_mmio(pdev)              ((pdev)->m_kvp_port_mmio)
 #define ccip_port_phys_mmio(pdev)             ((pdev)->m_phys_port_mmio)
+#define ccip_port_mmio_len(pdev)              ((pdev)->m_port_mmio_len)
+
 #define ccip_port_to_ccidev(pdev)             ((pdev)->m_ccipdev)
 
 #define ccip_port_list_head(pdev)             ((pdev)->m_list)
@@ -155,7 +158,8 @@ struct port_device
 /// @param[in] pkvp_port_mmio port mmio virtual address
 /// @return    port_device code
 struct port_device  *get_port_device(  btPhysAddr pphys_port_mmio,
-                                       btVirtAddr pkvp_port_mmio);
+                                       btVirtAddr pkvp_port_mmio,
+                                       btWSSize   port_mmio_len);
 
 /// @brief  destroys a Port Device
 ///

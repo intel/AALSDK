@@ -24,18 +24,19 @@ using namespace AAL;
 #if   defined( __AAL_WINDOWS__ )
 # define cpu_yield()       ::Sleep(0)
 # define sleep_millis(__x) ::Sleep(__x)
+# define sleep_sec(__x)    ::Sleep(1000 * (__x))
 #elif defined( __AAL_LINUX__ )
 # define cpu_yield()       ::usleep(0)
 # define sleep_millis(__x) ::usleep((__x) * 1000)
+# define sleep_sec(__x)    ::sleep(__x)
 #endif // OS
 
-#if defined( __AAL_LINUX__ )
 BEGIN_NAMESPACE(AAL)
    BEGIN_NAMESPACE(Testing)
 AAL::btUIntPtr DbgOSLThreadCount();
    END_NAMESPACE(Testing)
 END_NAMESPACE(AAL)
-#endif // __AAL_LINUX__
+
 class GlobalTestConfig
 {
 public:
@@ -48,11 +49,7 @@ public:
 
    AAL::btUIntPtr CurrentThreads() const
    {
-#if   defined( __AAL_WINDOWS__ )
-# error TODO implement GlobalTestConfig::CurrentThreads() for Windows.
-#elif defined( __AAL_LINUX__ )
       return AAL::Testing::DbgOSLThreadCount();
-#endif // OS
    }
 
    AAL::btUnsigned32bitInt RandSeed() const
@@ -292,6 +289,42 @@ X PassReturnByValue(X x) { return x; }
 
 ////////////////////////////////////////////////////////////////////////////////
 
+class ConsoleColorizer
+{
+public:
+   enum Stream
+   {
+      STD_COUT = 1,
+      STD_CERR
+   };
+
+   static ConsoleColorizer & GetInstance();
+
+   bool HasColors(Stream );
+
+   void   Red(Stream );
+   void Green(Stream );
+   void  Blue(Stream );
+   void Reset(Stream );
+
+protected:
+   ConsoleColorizer();
+
+   static ConsoleColorizer sm_Instance;
+
+#if   defined( __AAL_LINUX__ )
+   static const char sm_Red[];
+   static const char sm_Green[];
+   static const char sm_Blue[];
+   static const char sm_Reset[];
+#elif defined( __AAL_WINDOWS__ )
+   WORD m_OldStdoutAttrs;
+   WORD m_OldStderrAttrs;
+#endif // OS
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 class TestStatus
 {
 public:
@@ -316,13 +349,8 @@ protected:
    static void OnTerminated();
    static void OnKeepaliveTimeout();
 
-   static const char sm_Red[];
-   static const char sm_Green[];
-   static const char sm_Blue[];
-   static const char sm_Reset[];
-
-   static bool       sm_HaltOnSegFault;
-   static bool       sm_HaltOnKeepaliveTimeout;
+   static bool sm_HaltOnSegFault;
+   static bool sm_HaltOnKeepaliveTimeout;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -360,26 +388,34 @@ protected:
    btTID         m_RegisteredThreads[50];
 };
 
-
 #if   defined( __AAL_WINDOWS__ )
-# error TODO implement SignalHelper class for windows.
+# include <signal.h>
 #elif defined( __AAL_LINUX__ )
 # include <errno.h>
 # include <unistd.h>
 # include <sys/types.h>
 # include <signal.h>
+#endif // OS
 
 class SignalHelper : public ThreadRegistry
 {
 public:
    enum SigIndex
    {
+#if   defined( __AAL_WINDOWS__ )
       IDX_SIGINT = 0,
-      IDX_FIRST  = IDX_SIGINT,
+      IDX_FIRST = IDX_SIGINT,
+      IDX_SIGSEGV,
+      IDX_SIGUSR1,
+      IDX_SIGUSR2,
+#elif defined( __AAL_LINUX__ )
+      IDX_SIGINT = 0,
+      IDX_FIRST = IDX_SIGINT,
       IDX_SIGSEGV,
       IDX_SIGIO,
       IDX_SIGUSR1,
       IDX_SIGUSR2,
+#endif // OS
 
       IDX_COUNT
    };
@@ -393,7 +429,6 @@ public:
    // non-zero on error.
    int      Uninstall(SigIndex i);
 
-
    btUIntPtr GetCount(SigIndex i, btUnsignedInt thr);
 
 protected:
@@ -402,30 +437,42 @@ protected:
 
    void PutCount(SigIndex i, btUnsignedInt thr);
 
-   typedef void (*handler)(int , siginfo_t * , void * );
+#if   defined( __AAL_WINDOWS__ )
+   typedef void(*handler)(int );
+#elif defined( __AAL_LINUX__ )
+   typedef void(*handler)(int, siginfo_t *, void *);
+#endif // OS
 
    struct SigTracker
    {
       int              signum;
       handler          h;
       btBool           installed;
+#if   defined( __AAL_WINDOWS__ )
+      handler          orig;
+#elif defined ( __AAL_LINUX__ )
       struct sigaction orig;
+#endif // OS
       btUIntPtr        Counts[50]; // support the max number of threads.
    };
 
-   SigTracker    m_Tracker[IDX_COUNT];
+   SigTracker m_Tracker[IDX_COUNT];
 
    static SignalHelper sm_Instance;
 
-   static void   SIGIOHandler(int , siginfo_t * , void * );
-   static void SIGUSR1Handler(int , siginfo_t * , void * );
-   static void SIGUSR2Handler(int , siginfo_t * , void * );
-
-   static void SIGSEGVHandler(int , siginfo_t * , void * );
-   static void  SIGINTHandler(int , siginfo_t * , void * );
-};
-
+#if   defined( __AAL_WINDOWS__ )
+   static void  SIGINTHandler(int );
+   static void SIGSEGVHandler(int );
+   static void SIGUSR1Handler(int );
+   static void SIGUSR2Handler(int );
+#elif defined( __AAL_LINUX__ )
+   static void  SIGINTHandler(int, siginfo_t *, void *);
+   static void SIGSEGVHandler(int, siginfo_t *, void *);
+   static void   SIGIOHandler(int, siginfo_t *, void *);
+   static void SIGUSR1Handler(int, siginfo_t *, void *);
+   static void SIGUSR2Handler(int, siginfo_t *, void *);
 #endif // OS
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -467,8 +514,8 @@ protected:
    pthread_mutex_t    m_mutex;
    pthread_cond_t     m_condition;
 #elif defined ( __AAL_WINDOWS__ )
+   HANDLE             m_hThread;
    HANDLE             m_hEvent;
-   HANDLE             m_hJoinEvent;
 #endif // OS
 
    static       btTime        sm_KeepAliveFreqMillis;
@@ -478,7 +525,7 @@ protected:
 //   static void  KeepAliveCleanup(void * );
    static void * KeepAliveThread(void * );
 #elif defined ( __AAL_WINDOWS__ )
-   static void   KeepAliveThread(void * );
+   static DWORD WINAPI KeepAliveThread(LPVOID );
 #endif // OS
 
    static KeepAliveTimerEnv *sm_pInstance;

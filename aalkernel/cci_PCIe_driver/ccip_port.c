@@ -185,7 +185,7 @@ struct cci_aal_device   *
 
    cci_dev_phys_afu_mmio(pcci_aaldev)    = ccip_port_phys_mmio(pportdev);
    cci_dev_kvp_afu_mmio(pcci_aaldev)     = ccip_port_kvp_mmio(pportdev);
-   cci_dev_len_afu_mmio(pcci_aaldev)     = ccip_portdev_len_afu_mmio(pportdev->m_ccipdev,0);
+   cci_dev_len_afu_mmio(pcci_aaldev)     = ccip_port_mmio_len(pportdev);
 
 
    // Set the interface permissions
@@ -450,7 +450,8 @@ ERROR:
 /// @return    error code
 ///============================================================================
 struct port_device  *get_port_device( btPhysAddr pphys_port_mmio,
-                                      btVirtAddr pkvp_port_mmio)
+                                      btVirtAddr pkvp_port_mmio,
+                                      btWSSize   port_mmio_len)
 {
    struct port_device      *pportdev   = NULL;
    bt32bitInt               res         = 0;
@@ -479,6 +480,7 @@ struct port_device  *get_port_device( btPhysAddr pphys_port_mmio,
 
    ccip_port_kvp_mmio(pportdev)    = pkvp_port_mmio;
    ccip_port_phys_mmio(pportdev)   = pphys_port_mmio;
+   ccip_port_mmio_len(pportdev)    = port_mmio_len;
 
    // Get Port header
    ccip_port_hdr(pportdev) = get_port_header(pkvp_port_mmio );

@@ -335,7 +335,8 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
          //   Then add the new port object onto the list
          //-------------------------------------------------------------
          pportdev = get_port_device( kosal_virt_to_phys(ccip_portdev_kvp_afu_mmio(pccipdev,0)) + pfme_hdr->port_offsets[i].port_offset,
-                                     ccip_portdev_kvp_afu_mmio(pccipdev,0) + pfme_hdr->port_offsets[i].port_offset);
+                                     ccip_portdev_kvp_afu_mmio(pccipdev,0) + pfme_hdr->port_offsets[i].port_offset,
+                                     ccip_portdev_len_afu_mmio(pccipdev,0));
          if ( NULL == pportdev ) {
             PERR("Could not allocate memory for FME object\n");
             res = -ENOMEM;
