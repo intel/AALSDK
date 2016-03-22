@@ -447,8 +447,7 @@ protected:
 class FauxServiceClient : public CAASBase
 {
 public:
-   FauxServiceClient(btApplicationContext Ctx=NULL) :
-      CAASBase(Ctx)
+   FauxServiceClient()
    {}
 };
 

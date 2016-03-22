@@ -16,8 +16,6 @@ public:
    virtual IBase &                  Object()                   const { return m_pCAALEvent->Object();         }
    virtual IBase *                 pObject()                   const { return m_pCAALEvent->pObject();        }
    virtual btBool                     IsOK()                   const { return m_pCAALEvent->IsOK();           }
-   virtual btApplicationContext    Context()                   const { return m_pCAALEvent->Context();        }
-   virtual btApplicationContext SetContext(btApplicationContext Ctx) { return m_pCAALEvent->SetContext(Ctx);  }
    virtual IEvent *                  Clone()                   const { return NULL;                           }
 
    virtual void setHandler(IServiceClient *p) { m_pCAALEvent->setHandler(p); }
@@ -29,8 +27,8 @@ public:
    virtual void        operator()()                               { m_pCAALEvent->operator()();    }
 
 protected:
-   CAALEvent_f(btApplicationContext Ctx) :
-      m_CAASBase(Ctx),
+   CAALEvent_f() :
+      m_CAASBase(),
       m_pCAALEvent(NULL)
    {}
 
@@ -69,15 +67,6 @@ protected:
    CAALEvent *m_pCAALEvent;
 };
 
-class CAALEvent_f_0 : public CAALEvent_f
-{
-protected:
-   CAALEvent_f_0() :
-      CAALEvent_f((btApplicationContext)55)
-   {}
-};
-
-
 class CAALEventProtected : public CAALEvent
 {
 public:
@@ -92,7 +81,6 @@ public:
       CAALEventProtected::sm_CallLog.ClearLog();
    }
 
-   void    CallUpdateContext() { UpdateContext(); }
    EOBJECT CallSetInterface(btIID ID, btGenericInterface pIfc) { return SetInterface(ID, pIfc); }
    btBool  CallProcessEventTranID() { return ProcessEventTranID(); }
 
@@ -108,7 +96,7 @@ void CAALEventProtected::EventHandler(IEvent const &e)
 }
 
 
-TEST_F(CAALEvent_f_0, aal0622)
+TEST_F(CAALEvent_f, aal0622)
 {
    // CAALEvent::CAALEvent(IBase *pObject) sets an interface pointer for iidCEvent and
    // iidEvent. When object initialization is successful, m_bIsOK is set to true. m_pObject
@@ -131,7 +119,7 @@ TEST_F(CAALEvent_f_0, aal0622)
    EXPECT_EQ(dynamic_cast<IBase *>(&m_CAASBase), &Object());
 }
 
-TEST_F(CAALEvent_f_0, aal0623)
+TEST_F(CAALEvent_f, aal0623)
 {
    // CAALEvent::CAALEvent(IBase *pObject) with NULL input IBase pointer sets interface
    // pointers for iidCEvent and iidEvent. When object initialization
@@ -156,7 +144,7 @@ TEST_F(CAALEvent_f_0, aal0623)
    EXPECT_EQ(NULL, pObject());
 }
 
-TEST_F(CAALEvent_f_0, aal0624)
+TEST_F(CAALEvent_f, aal0624)
 {
    // CAALEvent(IBase *pObject, btIID SubClassID) sets interface pointers for iidCEvent,
    // iidEvent, and SubClassID. When object initialization is
@@ -181,7 +169,7 @@ TEST_F(CAALEvent_f_0, aal0624)
    EXPECT_EQ(dynamic_cast<IBase *>(&m_CAASBase), &Object());
 }
 
-TEST_F(CAALEvent_f_0, aal0625)
+TEST_F(CAALEvent_f, aal0625)
 {
    // When the input parameter to CAALEvent(IBase *pObject, btIID SubClassID)
    // has a matching subclass interface ID, set SubClass interface returns EObjDuplicateName.
@@ -206,12 +194,14 @@ TEST_F(CAALEvent_f_0, aal0625)
    EXPECT_FALSE(IsOK());
    EXPECT_EQ(NULL, pObject());
 
+#if DEPRECATED
    EXPECT_EQ(NULL, Context());
+#endif // DEPRECATED
 }
 
 #if 0
 Copies were de-featured.
-TEST_F(CAALEvent_f_0, aal0626)
+TEST_F(CAALEvent_f, aal0626)
 {
    // CAALEvent::CAALEvent(const CAALEvent &rOther) sets an interface pointer for iidCEvent,
    // and sets a SubClass interface of iidEvent. When object initialization is successful,
@@ -244,7 +234,7 @@ TEST_F(CAALEvent_f_0, aal0626)
 }
 #endif
 
-TEST_F(CAALEvent_f_0, aal0627)
+TEST_F(CAALEvent_f, aal0627)
 {
    // When interface corresponding to the input parameter is implemented,
    // CAALEvent::Interface(btIID Interface) returns a pointer to the requested interface.
@@ -253,7 +243,7 @@ TEST_F(CAALEvent_f_0, aal0627)
    EXPECT_EQ(m_pCAALEvent, reinterpret_cast<CAALEvent *>( Interface(iidCEvent) ));
 }
 
-TEST_F(CAALEvent_f_0, aal628)
+TEST_F(CAALEvent_f, aal628)
 {
    // When interface corresponding to the input parameter is not implemented,
    // CAALEvent::Interface(btIID Interface) returns NULL.
@@ -316,7 +306,7 @@ TEST(CAALEventTest, aal0631)
    EXPECT_EQ(EObjDuplicateName, e.CallSetInterface(ID, Ifc));
 }
 
-TEST_F(CAALEvent_f_0, aal0632)
+TEST_F(CAALEvent_f, aal0632)
 {
    // when set a sub class interface pointer to a non-NULL subclass object (CAALEvent ::SetSubClassInterface()),
    // m_SubClassID stores subclass id and an interface entry is made for the parameters in the
@@ -333,7 +323,7 @@ TEST_F(CAALEvent_f_0, aal0632)
 #endif // DEPRECATED
 }
 
-TEST_F(CAALEvent_f_0, aal0633)
+TEST_F(CAALEvent_f, aal0633)
 {
    // When the input interface pointer parameter to SetSubClassInterface() is NULL,
    // CAALEvent::SetSubClassInterface() returns EObjBadObject.
@@ -343,7 +333,7 @@ TEST_F(CAALEvent_f_0, aal0633)
    EXPECT_FALSE(Has(ID));
 }
 
-TEST_F(CAALEvent_f_0, aal0634)
+TEST_F(CAALEvent_f, aal0634)
 {
    // When try to set already implemented sub class interface,
    // CAALEvent::SetSubClassInterface() returns EObjDuplicateName.
@@ -378,7 +368,7 @@ TEST_F(CAALEvent_f_0, aal0634)
    EXPECT_EQ(ID, SubClassID());
 }
 
-TEST_F(CAALEvent_f_0, aal0635)
+TEST_F(CAALEvent_f, aal0635)
 {
    // When the CAALEvent object has an interface matching the given
    // interface ID, CAALEvent::Has() returns true.
@@ -387,7 +377,7 @@ TEST_F(CAALEvent_f_0, aal0635)
    EXPECT_TRUE(Has(iidCEvent));
 }
 
-TEST_F(CAALEvent_f_0, aal0636)
+TEST_F(CAALEvent_f, aal0636)
 {
    // When no interface matching the given interface ID is found,
    // CAALEvent::Has() returns false.
@@ -418,7 +408,7 @@ TEST_F(CAALEvent_f_0, aal0637)
 }
 #endif // DEPRECATED
 
-TEST_F(CAALEvent_f_0, aal0638)
+TEST_F(CAALEvent_f, aal0638)
 {
    // SubClassID() returns stored subclass ID in m_SubClassID,
    // set by CAALEvent::SetSubClassInterface()
@@ -473,10 +463,8 @@ TEST(CAALEventTest, aal0640)
       btBool             operator != (const IEvent &rhs) const  { return true;     }
       btBool             operator == (const IEvent &rhs) const  { return false;    }
       btBool                     IsOK()                  const  { return true;     }
-      btApplicationContext    Context()                  const  { return NULL;     }
       IBase &                  Object()                  const  { return m_IBase;  }
       IBase *                 pObject()                  const  { return &m_IBase; }
-      btApplicationContext SetContext(btApplicationContext Ctx) { return NULL;     }
       IEvent *                  Clone()                  const  { return new(std::nothrow) aal0640Event(*this); }
 
    protected:
@@ -577,7 +565,7 @@ TEST(CAALEventTest, aal0643)
    EXPECT_TRUE( b != a);
 }
 
-TEST_F(CAALEvent_f_0, aal0644)
+TEST_F(CAALEvent_f, aal0644)
 {
    // SetObject() Updates the object pointed to by the Event,
    // m_pObject stores updated cached object pointer.
@@ -595,7 +583,8 @@ TEST_F(CAALEvent_f_0, aal0644)
    EXPECT_EQ(&m_CAASBase, pObject());
 }
 
-TEST_F(CAALEvent_f_0, aal0645)
+#if DEPRECATED
+TEST_F(CAALEvent_f, aal0645)
 {
    // UpdateContext() updates application context of based on
    // m_pObject(cache the object context).
@@ -608,8 +597,6 @@ TEST_F(CAALEvent_f_0, aal0645)
    EXPECT_EQ((btApplicationContext)56, Context());
 }
 
-#if 0
-Redmine 542
 TEST_F(CAALEvent_f_1, aal0646)
 {
    //When m_pObject(cache the object context) is NULL, UpdateContext()
@@ -624,7 +611,7 @@ TEST_F(CAALEvent_f_1, aal0646)
    EXPECT_EQ(appCtx,m_Context);
 }
 
-TEST_F(CAALEvent_f_0, aal0647)
+TEST_F(CAALEvent_f, aal0647)
 {
    //When m_pObject.IsOK() is false, UpdateContext() doesn't update application context .
 
@@ -652,17 +639,17 @@ TEST_F(CAALEvent_f_0, aal0647)
    EXPECT_EQ(appCtx,m_Context);
    EXPECT_EQ(appCtx,Context());
 }
-#endif
+#endif // DEPRECATED
 
-#if 0
-TEST_F(CAALEvent_f_0, aal0649)
+#if DEPRECATED
+TEST_F(CAALEvent_f, aal0649)
 {
    //When transaction ID 's Event Handler is NULL , ProcessEventTranID() returns false.
    EXPECT_NULL(m_TranID.Handler());
    EXPECT_FALSE(ProcessEventTranID());
 }
 
-TEST_F(CAALEvent_f_0, aal0650)
+TEST_F(CAALEvent_f, aal0650)
 {
    //When transaction ID 's Event Handler is valid , ProcessEventTranID()
    //invokes event handler callback and returns true.
@@ -677,9 +664,9 @@ TEST_F(CAALEvent_f_0, aal0650)
    m_TranID.Handler(eventclient.btEventHandlertest);
    EXPECT_TRUE(ProcessEventTranID());
 }
-#endif
+#endif // DEPRECATED
 
-TEST_F(CAALEvent_f_0, aal0651)
+TEST_F(CAALEvent_f, aal0651)
 {
    // Object() returns a reference to the object associated with the event.
    // pObject() returns a pointer to the associated object.
@@ -697,8 +684,8 @@ TEST_F(CAALEvent_f_0, aal0651)
    EXPECT_NULL(pObject());
 }
 
-#if 0
-TEST_F(CAALEvent_f_0, aal0653)
+#if DEPRECATED
+TEST_F(CAALEvent_f, aal0653)
 {
    //Context() returns pointer to application context of based on
    //m_pObject(cache the object context).
@@ -706,7 +693,7 @@ TEST_F(CAALEvent_f_0, aal0653)
    EXPECT_EQ(m_Context,Context());
 }
 
-TEST_F(CAALEvent_f_0, aal0654)
+TEST_F(CAALEvent_f, aal0654)
 {
    //SetContext(btApplicationContext Ctx) stores input put context and
    //returns previous stored context.
@@ -718,7 +705,7 @@ TEST_F(CAALEvent_f_0, aal0654)
    EXPECT_EQ(newappCtx,m_Context);
    EXPECT_EQ(newappCtx,Context());
 }
-#endif
+#endif // DEPRECATED
 
 
 TEST(CAALEventTest, aal0655)
@@ -1038,7 +1025,7 @@ TEST(CTransactionEventTest, aal0665)
    // CTransactionEvent::SetTranID() mutates the TransactionID that is accessed by
    // CTransactionEvent::TranID().
 
-   CAASBase      baseA((btApplicationContext)71);
+   CAASBase      baseA;
    TransactionID tidA;
 
    tidA.ID(8);
@@ -1056,7 +1043,7 @@ TEST(CTransactionEventTest, aal0665)
    EXPECT_EQ(9, a.TranID().ID());
 
 
-   CAASBase baseB((btApplicationContext)72);
+   CAASBase baseB;
    const btIID IDB = 998;
 
    tidB.ID(10);
@@ -1079,7 +1066,7 @@ TEST(CExceptionEventTest, aal0666)
    // and stores the ExceptionNumber, Reason, and Description for later retrieval by data accessor
    // member fn's of the same name. On success, a SubClass if iidExEvent/IExceptionEvent * is set.
 
-   CAASBase base((btApplicationContext)101);
+   CAASBase base;
 
    const btID ExNum  = 12;
    const btID Reason = 13;
@@ -1088,7 +1075,9 @@ TEST(CExceptionEventTest, aal0666)
    CExceptionEvent e(&base, ExNum, Reason, Descr);
 
    EXPECT_EQ(dynamic_cast<IBase *>(&base), e.pObject());
+#if DEPRECATED
    EXPECT_EQ((btApplicationContext)101, e.Context());
+#endif // DEPRECATED
 
    EXPECT_EQ(ExNum,    e.ExceptionNumber());
    EXPECT_EQ(Reason,   e.Reason());
@@ -1109,7 +1098,7 @@ TEST(CExceptionEventTest, aal0667)
    // accessor member fn's of the same name. On success, a SubClass of ID/IExceptionEvent * is set.
    // Interface iidExEvent/IExceptionEvent * is also added.
 
-   CAASBase base((btApplicationContext)102);
+   CAASBase base;
 
    const btIID ID     = 14;
    const btID  ExNum  = 15;
@@ -1119,7 +1108,9 @@ TEST(CExceptionEventTest, aal0667)
    CExceptionEvent e(&base, ID, ExNum, Reason, Descr);
 
    EXPECT_EQ(dynamic_cast<IBase *>(&base), e.pObject());
+#if DEPRECATED
    EXPECT_EQ((btApplicationContext)102, e.Context());
+#endif // DEPRECATED
 
    EXPECT_EQ(ExNum,    e.ExceptionNumber());
    EXPECT_EQ(Reason,   e.Reason());
@@ -1333,7 +1324,7 @@ TEST(CExceptionTransactionEventTest, aal0669)
    // iidExTranEvent/IExceptionTransactionEvent * is set, and an interface of
    // iidTranEvent/ITransactionEvent * is available.
 
-   CAASBase base((btApplicationContext)101);
+   CAASBase base;
 
    TransactionID tid;
    tid.ID(105);
@@ -1345,7 +1336,9 @@ TEST(CExceptionTransactionEventTest, aal0669)
    CExceptionTransactionEvent e(&base, tid, ExNum, Reason, Descr);
 
    EXPECT_EQ(dynamic_cast<IBase *>(&base), e.pObject());
+#if DEPRECATED
    EXPECT_EQ((btApplicationContext)101, e.Context());
+#endif // DEPRECATED
 
    EXPECT_EQ(ExNum,    e.ExceptionNumber());
    EXPECT_EQ(Reason,   e.Reason());
@@ -1373,7 +1366,7 @@ TEST(CExceptionTransactionEventTest, aal0670)
    // set. Interfaces iidTranEvent/ITransactionEvent * and
    // iidExTranEvent/IExceptionTransactionEvent * are also added.
 
-   CAASBase base((btApplicationContext)102);
+   CAASBase base;
 
    const btIID   ID     = 17;
    TransactionID tid;
@@ -1385,7 +1378,9 @@ TEST(CExceptionTransactionEventTest, aal0670)
    CExceptionTransactionEvent e(&base, ID, tid, ExNum, Reason, Descr);
 
    EXPECT_EQ(dynamic_cast<IBase *>(&base), e.pObject());
+#if DEPRECATED
    EXPECT_EQ((btApplicationContext)102, e.Context());
+#endif // DEPRECATED
 
    EXPECT_EQ(ExNum,    e.ExceptionNumber());
    EXPECT_EQ(Reason,   e.Reason());
