@@ -26,9 +26,9 @@
 //****************************************************************************
 /// @file ALIConfAFU.cpp
 /// @brief Basic ALI AFU interaction.
-/// @ingroup HelloALINLB
+/// @ingroup ALIConfAFU
 /// @verbatim
-/// Intel(R) Accelerator Abstraction Layer Sample Application
+/// Accelerator Abstraction Layer Sample Application
 ///
 ///    This application is for example purposes only.
 ///    It is not intended to represent a model for developing commercially-
@@ -97,13 +97,13 @@ struct  ALIConfigCommandLine
 #define ALICONIFG_CMD_FLAG_VERSION   0x00000002
 #define ALICONIFG_CMD_PARSE_ERROR    0x00000003
 
-   char    bitstream_file[100];
+   char    bitstream_file[200];
    int     reconftimeout;
    int     reconfAction;
    bool    reactivateDisabled;
 
 };
-struct ALIConfigCommandLine configCmdLine = { 0, 5,0,0,0 };
+struct ALIConfigCommandLine configCmdLine = { 0,"",1,0,0 };
 
 
 int aliconigafu_on_non_option(AALCLP_USER_DEFINED user, const char *nonoption) {
@@ -255,9 +255,9 @@ CLEANUP:
 void help_msg_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
 {
    fprintf(fp, "Usage:\n");
-   fprintf(fp, "   aliconfafu [--bitstream=<FILENAME>] [--reconftimeout=<MILLISECONDS>]  \
+   fprintf(fp, "   aliconfafu [--bitstream=<FILENAME>] [--reconftimeout=<SECONDS>]  \
                 [--reconfaction=<ACTION_HONOR_REQUEST or ACTION_HONOR_OWNER >]        \
-                [--reactivateDisabled=< TRUE or FLASE>]\n");
+                [--reactivateDisabled=< TRUE or FALSE>]\n");
    fprintf(fp, "\n");
 
 }
@@ -368,7 +368,7 @@ ALIConfAFUApp::ALIConfAFUApp() :
    m_Result(0)
 {
    // Register our Client side interfaces so that the Service can acquire them.
-   //   SetInterface() is inherited from CAASBase
+   // SetInterface() is inherited from CAASBase
    SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
    SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
    SetInterface(iidALI_CONF_Service_Client, dynamic_cast<IALIReconfigure_Client *>(this));
@@ -379,8 +379,8 @@ ALIConfAFUApp::ALIConfAFUApp() :
    // Start the AAL Runtime, setting any startup options via a NamedValueSet
 
    // Using Hardware Services requires the Remote Resource Manager Broker Service
-   //  Note that this could also be accomplished by setting the environment variable
-   //   AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
+   // Note that this could also be accomplished by setting the environment variable
+   // AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
    NamedValueSet configArgs;
    NamedValueSet configRecord;
 
@@ -391,7 +391,7 @@ ALIConfAFUApp::ALIConfAFUApp() :
 #endif
 
    // Start the Runtime and wait for the callback by sitting on the semaphore.
-   //   the runtimeStarted() or runtimeStartFailed() callbacks should set m_bIsOK appropriately.
+   // the runtimeStarted() or runtimeStartFailed() callbacks should set m_bIsOK appropriately.
    if(!m_Runtime.start(configArgs)){
 	   m_bIsOK = false;
       return;
@@ -417,7 +417,7 @@ ALIConfAFUApp::~ALIConfAFUApp()
 btInt ALIConfAFUApp::run()
 {
    cout <<"============================="<<endl;
-   cout <<"= ALI AFU Config NLB Sample ="<<endl;
+   cout <<"= ALI AFU Configure Sample ="<<endl;
    cout <<"============================="<<endl;
 
    // Request the Servcie we are interested in.
@@ -428,6 +428,7 @@ btInt ALIConfAFUApp::run()
    //  readily available and bound at run-time.
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
+   NamedValueSet reconfnvs;
 
 #if defined( HWAFU )                /* Use FPGA hardware */
    // Service Library to use
@@ -476,77 +477,66 @@ btInt ALIConfAFUApp::run()
    }
 
 
-
-
    //=============================
-   // Now we have the NLB Service
+   // Now we have the ALIReconfigure Service
    //   now we can use it
    //=============================
    MSG("Running Test");
    if(true == m_bIsOK){
 
-      NamedValueSet nvsDeactv;
+      // Reconfigure timeout
+      reconfnvs.Add(AALCONF_MILLI_TIMEOUT,(static_cast<btUnsigned64bitInt>(configCmdLine.reconftimeout)) *1000);
 
-
-
-      nvsDeactv.Add(AALCONF_MILLI_TIMEOUT,static_cast<btUnsigned64bitInt>(configCmdLine.reconftimeout));
-
+      // Reconfigure action
       if(AALCONF_RECONF_ACTION_HONOR_OWNER_ID == configCmdLine.reconfAction) {
-         nvsDeactv.Add(AALCONF_RECONF_ACTION,AALCONF_RECONF_ACTION_HONOR_OWNER_ID);
+         reconfnvs.Add(AALCONF_RECONF_ACTION,AALCONF_RECONF_ACTION_HONOR_OWNER_ID);
       }
       else {
-         nvsDeactv.Add(AALCONF_RECONF_ACTION,AALCONF_RECONF_ACTION_HONOR_REQUEST_ID);
+         reconfnvs.Add(AALCONF_RECONF_ACTION,AALCONF_RECONF_ACTION_HONOR_REQUEST_ID);
       }
 
+      // ReActivated state
       if(configCmdLine.reactivateDisabled) {
-         nvsDeactv.Add(AALCONF_REACTIVATE_DISABLED,true);
+         reconfnvs.Add(AALCONF_REACTIVATE_DISABLED,true);
       }
       else {
-         nvsDeactv.Add(AALCONF_REACTIVATE_DISABLED,false);
+         reconfnvs.Add(AALCONF_REACTIVATE_DISABLED,false);
       }
 
-      nvsDeactv.Add(AALCONF_FILENAMEKEY,configCmdLine.bitstream_file);
+      //reconfnvs.Add(AALCONF_FILENAMEKEY,"/home/lab/pr/bitstream.rbf");
+      reconfnvs.Add(AALCONF_FILENAMEKEY,configCmdLine.bitstream_file);
 
-      //m_pALIReconfService->reconfDeactivate(TransactionID(), nvsDeactv);
-      //m_Sem.Wait();
-
-      m_pALIReconfService->reconfConfigure(TransactionID(), nvsDeactv);
+      /*// Deactivate AFU Resource
+      m_pALIReconfService->reconfDeactivate(TransactionID(), reconfnvs);
       m_Sem.Wait();
+      if(!m_bIsOK){
+         ERR("Deactivate failed\n");
+         goto done_1;
+      }*/
 
+      // reconfigure with Bitstream
+      m_pALIReconfService->reconfConfigure(TransactionID(), reconfnvs);
+      m_Sem.Wait();
+      if(!m_bIsOK){
+         ERR("ReConfigure failed\n");
+         goto done_1;
+      }
+
+      // reactivate AFU Resource
       if(configCmdLine.reactivateDisabled) {
          m_pALIReconfService->reconfActivate(TransactionID(), NamedValueSet());
          m_Sem.Wait();
+         if(!m_bIsOK){
+            ERR("Activate failed\n");
+            goto done_1;
+         }
       }
 
-#if 0
-
-      nvsDeactv.Add(AALCONF_MILLI_TIMEOUT,static_cast<btUnsigned64bitInt>(1));
-
-
-      nvsDeactv.Add(AALCONF_RECONF_ACTION,AALCONF_RECONF_ACTION_HONOR_REQUEST_ID);
-
-      nvsDeactv.Add(AALCONF_REACTIVATE_DISABLED,false);
-
-      // FIXME: could reuse existing empty NVS for less overhead
-      //  m_pALIReconfService->reconfDeactivate(TransactionID(), nvsDeactv);
-      //  m_Sem.Wait();
-
-      nvsDeactv.Add(AALCONF_FILENAMEKEY,"/home/joe/sources/ccipTest_PR.rbf");
-
-      // nvsDeactv.Add(AALCONF_FILENAMEKEY,"/home/aravuri/kernelperf/10.rbf");
-
-      m_pALIReconfService->reconfConfigure(TransactionID(), nvsDeactv);
-      m_Sem.Wait();
-
-      /*
-      // FIXME: could reuse existing empty NVS for less overhead
-      m_pALIReconfService->reconfActivate(TransactionID(), NamedValueSet());
-      m_Sem.Wait();*/
-#endif
 
    }
    MSG("Done Running Test");
 
+done_1:
    // Clean-up and return
    // Release() the Service through the Services IAALService::Release() method
    MSG("Release Service");
@@ -594,7 +584,7 @@ void ALIConfAFUApp::serviceAllocated(IBase *pServiceBase,
 void ALIConfAFUApp::serviceAllocateFailed(const IEvent &rEvent)
 {
    ERR("Failed to allocate Service");
-    PrintExceptionDescription(rEvent);
+   PrintExceptionDescription(rEvent);
    ++m_Result;                     // Remember the error
    m_bIsOK = false;
 
@@ -603,19 +593,27 @@ void ALIConfAFUApp::serviceAllocateFailed(const IEvent &rEvent)
 
  void ALIConfAFUApp::serviceReleased(TransactionID const &rTranID)
 {
-    MSG("Service Released");
+   MSG("Service Released");
    // Unblock Main()
    m_Sem.Post(1);
 }
 
  void ALIConfAFUApp::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
   {
-     MSG("Service unexpected requested back");
-     if(NULL != pServiceBase){
-        IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
-        ASSERT(pIAALService);
-        pIAALService->Release(TransactionID());
-     }
+   MSG("Service unexpected requested back");
+   if ( rEvent.Has(iidReleaseRequestEvent) ) {
+
+      std::cerr << "Description: " << dynamic_ref<IReleaseRequestEvent>(iidReleaseRequestEvent, rEvent).Description() << std::endl;
+      std::cerr << "Timeout: " << dynamic_ref<IReleaseRequestEvent>(iidReleaseRequestEvent, rEvent).Timeout() << std::endl;
+      std::cerr << "Reason: " << dynamic_ref<IReleaseRequestEvent>(iidReleaseRequestEvent, rEvent).Reason() << std::endl;
+
+   }
+
+   if(NULL != pServiceBase){
+      IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
+      ASSERT(pIAALService);
+      pIAALService->Release(TransactionID());
+   }
   }
 
  void ALIConfAFUApp::serviceReleaseFailed(const IEvent        &rEvent)
@@ -659,6 +657,7 @@ void ALIConfAFUApp::deactivateFailed( IEvent const &rEvent )
    ERR("Failed deactivate");
    PrintExceptionDescription(rEvent);
    PrintReconfExceptionDescription(rEvent);
+   ++m_Result;                     // Remember the error
    m_bIsOK = false;
    m_Sem.Post(1);
 }
@@ -673,6 +672,7 @@ void ALIConfAFUApp::configureFailed( IEvent const &rEvent )
    ERR("configureFailed");
    PrintExceptionDescription(rEvent);
    PrintReconfExceptionDescription(rEvent);
+   ++m_Result;                     // Remember the error
    m_bIsOK = false;
    m_Sem.Post(1);
 }
@@ -686,6 +686,7 @@ void ALIConfAFUApp::activateFailed( IEvent const &rEvent )
    ERR("activateFailed");
    PrintExceptionDescription(rEvent);
    PrintReconfExceptionDescription(rEvent);
+   ++m_Result;                     // Remember the error
    m_bIsOK = false;
    m_Sem.Post(1);
 }
@@ -746,18 +747,15 @@ void ALIConfAFUApp::activateFailed( IEvent const &rEvent )
 
  void ALIConfAFUApp::PrintReconfExceptionDescription(IEvent const &rEvent)
  {
-
     if ( rEvent.Has(iidExTranEvent) ) {
-
-      std::cerr << "\n Description  " << dynamic_ref<IExceptionTransactionEvent>(iidExTranEvent, rEvent).Description() << std::endl;
-      std::cerr << "\n ExceptionNumber:  " << dynamic_ref<IExceptionTransactionEvent>(iidExTranEvent, rEvent).ExceptionNumber() << std::endl;
-      std::cerr << "\n Reason:  " << dynamic_ref<IExceptionTransactionEvent>(iidExTranEvent, rEvent).Reason() << std::endl;
-
-     }
+      std::cerr << "Description: " << dynamic_ref<IExceptionTransactionEvent>(iidExTranEvent, rEvent).Description() << std::endl;
+      std::cerr << "ExceptionNumber: " << dynamic_ref<IExceptionTransactionEvent>(iidExTranEvent, rEvent).ExceptionNumber() << std::endl;
+      std::cerr << "Reason: " << dynamic_ref<IExceptionTransactionEvent>(iidExTranEvent, rEvent).Reason() << std::endl;
+   }
  }
  // <begin IRuntimeClient interface>
 
-/// @} group HelloALINLB
+/// @} group ALIConfAFUApp
 
 
 //=============================================================================
