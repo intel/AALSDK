@@ -387,9 +387,9 @@ typedef struct aaldevice_interface {
 
    struct device_attributes     *( *getDevAttributes )( WDFDEVICE );  // Fix this too
 #endif
-   btAny( *getExtendedAttributes )( );
-   btAny( *getPublicAttributes )( );
-   btBool( *sendDeviceUpdate )( );
+   btAny( *getExtendedAttributes )( void );
+   btAny( *getPublicAttributes )( void );
+   btBool( *sendDeviceUpdate )( void );
 
    aaldev_AddOwner_e    (*addOwner)(struct aal_device * ,
                                     btPID ,
