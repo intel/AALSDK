@@ -164,6 +164,8 @@ public:
 
     void runtimeAllocateServiceFailed( IEvent const &rEvent);
 
+    void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent);
+
     void runtimeAllocateServiceSucceeded(IBase               *pClient,
                                          TransactionID const &rTranID);
 
@@ -669,10 +671,20 @@ void ErrorMonApp::runtimeAllocateServiceFailed( IEvent const &rEvent)
 }
 
 void ErrorMonApp::runtimeAllocateServiceSucceeded(IBase *pClient,
-                                                    TransactionID const &rTranID)
+                                                  TransactionID const &rTranID)
 {
    TransactionID const * foo = &rTranID;
    MSG("Runtime Allocate Service Succeeded");
+}
+
+void ErrorMonApp::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
+{
+   MSG("Service unexpected requested back");
+   if(NULL != pServiceBase){
+      IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
+      ASSERT(pIAALService);
+      pIAALService->Release(TransactionID());
+   }
 }
 
 void ErrorMonApp::runtimeEvent(const IEvent &rEvent)
