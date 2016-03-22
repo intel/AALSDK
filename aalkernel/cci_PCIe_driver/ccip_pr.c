@@ -875,6 +875,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             goto ERROR;
 
          }
+         port_afu_quiesce_and_halt(pportdev);
          // TODO FOR NOW JUST DO IT
          cci_unpublish_aaldevice(ccip_port_uafu_dev(pportdev));
          cci_destroy_aal_device( ccip_port_uafu_dev(pportdev) );
@@ -910,7 +911,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
             goto ERROR;
          }
-
+         port_afu_Enable(pportdev);
          // TODO FOR NOW JUST DO IT
          {
               // Get the AFU header pointer by adding the offset to the port header address

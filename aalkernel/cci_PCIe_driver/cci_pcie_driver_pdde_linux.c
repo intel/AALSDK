@@ -80,7 +80,6 @@
 #include "ccip_port.h"
 #include "ccip_perfmon.h"
 
-//#include "aalsdk/kernel/spl2defs.h"
 
 extern int print_sim_fme_device(struct fme_device *);
 extern int print_sim_port_device(struct port_device *pport_dev);
@@ -722,12 +721,11 @@ cci_pci_remove(struct pci_dev *pcidev)
       }
 
    }
-   ASSERT(1 == found);
 
    if ( 0 == found ) {
-      PERR("struct pci_dev * 0x%p not found in device list.\n", pcidev);
+      PINFO("struct pci_dev * 0x%p not found in device list.\n", pcidev);
    } else if ( found > 1 ) {
-      PERR("struct pci_dev * 0x%p found in device list multiple times.\n", pcidev);
+      PINFO("struct pci_dev * 0x%p found in device list multiple times.\n", pcidev);
    }
 
    PTRACEOUT;
@@ -770,6 +768,7 @@ cci_remove_device(struct ccip_device *pccipdev)
    if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
       if(!ccip_is_simulated(pccipdev)){
          PVERBOSE("Freeing FME BAR 0\n");
+         remove_perfmonitor(pccipdev->m_pcidev);
          iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
          pci_release_region(ccip_dev_to_pci_dev(pccipdev), 0);
       }else{
@@ -924,7 +923,6 @@ ccidrv_exitDriver(void)
       driver_info.isregistered = 0;
    }
 
-   //aalbus_get_bus()->unregister_driver( &cci_pci_driver_info.aaldriver );
 
    PINFO("<- %s removed.\n", DRV_DESCRIPTION);
    PTRACEOUT;

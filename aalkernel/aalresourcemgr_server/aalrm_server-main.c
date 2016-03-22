@@ -457,7 +457,7 @@ int rm_server_init(void)
                       AAL_RMSAPI_IID_01);    // service interface ID
 
    // Register with the service interface with the AAL Bus Service INterface Broker
-   kosal_printk("Registering service interface 0x%Lx\n", (long long)AAL_RMSAPI_IID_01);
+   DPRINTF(AALRMS_DBG_MOD, "Registering service interface 0x%Lx\n", (long long)AAL_RMSAPI_IID_01);
    ret = aalbus_get_bus()->register_service_interface(&rm_server_intfc);
    if(ret < 0){
 	   DPRINTF(AALRMS_DBG_MOD, "Failed registeer service interface\n");
