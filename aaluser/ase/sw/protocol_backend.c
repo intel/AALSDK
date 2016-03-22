@@ -678,7 +678,6 @@ int ase_init()
 
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
-  printf("1\n");
 
   // Evaluate IPCs
   ipc_init();
@@ -1012,22 +1011,23 @@ void ase_config_parse(char *filename)
   FILE *fp = (FILE *)NULL;
   char *line;
   size_t len = 0;
-  // ssize_t read;
   char *parameter;
   int value;
 
   char *ase_cfg_filepath;
   ase_cfg_filepath = ase_malloc(256);
-  memset (ase_cfg_filepath, 0, 256);
-  // if ( strlen(sv2c_config_filepath) != 0 )
-  if ( (strlen(sv2c_config_filepath) != 0) && (sv2c_config_filepath!=(char*)NULL))
-    {
-      sprintf(ase_cfg_filepath, "%s", sv2c_config_filepath);
+  
+  if ( access(sv2c_script_filepath, F_OK) != -1 )
+    {   
+      if ( (strlen(sv2c_config_filepath) != 0) && (sv2c_config_filepath!=(char*)NULL))
+	{
+	  sprintf(ase_cfg_filepath, "%s", sv2c_config_filepath);
+	}
     }
-  else
-    {
-      sprintf(ase_cfg_filepath, "%s/%s", ase_run_path, ASE_CONFIG_FILE);
-    }
+  /* else */
+  /*   { */
+  /*     sprintf(ase_cfg_filepath, "%s/%s", ase_run_path, ASE_CONFIG_FILE); */
+  /*   } */
 
   // Allocate space to store ASE config
   cfg = (struct ase_cfg_t *)ase_malloc( sizeof(struct ase_cfg_t) );
@@ -1040,7 +1040,7 @@ void ase_config_parse(char *filename)
       start_simkill_countdown();
     }
   line = ase_malloc(sizeof(char) * 80);
-
+  
   // Default values
   cfg->ase_mode = ASE_MODE_DAEMON_NO_SIMKILL;
   cfg->ase_timeout = 500;
@@ -1048,7 +1048,7 @@ void ase_config_parse(char *filename)
   cfg->enable_reuse_seed = 0;
   cfg->enable_cl_view = 1;
   cfg->phys_memory_available_gb = 256;
-
+  
   // Find ase.cfg OR not
   // if ( access (ASE_CONFIG_FILE, F_OK) != -1 )
   if ( access (ase_cfg_filepath, F_OK) != -1 )
