@@ -45,7 +45,7 @@
 include ase_sources.mk
 
 ## ASE Version
-ASE_VERSION = 5.0.2
+ASE_VERSION = 5.0.2-Beta
 
 # ASE switches (these tend to increase log sizes)
 ASE_DEBUG ?= 1
@@ -79,7 +79,7 @@ endif
 ## C Compiler options
 CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1
 CC_OPT+= -I $(TOOL_DPI_INCDIR)/include
-CC_OPT+= -Wall
+CC_OPT+= -Wall 
 # -std=c99
 # -D_POSIX_C_SOURCE=200809L
 # -D_XOPEN_SOURCE=700
@@ -119,13 +119,14 @@ SNPS_VHDLAN_OPT+= -work $(WORK)
 SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
-SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
+# SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
 SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+USE_PLATFORM_CCIP  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
+SNPS_VLOGAN_OPT+= +lint=all,noVCDE,noNS,NCEID,CAWM,TFIPC,IPDP,PCWM
 ifeq ($(ASE_DEBUG), 1)
   ifeq ($(ASE_DISABLE_LOGGER), 1)
    SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
   endif
-  SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +lint=TFIPC-L +warn
+  SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +warn
 endif
 ifdef GLS_SIM
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
@@ -196,7 +197,7 @@ CLANG_VERSION=3.6
 CLANG_OPT = -v -v -v -k -analyze-headers --use-cc=gcc -stats
 CLANG_OPT+= -maxloop 100
 CLANG_OPT+= -o $(PWD)/scanbuild/
-CLANG_OPT+= --use-analyzer=/usr/bin/clang
+CLANG_OPT+= --use-analyzer=/usr/bin/clang-3.6
 CLANG_OPT+= \
 	-enable-checker alpha.core.BoolAssignment \
 	-enable-checker alpha.core.CastSize \
@@ -206,16 +207,13 @@ CLANG_OPT+= \
 	-enable-checker alpha.core.PointerArithm \
 	-enable-checker alpha.core.PointerSub \
 	-enable-checker alpha.core.SizeofPtr \
-	-enable-checker alpha.cplusplus.NewDeleteLeaks \
 	-enable-checker alpha.cplusplus.VirtualCall \
-	-enable-checker alpha.deadcode.IdempotentOperations \
 	-enable-checker alpha.deadcode.UnreachableCode \
 	-enable-checker alpha.osx.cocoa.Dealloc \
 	-enable-checker alpha.osx.cocoa.DirectIvarAssignment \
 	-enable-checker alpha.osx.cocoa.DirectIvarAssignmentForAnnotatedFunctions \
 	-enable-checker alpha.osx.cocoa.InstanceVariableInvalidation \
 	-enable-checker alpha.osx.cocoa.MissingInvalidationMethod \
-	-enable-checker alpha.osx.cocoa.MissingSuperCall \
 	-enable-checker alpha.security.ArrayBound \
 	-enable-checker alpha.security.ArrayBoundV2 \
 	-enable-checker alpha.security.MallocOverflow \
@@ -260,9 +258,14 @@ CLANG_OPT+= \
 	-enable-checker security.insecureAPI.strcpy \
 	-enable-checker debug.TaintTest \
 	-enable-checker alpha.security.taint.TaintPropagation \
+
+
 #	-enable-checker debug.ViewCallGraph \
 	-enable-checker debug.DumpCFG \
 	-enable-checker debug.ViewCFG \
+	-enable-checker alpha.cplusplus.NewDeleteLeaks \
+	-enable-checker alpha.deadcode.IdempotentOperations \
+	-enable-checker alpha.osx.cocoa.MissingSuperCall \
 
 #########################################################################
 #                            Build Targets                              #
@@ -296,7 +299,7 @@ endif
 header:
 	@echo "############################################################"
 	@echo "#                                                          #"
-	@echo "#    Xeon(R) + FPGA Accelerator Abstraction Layer 5.0.3    #"
+	@echo "#       Xeon(R) + FPGA Accelerator Abstraction Layer       #"
 	@echo "#             AFU Simulation Environment (ASE)             #"
 	@echo "#                                                          #"
 	@echo "############################################################"
@@ -431,8 +434,9 @@ distclean: header clean
 #########################################################################
 # Source scan-build
 scan-build:
+	rm -rf scanbuild
 	mkdir -p scanbuild
-	scan-build $(CLANG_OPT) make sw_build | tee scan-build.log
+	scan-build-3.6 $(CLANG_OPT) make sw_build | tee scan-build.log
 
 # Coverage
 coverage:
@@ -451,7 +455,10 @@ long_sim:
 	cd ./$(WORK)/; ./ase_simv -ucli -do $(ASE_SRCDIR)/vcs_run.tcl +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 
 splint:
-	cd sw ; splint -standard +posixlib -preproc -syntax -limit 10000 -nullassign -formatconst -retvalint +gnuextensions *.c | tee ../splint.log ; cd -
+	cd sw ; splint -standard +posixlib -preproc -syntax -limit 10000 -nullassign -formatconst -retvalint +gnuextensions protocol_backend.c | tee ../splint.log ; cd -
 
 cppcheck:
 	cd sw ; cppcheck *.c -DSIM_SIDE=1 -D__x86_64__ --enable=all -v --check-config | tee ../lint.log ; cd -
+
+gdb_sim:
+	cd ./$(WORK)/; gdb --args ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -

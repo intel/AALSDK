@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -60,7 +58,7 @@
 //      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
 // PURPOSE: This file implements init/exit entry points for the
 //          Intel(R) Intel QuickAssist Technology AAL FPGA device driver for
-//          CCI protocol compliant devices.
+//          functionality of the AAL FPGA device driver.
 // HISTORY:
 // COMMENTS: Linux specific
 // WHEN:          WHO:     WHAT:
@@ -129,13 +127,13 @@ btUnsignedInt debug = PTRACE_FLAG
    | PINFO_FLAG
    | PNOTICE_FLAG
 /* Module selection flags */
-   | CCIV4_DBG_MOD
-   | CCIV4_DBG_DEV
-   | CCIV4_DBG_AFU
-   | CCIV4_DBG_MAFU
-   | CCIV4_DBG_MMAP
-   | CCIV4_DBG_CMD
-   | CCIV4_DBG_CFG
+   | CCIPCIE_DBG_MOD
+   | CCIPCIE_DBG_DEV
+   | CCIPCIE_DBG_AFU
+   | CCIPCIE_DBG_MAFU
+   | CCIPCIE_DBG_MMAP
+   | CCIPCIE_DBG_CMD
+   | CCIPCIE_DBG_CFG
 
 ;
 
@@ -1155,7 +1153,6 @@ ccidrv_exitDriver(void)
       driver_info.isregistered = 0;
    }
 
-   //aalbus_get_bus()->unregister_driver( &cci_pci_driver_info.aaldriver );
 
    PINFO("<- %s removed.\n", DRV_DESCRIPTION);
    PTRACEOUT;

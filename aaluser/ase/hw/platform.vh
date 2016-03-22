@@ -70,7 +70,7 @@
  // `define UMSG_MAX_MSG_LOG2             5
  // `define UMSG_MAX_MSG                  2**`UMSG_MAX_MSG_LOG2
 
- `define SOFT_RESET_DURATION           20
+ `define SOFT_RESET_DURATION           256
 
 /* OME5 */
  `ifdef BDX_FPGA

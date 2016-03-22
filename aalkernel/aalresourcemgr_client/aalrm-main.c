@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -353,7 +351,7 @@ btInt aalrm_init(void)
    //-------------------
    // Display the signon
    //-------------------
-   kosal_printk_level(KERN_INFO, "Intel(R) QuickAssist Technology Accelerator Abstraction Layer\n");
+   kosal_printk_level(KERN_INFO, "Accelerator Abstraction Layer\n");
    kosal_printk_level(KERN_INFO, "-> %s\n", DRV_DESCRIPTION);
    kosal_printk_level(KERN_INFO, "-> Version %s\n",DRV_VERSION);
    kosal_printk_level(KERN_INFO, "-> %s\n", DRV_COPYRIGHT);
@@ -395,7 +393,7 @@ btInt resourcemgr_init()
    }
 
    if(driver_create_file(&rm_driver.m_driver,&driver_attr_debug)){
-       DPRINTF (AHMPIP_DBG_MOD, ": Failed to create debug attribute - Unloading module\n");
+       DPRINTF (AALRMC_DBG_MOD, ": Failed to create debug attribute - Unloading module\n");
        // Unregister the driver with the bus
        aalbus_get_bus()->unregister_driver( &rm_driver );
        return -EIO;

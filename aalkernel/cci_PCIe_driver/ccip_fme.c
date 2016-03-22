@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -514,7 +512,7 @@ bt32bitInt get_fme_dev_featurelist( struct fme_device *pfme_dev,
 
          default :
          {
-            PERR(" invalid FME Feature ID\n");
+            PWARN(" Invalid FME Feature ID %d  0x%X \n",fme_dfh.Feature_ID,fme_dfh.Feature_ID);
          }
          break ;
       } // end switch

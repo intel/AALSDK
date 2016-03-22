@@ -105,16 +105,15 @@ SNPS_VHDLAN_OPT+= -work $(WORK)
 SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
-SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
-SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+USE_PLATFORM_CCIP
-SNPS_VLOGAN_OPT+= +define+CCI_SIMULATION=1 +define+SIM_MODE=1
+# SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
+SNPS_VLOGAN_OPT+= +lint=all,noVCDE,noNS
 ifdef GLS_SIM
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
-  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
+#  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
@@ -138,6 +137,17 @@ MENT_VCOM_OPT = -nologo -work $(WORK)
 MENT_VLOG_OPT = -64 -novopt -nologo +librescan -work $(WORK) 
 MENT_VLOG_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR) 
 MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
+ifdef GLS_SIM
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
+#  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
+endif
 
 ## VSIM elaboration, and run options
 MENT_VSIM_OPT = -64 -c -novopt -l run.log
@@ -176,7 +186,7 @@ endif
 header:
 	@echo "############################################################"
 	@echo "#                                                          #"
-	@echo "#    Xeon(R) + FPGA Accelerator Abstraction Layer 5.0.3    #"
+	@echo "#       Xeon(R) + FPGA Accelerator Abstraction Layer       #"
 	@echo "#             AFU Simulation Environment (ASE)             #"
 	@echo "#                                                          #"
 	@echo "############################################################"
@@ -211,7 +221,7 @@ sw_build:
 	make header
 	mkdir -p $(WORK)
 	cd $(WORK) ; $(CC) $(CC_OPT) -c $(ASESW_FILE_LIST) || exit 1 ; cd -
-	cd $(WORK) ; $(CC) -g -shared -o $(ASE_SHOBJ_SO) `ls *.o` $(ASE_LD_SWITCHES) ; cd -
+	cd $(WORK) ; $(CC) -g -m64 -shared -Bsymbolic -o $(ASE_SHOBJ_SO) `ls *.o` $(ASE_LD_SWITCHES) ; cd -
 	nm $(WORK)/$(ASE_SHOBJ_SO) > $(WORK)/$(ASE_SHOBJ_NAME).nm
 
 ## VCS build template ##
@@ -247,10 +257,10 @@ questa_build:
 ifdef DUT_VHD_SRC_LIST
 	vcom $(MENT_VCOM_OPT) -f $(DUT_VHD_SRC_LIST)
 endif
+	vlog $(MENT_VLOG_OPT) $(ASEHW_FILE_LIST)
 ifdef DUT_VLOG_SRC_LIST
 	vlog $(MENT_VLOG_OPT) -f $(DUT_VLOG_SRC_LIST)
 endif
-	vlog $(MENT_VLOG_OPT) $(ASEHW_FILE_LIST)
 
 
 ## Build Simulator objects ## 
@@ -273,7 +283,8 @@ ifeq ($(SIMULATOR), VCS)
 	cd ./$(WORK)/; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 else
   ifeq ($(SIMULATOR), QUESTA)
-	vsim $(MENT_VSIM_OPT) $(ASE_TOP) 
+#	vsim $(MENT_VSIM_OPT) $(ASE_TOP)
+	vsim $(MENT_VSIM_OPT) $(ASE_TOP) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh  
   else
 	@echo "############################################################"
 	@echo "#         SIMULATOR=$(SIMULATOR) not supported             #"

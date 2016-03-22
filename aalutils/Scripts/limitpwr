@@ -1,0 +1,352 @@
+#!/bin/bash
+# vim: set ts=4 sw=4 et ai:
+#
+# Copyright(c) 2015-2016, Intel Corporation
+#
+# Redistribution  and  use  in source  and  binary  forms,  with  or  without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of  source code  must retain the  above copyright notice,
+#   this list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   andor other materials provided with the distribution.
+# * Neither the name  of Intel Corporation  nor the names of its contributors
+#   may be used to  endorse or promote  products derived  from this  software
+#   without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE
+# IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
+# LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
+# CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF
+# SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS
+# INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN
+# CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#****************************************************************************
+# @file limitpwr
+# @brief Set the power limits for one or all CPUs (threads)
+# @verbatim
+# Accelerator Abstraction Layer Utility Script
+#
+# Set the package and/or DRAP power limits MSR registers for one or all of 
+# the CPUs (threads).  MSR PACKAGE_POWER_LIMIT (0x610) is is used to set the
+# Package limits and MSR DRAM_PLANE_POWER_LIMIT (0x618) is used tp set the
+# DRAM limits.  Each MSR supports a "short durration" and an "average power"
+# Limit.  Each Limit consists of a 2-tuple (POWER_LIMIT, POWER_LIMIT_TIME).
+#  
+# See 'limitpwr -h' for usage.
+#
+# Uses 'rdmsr' for register access. If not found and 'apt-get' is available,
+# the script will offer to install the 'msr' package.
+#
+# Known issues: 
+#    - Some (many) of the promises found above have yet to be fulfilled.
+#
+# AUTHORS: Paul J. Gilliam, Mindlance for Intel Corporation
+#
+#
+# HISTORY:
+# WHEN:          WHO:     WHAT:
+# 03/10/2016     PJG      Initial version.@endverbatim
+#****************************************************************************
+
+# === CONSTANTS AND GLOBALS ===================================================
+
+SCRIPTNAME=$(basename "$0")         # How we were called
+RDMSR="rdmsr"                       # Name of read msr executable
+WRMSR="wrmsr"                       # Name of write msr executable
+VERBOSE=0                           # Versbosity level
+SLEEP=01                           # Time, in seconds, between samples.
+
+#MSR Registers:
+PACKAGE_POWER_LIMIT=0x610
+DRAM_PLANE_POWER_LIMIT=0x618
+PACKAGE_POWER_SKU=0x614
+DRAM_POWER_INFO=0x61c
+
+MSR_NBR=PACKAGE_POWER_LIMIT       # Default domain is Package
+MSR_PARMS=PACKAGE_POWER_SKU       # Paramters MSR for default domain
+
+# === FUNCTIONS ===============================================================
+
+#
+# print_usage(): print usage information
+#
+function print_usage ()
+{
+    #echo "USAGE: ${SCRIPTNAME} -h | [-d <domain>] [-s|-a] -p <power limit>[%] [-t <limit time>]
+    echo "USAGE: ${SCRIPTNAME} -h | [-d <domain>] -p <power limit>[%] [-t <limit time>]"
+    echo "-h Print this simple usage message."
+    echo "-s | -a  Short durrataion or Average power"
+    echo "-d The domain to modify, 'pack' for Package or 'dram' for DRAM."
+    echo "-p The (package by default) power limit will be set to the given value."
+    echo "     If the value is suffixed by a '%', then the actual limit will be "
+    echo "     adjusted by that percentage."
+    echo "-t The (package by default) power limit time will be set to this 7-bit"
+    echo "     value, given in hex."
+    echo "-v Be verbose. Can be issued multiple times (-vv)."
+}
+
+#
+# check_arguments(): parse and validate the command line arguments (actuall do -h)
+#
+function check_arguments()
+{
+    while getopts ":hvd:p:t:" OPT; do
+        case "${OPT}" in
+        h)
+            print_usage
+            exit 0
+            ;;
+        d)
+            case "${OPTARG}" in
+            pack | dram) ;;
+            *)
+                echo "ERROR: -d option argument must be 'pack' or 'dram'"  >&2
+                exit 1
+                ;;
+            esac
+            ;;
+        a | s)
+            ;;
+        p)
+            # Check for percent
+            if [[ ${OPTARG} == *"%" ]]; then
+                if [ ${VERBOSE} -gt 1 ]; then
+                    echo "have percentage: ${OPTARG:0:(-1)}%"
+                fi
+                if [[ ${OPTARG:0:(-1)} -gt 200 ]]; then
+                    echo "ERROR: -p percentage value greater (${OPTARG:0:(-1)}) than 200" >&2
+                    exit 1
+                fi
+            else
+                if [[ ${OPTARG} -gt 32768 ]]; then
+                    echo "ERROR: new power limit value greater (${OPTARG:0:(-1)}) than 15 bits" >&2
+                    exit 1
+                fi
+            fi
+            ;;
+        t)
+            if [ ${OPTARG} -gt 128 ]; then
+                echo "ERROR: The give time (${OPTARG})exceeds 7 bits." >&2
+                exit 1
+            fi
+            ;;
+        v)
+            VERBOSE=$(( VERBOSE + 1 ))
+            ;;
+        esac
+    done
+}
+
+#
+# write out the approprate MSR
+#
+function write_modified_msr()
+{
+    if (( NEED_TO_WRITE_MSR )); then
+        OLD1=`${RDMSR} -cx ${MSR_NBR}`
+        COMMAND=$(printf "%s\040%#x\040%#x" ${WRMSR} ${MSR_NBR} ${LIMIT_VALUE_FROM_MSR})
+        if [ ${VERBOSE} -gt 1 ]; then
+            echo \$ $COMMAND
+        fi
+        `$COMMAND`
+        NEW1=`${RDMSR} -cx ${MSR_NBR}`
+        if [ ${VERBOSE} -gt 1 ]; then
+            printf "old: %#016x   new: %#016x\n" ${OLD1} ${NEW1}
+        fi
+        if [ "x${WATCHER}" != "x" ]; then
+            kill -TERM ${WATCHER}
+            echo '@@@@@ signal @@@@@@'
+        fi
+    fi
+}
+
+#
+# exec_arguments(): perform the tasks specified by the command line arguments
+#
+function exec_arguments()
+{
+    if [ ${VERBOSE} -gt 1 ]; then
+        echo -e "Starting exec_arguments()\n===================================="
+    fi
+    # By default, domain = 'pack'
+    MSR_NBR=${PACKAGE_POWER_LIMIT}
+    MSR_PARMS=${PACKAGE_POWER_SKU}
+    LIMIT_VALUE_FROM_MSR=`${RDMSR} -cx ${MSR_NBR}` 
+    NEED_TO_WRITE_MSR=0
+
+    # By default, '-a' is in effect: Average Power Limit
+    POWER_MASK=0x7fff
+    POWER_SHIFT=0 
+    POWER_BITS="14:0"
+    TIME_MASK=0xfe0000
+    TIME_SHIFT=17
+    TIME_BITS="23:17"
+
+    # Get Package allowed parameters
+    PACK_TDP_POWER=`${RDMSR} -cx --bitfield 14:0 ${PACKAGE_POWER_SKU}`
+    PACK_MIN_POWER=`${RDMSR} -cx --bitfield 30:16 ${PACKAGE_POWER_SKU}`
+    PACK_MAX_POWER=`${RDMSR} -cx --bitfield 46:32 ${PACKAGE_POWER_SKU}`
+    PACK_MAX_TIME_X=`${RDMSR} -cx --bitfield 54:53 ${PACKAGE_POWER_SKU}`
+    PACK_MAX_TIME_Y=`${RDMSR} -cx --bitfield 52:48 ${PACKAGE_POWER_SKU}`
+    if [ ${VERBOSE} -gt 1 ]; then
+        printf "PACK_TDP_POWER: %#x\n" ${PACK_TDP_POWER}
+        printf "PACK_MIN_POWER: %#x\n" ${PACK_MIN_POWER}
+        printf "PACK_MAX_POWER: %#x\n" ${PACK_MAX_POWER}
+        printf "PACK_MAX_TIME_X: %#x\n" ${PACK_MAX_TIME_X}
+        printf "PACK_MAX_TIME_Y: %#x\n" ${PACK_MAX_TIME_Y}
+    fi
+
+    # Get DRAM allowed parameters
+    DRAM_TDP_POWER=`${RDMSR} -cx --bitfield 14:0 ${DRAM_POWER_INFO}`
+    DRAM_MIN_POWER=`${RDMSR} -cx --bitfield 30:16 ${DRAM_POWER_INFO}`
+    DRAM_MAX_POWER=`${RDMSR} -cx --bitfield 46:32 ${DRAM_POWER_INFO}`
+    DRAM_MAX_TIME_X=`${RDMSR} -cx --bitfield 54:53 ${DRAM_POWER_INFO}`
+    DRAM_MAX_TIME_Y=`${RDMSR} -cx --bitfield 52:48 ${DRAM_POWER_INFO}`
+    if [ ${VERBOSE} -gt 1 ]; then
+        printf "DRAM_TDP_POWER: %#x\n" ${DRAM_TDP_POWER}
+        printf "DRAM_MIN_POWER: %#x\n" ${DRAM_MIN_POWER}
+        printf "DRAM_MAX_POWER: %#x\n" ${DRAM_MAX_POWER}
+        printf "DRAM_MAX_TIME_X: %#x\n" ${DRAM_MAX_TIME_X}
+        printf "DRAM_MAX_TIME_Y: %#x\n" ${DRAM_MAX_TIME_Y}
+    fi
+
+    # Go through the command line arguments again, this time, doing, not just checking.
+    OPTIND=1 # reset getopt
+    while getopts ":hvd:p:t:" OPT; do
+        case "${OPT}" in
+        #h) already taken care of
+        d)
+            # Domain (Package or DRAM)
+            if [[ ${OPTARG} == "pack" ]]; then
+                NEW_MSR_NBR=${PACKAGE_POWER_LIMIT}
+                NEW_MSR_PARMS=${PACKAGE_POWER_SKU}
+            else
+                NEW_MSR_NBR=${DRAM_PLANE_POWER_LIMIT}
+                NEW_MSR_PARMS=${DRAM_POWER_INFO}
+            fi
+            if (( MSR_NBR != NEW_MSR_NBR )); then
+                write_modified_msr
+                MSR_NBR=${NEW_MSR_NBR}
+                MSR_PARMS=${NEW_MSR_PARMS}
+            fi
+            LIMIT_VALUE_FROM_MSR=`${RDMSR} -cx ${MSR_NBR}` 
+            if [ ${VERBOSE} -gt 1 ]; then
+                printf 'LIMIT_VALUE_FROM_MSR="%s"\n' ${LIMIT_VALUE_FROM_MSR}
+            fi
+            ;;
+        a)
+            # Average Power
+            POWER_MASK=0x7fff
+            POWER_SHIFT=0 
+            POWER_BITS="14:0"
+            TIME_MASK=0xfe0000
+            TIME_SHIFT=17
+            TIME_BITS="23:17"
+            ;;
+        s)  
+            # Short Durration
+            POWER_MASK=0x7fff00000000
+            POWER_SHIFT=32
+            POWER_BITS="46:32"
+            TIME_MASK=0xf7000000000000
+            TIME_SHIFT=49
+            TIME_BITS="55:49"
+            ;;
+        p)
+            # Power Limit
+            if [[ ${OPTARG} == *"%" ]]; then
+                # we'er doing a percentage
+                PERCENT=${OPTARG:0:(-1)}
+                OLD_LIMIT=`${RDMSR} -cx --bitfield ${POWER_BITS} ${MSR_NBR}`
+                NEW_LIMIT=$(( OLD_LIMIT * PERCENT / 100 ))
+                if [ ${VERBOSE} -gt 1 ]; then
+                    printf "using percentage (%d%%) of existing power limit value (%#x) = %#x\n" ${PERCENT} ${OLD_LIMIT} ${NEW_LIMIT}
+                fi
+                if [[ ${NEW_LIMIT} -gt 32768 ]]; then
+                    echo "ERROR: percentage (${PERCENT}%) leads to more than 15 bits" >&2
+                    exit 1
+                fi
+            else
+                # streight value
+                if [ ${VERBOSE} -gt 1 ]; then
+                    echo "have regular power limit value"
+                fi
+                NEW_LIMIT=${OPTARG}
+                if [[ ${NEW_LIMIT} -gt 32768 ]]; then
+                    echo "ERROR: power limit (${NEW_LIMIT}) greater than 15 bits" >&2
+                    exit 1
+                fi
+            fi
+            if [ ${VERBOSE} -gt 1 ]; then
+                printf "LIMIT_VALUE_FROM_MSR was...\n\t%#x\n" ${LIMIT_VALUE_FROM_MSR}
+            fi
+            # AND zeros into the destination...
+            LIMIT_VALUE_FROM_MSR=$(( LIMIT_VALUE_FROM_MSR & (~ POWER_MASK << POWER_SHIFT) ))
+            if [ ${VERBOSE} -gt 1 ]; then
+                printf "LIMIT_VALUE_FROM_MSR zeroed...\n\t%#x\n" ${LIMIT_VALUE_FROM_MSR}
+            fi
+            # OR in the new limit
+            LIMIT_VALUE_FROM_MSR=$(( LIMIT_VALUE_FROM_MSR | (NEW_LIMIT << POWER_SHIFT) ))
+            if [ ${VERBOSE} -gt 1 ]; then
+                printf "LIMIT_VALUE_FROM_MSR is now...\n\t%#x\n" ${LIMIT_VALUE_FROM_MSR}
+            fi
+            NEED_TO_WRITE_MSR=1
+            ;;
+        t)
+            echo "ERROR: This feature has not yet been implemented." >&2
+            exit 1
+            ;;
+        #v) already taken care of
+        esac
+    done
+}
+
+
+
+# === MAIN ====================================================================
+
+# check if we are root
+#echo "EFECTIVE USER ID: ${EUID}"
+#if [ $EUID -ne 0 ]; then
+#    echo "ERROR: You want to be root to run ${SCRIPTNAME}." >&2
+#    exit 1
+#fi
+
+# check for rdmsr
+if ! `command -v "${RDMSR}" &> /dev/null`; then
+    echo "ERROR: ${RDMSR} not found." >&2
+    echo '       Please install the "msr" package.'
+    exit 1
+fi
+
+# check for wrmsr
+if ! `command -v "${WRMSR}" &> /dev/null`; then
+    echo "ERROR: ${WRMSR} not found." >&2
+    echo "       And yet ${RDMSR} was found. How can that be? There in the same package!" >&2
+    exit 1
+fi
+
+# check the command line arguments for errors or inconsistences
+check_arguments "$@"
+
+# find the pid of the "watchpwr" script if it is running
+WATCHER=`ps -a | grep watchpwr | sed -e 's/^ *//;s/ .*$//'`
+if [ ${VERBOSE} -gt 1 ]; then
+    if [ "x${WATCHER}" != "x" ]; then
+        echo Watcher PID: ${WATCHER}
+    else
+        echo Watcher PID not found
+    fi
+fi
+
+# execute the command line arguments
+exec_arguments "$@"
+
+# write out any "dangling" MSR
+write_modified_msr

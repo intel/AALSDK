@@ -1,6 +1,4 @@
 ##******************************************************************************
-## Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-##
 ## This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 ##         redistributing this file, you may do so under either license.
 ##
@@ -193,7 +191,7 @@ dnl ############################################################################
 echo \
 "
 ${ac_cv_aal_copyright}
-Intel(R) QuickAssist Technology Accelerator Abstraction Layer Drivers for Linux
+Accelerator Abstraction Layer Drivers for Linux
 
 ${PACKAGE_NAME} ${PACKAGE_VERSION}
 

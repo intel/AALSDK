@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -59,8 +57,8 @@
 //     CREATED: Dec. 3, 2008
 //      AUTHOR: Joseph Grecco, Intel Corporation.
 //
-// PURPOSE: This implements the external events for the Intel(R)
-//          QuickAssist Technology Accelerator Abstraction Layer (AAL)
+// PURPOSE: This implements the external events for the
+//          Accelerator Abstraction Layer (AAL)
 //          Universal Interface Driver
 // HISTORY:
 // WHEN:          WHO:     WHAT:

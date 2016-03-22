@@ -115,7 +115,7 @@ module ccip_emulator
    // Real Full ch2as
    logic 			      cf2as_ch0_realfull;
    logic 			      cf2as_ch1_realfull;
-   
+
 
    /*
     * Local valid/debug breakout signals
@@ -166,9 +166,15 @@ module ccip_emulator
    // ccip_tx1_to_ase_tx1: Convert from CCIP -> ASE Tx1
    function ASETxHdr_t ccip_tx1_to_ase_tx1(t_ccip_c1_ReqMemHdr inhdr);
       ASETxHdr_t txasehdr;
+      logic [41:0]   c1tx_mcl_baseaddr;
+      ccip_reqtype_t c1tx_mcl_basetype;      
+      ccip_len_t     c1tx_mcl_baselen;
+      logic [15:0]   c1tx_mcl_basemdata;      
+      ccip_vc_t      c1tx_mcl_basevc;      
       begin
 	 txasehdr.txhdr = TxHdr_t'(inhdr);
 	 txasehdr.channel_id = 1;
+	 // Request type remap to ASE internal types
 	 case (inhdr.req_type)
 	   eREQ_WRLINE_I : txasehdr.txhdr.reqtype = ASE_WRLINE_I;
 	   eREQ_WRLINE_M : txasehdr.txhdr.reqtype = ASE_WRLINE_M;
@@ -178,6 +184,25 @@ module ccip_emulator
 `endif
 	   eREQ_INTR     : txasehdr.txhdr.reqtype = ASE_INTR_REQ;
 	 endcase // case (inhdr.req_type)
+	 // Accomodating MCL addr[41:2]=X when SOP=0
+	 if ((txasehdr.txhdr.reqtype==ASE_WRLINE_I)||(txasehdr.txhdr.reqtype == ASE_WRLINE_M)) begin
+	    if (inhdr.sop) begin
+	       c1tx_mcl_baseaddr  = txasehdr.txhdr.addr;
+	       c1tx_mcl_basetype  = txasehdr.txhdr.reqtype;
+	       c1tx_mcl_baselen   = txasehdr.txhdr.len;
+	       c1tx_mcl_basemdata = txasehdr.txhdr.mdata;
+	       c1tx_mcl_basevc    = txasehdr.txhdr.vc;
+	    end
+	    else begin
+	       txasehdr.txhdr.reqtype = c1tx_mcl_basetype;	       
+	       case (c1tx_mcl_baselen)
+		 ASE_2CL: txasehdr.txhdr.addr = {c1tx_mcl_baseaddr[41:1], inhdr.address[0]};		 
+		 ASE_4CL: txasehdr.txhdr.addr = {c1tx_mcl_baseaddr[41:2], inhdr.address[1:0]};
+	       endcase // case (c1tx_mcl_baselen)
+	       txasehdr.txhdr.mdata = c1tx_mcl_basemdata;	       
+	       txasehdr.txhdr.vc    = c1tx_mcl_basevc;
+	    end	
+	 end
 	 return txasehdr;
       end
    endfunction
@@ -214,7 +239,7 @@ module ccip_emulator
 
 
    // ASE's internal reset signal
-   logic 			      sys_reset = 1;
+   logic 			      ase_reset = 1;
 
    /*
     * Remapping ASE CCIP to cvl_pkg struct
@@ -298,7 +323,7 @@ module ccip_emulator
 
    // ASE instance check
    import "DPI-C" function int ase_instance_running();
-      
+
    // Global dealloc allowed flag
    import "DPI-C" function void update_glbl_dealloc(int flag);
 
@@ -320,6 +345,9 @@ module ccip_emulator
    // Software controlled process - Run AFU Reset
    export "DPI-C" task afu_softreset_trig;
 
+   // Software controlled reset response
+   import "DPI-C" function void sw_reset_response();
+
    // cci_logger buffer message
    export "DPI-C" task buffer_msg_inject;
 
@@ -331,7 +359,7 @@ module ccip_emulator
    initial scope_function();
 
    // Ready PID
-   int 	 ase_ready_pid;      
+   int 	 ase_ready_pid;
 
 
    /*
@@ -383,28 +411,6 @@ module ccip_emulator
    int umsg_credit;
    int atomic_credit;
 
-
-   /* ***************************************************************************
-    * CCI signals declarations
-    * ***************************************************************************
-    *
-    *                          -------------------
-    *   tx0_header     ---61-->|                 |---18---> rx0_header
-    *   tx0_valid      ------->|                 |---512--> rx0_data
-    *   tx0_almostfull <-------|                 |--------> rx0_rdvalid
-    *   tx1_header     ---61-->|      ASE        |--------> rx0_wrvalid
-    *   tx1_data       --512-->|     BLOCK       |--------> rx0_cfgvalid
-    *   tx1_valid      ------->|                 |--------> rx0_umsgvalid (TBD)
-    *   tx1_almostfull <-------|                 |--------> rx0_intrvalid (TBD)
-    *   tx1_intrvalid  ------->|                 |---18---> rx1_header
-    *                          |                 |--------> rx1_intrvalid (TBD)
-    *                          |                 |--------> rx1_wrvalid
-    *                          |                 |--------> lp_initdone
-    *                          |                 |--------> reset
-    *                          |                 |--------> clk
-    *                          -------------------
-    *
-    * ***************************************************************************/
 
    /*
     * Overflow/underflow signal checks
@@ -459,13 +465,95 @@ module ccip_emulator
 
    // Reset management
    logic 			  sw_reset_trig = 1;
+   logic 			  app_reset_trig;   
+   int 				  rst_counter;
+
+   // Reset states
+   typedef enum {
+		 ResetIdle,
+		 ResetHoldHigh,
+		 ResetHoldLow,
+		 ResetWait
+		 } ResetStateEnum;
+   ResetStateEnum rst_state;
+
 
    // AFU Soft Reset Trigger
-   task afu_softreset_trig( int value );
+   task afu_softreset_trig(int init, int value );
       begin
-	 sw_reset_trig = value;
+	 if (init) begin
+	    app_reset_trig = 0;
+	 end
+	 else begin
+	    app_reset_trig = value[0];
+	 end
       end
    endtask
+
+   // Reset FSM
+   always @(posedge clk) begin
+      if (ase_reset) begin
+	 rst_state <= ResetIdle;
+	 rst_counter <= 0;
+      end
+      else begin
+	 case (rst_state)
+	   ResetIdle:
+	     begin
+		// 0 -> 1
+		if (~SoftReset && app_reset_trig) begin
+		   rst_state <= ResetHoldHigh;
+		end
+		// 1 -> 0
+		else if (SoftReset && ~app_reset_trig) begin
+		   rst_state <= ResetHoldLow;
+		end
+		else begin
+		   rst_state <= ResetIdle;
+		end
+	     end
+
+	   // Set to 1
+	   ResetHoldHigh:
+	     begin
+		if (glbl_dealloc_credit != 0) begin
+		   rst_state <= ResetHoldHigh;
+		end
+		else begin
+		   sw_reset_trig <= 1;
+		   rst_state <= ResetWait;
+		end
+	     end
+
+	   // Set to 0
+	   ResetHoldLow:
+	     begin
+		sw_reset_trig <= 0;
+		rst_state <= ResetWait;
+	     end
+
+	   // Wait few cycles
+	   ResetWait:
+	     begin
+		if (rst_counter < `SOFT_RESET_DURATION) begin
+		   rst_counter <= rst_counter + 1;
+		   rst_state <= ResetWait;
+		end
+		else begin
+		   rst_counter <= 0;
+		   rst_state <= ResetIdle;
+		   sw_reset_response();
+		end
+	     end
+
+	   default:
+	     begin
+		rst_state <= ResetIdle;
+	     end
+
+	 endcase
+      end
+   end
 
 
    /*
@@ -516,9 +604,9 @@ module ccip_emulator
 
    // always @(posedge clk) begin
    // always @(*) begin
-   //    SoftReset <= sys_reset | sw_reset_trig;
+   //    SoftReset <= ase_reset | sw_reset_trig;
    // end
-   assign SoftReset = sys_reset | sw_reset_trig;
+   assign SoftReset = ase_reset | sw_reset_trig;
 
 
    /* ******************************************************************
@@ -617,9 +705,10 @@ module ccip_emulator
 	 end
 	 else begin
 	    if (mmio_pkt.write_en == MMIO_WRITE_REQ) begin
-	       hdr.index  = {2'b0, mmio_pkt.addr[15:2]};
+	       // hdr.index  = {2'b0, mmio_pkt.addr[15:2]};
+	       hdr.index  = {mmio_pkt.addr[17:2]};
 	       hdr.rsvd9  = 1'b0;
-	       hdr.tid    = mmio_tid_counter;	       
+	       hdr.tid    = mmio_tid_counter;
 	       if (mmio_pkt.width == MMIO_WIDTH_32) begin
 		  hdr.len = 2'b00;
 		  cwlp_data = {480'b0, mmio_pkt.qword[0][31:0]};
@@ -677,7 +766,7 @@ module ccip_emulator
    mmioreq_fifo
      (
       .clk        ( clk ),
-      .rst        ( sys_reset ),
+      .rst        ( ase_reset ),
       .wr_en      ( mmioreq_write ),
       .data_in    ( mmioreq_din ),
       .rd_en      ( mmioreq_read & ~mmioreq_empty ),
@@ -719,7 +808,7 @@ module ccip_emulator
    mmioresp_fifo
      (
       .clk        ( clk ),
-      .rst        ( sys_reset ),
+      .rst        ( ase_reset ),
       .wr_en      ( C2TxMmioRdValid ),
       .data_in    ( {CCIP_MMIO_TID_WIDTH'(C2TxHdr), C2TxData} ),
       .rd_en      ( mmioresp_read & ~mmioresp_empty ),
@@ -849,7 +938,7 @@ module ccip_emulator
 	    umsg_data_enable_array[ii] <= umsg_array[ii].data_ready;
 	 end
 
-	 
+
 	 // State machine
 	 always @(posedge clk) begin
 	    if (SoftReset) begin
@@ -1017,7 +1106,7 @@ module ccip_emulator
    UmsgPopStateMachine upop_state;
 
    always @(posedge clk) begin : umsgfifo_pop_write
-      if (sys_reset) begin
+      if (ase_reset) begin
    	 umsgfifo_hdr_in    <= {ASE_UMSG_HDR_WIDTH{1'b0}};
    	 umsgfifo_data_in   <= {UMSG_FIFO_WIDTH{1'b0}};
    	 umsgfifo_write     <= 0;
@@ -1116,7 +1205,7 @@ module ccip_emulator
    umsg_fifo
      (
       .clk        ( clk ),
-      .rst        ( sys_reset ),
+      .rst        ( ase_reset ),
       .wr_en      ( umsgfifo_write ),
       .data_in    ( { ASE_UMSG_HDR_WIDTH'(umsgfifo_hdr_in), umsgfifo_data_in} ),
       .rd_en      ( umsgfifo_read & ~umsgfifo_empty ),
@@ -1136,9 +1225,9 @@ module ccip_emulator
 
    // Register UMSG fifo count
    always @(posedge clk) begin
-      umsgfifo_cnt <= umsgfifo_cnt_tmp;      
+      umsgfifo_cnt <= umsgfifo_cnt_tmp;
    end
-   
+
 
    /* ******************************************************************
     *
@@ -1174,9 +1263,10 @@ module ccip_emulator
    int ase_rx1_wrfence_cnt   ;
    int ase_rx0_umsghint_cnt  ;
    int ase_rx0_umsgdata_cnt  ;
+`ifdef DEFEATRUE_ATOMIC
    int ase_tx1_atomic_cnt;
    int ase_rx0_atomic_cnt;
-
+`endif
 
    // Remap UmsgHdr for count purposes
    UMsgHdr_t ase_umsghdr_map;
@@ -1184,7 +1274,7 @@ module ccip_emulator
 
    // process
    always @(posedge clk) begin : transact_cnt_proc
-      if (sys_reset) begin
+      if (ase_reset) begin
 	 ase_rx0_mmiowrreq_cnt <= 0 ;
 	 ase_rx0_mmiordreq_cnt <= 0 ;
 	 ase_tx2_mmiordrsp_cnt <= 0 ;
@@ -1196,8 +1286,10 @@ module ccip_emulator
 	 ase_rx1_wrfence_cnt <= 0 ;
 	 ase_rx0_umsghint_cnt <= 0 ;
 	 ase_rx0_umsgdata_cnt <= 0 ;
+`ifdef DEFEATRUE_ATOMIC
 	 ase_tx1_atomic_cnt <= 0;
 	 ase_rx0_atomic_cnt <= 0;
+`endif
       end
       else begin
 	 // MMIO counts
@@ -1226,11 +1318,13 @@ module ccip_emulator
 	   ase_rx0_umsghint_cnt <= ase_rx0_umsghint_cnt + 1;
 	 if (C0RxUMsgValid && ~ase_umsghdr_map.umsg_type )
 	   ase_rx0_umsgdata_cnt <= ase_rx0_umsgdata_cnt + 1;
+`ifdef DEFEATRUE_ATOMIC
 	 // Atomics' counts
 	 if (C1TxWrValid && (C1TxHdr.reqtype == ASE_ATOMIC_REQ))
 	   ase_tx1_atomic_cnt <= ase_tx1_atomic_cnt + 1;
 	 if (C0RxRdValid && (C0RxHdr.resptype == ASE_ATOMIC_RSP))
 	   ase_rx0_atomic_cnt <= ase_rx0_atomic_cnt + 1;
+`endif
       end
    end
 
@@ -1240,7 +1334,7 @@ module ccip_emulator
     */
    int count_error_flag;
    always @(posedge clk) begin
-      if (sys_reset) begin
+      if (ase_reset) begin
 	 count_error_flag <= 0;
       end
       else begin
@@ -1414,12 +1508,12 @@ module ccip_emulator
        .DEBUG_LOGNAME       ("latbuf_ch0.log"),
        .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
        .COUNT_WIDTH         (LATBUF_COUNT_WIDTH),
-       .UNROLL_ENABLE       (1)
+       .WRITE_CHANNEL       (0)
        )
    cf2as_latbuf_ch0
      (
       .clk		( clk ),
-      .rst		( sys_reset ),
+      .rst		( ase_reset ),
       .hdr_in		( C0TxHdr ),
       .data_in		( {CCIP_DATA_WIDTH{1'b0}} ),
       .write_en		( C0TxRdValid ),
@@ -1445,7 +1539,7 @@ module ccip_emulator
 
    // Tx0 process
    always @(posedge clk) begin
-      if (sys_reset) begin
+      if (ase_reset) begin
    	 Tx0_pkt_vld <= 0;
 	 rd_memline_dex_called <= 0;
       end
@@ -1472,7 +1566,7 @@ module ccip_emulator
 
    // RdRsp in
    always @(posedge clk) begin
-      if (sys_reset) begin
+      if (ase_reset) begin
    	 rdrsp_data_in <= {CCIP_DATA_WIDTH{1'b0}};
    	 rdrsp_hdr_in <= {CCIP_RX_HDR_WIDTH{1'b0}};
    	 rdrsp_write <= 0;
@@ -1495,12 +1589,12 @@ module ccip_emulator
        .DEBUG_LOGNAME       ("latbuf_ch1.log"),
        .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
        .COUNT_WIDTH         (LATBUF_COUNT_WIDTH),
-       .UNROLL_ENABLE       (0)
+       .WRITE_CHANNEL       (1)
        )
    cf2as_latbuf_ch1
      (
       .clk		( clk ),
-      .rst		( sys_reset ),
+      .rst		( ase_reset ),
       .hdr_in		( C1TxHdr ),
       .data_in		( C1TxData ),
       .write_en		( C1TxWrValid ),
@@ -1533,7 +1627,7 @@ module ccip_emulator
 
    // TX1 process
    always @(posedge clk) begin
-      if (sys_reset) begin
+      if (ase_reset) begin
 	 Tx1_pkt_vld             <= 0;
 	 wr_memline_dex_called   <= 0;
       end
@@ -1554,7 +1648,7 @@ module ccip_emulator
 
    // Wr1Rsp_in
    always @(posedge clk) begin : latbuf1_rsp_marshal
-      if (sys_reset) begin
+      if (ase_reset) begin
    	 wr1rsp_hdr_in                <= {CCIP_RX_HDR_WIDTH{1'b0}};
    	 wr1rsp_write                 <= 0;
 	 atomics_write                <= 0;
@@ -1604,7 +1698,7 @@ module ccip_emulator
    rdrsp_fifo
      (
       .clk             ( clk ),
-      .rst             ( sys_reset ),
+      .rst             ( ase_reset ),
       .wr_en           ( rdrsp_write ),
       .data_in         ( { CCIP_RX_HDR_WIDTH'(rdrsp_hdr_in), rdrsp_data_in } ),
       .rd_en           ( ~rdrsp_empty && rdrsp_read ),
@@ -1632,7 +1726,7 @@ module ccip_emulator
    atomics_fifo
      (
       .clk             ( clk ),
-      .rst             ( sys_reset ),
+      .rst             ( ase_reset ),
       .wr_en           ( atomics_write ),
       .data_in         ( { CCIP_RX_HDR_WIDTH'(atomics_hdr_in), atomics_data_in } ),
       .rd_en           ( ~atomics_empty && atomics_read ),
@@ -1664,7 +1758,7 @@ module ccip_emulator
    wr1rsp_fifo
      (
       .clk             ( clk ),
-      .rst             ( sys_reset ),
+      .rst             ( ase_reset ),
       .wr_en           ( wr1rsp_write ),
       .data_in         ( CCIP_RX_HDR_WIDTH'(wr1rsp_hdr_in) ),
       .rd_en           ( ~wr1rsp_empty && wr1rsp_read ),
@@ -1966,26 +2060,26 @@ module ccip_emulator
 
    always @(posedge clk) begin : inact_ctr
       if (first_transaction_seen && any_valid) begin
-	 inactivity_counter <= 0;	 
+	 inactivity_counter <= 0;
       end
       else begin
-	 inactivity_counter <= inactivity_counter + 1;	 
+	 inactivity_counter <= inactivity_counter + 1;
       end
    end
 
    always @(posedge clk) begin : inactivity_found_proc
-      if (sys_reset) begin
-	 inactivity_found <= 0;	 
+      if (ase_reset) begin
+	 inactivity_found <= 0;
       end
       else if (inactivity_counter > cfg.ase_timeout) begin
-	 inactivity_found <= 1;	 
+	 inactivity_found <= 1;
       end
       else begin
-	 inactivity_found <= 0;	 
+	 inactivity_found <= 0;
       end
    end
 
-   
+
    /*
     * Initialization procedure
     *
@@ -2011,17 +2105,20 @@ module ccip_emulator
       // Check if simulator is already running in this directory:
       // If YES, kill simulator, post message
       // If NO, continue
-      ase_ready_pid = ase_instance_running();      
+      ase_ready_pid = ase_instance_running();
       if (ase_ready_pid != 0) begin
-	 `BEGIN_RED_FONTCOLOR;	 
+	 `BEGIN_RED_FONTCOLOR;
 	 $display("SIM-SV: An ASE instance is probably still running in current directory !");
 	 $display("        Check for PID %d", ase_ready_pid);
 	 $display("        Simulation will exit... you may use a SIGKILL to kill the simulation process.");
 	 $display("        Also check if '.ase_ready.pid' file is removed before proceeding.");
 	 `END_RED_FONTCOLOR;
-	 $finish;	 
-      end	
-      
+	 $finish;
+      end
+
+      // AFU reset
+      afu_softreset_trig(1, 0 );
+
       // Initialize data-structures
       mmio_dispatch (1, '{0, 0, 0, '{0,0,0,0,0,0,0,0}, 0});
       umsg_dispatch (1, '{0, 0, '{0,0,0,0,0,0,0,0}});
@@ -2040,7 +2137,7 @@ module ccip_emulator
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
       run_clocks(20);
-      sys_reset     <= 0;
+      ase_reset     <= 0;
       sw_reset_trig <= 0;
       run_clocks(20);
 
@@ -2222,8 +2319,10 @@ module ccip_emulator
 	 $display("\tWrFenceRsp = %d", ase_rx1_wrfence_cnt   );
 	 $display("\tUMsgHint   = %d", ase_rx0_umsghint_cnt  );
 	 $display("\tUMsgData   = %d", ase_rx0_umsgdata_cnt  );
+`ifdef DEFEATRUE_ATOMIC
 	 $display("\tAtomicReq  = %d", ase_tx1_atomic_cnt    );
 	 $display("\tAtomicRsp  = %d", ase_rx0_atomic_cnt    );
+`endif
 	 `END_YELLOW_FONTCOLOR;
 
 	 // Valid Count
@@ -2241,10 +2340,10 @@ module ccip_emulator
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display("cf2as_latbuf_ch0 dropped =>");
-	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.checkunit.check_array);
-	 $display("cf2as_latbuf_ch1 dropped =>");
-	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.checkunit.check_array);
+	 // $display("cf2as_latbuf_ch0 dropped =>");
+	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.checkunit.check_array);
+	 // $display("cf2as_latbuf_ch1 dropped =>");
+	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.checkunit.check_array);
 	 $display("Read Response checker =>");
 	 $display(read_check_array);
 	 $display("Write Response checker =>");
@@ -2277,69 +2376,94 @@ module ccip_emulator
     * - Dellocate requests will be queued but not executed
     * **************************************************************************/
    always @(posedge clk) begin
-      // ---------------------------------------------------- //
-      // Read credit counter
-      case (  {C0TxRdValid, (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP)) } )
-	2'b10   : rd_credit <= rd_credit + C0TxHdr.len + 1;
-	2'b01   : rd_credit <= rd_credit - 1;
-	2'b11   : rd_credit <= rd_credit + C0TxHdr.len + 1 - 1;
-	default : rd_credit <= rd_credit;
-      endcase // case ( {C0TxRdValid, C0RxRdValid} )
-      // ---------------------------------------------------- //
-      // Write credit counter
-      case ( { (C1TxWrValid && (C1TxHdr.reqtype != ASE_ATOMIC_REQ)), C1RxWrValid} )
-	2'b10   : wr_credit <= wr_credit + 1;
-	2'b01   : wr_credit <= wr_credit - 1;
-	default : wr_credit <= wr_credit;
-      endcase // case ( {C1TxWrValid, C1RxWrValid} )
-      // ---------------------------------------------------- //
-      // MMIO Writevalid counter
-      case ( {cwlp_wrvalid, C0RxMmioWrValid} )
-	2'b10   : mmiowr_credit <= mmiowr_credit + 1;
-	2'b01   : mmiowr_credit <= mmiowr_credit - 1;
-	default : mmiowr_credit <= mmiowr_credit;
-      endcase // case ( {cwlp_wrvalid, C0RxMmioWrValid} )
-      // ---------------------------------------------------- //
-      // MMIO readvalid counter
-      case ( {cwlp_rdvalid, mmioresp_valid} )
-	2'b10   : mmiord_credit <= mmiord_credit + 1;
-	2'b01   : mmiord_credit <= mmiord_credit - 1;
-	default : mmiord_credit <= mmiord_credit;
-      endcase // case ( {cwlp_rdvalid, mmioresp_valid} )
-      // ---------------------------------------------------- //
-      // Umsg valid counter
-      umsg_credit <= $countones(umsg_hint_enable_array) + $countones(umsg_data_enable_array) + umsgfifo_cnt;
-      // ---------------------------------------------------- //
-      // Atomics CmpXchg counter
-      case ( { (C1TxWrValid && (C1TxHdr.reqtype==ASE_ATOMIC_REQ)), (C0RxRdValid && (C0RxHdr.resptype==ASE_ATOMIC_RSP)) } )
-	2'b10   : atomic_credit <= atomic_credit + 1;
-	2'b01   : atomic_credit <= atomic_credit - 1;
-	default : atomic_credit <= atomic_credit;
-      endcase
-      // ---------------------------------------------------- //
+      // if (SoftReset) begin
+      // 	 rd_credit <= 0;
+      // 	 wr_credit <= 0;
+      // 	 mmiowr_credit <= 0;
+      // 	 mmiord_credit <= 0;
+      // 	 umsg_credit <= 0;
+      // 	 atomic_credit <= 0;
+      // end
+      // else begin
+	 // ---------------------------------------------------- //
+	 // Read credit counter
+	 case (  {C0TxRdValid, (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP)) } )
+	   2'b10   : rd_credit <= rd_credit + C0TxHdr.len + 1;
+	   2'b01   : rd_credit <= rd_credit - 1;
+	   2'b11   : rd_credit <= rd_credit + C0TxHdr.len + 1 - 1;
+	   default : rd_credit <= rd_credit;
+	 endcase // case ( {C0TxRdValid, C0RxRdValid} )
+	 // ---------------------------------------------------- //
+	 // Write credit counter
+	 case ( { (C1TxWrValid && (C1TxHdr.reqtype != ASE_ATOMIC_REQ)), C1RxWrValid} )
+	   2'b10   : wr_credit <= wr_credit + 1;
+	   2'b01   : wr_credit <= wr_credit - 1;
+	   default : wr_credit <= wr_credit;
+	 endcase // case ( {C1TxWrValid, C1RxWrValid} )
+	 // ---------------------------------------------------- //
+	 // MMIO Writevalid counter
+	 case ( {cwlp_wrvalid, C0RxMmioWrValid} )
+	   2'b10   : mmiowr_credit <= mmiowr_credit + 1;
+	   2'b01   : mmiowr_credit <= mmiowr_credit - 1;
+	   default : mmiowr_credit <= mmiowr_credit;
+	 endcase // case ( {cwlp_wrvalid, C0RxMmioWrValid} )
+	 // ---------------------------------------------------- //
+	 // MMIO readvalid counter
+	 case ( {cwlp_rdvalid, mmioresp_valid} )
+	   2'b10   : mmiord_credit <= mmiord_credit + 1;
+	   2'b01   : mmiord_credit <= mmiord_credit - 1;
+	   default : mmiord_credit <= mmiord_credit;
+	 endcase // case ( {cwlp_rdvalid, mmioresp_valid} )
+	 // ---------------------------------------------------- //
+	 // Umsg valid counter
+	 umsg_credit <= $countones(umsg_hint_enable_array) + $countones(umsg_data_enable_array) + umsgfifo_cnt;
+	 // ---------------------------------------------------- //
+	 // Atomics CmpXchg counter
+	 case ( { (C1TxWrValid && (C1TxHdr.reqtype==ASE_ATOMIC_REQ)), (C0RxRdValid && (C0RxHdr.resptype==ASE_ATOMIC_RSP)) } )
+	   2'b10   : atomic_credit <= atomic_credit + 1;
+	   2'b01   : atomic_credit <= atomic_credit - 1;
+	   default : atomic_credit <= atomic_credit;
+	 endcase
+	 // ---------------------------------------------------- //
+      // end
    end
 
    // Global dealloc flag enable
    always @(posedge clk) begin
-      glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit + atomic_credit;
+      // if (SoftReset) begin
+      // 	 glbl_dealloc_credit <= 0;
+      // end
+      // else begin
+	 glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit + atomic_credit;
+      //end
    end
 
    // Register for changes
-   always @(posedge clk)
-     glbl_dealloc_credit_q <= glbl_dealloc_credit;
-
+   always @(posedge clk) begin
+      glbl_dealloc_credit_q <= glbl_dealloc_credit;
+   end
 
    // Update process
    always @(posedge clk) begin
       if ((glbl_dealloc_credit_q == 0) && (glbl_dealloc_credit != 0)) begin
-	 update_glbl_dealloc(0);
+      	 update_glbl_dealloc(0);
       end
       else if ((glbl_dealloc_credit_q != 0) && (glbl_dealloc_credit == 0)) begin
-	 update_glbl_dealloc(1);
+      	 update_glbl_dealloc(1);
       end
       else if (glbl_dealloc_credit == 0) begin
-	 update_glbl_dealloc(1);
+      	 update_glbl_dealloc(1);
       end
+      else if ((glbl_dealloc_credit_q == 0) && (glbl_dealloc_credit == 0)) begin
+      	 update_glbl_dealloc(0);
+      end
+
+      // if (glbl_dealloc_credit > 0) begin
+      // 	 update_glbl_dealloc(0);
+      // end
+      // else begin
+      // 	 update_glbl_dealloc(1);
+      // end
    end
 
 

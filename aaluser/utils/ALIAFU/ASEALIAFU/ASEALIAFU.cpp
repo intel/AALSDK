@@ -28,7 +28,7 @@
 /// @brief Implementation of ASE ALI AFU Service.
 /// @ingroup ASEALIAFU
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
+/// Accelerator Abstraction Layer Sample Application
 ///
 ///    This application is for example purposes only.
 ///    It is not intended to represent a model for developing commercially-deployable applications.
@@ -36,7 +36,8 @@
 ///
 /// AUTHORS: Henry Mitchel, Intel Corporation
 ///          Joseph Grecco, Intel Corporation
-///          
+///          Enno Luebbers, Intel Corporation
+///
 ///
 /// This sample demonstrates how to create an AFU Service that uses a host-based AFU engine.
 ///  This design also applies to AFU Services that use hardware via a
@@ -93,6 +94,41 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
    m_MMIORmap = mmioGetAddress();
    m_MMIORsize = (MMIO_LENGTH - MMIO_AFU_OFFSET);
 
+   // If we have a valid MMIO region, expose IALIMMIO interface
+   if (m_MMIORmap != NULL && m_MMIORsize > 0) {
+      if ( EObjOK !=  SetInterface(iidALI_MMIO_Service, dynamic_cast<IALIMMIO *>(this)) ) {
+         initFailed(new CExceptionTransactionEvent( NULL,
+                                                    TranID,
+                                                    errCreationFailure,
+                                                    reasUnknown,
+                                                    "Error: Could not register interface."));
+         return true;
+      }
+   }
+
+   // Populate internal data structures for feature discovery
+   if (! _discoverFeatures() ) {
+      // FIXME: use correct error classes
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 TranID,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Failed to discover features."));
+      return true;
+   }
+
+   // Print warnings for malformed device feature lists
+   _validateDFL();
+
+   initComplete(TranID);
+   return true;
+}
+
+
+btBool ASEALIAFU::_discoverFeatures() {
+
+   btBool retVal;
+
    // walk DFH list and populate internal data structure
    // also do some sanity checking
    AAL_DEBUG(LM_AFU, "Populating feature list from DFH list..." << std::endl);
@@ -100,13 +136,16 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
    btUnsigned32bitInt offset = 0;         // offset that we are currently at
 
    // look at AFU CSR (mandatory) to get first feature header offset
-   ASSERT( mmioRead64(0, (btUnsigned64bitInt *)&feat.dfh) );
+   retVal = mmioRead64(0, (btUnsigned64bitInt *)&feat.dfh);
+   ASSERT( retVal );
    _printDFH(feat.dfh);
    feat.offset = offset;
 
    // read AFUID
-   ASSERT( mmioRead64(offset +  8, &feat.guid[0]) );
-   ASSERT( mmioRead64(offset + 16, &feat.guid[1]) );
+   retVal = mmioRead64(offset +  8, &feat.guid[0]);
+   ASSERT( retVal );
+   retVal = mmioRead64(offset + 16, &feat.guid[1]);
+   ASSERT( retVal );
 
    // Add AFU feature to list
    m_featureList.push_back(feat);
@@ -118,12 +157,15 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
       // populate fields
       feat.offset = offset;
       // read feature header
-      ASSERT(mmioRead64(offset, (btUnsigned64bitInt *)&feat.dfh));
+      retVal = mmioRead64(offset, (btUnsigned64bitInt *)&feat.dfh);
+      ASSERT( retVal );
       _printDFH(feat.dfh);
       // read guid, if present
       if (feat.dfh.Type == ALI_DFH_TYPE_BBB) {
-         ASSERT( mmioRead64(offset +  8, &feat.guid[0]) );
-         ASSERT( mmioRead64(offset + 16, &feat.guid[1]) );
+         retVal = mmioRead64(offset +  8, &feat.guid[0]);
+         ASSERT( retVal );
+         retVal = mmioRead64(offset + 16, &feat.guid[1]);
+         ASSERT( retVal );
       } else {
          feat.guid[0] = feat.guid[1] = 0;
       }
@@ -135,6 +177,12 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
       offset += feat.dfh.next_DFH_offset;
    }
 
+   return true;
+}
+
+// This currently only prints warnings.
+btBool ASEALIAFU::_validateDFL()
+{
    // check for ambiguous featureID/GUID
    AAL_DEBUG(LM_AFU, "Checking detected features for ambiguous IDs..." <<
          std::endl);
@@ -185,10 +233,9 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
          }
       }
    }
-
-   initComplete(TranID);
    return true;
 }
+
 
 
 void ASEALIAFU::_printDFH( const struct CCIP_DFH &dfh )
@@ -335,15 +382,6 @@ btBool  ASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
    // Spec and sanity checks
    //
 
-   // BBB GUIDs are only meant for matching HW and SW implementations, not to
-   // identify features.
-   // We provided it for convenience, but will output a warning.
-   if (filterByGUID) {
-      AAL_WARNING(LM_AFU, "Searching for GUID is not recommended to discover "
-                       << "features." << std::endl);
-      AAL_WARNING(LM_AFU, "Please use featureID instead." << std::endl);
-   }
-
    // Can't search for GUID in private features
    if ((filterByGUID && filterByType && (filterType == ALI_DFH_TYPE_PRIVATE))) {
       AAL_ERR(LM_AFU, "Can't search for GUIDs in private features." << std::endl);
@@ -455,10 +493,12 @@ AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize             Length,
   buf->memsize = (uint32_t)Length;
   // ASECCIAFU::sm_ASEMtx.Lock();
 
-  // FIXME: Retrying several times to work around ASE issue (Redmine #674)
+#if 0  // FIXME: Retrying several times to work around ASE issue (Redmine #674)
   int retriesLeft;
   for ( retriesLeft = 3; retriesLeft > 0; retriesLeft-- ) {
+#endif
      allocate_buffer(buf, (uint64_t*)pTargetVirtAddr);
+#if 0
      if ( ( ASE_BUFFER_VALID == buf->valid )   &&
            ( MAP_FAILED != (void *)buf->vbase ) &&
            ( 0 != buf->fake_paddr ) ) {
@@ -467,6 +507,7 @@ AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize             Length,
      AAL_WARNING(LM_AFU, "ASE buffer allocation failed, retrying..." <<
            std::endl);
   }
+#endif
 
   //ASECCIAFU::sm_ASEMtx.Unlock();
   if ( ( ASE_BUFFER_VALID != buf->valid )   ||

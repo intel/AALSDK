@@ -28,7 +28,7 @@
 /// @brief Definitions for ASE ALI AFU Service.
 /// @ingroup ASEALIAFU
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
+/// Accelerator Abstraction Layer Sample Application
 ///
 ///    This application is for example purposes only.
 ///    It is not intended to represent a model for developing commercially-deployable applications.
@@ -36,7 +36,8 @@
 ///
 /// AUTHORS: Henry Mitchel, Intel Corporation
 ///          Joseph Grecco, Intel Corporation
-///          
+///          Enno Luebbers, Intel Corporation
+///
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
@@ -105,10 +106,6 @@ public:
 
       // TODO: at some point, these probably go into init() and be exposed based
       //       on the actual capabilities
-      if ( EObjOK !=  SetInterface(iidALI_MMIO_Service, dynamic_cast<IALIMMIO *>(this)) ) {
-         m_bIsOK = false;
-      }
-
       if ( EObjOK != SetInterface(iidALI_UMSG_Service, dynamic_cast<IALIUMsg *>(this)) ){
          m_bIsOK = false;
       }
@@ -233,6 +230,8 @@ protected:
    static CriticalSection sm_ASEMtx;
 
 private:
+   btBool _discoverFeatures();
+   btBool _validateDFL();
    void _printDFH( const struct CCIP_DFH &dfh );
 };
 

@@ -28,7 +28,7 @@
 /// @brief Native Loopback Validation AFU definitions.
 /// @ingroup NLBVAFU
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Tim Whisonant, Intel Corporation
 ///

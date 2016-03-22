@@ -28,7 +28,7 @@
 /// @brief AAL Service Module definitions for Hardware ALI AFU
 /// @ingroup HWALIAFU
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Henry Mitchel, Intel Corporation
 ///

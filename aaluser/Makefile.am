@@ -24,11 +24,11 @@
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 ##****************************************************************************
-##     Intel(R) Accelerator Abstraction Layer Library Software Developer
-##        Kit (SDK)
+##  Accelerator Abstraction Layer Library Software Developer Kit (SDK)
+##
 ##  Content:
-##     Intel(R) Accelerator Abstraction Layer Library
-##     AALSDK/Makefile.am
+##     Accelerator Abstraction Layer Library
+##     aalsdk/Makefile.am
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
 ##  History:
@@ -273,7 +273,6 @@ ase/distclean.sh \
 ase/LICENSE.txt \
 ase/ase_regress.sh \
 ase/hw/outoforder_wrf_channel.sv \
-ase/hw/counter.sv \
 ase/hw/ccip_if_pkg.sv \
 ase/hw/ase_fifo.sv \
 ase/hw/latency_pipe.sv \
@@ -286,10 +285,10 @@ ase/hw/stream_checker.sv \
 ase/hw/ase_pkg.sv \
 ase/hw/platform.vh \
 ase/scripts/generate_ase_environment.py \
-ase/scripts/vcs_icc.make \
 ase/scripts/ipc_clean.py \
 ase/scripts/ase_functions.py \
-ase/scripts/ase_setup.csh
+ase/scripts/env_check.sh \
+ase/scripts/ase_setup.sh
 
 CLP_EXTRA=\
 include/aalsdk/aalclp/aalclp.h.in
@@ -316,7 +315,12 @@ include/aalsdk/uaia/AIAService.h.in
 
 UTILS_EXTRA=\
 utils/fpgadiag/fpgasane_nlb400_0.sh \
-utils/fpgadiag/fpgasane_nlb400_3.sh
+utils/fpgadiag/fpgasane_nlb400_3.sh \
+utils/scripts/setcpupwr \
+utils/scripts/setfpgapwr \
+utils/scripts/getcpupwr \
+utils/scripts/getfpgapwr
+
 
 EXTRA_DIST=\
 $(AAS_EXTRA) \

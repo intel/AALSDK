@@ -28,7 +28,7 @@
 /// @brief This file is the primary header for the exported library interfaces.
 /// @ingroup AALCore
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///          Henry Mitchel, Intel Corporation

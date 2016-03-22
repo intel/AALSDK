@@ -28,7 +28,7 @@
 /// @brief Basic AFU interaction.
 /// @ingroup TempPowMon
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
+/// Accelerator Abstraction Layer Sample Application
 ///
 ///    This application is for example purposes only.
 ///    It is not intended to represent a model for developing commercially-deployable applications.
@@ -224,7 +224,7 @@ void TempPowMonApp::getTemp()
       ccip_tmp_rdssensor_fm1.tmp_reading_seq_num << " \n";
 
    cout << "Temperature = " <<
-      ccip_tmp_rdssensor_fm1.tmp_reading << " Degrees Celcius.\n";
+      ccip_tmp_rdssensor_fm1.tmp_reading << " Degrees Celsius.\n";
 
 }
 

@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -563,7 +561,7 @@ btInt aalrm_processmsg(struct aalrm_ioctlreq    *preq,
 
           // Get the default message interface
           if(ownerSessp == NULL){
-                DPRINTF (AALRMC_DBG_IOCTL, ": Not owner or no message handler.\n");
+                DPRINTF (AALRMC_DBG_IOCTL, ": Not owner or no message handler during Release Device.\n");
                 return -EACCES;
           }
 

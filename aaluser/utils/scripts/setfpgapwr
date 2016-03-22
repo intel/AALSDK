@@ -1,0 +1,470 @@
+#!/bin/bash
+# Copyright(c) 2015-2016, Intel Corporation
+#
+# Redistribution  and  use  in source  and  binary  forms,  with  or  without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of  source code  must retain the  above copyright notice,
+#   this list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   andor other materials provided with the distribution.
+# * Neither the name  of Intel Corporation  nor the names of its contributors
+#   may be used to  endorse or promote  products derived  from this  software
+#   without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE
+# IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
+# LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
+# CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF
+# SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS
+# INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN
+# CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#****************************************************************************
+# @file setfpgapwr
+# @brief Set FPGA power thresholds
+# @verbatim
+# Accelerator Abstraction Layer Utility Script
+#
+# Modifies FPGA FME registers that define power limits for thresholds 1 and 2.
+#
+# See 'setfpgapwr -h' for usage.
+#
+# Invoke as 'getfpgapwr' (via symlink) to read values only.
+#
+# Uses pcimem for register access. If not found, the script will offer to
+# download and build.
+#
+# Known issues: 
+#    - uses fixed MMIO offset for accessing PM_THRESHOLD CSR. Should in fact
+#      walk DFH list to find correct offset.
+#    - does not check FME AFU GUID, but assumes that we are pointed at the
+#      right BAR.
+#
+# AUTHORS: Enno Luebbers, Intel Corporation
+#
+#
+# HISTORY:
+# WHEN:          WHO:     WHAT:
+# 03/08/2016     EL       Initial version.@endverbatim
+#****************************************************************************
+
+# === CONSTANTS AND GLOBALS ===================================================
+
+SCRIPTNAME=$(basename "$0")         # How we were called
+PCIMEM=pcimem                       # Name of pcimem executable
+PCIMEM_URL="https://github.com/billfarrow/pcimem"
+PCIMEM_BUILDDIR=$(pwd)/build_pcimem # Path to build pcimem in
+PATH="${PATH}:${PWD}:${PCIMEM_BUILDDIR}"  # PATH including PWD and built pcimem
+PM_THRESHOLD_OFFSET="0x2008"        # FIXME: hardcoded, should discover via DFL
+PM_DFH_OFFSET="0x2000"              # FIXME: hardcoded, should discover via DFL
+PM_FTYPE="3"                        # Expected feature type for PM
+PM_FREV="0"                         # Expected feature revision for PM
+PM_FID="2"                          # Expected feature ID for PM
+VERBOSE=0                           # Versbosity level
+CORE_VOLTAGE=0.9                    # FPGA core voltage
+
+
+# === FUNCTIONS ===============================================================
+
+#
+# get_and_build_pcimem(): Try to download and build pcimem
+#
+function get_and_build_pcimem()
+{
+   echo -n "Downloading and building pcimem..."
+   OLDDIR=$(pwd)
+   git clone "${PCIMEM_URL}" "${PCIMEM_BUILDDIR}" &> git.log || {
+      echo "ERROR: git clone failed. See git.log for details."
+      echo ""
+      echo "You might want to download and build pcimem manually and place it"
+      echo "in your PATH."
+      cd "${OLDDIR}"
+      exit 1
+   }
+   cd "${PCIMEM_BUILDDIR}"
+   make &> make.log || {
+      echo "ERROR: make failed. See make.log for details."
+      echo ""
+      echo "You might want to download and build pcimem manually and place it"
+      echo "in your PATH or the current working directory."
+      cd "${OLDDIR}"
+      exit 1
+   }
+
+   echo -e "done.\n"
+
+   # clean up
+   rm -f git.log make.log
+
+   echo "pcimem successfully built into ${PCIMEM_BUILDDIR}. Either leave"
+   echo -e "it there or move it somewhere in your PATH.\n"
+   cd "${OLDDIR}"
+}
+
+#
+# print_usage(): print usage information
+#
+function print_usage ()
+{
+   if [ "${SCRIPTNAME}" = "setfpgapwr" ]; then
+      echo "USAGE: ${SCRIPTNAME} [-v] -d <device> [-1 <pt 1>] [-2 <pt 2>]"
+      echo ""
+      echo "       -d <device>  Path to sysfs device resource associated with"
+      echo "                    FPGA's FME BAR."
+      echo "       -1 <pt 1>    Set core supply threshold 1 value."
+      echo "                    Units of 0.78125 A. Default: 0x57 (68 A)"
+      echo "       -2 <pt 2>    Set core supply threshold 2 value."
+      echo "                    Units of 0.78125 A. Default: 0x53 (64.8 A)"
+      echo "       -v           Be verbose. Can be issued multiple times (-vv)."
+   elif [ "${SCRIPTNAME}" = "getfpgapwr" ]; then
+      echo "USAGE: ${SCRIPTNAME} [-v] -d <device> [-1] [-2]"
+      echo ""
+      echo "       -d <device>  Path to sysfs device resource associated with"
+      echo "                    FPGA's FME BAR."
+      echo "       -1           Read core supply threshold 1 value."
+      echo "                    Units of 0.78125 A. Default: 0x57 (68 A)"
+      echo "       -2           Read core supply threshold 2 value."
+      echo "                    Units of 0.78125 A. Default: 0x53 (64.8 A)"
+      echo "       -v           Be verbose. Can be issued multiple times (-vv)."
+   fi
+}
+
+#
+# parse_arguments(): parse command line arguments
+#
+function parse_arguments()
+{
+   if [ "${SCRIPTNAME}" = "setfpgapwr" ]; then
+
+      while getopts ":hv1:2:d:" OPT; do
+         case "${OPT}" in
+            1)
+               THRESHOLD_1="${OPTARG}"
+               if [ ! -z "${THRESHOLD_2}" ]; then
+                  echo "ERROR: Please do not specify Threshold 2 before Threshold 1."
+                  exit 1
+               fi
+               ;;
+            2)
+               THRESHOLD_2="${OPTARG}"
+               ;;
+            d)
+               DEVICE="${OPTARG}"
+               ;;
+            v)
+               VERBOSE=$(( VERBOSE + 1 ))
+               ;;
+            \?)
+               echo "ERROR: Invalid option -${OPTARG}" >&2
+               exit 1
+               ;;
+            :)
+               echo "ERROR: Option -${OPTARG} requires an argument." >&2
+               exit 1
+               ;;
+            h)
+               print_usage
+               exit 0
+               ;;
+         esac
+      done
+
+   elif [ "${SCRIPTNAME}" = "getfpgapwr" ]; then
+
+      while getopts ":hv12d:" OPT; do
+         case "${OPT}" in
+            1)
+               THRESHOLD_1=1
+               if [ ! -z "${THRESHOLD_2}" ]; then
+                  echo "ERROR: Please do not specify Threshold 2 before Threshold 1."
+                  exit 1
+               fi
+               ;;
+            2)
+               THRESHOLD_2=1
+               ;;
+            d)
+               DEVICE="${OPTARG}"
+               ;;
+            v)
+               VERBOSE=$(( VERBOSE + 1 ))
+               ;;
+            \?)
+               echo "ERROR: Invalid option -${OPTARG}" >&2
+               exit 1
+               ;;
+            :)
+               echo "ERROR: Option -${OPTARG} requires an argument." >&2
+               exit 1
+               ;;
+            h)
+               print_usage
+               exit 0
+               ;;
+         esac
+      done
+
+   fi
+}
+
+#
+# check_arguments(): check parsed arguments for validity
+#
+function check_arguments()
+{
+   if [ "${SCRIPTNAME}" = "setfpgapwr" ]; then
+
+      if [ -z "${THRESHOLD_1}" -a -z "${THRESHOLD_2}" ]; then
+         echo "ERROR: No power threshold provided."
+         exit 1
+      fi
+
+   elif [ "${SCRIPTNAME}" = "getfpgapwr" ]; then
+
+      if [ -z "${THRESHOLD_1}" -a -z "${THRESHOLD_2}" ]; then
+         echo "ERROR: No threshold to read specified."
+         exit 1
+      fi
+
+   fi
+
+   if [ -z "${DEVICE}" ]; then
+      echo "ERROR: No PCI device provided."
+      exit 1
+   fi
+
+   if [ ! -e "${DEVICE}" ]; then
+      echo "ERROR: Device '${DEVICE}' does not exist."
+      exit 1
+   fi
+
+   if echo "${DEVICE}" | egrep -v "^\/sys.*resource[0-9]$"; then
+      echo "ERROR: Device '${DEVICE}' does not look like a PCI device."
+      exit 1
+   fi
+}
+
+#
+# read32(): Read 32bit value from OFFSET into variable named in RETVAL
+#
+function read32()
+{
+   local OFFSET=$1
+   local RETVAL=$2
+
+   # execute pcimem read
+   local OUT=$(${PCIMEM} "${DEVICE}" "${OFFSET}" w)
+
+   # echo output in -vv
+   if [ "${VERBOSE}" -gt 1 ]; then
+      echo "${PCIMEM} ${DEVICE} ${OFFSET} w"
+      echo -e "${OUT}"
+   fi
+
+   # parse output and return read value
+   R=$(echo -e "${OUT}" | grep "^Value at offset" | sed "s/^.*: //")
+   eval "${RETVAL}=${R}"
+}
+
+#
+# write(): Write 32bit value VALUE into OFFSET
+#
+function write32()
+{
+   local OFFSET=$1
+   local VALUE=$2
+
+   # execute pcimem write
+   local OUT=$(${PCIMEM} "${DEVICE}" "${OFFSET}" w "${VALUE}")
+
+   # echo output in -vv
+   if [ "${VERBOSE}" -gt 1 ]; then
+      echo "${PCIMEM} ${DEVICE} ${OFFSET} w ${VALUE}"
+      echo -e "${OUT}"
+   fi
+
+   # parse output and check against written value
+   R=$(echo -e "${OUT}" | grep "; readback" | sed "s/^.*readback //")
+   if [ "$(( R ))" -ne "$(( VALUE ))" ]; then
+      # print as warning only - could be that we just tripped a threshold
+      echo "WARNING: Readback mismatch. Expected: $(( VALUE )), got: $(( R ))." >&2
+   fi
+}
+
+#
+# check_dfh(): Check DFH at OFFSET against expected EXP_FTYPE, EXP_FREV, and
+#              EXP_FID.
+#
+function check_dfh
+{
+   local OFFSET=$1
+   local EXP_FTYPE=$2
+   local EXP_FREV=$3
+   local EXP_FID=$4
+
+   # higher order 32 bits
+   read32 "$(( OFFSET + 4 ))" "READ_VAL"
+   local FTYPE=$(( READ_VAL >> 28 ))
+
+   # lower order 32 bits
+   read32 "${OFFSET}" "READ_VAL"
+   local FREV=$(( ( READ_VAL >> 12 ) & 0x000000000000000f ))
+   local FID=$(( READ_VAL & 0x0000000000000fff ))
+
+   if [ "${FTYPE}" -ne "${EXP_FTYPE}" ]; then
+      echo "ERROR: Feature type mismatch. Expected: ${EXP_FTYPE}, found ${FTYPE}."
+      exit 1
+   fi
+   if [ "${FREV}" -ne "${EXP_FREV}" ]; then
+      echo "ERROR: Feature revision mismatch. Expected: ${EXP_FREV}, found ${FREV}."
+      exit 1
+   fi
+   if [ "${FID}" -ne "${EXP_FID}" ]; then
+      echo "ERROR: Feature ID mismatch. Expected: ${EXP_FID}, found ${FID}."
+      exit 1
+   fi
+}
+
+# === MAIN ====================================================================
+
+# check if we are root
+if [ $EUID -ne 0 ]; then
+   echo "ERROR: You want to be root to run ${SCRIPTNAME}."
+   exit 1
+fi
+
+# check for pcimem
+command -v "${PCIMEM}" &> /dev/null || {
+   echo -e "ERROR: pcimem not found.\n"
+   echo "pcimem is a utility written by Bill Farrow to manipulate PCI memory"
+   echo -e "from userspace. It is freely available on GitHub at\n"
+   echo -e "   ${PCIMEM_URL}\n"
+   read -p "Would you like to download and build pcimem now? [Y/n] "\
+      -n 1
+   echo -e "\n"
+   if [ "$(echo "${REPLY}" | tr '[:upper:]' '[:lower:]')" = 'y' ]; then
+      get_and_build_pcimem
+   else
+      exit 1
+   fi
+}
+
+# Largest data size supported by pcimem is 32 bits ("word") - read lower half
+# of 64 bit register only
+
+parse_arguments "$@"
+check_arguments
+
+# Sanity check if we're talking to the correct feature
+# TODO: Also check FME GUID
+check_dfh ${PM_DFH_OFFSET} ${PM_FTYPE} ${PM_FREV} ${PM_FID}
+
+# --- SETFPGAPWR: write values ----------------------------------------------------
+if [ "${SCRIPTNAME}" = "setfpgapwr" ]; then
+
+   # Read lower half of PM_THRESHOLD register
+   read32 "${PM_THRESHOLD_OFFSET}" "READ_VAL"
+
+   # Extract threshold values and derived representations
+   OLD_T1=$(( READ_VAL & 0x0000007F ))
+   OLD_T2=$(( ( READ_VAL >> 8 ) & 0x0000007F ))
+   OLD_T1_AMPS=$(echo "${OLD_T1} * 0.78125" | bc )
+   OLD_T2_AMPS=$(echo "${OLD_T2} * 0.78125" | bc )
+   OLD_T1_WATTS=$(echo "${OLD_T1_AMPS} * ${CORE_VOLTAGE}" | bc )
+   OLD_T2_WATTS=$(echo "${OLD_T2_AMPS} * ${CORE_VOLTAGE}" | bc )
+
+   if [ "${VERBOSE}" -gt 0 ]; then
+      # Display old values
+      echo -n "Old threshold 1 (AP1 state): "
+      printf "0x%02x (dec: %i) (%f A, %f W)\n" "${OLD_T1}" "${OLD_T1}" "${OLD_T1_AMPS}" "${OLD_T1_WATTS}"
+      echo -n "Old threshold 2 (AP2 state): "
+      printf "0x%02x (dec: %i) (%f A, %f W)\n" "${OLD_T2}" "${OLD_T2}" "${OLD_T2_AMPS}" "${OLD_T2_WATTS}"
+   fi
+
+   # Build register value to reflect new thresholds
+   if [ -z "${THRESHOLD_1}" ]; then
+      NEW_T1=$OLD_T1
+   else
+      NEW_T1=$(( THRESHOLD_1 & 0x0000007F ))
+   fi
+   if [ -z "${THRESHOLD_2}" ]; then
+      NEW_T2=$OLD_T2
+   else
+      NEW_T2=$(( THRESHOLD_2 & 0x0000007F ))
+   fi
+   NEW_T1_AMPS=$(echo "${NEW_T1} * 0.78125" | bc )
+   NEW_T2_AMPS=$(echo "${NEW_T2} * 0.78125" | bc )
+   NEW_T1_WATTS=$(echo "${NEW_T1_AMPS} * ${CORE_VOLTAGE}" | bc )
+   NEW_T2_WATTS=$(echo "${NEW_T2_AMPS} * ${CORE_VOLTAGE}" | bc )
+   WRITE_VAL=$(( ( READ_VAL & 0xFFFF0000 ) | ( NEW_T2 << 8 ) | ( NEW_T1 ) ))
+
+   if [ "${VERBOSE}" -gt 0 ]; then
+      # Display new values
+      echo -n "New threshold 1 (AP1 state): "
+      printf "0x%02x (dec: %i) (%f A, %f W)\n" "${NEW_T1}" "${NEW_T1}" "${NEW_T1_AMPS}" "${NEW_T1_WATTS}"
+      echo -n "New threshold 2 (AP2 state): "
+      printf "0x%02x (dec: %i) (%f A, %f W)\n" "${NEW_T2}" "${NEW_T2}" "${NEW_T2_AMPS}" "${NEW_T2_WATTS}"
+   fi
+
+   # Write register contents back
+   write32 "${PM_THRESHOLD_OFFSET}" "${WRITE_VAL}"
+
+# --- GETFPGAPWR: write values ----------------------------------------------------
+elif [ "${SCRIPTNAME}" = "getfpgapwr" ]; then
+
+   # Read lower half of PM_THRESHOLD register
+   read32 "${PM_THRESHOLD_OFFSET}" "READ_VAL"
+
+   # Extract threshold values and derived representations
+   OLD_T1=$(( READ_VAL & 0x0000007F ))
+   OLD_T2=$(( ( READ_VAL >> 8 ) & 0x0000007F ))
+   OLD_T1_AMPS=$(echo "${OLD_T1} * 0.78125" | bc )
+   OLD_T2_AMPS=$(echo "${OLD_T2} * 0.78125" | bc )
+   OLD_T1_WATTS=$(echo "${OLD_T1_AMPS} * ${CORE_VOLTAGE}" | bc )
+   OLD_T2_WATTS=$(echo "${OLD_T2_AMPS} * ${CORE_VOLTAGE}" | bc )
+
+   # Display values
+   if [ ! -z "${THRESHOLD_1}" ]; then
+      if [ "${VERBOSE}" -gt 0 ]; then
+         echo -n "Threshold 1 (AP1 state): "
+         printf "0x%02x (dec: %i) (%f A, %f W)\n" "${OLD_T1}" "${OLD_T1}" "${OLD_T1_AMPS}" "${OLD_T1_WATTS}"
+      else
+         printf "%i\n" "${OLD_T1}"
+      fi
+   fi
+   if [ ! -z "${THRESHOLD_2}" ]; then
+      if [ "${VERBOSE}" -gt 0 ]; then
+         echo -n "Threshold 2 (AP2 state): "
+         printf "0x%02x (dec: %i) (%f A, %f W)\n" "${OLD_T2}" "${OLD_T2}" "${OLD_T2_AMPS}" "${OLD_T2_WATTS}"
+      else
+         printf "%i\n" "${OLD_T2}"
+      fi
+   fi
+
+   # detect if thresholds tripped
+   T1_STATUS=$(( ( READ_VAL >> 16 ) & 0x00000001 ))
+   T2_STATUS=$(( ( READ_VAL >> 17 ) & 0x00000001 ))
+
+   # print warning and exit with different error code if tripped
+   # if T2 trips, T1 will also have tripped
+   if [ "${T2_STATUS}" -ne 0 ]; then
+      echo "WARNING: Threshold 2 exceeded!"
+      exit 3
+   fi
+   if [ "${T1_STATUS}" -ne 0 ]; then
+      echo "WARNING: Threshold 1 exceeded!"
+      exit 2
+   fi
+
+else
+
+   echo "ERROR: Script invoked with unexpected name: \"${SCRIPTNAME}\"."
+   exit 1
+
+fi
+

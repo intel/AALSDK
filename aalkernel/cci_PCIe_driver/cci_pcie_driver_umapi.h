@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -59,8 +57,7 @@
 //     CREATED: 02/19/2016
 //      AUTHOR: Joseph Grecco
 //
-// PURPOSE:  This file contains commmon definitions for the
-//           Intel(R) QuickAssist Technology Accelerator Abstraction Layer (AAL)
+//          AAL FPGA device driver for CCI protocol compliant devices.
 //           User Mode Interface for the AAL CCI device driver
 // HISTORY:
 // COMMENTS:

@@ -29,7 +29,7 @@
 ///        instanced of the Logger.
 /// @ingroup Debugging
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 ///      AUTHOR: Henry Mitchel, Intel Corporation.
 ///

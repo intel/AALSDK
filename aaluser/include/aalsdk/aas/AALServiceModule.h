@@ -29,7 +29,7 @@
 ///    loaded via the AAL::Factory() core service.
 /// @ingroup Services
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Joseph Grecco, Intel Corporation
 ///

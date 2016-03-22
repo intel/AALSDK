@@ -28,7 +28,7 @@
 /// @brief Defines the Message wrapper for the AAL Universal Device Driver.
 /// @ingroup uAIA
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Joseph Grecco, Intel Corporation.
 ///

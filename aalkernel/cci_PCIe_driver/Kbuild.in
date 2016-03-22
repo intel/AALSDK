@@ -1,6 +1,4 @@
 ##******************************************************************************
-## Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-##
 ## This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 ##         redistributing this file, you may do so under either license.
 ##
@@ -56,7 +54,7 @@
 ##******************************************************************************
 ##****************************************************************************
 ##  FILE: Kbuild
-##     Intel(R) QuickAssist Technology AAL PCIe driver for CCI FPGA devices 
+##     AAL PCIe driver for CCI FPGA devices 
 ##  Author:
 ##     Joseph Grecco, Intel Corporation
 ##  Created:

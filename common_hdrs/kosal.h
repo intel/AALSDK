@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -59,8 +57,8 @@
 /// @brief Defines the scalar type abstraction used by AAL.
 /// @ingroup kOSAL
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-///          OS Kernel Abstraction Layer library definitions
+/// Accelerator Abstraction Layer
+/// OS Kernel Abstraction Layer library definitions
 ///
 ///  AUTHORS:  Joseph Grecco, Intel Corporation
 ///            Tim Whisonant, Intel Corporation
@@ -169,60 +167,10 @@ typedef void * kosal_ownermodule;
 #define AALRMS_DBG_MMAP    ((KOSAL_UINT)1 <<  2)
 #define AALRMS_DBG_IOCTL   ((KOSAL_UINT)1 <<  3)
 
-#define AALWSMGR_DBG_MOD   ((KOSAL_UINT)1 <<  0)
-#define AALWSMGR_DBG_FILE  ((KOSAL_UINT)1 <<  1)
-#define AALWSMGR_DBG_MMAP  ((KOSAL_UINT)1 <<  2)
-#define AALWSMGR_DBG_IOCTL ((KOSAL_UINT)1 <<  3)
-
-#define AALWKSP_DBG_MOD    ((KOSAL_UINT)1 <<  4)
-
-#define AHMPIP_DBG_MOD     ((KOSAL_UINT)1 <<  0)
-#define AHMPIP_DBG_FILE    ((KOSAL_UINT)1 <<  1)
-#define AHMPIP_DBG_IOCTL   ((KOSAL_UINT)1 <<  2)
-#define AHMPIP_DBG_HWTASK  ((KOSAL_UINT)1 <<  3)
-#define AHMPIP_DBG_MEM     ((KOSAL_UINT)1 <<  4)
-#define AHMPIP_DBG_SESS    ((KOSAL_UINT)1 <<  5)
-#define AHMPIP_DBG_DEV     ((KOSAL_UINT)1 <<  6)
-#define AHMPIP_DBG_AUTOD   ((KOSAL_UINT)1 <<  7)
-#define AHMPIP_DBG_TIMEOUT ((KOSAL_UINT)1 <<  8)
-#define AHMPIP_DBG_MSGHDLR ((KOSAL_UINT)1 <<  9)
-#define AHMPIP_DBG_MMAP    ((KOSAL_UINT)1 << 10)
-
 #define UIDRV_DBG_MOD      ((KOSAL_UINT)1 <<  0)
 #define UIDRV_DBG_FILE     ((KOSAL_UINT)1 <<  1)
 #define UIDRV_DBG_MMAP     ((KOSAL_UINT)1 <<  2)
 #define UIDRV_DBG_IOCTL    ((KOSAL_UINT)1 <<  3)
-
-#define ENCODER_DBG_MOD    ((KOSAL_UINT)1 <<  0)
-#define ENCODER_DBG_AFU    ((KOSAL_UINT)1 <<  1)
-#define ENCODER_DBG_MMAP   ((KOSAL_UINT)1 <<  2)
-
-#define HBAFU_DBG_MOD      ((KOSAL_UINT)1 <<  0)
-#define HBAFU_DBG_AFU      ((KOSAL_UINT)1 <<  1)
-#define HBAFU_DBG_MAFU     ((KOSAL_UINT)1 <<  2)
-
-#define QPIDKSM_DBG_MOD    ((KOSAL_UINT)1 <<  0)
-#define QPIDKSM_DBG_MMAP   ((KOSAL_UINT)1 <<  1)
-#define QPIDKSM_DBG_DEV    ((KOSAL_UINT)1 <<  2)
-#define QPIDKSM_DBG_AFU    ((KOSAL_UINT)1 <<  3)
-#define QPIDKSM_DBG_MAFU   ((KOSAL_UINT)1 <<  4)
-#define QPIDKSM_DBG_CMD    ((KOSAL_UINT)1 <<  5)
-
-#define SPL2_DBG_MOD       ((KOSAL_UINT)1 <<  0)
-#define SPL2_DBG_DEV       ((KOSAL_UINT)1 <<  1)
-#define SPL2_DBG_AFU       ((KOSAL_UINT)1 <<  2)
-#define SPL2_DBG_MAFU      ((KOSAL_UINT)1 <<  3)
-#define SPL2_DBG_MMAP      ((KOSAL_UINT)1 <<  4)
-#define SPL2_DBG_CMD       ((KOSAL_UINT)1 <<  5)
-#define SPL2_DBG_CFG       ((KOSAL_UINT)1 <<  6)
-
-#define CCIV4_DBG_MOD       ((KOSAL_UINT)1 <<  0)
-#define CCIV4_DBG_DEV       ((KOSAL_UINT)1 <<  1)
-#define CCIV4_DBG_AFU       ((KOSAL_UINT)1 <<  2)
-#define CCIV4_DBG_MAFU      ((KOSAL_UINT)1 <<  3)
-#define CCIV4_DBG_MMAP      ((KOSAL_UINT)1 <<  4)
-#define CCIV4_DBG_CMD       ((KOSAL_UINT)1 <<  5)
-#define CCIV4_DBG_CFG       ((KOSAL_UINT)1 <<  6)
 
 #define CCIPCIE_DBG_MOD       ((KOSAL_UINT)1 <<  0)
 #define CCIPCIE_DBG_DEV       ((KOSAL_UINT)1 <<  1)

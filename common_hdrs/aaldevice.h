@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -80,12 +78,6 @@
 #include <aalsdk/kernel/kosal.h>
 #include <aalsdk/kernel/iaaldevice.h>
 #include <aalsdk/kernel/aalbus-device.h>
-#if 0
-#ifdef __AAL_USER__
-# include <aalsdk/AALTypes.h>
-# define __user
-#endif
-#endif
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -283,7 +275,11 @@ static inline struct aal_device *
       return NULL;
    }
 
-   DPRINTF(AALBUS_DBG_MOD," Preparing AAL device %s\n", szDevName);
+   // DPRINTF do not resolve properly in a header file because there is no well-defined
+   //   external linkage for the "debug" variable. This should be PINFO with the correct
+   //   module linkage defined in the calling .c file set up prior to including this file.
+   // See RedMine 566
+   //   DPRINTF(AALBUS_DBG_MOD," Preparing AAL device %s\n", szDevName);
 
     // Prepare the new device
    memset(paaldevice, 0, sizeof(struct aal_device));
@@ -331,8 +327,12 @@ static inline struct aal_device *
    // Used as part of the handle validation
    paaldevice->m_validator = kosal_virt_to_phys( paaldevice );
 
+   // DPRINTF do not resolve properly in a header file because there is no well-defined
+   //   external linkage for the "debug" variable. This should be PINFO with the correct
+   //   module linkage defined in the calling .c file set up prior to including this file.
+   // See RedMine 566
    // Initialize the device ID info
-   DPRINTF(AALBUS_DBG_MOD," Initializing AAL device %p\n", paaldevice);
+   // DPRINTF(AALBUS_DBG_MOD," Initializing AAL device %p\n", paaldevice);
 
    // The Context is a PIP defined data value
    //   The standard AAL PIP pointer is stored as well

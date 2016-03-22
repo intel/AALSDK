@@ -44,7 +44,7 @@ void ase_write_seed(uint64_t seed)
     {
       fprintf(fp_seed, "%lu", seed);
       fclose(fp_seed);
-    }  
+    }
 }
 
 
@@ -53,24 +53,54 @@ void ase_write_seed(uint64_t seed)
  */
 uint64_t ase_read_seed()
 {
-  uint64_t readback_seed;
-  uint64_t new_seed;
   FILE *fp_seed = (FILE *)NULL;
-  fp_seed = fopen(ASE_SEED_FILE, "r");
-  if (fp_seed == NULL)
+  uint64_t new_seed;
+  uint64_t readback_seed;
+
+  // Check if file already exists (FALSE)
+  if (access(ASE_SEED_FILE, F_OK) == -1)
     {
       printf("SIM-C : ASE Seed file could not be read\n");
       printf("        Old seed unusable --- creating a new seed\n");
+
+      // Generate seed
       new_seed = time(NULL);
-      ase_write_seed(new_seed);      
+
+      // Write seed to file
+      ase_write_seed(new_seed);
+
+      // Return seed
       return new_seed;
     }
+  // If TRUE, read seed file
   else
     {
-      fscanf(fp_seed, "%lu", &readback_seed);
-      printf("SIM-C : Readback seed %lu\n", readback_seed);
-      fclose(fp_seed);
-      return readback_seed;
+      // Open file (known to exist)
+      fp_seed = fopen(ASE_SEED_FILE, "r");
+      if (fp_seed == NULL)
+	{
+	  printf("SIM-C : ASE Seed file could not be read (NULL seed fileptr) \n");
+	  printf("        Old seed unusable --- creating a new seed\n");
+
+	  // Generate seed
+	  new_seed = time(NULL);
+
+	  // Write seed to file
+	  ase_write_seed(new_seed);
+
+	  // Return seed
+	  return new_seed;
+	}
+      else
+	{
+	  // Read conents, post on log, close, return
+	  fscanf(fp_seed, "%lu", &readback_seed);
+	  printf("SIM-C : Readback seed %lu\n", readback_seed);
+	  fclose(fp_seed);
+
+	  // Return seed
+	  return readback_seed;
+	}
     }
 }
 
@@ -104,6 +134,5 @@ void shuffle_int_array(int *array, int num_items)
           array[j] = array[i];
           array[i] = tmp;
         }
-    }  
+    }
 }
-

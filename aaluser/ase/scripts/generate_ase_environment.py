@@ -134,7 +134,7 @@ else:
     else:
         tool_type = "VCS"
     if (tool_type not in ["VCS", "QUESTA"]):
-        print ("ILLEGAL : Tool Brand ", tool_type, " was supplied, DEFAULT to 'VCS'") 
+        print ("ILLEGAL : Tool Name ", tool_type, " was supplied, DEFAULT to 'VCS'") 
         TOOL_BRAND = "VCS"
     else:
         TOOL_BRAND = tool_type

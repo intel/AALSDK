@@ -1,4 +1,4 @@
-## Copyright (c) 2005-2015, Intel Corporation
+## Copyright(c) 2005-2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -24,18 +24,24 @@
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 ##****************************************************************************
-##     Intel(R) Accelerator Abstraction Layer Library Software Developer
-##        Kit (SDK)
+##  Accelerator Abstraction Layer Library Software Developer Kit (SDK)
+##
 ##  Content:
-##     samples/AllocDealloc_StressTest/Makefile
+##     samples/Error_Monitor/Makefile
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
+##     Joseph Grecco, Intel Corporation
+##     Ananda Ravuri, Intel Corporation
 ##  History:
-##     11/18/2014    TSW   Initial version
+##     03/09/2016    JG   Initial version based off of canonical sample makefile
 ##******************************************************************************
 CPPFLAGS ?=
 CXX      ?= g++
 LDFLAGS  ?=
+
+ifeq (,$(CFLAGS))
+CFLAGS = -g -O2
+endif
 
 ifneq (,$(ndebug))
 else
@@ -49,25 +55,27 @@ endif
 ifeq (,$(DESTDIR))
 ifneq (,$(prefix))
 CPPFLAGS += -I$(prefix)/include
-LDFLAGS  += -L$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(prefix)/lib
+LDFLAGS  += -L$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(prefix)/lib \
+            -L$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(prefix)/lib64
 endif
 else
 ifeq (,$(prefix))
 prefix = /usr/local
 endif
 CPPFLAGS += -I$(DESTDIR)$(prefix)/include
-LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(DESTDIR)$(prefix)/lib -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib
+LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib \
+            -L$(DESTDIR)$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib64
 endif
 
-all: AllocDealloc_StressTest
+all: errorMonitor
 
-AllocDealloc_StressTest: AllocDealloc_StressTest.o
-	$(CXX) -g -O2 -o AllocDealloc_StressTest AllocDealloc_StressTest.o $(LDFLAGS) -L../CCILib -lCCI -laalclp
+errorMonitor: ErrorMonitor.o
+	$(CXX) $(CFLAGS) -o errorMonitor ErrorMonitor.o $(LDFLAGS) -lOSAL -lAAS -laalrt
 
-AllocDealloc_StressTest.o: AllocDealloc_StressTest.cpp ../CCILib/CCILib.h Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -I../CCILib -g -O2 -c -o AllocDealloc_StressTest.o AllocDealloc_StressTest.cpp
+ErrorMonitor.o: ErrorMonitor.cpp  Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  $(CFLAGS) -c -o ErrorMonitor.o ErrorMonitor.cpp
 
 clean:
-	$(RM) AllocDealloc_StressTest AllocDealloc_StressTest.o
+	$(RM) errorMonitor ErrorMonitor.o
 
 .PHONY:all clean

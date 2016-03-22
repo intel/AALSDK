@@ -40,6 +40,8 @@
 void ase_error_report(char *err_func, int err_num, int err_code)
 {
   BEGIN_RED_FONTCOLOR;
+  //  backtrace_wrapper();
+
   // Report error
   printf("@ERROR in %s CODE %d | %s\n", err_func, err_num, strerror(err_num) );
     
@@ -101,3 +103,28 @@ void ase_error_report(char *err_func, int err_num, int err_code)
   END_RED_FONTCOLOR;
 }
 
+
+/*
+ * Wrapper for backtrace wrapper
+ * Useful for debugging broken symbols
+ */
+void backtrace_wrapper()
+{
+  /* int bt_j, bt_nptrs;   */
+  /* void *bt_buffer[4096]; */
+  /* char **bt_strings; */
+
+  bt_nptrs = backtrace(bt_buffer, 4096);
+  printf("backtrace() returned %d addresses\n", bt_nptrs);
+
+  bt_strings = backtrace_symbols(bt_buffer, bt_nptrs);
+  if (bt_strings == NULL) {
+    perror("backtrace_symbols");
+    exit(EXIT_FAILURE);
+  }
+
+  for (bt_j = 0; bt_j < bt_nptrs; bt_j++)
+    printf("%s\n", bt_strings[bt_j]);
+
+  free(bt_strings);
+}

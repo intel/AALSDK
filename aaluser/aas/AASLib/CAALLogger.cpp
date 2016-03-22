@@ -28,7 +28,7 @@
 /// @brief Contains CLogger, PIDossMap, and ossRec implementations.
 /// @ingroup Debugging
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Henry Mitchel, Intel Corporation.
 ///          Alvin Chen, Intel Corporation.

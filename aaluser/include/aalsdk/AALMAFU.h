@@ -28,7 +28,7 @@
 /// brief IMAFU and related events.
 /// ingroup MAFU
 /// verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Joseph Grecco, Intel Corporation.
 ///         Henry Mitchel, Intel Corporation

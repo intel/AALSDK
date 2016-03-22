@@ -28,7 +28,7 @@
 /// @brief AAL remote services. 
 /// @ingroup Services
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Joseph Grecco, Intel Corporation
 ///

@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -62,7 +60,7 @@
 // PURPOSE: Definitions for the AAL IUpdateConfig AAL Bus interface
 // HISTORY:
 // WHEN:          WHO:     WHAT:
-
+//
 //****************************************************************************
 #ifndef __AALSDK_KERNEL_BUS_IUPDATE_CONFIG_H__
 #define __AALSDK_KERNEL_BUS_IUPDATE_CONFIG_H__

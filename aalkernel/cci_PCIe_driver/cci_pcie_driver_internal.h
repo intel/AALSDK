@@ -1,6 +1,4 @@
 //******************************************************************************
-// Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-//
 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
 //         redistributing this file, you may do so under either license.
 //
@@ -59,8 +57,8 @@
 //     CREATED: 10/14/2015
 //      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
 //
-// PURPOSE: Internal private definitions and constants for the Intel(R)
-//          Intel QuickAssist Technology CCI PCIe Device Driver.
+// PURPOSE: Internal private definitions and constants for the
+//          CCI PCIe Device Driver.
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
@@ -77,7 +75,7 @@
 #ifndef DRV_VERSION
 # define DRV_VERSION          "EXPERIMENTAL VERSION"
 #endif
-#define DRV_DESCRIPTION       "Intel(R) AAL FPGA PCIe Device driver and CCI Physical Interface Protocol (PIP)"
+#define DRV_DESCRIPTION       "AAL FPGA PCIe Device driver and CCI Physical Interface Protocol (PIP)"
 #define DRV_AUTHOR            "Joseph Grecco <joe.grecco@intel.com>"
 #define DRV_LICENSE           "Dual BSD/GPL"
 #define DRV_COPYRIGHT         "Copyright(c) 2015-2016, Intel Corporation"

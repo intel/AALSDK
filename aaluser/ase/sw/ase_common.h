@@ -37,10 +37,6 @@
 #ifndef _ASE_COMMON_H_
 #define _ASE_COMMON_H_
 
-#ifdef QUESTA
-#include "dpiheader.h"
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -63,7 +59,7 @@
 #include <sys/un.h>
 #include <sys/file.h>
 #include <dirent.h>
-
+#include <execinfo.h>
 
 #ifdef SIM_SIDE 
 #include "svdpi.h"
@@ -151,6 +147,7 @@ char *app_run_cmd;
 #define NOT_ESTABLISHED 0x0
 #define ESTABLISHED     0xBEEF
 
+
 /*
  * Console colors
  */
@@ -165,6 +162,10 @@ char *app_run_cmd;
 // WARNING codes in YELLOW color
 #define BEGIN_YELLOW_FONTCOLOR printf("\033[0;33m");
 #define END_YELLOW_FONTCOLOR   printf("\033[0m");
+
+// Wipeout current line in printf
+#define WIPEOUT_LINE           printf("]\n\033[F\033[J");
+
 
 /*
  * ASE Error codes
@@ -191,7 +192,8 @@ char *app_run_cmd;
 
 /* *******************************************************************************
  *
- * Shared buffer 
+ * Shared buffer structure
+ * Fri Mar 11 09:02:18 PST 2016 : Converted to dual-ended linked list
  * 
  * ******************************************************************************/
 // Buffer information structure
@@ -211,6 +213,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
   int is_privmem;                 // Flag memory as a private memory |    
   int is_mmiomap;                 // Flag memory as CSR map          |   
   int is_umas;                    // Flag memory as UMAS region      |
+  struct buffer_t *prev;
   struct buffer_t *next;
 };
 
@@ -221,6 +224,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
 struct wsmeta_t 
 {
   int      index;
+  int      valid;
   uint64_t *buf_structaddr;
   struct wsmeta_t *next;
 };
@@ -310,12 +314,12 @@ struct buffer_t* ll_search_buffer(int);
 
 // Mem-ops functions
 // void ase_mqueue_setup();
-void ase_mqueue_teardown();
+// void ase_mqueue_teardown();
 int ase_recv_msg(struct buffer_t *);
 void ase_alloc_action(struct buffer_t *);
 void ase_dealloc_action(struct buffer_t *);
 void ase_destroy();
-uint64_t* ase_fakeaddr_to_vaddr(uint64_t, int*);
+uint64_t* ase_fakeaddr_to_vaddr(uint64_t);
 void ase_dbg_memtest(struct buffer_t *);
 void ase_perror_teardown();
 void ase_empty_buffer(struct buffer_t *);
@@ -356,6 +360,7 @@ char* generate_tstamp_path(char*);
 
 // Error report functions
 void ase_error_report(char *, int , int );
+void backtrace_wrapper();
 
 // IPC management functions
 void final_ipc_cleanup();
@@ -409,7 +414,7 @@ extern "C" {
 #define ASE_MQ_MAXMSG     8
 #define ASE_MQ_MSGSIZE    1024
 #define ASE_MQ_NAME_LEN   64
-#define ASE_MQ_INSTANCES  9
+#define ASE_MQ_INSTANCES  10
 
 // Message presence setting
 #define ASE_MSG_PRESENT 0xD33D
@@ -472,7 +477,12 @@ struct ipc_t *mq_array;
 
 // Print buffers as they are being alloc/dealloc
 // *FIXME*: Connect to ase.cfg
-#define ASE_BUFFER_VIEW
+// #define ASE_BUFFER_VIEW
+
+// Backtrace data
+int bt_j, bt_nptrs;  
+void *bt_buffer[4096];
+char **bt_strings;
 
 
 /* *********************************************************************
@@ -543,7 +553,8 @@ void ase_config_parse(char*);
 // Simulation control function
 void start_simkill_countdown();
 void run_clocks(int num_clocks);
-void afu_softreset_trig( int value);
+void afu_softreset_trig(int init, int value);
+void sw_reset_response();
 
 // Read system memory line
 void rd_memline_dex( cci_pkt *pkt );
@@ -623,6 +634,9 @@ FILE *fp_pagetable_log; // = (FILE *)NULL;
 // Physical address mask - used to constrain generated addresses
 uint64_t PHYS_ADDR_PREFIX_MASK;
 
+// '1' indicates that teardown is in progress
+int self_destruct_in_progress;
+
 #endif
 
 
@@ -636,9 +650,10 @@ int app2sim_mmioreq_rx;   // MMIO Request path
 int sim2app_mmiorsp_tx;   // MMIO Response path
 int app2sim_umsg_rx;      // UMSG    message queue in RX mode
 int app2sim_simkill_rx;   // app2sim message queue in RX mode
-int app2sim_portctrl_rx;  // Port Control messages in Rx mode
+int app2sim_portctrl_req_rx;  // Port Control messages in Rx mode
 int app2sim_dealloc_rx;
 int sim2app_dealloc_tx;
+int sim2app_portctrl_rsp_tx;
 #else
 int app2sim_alloc_tx;           // app2sim mesaage queue in RX mode
 int sim2app_alloc_rx;           // sim2app mesaage queue in TX mode
@@ -646,9 +661,10 @@ int app2sim_mmioreq_tx;   // MMIO Request path
 int sim2app_mmiorsp_rx;   // MMIO Response path
 int app2sim_umsg_tx;      // UMSG    message queue in RX mode
 int app2sim_simkill_tx;   // app2sim message queue in RX mode
-int app2sim_portctrl_tx;  // Port Control message in TX mode 
+int app2sim_portctrl_req_tx;  // Port Control message in TX mode 
 int app2sim_dealloc_tx;
 int sim2app_dealloc_rx;
+int sim2app_portctrl_rsp_rx;
 #endif // End SIM_SIDE
 
 // Defeature Atomics for BDX releases 

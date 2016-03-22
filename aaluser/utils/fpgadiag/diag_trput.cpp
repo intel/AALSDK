@@ -28,7 +28,7 @@
 // @brief NLB Trput test application file.
 // @ingroup
 // @verbatim
-// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+// Accelerator Abstraction Layer
 //
 // AUTHORS: Tim Whisonant, Intel Corporation
 //			Sadruta Chandrashekar, Intel Corporation

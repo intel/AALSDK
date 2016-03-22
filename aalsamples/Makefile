@@ -24,8 +24,8 @@
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 ##****************************************************************************
-##     Intel(R) Accelerator Abstraction Layer Library Software Developer
-##        Kit (SDK)
+##  Accelerator Abstraction Layer Library Software Developer Kit (SDK)
+##
 ##  Content:
 ##     samples/Makefile
 ##  Author:
@@ -42,10 +42,12 @@ SUBDIRS=\
 Hello_AAL_Service/SW \
 Hello_AAL/SW \
 Hello_ALI_NLB/SW \
+Hello_ALI_HSSI/SW \
 ALI_Multi_AFU_with_PerfMon/SW \
 Temp_Power_Monitor/SW \
-ALI_Configure_AFU/SW
-
+MMLink/SW \
+ALI_Configure_AFU/SW \
+Error_Monitor/SW
 
 #Removed SUBDIRS
 #SUBDIRS=\

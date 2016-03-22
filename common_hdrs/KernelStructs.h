@@ -28,7 +28,7 @@
 /// @brief Utilities used when working with the Resource Manager
 /// @ingroup ResMgr
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Henry Mitchel, Intel Corporation.
 ///

@@ -28,7 +28,7 @@
 /// @brief Uses XL and IALIAFU to interact with ALI.
 /// @ingroup
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
+/// Accelerator Abstraction Layer Sample Application
 ///
 ///    This application is for example purposes only.
 ///    It is not intended to represent a model for developing commercially-deployable applications.
@@ -433,36 +433,6 @@ void CMyApp::runtimeAllocateServiceFailed(IEvent const &e)
 void CMyApp::runtimeAllocateServiceSucceeded(IBase               *pServiceBase,
 											 TransactionID const &tid)
 {
-#if 0
-   m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
-   ASSERT(NULL != m_pAALService);
-   if ( NULL == m_pAALService ) {
-      m_bIsOK = false;
-      return;
-   }
-#endif
-
-   m_pALIBufferService = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
-   ASSERT(NULL != m_pALIBufferService);
-   if ( NULL == m_pALIBufferService ) {
-      m_bIsOK = false;
-      return;
-   }
-
-   m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
-   ASSERT(NULL != m_pALIMMIOService);
-   if ( NULL == m_pALIMMIOService ) {
-      m_bIsOK = false;
-      return;
-   }
-
-   m_pALIResetService = dynamic_ptr<IALIReset>(iidALI_RSET_Service, pServiceBase);
-   ASSERT(NULL != m_pALIResetService);
-   if ( NULL == m_pALIResetService ) {
-      m_bIsOK = false;
-      return;
-   }
-
    INFO("Service Allocated (rt)");
 }
 
@@ -690,7 +660,7 @@ int main(int argc, char *argv[])
       }
 
    cout << endl
-        << "FpgaDiag - Intel QuickAssist FPGA Diagnostics Test:" << endl;
+        << "FpgaDiag - FPGA Diagnostics Test:" << endl;
 
 #if DBG_HOOK
    cerr << "Waiting for debugger attach.." << endl;

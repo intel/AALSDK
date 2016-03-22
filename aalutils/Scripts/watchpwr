@@ -1,0 +1,204 @@
+#!/bin/bash
+# vim: set ts=4 sw=4 et ai:
+#
+# Copyright(c) 2015-2016, Intel Corporation
+#
+# Redistribution  and  use  in source  and  binary  forms,  with  or  without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of  source code  must retain the  above copyright notice,
+#   this list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   andor other materials provided with the distribution.
+# * Neither the name  of Intel Corporation  nor the names of its contributors
+#   may be used to  endorse or promote  products derived  from this  software
+#   without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE
+# IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
+# LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
+# CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF
+# SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS
+# INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN
+# CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#****************************************************************************
+# @file watchpwr
+# @brief display the power usage reported by the MSR registers
+# @verbatim
+# Accelerator Abstraction Layer Utility Script
+#
+# Continuously displays the package and/or DRAM, power usage based on the value
+# in MSR register PACKAGE_ENERGY_STATUS (0x611) and/or DRAM_ENERGY_STATUS, using
+# the units specified by MSR register PACKAGE_POWSER_SKU_UNIT (0x606).
+#
+# See 'watchpwr -h' for usage.
+#
+# Uses 'rdmsr' for register access. If not found and 'apt-get' is available,
+# the script offer to install the 'msr' package.
+#
+# Known issues: 
+#    - None yet, but we are just getting started.
+#
+# AUTHORS: Paul J. Gilliam, Mindlance for Intel Corporation
+#
+#
+# HISTORY:
+# WHEN:          WHO:     WHAT:
+# 03/10/2016     PJG      Initial version.@endverbatim
+#****************************************************************************
+
+# === CONSTANTS AND GLOBALS ===================================================
+
+SCRIPTNAME=$(basename "$0")         # How we were called
+RDMSR="rdmsr"                       # Name of rdmsr executable
+DOPACKAGE=0                         # Monitor the Package power usage
+#DODRAM=0                            # Monitor the aggragate DRAM power usage.
+#DOCHANEL=0                          # Monitor the DRAM power usage, by Channel
+VERBOSE=0                           # Versbosity level
+SLEEP=01                           # Time, in seconds, between samples.
+
+
+#MSR Registers:
+PACKAGE_POWER_SQU_UNIT=0x606
+PACKAGE_ENERGY_STATUS=0x611
+#PACKAGE_POWER_SQU=0x614
+
+# === FUNCTIONS ===============================================================
+
+#
+# print_usage(): print usage information
+#
+function print_usage ()
+{
+    #echo "USAGE: ${SCRIPTNAME} [-v] [-d] [-c [0-3]]... [-s n[.m][s|m|h|d]"
+    echo "USAGE: ${SCRIPTNAME} [-v] [-d] [-s n[.m][s|m|h|d]"
+    echo "-p Compute and display the package energy usage."
+    #echo "-d Compute and display the DRAM energy usage, in general. "
+    #echo "-c Compute and display the DRAM energy usage for the given DIMM Channel."
+    #echo "-% Show energy usage as percent of maximum."
+    echo "-s Sample interval, in the given units."
+    echo "-v Be verbose. Can be issued multiple times (-vv)."
+USAGE_END
+}
+
+#
+# parse_arguments(): parse command line arguments
+#
+function parse_arguments()
+{
+    while getopts ":hvpc:s:" OPT; do
+        case "${OPT}" in
+        p)
+            DOPACKAGE = 1
+            ;;
+        d)
+            echo "This feature has not yet been implemented."
+            exit 1
+            ;;
+        c)
+            echo "This feature has not yet been implemented."
+            exit 1
+            ;;
+        %)
+            echo "This feature has not yet been implemented."
+            exit 1
+            ;;
+        h)
+            print_usage
+            exit 0
+            ;;
+        v)
+            VERBOSE=$(( VERBOSE + 1 ))
+           ;;
+        s)
+            SLEEP="${OPTARG}"
+            ;;
+        esac
+    done
+}
+
+#
+# Use 'rdmsr' to extract a field from the given MSR.
+#
+function extract_msr_field() {
+    local MSRNBR=$1
+    local HIGH=$2
+    local LOW=$3
+    local RETVAL=$4
+
+    #echo extract_msr_field $MSRNBR $HIGH $LOW
+    #echo ${RDMSR} --decimal --bitfield=${HIGH}\:${LOW} ${MSRNBR} 
+    # Execute the RDMSR command and capture its output.
+    local OUT=`${RDMSR} --decimal --bitfield=${HIGH}:${LOW} ${MSRNBR} `
+
+    # Echo it if -vv
+    if [ "${VERBOSE}" -gt 1 ]; then
+        echo ${RDMSR} --decimal --bitfield=${HIGH}:${LOW} ${MSRNBR}
+        echo $OUT
+    fi
+
+    #echo @@@ eval "${RETVAL}=${OUT}"
+    eval "${RETVAL}=${OUT}"
+}
+    
+
+# === MAIN ====================================================================
+
+# check if we are root
+# if [ $EUID -ne 0 ]; then
+#     echo "ERROR: You want to be root to run ${SCRIPTNAME}."
+#     exit 1
+# fi
+
+# check for rdmsr
+if ! `command -v "${RDMSR}" &> /dev/null`; then
+    echo -e "ERROR: ${RDMSR} not found."
+    echo 'Please install the "msr" package'
+    exit 1
+fi
+
+# process the command line
+parse_arguments "$@"
+
+
+# "Prime the pump" for the sampling loop
+#PACKAGE_TDP_POWER=extract_msr_field(${PACKAGE_POWER_SKU}, 14, 0)
+extract_msr_field ${PACKAGE_ENERGY_STATUS} 31 0 PACKAGE_POWER_AT_T0
+#echo PACKAGE_POWER_AT_T: $PACKAGE_POWER_AT_T
+#LAST_DRAM_POWER=extract_msr_field(${DDR_ENERGY_STATUS}, 31, 0)
+#LAST_C0_POWER=extract_msr_field(${DRAM_ENERGY_STATUS_CH0}, 31, 0)
+#LAST_C1_POWER=extract_msr_field(${DRAM_ENERGY_STATUS_CH1}, 31, 0)
+#LAST_C2_POWER=extract_msr_field(${DRAM_ENERGY_STATUS_CH2}, 31, 0)
+#LAST_C3_POWER=extract_msr_field(${DRAM_ENERGY_STATUS_CH3}, 31, 0)
+ 
+# Sampling Loop: 
+CNT=0
+SUM=0
+GOTSIG=0
+
+trap "echo =====================; SUM=0" SIGTERM
+
+while true; do
+    sleep ${SLEEP}
+    extract_msr_field ${PACKAGE_ENERGY_STATUS} 31 0 PACKAGE_POWER_AT_T1
+    #extract_msr_field ${PACKAGE_ENERGY_STATUS} 31 0
+    #echo PACKAGE_POWER_AT_T1: ${PACKAGE_POWER_AT_T1}
+    #echo PACKAGE_POWER_AT_T0: ${PACKAGE_POWER_AT_T0}
+    #echo DELTA: $((PACKAGE_POWER_AT_T1 - PACKAGE_POWER_AT_T0))
+    DELTA=$((PACKAGE_POWER_AT_T1 - PACKAGE_POWER_AT_T0))
+    SUM=$((SUM + DELTA))
+    CNT=$((CNT + 1))
+    MEAN=$((SUM / CNT))
+    #if [ ${DELTA} -lt 0 ]; then
+    #    DELTA=$((- DELTA))
+    #fi
+    #printf "total: |%#x - %#x| =  delta: %#x\n" ${PACKAGE_POWER_AT_T1} ${PACKAGE_POWER_AT_T0} ${DELTA}
+    #printf "total: |%d - %d| =  delta: %d\n" ${PACKAGE_POWER_AT_T1} ${PACKAGE_POWER_AT_T0} ${DELTA}
+    printf "delta: %d  mean: %d\n" ${DELTA} $MEAN
+    PACKAGE_POWER_AT_T0=${PACKAGE_POWER_AT_T1}
+done
