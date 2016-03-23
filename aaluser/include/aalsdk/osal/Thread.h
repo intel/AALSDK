@@ -157,7 +157,7 @@ public:
    /// @note There is currently no Windows implementation.
    void              Cancel();
    /// Compare this thread's identifier with id.
-   btBool      IsThisThread( btTID id ) const;
+   btBool      IsThisThread(btTID id ) const;
    /// Retrieve this thread's identifier. Don't compare ID's outright. Use IsThisThread().
    btTID                tid();
 
@@ -167,25 +167,23 @@ public:
 
 private:
 #if   defined( __AAL_WINDOWS__ )
-   HANDLE             m_hEvent;
-   HANDLE             m_hJoinEvent;
+   HANDLE             m_hThread;
 #elif defined( __AAL_LINUX__ )
    pthread_t          m_Thread;
-   CSemaphore         m_Semaphore;
 #endif // OS
-
    btTID              m_tid;
    ThreadProc         m_pProc;
    btInt              m_nPriority;
    void              *m_pContext;
    btUnsignedInt      m_State;
+   CSemaphore         m_Semaphore;
 
 #if   defined( __AAL_WINDOWS__ )
-   // _beginthread() takes this signature.
-   static void   StartThread(void * );
+   // CreateThread() takes this signature.
+   static DWORD WINAPI StartThread(LPVOID );
 #elif defined( __AAL_LINUX__ )
    // pthread_create() takes this signature.
-   static void * StartThread(void * );
+   static void *       StartThread(void * );
 #endif // OS
 
 /*   friend OSAL_API void SetThreadPriority(OSLThread::ThreadPriority nPriority); */

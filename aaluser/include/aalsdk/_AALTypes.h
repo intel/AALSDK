@@ -493,8 +493,8 @@ typedef enum eNameTypes {
      typedef UINT64    btUnsigned64bitInt;        ///< Unsigned 64-bit integer.
      typedef UINT64   *btUnsigned64bitIntArray;   ///< Unsigned 64-bit integer array.
 # endif // __AAL_INT64_DEFINED
-   typedef HANDLE      btPID;                     ///< Process Identifier
-   typedef HANDLE      btTID;                     ///< Thread Identifier
+   typedef btUIntPtr   btPID;                     ///< Process Identifier
+   typedef btUIntPtr   btTID;                     ///< Thread Identifier
    typedef HANDLE      btHANDLE;
 #else // ! __AAL_WINDOWS__
    typedef unsigned long long btID;

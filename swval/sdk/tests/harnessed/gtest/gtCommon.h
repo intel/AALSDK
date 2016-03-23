@@ -33,7 +33,8 @@ using namespace AAL;
 
 BEGIN_NAMESPACE(AAL)
    BEGIN_NAMESPACE(Testing)
-AAL::btUIntPtr DbgOSLThreadCount();
+OSAL_API AAL::btUIntPtr DbgOSLThreadCount();
+OSAL_API void DbgOSLThreadDelThr(AAL::btTID );
    END_NAMESPACE(Testing)
 END_NAMESPACE(AAL)
 
@@ -430,6 +431,9 @@ public:
    int      Uninstall(SigIndex i);
 
    btUIntPtr GetCount(SigIndex i, btUnsignedInt thr);
+
+   // non-zero on error.
+   int          Raise(SigIndex i, btTID tid);
 
 protected:
    SignalHelper();

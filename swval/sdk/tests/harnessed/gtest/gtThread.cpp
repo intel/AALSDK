@@ -65,8 +65,12 @@ ensure that we're calling the RNG correctly.
    }
 }
 
-
-TEST(OSAL_Thread, aal0005) {
+#ifdef __AAL_WINDOWS__
+TEST(OSAL_Thread, DISABLED_aal0005)
+#else
+TEST(OSAL_Thread, aal0005)
+#endif // OS
+{
    // The GetRand() sequence is repeatable for a given input seed value.
 
 /*
@@ -156,7 +160,7 @@ protected:
       YIELD_WHILE(CurrentThreads() > 0);
    }
 
-   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return (AAL::btUnsignedInt) GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThread *m_pThrs[3];
    btUIntPtr  m_Scratch[10];
@@ -462,7 +466,7 @@ protected:
       m_Semaphore.Destroy();
    }
 
-   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return (AAL::btUnsignedInt) GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThread  *m_pThrs[3];
    btTID       m_TIDs[3];
@@ -570,7 +574,12 @@ void OSAL_Thread_f::Thr1(OSLThread *pThread, void *pContext)
    pTC->m_Scratch[1] = 1; // set the 2nd scratch space to 1 to signify that we're exiting.
 }
 
+#ifdef __AAL_WINDOWS__
+// Redmine 689
+TEST_F(OSAL_Thread_f, DISABLED_aal0011)
+#else
 TEST_F(OSAL_Thread_f, aal0011)
+#endif // OS
 {
    // OSLThread::Unblock() causes the recepient thread to be canceled (false==ThisThread).
 
@@ -726,11 +735,13 @@ TEST_F(OSAL_Thread_f, aal0012)
    // Wait for B to exit.
    YIELD_WHILE(0 == m_Scratch[1]);
 
+   m_pThrs[1]->Signal();
+
+   // Wait for A to wake from sleep on B before deleting B.
+   YIELD_WHILE(0 == m_Scratch[4]);
+
    m_pThrs[1]->Join();
    delete m_pThrs[1];
-
-   // Destructing B will Post its internal sem, causing A to wake and exit.
-   YIELD_WHILE(0 == m_Scratch[4]);
 
    m_pThrs[0]->Join();
    delete m_pThrs[0];
@@ -744,11 +755,9 @@ void OSAL_Thread_f::Thr5(OSLThread *pThread, void *pContext)
 
    pTC->m_TIDs[0] = GetThreadID();
 
-#if   defined( __AAL_WINDOWS__ )
-   FAIL() << "need to implement for windows";
-#elif defined( __AAL_LINUX__ )
-   btUnsignedInt idx = SignalHelper::GetInstance().ThreadRegister(pTC->m_TIDs[0]);
-#endif // OS
+   SignalHelper &sig = SignalHelper::GetInstance();
+
+   btUnsignedInt idx = sig.ThreadRegister(pTC->m_TIDs[0]);
 
    // wait for B to be active.
    YIELD_WHILE(0 == pTC->m_Scratch[1]);
@@ -761,9 +770,7 @@ void OSAL_Thread_f::Thr5(OSLThread *pThread, void *pContext)
       ++pTC->m_Scratch[4];
    }while( 0 == pTC->m_Scratch[3] );
 
-#if defined( __AAL_LINUX__ )
-   YIELD_WHILE(SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGUSR1, idx) < pTC->m_Scratch[0]);
-#endif // OS
+   YIELD_WHILE(sig.GetCount(SignalHelper::IDX_SIGUSR1, idx) < pTC->m_Scratch[0]);
 
    sleep_millis(25);
    pTC->m_Scratch[5] = 1;
@@ -775,9 +782,7 @@ void OSAL_Thread_f::Thr6(OSLThread *pThread, void *pContext)
    ASSERT_NONNULL(pTC);
    ASSERT_NONNULL(pThread);
 
-#if defined( __AAL_LINUX__ )
    SignalHelper::GetInstance().ThreadRegister(GetThreadID());
-#endif // __AAL_LINUX__
 
    pTC->m_Scratch[1] = 1; // signal that we're ready.
 
@@ -809,11 +814,10 @@ TEST_F(OSAL_Thread_f, DISABLED_aal0013)
       if scratch[4] is greater than 1, then A woke before it was told.
 */
 
-#if defined( __AAL_LINUX__ )
-   SignalHelper::GetInstance().RegistryReset();
-   SignalHelper::GetInstance().ThreadRegister(GetThreadID());
-#endif // __AAL_LINUX__
+   SignalHelper &sig = SignalHelper::GetInstance();
 
+   sig.RegistryReset();
+   sig.ThreadRegister(GetThreadID());
 
    // Number of signals in m_Scratch[0].
    m_Scratch[0] = 1;
@@ -835,26 +839,17 @@ TEST_F(OSAL_Thread_f, DISABLED_aal0013)
    // Wait for the threads to become ready.
    YIELD_WHILE(0 == m_Scratch[2]);
 
-#if defined( __AAL_LINUX__ )
-   btUnsignedInt idx = SignalHelper::GetInstance().ThreadLookup(m_TIDs[0]);
-#endif // __AAL_LINUX__
+   btUnsignedInt idx = sig.ThreadLookup(m_TIDs[0]);
 
    // A is blocked in Wait() for B - send A signals to try to wake it.
    btUIntPtr i = 0;
    while ( i < m_Scratch[0] ) {
+      EXPECT_EQ(0, sig.Raise(SignalHelper::IDX_SIGUSR1, m_TIDs[0]));
+      sleep_millis(250);
 
-#if   defined( __AAL_WINDOWS__ )
-      FAIL() << "implement for windows";
-#elif defined( __AAL_LINUX__ )
-
-      EXPECT_EQ(0, pthread_kill(m_TIDs[0], SIGUSR1));
-      sleep_millis(10);
-
-      i = SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGUSR1, idx);
+      i = sig.GetCount(SignalHelper::IDX_SIGUSR1, idx);
 
       ASSERT_EQ(0, m_Scratch[4]);
-
-#endif // OS
    }
 
    sleep_millis(10);
@@ -871,9 +866,7 @@ TEST_F(OSAL_Thread_f, DISABLED_aal0013)
 
    ASSERT_EQ(1, m_Scratch[4]); // A should have woken only once.
 
-#if defined( __AAL_LINUX__ )
-   SignalHelper::GetInstance().RegistryReset();
-#endif // __AAL_LINUX__
+   sig.RegistryReset();
 }
 
 void OSAL_Thread_f::Thr7(OSLThread *pThread, void *pContext)
@@ -884,11 +877,9 @@ void OSAL_Thread_f::Thr7(OSLThread *pThread, void *pContext)
 
    pTC->m_TIDs[0] = GetThreadID();
 
-#if   defined( __AAL_WINDOWS__ )
-   FAIL() << "need to implement for windows";
-#elif defined( __AAL_LINUX__ )
-   btUnsignedInt idx = SignalHelper::GetInstance().ThreadRegister(pTC->m_TIDs[0]);
-#endif // OS
+   SignalHelper &sig = SignalHelper::GetInstance();
+
+   btUnsignedInt idx = sig.ThreadRegister(pTC->m_TIDs[0]);
 
    // wait for B to be active before we try to wait for it.
    YIELD_WHILE(0 == pTC->m_Scratch[1]);
@@ -901,9 +892,7 @@ void OSAL_Thread_f::Thr7(OSLThread *pThread, void *pContext)
       ++pTC->m_Scratch[4];
    }while( 0 == pTC->m_Scratch[3] );
 
-#if defined( __AAL_LINUX__ )
-   YIELD_WHILE(SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGUSR1, idx) < pTC->m_Scratch[0]);
-#endif // OS
+   YIELD_WHILE(sig.GetCount(SignalHelper::IDX_SIGUSR1, idx) < pTC->m_Scratch[0]);
 
    sleep_millis(25);
    pTC->m_Scratch[5] = 1;
@@ -915,9 +904,7 @@ void OSAL_Thread_f::Thr8(OSLThread *pThread, void *pContext)
    ASSERT_NONNULL(pTC);
    ASSERT_NONNULL(pThread);
 
-#if defined( __AAL_LINUX__ )
    SignalHelper::GetInstance().ThreadRegister(GetThreadID());
-#endif // __AAL_LINUX__
 
    pTC->m_Scratch[1] = 1; // signal that we're ready.
 
@@ -956,10 +943,10 @@ TEST_F(OSAL_Thread_f, DISABLED_aal0014)
       if scratch[4] is greater than 1, then A woke before the timeout.
 */
 
-#if defined( __AAL_LINUX__ )
-   SignalHelper::GetInstance().RegistryReset();
-   SignalHelper::GetInstance().ThreadRegister(GetThreadID());
-#endif // __AAL_LINUX__
+   SignalHelper &sig = SignalHelper::GetInstance();
+
+   sig.RegistryReset();
+   sig.ThreadRegister(GetThreadID());
 
    // Number of signals in m_Scratch[0].
    m_Scratch[0] = 1;
@@ -981,26 +968,17 @@ TEST_F(OSAL_Thread_f, DISABLED_aal0014)
    // Wait for the threads to become ready.
    YIELD_WHILE(0 == m_Scratch[2]);
 
-#if defined( __AAL_LINUX__ )
-   btUnsignedInt idx = SignalHelper::GetInstance().ThreadLookup(m_TIDs[0]);
-#endif // __AAL_LINUX__
+   btUnsignedInt idx = sig.ThreadLookup(m_TIDs[0]);
 
    // A is blocked in Wait() for B - send A signals to try to wake it.
    btUIntPtr i = 0;
    while ( i < m_Scratch[0] ) {
-
-#if   defined( __AAL_WINDOWS__ )
-      FAIL() << "implement for windows";
-#elif defined( __AAL_LINUX__ )
-
-      EXPECT_EQ(0, pthread_kill(m_TIDs[0], SIGUSR1));
+      EXPECT_EQ(0, sig.Raise(SignalHelper::IDX_SIGUSR1, m_TIDs[0]));
       sleep_millis(10);
 
       i = SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGUSR1, idx);
 
       ASSERT_EQ(0, m_Scratch[4]);
-
-#endif // OS
    }
 
    sleep_millis(10);
@@ -1018,9 +996,7 @@ TEST_F(OSAL_Thread_f, DISABLED_aal0014)
 
    ASSERT_EQ(1, m_Scratch[4]);
 
-#if defined( __AAL_LINUX__ )
-   SignalHelper::GetInstance().RegistryReset();
-#endif // __AAL_LINUX__
+   sig.RegistryReset();
 }
 
 void OSAL_Thread_f::Thr9(OSLThread *pThread, void *pContext)
@@ -1071,18 +1047,18 @@ void OSAL_Thread_f::Thr10(OSLThread *pThread, void *pContext)
    OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
    ASSERT_NONNULL(pTC);
 
-#if   defined( __AAL_WINDOWS__ )
-   FAIL() << "need to implement for windows";
-#elif defined( __AAL_LINUX__ )
-   btUnsignedInt idx = SignalHelper::GetInstance().ThreadRegister(GetThreadID());
-#endif // OS
+   SignalHelper &sig = SignalHelper::GetInstance();
+
+   btUnsignedInt idx = sig.ThreadRegister(GetThreadID());
 
    pTC->m_Scratch[0] = 1; // set the first scratch space to 1 to signify that we're running.
 
    pTC->m_Semaphore.Wait();
 
-#if defined( __AAL_LINUX__ )
-   YIELD_WHILE(SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) < 1);
+#if   defined( __AAL_WINDOWS__ )
+   YIELD_WHILE(sig.GetCount(SignalHelper::IDX_SIGUSR1, idx) < 1);
+#elif defined( __AAL_LINUX__ )
+   YIELD_WHILE(sig.GetCount(SignalHelper::IDX_SIGIO, idx) < 1);
 #endif // OS
 
    pTC->m_Scratch[1] = 1;
@@ -1092,10 +1068,10 @@ TEST_F(OSAL_Thread_f, DISABLED_aal0016)
 {
    // OSLThread::Join() - what is expected behavior of Join() when the target thread is OSLThread::Unblock()'ed?
 
-#if defined( __AAL_LINUX__ )
-   SignalHelper::GetInstance().RegistryReset();
-   SignalHelper::GetInstance().ThreadRegister(GetThreadID());
-#endif // __AAL_LINUX__
+   SignalHelper &sig = SignalHelper::GetInstance();
+
+   sig.RegistryReset();
+   sig.ThreadRegister(GetThreadID());
 
    ASSERT_TRUE(m_Semaphore.Create(0, 1));
 
@@ -1118,9 +1094,7 @@ TEST_F(OSAL_Thread_f, DISABLED_aal0016)
    // Don't attempt to join Thr10. ~OSLThread will detach then cancel it.
    delete m_pThrs[0];
 
-#if defined( __AAL_LINUX__ )
-   SignalHelper::GetInstance().RegistryReset();
-#endif // __AAL_LINUX__
+   sig.RegistryReset();
 }
 
 void OSAL_Thread_f::Thr11(OSLThread *pThread, void *pContext)
@@ -1128,16 +1102,15 @@ void OSAL_Thread_f::Thr11(OSLThread *pThread, void *pContext)
    OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
    ASSERT_NONNULL(pTC);
 
+   pTC->m_Scratch[1] = GetThreadID();
    pTC->m_Scratch[0] = 1; // set the first scratch space to 1 to signify that we're running.
-   pTC->m_Semaphore.Wait();
+   YIELD_WHILE(0 == pTC->m_Scratch[2]);
 }
 
 TEST_F(OSAL_Thread_f, aal0017)
 {
    // After calling OSLThread::Cancel() for a thread other than the current thread, the current
    // thread should be able to immediately OSLThread::Join() the canceled thread.
-
-   ASSERT_TRUE(m_Semaphore.Create(0, 1));
 
    m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr11,
                               OSLThread::THREADPRIORITY_NORMAL,
@@ -1148,15 +1121,19 @@ TEST_F(OSAL_Thread_f, aal0017)
 
    // wait for Thr10 to begin.
    YIELD_WHILE(0 == m_Scratch[0]);
-   YIELD_X(5);
 
    // cancel the child thread.
    m_pThrs[0]->Cancel();
 
-   EXPECT_TRUE(m_Semaphore.Post(1));
-
    m_pThrs[0]->Join();
    delete m_pThrs[0];
+
+#ifdef __AAL_WINDOWS__
+   // Threads terminated by TerminateThread() do not cause DLL_THREAD_DETACH notifications in DllMain().
+   // https://msdn.microsoft.com/en-us/library/windows/desktop/ms686717%28v=vs.85%29.aspx
+   //   "DLLs attached to the thread are not notified that the thread is terminating."
+   AAL::Testing::DbgOSLThreadDelThr(m_Scratch[1]);
+#endif // __AAL_WINDOWS__
 }
 
 void OSAL_Thread_f::Thr12(OSLThread *pThread, void *pContext)
@@ -1405,6 +1382,7 @@ void OSAL_Thread_f::Thr20(OSLThread *pThread, void *pContext)
    OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
    ASSERT_NONNULL(pTC);
 
+   pTC->m_Scratch[2] = GetThreadID();
    pTC->m_Scratch[0] = 1;
 
    EXPECT_TRUE(pTC->m_Semaphore.Wait());
@@ -1438,6 +1416,13 @@ TEST_F(OSAL_Thread_f, aal0171)
    m_pThrs[0]->Cancel();
 
    EXPECT_TRUE(m_Semaphore.Post(1));
+
+#ifdef __AAL_WINDOWS__
+   // Threads terminated by TerminateThread() do not cause DLL_THREAD_DETACH notifications in DllMain().
+   // https://msdn.microsoft.com/en-us/library/windows/desktop/ms686717%28v=vs.85%29.aspx
+   //   "DLLs attached to the thread are not notified that the thread is terminating."
+   AAL::Testing::DbgOSLThreadDelThr(m_Scratch[2]);
+#endif // __AAL_WINDOWS__
 
    YIELD_WHILE(CurrentThreads() > 0);
 
@@ -1555,6 +1540,7 @@ void OSAL_Thread_f::Thr23(OSLThread *pThread, void *pContext)
    OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
    ASSERT_NONNULL(pTC);
 
+   pTC->m_Scratch[3] = GetThreadID();
    pTC->m_Scratch[0] = 1;
 
    ExitCurrentThread(pTC->m_Scratch[1]);
@@ -1580,5 +1566,10 @@ TEST_F(OSAL_Thread_f, aal0202)
 
    EXPECT_EQ(1, m_Scratch[0]);
    EXPECT_EQ(0, m_Scratch[2]);
+
+#ifdef __AAL_WINDOWS__
+   // OSLThread's are not generating DLL_THREAD_ATTACH/DLL_THREAD_DETACH.
+   AAL::Testing::DbgOSLThreadDelThr(m_Scratch[3]);
+#endif // __AAL_WINDOWS__
 }
 

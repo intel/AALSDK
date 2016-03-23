@@ -769,6 +769,46 @@ void SignalHelper::PutCount(SignalHelper::SigIndex i, btUnsignedInt thr)
    ++m_Tracker[i].Counts[thr];
 }
 
+int SignalHelper::Raise(SignalHelper::SigIndex i, btTID tid)
+{
+   int signum;
+
+   switch ( i ) {
+      case IDX_SIGINT :
+         signum = SIGINT;
+      break;
+      case IDX_SIGSEGV :
+         signum = SIGSEGV;
+      break;
+      case IDX_SIGUSR1 :
+#if   defined( __AAL_WINDOWS__ )
+         signum = SIGILL;
+#elif defined( __AAL_LINUX__ )
+         signum = SIGUSR1;
+#endif // OS
+      break;
+      case IDX_SIGUSR2 :
+#if   defined( __AAL_WINDOWS__ )
+         signum = SIGTERM;
+#elif defined( __AAL_LINUX__ )
+         signum = SIGUSR2;
+#endif // OS
+      break;
+#if defined( __AAL_LINUX__ )
+      case IDX_SIGIO   :
+         signum = SIGIO;
+      break;
+#endif // __AAL_LINUX__
+      default : return 1; // unsupported signal
+   }
+
+#if   defined( __AAL_WINDOWS__ )
+   return raise(signum);
+#elif defined( __AAL_LINUX__ )
+   return pthread_kill(tid, signum);
+#endif // OS
+}
+
 SignalHelper::SignalHelper()
 {
    memset(&m_Tracker, 0, sizeof(m_Tracker));
