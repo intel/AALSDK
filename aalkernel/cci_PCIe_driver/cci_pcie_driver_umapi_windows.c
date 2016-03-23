@@ -25,7 +25,7 @@
 /// @brief Implements the kernel driver shell for CCI-P PCIe devices.
 /// @ingroup DeviceDrivers
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Intel(R) Accelerator Abstraction Layer
 ///
 /// AUTHOR: Joseph Grecco, Intel Corporation
 /// PURPOSE:  This file contains the main startup and shutdown code for the

@@ -57,7 +57,7 @@
 //     CREATED: 10/14/2015
 //      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
 // PURPOSE: This file implements init/exit entry points for the
-//          Intel(R) Intel QuickAssist Technology AAL FPGA device driver for
+//          Intel(R) Intel AAL FPGA device driver for
 //          functionality of the AAL FPGA device driver.
 // HISTORY:
 // COMMENTS: Linux specific
