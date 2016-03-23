@@ -74,3 +74,5 @@ EXTRA_CFLAGS=\
 
 obj-m                 :=@AALRMS_DRV_NAME@.o
 @AALRMS_DRV_NAME@-objs:=aalrm_server-file.o aalrm_server-ioctl.o aalrm_server-main.o aalrm_server-services.o kOSAL.o
+
+@KBUILD_OPTS@

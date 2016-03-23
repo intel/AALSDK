@@ -1,0 +1,1 @@
+../../aalkernel/README.GPLV2-LICENSE.TXT
