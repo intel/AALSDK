@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2014-2016, Intel Corporation.
+//  Copyright(c) 2014-2015, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2014-2016, Intel Corporation.
+//  Copyright(c) 2014-2015, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -55,52 +55,82 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-//        FILE: aalbus_imonitorconfig.h
-//     CREATED: May 15, 2014
+//        FILE: aalbusDefs.h
+//     CREATED: Feb. 27, 2015
 //      AUTHOR: Joseph Grecco, Intel Corporation.
 //
-// PURPOSE: Definitions for the AAL IMonitorConfig AAL Bus interface
+// PURPOSE: Public Definitions for the AAL Bus subsystem
 // HISTORY:
 // WHEN:          WHO:     WHAT:
 //****************************************************************************
-#ifndef __AALSDK_KERNEL_BUS_IMONITOR_CONFIG_H__
-#define __AALSDK_KERNEL_BUS_IMONITOR_CONFIG_H__
-
-//
-// Define an Interface Guid for toaster device class.
-// This GUID is used to register (IoRegisterDeviceInterface)
-// an instance of an interface so that user application
-// can control the toaster device.
-//
-// {701D4F32-26CB-4A87-BBC4-D1EB0A3B51D2}
-DEFINE_GUID(GUID_DEVINTERFACE_AALBUS_CONFIG_STATE_MONITOR,
-   0x701d4f32, 0x26cb, 0x4a87, 0xbb, 0xc4, 0xd1, 0xeb, 0xa, 0x3b, 0x51, 0xd2);
-
-BEGIN_NAMESPACE(AAL)
-
-#define NTDEVICE_MONITORCONFIG_NAME_STRING      L"\\Device\\AAL_IMonitorConfig"
-#define SYMBOLIC_MONITORCONFIG_NAME_STRING      L"\\DosDevices\\AAL_IMonitorConfig"
-
-#define FILE_DEVICE_BUSENUM         FILE_DEVICE_BUS_EXTENDER
-
-#define AALBUS_MONITOR_CONFIG_IOCTL(_index_) \
-    CTL_CODE (FILE_DEVICE_BUSENUM, (_index_ + 0xF), METHOD_BUFFERED, FILE_READ_DATA)
-
-#define IOCTL_BUSENUM_PLUGIN_HARDWARE               AALBUS_MONITOR_CONFIG_IOCTL(0x0)
-#define IOCTL_BUSENUM_UNPLUG_HARDWARE               AALBUS_MONITOR_CONFIG_IOCTL(0x1)
-#define IOCTL_BUSENUM_EJECT_HARDWARE                AALBUS_MONITOR_CONFIG_IOCTL(0x2)
+#ifndef __AALSDK_KERNEL_BUS_DEFS_H__
+#define __AALSDK_KERNEL_BUS_DEFS_H__
 
 
-typedef struct _AAL_BUS_MONITORCONFIG_CONTEXT {
+//-----------------------------------------------------------------------------
+// Request message IDs
+//-----------------------------------------------------------------------------
+typedef enum
+{
+   // User Resource Manager requests
+   reqid_bus_RequestDevice = 1,     // Device Allocation Request
+   reqid_bus_ReleaseDevice,        // Device Release Request
 
-   PVOID   ControlData; // Store your control data here
+   // Device configuration requests
+   reqid_bus_DeviceRequest,          // Send a device request
 
-} AAL_BUS_MONITORCONFIG_CONTEXT, *PAAL_BUS_MONITORCONFIG_CONTEXT;
+   // Administration
+   reqid_bus_Shutdown,                  // Request that the Service session shutdown
+   reqid_bus_Restart,                   // Request to restart the RMCS without close/open
 
-WDF_DECLARE_CONTEXT_TYPE_WITH_NAME( AAL_BUS_MONITORCONFIG_CONTEXT,
-                                    MonitorConfigGetContext)
+   // Kernel Resource Manager requests
+   reqid_bus_SetConfigUpdates,     // Used to set configuration updates
 
-END_NAMESPACE(AAL)
+   // Response and Event IDs
+   rspid_bus_RequestDevice = 0xF000, // Device Allocation Response
 
-#endif //__AALSDK_KERNEL_BUS_IMONITOR_CONFIG_H__
+   // Device configuration requests
+   rspid_bus_DeviceRequest,          // Device Request response
 
+   // Kernel Resource Manager Responses and events
+   evtid_bus_ConfigUpdate,         // Configuration Update
+
+   // Administration
+   rspid_bus_Shutdown,                  // Service is shutdown
+   rspid_bus_Started
+
+} aalbus_msgIDs_e;
+
+
+//-----------------------------------------------------------------------------
+// Shutdown reason codes
+//-----------------------------------------------------------------------------
+typedef enum
+{
+   aalbus_shutdownReasonNormal = 0,
+   aalbus_shutdownReasonMaint,
+   aalbus_aalbus_shutdownFailure,
+   aalbus_aalbus_shutdownReasonRestart
+} aalbus_shutdownreason_e;
+
+//-----------------------------------------------------------------------------
+// Result message IDs - TODO COMBINE THESE WITH A GLOBAL SET
+//-----------------------------------------------------------------------------
+typedef enum
+{
+   aalbus_resultOK = 0,                                        // No error
+   aalbus_resultMaxOwnersErr,                                  // Max device owners
+   aalbus_resultDuplicateOwnerErr,                             // PID already owner
+   aalbus_resultNotOwnerErr,                                   // PID not owner
+   aalbus_resultInvalidDevice,                                 // Invalid device handle
+   aalbus_resultErrno,                                         // Errno has only info
+   aalbus_resultBadParm,                                       // Invalid parameter
+   aalbus_resultCancelled,                                     // Transaction cancelled
+   aalbus_resultDeviceHasNoPIPAssigned,                        // No PIP assigned
+   aalbus_resultNoAppropriateInterface,                        // No interface
+   aalbus_resultSystemErr                                      // System Error
+} aalbus_result_e;
+
+
+
+#endif //__AALSDK_KERNEL_BUS_DEFS_H__

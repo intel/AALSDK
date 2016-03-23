@@ -157,6 +157,7 @@ typedef void * kosal_ownermodule;
 #define AALBUS_DBG_FILE    ((KOSAL_UINT)1 <<  1)
 #define AALBUS_DBG_MMAP    ((KOSAL_UINT)1 <<  2)
 #define AALBUS_DBG_IOCTL   ((KOSAL_UINT)1 <<  3)
+#define AALBUS_DBG_POLL    ((KOSAL_UINT)1 <<  4)
 
 #define AALRMC_DBG_MOD     ((KOSAL_UINT)1 <<  0)
 #define AALRMC_DBG_FILE    ((KOSAL_UINT)1 <<  1)
@@ -1063,6 +1064,9 @@ do                                            \
 # include <wdf.h>
 # include <wdftypes.h>
 typedef WDFREQUEST        kosal_poll_object; 
+
+// Macro to hide relationship of Request to Poll Object
+#define AAL_WDFREQUEST_TO_POLLOBJ(po) (kosal_poll_object)(po)
 
 # define kosal_poll_object_is_valid(__kpo_ptr) ( (NULL != (__kpo_ptr)) && (NULL != *(__kpo_ptr)) )
 

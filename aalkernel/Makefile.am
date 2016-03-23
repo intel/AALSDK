@@ -90,7 +90,7 @@ encoderhdrsdir=$(kernelhdrsdir)/encoder_sample_kbae
 kernelhdrs_HEADERS=\
 include/aalsdk/kernel/aalbus-device.h \
 include/aalsdk/kernel/aalbus.h \
-include/aalsdk/kernel/aalbus_imonitorconfig.h \
+include/aalsdk/kernel/aalbus_iconfigmonitor.h \
 include/aalsdk/kernel/aalbus-ipip.h \
 include/aalsdk/kernel/aalbus_iupdate_config.h \
 include/aalsdk/kernel/aaldefs.h \

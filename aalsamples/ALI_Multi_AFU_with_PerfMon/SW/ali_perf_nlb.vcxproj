@@ -55,8 +55,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\bin\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -88,7 +88,7 @@
       <PreprocessorDefinitions>_AAL_USER__=1;ENABLE_DEBUG=1;ENABLE_ASSERT=1;_NO_BUILD_MESSAGES_;HAVE_CONFIG_H;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libAALRuntime.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libaalrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

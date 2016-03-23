@@ -574,7 +574,10 @@ struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev
    //   Enumerates the Port feature list, creates the Port object.
    //   Then add the new port object onto the list
    //-------------------------------------------------------------
-   pportdev = get_port_device( ccip_portdev_phys_afu_mmio(pccipdev,0), ccip_portdev_kvp_afu_mmio(pccipdev,0));
+   pportdev = get_port_device( ccip_portdev_phys_afu_mmio(pccipdev,0),
+                               ccip_portdev_kvp_afu_mmio(pccipdev,0),
+                               ccip_portdev_len_afu_mmio(pccipdev,0));
+
    if ( NULL == pportdev ) {
       PERR("Could not allocate memory for FME object\n");
       res = -ENOMEM;
@@ -810,7 +813,9 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          //   Enumerates the Port feature list, creates the Port object.
          //   Then add the new port object onto the list
          //-------------------------------------------------------------
-         pportdev = get_port_device( pbarPhyAddr + offset, ccip_portdev_kvp_afu_mmio(pccipdev,bar) + offset );
+         pportdev = get_port_device( pbarPhyAddr + offset,
+                                     ccip_portdev_kvp_afu_mmio(pccipdev,bar) + offset,
+                                     ccip_portdev_len_afu_mmio(pccipdev,bar));
          if ( NULL == pportdev ) {
             PERR("Could not allocate memory for FME object\n");
             res = -ENOMEM;
@@ -948,12 +953,11 @@ cci_pci_remove(struct pci_dev *pcidev)
       }
 
    }
-   ASSERT(1 == found);
 
    if ( 0 == found ) {
-      PERR("struct pci_dev * 0x%p not found in device list.\n", pcidev);
+      PINFO("struct pci_dev * 0x%p not found in device list.\n", pcidev);
    } else if ( found > 1 ) {
-      PERR("struct pci_dev * 0x%p found in device list multiple times.\n", pcidev);
+      PINFO("struct pci_dev * 0x%p found in device list multiple times.\n", pcidev);
    }
 
    PTRACEOUT;
@@ -996,6 +1000,7 @@ cci_remove_device(struct ccip_device *pccipdev)
    if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
       if(!ccip_is_simulated(pccipdev)){
          PVERBOSE("Freeing FME BAR 0\n");
+         remove_perfmonitor(pccipdev->m_pcidev);
          iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
          pci_release_region(ccip_dev_to_pci_dev(pccipdev), 0);
       }else{

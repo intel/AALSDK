@@ -328,6 +328,9 @@
     <FilesToPackage Include="@(Inf->'%(CopyOutput)')" Condition="'@(Inf)'!=''" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="aalbus_windows\aalbus.vcxproj">
+      <Project>{f245f55c-587c-414f-b04b-5dc4248b9875}</Project>
+    </ProjectReference>
     <ProjectReference Include="cci_PCIe_driver\ccip.vcxproj">
       <Project>{29042c24-058f-4a50-bd4e-0b6845578a31}</Project>
     </ProjectReference>

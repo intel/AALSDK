@@ -64,7 +64,7 @@ btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr 
       mmapFlags = MAP_SHARED;
    }
 #elif defined( __AAL_WINDOWS__ )
-#pragma message("***NEED A WINDOWS IMPLEMENTATION***")
+#pragma message("***NEED A WINDOWS IMPLEMENTATION??***")
 #else
 # error Implement kOSAL for unknown OS.
 #endif
