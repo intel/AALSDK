@@ -138,11 +138,13 @@ struct cci_aal_device {
    int                        m_protocolID;
 
    // For background tasks handling
-   kosal_work_queue           m_workq_deactimeout;
+   kosal_work_queue           m_workq_deactivate;
 
    kosal_work_queue           m_workq_prconifg;
 
    kosal_work_queue           m_workq_revokeafu;
+
+   kosal_work_queue           m_workq_revokesigtap;
 
    // AFU MMIO Space
    btVirtAddr                 m_kvp_afu_mmio;   // kv address of MMIO space
@@ -232,11 +234,10 @@ struct cci_aal_device {
 #define cci_dev_psem(pdev)                  (&(pdev)->m_sem)
 
 
-#define cci_dev_workq_deactimeout(pdev)               ((pdev)->m_workq_deactimeout )
-
+#define cci_dev_workq_deactivate(pdev)                ((pdev)->m_workq_deactivate )
 #define cci_dev_workq_prcconfigure(pdev)              ((pdev)->m_workq_prconifg )
-
 #define cci_dev_workq_revokeafu(pdev)                 ((pdev)->m_workq_revokeafu )
+#define cci_dev_workq_revokesigtap(pdev)              ((pdev)->m_workq_revokesigtap )
 
 ///============================================================================
 /// Name: ccip_device

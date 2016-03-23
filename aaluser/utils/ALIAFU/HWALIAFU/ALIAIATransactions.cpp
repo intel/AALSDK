@@ -682,22 +682,19 @@ AFUDeactivateTransaction::AFUDeactivateTransaction(AAL::TransactionID const &rTr
    // Point at payload
     struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
 
-
-   btUnsigned64bitInt reconfTimeout =0;
-   btUnsigned64bitInt reconfAction =0;
+   btTime reconfTimeout            = 0;
+   btUnsigned64bitInt reconfAction = 0;
 
    // DeActive Timeout
    if(rInputArgs.Has(AALCONF_MILLI_TIMEOUT)){
 
       rInputArgs.Get(AALCONF_MILLI_TIMEOUT, &reconfTimeout);
-      //printf("reconfTimeout= %lld \n",reconfTimeout);
    }
 
    // ReConfiguration Action Flags
    if(rInputArgs.Has(AALCONF_RECONF_ACTION)){
 
       rInputArgs.Get(AALCONF_RECONF_ACTION, &reconfAction);
-      //printf("reconfAction= %lld \n",reconfAction);
 
       if((AALCONF_RECONF_ACTION_HONOR_REQUEST_ID != reconfAction ) &&
         (AALCONF_RECONF_ACTION_HONOR_OWNER_ID != reconfAction ))    {
@@ -711,12 +708,9 @@ AFUDeactivateTransaction::AFUDeactivateTransaction(AAL::TransactionID const &rTr
    req->u.pr_config.reconfTimeout  = reconfTimeout;
    req->u.pr_config.reconfAction   = reconfAction;
 
-   //printf("req->u.pr_config.reconfTimeout= %lld \n",req->u.pr_config.reconfTimeout );
-   //printf("req->u.pr_config.reconfAction= %lld \n",req->u.pr_config.reconfAction);
-
    // fill out aalui_CCIdrvMessage
-    afumsg->cmd     = ccipdrv_deactivateAFU;
-    afumsg->size    = sizeof(struct ahm_req) ;
+   afumsg->cmd     = ccipdrv_deactivateAFU;
+   afumsg->size    = sizeof(struct ahm_req) ;
 
 
    // package in AIA transaction
@@ -775,25 +769,21 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
    // Point at payload
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
 
-   btUnsigned64bitInt reconfTimeout =0;
-
+   btTime reconfTimeout = 0;
 
    // DeActive Timeout
    if(rNVS.Has(AALCONF_MILLI_TIMEOUT)){
 
       rNVS.Get(AALCONF_MILLI_TIMEOUT, &reconfTimeout);
-      //printf("reconfTimeout= %lld \n",reconfTimeout);
    }
 
    // ReConfiguration Action Flags
-
    // Assume default action
    req->u.pr_config.reconfAction = ReConf_Action_Honor_request;
    if(rNVS.Has(AALCONF_RECONF_ACTION)){
 
-      btUnsigned64bitInt reconfAction =0;
+      btUnsigned64bitInt reconfAction = 0;
       rNVS.Get(AALCONF_RECONF_ACTION, &reconfAction);
-      //printf("reconfAction= %lld \n",reconfAction);
 
       if(reconfAction == AALCONF_RECONF_ACTION_HONOR_OWNER_ID){
          req->u.pr_config.reconfAction = ReConf_Action_Honor_Owner;
@@ -807,7 +797,7 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
 
       if(bDisabled == true){
          req->u.pr_config.reconfAction |= ReConf_Action_InActive;
-         printf("Creating disabled\n");
+         //printf("Creating disabled\n");
       }
    }
 
@@ -818,10 +808,6 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
    req->u.pr_config.vaddr  = pBuf;
    req->u.pr_config.size   = len;
    req->u.pr_config.reconfTimeout  = reconfTimeout;
-
-
-   //printf("req->u.pr_config.reconfTimeout= %lld \n",req->u.pr_config.reconfTimeout );
-   //printf("req->u.pr_config.reconfAction= %lld \n",req->u.pr_config.reconfAction);
 
 // package in AIA transaction
    m_payload = reinterpret_cast<AAL::btVirtAddr>(afumsg);

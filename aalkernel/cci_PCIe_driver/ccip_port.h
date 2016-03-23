@@ -112,6 +112,8 @@ struct port_device
 
    // The User AFU in this port
    struct cci_aal_device        *m_uafu;
+   // Signal tap aal device
+   struct cci_aal_device        *m_sigtap;
 
 
 }; // end struct port_device
@@ -149,6 +151,7 @@ struct port_device
 #define ccip_port_psem(pdev)                  (&(pdev)->m_sem)
 
 #define ccip_port_dev_fme(pdev)               ((pdev)->m_fme)
+#define ccip_port_stap_dev(pdev)              ((pdev)->m_sigtap)
 
 /// @brief creates a Port Device
 ///

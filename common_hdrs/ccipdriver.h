@@ -112,11 +112,11 @@ typedef enum
    uid_errnumPRTimeout,                          // 31
    uid_errnumPROperation,                        // 32
    uid_errnumPRCRC,                              // 33
-   uid_errnumPRIncomparableBitstream,            // 34
+   uid_errnumPRIncompatibleBitstream,            // 34
    uid_errnumPRIPProtocal,                       // 35
    uid_errnumPRFIFO,                             // 36
    uid_errnumAFUActivationFail,                  // 37
-   uid_errnumRequestAFURelease                   // 38
+   uid_errnumPRDeviceBusy                        // 38
 
 
 
@@ -287,9 +287,8 @@ struct ahm_req
       struct {
         btVirtAddr               vaddr;           /* IN   */
         btWSSize                 size;            /* IN   */
-        btUnsigned64bitInt       reconfTimeout;   /* IN   */
+        btTime                   reconfTimeout;   /* IN   */
         btUnsigned64bitInt       reconfAction;    /* IN   */
-        btUnsigned64bitInt       pr_status ;      /* OUT  */
       } pr_config;
    } u;
 };

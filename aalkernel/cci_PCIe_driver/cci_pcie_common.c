@@ -370,6 +370,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
       return false;     // TODO This is a BUG if we get here but should cleanup correctly.
    }
 
+   ccip_port_stap_dev(pportdev)  = pcci_aaldev;
    // Add the device to the CCI Board device's device list
    kosal_list_add( &cci_dev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
 
@@ -457,8 +458,8 @@ int cci_destroy_aal_device( struct cci_aal_device* pcci_aaldev)
       return -EINVAL;
    }
 
-   if(NULL != pcci_aaldev->m_workq_deactimeout) {
-      kosal_destroy_workqueue(pcci_aaldev->m_workq_deactimeout);
+   if(NULL != pcci_aaldev->m_workq_deactivate) {
+      kosal_destroy_workqueue(pcci_aaldev->m_workq_deactivate);
    }
 
    if(NULL != pcci_aaldev->m_workq_prconifg) {
@@ -467,6 +468,10 @@ int cci_destroy_aal_device( struct cci_aal_device* pcci_aaldev)
 
    if(NULL != pcci_aaldev->m_workq_revokeafu) {
       kosal_destroy_workqueue(pcci_aaldev->m_workq_revokeafu);
+    }
+
+   if(NULL != pcci_aaldev->m_workq_revokesigtap) {
+      kosal_destroy_workqueue(pcci_aaldev->m_workq_revokesigtap);
     }
 
    kosal_list_del( &cci_dev_list_head(pcci_aaldev));

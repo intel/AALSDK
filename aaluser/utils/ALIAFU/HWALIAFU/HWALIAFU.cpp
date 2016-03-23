@@ -1085,6 +1085,12 @@ void HWALIAFU::reconfDeactivate( TransactionID const &rTranID,
    m_pAFUProxy->SendTransaction(&deactivatetrans);
    if(deactivatetrans.getErrno() != uid_errnumOK){
       AAL_ERR( LM_All,"Deactivate failed");
+
+      getRuntime()->schedDispatchable(new AFUDeactivateFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                                                                                                              rTranID,
+                                                                                                              errCauseUnknown,
+                                                                                                              reasUnknown,
+                                                                                                              "Error: Failed transaction")));
       return;
    }
 
@@ -1105,11 +1111,10 @@ void HWALIAFU::reconfDeactivate( TransactionID const &rTranID,
 void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
                                 NamedValueSet const &rInputArgs)
 {
-   btByte        *bufptr      = NULL;
-   std::streampos    filesize    = 0;
+   btByte *bufptr                = NULL;
+   std::streampos filesize       = 0;
 
    if(rInputArgs.Has(AALCONF_FILENAMEKEY)){
-
       btcString filename;
       rInputArgs.Get(AALCONF_FILENAMEKEY, &filename);
 
@@ -1158,7 +1163,7 @@ void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
 
 
       bitfile.seekg( 0, std::ios::beg );
-      bufptr = reinterpret_cast<btByte*>(malloc(filesize));
+      bufptr = new(std::nothrow) btByte[filesize];
 
       if(NULL == bufptr) {
          // Memory  allocation failed  error Message "Failed to allocate file buffer"
@@ -1202,11 +1207,12 @@ void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
                                                                                                                errCauseUnknown,
                                                                                                                reasUnknown,
                                                                                                                "Error: Failed transaction")));
-      free(bufptr);
-      free(bufptr);
+      if(bufptr)
+         delete bufptr;
       return;
    }
-   free(bufptr);
+   if(bufptr)
+      delete bufptr;
 }
 
 /// @brief Activate an AFU after it has been reconfigured.
@@ -1228,6 +1234,12 @@ void HWALIAFU::reconfActivate( TransactionID const &rTranID,
    m_pAFUProxy->SendTransaction(&activatetrans);
    if(activatetrans.getErrno() != uid_errnumOK){
       AAL_ERR( LM_All,"Activate failed");
+
+      getRuntime()->schedDispatchable(new AFUActivateFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                                                                                                            rTranID,
+                                                                                                            errCauseUnknown,
+                                                                                                            reasUnknown,
+                                                                                                            "Error: Failed transaction")));
       return;
    }
 
