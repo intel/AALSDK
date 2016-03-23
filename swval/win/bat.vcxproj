@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtCommon.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtThread.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\main.cpp" />
   </ItemGroup>
   <ItemGroup>

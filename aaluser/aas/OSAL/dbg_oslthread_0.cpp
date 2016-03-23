@@ -6,18 +6,56 @@
 
 namespace Testing {
 
-static volatile btUIntPtr gOSLThreadCount = 0;
+static volatile AAL::btUIntPtr gOSLThreadCount = 0;
 
-btUIntPtr DbgOSLThreadCount()
+OSAL_API AAL::btUIntPtr DbgOSLThreadCount()
 {
    return gOSLThreadCount;
 }
 
-static CriticalSection gOSLThreadCountLock;
+static AAL::CriticalSection gOSLThreadCountLock;
 
 } // Testing
 
 # if   defined( __AAL_WINDOWS__ )
+
+namespace Testing {
+
+static std::map<AAL::btTID, AAL::btUnsigned32bitInt> gOSLThreadMap;
+
+static void DbgOSLThreadNewThr(AAL::btTID tid)
+{
+   AutoLock(&gOSLThreadCountLock);
+
+   std::map<AAL::btTID, AAL::btUnsigned32bitInt>::iterator iter = gOSLThreadMap.find(tid);
+
+   if ( gOSLThreadMap.end() == iter ) {
+      // tid not found - add it.
+      gOSLThreadMap.insert(std::make_pair(tid, 1));
+      ++gOSLThreadCount;
+   } else {
+      // increment the tracking count for tid.
+      ++(iter->second);
+   }
+}
+
+OSAL_API void DbgOSLThreadDelThr(AAL::btTID tid)
+{
+   AutoLock(&gOSLThreadCountLock);
+
+   std::map<AAL::btTID, AAL::btUnsigned32bitInt>::iterator iter = gOSLThreadMap.find(tid);
+
+   if ( gOSLThreadMap.end() != iter ) {
+      --(iter->second);
+      if ( 0 == iter->second ) {
+         // Done tracking tid.
+         gOSLThreadMap.erase(iter);
+         --gOSLThreadCount;
+      }
+   }
+}
+
+} // Testing
 
 BOOL APIENTRY DllMain(HANDLE hModule,
                       DWORD  ul_reason_for_call,
@@ -27,14 +65,16 @@ BOOL APIENTRY DllMain(HANDLE hModule,
    LPVOID lpVoid = lpReserved;
    switch ( ul_reason_for_call ) {
       case DLL_PROCESS_ATTACH : /* FALL THROUGH */
-      case DLL_THREAD_ATTACH  : /* FALL THROUGH */
       case DLL_PROCESS_DETACH : break;
 
+      case DLL_THREAD_ATTACH  : {
+         std::cout << "thr: DllMain() new " << ::AAL::GetThreadID() << std::endl << std::flush;
+         ::AAL::Testing::DbgOSLThreadNewThr(::AAL::GetThreadID());
+      } break;
+
       case DLL_THREAD_DETACH  : {
-
-         AutoLock(&::AAL::Testing::gOSLThreadCountLock);
-         --::AAL::Testing::gOSLThreadCount;
-
+         std::cout << "thr: DllMain() del " << ::AAL::GetThreadID() << std::endl << std::flush;
+         ::AAL::Testing::DbgOSLThreadDelThr(::AAL::GetThreadID());
       } break;
    }
    return TRUE;

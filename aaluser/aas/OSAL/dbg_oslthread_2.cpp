@@ -4,9 +4,12 @@
 
 #ifdef DBG_OSLTHREAD
 
-// Don't manipulate gOSLThreadCount here for Windows. See dbg_oslthread_0.cpp
+# if   defined( __AAL_WINDOWS__ )
 
-# if defined( __AAL_LINUX__ )
+   std::cout << "thr: OSLThread::StartThread() del " << ::AAL::GetThreadID() << std::endl << std::flush;
+   ::AAL::Testing::DbgOSLThreadDelThr(::AAL::GetThreadID());
+
+# elif defined( __AAL_LINUX__ )
 
    pthread_cleanup_pop(0);
    {
