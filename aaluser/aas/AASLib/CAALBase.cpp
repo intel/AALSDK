@@ -87,9 +87,8 @@ BEGIN_NAMESPACE(AAL)
 // Outputs: none.
 // Comments:
 //=============================================================================
-CAASBase::CAASBase(btApplicationContext Context) :
+CAASBase::CAASBase() :
    CriticalSection(),
-   m_Context(Context),
    m_bIsOK(false),
    m_InterfaceMap()
 {
@@ -220,18 +219,6 @@ btBool CAASBase::IsOK() const
    return m_bIsOK;
 }
 
-btApplicationContext CAASBase::Context() const
-{
-   AutoLock(this);
-   return m_Context;
-}
-
-void CAASBase::SetContext(btApplicationContext context)
-{
-   AutoLock(this);
-   m_Context = context;
-}
-
 //=============================================================================
 // Name: CAASBase::SetInterface
 // Description: Sets an interface pointer on the object.
@@ -300,9 +287,8 @@ EOBJECT CAASBase::ReplaceInterface(btIID              Interface,
 // Outputs: none.
 // Comments:
 //=============================================================================
-CAALBase::CAALBase(btEventHandler       pEventHandler,
-                   btApplicationContext Context) :
-   CAASBase(Context),
+CAALBase::CAALBase(btEventHandler pEventHandler) :
+   CAASBase(),
    m_pEventHandler(pEventHandler)
 {
    // Save the event handler

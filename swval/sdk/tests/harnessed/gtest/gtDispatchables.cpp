@@ -518,10 +518,8 @@ TEST(DispatchableGroup, aal0746)
 class DispTestService : public CallTrackingIServiceBase
 {
 public:
-   DispTestService(IServiceClient      *pSvcClient=NULL,
-                   IRuntimeClient      *pRTClient=NULL,
-                   btApplicationContext Ctx=NULL) :
-      CallTrackingIServiceBase(Ctx)
+   DispTestService(IServiceClient *pSvcClient=NULL,
+                   IRuntimeClient *pRTClient=NULL)
    {
       if ( NULL != pSvcClient ) {
          SetInterface(iidServiceClient, pSvcClient);

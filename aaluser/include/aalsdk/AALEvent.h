@@ -91,11 +91,6 @@ public:
    virtual IBase *                 pObject()                     const = 0;
    /// Internal state check.
    virtual btBool                     IsOK()                     const = 0;
-   /// Retrieve the application-specific context for the event.
-   virtual btApplicationContext    Context()                     const = 0;
-   /// Set the context.
-   /// @return Previous context.
-   virtual btApplicationContext SetContext(btApplicationContext Ctx)   = 0;
    /// @return An identical copy of this event object.
    virtual IEvent *                  Clone()                     const = 0;
 protected:
