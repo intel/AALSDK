@@ -57,7 +57,7 @@
 //     CREATED: 10/14/2015
 //      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
 // PURPOSE: This file implements init/exit entry points for the
-//          Intel(R) Intel AAL FPGA device driver for
+//          AAL FPGA device driver for
 //          functionality of the AAL FPGA device driver.
 // HISTORY:
 // COMMENTS: Linux specific
@@ -1178,7 +1178,7 @@ ccidrv_init(void)
    //--------------------
    // Display the sign-on
    //--------------------
-   PINFO("Intel(R) QuickAssist Technology Accelerator Abstraction Layer\n");
+   PINFO("Accelerator Abstraction Layer\n");
    PINFO("-> %s\n",         DRV_DESCRIPTION);
    PINFO("-> Version %s\n", DRV_VERSION);
    PINFO("-> License %s\n", DRV_LICENSE);

@@ -25,7 +25,7 @@
 /// @brief Implements the kernel driver shell for CCI-P PCIe devices.
 /// @ingroup DeviceDrivers
 /// @verbatim
-/// Intel(R) Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Joseph Grecco, Intel Corporation
 ///
@@ -131,8 +131,8 @@ DriverEntry(IN PDRIVER_OBJECT  DriverObject,
    PTRACEIN;
 
    // Sign on message
-   DbgPrint("Intel(R) Accelerator Abstraction Layer\n");
-   DbgPrint("Intel(R) AAL CCI-P PCIe Driver\n");
+   DbgPrint("Accelerator Abstraction Layer\n");
+   DbgPrint("AAL CCI-P PCIe Driver\n");
    DbgPrint("Copyright (c) 2012-2016 Intel Corporation\n");
    DbgPrint("Built %s %s\n", __DATE__, __TIME__);
 
