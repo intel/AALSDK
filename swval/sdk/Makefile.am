@@ -93,7 +93,7 @@ include/aalsdk/eds/AASEventDeliveryService.h
 kernelhdrs_HEADERS=\
 include/aalsdk/kernel/aalbus-device.h \
 include/aalsdk/kernel/aalbus.h \
-include/aalsdk/kernel/aalbus_imonitorconfig.h \
+include/aalsdk/kernel/aalbus_iconfigmonitor.h \
 include/aalsdk/kernel/aalbus-ipip.h \
 include/aalsdk/kernel/aalbus_iupdate_config.h \
 include/aalsdk/kernel/aaldefs.h \
@@ -200,10 +200,9 @@ ase/hw/stream_checker.sv \
 ase/hw/ase_pkg.sv \
 ase/hw/platform.vh \
 ase/scripts/generate_ase_environment.py \
-ase/scripts/vcs_icc.make \
 ase/scripts/ipc_clean.py \
 ase/scripts/ase_functions.py \
-ase/scripts/env_setup.sh \
+ase/scripts/env_check.sh \
 ase/scripts/ase_setup.sh
 
 CLP_EXTRA=\
@@ -226,7 +225,12 @@ include/aalsdk/uaia/AIAService.h.in
 
 UTILS_EXTRA=\
 utils/fpgadiag/fpgasane_nlb400_0.sh \
-utils/fpgadiag/fpgasane_nlb400_3.sh
+utils/fpgadiag/fpgasane_nlb400_3.sh \
+utils/scripts/setcpupwr \
+utils/scripts/setfpgapwr \
+utils/scripts/getcpupwr \
+utils/scripts/getfpgapwr
+
 
 EXTRA_DIST=\
 $(AAS_EXTRA) \

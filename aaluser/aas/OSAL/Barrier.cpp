@@ -161,7 +161,7 @@ btBool Barrier::Destroy()
 
    UnblockAll();
 
-   m_AutoResetManager.WaitForAllWaitersToExit(&__LockObj);
+   m_AutoResetManager.WaitForAllWaitersToExit(this);
    m_AutoResetManager.Destroy();
 
 #if   defined( __AAL_WINDOWS__ )
@@ -449,28 +449,32 @@ void Barrier::AutoResetManager::UnblockAll()
    AutoResetEnd();
 }
 
-void Barrier::AutoResetManager::WaitForAutoResetCompletion(_AutoLock *pAutoLock)
+void Barrier::AutoResetManager::WaitForAutoResetCompletion(CriticalSection *pCS)
 {
    while ( flags_are_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_RESETTING) ) {
       // We must hang out here until the Barrier is fully reset.
 
+      {
+
 #if   defined( __AAL_LINUX__ )
 
-      pAutoLock->PthreadCondWait(&m_Rcondition);
+         _PThreadCondWait wait(pCS, &m_Rcondition);
 
 #elif defined( __AAL_WINDOWS__ )
 
-      pAutoLock->WaitForSingleObject(m_hREvent, INFINITE);
+         _UnlockedWaitForSingleObject wait(pCS, m_hREvent, INFINITE);
 
 #endif // OS
+
+      }
 
    }
 }
 
-void Barrier::AutoResetManager::WaitForAutoResetCompletion(_AutoLock *pAutoLock, btTime Timeout)
+void Barrier::AutoResetManager::WaitForAutoResetCompletion(CriticalSection *pCS, btTime Timeout)
 {
    if ( AAL_INFINITE_WAIT == Timeout ) {
-      WaitForAutoResetCompletion(pAutoLock);
+      WaitForAutoResetCompletion(pCS);
       return;
    }
 
@@ -492,13 +496,27 @@ void Barrier::AutoResetManager::WaitForAutoResetCompletion(_AutoLock *pAutoLock,
 
 #if   defined( __AAL_LINUX__ )
 
-      if ( ETIMEDOUT == pAutoLock->PthreadCondTimedWait(&m_Rcondition, &ts) ) {
+      int WaitRes = ETIMEDOUT;
+
+      {
+         _PThreadCondTimedWait wait(pCS, &m_Rcondition, &ts);
+         WaitRes = wait.Result();
+      }
+
+      if ( ETIMEDOUT == WaitRes ) {
          break;
       }
 
 #elif defined( __AAL_WINDOWS__ )
 
-      if ( WAIT_OBJECT_0 != pAutoLock->WaitForSingleObject(m_hREvent, (DWORD)Timeout) ) {
+      DWORD dwWaitResult = WAIT_FAILED;
+
+      {
+         _UnlockedWaitForSingleObject wait(pCS, m_hREvent, (DWORD)Timeout);
+         dwWaitResult = wait.Result();
+      }
+
+      if ( WAIT_OBJECT_0 != dwWaitResult ) {
          // Timeout or error.
          break;
       }
@@ -508,7 +526,7 @@ void Barrier::AutoResetManager::WaitForAutoResetCompletion(_AutoLock *pAutoLock,
    }
 }
 
-void Barrier::AutoResetManager::AddWaiter(_AutoLock *pAutoLock)
+void Barrier::AutoResetManager::AddWaiter(CriticalSection *pCS)
 {
    // When doing auto-reset, we cannot increment m_NumWaiters until we have decremented
    //  m_NumWaiters to 0 and reset the Barrier to the locked state. This is to prevent
@@ -524,7 +542,7 @@ void Barrier::AutoResetManager::AddWaiter(_AutoLock *pAutoLock)
       ++m_NumPreWaiters;
 
 WAITLOOP:
-      WaitForAutoResetCompletion(pAutoLock, m_WaitTimeout);
+      WaitForAutoResetCompletion(pCS, m_WaitTimeout);
 
       // This check is required because we're crossing lock domains.
       if ( flags_are_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_RESETTING) ) {
@@ -624,11 +642,12 @@ void Barrier::AutoResetManager::AutoResetEnd()
 #endif // OS
 }
 
-void Barrier::AutoResetManager::WaitForAllWaitersToExit(_AutoLock *pAutoLock)
+void Barrier::AutoResetManager::WaitForAllWaitersToExit(CriticalSection *pCS)
 {
    const btTime Timeout = 100;
 
 #if defined( __AAL_LINUX__ )
+
    struct timeval  tv;
    struct timespec ts;
 
@@ -643,7 +662,9 @@ void Barrier::AutoResetManager::WaitForAllWaitersToExit(_AutoLock *pAutoLock)
       ts.tv_sec  += ts.tv_nsec / 1000000000;
       ts.tv_nsec %= 1000000000;
 
-      pAutoLock->PthreadCondTimedWait(&m_Zcondition, &ts);
+      {
+         _PThreadCondTimedWait wait(pCS, &m_Zcondition, &ts);
+      }
 
    }
 
@@ -652,7 +673,9 @@ void Barrier::AutoResetManager::WaitForAllWaitersToExit(_AutoLock *pAutoLock)
    while ( ( m_NumWaiters + m_NumPreWaiters ) > 0 ) {
       // Wait for the last waiter to call RemoveWaiter().
 
-      pAutoLock->WaitForSingleObject(m_hZEvent, (DWORD)Timeout);
+      {
+         _UnlockedWaitForSingleObject wait(pCS, m_hZEvent, (DWORD)Timeout);
+      }
 
    }
 
@@ -682,7 +705,7 @@ btBool Barrier::Wait()
    
    btBool res = true;
    
-   m_AutoResetManager.AddWaiter(&__LockObj);
+   m_AutoResetManager.AddWaiter(this);
    
    while ( m_CurCount < m_UnlockCount ) {
 
@@ -691,7 +714,10 @@ btBool Barrier::Wait()
          break;
       }
 
-      __LockObj.PthreadCondWait(&m_condition);
+      {
+         _PThreadCondWait wait(this, &m_condition);
+      }
+
    }
 
    if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
@@ -740,7 +766,7 @@ btBool Barrier::Wait(btTime Timeout) // milliseconds
 
    btBool res = true;
 
-   m_AutoResetManager.AddWaiter(&__LockObj);
+   m_AutoResetManager.AddWaiter(this);
 
    while ( m_CurCount < m_UnlockCount ) {
 
@@ -756,7 +782,14 @@ btBool Barrier::Wait(btTime Timeout) // milliseconds
       // * when the caller wakes, the lock is guaranteed to be held (locked) by the caller.
       // In this way, the examination and mutation of the counter predicate occur atomically.
 
-      if ( ETIMEDOUT == __LockObj.PthreadCondTimedWait(&m_condition, &ts) ) {
+      int WaitRes = ETIMEDOUT;
+
+      {
+         _PThreadCondTimedWait wait(this, &m_condition, &ts);
+         WaitRes = wait.Result();
+      }
+
+      if ( ETIMEDOUT == WaitRes ) {
          res = false;
          break;
       }
@@ -784,7 +817,7 @@ btBool Barrier::Wait(btTime Timeout) // milliseconds
 //=============================================================================
 btBool Barrier::Wait()
 {
-   DWORD dwWaitResult;
+   DWORD dwWaitResult = WAIT_FAILED;
 
    AutoLock(this);
 
@@ -795,7 +828,7 @@ btBool Barrier::Wait()
       return false;
    }
 
-   m_AutoResetManager.AddWaiter(&__LockObj);
+   m_AutoResetManager.AddWaiter(this);
 
 WAITLOOP:
 
@@ -814,7 +847,10 @@ WAITLOOP:
       }
 
       // ASSERT: we are unlocked - don't wait while locked!
-      dwWaitResult = __LockObj.WaitForSingleObject(m_hEvent, INFINITE);
+      {
+         _UnlockedWaitForSingleObject wait(this, m_hEvent, INFINITE);
+         dwWaitResult = wait.Result();
+      }
 
       switch( dwWaitResult ) {
          case WAIT_OBJECT_0 : break; // event was signaled
@@ -850,7 +886,7 @@ WAITLOOP:
 //=============================================================================
 btBool Barrier::Wait(btTime Timeout) // milliseconds
 {
-   DWORD dwWaitResult;
+   DWORD dwWaitResult = WAIT_FAILED;
 
    if ( AAL_INFINITE_WAIT == Timeout ) {
       return Wait();
@@ -865,7 +901,7 @@ btBool Barrier::Wait(btTime Timeout) // milliseconds
       return false;
    }
 
-   m_AutoResetManager.AddWaiter(&__LockObj);
+   m_AutoResetManager.AddWaiter(this);
 
 WAITLOOP:
 
@@ -883,7 +919,10 @@ WAITLOOP:
          return false;
       }
 
-      dwWaitResult = __LockObj.WaitForSingleObject(m_hEvent, (DWORD)Timeout);
+      {
+         _UnlockedWaitForSingleObject wait(this, m_hEvent, (DWORD)Timeout);
+         dwWaitResult = wait.Result();
+      }
 
       switch( dwWaitResult ) {
          case WAIT_OBJECT_0 : break; // event was signaled

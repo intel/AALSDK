@@ -154,7 +154,7 @@ private:
       void Destroy();
 
       void UnblockAll();
-      void AddWaiter(_AutoLock * );
+      void AddWaiter(CriticalSection * );
       void RemoveWaiter();
 
       btUnsignedInt NumWaiters() const;
@@ -162,7 +162,7 @@ private:
       void AutoResetBegin();
       void AutoResetEnd();
 
-      void WaitForAllWaitersToExit(_AutoLock * );
+      void WaitForAllWaitersToExit(CriticalSection * );
 
    protected:
       Barrier       *m_pBarrier;
@@ -177,8 +177,8 @@ private:
       pthread_cond_t m_Zcondition;
 #endif // OS
 
-      void WaitForAutoResetCompletion(_AutoLock *  );
-      void WaitForAutoResetCompletion(_AutoLock * , btTime );
+      void WaitForAutoResetCompletion(CriticalSection *  );
+      void WaitForAutoResetCompletion(CriticalSection * , btTime );
    };
 
    AutoResetManager   m_AutoResetManager;

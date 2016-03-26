@@ -789,7 +789,7 @@ void OSLThreadGroup::ThrGrpState::DrainManager::WaitForAllDrainersDone()
    BarrierWaitDisp disp(&m_DrainerDoneBarrier, m_WaitTimeout);
 
    while ( m_DrainNestLevel > 0 ) {
-      __LockObj.UnlockedDispatch(&disp);
+      _UnlockedDispatch uld(m_pTGS, &disp);
    }
 }
 
@@ -853,7 +853,7 @@ btBool OSLThreadGroup::ThrGrpState::Drain()
          while ( m_workqueue.size() > 0 ) {
             pWork = m_workqueue.front();
             m_workqueue.pop();
-            __LockObj.UnlockedDispatch(pWork);
+            _UnlockedDispatch uld(this, pWork);
          }
       }
 
@@ -935,7 +935,7 @@ btBool OSLThreadGroup::ThrGrpState::Join(btTime Timeout)
          while ( m_workqueue.size() > 0 ) {
             pWork = m_workqueue.front();
             m_workqueue.pop();
-            __LockObj.UnlockedDispatch(pWork);
+            _UnlockedDispatch uld(this, pWork);
          }
 
          WorkerIsSelfTerminating(pThread);
@@ -1001,7 +1001,7 @@ btBool OSLThreadGroup::ThrGrpState::Destroy(btTime Timeout)
          while ( m_workqueue.size() > 0 ) {
             pWork = m_workqueue.front();
             m_workqueue.pop();
-            __LockObj.UnlockedDispatch(pWork);
+            _UnlockedDispatch uld(this, pWork);
          }
 
          WorkerIsSelfTerminating(pThread);

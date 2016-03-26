@@ -68,12 +68,12 @@ BOOL APIENTRY DllMain(HANDLE hModule,
       case DLL_PROCESS_DETACH : break;
 
       case DLL_THREAD_ATTACH  : {
-         std::cout << "thr: DllMain() new " << ::AAL::GetThreadID() << std::endl << std::flush;
+         //std::cout << "thr: DllMain() new " << ::AAL::GetThreadID() << std::endl << std::flush;
          ::AAL::Testing::DbgOSLThreadNewThr(::AAL::GetThreadID());
       } break;
 
       case DLL_THREAD_DETACH  : {
-         std::cout << "thr: DllMain() del " << ::AAL::GetThreadID() << std::endl << std::flush;
+         //std::cout << "thr: DllMain() del " << ::AAL::GetThreadID() << std::endl << std::flush;
          ::AAL::Testing::DbgOSLThreadDelThr(::AAL::GetThreadID());
       } break;
    }

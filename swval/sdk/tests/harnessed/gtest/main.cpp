@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
    SignalHelper::GetInstance().Install(SignalHelper::IDX_SIGIO);
 #endif // __AAL_LINUX__
    SignalHelper::GetInstance().Install(SignalHelper::IDX_SIGUSR1);
+   SignalHelper::GetInstance().Install(SignalHelper::IDX_SIGUSR2);
 
    ::testing::InitGoogleTest(&argc, argv);
 

@@ -6,7 +6,7 @@
 
 # if   defined( __AAL_WINDOWS__ )
 
-   std::cout << "thr: OSLThread::StartThread() new " << ::AAL::GetThreadID() << std::endl << std::flush;
+   //std::cout << "thr: OSLThread::StartThread() new " << ::AAL::GetThreadID() << std::endl << std::flush;
    ::AAL::Testing::DbgOSLThreadNewThr(::AAL::GetThreadID());
 
 # elif defined( __AAL_LINUX__ )
