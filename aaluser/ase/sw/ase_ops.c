@@ -211,6 +211,10 @@ void ase_eval_session_directory()
 	  perror("opendir");
 	  exit(1);
 	}
+      else
+	{
+	  closedir(ase_dir);
+	}
     }
 #endif
   

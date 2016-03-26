@@ -651,7 +651,7 @@ int ase_init()
   signal(SIGTERM, start_simkill_countdown);
   signal(SIGINT , start_simkill_countdown);
   signal(SIGQUIT, start_simkill_countdown);
-  signal(SIGKILL, start_simkill_countdown); // *FIXME*: This possibly doesnt work //
+  // signal(SIGKILL, start_simkill_countdown); // *FIXME*: This possibly doesnt work //
   signal(SIGHUP,  start_simkill_countdown);
 
   // Ignore SIGPIPE *FIXME*: Look for more elegant solution

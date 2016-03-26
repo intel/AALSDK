@@ -114,15 +114,16 @@ void mqueue_create(char* mq_name_suffix)
   mq_path = ase_malloc (ASE_FILEPATH_LEN);
   sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
 
-/* #ifdef ASE_DEBUG */
-/*   printf("mq_path = %s\n", mq_path); */
-/* #endif */
+#ifdef ASE_DEBUG
+  printf("mq_path = %s\n", mq_path);
+#endif
 
   ret = mkfifo(mq_path, S_IRUSR|S_IWUSR );
   if (ret == -1)
     {
       BEGIN_RED_FONTCOLOR;
       printf("Error creating IPC\n");
+      printf("Consider re-compiling AALSDK libraries !\n");
       END_RED_FONTCOLOR;
     }
 
@@ -265,13 +266,6 @@ void mqueue_send(int mq, const char* str, int size)
 {
   FUNC_CALL_ENTRY;
   int ret_tx;
-
-  /* char msg[ASE_MQ_MSGSIZE]; */
-  /* memset(msg, '0', ASE_MQ_MSGSIZE); */
-  /* memcpy(msg, str, size); */
-  /* write(mq, msg, ASE_MQ_MSGSIZE); */
-
-  //  printf("status %s\n", strerror(errno)); 
 
   ret_tx = write(mq, (void*)str, size);
 #if ASE_DEBUG
