@@ -28,7 +28,7 @@
 // @brief NLB SW test application file.
 // @ingroup
 // @verbatim
-// Intel(R) Accelerator Abstraction Layer
+// Accelerator Abstraction Layer
 //
 // AUTHORS: Tim Whisonant, Intel Corporation
 //			Sadruta Chandrashekar, Intel Corporation

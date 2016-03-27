@@ -25,11 +25,11 @@
 /// @brief Implements the kernel driver shell for CCI-P PCIe devices.
 /// @ingroup DeviceDrivers
 /// @verbatim
-/// Intel(R) Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Joseph Grecco, Intel Corporation
 /// PURPOSE:  This file contains the main startup and shutdown code for the
-///           Intel(R) Accelerator Abstraction Layer (AAL)
+///           Accelerator Abstraction Layer (AAL)
 ///           User Mode Interface for the AAL CCI device driver for Windows
 /// HISTORY: Initial version based on Microsoft Sample Code
 /// WHEN:          WHO:     WHAT:
