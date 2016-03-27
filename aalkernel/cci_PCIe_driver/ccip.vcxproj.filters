@@ -90,9 +90,6 @@
     <ClInclude Include="cci_pcie_driver_umapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cci_pcie_driver_umapi_linux.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Inf Include="aal_ccip_driver.inf">

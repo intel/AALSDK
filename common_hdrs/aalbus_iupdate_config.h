@@ -57,7 +57,8 @@
 //     CREATED: May 13, 2014
 //      AUTHOR: Joseph Grecco, Intel Corporation.
 //
-// PURPOSE: Definitions for the AAL IUpdateConfig AAL Bus interface
+// PURPOSE: Public definitions for the AAL IUpdateConfig AAL Bus interface
+//          This file defines the Ring 0 and Ring 3 accesses methods
 // HISTORY:
 // WHEN:          WHO:     WHAT:
 //
@@ -146,7 +147,7 @@ DEFINE_GUID( GUID_AALBUS_CONFIGMANAGER_DEVINTERFACE,
 #define AALBUS_UPDATECONFIG_SERVICE_NAME_STRING                "AAL_IUpdateConfig"
 
 #endif
-
+#if 0
 //=============================================================================
 // Name:        aalbus_create_device_attrib
 // Description: Create the Device Attribute object
@@ -249,8 +250,7 @@ static inline struct IUpdateConfig_Request  *
    
    return pConfigReq;
 }
-
-
+#endif
 
 END_C_DECLS
 

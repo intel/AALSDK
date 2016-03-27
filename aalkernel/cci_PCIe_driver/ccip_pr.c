@@ -1912,8 +1912,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
             return -EINVAL;
          }
-         ccidrv_sendevent(pownerSess,
-                          AALQIP(pafuws_evt));
       }break;
 
       // Returns a workspace ID for the Config Space

@@ -333,7 +333,6 @@
     <ClInclude Include="cci_pcie_driver_PIPsession.h" />
     <ClInclude Include="cci_pcie_driver_simulator.h" />
     <ClInclude Include="cci_pcie_driver_umapi.h" />
-    <ClInclude Include="cci_pcie_driver_umapi_linux.h" />
     <ClInclude Include="cci_pcie_windows.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

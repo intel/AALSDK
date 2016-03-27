@@ -106,6 +106,12 @@ WDF_DECLARE_CONTEXT_TYPE_WITH_NAME( CCI_DEVICE, CCIFdoGetCCIDev );
 //#pragma alloc_text (PAGE, CCIPDrvGetDeviceInformation)
 #endif
 
+// Exported interfaces from AALBus Services
+AAL_DEVICE_INTERFACE                iaalbus;
+
+UPDATECONFIG_INTERFACE_STANDARD     iupdateconfig;
+
+
 //=============================================================================
 // Name: DriverEntry
 // Description:     DriverEntry initializes the driver and is the first routine
@@ -294,7 +300,7 @@ CCIPDrvEvtDeviceAdd( IN WDFDRIVER       Driver,
          return STATUS_UNSUCCESSFUL;
       }
    }else{
-#if 0 
+#if 0
       // Save the OS specific PCI device object in the OS independent CCIPDrv 
       //  device object so it can be used in generic kosal calls.
       pspl2dev = PWIN_CCIPDrv_DEVICE_TO_PCCIPDrv_DEVICE(pWinccidev);
@@ -309,6 +315,66 @@ CCIPDrvEvtDeviceAdd( IN WDFDRIVER       Driver,
       }
 #endif
    }
+#if 0
+   {
+      int size = sizeof( UPDATECONFIG_INTERFACE_STANDARD );
+      size++;
+   }
+   //
+   // Get the AAL Bus Services interfaces
+   // Stack is built - Get the device interface
+   //
+   // Get the BUS_INTERFACE_STANDARD for our device so that we can
+   // read & write to PCI config space.
+   status = WdfFdoQueryForInterface( hDevice,
+                                     &GUID_AALBUS_CONFIGMANAGER_QUERY_INTERFACE,
+                                     (PINTERFACE)&iupdateconfig,
+                                     sizeof( UPDATECONFIG_INTERFACE_STANDARD ),
+                                     1, // Version
+                                     NULL ); //InterfaceSpecificData
+
+   if( !NT_SUCCESS( status ) ) {
+      PERR( "Failed to get the Device interface.\n" );
+      PTRACEOUT_LINT( status );
+      return status;
+   } else {
+
+      iupdateconfig.AddDevice(NULL, NULL);
+   }
+#endif 
+
+{
+   WDF_OBJECT_ATTRIBUTES  ioTargetAttrib;
+   WDFIOTARGET  ioTarget;
+   WDF_IO_TARGET_OPEN_PARAMS  openParams;
+
+   WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(
+      &ioTargetAttrib,
+      TARGET_DEVICE_INFO
+      );
+   status = WdfIoTargetCreate(
+      device,
+      &ioTargetAttrib,
+      &ioTarget
+      );
+   if( !NT_SUCCESS( status ) ) {
+      return status;
+   }
+   WDF_IO_TARGET_OPEN_PARAMS_INIT_OPEN_BY_NAME(
+      &openParams,
+      SymbolicLink,
+      STANDARD_RIGHTS_ALL
+      );
+   status = WdfIoTargetOpen(
+      ioTarget,
+      &openParams
+      );
+   if( !NT_SUCCESS( status ) ) {
+      WdfObjectDelete( ioTarget );
+      return status;
+   }
+}
+
 
    // Create the use mode interface to the driver
    status = ccidrv_initUMAPI( hDevice );

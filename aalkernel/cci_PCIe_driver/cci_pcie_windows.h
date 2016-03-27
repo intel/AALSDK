@@ -115,4 +115,8 @@ EVT_WDF_IO_QUEUE_IO_DEVICE_CONTROL CCIPDrvEvtIoDeviceControl;
 //EVT_WDF_DEVICE_FILE_CREATE CCIPDrvEvtDeviceFileCreate;
 //EVT_WDF_FILE_CLOSE CCIPDrvEvtFileClose;
 
+//
+// Exports to AALBus
+
+
 #endif  // _CCI_PCIE_WINDOWS_H_
