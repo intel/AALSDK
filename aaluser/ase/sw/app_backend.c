@@ -81,8 +81,11 @@ void send_simkill()
   // Simkill
   char ase_simkill_msg[ASE_MQ_MSGSIZE];
   memset(ase_simkill_msg, 0, ASE_MQ_MSGSIZE);
-  snprintf(ase_simkill_msg, ASE_MQ_MSGSIZE, "%u", ASE_SIMKILL_MSG);
-  mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
+  sprintf(ase_simkill_msg, "ASE_SIMKILL 0");
+  ase_portctrl(ase_simkill_msg);
+
+  // snprintf(ase_simkill_msg, ASE_MQ_MSGSIZE, "%u", ASE_SIMKILL_MSG);
+  // mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  CTRL-C was seen... SW application will exit\n");
@@ -94,7 +97,7 @@ void send_simkill()
   mqueue_close(app2sim_alloc_tx);
   mqueue_close(sim2app_alloc_rx);
   mqueue_close(app2sim_umsg_tx);
-  mqueue_close(app2sim_simkill_tx);
+  // mqueue_close(app2sim_simkill_tx);
   mqueue_close(app2sim_portctrl_req_tx); 
   mqueue_close(app2sim_dealloc_tx);
   mqueue_close(sim2app_dealloc_rx);
@@ -151,13 +154,13 @@ void session_init()
   app2sim_alloc_tx        = mqueue_open( mq_array[0].name, mq_array[0].perm_flag );
   app2sim_mmioreq_tx      = mqueue_open( mq_array[1].name, mq_array[1].perm_flag );
   app2sim_umsg_tx         = mqueue_open( mq_array[2].name, mq_array[2].perm_flag );
-  app2sim_simkill_tx      = mqueue_open( mq_array[3].name, mq_array[3].perm_flag );
-  sim2app_alloc_rx        = mqueue_open( mq_array[4].name, mq_array[4].perm_flag );
-  sim2app_mmiorsp_rx      = mqueue_open( mq_array[5].name, mq_array[5].perm_flag );
-  app2sim_portctrl_req_tx = mqueue_open( mq_array[6].name, mq_array[6].perm_flag );
-  app2sim_dealloc_tx      = mqueue_open( mq_array[7].name, mq_array[7].perm_flag );
-  sim2app_dealloc_rx      = mqueue_open( mq_array[8].name, mq_array[8].perm_flag );
-  sim2app_portctrl_rsp_rx = mqueue_open( mq_array[9].name, mq_array[9].perm_flag );
+  // app2sim_simkill_tx      = mqueue_open( mq_array[3].name, mq_array[3].perm_flag );
+  sim2app_alloc_rx        = mqueue_open( mq_array[3].name, mq_array[3].perm_flag );
+  sim2app_mmiorsp_rx      = mqueue_open( mq_array[4].name, mq_array[4].perm_flag );
+  app2sim_portctrl_req_tx = mqueue_open( mq_array[5].name, mq_array[5].perm_flag );
+  app2sim_dealloc_tx      = mqueue_open( mq_array[6].name, mq_array[6].perm_flag );
+  sim2app_dealloc_rx      = mqueue_open( mq_array[7].name, mq_array[7].perm_flag );
+  sim2app_portctrl_rsp_rx = mqueue_open( mq_array[8].name, mq_array[8].perm_flag );
 
 #ifdef ASE_DEBUG
   // Page table tracker
@@ -276,10 +279,10 @@ void session_deinit()
 
       // Send SIMKILL
 #if 0
-      char ase_simkill_msg[ASE_MQ_MSGSIZE];
-      memset(ase_simkill_msg, 0, ASE_MQ_MSGSIZE);
-      sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
-      mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
+      /* char ase_simkill_msg[ASE_MQ_MSGSIZE]; */
+      /* memset(ase_simkill_msg, 0, ASE_MQ_MSGSIZE); */
+      /* sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG); */
+      /* mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE); */
 #else
       char session_ctrlcmd[ASE_MQ_MSGSIZE];
       memset(session_ctrlcmd, 0, ASE_MQ_MSGSIZE);
@@ -296,7 +299,7 @@ void session_deinit()
       mqueue_close(app2sim_alloc_tx);
       mqueue_close(sim2app_alloc_rx);
       mqueue_close(app2sim_umsg_tx);
-      mqueue_close(app2sim_simkill_tx);
+      // mqueue_close(app2sim_simkill_tx);
       mqueue_close(app2sim_portctrl_req_tx);
       mqueue_close(app2sim_dealloc_tx);
       mqueue_close(sim2app_dealloc_rx);

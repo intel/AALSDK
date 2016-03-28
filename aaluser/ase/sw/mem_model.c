@@ -43,27 +43,27 @@
 // Close and unlink DPI message queues
 // ---------------------------------------------------------------------
 #if 0
-void ase_mqueue_teardown()
-{
-  FUNC_CALL_ENTRY;
+/* void ase_mqueue_teardown() */
+/* { */
+/*   FUNC_CALL_ENTRY; */
 
-  // Close message queues
-  mqueue_close(app2sim_alloc_rx);       
-  mqueue_close(sim2app_alloc_tx);       
-  mqueue_close(app2sim_mmioreq_rx);
-  mqueue_close(sim2app_mmiorsp_tx);
-  mqueue_close(app2sim_umsg_rx);
-  mqueue_close(app2sim_simkill_rx);
-  mqueue_close(app2sim_portctrl_req_rx);
-  mqueue_close(app2sim_dealloc_rx);       
-  mqueue_close(sim2app_dealloc_tx);       
+/*   // Close message queues */
+/*   mqueue_close(app2sim_alloc_rx);        */
+/*   mqueue_close(sim2app_alloc_tx);        */
+/*   mqueue_close(app2sim_mmioreq_rx); */
+/*   mqueue_close(sim2app_mmiorsp_tx); */
+/*   mqueue_close(app2sim_umsg_rx); */
+/*   mqueue_close(app2sim_simkill_rx); */
+/*   mqueue_close(app2sim_portctrl_req_rx); */
+/*   mqueue_close(app2sim_dealloc_rx);        */
+/*   mqueue_close(sim2app_dealloc_tx);        */
 
-  int ipc_iter;
-  for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
-    mqueue_destroy(mq_array[ipc_iter].name);
+/*   int ipc_iter; */
+/*   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++) */
+/*     mqueue_destroy(mq_array[ipc_iter].name); */
 
-  FUNC_CALL_EXIT;
-}
+/*   FUNC_CALL_EXIT; */
+/* } */
 #endif
 
 // ---------------------------------------------------------------
