@@ -512,7 +512,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 
   // Traversal ptr
   struct buffer_t *trav_ptr = (struct buffer_t *)NULL;
-  int buffer_found = 0;
+  // int buffer_found = 0;
 
   if (req_paddr != 0)
     {
@@ -542,7 +542,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 	      real_offset = (uint64_t)req_paddr - (uint64_t)trav_ptr->fake_paddr;
 	      calc_pbase = trav_ptr->pbase;
 	      ase_pbase = (uint64_t*)(calc_pbase + real_offset);
-	      buffer_found = 1;
+	      // buffer_found = 1;
 	      
 	      // Debug only
 #ifdef ASE_DEBUG
@@ -561,13 +561,12 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
     }
   else 
     {
-      buffer_found = 0;
+      // buffer_found = 0;
       trav_ptr = NULL;
     }
 
   // If accesses are correct, ASE should not reach this point
-  // if(trav_ptr == NULL)
-  if(buffer_found == 0)
+  if(trav_ptr == NULL)
     {
       BEGIN_RED_FONTCOLOR;
       printf("@ERROR: ASE has detected a memory operation to an unallocated memory region.\n"
