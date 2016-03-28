@@ -557,7 +557,7 @@ INSTANTIATE_TEST_CASE_P(My, OSAL_Sem_vp_tuple_2,
 template <typename T>
 class OSAL_Sem_vp : public ::testing::TestWithParam<T>
 {
-protected:
+public:
    OSAL_Sem_vp() {}
    virtual ~OSAL_Sem_vp() {}
 
@@ -574,6 +574,8 @@ protected:
    }
    virtual void TearDown()
    {
+      m_Sem.UserDefined(NULL);
+
       YIELD_WHILE(CurrentThreads() > 0);
 
       unsigned i;
@@ -598,7 +600,7 @@ protected:
 
 class OSAL_Sem_vp_int_0 : public OSAL_Sem_vp< AAL::btInt >
 {
-protected:
+public:
    static void Thr0(OSLThread * , void * );
 };
 
@@ -689,7 +691,7 @@ INSTANTIATE_TEST_CASE_P(My, OSAL_Sem_vp_int_0, ::testing::Values(1, 10, 100, 250
 
 class OSAL_Sem_vp_int_1 : public OSAL_Sem_vp< AAL::btInt >
 {
-protected:
+public:
    static void Thr0(OSLThread * , void * );
 };
 
@@ -702,7 +704,7 @@ void OSAL_Sem_vp_int_1::Thr0(OSLThread *pThread, void *pContext)
    const AAL::btUnsignedInt nMaxCount     = pTC->m_nMaxCount;
    CSemaphore              &sem           = pTC->m_Sem;
 
-   pTC->m_Scratch[0] = 1;
+//   pTC->m_Scratch[0] = 1;
 
    EXPECT_TRUE(sem.Wait());
    pTC->m_Scratch[1] = 1;
@@ -729,10 +731,35 @@ TEST_P(OSAL_Sem_vp_int_1, aal0052)
    // Calling CSemaphore::Create() with nInitialCount < 0 and nMaxCount = 0 results in
    //  nInitialCount = nInitialCount + 1 and nMaxCount = 1.
 
+   class aal0052AfterCSemaphoreAutoLock : public AAL::Testing::EmptyAfterCSemaphoreAutoLock
+   {
+   public:
+      aal0052AfterCSemaphoreAutoLock(OSAL_Sem_vp_int_1 *pTC) :
+         m_pTC(pTC),
+         m_Count(0)
+      {}
+
+      virtual void OnWait()
+      {
+         if ( 0 == m_Count ) {
+            // Thr0
+            m_pTC->m_Scratch[0] = 1;
+         }
+         ++m_Count;
+      }
+
+   protected:
+      OSAL_Sem_vp_int_1 *m_pTC;
+      btInt              m_Count;
+   } AfterAutoLock(this);
+
+
    m_nInitialCount = GetParam();
    m_nMaxCount     = 0;
 
    ASSERT_TRUE(m_Sem.Create(m_nInitialCount, m_nMaxCount));
+
+   m_Sem.UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    AAL::btInt i = 0;
    AAL::btInt m = 0;
