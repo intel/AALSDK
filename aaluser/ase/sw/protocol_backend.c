@@ -347,7 +347,6 @@ int ase_listener()
 
 	      // Reset response is returned from simulator once queues are cleared
 	      // Simulator cannot be held up here.
-
 	    }
 	  else if ( memcmp(portctrl_cmd, "UMSG_MODE", 9) == 0)
 	    {
@@ -368,6 +367,62 @@ int ase_listener()
 	      // Print timestamp
 	      printf("SIM-C : Session ID => %s\n", get_timestamp(0) );	  
 
+	      // Send portctrl_rsp message
+	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
+	    }
+	  else if ( memcmp(portctrl_cmd, "ASE_SIMKILL", 11) == 0)
+	    {
+            #ifdef ASE_DEBUG
+	      BEGIN_YELLOW_FONTCOLOR;
+	      printf("SIM-C : ASE_SIMKILL requested, processing options... \n");
+	      END_YELLOW_FONTCOLOR;
+            #endif
+	      // ------------------------------------------------------------- //
+	      // Update regression counter
+	      glbl_test_cmplt_cnt = glbl_test_cmplt_cnt + 1;
+	      // Mode specific exit behaviour
+	      if (cfg->ase_mode == ASE_MODE_DAEMON_NO_SIMKILL)
+		{
+		  printf("SIM-C : ASE running in daemon mode (see ase.cfg)\n");
+		  printf("        Reseting buffers ... Simulator RUNNING\n");
+		  ase_destroy();
+		  BEGIN_GREEN_FONTCOLOR;
+		  printf("SIM-C : Ready to run next test\n");	  
+		  END_GREEN_FONTCOLOR;
+		}
+	      else if (cfg->ase_mode == ASE_MODE_DAEMON_SIMKILL)
+		{
+		  printf("SIM-C : ASE Timeout SIMKILL will happen soon\n");
+		}
+	      else if (cfg->ase_mode == ASE_MODE_DAEMON_SW_SIMKILL)
+		{
+		  printf("SIM-C : ASE recognized a SW simkill (see ase.cfg)... Simulator will EXIT\n");
+		  run_clocks (500);
+		  ase_perror_teardown();
+		  start_simkill_countdown();
+		}
+	      else if ((cfg->ase_mode == ASE_MODE_REGRESSION) && (cfg->ase_num_tests == glbl_test_cmplt_cnt))
+		{
+		  printf("SIM-C : ASE completed %d tests (see ase.cfg)... Simulator will EXIT\n", cfg->ase_num_tests);
+		  run_clocks (500);
+		  ase_perror_teardown();
+		  start_simkill_countdown();
+		}
+	      
+	      // Check for simulator sanity -- if transaction counts dont match
+	      // Kill the simulation ASAP -- DEBUG feature only
+            #ifdef ASE_DEBUG
+	      if (count_error_flag_ping() == 1)
+		{
+		  BEGIN_RED_FONTCOLOR;
+		  printf("SIM-C : ** ERROR ** Transaction counts do not match, something got lost\n");
+		  END_RED_FONTCOLOR;
+		  run_clocks (500);
+		  ase_perror_teardown();
+		  start_simkill_countdown();	  
+		}				
+            #endif
+	      
 	      // Send portctrl_rsp message
 	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
 	    }
@@ -452,8 +507,8 @@ int ase_listener()
 	  END_YELLOW_FONTCOLOR;
         #endif
 	}
-      // ------------------------------------------------------------------------------- //
 
+      // ------------------------------------------------------------------------------- //
       ase_empty_buffer(&ase_buffer);
       if (glbl_dealloc_allowed) 
 	{
@@ -539,6 +594,7 @@ int ase_listener()
       /*
        * SIMKILL message handler
        */
+#if 0
       char ase_simkill_str[ASE_MQ_MSGSIZE];
       memset (ase_simkill_str, 0, ASE_MQ_MSGSIZE);
       if(mqueue_recv(app2sim_simkill_rx, (char*)ase_simkill_str, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
@@ -590,6 +646,7 @@ int ase_listener()
         #endif
 	}
       // ------------------------------------------------------------------------------- //
+#endif
     }
   else 
     {
@@ -600,6 +657,7 @@ int ase_listener()
       END_RED_FONTCOLOR;
     #endif
     }
+  
 
   //  FUNC_CALL_EXIT;
   return 0;

@@ -213,7 +213,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
   int is_privmem;                 // Flag memory as a private memory |    
   int is_mmiomap;                 // Flag memory as CSR map          |   
   int is_umas;                    // Flag memory as UMAS region      |
-  struct buffer_t *prev;
+  // struct buffer_t *prev;
   struct buffer_t *next;
 };
 

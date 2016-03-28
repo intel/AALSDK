@@ -50,7 +50,7 @@ uint32_t mmio_exist_status = NOT_ESTABLISHED;
 uint32_t umas_exist_status = NOT_ESTABLISHED;
 
 // Session status
-uint32_t session_exis_status = NOT_ESTABLISHED;
+uint32_t session_exist_status = NOT_ESTABLISHED;
 
 // CSR map storage
 struct buffer_t *mmio_region;
@@ -197,7 +197,9 @@ void session_init()
   tstamp_string = get_timestamp(0);
 
   // Creating CSR map 
+  BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Creating MMIO ...\n");
+  END_YELLOW_FONTCOLOR;
   mmio_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
   memset(mmio_region, 0, sizeof(struct buffer_t));
   mmio_region->memsize = MMIO_LENGTH;
@@ -205,10 +207,14 @@ void session_init()
   allocate_buffer(mmio_region, NULL);
   mmio_afu_vbase = (uint64_t*)((uint64_t)mmio_region->vbase + MMIO_AFU_OFFSET);
   mmio_exist_status = ESTABLISHED;
+  BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  AFU MMIO Virtual Base Address = %p\n", (void*) mmio_afu_vbase); 
+  END_YELLOW_FONTCOLOR;
 
   // Create UMSG region
+  BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Creating UMAS ... \n");
+  END_YELLOW_FONTCOLOR;
   umas_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
   memset(umas_region, 0, sizeof(struct buffer_t));
   umas_region->memsize = UMAS_LENGTH;
@@ -216,10 +222,12 @@ void session_init()
   allocate_buffer(umas_region, NULL);
   umsg_umas_vbase = (uint64_t*)((uint64_t)umas_region->vbase);
   umas_exist_status = ESTABLISHED;
+  BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  UMAS Virtual Base address = %p\n", (void*)umsg_umas_vbase);
+  END_YELLOW_FONTCOLOR;
 
   // Session status
-  session_exis_status = ESTABLISHED;
+  session_exist_status = ESTABLISHED;
 
   END_YELLOW_FONTCOLOR;
 
@@ -235,7 +243,7 @@ void session_deinit()
 {
   FUNC_CALL_ENTRY;
 
-  if (session_exis_status == ESTABLISHED)
+  if (session_exist_status == ESTABLISHED)
     {
       // Unmap UMAS region
       if (umas_exist_status == ESTABLISHED) 
@@ -267,11 +275,18 @@ void session_deinit()
       END_YELLOW_FONTCOLOR;
 
       // Send SIMKILL
+#if 0
       char ase_simkill_msg[ASE_MQ_MSGSIZE];
       memset(ase_simkill_msg, 0, ASE_MQ_MSGSIZE);
       sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
       mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
-  
+#else
+      char session_ctrlcmd[ASE_MQ_MSGSIZE];
+      memset(session_ctrlcmd, 0, ASE_MQ_MSGSIZE);
+      sprintf(session_ctrlcmd, "ASE_SIMKILL 0");
+      ase_portctrl(session_ctrlcmd);
+#endif 
+ 
 #ifdef ASE_DEBUG
       fclose(fp_pagetable_log);
 #endif

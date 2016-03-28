@@ -271,6 +271,7 @@ void mqueue_send(int mq, const char* str, int size)
 #if ASE_DEBUG
   if ((ret_tx == 0) || (ret_tx != size))
     {
+      perror("write");
       printf("  [DEBUG]  write() returned wrong data size.");
     }
 #endif
