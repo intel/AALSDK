@@ -184,7 +184,7 @@ package ase_pkg;
    // Interrupt request header
    typedef struct     packed {
       logic [11:0]    rsvd_79_68; // 79:68 // Reserved
-      t_ccip_c1_req   req_type;   // 67:64 // Type
+      ccip_reqtype_t  req_type;   // 67:64 // Type
       logic [60:0]    rsvd_63_3;  // 63:3  // reserved
       logic [2:0]     id;         // 2:0   // Intr vector 
    } IntrReq_t;
@@ -192,7 +192,7 @@ package ase_pkg;
    // Interrupt response header
    typedef struct     packed {
       logic [7:0]     rsvd1;      // 27:20 // reserved, don't care
-      t_ccip_c1_rsp   resp_type;  // 19:16 // Response type
+      ccip_resptype_t resp_type;  // 19:16 // Response type
       logic [12:0]    rsvd_15_3;  // 15:3  // reserved, don't care
       logic [2:0]     id;         // 2:0   // Vector    
    } IntrRsp_t;
