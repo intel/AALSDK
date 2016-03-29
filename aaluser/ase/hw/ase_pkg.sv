@@ -175,12 +175,28 @@ package ase_pkg;
       logic [15:0]    mdata;      // 15:0
    } Atomics_t;
    parameter CCIP_CMPXCHG_HDR_WIDTH = $bits(Atomics_t);
-      
+
    // Config channel
    parameter CCIP_MMIO_ADDR_WIDTH   = 16;
    parameter CCIP_MMIO_INDEX_WIDTH  = 14;
    parameter CCIP_MMIO_RDDATA_WIDTH = 64;
 
+   // Interrupt request header
+   typedef struct     packed {
+      logic [11:0]    rsvd_79_68; // 79:68 // Reserved
+      t_ccip_c1_req   req_type;   // 67:64 // Type
+      logic [60:0]    rsvd_63_3;  // 63:3  // reserved
+      logic [2:0]     id;         // 2:0   // Intr vector 
+   } IntrReq_t;
+         
+   // Interrupt response header
+   typedef struct     packed {
+      logic [7:0]     rsvd1;      // 27:20 // reserved, don't care
+      t_ccip_c1_rsp   resp_type;  // 19:16 // Response type
+      logic [12:0]    rsvd_15_3;  // 15:3  // reserved, don't care
+      logic [2:0]     id;         // 2:0   // Vector    
+   } IntrRsp_t;
+   
    
    /* **********************************************************
     * Wrapped headers with channel Id
