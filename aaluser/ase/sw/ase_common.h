@@ -266,9 +266,6 @@ uint64_t *mmio_afu_vbase;
 uint64_t *umsg_umas_vbase;
 
 
-// Timestamp reference time
-// extern struct timeval start;
-
 // ASE buffer valid/invalid indicator
 // When a buffer is 'allocated' successfully, it will be valid, when
 // it is deallocated, it will become invalid.
@@ -335,8 +332,6 @@ void ase_buffer_t_to_str(struct buffer_t *, char *);
 void ase_str_to_buffer_t(char *, struct buffer_t *);
 int ase_dump_to_file(struct buffer_t*, char*);
 uint64_t ase_rand64();
-//char* ase_eval_session_directory();
-// void ase_eval_session_directory(char *);
 void ase_eval_session_directory();
 char* ase_malloc (size_t);
 int ase_instance_running();
@@ -420,15 +415,60 @@ extern "C" {
 #define ASE_MSG_PRESENT 0xD33D
 #define ASE_MSG_ABSENT  0xDEAD
 
+// Enumerate MQs
+enum mq_index
+  {
+    app2sim_alloc_ping   = 0,
+    app2sim_mmioreq      = 1,
+    app2sim_umsg         = 2,
+    sim2app_alloc_pong   = 3,
+    sim2app_mmiorsp      = 4,
+    app2sim_portctrl_req = 5,
+    app2sim_dealloc_ping = 6,
+    sim2app_dealloc_pong = 7,
+    sim2app_portctrl_rsp = 8,
+    LAST_NON_SMQ_NOUSE   = ASE_MQ_INSTANCES
+  };
+
+
+// Message queue instance name
+const char *mq_name_arr [ASE_MQ_INSTANCES];
+
 // Message queue controls
-struct ipc_t
+typedef struct ipc_t
 {
-  char name[ASE_MQ_NAME_LEN];
-  char path[ASE_FILEPATH_LEN];
+  int  mq_id;
+  int  mq_fd;
   int  perm_flag;
-};
-// struct ipc_t mq_array[ASE_MQ_INSTANCES];
-struct ipc_t *mq_array;
+  char path[ASE_FILEPATH_LEN];
+} ipc_t;
+ipc_t mq_array[ASE_MQ_INSTANCES];
+
+
+/*
+ * IPC MQ fd names
+ */
+#ifdef SIM_SIDE
+int app2sim_alloc_rx;           // app2sim mesaage queue in RX mode
+int sim2app_alloc_tx;           // sim2app mesaage queue in TX mode
+int app2sim_mmioreq_rx;   // MMIO Request path
+int sim2app_mmiorsp_tx;   // MMIO Response path
+int app2sim_umsg_rx;      // UMSG    message queue in RX mode
+int app2sim_portctrl_req_rx;  // Port Control messages in Rx mode
+int app2sim_dealloc_rx;
+int sim2app_dealloc_tx;
+int sim2app_portctrl_rsp_tx;
+#else
+int app2sim_alloc_tx;           // app2sim mesaage queue in RX mode
+int sim2app_alloc_rx;           // sim2app mesaage queue in TX mode
+int app2sim_mmioreq_tx;   // MMIO Request path
+int sim2app_mmiorsp_rx;   // MMIO Response path
+int app2sim_umsg_tx;      // UMSG    message queue in RX mode
+int app2sim_portctrl_req_tx;  // Port Control message in TX mode 
+int app2sim_dealloc_tx;
+int sim2app_dealloc_rx;
+int sim2app_portctrl_rsp_rx;
+#endif // End SIM_SIDE
 
 
 /* ********************************************************************
@@ -579,20 +619,6 @@ void update_glbl_dealloc(int);
 
 
 /*
- * Request/Response options
- */
-// RX0 channel
-/* #define ASE_RX0_CSR_WRITE    0x0 */
-/* #define ASE_RX0_WR_RESP      0x1 */
-/* #define ASE_RX0_RD_RESP      0x4 */
-/* #define ASE_RX0_INTR_CMPLT   0x8   // CCI 1.8 */
-/* #define ASE_RX0_UMSG         0xf   // CCI 1.8 */
-/* // RX1 channel */
-/* #define ASE_RX1_WR_RESP      0x1 */
-/* #define ASE_RX1_INTR_CMPLT   0x8   // CCI 1.8 */
-
-
-/*
  * ASE Ready session control files, for wrapping with autorun script
  */
 FILE *fp_ase_ready; // = (FILE *)NULL;
@@ -639,33 +665,6 @@ int self_destruct_in_progress;
 
 #endif
 
-
-/*
- * IPC MQ fd names
- */
-#ifdef SIM_SIDE
-int app2sim_alloc_rx;           // app2sim mesaage queue in RX mode
-int sim2app_alloc_tx;           // sim2app mesaage queue in TX mode
-int app2sim_mmioreq_rx;   // MMIO Request path
-int sim2app_mmiorsp_tx;   // MMIO Response path
-int app2sim_umsg_rx;      // UMSG    message queue in RX mode
-//int app2sim_simkill_rx;   // app2sim message queue in RX mode
-int app2sim_portctrl_req_rx;  // Port Control messages in Rx mode
-int app2sim_dealloc_rx;
-int sim2app_dealloc_tx;
-int sim2app_portctrl_rsp_tx;
-#else
-int app2sim_alloc_tx;           // app2sim mesaage queue in RX mode
-int sim2app_alloc_rx;           // sim2app mesaage queue in TX mode
-int app2sim_mmioreq_tx;   // MMIO Request path
-int sim2app_mmiorsp_rx;   // MMIO Response path
-int app2sim_umsg_tx;      // UMSG    message queue in RX mode
-//int app2sim_simkill_tx;   // app2sim message queue in RX mode
-int app2sim_portctrl_req_tx;  // Port Control message in TX mode 
-int app2sim_dealloc_tx;
-int sim2app_dealloc_rx;
-int sim2app_portctrl_rsp_rx;
-#endif // End SIM_SIDE
 
 // Defeature Atomics for BDX releases 
 // There is no global fixes for this

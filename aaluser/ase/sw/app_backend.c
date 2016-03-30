@@ -119,6 +119,17 @@ void session_init()
 
   ipc_init();
 
+  app2sim_alloc_tx        = mq_array[ app2sim_alloc_ping  ].mq_fd;
+  app2sim_mmioreq_tx      = mq_array[ app2sim_mmioreq     ].mq_fd;
+  app2sim_umsg_tx         = mq_array[ app2sim_umsg        ].mq_fd;
+  sim2app_alloc_rx        = mq_array[ sim2app_alloc_pong  ].mq_fd;
+  sim2app_mmiorsp_rx      = mq_array[ sim2app_mmiorsp     ].mq_fd;
+  app2sim_portctrl_req_tx = mq_array[ app2sim_portctrl_req].mq_fd;
+  app2sim_dealloc_tx      = mq_array[ app2sim_dealloc_ping].mq_fd;
+  sim2app_dealloc_rx      = mq_array[ sim2app_dealloc_pong].mq_fd;
+  sim2app_portctrl_rsp_rx = mq_array[ sim2app_portctrl_rsp].mq_fd;
+
+
   // Initialize lock
   if ( pthread_mutex_init(&app_lock, NULL) != 0)
     {
@@ -151,16 +162,15 @@ void session_init()
   printf("  [APP]  Initializing simulation session ... \n");
   END_YELLOW_FONTCOLOR;
 
-  app2sim_alloc_tx        = mqueue_open( mq_array[0].name, mq_array[0].perm_flag );
-  app2sim_mmioreq_tx      = mqueue_open( mq_array[1].name, mq_array[1].perm_flag );
-  app2sim_umsg_tx         = mqueue_open( mq_array[2].name, mq_array[2].perm_flag );
-  // app2sim_simkill_tx      = mqueue_open( mq_array[3].name, mq_array[3].perm_flag );
-  sim2app_alloc_rx        = mqueue_open( mq_array[3].name, mq_array[3].perm_flag );
-  sim2app_mmiorsp_rx      = mqueue_open( mq_array[4].name, mq_array[4].perm_flag );
-  app2sim_portctrl_req_tx = mqueue_open( mq_array[5].name, mq_array[5].perm_flag );
-  app2sim_dealloc_tx      = mqueue_open( mq_array[6].name, mq_array[6].perm_flag );
-  sim2app_dealloc_rx      = mqueue_open( mq_array[7].name, mq_array[7].perm_flag );
-  sim2app_portctrl_rsp_rx = mqueue_open( mq_array[8].name, mq_array[8].perm_flag );
+  /* app2sim_alloc_tx        = mqueue_open( mq_array[0].name, mq_array[0].perm_flag ); */
+  /* app2sim_mmioreq_tx      = mqueue_open( mq_array[1].name, mq_array[1].perm_flag ); */
+  /* app2sim_umsg_tx         = mqueue_open( mq_array[2].name, mq_array[2].perm_flag ); */
+  /* sim2app_alloc_rx        = mqueue_open( mq_array[3].name, mq_array[3].perm_flag ); */
+  /* sim2app_mmiorsp_rx      = mqueue_open( mq_array[4].name, mq_array[4].perm_flag ); */
+  /* app2sim_portctrl_req_tx = mqueue_open( mq_array[5].name, mq_array[5].perm_flag ); */
+  /* app2sim_dealloc_tx      = mqueue_open( mq_array[6].name, mq_array[6].perm_flag ); */
+  /* sim2app_dealloc_rx      = mqueue_open( mq_array[7].name, mq_array[7].perm_flag ); */
+  /* sim2app_portctrl_rsp_rx = mqueue_open( mq_array[8].name, mq_array[8].perm_flag ); */
 
 #ifdef ASE_DEBUG
   // Page table tracker
