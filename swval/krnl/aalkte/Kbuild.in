@@ -1,0 +1,12 @@
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+EXTRA_CFLAGS=\
+-D__KERNEL__=1 \
+-DENABLE_DEBUG=@ENABLE_DEBUG@ \
+-DENABLE_ASSERT=@ENABLE_ASSERT@ \
+-DDRV_NAME=\"@AALKTE_DRV_NAME@\" \
+-DDRV_VERSION=\"@AALKTE_VERSION@\" \
+-I$(M) \
+-I$(aalkernelinc)
+
+obj-m                 :=@AALKTE_DRV_NAME@.o
+@AALKTE_DRV_NAME@-objs:=aalkte-main.o aalkte-control.o aalkte-status.o aalkte-thr.o

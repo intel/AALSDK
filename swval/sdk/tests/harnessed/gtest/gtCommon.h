@@ -751,7 +751,7 @@ class EmptyIServiceClient : public AAL::IServiceClient,
                             public AAL::CAASBase
 {
 public:
-   EmptyIServiceClient(btApplicationContext Ctx=NULL);
+   EmptyIServiceClient();
    virtual void      serviceAllocated(IBase               * ,
                                       TransactionID const & ) {}
    virtual void serviceAllocateFailed(const IEvent & )        {}
@@ -764,7 +764,7 @@ class CallTrackingIServiceClient : public EmptyIServiceClient,
                                    public MethodCallLog
 {
 public:
-   CallTrackingIServiceClient(btApplicationContext Ctx=NULL);
+   CallTrackingIServiceClient();
    virtual void      serviceAllocated(IBase               * ,
                                       TransactionID const & );
    virtual void serviceAllocateFailed(const IEvent & );
@@ -776,7 +776,7 @@ public:
 class SynchronizingIServiceClient : public CallTrackingIServiceClient
 {
 public:
-   SynchronizingIServiceClient(btApplicationContext Ctx=NULL);
+   SynchronizingIServiceClient();
 
    virtual void      serviceAllocated(IBase               * ,
                                       TransactionID const & );
@@ -799,7 +799,7 @@ class EmptyIRuntimeClient : public AAL::IRuntimeClient,
                             public AAL::CAASBase
 {
 public:
-   EmptyIRuntimeClient(btApplicationContext Ctx=NULL);
+   EmptyIRuntimeClient();
    virtual void   runtimeCreateOrGetProxyFailed(IEvent const & )        {}
    virtual void                  runtimeStarted(IRuntime            * ,
                                                 const NamedValueSet & ) {}
@@ -816,7 +816,7 @@ class CallTrackingIRuntimeClient : public EmptyIRuntimeClient,
                                    public MethodCallLog
 {
 public:
-   CallTrackingIRuntimeClient(btApplicationContext Ctx=NULL);
+   CallTrackingIRuntimeClient();
    virtual void   runtimeCreateOrGetProxyFailed(IEvent const & );
    virtual void                  runtimeStarted(IRuntime            * ,
                                                 const NamedValueSet & );
@@ -832,7 +832,7 @@ public:
 class SynchronizingIRuntimeClient : public CallTrackingIRuntimeClient
 {
 public:
-   SynchronizingIRuntimeClient(btApplicationContext Ctx=NULL);
+   SynchronizingIRuntimeClient();
 
    virtual void   runtimeCreateOrGetProxyFailed(IEvent const & );
    virtual void                  runtimeStarted(IRuntime            * ,
@@ -895,7 +895,7 @@ class EmptyIRuntime : public AAL::IRuntime,
                       public AAL::CAASBase
 {
 public:
-   EmptyIRuntime(btApplicationContext Ctx=NULL);
+   EmptyIRuntime();
 
    virtual btBool                     start(const NamedValueSet & );
    virtual void                        stop() {}
@@ -928,7 +928,7 @@ class CallTrackingIRuntime : public EmptyIRuntime,
                              public MethodCallLog
 {
 public:
-   CallTrackingIRuntime(btApplicationContext Ctx=NULL);
+   CallTrackingIRuntime();
    virtual btBool                     start(const NamedValueSet & );
    virtual void                        stop();
    virtual void                allocService(IBase                * ,
@@ -948,7 +948,7 @@ class EmptyIServiceBase : public AAL::IServiceBase,
                           public AAL::CAASBase
 {
 public:
-   EmptyIServiceBase(btApplicationContext Ctx=NULL);
+   EmptyIServiceBase();
 
    virtual btBool                     initComplete(TransactionID const &rtid);
    virtual btBool                       initFailed(IEvent const *ptheEvent);
@@ -986,7 +986,7 @@ class CallTrackingIServiceBase : public EmptyIServiceBase,
                                  public MethodCallLog
 {
 public:
-   CallTrackingIServiceBase(btApplicationContext Ctx=NULL);
+   CallTrackingIServiceBase();
 
    virtual btBool                     initComplete(TransactionID const &rtid);
    virtual btBool                       initFailed(IEvent const *ptheEvent);
@@ -1133,7 +1133,7 @@ class EmptySwvalSvcClient : public ISwvalSvcClient,
                             public EmptyIServiceClient
 {
 public:
-   EmptySwvalSvcClient(btApplicationContext Ctx=NULL);
+   EmptySwvalSvcClient();
    virtual void DidSomething(const AAL::TransactionID & , int );
 };
 
@@ -1141,7 +1141,7 @@ class CallTrackingSwvalSvcClient : public ISwvalSvcClient,
                                    public CallTrackingIServiceClient
 {
 public:
-   CallTrackingSwvalSvcClient(btApplicationContext Ctx=NULL);
+   CallTrackingSwvalSvcClient();
    virtual void DidSomething(const AAL::TransactionID & , int );
 };
 
@@ -1149,7 +1149,7 @@ class SynchronizingSwvalSvcClient : public ISwvalSvcClient,
                                     public SynchronizingIServiceClient
 {
 public:
-   SynchronizingSwvalSvcClient(btApplicationContext Ctx=NULL);
+   SynchronizingSwvalSvcClient();
    virtual void DidSomething(const AAL::TransactionID & , int );
 };
 

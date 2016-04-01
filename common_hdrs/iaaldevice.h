@@ -188,13 +188,13 @@ struct aal_device_id {
 #define m_afuGUID m_afuGUIDl // AFU GUID low order (backward compat)
 };
 
-#define aal_device_id_terminator                                                        \
-{  .m_devaddr = { .m_bustype = 0, .m_busnum = 0, .m_devicenum = 0, .m_subdevnum = 0, }, \
-   .m_devicetype = aal_devtype_unknown,                                                 \
-   .m_vendor   = 0,                                                                     \
-   .m_pipGUID  = 0,                                                                     \
-   .m_ahmGUID  = 0,                                                                     \
-   .m_afuGUIDl = 0,                                                                     \
+#define aal_device_id_terminator                                                            \
+{  .m_devaddr = { .m_bustype = 0, { .m_busnum = 0 }, .m_devicenum = 0, .m_subdevnum = 0, }, \
+   .m_devicetype = aal_devtype_unknown,                                                     \
+   .m_vendor   = 0,                                                                         \
+   .m_pipGUID  = 0,                                                                         \
+   .m_ahmGUID  = 0,                                                                         \
+   .m_afuGUIDl = 0,                                                                         \
    .m_afuGUIDh = 0, }
 
 #define aaldevid_addr(devid)              	((devid).m_devaddr)

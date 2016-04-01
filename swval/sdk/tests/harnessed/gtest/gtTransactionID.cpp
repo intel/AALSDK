@@ -404,7 +404,7 @@ TEST(TransactionIDTest, aal0781)
    class aal0781Base : public CAASBase
    {
    public:
-      aal0781Base() : CAASBase(NULL) {}
+      aal0781Base() {}
       void Add(btIID id, btGenericInterface ifc) { SetInterface(id, ifc); }
    };
 
