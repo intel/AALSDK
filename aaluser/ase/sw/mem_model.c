@@ -38,33 +38,6 @@
 
 #include "ase_common.h"
 
-// ---------------------------------------------------------------------
-// ase_mqueue_teardown(): Teardown DPI message queues
-// Close and unlink DPI message queues
-// ---------------------------------------------------------------------
-#if 0
-/* void ase_mqueue_teardown() */
-/* { */
-/*   FUNC_CALL_ENTRY; */
-
-/*   // Close message queues */
-/*   mqueue_close(app2sim_alloc_rx);        */
-/*   mqueue_close(sim2app_alloc_tx);        */
-/*   mqueue_close(app2sim_mmioreq_rx); */
-/*   mqueue_close(sim2app_mmiorsp_tx); */
-/*   mqueue_close(app2sim_umsg_rx); */
-/*   mqueue_close(app2sim_simkill_rx); */
-/*   mqueue_close(app2sim_portctrl_req_rx); */
-/*   mqueue_close(app2sim_dealloc_rx);        */
-/*   mqueue_close(sim2app_dealloc_tx);        */
-
-/*   int ipc_iter; */
-/*   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++) */
-/*     mqueue_destroy(mq_array[ipc_iter].name); */
-
-/*   FUNC_CALL_EXIT; */
-/* } */
-#endif
 
 // ---------------------------------------------------------------
 // ASE graceful shutdown - Called if: error() occurs 
@@ -391,54 +364,6 @@ void ase_destroy()
   
   FUNC_CALL_EXIT;
 }
-
-
-// ------------------------------------------------------------------------------
-// ase_dbg_memtest : A memory read write test (DEBUG feature)
-// To run the test ASE_MEMTEST_ENABLE must be enabled.
-// - This test runs alongside a process shm_dbg_memtest.
-// - shm_dbg_memtest() is started before MEM_ALLOC_REQ message is sent to DPI
-//   The simply starts writing 0xCAFEBABE to memory region
-// - ase_dbg_memtest() is started after the MEM_ALLOC_REPLY message is sent back
-//   This reads all the data, verifies it is 0xCAFEBABE and writes 0x00000000 there
-// PURPOSE: To make sure all the shared memory regions are initialised correctly
-// -------------------------------------------------------------------------------
-#if 0
-void ase_dbg_memtest(struct buffer_t *mem)
-{
-  uint32_t *memptr;
-  uint32_t *low_addr, *high_addr;
-
-  // Memory test errors counter
-  int memtest_errors = 0;
-
-  // Calculate DPI low and high address
-  low_addr = (uint32_t*)mem->pbase;
-  high_addr = (uint32_t*)((uint64_t)mem->pbase + mem->memsize);
-
-  // Start checker
-  for(memptr = low_addr; memptr < high_addr; memptr++)
-    {
-      if(*memptr != 0xCAFEBABE)
-	memtest_errors++;
-      *memptr = 0x0;
-    }
-
-  // Print result
-  if(memtest_errors == 0)
-    {
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("SIM-C : MEMTEST -> Passed !!\n");
-      END_YELLOW_FONTCOLOR;
-    }
-  else
-    {
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("SIM-C : MEMTEST -> Failed with %d errors !!\n", memtest_errors);
-      END_YELLOW_FONTCOLOR;
-    }
-}
-#endif
 
 
 /*

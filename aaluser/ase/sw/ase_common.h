@@ -579,20 +579,6 @@ void update_glbl_dealloc(int);
 
 
 /*
- * Request/Response options
- */
-// RX0 channel
-/* #define ASE_RX0_CSR_WRITE    0x0 */
-/* #define ASE_RX0_WR_RESP      0x1 */
-/* #define ASE_RX0_RD_RESP      0x4 */
-/* #define ASE_RX0_INTR_CMPLT   0x8   // CCI 1.8 */
-/* #define ASE_RX0_UMSG         0xf   // CCI 1.8 */
-/* // RX1 channel */
-/* #define ASE_RX1_WR_RESP      0x1 */
-/* #define ASE_RX1_INTR_CMPLT   0x8   // CCI 1.8 */
-
-
-/*
  * ASE Ready session control files, for wrapping with autorun script
  */
 FILE *fp_ase_ready; // = (FILE *)NULL;

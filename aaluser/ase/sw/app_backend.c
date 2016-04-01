@@ -141,7 +141,6 @@ void session_init()
   signal(SIGTERM, send_simkill);
   signal(SIGINT , send_simkill);
   signal(SIGQUIT, send_simkill);
-  // signal(SIGKILL, send_simkill); // *FIXME*: This possibly doesnt work // 
   signal(SIGHUP,  send_simkill);
 
   // Ignore SIGPIPE *FIXME*: Look for more elegant solution
@@ -154,7 +153,6 @@ void session_init()
   app2sim_alloc_tx        = mqueue_open( mq_array[0].name, mq_array[0].perm_flag );
   app2sim_mmioreq_tx      = mqueue_open( mq_array[1].name, mq_array[1].perm_flag );
   app2sim_umsg_tx         = mqueue_open( mq_array[2].name, mq_array[2].perm_flag );
-  // app2sim_simkill_tx      = mqueue_open( mq_array[3].name, mq_array[3].perm_flag );
   sim2app_alloc_rx        = mqueue_open( mq_array[3].name, mq_array[3].perm_flag );
   sim2app_mmiorsp_rx      = mqueue_open( mq_array[4].name, mq_array[4].perm_flag );
   app2sim_portctrl_req_tx = mqueue_open( mq_array[5].name, mq_array[5].perm_flag );
@@ -278,17 +276,10 @@ void session_deinit()
       END_YELLOW_FONTCOLOR;
 
       // Send SIMKILL
-#if 0
-      /* char ase_simkill_msg[ASE_MQ_MSGSIZE]; */
-      /* memset(ase_simkill_msg, 0, ASE_MQ_MSGSIZE); */
-      /* sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG); */
-      /* mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE); */
-#else
       char session_ctrlcmd[ASE_MQ_MSGSIZE];
       memset(session_ctrlcmd, 0, ASE_MQ_MSGSIZE);
       sprintf(session_ctrlcmd, "ASE_SIMKILL 0");
       ase_portctrl(session_ctrlcmd);
-#endif 
  
 #ifdef ASE_DEBUG
       fclose(fp_pagetable_log);

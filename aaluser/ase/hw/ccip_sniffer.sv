@@ -465,35 +465,6 @@ module ccip_sniffer
    logic 			c1tx_beat_in_progress;
    logic 			wrline_en;
    logic 			wrfence_en;
-
-   // always @(*) begin
-   //    case (C1TxHdr.reqtype)
-   // 	ASE_WRLINE_M:
-   // 	  begin
-   // 	     wrfence_en <= 0;
-   // 	     wrline_en <= 1;	     
-   // 	  end
-   // 	ASE_WRLINE_I:
-   // 	  begin
-   // 	     wrfence_en <= 0;
-   // 	     wrline_en <= 1;	     
-   // 	  end
-   // 	ASE_WRFENCE:
-   // 	  begin
-   // 	     wrfence_en <= 1;
-   // 	     wrline_en <= 0;	     
-   // 	  end
-   // 	default:
-   // 	  begin
-   // 	     wrfence_en <= 1;
-   // 	     wrline_en <= 1;	     
-   // 	     `BEGIN_RED_FONTCOLOR;
-   // 	     $display ("  ** Potential error in request type ** ");	     
-   // 	     `END_RED_FONTCOLOR;	     
-   // 	  end
-   //    endcase
-   // end
-   
    
    // Wrline_en
    always @(*) begin

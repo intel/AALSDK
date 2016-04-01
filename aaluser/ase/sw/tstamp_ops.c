@@ -183,31 +183,6 @@ char* get_timestamp(int dont_kill)
 	}
     }
 
-  /* fp = fopen(tstamp_filepath, "r"); */
-
-  /* if (dont_kill != 0)  */
-  /*   { */
-  /*     BEGIN_YELLOW_FONTCOLOR; */
-  /*     printf(" Timestamp gone ! .. ");  */
-  /*     END_YELLOW_FONTCOLOR; */
-  /*   } */
-  /* else */
-  /*   { */
-  /*     if (fp == NULL)  */
-  /* 	{ */
-  /*       #ifdef SIM_SIDE */
-  /* 	  ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR); */
-  /*       #else */
-  /* 	  perror("fopen"); */
-  /*       #endif */
-  /* 	  exit(1); */
-  /* 	} */
-  /*   } */
-
-  // fread(&readback, sizeof(unsigned long long), 1, fp);
-
-  // sprintf(tstamp_str, "%lld", readback);
-
   FUNC_CALL_EXIT;
 
   return tstamp_str;
@@ -230,3 +205,4 @@ void poll_for_session_id()
     }
   printf("DONE\n");
 }
+

@@ -609,14 +609,6 @@ module outoforder_wrf_channel
 
    assign latbuf_almfull = (latbuf_cnt >= (NUM_WAIT_STATIONS-3)) ? 1 : 0;
 
-   // always @(*) begin
-   //    if (latbuf_cnt >= (NUM_WAIT_STATIONS-3))
-   // 	latbuf_almfull <= 1;
-   //    else
-   // 	latbuf_almfull <= 0;
-   // end
-
-
    // push_ptr selector
    function automatic integer find_next_push_slot();
       int 				     find_iter;
@@ -1238,65 +1230,7 @@ module outoforder_wrf_channel
 	 valid_out <= 0;	 
       end
    end
-   
-   /*
-   typedef enum {RdPop_Idle, RdPop_Stream, RdPop_Toggle}  rdpop_state;
-   rdpop_state rdstate;
-
-   always @(posedge clk) begin : read_guard_proc
-      if (rst) begin
-   	 rdstate <= RdPop_Idle;
-   	 valid_out  <= 0;
-      end
-      else begin
-   	 case (rdstate)
-   	   RdPop_Idle   :
-   	     begin
-   	 	if ( {read_en, outfifo_almempty, outfifo_empty } == 3'b100 ) begin
-   		   { tid_out, data_out, rxhdr_out_vec, txhdr_out_vec } <= outfifo.pop_front();
-   		   valid_out <= 1;
-   	 	   rdstate <= RdPop_Stream;
-   		end
-   		else if ( {read_en, outfifo_almempty, outfifo_empty } == 3'b110 ) begin
-   		   { tid_out, data_out, rxhdr_out_vec, txhdr_out_vec } <= outfifo.pop_front();
-   		   valid_out <= 1;
- 		   rdstate <= RdPop_Toggle;
-   		end
-   		else begin
-   		   valid_out <= 0;
-   		   rdstate <= RdPop_Idle;
-   		end
-   	     end
-
-   	   RdPop_Stream :
-   	     begin
-   	 	if ( {read_en, outfifo_almempty, outfifo_empty } == 3'b100 ) begin
-   		   { tid_out, data_out, rxhdr_out_vec, txhdr_out_vec } <= outfifo.pop_front();
-   		   valid_out <= 1;
-   	 	   rdstate <= RdPop_Stream;
-   	 	end
-   	 	else begin
-   		   valid_out <= 0;
-   	 	   rdstate <= RdPop_Idle;
-   	 	end
-   	     end
-
-   	   RdPop_Toggle :
-   	     begin
-   	 	valid_out <= 0;
-   	 	rdstate <= RdPop_Idle;
-   	     end
-
-   	   default :
-   	     begin
-   	 	valid_out <= 0;
-   	 	rdstate <= RdPop_Idle;
-   	     end
-   	 endcase
-      end
-   end
-*/
-
+  
    
    // Log output pop
 `ifdef ASE_DEBUG

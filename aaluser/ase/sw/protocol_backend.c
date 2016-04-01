@@ -342,9 +342,6 @@ int ase_listener()
 	      // AFU Reset trigger function will wait until channels clear up
 	      afu_softreset_trig (0, portctrl_value );
 	      
-	      // Send portctrl_rsp message
-	      // mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
-
 	      // Reset response is returned from simulator once queues are cleared
 	      // Simulator cannot be held up here.
 	    }
@@ -589,64 +586,6 @@ int ase_listener()
 	  umsg_dispatch(0, umsg_pkt);
 	}
       // ------------------------------------------------------------------------------- //
-
-
-      /*
-       * SIMKILL message handler
-       */
-#if 0
-      char ase_simkill_str[ASE_MQ_MSGSIZE];
-      memset (ase_simkill_str, 0, ASE_MQ_MSGSIZE);
-      if(mqueue_recv(app2sim_simkill_rx, (char*)ase_simkill_str, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
-	{
-	  // Update regression counter
-	  glbl_test_cmplt_cnt = glbl_test_cmplt_cnt + 1;
-
-	  // Mode specific exit behaviour
-	  if (cfg->ase_mode == ASE_MODE_DAEMON_NO_SIMKILL)
-	    {
-	      printf("SIM-C : ASE running in daemon mode (see ase.cfg)\n");
-	      printf("        Reseting buffers ... Simulator RUNNING\n");
-	      ase_destroy();
-	      BEGIN_GREEN_FONTCOLOR;
-	      printf("SIM-C : Ready to run next test\n");	  
-	      END_GREEN_FONTCOLOR;
-	    }
-	  else if (cfg->ase_mode == ASE_MODE_DAEMON_SIMKILL)
-	    {
-	      printf("SIM-C : ASE Timeout SIMKILL will happen soon\n");
-	    }
-	  else if (cfg->ase_mode == ASE_MODE_DAEMON_SW_SIMKILL)
-	    {
-	      printf("SIM-C : ASE recognized a SW simkill (see ase.cfg)... Simulator will EXIT\n");
-	      run_clocks (500);
-	      ase_perror_teardown();
-	      start_simkill_countdown();
-	    }
-	  else if ((cfg->ase_mode == ASE_MODE_REGRESSION) && (cfg->ase_num_tests == glbl_test_cmplt_cnt))
-	    {
-	      printf("SIM-C : ASE completed %d tests (see ase.cfg)... Simulator will EXIT\n", cfg->ase_num_tests);
-	      run_clocks (500);
-	      ase_perror_teardown();
-	      start_simkill_countdown();
-	    }
-
-	  // Check for simulator sanity -- if transaction counts dont match
-	  // Kill the simulation ASAP -- DEBUG feature only
-       #ifdef ASE_DEBUG
-	  if (count_error_flag_ping() == 1)
-	    {
-	      BEGIN_RED_FONTCOLOR;
-	      printf("SIM-C : ** ERROR ** Transaction counts do not match, something got lost\n");
-	      END_RED_FONTCOLOR;
-	      run_clocks (500);
-	      ase_perror_teardown();
-	      start_simkill_countdown();	  
-	    }				
-        #endif
-	}
-      // ------------------------------------------------------------------------------- //
-#endif
     }
   else 
     {
@@ -740,11 +679,6 @@ int ase_init()
   // Evaluate IPCs
   ipc_init();
 
-  // Evaluate Session directory
-  // ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
-  /* ase_workdir_path = ase_eval_session_directory();   */
-  // ase_eval_session_directory();
-  // sprintf(ase_workdir_path, "%s/", ase_run_path);
   printf("SIM-C : ASE Session Directory located at =>\n");
   printf("        %s\n", ase_workdir_path);
   printf("SIM-C : Current Working Directory =>\n");
@@ -796,7 +730,6 @@ int ase_init()
   app2sim_alloc_rx    = mqueue_open(mq_array[0].name,  mq_array[0].perm_flag);
   app2sim_mmioreq_rx  = mqueue_open(mq_array[1].name,  mq_array[1].perm_flag);
   app2sim_umsg_rx     = mqueue_open(mq_array[2].name,  mq_array[2].perm_flag);
-  // app2sim_simkill_rx  = mqueue_open(mq_array[3].name,  mq_array[3].perm_flag);
   sim2app_alloc_tx    = mqueue_open(mq_array[3].name,  mq_array[3].perm_flag);
   sim2app_mmiorsp_tx  = mqueue_open(mq_array[4].name,  mq_array[4].perm_flag);
   app2sim_portctrl_req_rx = mqueue_open(mq_array[5].name,  mq_array[5].perm_flag);
@@ -934,7 +867,6 @@ void start_simkill_countdown()
   mqueue_close(app2sim_mmioreq_rx);
   mqueue_close(sim2app_mmiorsp_tx);
   mqueue_close(app2sim_umsg_rx);
-  // mqueue_close(app2sim_simkill_rx);
   mqueue_close(app2sim_portctrl_req_rx);
   mqueue_close(app2sim_dealloc_rx);       
   mqueue_close(sim2app_dealloc_tx);       

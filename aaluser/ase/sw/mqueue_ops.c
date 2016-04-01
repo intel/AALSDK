@@ -55,7 +55,6 @@ void ipc_init()
   strncpy(mq_array[0].name, "app2sim_alloc_ping_smq"	, ASE_MQ_NAME_LEN);
   strncpy(mq_array[1].name, "app2sim_mmioreq_smq"	, ASE_MQ_NAME_LEN);
   strncpy(mq_array[2].name, "app2sim_umsg_smq"	        , ASE_MQ_NAME_LEN);
-  // strncpy(mq_array[3].name, "app2sim_simkill_smq"	, ASE_MQ_NAME_LEN);
   strncpy(mq_array[3].name, "sim2app_alloc_pong_smq"	, ASE_MQ_NAME_LEN);
   strncpy(mq_array[4].name, "sim2app_mmiorsp_smq"	, ASE_MQ_NAME_LEN);
   strncpy(mq_array[5].name, "app2sim_portctrl_req_smq"	, ASE_MQ_NAME_LEN);
@@ -71,7 +70,6 @@ void ipc_init()
   mq_array[0].perm_flag = O_RDONLY|O_NONBLOCK;
   mq_array[1].perm_flag = O_RDONLY|O_NONBLOCK;
   mq_array[2].perm_flag = O_RDONLY|O_NONBLOCK;
-  // mq_array[3].perm_flag = O_RDONLY|O_NONBLOCK;
   mq_array[3].perm_flag = O_WRONLY;
   mq_array[4].perm_flag = O_WRONLY;
   mq_array[5].perm_flag = O_RDONLY|O_NONBLOCK;
@@ -82,7 +80,6 @@ void ipc_init()
   mq_array[0].perm_flag = O_WRONLY;
   mq_array[1].perm_flag = O_WRONLY;
   mq_array[2].perm_flag = O_WRONLY;
-  // mq_array[3].perm_flag = O_WRONLY;
   mq_array[3].perm_flag = O_RDONLY;
   mq_array[4].perm_flag = O_RDONLY;
   mq_array[5].perm_flag = O_WRONLY;

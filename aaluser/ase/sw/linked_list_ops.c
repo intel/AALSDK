@@ -44,18 +44,12 @@ void ll_print_info(struct buffer_t *print_ptr)
   FUNC_CALL_ENTRY;
 
   printf("%d  ", print_ptr->index);
-  /* if (print_ptr->valid == ASE_BUFFER_VALID)  */
-  /*   printf("ADDED   "); */
-  /* else */
-  /*   printf("REMOVED "); */
   printf("%5s \t", print_ptr->memname);
   printf("%5s  ", (print_ptr->valid == ASE_BUFFER_VALID) ? "VALID" : "INVLD");
   printf("%p  ", (void *)print_ptr->vbase);
   printf("%p  ", (void *)print_ptr->pbase);
   printf("%p  ", (void *)print_ptr->fake_paddr);
   printf("%x  ", print_ptr->memsize);
-  /* printf("%d  ", print_ptr->is_mmiomap); */
-  /* printf("%d  ", print_ptr->is_privmem); */
   printf("\n");
 
   FUNC_CALL_EXIT;
