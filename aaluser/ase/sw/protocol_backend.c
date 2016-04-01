@@ -312,9 +312,9 @@ int ase_listener()
    * -----------------------------------------------------------------
    * Supported commands       |
    * ASE_INIT   <APP_PID>     | Session control - sends PID to 
+   *                          |
    * AFU_RESET  <0,1>         | AFU reset handle
    * UMSG_MODE  <8-bit mask>  | UMSG mode control
-   * ASE_SIMKILL 0            | Kill simulation (APP return 0)
    *
    * ASE responds with "COMPLETED" as a string, there is no
    * expectation of a string check
@@ -737,28 +737,21 @@ int ase_init()
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
 
-  // Create IPC cleanup setup
-  // create_ipc_listfile();
-
   // Evaluate IPCs
   ipc_init();
 
-  // Open message queues
-  app2sim_alloc_rx        = mq_array[ app2sim_alloc_ping  ].mq_fd;
-  app2sim_mmioreq_rx      = mq_array[ app2sim_mmioreq     ].mq_fd;
-  app2sim_umsg_rx         = mq_array[ app2sim_umsg        ].mq_fd;
-  sim2app_alloc_tx        = mq_array[ sim2app_alloc_pong  ].mq_fd;
-  sim2app_mmiorsp_tx      = mq_array[ sim2app_mmiorsp     ].mq_fd;
-  app2sim_portctrl_req_rx = mq_array[ app2sim_portctrl_req].mq_fd;
-  app2sim_dealloc_rx      = mq_array[ app2sim_dealloc_ping].mq_fd;
-  sim2app_dealloc_tx      = mq_array[ sim2app_dealloc_pong].mq_fd;
-  sim2app_portctrl_rsp_tx = mq_array[ sim2app_portctrl_rsp].mq_fd;
-
-  // Print Session directory
+  // Evaluate Session directory
+  // ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
+  /* ase_workdir_path = ase_eval_session_directory();   */
+  // ase_eval_session_directory();
+  // sprintf(ase_workdir_path, "%s/", ase_run_path);
   printf("SIM-C : ASE Session Directory located at =>\n");
   printf("        %s\n", ase_workdir_path);
   printf("SIM-C : Current Working Directory =>\n");
   printf("        %s\n", ase_run_path);
+
+  // Create IPC cleanup setup
+  create_ipc_listfile();
 
 #ifdef ASE_DEBUG
   // Create a memory access log
@@ -794,10 +787,22 @@ int ase_init()
 #endif
 
   // Set up message queues
-  /* printf("SIM-C : Creating Messaging IPCs...\n"); */
-  /* int ipc_iter; */
-  /* for( ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++) */
-  /*   mqueue_create( mq_array[ipc_iter].name ); */
+  printf("SIM-C : Creating Messaging IPCs...\n");
+  int ipc_iter;
+  for( ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
+    mqueue_create( mq_array[ipc_iter].name );
+
+  // Open message queues
+  app2sim_alloc_rx    = mqueue_open(mq_array[0].name,  mq_array[0].perm_flag);
+  app2sim_mmioreq_rx  = mqueue_open(mq_array[1].name,  mq_array[1].perm_flag);
+  app2sim_umsg_rx     = mqueue_open(mq_array[2].name,  mq_array[2].perm_flag);
+  // app2sim_simkill_rx  = mqueue_open(mq_array[3].name,  mq_array[3].perm_flag);
+  sim2app_alloc_tx    = mqueue_open(mq_array[3].name,  mq_array[3].perm_flag);
+  sim2app_mmiorsp_tx  = mqueue_open(mq_array[4].name,  mq_array[4].perm_flag);
+  app2sim_portctrl_req_rx = mqueue_open(mq_array[5].name,  mq_array[5].perm_flag);
+  app2sim_dealloc_rx  = mqueue_open(mq_array[6].name,  mq_array[6].perm_flag);
+  sim2app_dealloc_tx  = mqueue_open(mq_array[7].name,  mq_array[7].perm_flag);
+  sim2app_portctrl_rsp_tx = mqueue_open(mq_array[8].name,  mq_array[8].perm_flag);
 
   // Calculate memory map regions
   printf("SIM-C : Calculating memory map...\n");
@@ -937,9 +942,9 @@ void start_simkill_countdown()
 
   int ipc_iter;
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
-    mqueue_destroy(mq_array[ipc_iter].path);
+    mqueue_destroy(mq_array[ipc_iter].name);
 
-  // free(mq_array);
+  free(mq_array);
 
   // Destroy all open shared memory regions
   printf("SIM-C : Unlinking Shared memory regions.... \n");

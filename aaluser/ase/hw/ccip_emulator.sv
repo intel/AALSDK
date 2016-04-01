@@ -67,9 +67,7 @@ module ccip_emulator
    input 	      t_if_ccip_Tx pck_af2cp_sTx  // CCI-P Tx Port
    );
 
-   // Initialization indicator
-   logic 	      ase_initialized;
-   
+
    // Power and error state
    assign pck_cp2af_pwrState = 2'b0;
    assign pck_cp2af_error    = 1'b0;
@@ -573,9 +571,7 @@ module ccip_emulator
    initial begin : uclk_proc
       begin
 	 `ifdef ASE_DEBUG
-	 `BEGIN_YELLOW_FONTCOLOR;	 
 	 $display("  [DEBUG] User clock frequency = %f\n", `UCLK_DURATION);
-	 `END_YELLOW_FONTCOLOR;	 
 	 `endif
 	 usrClk = 0;
 	 forever begin
@@ -1371,9 +1367,7 @@ module ccip_emulator
     *
     * *******************************************************************/
    always @(posedge clk) begin : daemon_proc
-      if (ase_initialized) begin
-	 ase_listener();
-      end
+      ase_listener();
    end
 
 
@@ -2107,7 +2101,6 @@ module ccip_emulator
     */
    initial begin : ase_entry_point
       $display("SIM-SV: Simulator started...");
-      ase_initialized = 0;
 
       // Check if simulator is already running in this directory:
       // If YES, kill simulator, post message
@@ -2150,8 +2143,7 @@ module ccip_emulator
 
       // Indicate to APP that ASE is ready
       ase_ready();
-      ase_initialized = 1;
-            
+
    end
 
 
