@@ -660,7 +660,7 @@ module ccip_emulator
     *
     * *****************************************************************/
    // MMIO read tid counter
-   logic [CCIP_MMIO_TID_WIDTH-1:0] 	     mmio_tid_counter;
+   // logic [CCIP_MMIO_TID_WIDTH-1:0] 	     mmio_tid_counter;
 
    // TID:Address tuple storage
    int 					     unsigned tid_array[*];
@@ -701,14 +701,14 @@ module ccip_emulator
 	    cwlp_rdvalid = 0;
 	    cwlp_header  = 0;
 	    cwlp_data    = 0;
-	    mmio_tid_counter  = 0;
+	    // mmio_tid_counter  = 0;
 	 end
 	 else begin
 	    if (mmio_pkt.write_en == MMIO_WRITE_REQ) begin
 	       // hdr.index  = {2'b0, mmio_pkt.addr[15:2]};
 	       hdr.index  = {mmio_pkt.addr[17:2]};
 	       hdr.rsvd9  = 1'b0;
-	       hdr.tid    = mmio_tid_counter;
+	       hdr.tid    = mmio_pkt.tid[CCIP_CFGHDR_TID_WIDTH-1:0];  // mmio_tid_counter;
 	       if (mmio_pkt.width == MMIO_WIDTH_32) begin
 		  hdr.len = 2'b00;
 		  cwlp_data = {480'b0, mmio_pkt.qword[0][31:0]};
@@ -721,7 +721,7 @@ module ccip_emulator
 	       cwlp_wrvalid = 1;
 	       cwlp_rdvalid = 0;
 	       mmio_pkt.resp_en = 1;
-    	       mmio_tid_counter  = mmio_tid_counter + 1;
+    	       // mmio_tid_counter  = mmio_tid_counter + 1;
 	       @(posedge clk);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 0;
@@ -737,11 +737,11 @@ module ccip_emulator
 		  hdr.len      = 2'b01;
 	       end
 	       hdr.rsvd9    = 1'b0;
-	       hdr.tid      = mmio_tid_counter;
+	       hdr.tid      = mmio_pkt.tid[CCIP_CFGHDR_TID_WIDTH-1:0]; // mmio_tid_counter;
 	       cwlp_header  = CCIP_CFG_HDR_WIDTH'(hdr);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 1;
-    	       mmio_tid_counter  = mmio_tid_counter + 1;
+    	       // mmio_tid_counter  = mmio_tid_counter + 1;
 	       @(posedge clk);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 0;
@@ -2111,7 +2111,7 @@ module ccip_emulator
       afu_softreset_trig(1, 0 );
 
       // Initialize data-structures
-      mmio_dispatch (1, '{0, 0, 0, '{0,0,0,0,0,0,0,0}, 0});
+      mmio_dispatch (1, '{0, 0, 0, 0, '{0,0,0,0,0,0,0,0}, 0});
       umsg_dispatch (1, '{0, 0, '{0,0,0,0,0,0,0,0}});
 
       // Globally write CONFIG, SCRIPT paths

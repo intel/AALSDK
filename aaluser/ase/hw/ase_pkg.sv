@@ -280,6 +280,7 @@ package ase_pkg;
     * MMIO packet
     */
    typedef struct {
+      int 	  tid;
       int 	  write_en;
       int 	  width;
       int 	  addr;

@@ -234,6 +234,7 @@ struct wsmeta_t
  * MMIO transaction packet
  */
 typedef struct mmio_t {
+  int tid;
   int write_en;
   int width;
   int addr;
@@ -558,11 +559,13 @@ void sw_reset_response();
 
 // Read system memory line
 void rd_memline_dex( cci_pkt *pkt );
+
 // Write system memory line
 void wr_memline_dex( cci_pkt *pkt );
 
 // MMIO request 
 void mmio_dispatch(int init, struct mmio_t *mmio_pkt);
+
 // MMIO Read response
 void mmio_response(struct mmio_t *mmio_pkt);
 

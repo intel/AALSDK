@@ -464,6 +464,7 @@ void mmio_write32 (uint32_t offset, uint32_t data)
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
+      mmio_pkt->tid = generate_mmio_tid();
       mmio_pkt->write_en = MMIO_WRITE_REQ;
       mmio_pkt->width = MMIO_WIDTH_32;
       mmio_pkt->addr = offset;
@@ -480,7 +481,7 @@ void mmio_write32 (uint32_t offset, uint32_t data)
       // Display
       mmio_write_cnt++;
       BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  MMIO Write #%d : offset = 0x%x, data = 0x%08x\n", mmio_write_cnt, offset, data);
+      printf("  [APP]  MMIO Write #%d : tid=%03x, offset = 0x%x, data = 0x%08x\n", mmio_write_cnt, mmio_pkt->tid, mmio_pkt->addr, data);
       END_YELLOW_FONTCOLOR;
       free(mmio_pkt);
     }  
@@ -510,7 +511,8 @@ void mmio_write64 (uint32_t offset, uint64_t data)
     {
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
-
+      
+      mmio_pkt->tid= generate_mmio_tid();
       mmio_pkt->write_en = MMIO_WRITE_REQ;
       mmio_pkt->width = MMIO_WIDTH_64;
       mmio_pkt->addr = offset;
@@ -526,7 +528,7 @@ void mmio_write64 (uint32_t offset, uint64_t data)
 
       mmio_write_cnt++;
       BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  MMIO Write #%d : offset = 0x%x, data = 0x%llx\n", mmio_write_cnt, offset, (unsigned long long)data);
+      printf("  [APP]  MMIO Write #%d : tid=%03x, offset = 0x%x, data = 0x%llx\n", mmio_write_cnt, mmio_pkt->tid, mmio_pkt->addr, (unsigned long long)data);
       END_YELLOW_FONTCOLOR;
 
       free(mmio_pkt);
@@ -571,6 +573,7 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
+      mmio_pkt->tid      = generate_mmio_tid();
       mmio_pkt->write_en = MMIO_READ_REQ;
       mmio_pkt->width = MMIO_WIDTH_32;
       mmio_pkt->addr = offset;
@@ -585,20 +588,11 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
       // Display
       mmio_read_cnt++;
       BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  MMIO Read #%d  : offset = 0x%x\n", mmio_read_cnt, offset);
+      printf("  [APP]  MMIO Read #%d  : tid = 0x%03x offset = 0x%x\n", mmio_read_cnt, mmio_pkt->tid, mmio_pkt->addr);
       
       // Write data
       // data = (uint32_t*)((uint64_t)mmio_afu_vbase + offset);
       *data32 = (uint32_t)mmio_pkt->qword[0];
-      
-      /* #ifdef ASE_DEBUG */
-      /*       BEGIN_YELLOW_FONTCOLOR; */
-      /*       printf("  [DEBUG]  mmio_response =>\n"); */
-      /*       printf("  [DEBUG]  width=%d, addr=%x, resp_en=%d\n", mmio_pkt->width, mmio_pkt->addr, mmio_pkt->resp_en); */
-      /*       printf("  [DEBUG]  data=%llx\n", mmio_pkt->qword[0]); */
-      /*       printf("  [DEBUG]  *data=%08x\n", (uint32_t)*data32); */
-      /*       END_YELLOW_FONTCOLOR; */
-      /* #endif */
 
       printf("  [APP]  MMIO Read Resp : %08x\n", (uint32_t)*data32);
       END_YELLOW_FONTCOLOR;
@@ -627,11 +621,12 @@ void mmio_read64(uint32_t offset, uint64_t *data64)
     {
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
-
+      
+      mmio_pkt->tid      = generate_mmio_tid();
       mmio_pkt->write_en = MMIO_READ_REQ;
-      mmio_pkt->width = MMIO_WIDTH_64;
-      mmio_pkt->addr = offset;
-      mmio_pkt->resp_en = 0;
+      mmio_pkt->width    = MMIO_WIDTH_64;
+      mmio_pkt->addr     = offset;
+      mmio_pkt->resp_en  = 0;
 
       // Messaging
       pthread_mutex_lock (&mmio_lock);
@@ -642,7 +637,7 @@ void mmio_read64(uint32_t offset, uint64_t *data64)
       // Display
       mmio_read_cnt++;
       BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  MMIO Read #%d  : offset = 0x%x\n", mmio_read_cnt, offset);
+      printf("  [APP]  MMIO Read #%d  : tid=0x%03x, offset = 0x%x\n", mmio_read_cnt, mmio_pkt->tid, mmio_pkt->addr);
       
       // Write data
       // data = (uint64_t*)((uint64_t)mmio_afu_vbase + offset);
