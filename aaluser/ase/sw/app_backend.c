@@ -37,6 +37,7 @@
 
 // Lock
 pthread_mutex_t app_lock;
+pthread_mutex_t mmio_lock;
 
 // CSR Map
 uint32_t mmio_write_cnt = 0;
@@ -121,6 +122,14 @@ void session_init()
 
   // Initialize lock
   if ( pthread_mutex_init(&app_lock, NULL) != 0)
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  Lock initialization failed, EXIT\n");
+      END_YELLOW_FONTCOLOR;
+      exit (EXIT_FAILURE);
+    }
+
+  if ( pthread_mutex_init(&mmio_lock, NULL) != 0)
     {
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  Lock initialization failed, EXIT\n");
@@ -307,6 +316,7 @@ void session_deinit()
   
       // Lock deinit
       pthread_mutex_destroy(&app_lock);
+      pthread_mutex_destroy(&mmio_lock);
     }
   else 
     {
@@ -478,8 +488,10 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
       mmio_pkt->resp_en = 0;
 
       // Messaging
+      pthread_mutex_lock (&mmio_lock);
       mmio_request_put(mmio_pkt);
       mmio_response_get(mmio_pkt);
+      pthread_mutex_unlock (&mmio_lock);
 
       // Display
       mmio_read_cnt++;
@@ -533,8 +545,10 @@ void mmio_read64(uint32_t offset, uint64_t *data64)
       mmio_pkt->resp_en = 0;
 
       // Messaging
+      pthread_mutex_lock (&mmio_lock);
       mmio_request_put(mmio_pkt);
       mmio_response_get(mmio_pkt);
+      pthread_mutex_unlock (&mmio_lock);
 
       // Display
       mmio_read_cnt++;

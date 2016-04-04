@@ -58,7 +58,6 @@ package ase_pkg;
     * CCI specifications
     */
    parameter CCIP_DATA_WIDTH       = 512;
-   // parameter ASE_UMSG_BITINDEX    = 12;
    parameter CCIP_CFG_RDDATA_WIDTH = 64;
 
    /*
@@ -137,6 +136,13 @@ package ase_pkg;
    } TxHdr_t;
    parameter CCIP_TX_HDR_WIDTH     = $bits(TxHdr_t);
 
+   /* 
+    * Config MMIO Header
+    */ 			
+   // MMIO Header specifics
+   parameter int      CCIP_CFGHDR_INDEX_WIDTH = 16;
+   parameter int      CCIP_CFGHDR_TID_WIDTH = 9;    
+   
    // CfgHdr   
    typedef struct packed {
       logic [15:0] index;  // 27:12
@@ -237,7 +243,6 @@ package ase_pkg;
    parameter LATBUF_DEPTH_BASE2      = $clog2(LATBUF_NUM_TRANSACTIONS);
 
 
-
    /*
     * CCI Transaction packet
     */
@@ -280,7 +285,7 @@ package ase_pkg;
       int 	  addr;
       longint 	  qword[8];
       int 	  resp_en;
-      } mmio_t;
+      } mmio_t;  
    
    // Request types
    parameter int  MMIO_WRITE_REQ    = 32'hAA88;
@@ -290,7 +295,15 @@ package ase_pkg;
    parameter int  MMIO_WIDTH_32 = 32;
    parameter int  MMIO_WIDTH_64 = 64;
 
-
+   // MMIOread tracking
+   typedef struct {
+      logic [CCIP_CFGHDR_TID_WIDTH-1:0]        tid;
+      logic [CCIP_CFGHDR_INDEX_WIDTH-1:0]      index;
+      logic [`MMIO_RESPONSE_TIMEOUT_RADIX-1:0] timer_val; 
+      logic 				       active;
+      } mmioread_track_t;
+   
+   
    /*
     * UMSG Hint/Data state machine
     */
@@ -301,7 +314,7 @@ package ase_pkg;
    typedef struct {
       int 	  id;
       int 	  hint;
-      longint 	  qword[8];	  
+      longint 	  qword[8] 		;	  
    } umsgcmd_t;
    
 

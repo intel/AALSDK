@@ -88,8 +88,9 @@
 /*
  * MMIO Specifications
  */ 
-`define MMIO_RESPONSE_TIMEOUT      128
-`define MMIO_MAX_OUTSTANDING       64
+`define MMIO_RESPONSE_TIMEOUT        512
+`define MMIO_RESPONSE_TIMEOUT_RADIX  $clog2(`MMIO_RESPONSE_TIMEOUT) + 1
+`define MMIO_MAX_OUTSTANDING         64
 
 
 /*

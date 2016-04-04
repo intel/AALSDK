@@ -171,6 +171,17 @@ MENT_VLOG_OPT+= -dpiheader work/dpiheader.h
 MENT_VLOG_OPT+= +incdir+$(ASE_INCDIR)+$(DUT_INCDIR)+$(WORK)
 MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
 MENT_VLOG_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
+ifdef GLS_SIM
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
+  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
+endif
 
 ## VSIM elaboration, and run options
 MENT_VSIM_OPT = -64 -c -l run.log

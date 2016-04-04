@@ -857,6 +857,13 @@ module ccip_emulator
    end
 
 
+   /*
+    * MMIORead transaction tracker
+    */
+   // generate
+   
+   
+
    /* ******************************************************************
     *
     * Unordered Messages Engine
@@ -928,9 +935,9 @@ module ccip_emulator
    // UMSG Hint-to-Data time emulator (toaster style)
    // New Umsg hints to same location are ignored
    // If Data is same, hints dont get generated
-   genvar ii;
+      // genvar 			ii;
    generate
-      for ( ii = 0; ii < NUM_UMSG_PER_AFU; ii = ii + 1 ) begin : umsg_engine
+      for (genvar ii = 0; ii < NUM_UMSG_PER_AFU; ii = ii + 1 ) begin : umsg_engine
 
 	 // Status board
 	 always @(*) begin
