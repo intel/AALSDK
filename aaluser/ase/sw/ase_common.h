@@ -89,9 +89,13 @@
 #define ASE_PAGESIZE   0x1000        // 4096 bytes
 #define CCI_CHUNK_SIZE 2*1024*1024   // CCI 2 MB physical chunks 
 
-// CSR memory map size
+//MMIO memory map size
 #define MMIO_LENGTH                512*1024   // 512 KB MMIO size
 #define MMIO_AFU_OFFSET            256*1024
+
+// MMIO Tid width
+#define MMIO_TID_BITWIDTH          9
+#define MMIO_TID_BITMASK           (uint32_t)(pow((uint32_t)2, MMIO_TID_BITWIDTH)-1)
 
 // Number of UMsgs per AFU
 #define NUM_UMSG_PER_AFU               8
@@ -181,10 +185,6 @@ char *app_run_cmd;
 #define ASE_IPCKILL_CATERR             0xA    // Catastropic error when cleaning
                                               // IPCs, manual intervention required
 #define ASE_UNDEF_ERROR                0xFF   // Undefined error, pls report
-
-// Remote Start Stop messages
-/* #define HDR_ASE_READY_STAT   0xFACEFEED */
-/* #define HDR_ASE_KILL_CTRL    0xC00CB00C */
 
 // Simkill message
 #define ASE_SIMKILL_MSG      0xDEADDEAD
@@ -350,9 +350,6 @@ void mqueue_destroy(char*);
 void mqueue_send(int, const char*, int);
 int mqueue_recv(int, char*, int);
 
-// Debug interface
-// void shm_dbg_memtest(struct buffer_t *);
-
 // Timestamp functions
 void put_timestamp();
 char* get_timestamp(int);
@@ -382,6 +379,7 @@ extern "C" {
   void deallocate_buffer_by_index(int);
   void append_wsmeta(struct wsmeta_t *);
   // MMIO activity
+  uint32_t generate_mmio_tid();
   void mmio_request_put(struct mmio_t *);
   void mmio_response_get(struct mmio_t *);
   void mmio_write32(uint32_t index, uint32_t data);
@@ -394,11 +392,13 @@ extern "C" {
   void umsg_set_attribute(uint32_t hint_mask);
   // Driver activity
   void ase_portctrl(const char *);
+  // Threaded watch processes
+  void *mmio_response_watcher();
 #ifdef __cplusplus
 }
 #endif // __cplusplus
 
-#define DUMPSTRVAR(varname) fprintf(fp_workspace_log, "%s", #varname);
+#define DUMPSTRVAR(varname) fprintf(DUMPSTRVAR_str, "%s", #varname);
 
 
 /* ********************************************************************

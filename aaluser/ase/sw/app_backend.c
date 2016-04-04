@@ -36,7 +36,7 @@
 #include "ase_common.h"
 
 // Lock
-pthread_mutex_t app_lock;
+// pthread_mutex_t app_lock;
 pthread_mutex_t mmio_lock;
 
 // CSR Map
@@ -74,6 +74,64 @@ char *tstamp_string;
 FILE *fp_pagetable_log = (FILE *)NULL;
 #endif
 
+// MMIO Tid
+int glbl_mmio_tid;
+pthread_mutex_t mmio_tid_lock;
+
+// Tracker thread Id
+pthread_t mmio_watch_tid;
+pthread_t msix_watch_tid;
+
+
+/*
+ * MMIO Generate TID
+ * - Creation of TID must be atomic
+ */
+uint32_t generate_mmio_tid()
+{
+  // Return value
+  uint32_t ret_mmio_tid;
+  
+  // Lock access to resource
+  pthread_mutex_lock(&mmio_tid_lock);
+  
+  // Increment and mask
+  // __asm__ __volatile__("lock add $1, %0" : "+r"(glbl_mmio_tid));  
+  ret_mmio_tid = glbl_mmio_tid & MMIO_TID_BITMASK;
+  glbl_mmio_tid++;
+
+  // Unlock access to resource
+  pthread_mutex_unlock(&mmio_tid_lock);
+
+  // Return ID
+  return ret_mmio_tid;
+}
+
+
+/*
+ * MMIO Read thread watcher
+ */
+void *mmio_response_watcher()
+{
+  // Open MMIO Response (FPGA->CPU) MQ
+
+  // start watching for messages
+  while(1)
+    {
+      // If received, update global message
+
+      // Wait until ACK from requesting thread
+
+      // *FIXME*: If no ACK for 10 sec, throw exception (HOW ?)
+
+    }
+}
+
+
+/* 
+ * Interrupt request (FPGA->CPU) watcher
+ */
+
 /*
  * Send SIMKILL
  */
@@ -85,9 +143,6 @@ void send_simkill()
   sprintf(ase_simkill_msg, "ASE_SIMKILL 0");
   ase_portctrl(ase_simkill_msg);
 
-  // snprintf(ase_simkill_msg, ASE_MQ_MSGSIZE, "%u", ASE_SIMKILL_MSG);
-  // mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
-
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  CTRL-C was seen... SW application will exit\n");
   END_YELLOW_FONTCOLOR;
@@ -98,7 +153,6 @@ void send_simkill()
   mqueue_close(app2sim_alloc_tx);
   mqueue_close(sim2app_alloc_rx);
   mqueue_close(app2sim_umsg_tx);
-  // mqueue_close(app2sim_simkill_tx);
   mqueue_close(app2sim_portctrl_req_tx); 
   mqueue_close(app2sim_dealloc_tx);
   mqueue_close(sim2app_dealloc_rx);
@@ -121,26 +175,31 @@ void session_init()
   ipc_init();
 
   // Initialize lock
-  if ( pthread_mutex_init(&app_lock, NULL) != 0)
-    {
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  Lock initialization failed, EXIT\n");
-      END_YELLOW_FONTCOLOR;
-      exit (EXIT_FAILURE);
-    }
+  /* if ( pthread_mutex_init(&app_lock, NULL) != 0) */
+  /*   { */
+  /*     BEGIN_YELLOW_FONTCOLOR; */
+  /*     printf("  [APP]  Lock initialization failed, EXIT\n"); */
+  /*     END_YELLOW_FONTCOLOR; */
+  /*     exit (EXIT_FAILURE); */
+  /*   } */
 
   if ( pthread_mutex_init(&mmio_lock, NULL) != 0)
     {
       BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  Lock initialization failed, EXIT\n");
+      printf("  [APP]  MMIO Lock initialization failed, EXIT\n");
+      END_YELLOW_FONTCOLOR;
+      exit (EXIT_FAILURE);
+    }
+
+  if ( pthread_mutex_init(&mmio_tid_lock, NULL) != 0)
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  MMIO TID Lock initialization failed, EXIT\n");
       END_YELLOW_FONTCOLOR;
       exit (EXIT_FAILURE);
     }
   
   // Initialize ase_workdir_path
-  // ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
-  // ase_workdir_path = ase_eval_session_directory();  
-  // ase_eval_session_directory ();  
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  ASE Session Directory located at =>\n");
   printf("         %s\n", ase_workdir_path);
@@ -169,8 +228,11 @@ void session_init()
   sim2app_dealloc_rx      = mqueue_open( mq_array[7].name, mq_array[7].perm_flag );
   sim2app_portctrl_rsp_rx = mqueue_open( mq_array[8].name, mq_array[8].perm_flag );
 
-#ifdef ASE_DEBUG
-  // Page table tracker
+  // Message queues have been established
+  mq_exist_status = MQ_ESTABLISHED;
+
+  // Page table tracker (optional logger)
+#ifdef ASE_DEBUG  
   fp_pagetable_log = fopen("app_pagetable.log", "w");
   if (fp_pagetable_log == NULL) 
     {
@@ -185,12 +247,33 @@ void session_init()
       END_YELLOW_FONTCOLOR;
     }
 #endif
-
-  // Message queues have been established
-  mq_exist_status = MQ_ESTABLISHED;
-
   BEGIN_YELLOW_FONTCOLOR;
+  
+  // Set MMIO Tid to 0
+  glbl_mmio_tid = 0;
 
+  // Thread error integer
+  int thr_err;
+
+  // Start MMIO watcher thread  
+  printf("  [APP]  Starting MMIO Read watcher ... \n");
+  thr_err = pthread_create (&mmio_watch_tid, NULL, &mmio_response_watcher, NULL);
+  if (thr_err != 0)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("FAILED\n");
+      perror("pthread_create");
+      exit(1);
+      END_RED_FONTCOLOR;
+    }
+  else
+    {
+      printf("SUCCESS\n");
+    }
+
+  // Start MSI-X watcher thread
+  // printf("  [APP]  Starting Interrupt watcher ... \n");
+  
   // Session start
   printf(" DONE\n");
   printf("  [APP]  Session started\n");
@@ -253,6 +336,8 @@ void session_deinit()
 {
   FUNC_CALL_ENTRY;
 
+  int thr_err;
+
   if (session_exist_status == ESTABLISHED)
     {
       // Unmap UMAS region
@@ -294,12 +379,15 @@ void session_deinit()
       fclose(fp_pagetable_log);
 #endif
 
+      // Close MMIO Response tracker thread
+      pthread_kill(mmio_watch_tid, SIGINT);
+      
+      // close message queue
       mqueue_close(app2sim_mmioreq_tx);
       mqueue_close(sim2app_mmiorsp_rx);
       mqueue_close(app2sim_alloc_tx);
       mqueue_close(sim2app_alloc_rx);
       mqueue_close(app2sim_umsg_tx);
-      // mqueue_close(app2sim_simkill_tx);
       mqueue_close(app2sim_portctrl_req_tx);
       mqueue_close(app2sim_dealloc_tx);
       mqueue_close(sim2app_dealloc_rx);
@@ -315,8 +403,9 @@ void session_deinit()
       // free(ase_workdir_path);
   
       // Lock deinit
-      pthread_mutex_destroy(&app_lock);
+      // pthread_mutex_destroy(&app_lock);
       pthread_mutex_destroy(&mmio_lock);
+      pthread_mutex_destroy(&mmio_tid_lock);
     }
   else 
     {
