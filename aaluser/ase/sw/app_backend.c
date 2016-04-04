@@ -39,9 +39,11 @@
 // pthread_mutex_t app_lock;
 pthread_mutex_t mmio_lock;
 
-// CSR Map
-/* uint32_t mmio_write_cnt = 0; */
-/* uint32_t mmio_read_cnt = 0; */
+// MMIO Outstanding counts
+uint32_t mmio_write_cnt = 0;
+uint32_t mmio_readreq_cnt = 0;
+uint32_t mmio_readrsp_cnt = 0;
+// uint32_t mmio_rsp_num_outstanding = 0;
 
 // MQ established
 uint32_t mq_exist_status = MQ_NOT_ESTABLISHED;
@@ -103,6 +105,11 @@ pthread_t msix_watch_tid;
 uint32_t generate_mmio_tid()
 {
   // *FIXME*: TID credit must not overrun, no more than 512 outstanding MMIO Requests
+  while ((mmio_readreq_cnt - mmio_readrsp_cnt) == MMIO_MAX_OUTSTANDING)
+    {
+      printf("  [APP]  MMIO TIDs have run out --- waiting for some to get released !\n");
+      usleep(100000);
+    }
 
   // Return value
   uint32_t ret_mmio_tid;
@@ -153,6 +160,7 @@ void *mmio_response_watcher()
 	      /* // usleep(500000); */
 	      /* sleep(1); */
 	    }
+	  mmio_readrsp_cnt++;
 	}
     }
 }
@@ -454,6 +462,15 @@ void session_deinit()
 void mmio_request_put(struct mmio_t *pkt)
 {
   FUNC_CALL_ENTRY;
+
+  if (pkt->write_en == MMIO_WRITE_REQ) 
+    {
+      mmio_write_cnt++;
+    }
+  else if (pkt->write_en == MMIO_READ_REQ) 
+    {
+      mmio_readreq_cnt++;
+    }
 
   mqueue_send( app2sim_mmioreq_tx, (char*)pkt, sizeof(mmio_t) );
 
