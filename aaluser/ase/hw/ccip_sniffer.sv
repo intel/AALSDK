@@ -143,7 +143,7 @@ module ccip_sniffer
 
    logic simkill_en = 0;
    int 	 simkill_cnt;
-      
+
    // Print and simkill
    function void print_and_simkill();
       begin
@@ -151,7 +151,7 @@ module ccip_sniffer
 	 $display(" [ERROR] %d : Simulation will end now", $time);
 	 `END_RED_FONTCOLOR;
 	 $fwrite(fd_errlog, " [ERROR] %d : Simulation will end now\n", $time);
-	 simkill_en = 1;	 
+	 simkill_en = 1;
 	 // start_simkill_countdown();
       end
    endfunction
@@ -162,11 +162,11 @@ module ccip_sniffer
 		 SimkillNow
 		 } SimkillEnumStates;
    SimkillEnumStates simkill_state;
-   
+
    always @(posedge clk) begin
       if (SoftReset) begin
-	 simkill_cnt <= 20;	 
-	 simkill_state <= SimkillIdle;	 
+	 simkill_cnt <= 20;
+	 simkill_state <= SimkillIdle;
       end
       else begin
 	 case (simkill_state)
@@ -174,35 +174,35 @@ module ccip_sniffer
 	     begin
 		simkill_cnt <= 20;
 		if (simkill_en) begin
-		   simkill_state <= SimkillCountdown; 
+		   simkill_state <= SimkillCountdown;
 		end
 		else begin
-		   simkill_state <= SimkillIdle;	 
+		   simkill_state <= SimkillIdle;
 		end
 	     end
 	   SimkillCountdown:
 	     begin
 		simkill_cnt <= simkill_cnt - 1;
 		if (simkill_cnt <= 0) begin
-		   simkill_state <= SimkillNow;	 
+		   simkill_state <= SimkillNow;
 		end
 		else begin
-		   simkill_state <= SimkillCountdown;	 
+		   simkill_state <= SimkillCountdown;
 		end
 	     end
 	   SimkillNow:
 	     begin
 		simkill_state <= SimkillNow;
-		start_simkill_countdown();		
+		start_simkill_countdown();
 	     end
 	   default:
 	     begin
-		simkill_state <= SimkillIdle;		
+		simkill_state <= SimkillIdle;
 	     end
 	 endcase
       end
    end
-   
+
 
    /*
     * Valid aggregate for X, Z checking
@@ -297,92 +297,91 @@ module ccip_sniffer
 
    /*
     * MMIO Misbehaviour tracker
-    */  
+    */
    // MMIO Timeout management
-   int mmioread_timeout_cnt;
-   logic mmioread_cycle;
-   logic mmioread_cycle_q;
-   
+   // int mmioread_timeout_cnt;
+   // logic mmioread_cycle;
+   // logic mmioread_cycle_q;
+
    // Check if MMIO TID returned was correct
-   int 	 c0rx_mmiord_tid;
-   int 	 c2tx_mmiord_tid;
+   // int 	 c0rx_mmiord_tid;
+   // int 	 c2tx_mmiord_tid;
 
    // MMIO Read activity in progress
-   always @(posedge clk) begin : mmiocycle_proc
-      if (SoftReset) begin
-	 mmioread_cycle <= 0;
-      end
-      else begin
-	 case ({C0RxMmioRdValid, C2TxMmioRdValid})
-	   // MMIO Read request
-	   2'b10   : 
-	     begin
-		// c0rx_mmiord_tid <= C0RxCfg.tid;	 
-		mmioread_cycle  <= 1;
-	     end
+   // always @(posedge clk) begin : mmiocycle_proc
+   //    if (SoftReset) begin
+   // 	 mmioread_cycle <= 0;
+   //    end
+   //    else begin
+   // 	 case ({C0RxMmioRdValid, C2TxMmioRdValid})
+   // 	   // MMIO Read request
+   // 	   2'b10   :
+   // 	     begin
+   // 		// c0rx_mmiord_tid <= C0RxCfg.tid;
+   // 		mmioread_cycle  <= 1;
+   // 	     end
 
-	   // MMIO Read response
-	   2'b01   : 
-	     begin
-		// c2tx_mmiord_tid <= C2TxHdr.tid;	 
-		mmioread_cycle  <= 0;
-	     end
-	   
-	   default :
-	     begin		
-		mmioread_cycle <= mmioread_cycle;
-	     end
-	 endcase
-      end
-   end
+   // 	   // MMIO Read response
+   // 	   2'b01   :
+   // 	     begin
+   // 		// c2tx_mmiord_tid <= C2TxHdr.tid;
+   // 		mmioread_cycle  <= 0;
+   // 	     end
+
+   // 	   default :
+   // 	     begin
+   // 		mmioread_cycle <= mmioread_cycle;
+   // 	     end
+   // 	 endcase
+   //    end
+   // end
 
    // Sample outgoing/incoming TID as current
-   always @(posedge clk) begin
-   // always @(*) begin
-      if (C0RxMmioRdValid) begin
-	 c0rx_mmiord_tid <= C0RxCfg.tid;	 	 
-      end
-      if (C2TxMmioRdValid) begin
-	 c2tx_mmiord_tid <= C2TxHdr.tid;	 
-      end
-   end
+   // always @(posedge clk) begin
+   //    if (C0RxMmioRdValid) begin
+   // 	 c0rx_mmiord_tid <= C0RxCfg.tid;
+   //    end
+   //    if (C2TxMmioRdValid) begin
+   // 	 c2tx_mmiord_tid <= C2TxHdr.tid;
+   //    end
+   // end
 
    // MMIO Cycle REG
-   always @(posedge clk) begin
-      mmioread_cycle_q <= mmioread_cycle;      
-   end  
-   
+   // always @(posedge clk) begin
+   //    mmioread_cycle_q <= mmioread_cycle;
+   // end
+
    // MMIO counter
-   always @(posedge clk) begin : mmioread_timeout_ctr
-      if (SoftReset) begin
-	 mmioread_timeout_cnt <= 0;
-      end
-      else if (mmioread_cycle) begin
-	 mmioread_timeout_cnt <= mmioread_timeout_cnt + 1;
-      end
-      else begin
-	 mmioread_timeout_cnt <= 0;
-      end
-   end
+   // always @(posedge clk) begin : mmioread_timeout_ctr
+   //    if (SoftReset) begin
+   // 	 mmioread_timeout_cnt <= 0;
+   //    end
+   //    else if (mmioread_cycle) begin
+   // 	 mmioread_timeout_cnt <= mmioread_timeout_cnt + 1;
+   //    end
+   //    else begin
+   // 	 mmioread_timeout_cnt <= 0;
+   //    end
+   // end
 
    // MMIO misbehaviour check
-   always @(posedge clk) begin : mmio_timeout_simkill
-      if (mmioread_timeout_cnt >= `MMIO_RESPONSE_TIMEOUT) begin
-	 print_message_and_log(0, "ASE timed out waiting for MMIO Read response to arrive !!");
-	 print_message_and_log(0, "MMIO Read responses must return in 512 cycles");
-	 print_and_simkill();
-      end
-      if (~mmioread_cycle && C2TxMmioRdValid) begin
-      	 print_message_and_log(0, "ASE detected an unsolicited MMIO Read response !!\n");
-      	 print_message_and_log(0, "In system, this can cause a crash");
-      	 print_and_simkill();
-      end
-      if (~mmioread_cycle && mmioread_cycle_q && (c0rx_mmiord_tid != c2tx_mmiord_tid)) begin
-	 print_message_and_log(0, "ASE detected wrong TID returned on MMIO Read response !!\n");
-	 print_message_and_log(0, "In system, this can cause a crash");
-	 print_and_simkill();	 
-      end
-   end
+   // always @(posedge clk) begin : mmio_timeout_simkill
+   //    if (mmioread_timeout_cnt >= `MMIO_RESPONSE_TIMEOUT) begin
+   // 	 print_message_and_log(0, "ASE timed out waiting for MMIO Read response to arrive !!");
+   // 	 print_message_and_log(0, "MMIO Read responses must return in 512 cycles");
+   // 	 print_and_simkill();
+   //    end
+   //    if (~mmioread_cycle && C2TxMmioRdValid) begin
+   //    	 print_message_and_log(0, "ASE detected an unsolicited MMIO Read response !!\n");
+   //    	 print_message_and_log(0, "In system, this can cause a crash");
+   //    	 print_and_simkill();
+   //    end
+   //    if (~mmioread_cycle && mmioread_cycle_q && (c0rx_mmiord_tid != c2tx_mmiord_tid)) begin
+   // 	 print_message_and_log(0, "ASE detected wrong TID returned on MMIO Read response !!\n");
+   // 	 print_message_and_log(0, "In system, this can cause a crash");
+   // 	 print_and_simkill();
+   //    end
+   // end
 
 
 
@@ -440,7 +439,7 @@ module ccip_sniffer
 	 c1tx_illegal <= 0;
       end // if (C1TxValid)
    end
-   
+
 
    /*
     * Incoming transaction checker
@@ -465,20 +464,20 @@ module ccip_sniffer
    logic 			c1tx_beat_in_progress;
    logic 			wrline_en;
    logic 			wrfence_en;
-   
+
    // Wrline_en
    always @(*) begin
       if (C1TxValid && ((C1TxHdr.reqtype==ASE_WRLINE_M)||(C1TxHdr.reqtype==ASE_WRLINE_I))) begin
    	 wrline_en <= 1;
-	 wrfence_en <= 0;	 
+	 wrfence_en <= 0;
       end
       else if (C1TxValid && (C1TxHdr.reqtype==ASE_WRFENCE)) begin
    	 wrline_en <= 0;
-	 wrfence_en <= 1;	 	 
+	 wrfence_en <= 1;
       end
-      else begin	 
+      else begin
    	 wrline_en <= 0;
-	 wrfence_en <= 0;	 
+	 wrfence_en <= 0;
       end
    end
 
@@ -505,11 +504,11 @@ module ccip_sniffer
 		   exp_c1len   <= C1TxHdr.len;
 		   exp_c1mdata <= C1TxHdr.mdata;
 		   exp_c1state <= Exp_2CL;
-		   c1tx_beat_in_progress <= 1;		   
+		   c1tx_beat_in_progress <= 1;
 		   if (C1TxHdr.addr[1:0] != 2'b00) begin
    		      print_message_and_log(0, "Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned !");
-		      print_and_simkill();		      
-		   end 
+		      print_and_simkill();
+		   end
 		end
 		// 2 CL MCL request
 		else if (wrline_en && (C1TxHdr.len == ASE_2CL)) begin
@@ -518,21 +517,21 @@ module ccip_sniffer
 		   exp_c1len   <= C1TxHdr.len;
 		   exp_c1mdata <= C1TxHdr.mdata;
 		   exp_c1state <= Exp_2CL;
-		   c1tx_beat_in_progress <= 1;		   
+		   c1tx_beat_in_progress <= 1;
 		   if (C1TxHdr.addr[0] != 1'b0) begin
    		      print_message_and_log(0, "Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned !");
-		      print_and_simkill();		      
-		   end 
+		      print_and_simkill();
+		   end
 		end
 		// If 3-cacheline request is made, thats ILLEGAL
 		else if (wrline_en && (C1TxHdr.len == ASE_3CL)) begin
-		   c1tx_beat_in_progress <= 0;		   
+		   c1tx_beat_in_progress <= 0;
 		   print_message_and_log(0, "Multi-cacheline request of length=3 is ILLEGAL !");
-		   print_and_simkill();		   
+		   print_and_simkill();
 		end
 		// 1CL MCL request
 		else if (wrline_en && (C1TxHdr.len == ASE_1CL)) begin
-		   c1tx_beat_in_progress <= 1;		   
+		   c1tx_beat_in_progress <= 1;
 		   exp_c1addr  <= C1TxHdr.addr;
 		   exp_c1vc    <= C1TxHdr.vc;
 		   exp_c1len   <= C1TxHdr.len;
@@ -540,7 +539,7 @@ module ccip_sniffer
 		   exp_c1state <= Exp_1CL;
 		end
 		else begin
-		   c1tx_beat_in_progress <= 0;		   
+		   c1tx_beat_in_progress <= 0;
 		   exp_c1state <= Exp_1CL;
 		end
 		// SOP bit check
@@ -554,7 +553,7 @@ module ccip_sniffer
 	   // 2nd cache line of multiline request
 	   Exp_2CL:
 	     begin
-		c1tx_beat_in_progress <= 1;		   
+		c1tx_beat_in_progress <= 1;
 		// State control
 		if (wrline_en && (exp_c1len == ASE_2CL)) begin
 		   exp_c1state <= Exp_1CL;
@@ -583,12 +582,12 @@ module ccip_sniffer
 		// VC enforcement
 		if (wrline_en && (C1TxHdr.vc != exp_c1vc)) begin
 		   print_message_and_log(0, "C1TxHdr VC field must not change while multi-line Write Request is in progress");
-		   print_and_simkill();		   
+		   print_and_simkill();
 		end
 		// LEN enforcement *FIXME*
 		// if (wrline_en && (C1TxHdr.len != exp_c1len)) begin
 		//    print_message_and_log(0, "C1TxHdr LEN field must not change while multi-line Write Request is in progress");
-		//    // print_and_simkill();		   
+		//    // print_and_simkill();
 		// end
 	     end
 
@@ -596,7 +595,7 @@ module ccip_sniffer
 	   // 3rd cache line of multiline request -- no return to base from here
 	   Exp_3CL:
 	     begin
-		c1tx_beat_in_progress <= 1;		   
+		c1tx_beat_in_progress <= 1;
 		// State control
 		if (wrline_en && (exp_c1len == ASE_4CL)) begin
 		   exp_c1state <= Exp_4CL;
@@ -622,12 +621,12 @@ module ccip_sniffer
 		// VC enforcement
 		if (wrline_en && (C1TxHdr.vc != exp_c1vc)) begin
 		   print_message_and_log(0, "C1TxHdr VC field must not change while multi-line Write Request is in progress");
-		   print_and_simkill();		   
+		   print_and_simkill();
 		end
 		// // LEN enforcement *FIXME*
 		// if (wrline_en && (C1TxHdr.len != exp_c1len)) begin
 		//    print_message_and_log(0, "C1TxHdr LEN field must not change while multi-line Write Request is in progress");
-		//    // print_and_simkill();		  
+		//    // print_and_simkill();
 		// end
 	     end
 
@@ -635,7 +634,7 @@ module ccip_sniffer
 	   // 4th cacheline of multiline request
 	   Exp_4CL:
 	     begin
-		c1tx_beat_in_progress <= 1;		   
+		c1tx_beat_in_progress <= 1;
 		// State control
 		if (wrline_en && (exp_c1len == ASE_4CL)) begin
 		   exp_c1state <= Exp_1CL;
@@ -661,12 +660,12 @@ module ccip_sniffer
 		// VC enforcement
 		if (wrline_en && (C1TxHdr.vc != exp_c1vc)) begin
 		   print_message_and_log(0, "C1TxHdr VC field must not change while multi-line Write Request is in progress");
-		   print_and_simkill();		   
+		   print_and_simkill();
 		end
 		// // LEN enforcement *FIXME*
 		// if (wrline_en && (C1TxHdr.len != exp_c1len)) begin
 		//    print_message_and_log(0, "C1TxHdr LEN field must not change while multi-line Write Request is in progress");
-		//    // print_and_simkill();		   
+		//    // print_and_simkill();
 		// end
 	     end
 
@@ -674,7 +673,7 @@ module ccip_sniffer
 	   // lala land
 	   default:
 	     begin
-		c1tx_beat_in_progress <= 0;		   
+		c1tx_beat_in_progress <= 0;
 		exp_c1state <= Exp_1CL;
 	     end
 
@@ -752,7 +751,7 @@ module ccip_sniffer
    longint wr_active_addr_array[*];
 
    logic [41:0] c1tx_addr_mclbase;
-   
+
    string  rd_addr_str;
    string  wr_addr_str;
 
@@ -767,7 +766,7 @@ module ccip_sniffer
 	 if ((C0TxHdr.reqtype == ASE_RDLINE_I)||(C0TxHdr.reqtype == ASE_RDLINE_S)) begin
 	    // If transaction address exists in active list
 	    if  ( wr_active_addr_array.exists(C0TxHdr.addr) ) begin
-	       c0txaddr_str.hextoa(C0TxHdr.addr);	       
+	       c0txaddr_str.hextoa(C0TxHdr.addr);
 	       rd_addr_str = {"A request to CL Address ", c0txaddr_str, " is already in flight, potential for Read-after-Write data hazard !"};
 	       print_message_and_log(1, rd_addr_str);
 	    end
@@ -784,22 +783,125 @@ module ccip_sniffer
 	 if ((C1TxHdr.reqtype == ASE_WRLINE_I)||(C1TxHdr.reqtype == ASE_WRLINE_M)) begin
 	    // If transaction address exists in active list
 	    if  ( rd_active_addr_array.exists(C1TxHdr.addr) ) begin
-	       c1txaddr_str.hextoa(C1TxHdr.addr);	       
+	       c1txaddr_str.hextoa(C1TxHdr.addr);
 	       wr_addr_str = {"A request to Address ", c1txaddr_str, " is already in flight, potential for Write-after-Read data hazard"};
 	       print_message_and_log(1, wr_addr_str);
 	    end
 	    else if (wr_active_addr_array.exists(C1TxHdr.addr) ) begin
-	       c1txaddr_str.hextoa(C1TxHdr.addr);	       
+	       c1txaddr_str.hextoa(C1TxHdr.addr);
 	       wr_addr_str = {"A request to Address ", c1txaddr_str, " is already in flight, potential for Write-after-Write data hazard"};
 	       print_message_and_log(1, wr_addr_str);
 	    end
 	    else begin
 	       wr_active_addr_array[C1TxHdr.addr] = C1TxHdr.addr;
 	    end
-	 end	 
+	 end
       end // if (C1TxValid)
-      
    end
 
+
+   /*
+    * Multiple outstandind MMIO Response tracking
+    * - Maintains `MMIO_MAX_OUTSTANDING records tracking activity
+    * - Tracking key = MMIO TID
+    */
+   parameter int      MMIO_TRACKER_DEPTH = 2**CCIP_CFGHDR_TID_WIDTH;
+
+   // Tracker structure
+   typedef struct {
+      // Status management
+      logic [`MMIO_RESPONSE_TIMEOUT_RADIX-1:0] timer_val;
+      logic 				       timeout;
+      logic [CCIP_CFGHDR_TID_WIDTH-1:0]        tid;
+      logic 				       active;
+   } mmioread_track_t;
+   mmioread_track_t mmioread_tracker[0:MMIO_TRACKER_DEPTH-1];
+
+   // Tracker status array
+   logic [0:MMIO_TRACKER_DEPTH-1] 	       mmio_tracker_active_array;
+   logic [0:MMIO_TRACKER_DEPTH-1] 	       mmio_tracker_timeout_array;
+
+
+   // Push/pop control process
+   task update_mmio_activity(
+			     logic 			       clear,
+			     logic 			       push,
+			     logic 			       pop,
+			     logic [CCIP_CFGHDR_TID_WIDTH-1:0] tid
+			     );
+      begin
+	 if (clear) begin
+	    mmioread_tracker[tid].active = 0;
+	 end
+	 else begin
+	    // Push TID
+	    mmioread_tracker[tid].tid = tid;   	    
+	    // Active setting
+	    case ({push, pop})
+	      2'b10: mmioread_tracker[tid].active = 1;
+	      2'b01: mmioread_tracker[tid].active = 0;
+	      2'b11:
+		begin
+		   print_message_and_log(0, "Tracker push-pop occured at the same time, this is an error");
+		   print_and_simkill();
+		end
+	    endcase // case ({push, pop})
+	 end
+      end
+   endtask
+
+   // Push/pop glue
+   always @(posedge clk) begin
+      if (SoftReset) begin
+	 for (int track_i = 0; track_i < MMIO_TRACKER_DEPTH ; track_i = track_i + 1) begin
+	    update_mmio_activity(1, 0, 0, 0);
+	 end
+      end
+      else begin
+	 // Push task
+	 if (C0RxMmioRdValid) begin
+	    update_mmio_activity(0, C0RxMmioRdValid, 0, C0RxCfg.tid);
+	 end
+	 // Pop task
+	 if (C2TxMmioRdValid) begin
+	    update_mmio_activity(0, 0, C2TxMmioRdValid, C2TxHdr.tid);
+	 end
+      end
+   end
+
+   // Tracker block
+   generate
+      for (genvar ii = 0; ii < MMIO_TRACKER_DEPTH ; ii = ii + 1) begin : mmio_tracker_block
+	 // Counter value
+	 always @(posedge clk) begin
+	    if (SoftReset) begin
+	       mmioread_tracker[ii].timer_val <= 0;
+	    end
+	    else begin
+	       if (~mmioread_tracker[ii].active) begin
+		  mmioread_tracker[ii].timer_val <= 0;
+	       end
+	       else if (mmioread_tracker[ii].active) begin
+		  mmioread_tracker[ii].timer_val <= mmioread_tracker[ii].timer_val + 1;
+	       end
+	    end
+	 end // always @ (posedge clk)
+
+	 // Timeout flag
+	 always @(posedge clk) begin
+	    if (SoftReset|~mmioread_tracker[ii].active) begin
+	       mmioread_tracker[ii].timeout <= 0;	       
+	    end
+	    else if (mmioread_tracker[ii].timer_val <= `MMIO_RESPONSE_TIMEOUT) begin
+	       mmioread_tracker[ii].timeout <= 1;	       
+	    end
+	 end
+
+	 // Global flag
+	 assign mmio_tracker_timeout_array[ii] = mmioread_tracker[ii].timeout;
+	 assign mmio_tracker_active_array[ii]  = mmioread_tracker[ii].active;
+	 
+      end
+   endgenerate
 
 endmodule // cci_sniffer
