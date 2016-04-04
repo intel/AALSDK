@@ -296,14 +296,6 @@ package ase_pkg;
    parameter int  MMIO_WIDTH_32 = 32;
    parameter int  MMIO_WIDTH_64 = 64;
 
-   // MMIOread tracking
-   typedef struct {
-      logic [CCIP_CFGHDR_TID_WIDTH-1:0]        tid;
-      logic [CCIP_CFGHDR_INDEX_WIDTH-1:0]      index;
-      logic [`MMIO_RESPONSE_TIMEOUT_RADIX-1:0] timer_val; 
-      logic 				       active;
-      } mmioread_track_t;
-   
    
    /*
     * UMSG Hint/Data state machine

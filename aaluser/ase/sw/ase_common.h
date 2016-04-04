@@ -95,9 +95,8 @@
 
 // MMIO Tid width
 #define MMIO_TID_BITWIDTH          9
-#define MMIO_MAX_OUTSTANDING       (uint32_t)(pow((uint32_t)2, MMIO_TID_BITWIDTH))
-#define MMIO_TID_BITMASK           (MMIO_MAX_OUTSTANDING-1)
-// (uint32_t)(pow((uint32_t)2, MMIO_TID_BITWIDTH)-1)
+#define MMIO_TID_BITMASK           (uint32_t)(pow((uint32_t)2, MMIO_TID_BITWIDTH)-1)
+#define MMIO_MAX_OUTSTANDING       64
 
 // Number of UMsgs per AFU
 #define NUM_UMSG_PER_AFU               8

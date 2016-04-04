@@ -104,7 +104,7 @@ pthread_t msix_watch_tid;
  */
 uint32_t generate_mmio_tid()
 {
-  // *FIXME*: TID credit must not overrun, no more than 512 outstanding MMIO Requests
+  // *FIXME*: TID credit must not overrun, no more than 64 outstanding MMIO Requests
   while ((mmio_readreq_cnt - mmio_readrsp_cnt) == MMIO_MAX_OUTSTANDING)
     {
       printf("  [APP]  MMIO TIDs have run out --- waiting for some to get released !\n");
@@ -118,7 +118,6 @@ uint32_t generate_mmio_tid()
   pthread_mutex_lock(&mmio_tid_lock);
 
   // Increment and mask
-  // __asm__ __volatile__("lock add $1, %0" : "+r"(glbl_mmio_tid));
   ret_mmio_tid = glbl_mmio_tid & MMIO_TID_BITMASK;
   glbl_mmio_tid++;
 
