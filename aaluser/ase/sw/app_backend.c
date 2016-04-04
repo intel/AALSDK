@@ -74,18 +74,26 @@ char *tstamp_string;
 FILE *fp_pagetable_log = (FILE *)NULL;
 #endif
 
+/*
+ * MMIO Read response watcher
+ */
 // MMIO Tid
 int glbl_mmio_tid;
 pthread_mutex_t mmio_tid_lock;
 
 // Tracker thread Id
 pthread_t mmio_watch_tid;
-pthread_t msix_watch_tid;
 
 // MMIO Response packet handoff control
-struct mmio_t *mmio_rsp_pkt;
+mmio_t *mmio_rsp_pkt;
 volatile int mmio_rsp_pkt_available;
 volatile int mmio_rsp_pkt_accepted;
+
+/*
+ * MSI-X watcher 
+ */
+// MSI-X watcher 
+pthread_t msix_watch_tid;
 
 
 /*
@@ -116,7 +124,7 @@ uint32_t generate_mmio_tid()
 
 
 /*
- * MMIO Read thread watcher
+ * THREAD: MMIO Read thread watcher
  */
 void *mmio_response_watcher()
 {
@@ -140,7 +148,10 @@ void *mmio_response_watcher()
 	  // Wait until ACK from requesting thread
 	  while (mmio_rsp_pkt_accepted != 1)
 	    {
-	      printf("Waiting for mmio_rsp_pkt_accepted == 1\n");
+	      usleep(500);
+	      /* printf("Waiting for mmio_rsp_pkt_accepted == 1\n"); */
+	      /* // usleep(500000); */
+	      /* sleep(1); */
 	    }
 	}
     }
@@ -275,7 +286,7 @@ void session_init()
   int thr_err;
 
   // Start MMIO watcher thread
-  printf("  [APP]  Starting MMIO Read watcher ... \n");
+  printf("  [APP]  Starting MMIO Read watcher ... ");
   thr_err = pthread_create (&mmio_watch_tid, NULL, &mmio_response_watcher, NULL);
   if (thr_err != 0)
     {
@@ -451,18 +462,6 @@ void mmio_request_put(struct mmio_t *pkt)
 
 
 /*
- * MMIO Response get
- */
-/* void mmio_response_get(struct mmio_t *pkt) */
-/* { */
-/*   FUNC_CALL_ENTRY; */
-
-/*   mqueue_recv( sim2app_mmiorsp_rx, (char*)pkt, sizeof(mmio_t) ); */
-
-/*   FUNC_CALL_EXIT; */
-/* } */
-
-/*
  * MMIO Write 32-bit
  */
 void mmio_write32 (uint32_t offset, uint32_t data)
@@ -602,28 +601,21 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
       printf("  [APP]  MMIO Read      : tid = 0x%03x, offset = 0x%x\n", mmio_pkt->tid, mmio_pkt->addr);
       END_YELLOW_FONTCOLOR;
 
-      // Messaging
-      // pthread_mutex_lock (&mmio_lock);
       mmio_request_put(mmio_pkt);
 
       // Wait until correct response found
-      while (mmio_pkt->tid != mmio_rsp_pkt->tid);
-	/* { */
-	/*   printf("Waiting for response .. %d %d\n", mmio_pkt->tid, mmio_rsp_pkt->tid);  */
-	/* } */
+      while (mmio_pkt->tid != mmio_rsp_pkt->tid)
+	{
+	  usleep(500);
+	}
 
       memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t));
       mmio_rsp_pkt_accepted = 1;
 
-      /* mmio_response_get(mmio_pkt); */
-      /* pthread_mutex_unlock (&mmio_lock); */
-
       // Display
-      // mmio_read_cnt++;
       BEGIN_YELLOW_FONTCOLOR;
 
       // Write data
-      // data = (uint32_t*)((uint64_t)mmio_afu_vbase + offset);
       *data32 = (uint32_t)mmio_pkt->qword[0];
 
       printf("  [APP]  MMIO Read Resp : tid = 0x%03x, %08x\n", mmio_pkt->tid, (uint32_t)*data32);
@@ -664,27 +656,19 @@ void mmio_read64(uint32_t offset, uint64_t *data64)
       printf("  [APP]  MMIO Read      : tid = 0x%03x, offset = 0x%x\n", mmio_pkt->tid, mmio_pkt->addr);
       END_RED_FONTCOLOR;
 
-      // Messaging
-      /* pthread_mutex_lock (&mmio_lock); */
-      
       // Send request
       mmio_request_put(mmio_pkt);
 
       // Wait for correct response to be back
-      while (mmio_pkt->tid != mmio_rsp_pkt->tid);
-	/* { */
-	/*   printf("Waiting for response .. %d %d\n", mmio_pkt->tid, mmio_rsp_pkt->tid);  */
-	/* } */
+      while (mmio_pkt->tid != mmio_rsp_pkt->tid)
+	{
+	  usleep(5000);
+	};
 
       memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t));
       mmio_rsp_pkt_accepted = 1;
 
-
-      /* mmio_response_get(mmio_pkt); */
-      /* pthread_mutex_unlock (&mmio_lock); */
-
       // Display
-      // mmio_read_cnt++;
       BEGIN_YELLOW_FONTCOLOR;
 
       // Write data
@@ -877,9 +861,6 @@ void deallocate_buffer(struct buffer_t *mem)
 
   int ret;
   char tmp_msg[ASE_MQ_MSGSIZE] = { 0, };
-  /* char *mq_name; */
-  /* mq_name = ase_malloc (ASE_MQ_NAME_LEN); */
-  /* memset(mq_name, 0, ASE_MQ_NAME_LEN); */
 
 #if 0
   ase_buffer_info(mem);
@@ -1083,3 +1064,4 @@ void ase_portctrl(const char *ctrl_msg)
   // Allow simulator to parse message and sort itself out
   usleep(1000);
 }
+
