@@ -65,6 +65,10 @@
 #include "svdpi.h"
 #endif
 
+#ifndef SIM_SIDE
+#define APP_SIDE
+#endif
+
 /*
  * Return integers
  */
@@ -86,8 +90,8 @@
 #define SIZEOF_1GB_BYTES     (uint64_t)pow(1024, 3)
 
 // Size of page
-#define ASE_PAGESIZE   0x1000        // 4096 bytes
-#define CCI_CHUNK_SIZE 2*1024*1024   // CCI 2 MB physical chunks 
+#define ASE_PAGESIZE         0x1000        // 4096 bytes
+#define CCI_CHUNK_SIZE       2*1024*1024   // CCI 2 MB physical chunks 
 
 //MMIO memory map size
 #define MMIO_LENGTH                512*1024   // 512 KB MMIO size
@@ -200,8 +204,8 @@ char *app_run_cmd;
 // Buffer information structure
 struct buffer_t                   //  Descriptiion                    Computed by
 {                                 // --------------------------------------------
-  int fd_app;                     // File descriptor                 |   APP
-  int fd_ase;                     // File descriptor                 |   SIM
+  /* int fd_app;                     // File descriptor                 |   APP */
+  /* int fd_ase;                     // File descriptor                 |   SIM */
   int index;                      // Tracking id                     | INTERNAL
   int valid;                      // Valid buffer indicator          | INTERNAL
   int metadata;                   // MQ marshalling command          | INTERNAL

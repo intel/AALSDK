@@ -709,7 +709,7 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   FUNC_CALL_ENTRY;
 
   // pthread_mutex_lock (&app_lock);
-
+  int fd_alloc;
   char tmp_msg[ASE_MQ_MSGSIZE]  = { 0, };
 
   BEGIN_YELLOW_FONTCOLOR;
@@ -753,8 +753,8 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   // Tue May  5 19:24:21 PDT 2015
   // https://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html
   // S_IREAD | S_IWRITE are obselete
-  mem->fd_app = shm_open(mem->memname, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
-  if(mem->fd_app < 0)
+  fd_alloc = shm_open(mem->memname, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
+  if(fd_alloc < 0)
     {
       perror("shm_open");
       exit(1);
@@ -764,11 +764,11 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   // Mmap shared memory region
   if (suggested_vaddr == (uint64_t*) NULL)
     {
-      mem->vbase = (uint64_t) mmap(NULL, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED, mem->fd_app, 0);
+      mem->vbase = (uint64_t) mmap(NULL, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED, fd_alloc, 0);
     }
   else
     {
-      mem->vbase = (uint64_t) mmap(suggested_vaddr, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, mem->fd_app, 0);
+      mem->vbase = (uint64_t) mmap(suggested_vaddr, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, fd_alloc, 0);
     }
 
   // Check
@@ -781,7 +781,7 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
 
   // Extend memory to required size
   int ret;
-  ret = ftruncate(mem->fd_app, (off_t)mem->memsize);
+  ret = ftruncate(fd_alloc, (off_t)mem->memsize);
 #ifdef ASE_DEBUG
   if (ret != 0)
     {
@@ -842,13 +842,13 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
       if (mem->index % 20 == 0)
 	{
 	  fprintf(fp_pagetable_log,
-		  "Index\tfd_app\tfd_ase\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
+		  "Index\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
 	}
       fprintf(fp_pagetable_log,
-	      "%d\t%d\t%d\t%p\t%p\t%x\t%s\t\t%p\n",
+	      "%d\t%p\t%p\t%x\t%s\t\t%p\n",
 	      mem->index,
-	      mem->fd_app,
-	      mem->fd_ase,
+	      /* fd_alloc, */
+	      /* mem->fd_ase, */
 	      (void*)mem->vbase,
 	      (void*)mem->pbase,
 	      mem->memsize,
@@ -858,7 +858,7 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
     }
 #endif
 
-  close(mem->fd_app);
+  close(fd_alloc);
 
   FUNC_CALL_EXIT;
 }

@@ -123,6 +123,7 @@ void ase_alloc_action(struct buffer_t *mem)
   FUNC_CALL_ENTRY;
 
   struct buffer_t *new_buf;
+  int fd_alloc;
 
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
@@ -131,8 +132,8 @@ void ase_alloc_action(struct buffer_t *mem)
 #endif
 
   // Obtain a file descriptor
-  mem->fd_ase = shm_open(mem->memname, O_RDWR, S_IRUSR|S_IWUSR);
-  if(mem->fd_ase < 0)
+  fd_alloc = shm_open(mem->memname, O_RDWR, S_IRUSR|S_IWUSR);
+  if(fd_alloc < 0)
     {
       /* perror("shm_open"); */
       ase_error_report("shm_open", errno, ASE_OS_SHM_ERR);
@@ -146,7 +147,7 @@ void ase_alloc_action(struct buffer_t *mem)
 #endif
 
   // Mmap to pbase, find one with unique low 38 bit
-  mem->pbase = (uint64_t)mmap(NULL, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED, mem->fd_ase, 0);
+  mem->pbase = (uint64_t)mmap(NULL, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED, fd_alloc, 0);
   if(mem->pbase == (uint64_t)NULL)
     {
       ase_error_report("mmap", errno, ASE_OS_MEMMAP_ERR);
@@ -154,8 +155,8 @@ void ase_alloc_action(struct buffer_t *mem)
       ase_perror_teardown();
       start_simkill_countdown(); // RRS: exit(1);
     }
-  ftruncate(mem->fd_ase, (off_t)mem->memsize);
-  close(mem->fd_ase);
+  ftruncate(fd_alloc, (off_t)mem->memsize);
+  close(fd_alloc);
 
   // Record fake address
   mem->fake_paddr = get_range_checked_physaddr(mem->memsize);
@@ -208,14 +209,16 @@ void ase_alloc_action(struct buffer_t *mem)
       if (mem->index % 20 == 0) 
 	{
 	  fprintf(fp_pagetable_log, 
-		  "Index\tfd_app\tfd_ase\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
+		  "Index\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
+	  // "Index\tfd_app\tfd_ase\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
 	}
       
       fprintf(fp_pagetable_log, 
-	      "%d\t%d\t%d\t%p\t%p\t%x\t%s\t\t%p\n",
+	      /* "%d\t%d\t%d\t%p\t%p\t%x\t%s\t\t%p\n", */
+	      "%d\t%p\t%p\t%x\t%s\t\t%p\n",
 	      mem->index,
-	      mem->fd_app,
-	      mem->fd_ase,
+	      /* mem->fd_app, */
+	      /* mem->fd_ase, */
 	      (void*)mem->vbase, 
 	      (void*)mem->pbase,
 	      mem->memsize,
@@ -290,8 +293,8 @@ void ase_dealloc_action(struct buffer_t *buf)
 // --------------------------------------------------------------------
 void ase_empty_buffer(struct buffer_t *buf)
 {
-  buf->fd_app = 0;
-  buf->fd_ase = 0;
+  /* buf->fd_app = 0; */
+  /* buf->fd_ase = 0; */
   buf->index = 0;
   buf->valid = ASE_BUFFER_INVALID;
   buf->metadata = 0;
