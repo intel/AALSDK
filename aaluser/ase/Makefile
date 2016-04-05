@@ -44,7 +44,7 @@
 
 include ase_sources.mk
 
-## ASE Version
+# ASE Version
 ASE_VERSION = 5.0.2-Beta
 
 # ASE switches (these tend to increase log sizes)
@@ -54,12 +54,14 @@ ASE_DISABLE_LOGGER = 0
 
 # Enable Altera gates library
 GLS_SIM = 1
+GLS_SAMPLE_LIB = $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
 
 # Timescale
 TIMESCALE = 1ns/1ns
 
 # ASE Source directory
 ASE_SRCDIR = $(shell pwd)
+
 
 #########################################################################
 #                          Default options                              #
@@ -68,25 +70,23 @@ ASE_SRCDIR = $(shell pwd)
 SIMULATOR?=VCS
 CC=gcc
 
-## Include directory
-ifeq ($(SIMULATOR), VCS)
-TOOL_DPI_INCDIR=$(VCS_HOME)
-endif
-ifeq ($(SIMULATOR), QUESTA)
-TOOL_DPI_INCDIR=$(MTI_HOME)
-endif
+## RTL command
+SNPS_COMMAND = $(shell command -v vcs)
+MENT_COMMAND = $(shell command -v vsim)
 
 ## C Compiler options
 CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1
-CC_OPT+= -I $(TOOL_DPI_INCDIR)/include
 CC_OPT+= -Wall 
-# -std=c99
-# -D_POSIX_C_SOURCE=200809L
-# -D_XOPEN_SOURCE=700
 ifeq ($(ASE_DEBUG), 1)
 CC_OPT+= -D ASE_DEBUG=1
-# CC_OPT+= -pedantic
 endif
+ifeq ($(SIMULATOR), VCS)
+CC_OPT+= -I $(VCS_HOME)/include/
+endif
+ifeq ($(SIMULATOR), QUESTA)
+CC_OPT+= -I $(MTI_HOME)/include/
+endif
+
 
 ## Print information ##
  $(info SIMULATOR=$(SIMULATOR))
@@ -120,7 +120,7 @@ SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 # SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
-SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+USE_PLATFORM_CCIP  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
+# SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+USE_PLATFORM_CCIP  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
 SNPS_VLOGAN_OPT+= +lint=all,noVCDE,noNS,NCEID,CAWM,TFIPC,IPDP,PCWM
 ifeq ($(ASE_DEBUG), 1)
   ifeq ($(ASE_DISABLE_LOGGER), 1)
@@ -195,7 +195,6 @@ VALGRIND_OPTS+= -v --log-file=valgrind.log --error-limit=no
 VALGRIND_OPTS+= --track-fds=yes --trace-children=yes
 VALGRIND_OPTS+= --leak-check=full --track-origins=yes
 VALGRIND_OPTS+= --show-reachable=yes
-# VALGRIND_OPTS+= --gen-suppressions=all
 VALGRIND_OPTS+= --show-leak-kinds=definite,possible
 VALGRIND_OPTS+= --undef-value-errors=yes
 
@@ -271,13 +270,6 @@ CLANG_OPT+= \
 	-enable-checker alpha.security.taint.TaintPropagation \
 
 
-#	-enable-checker debug.ViewCallGraph \
-	-enable-checker debug.DumpCFG \
-	-enable-checker debug.ViewCFG \
-	-enable-checker alpha.cplusplus.NewDeleteLeaks \
-	-enable-checker alpha.deadcode.IdempotentOperations \
-	-enable-checker alpha.osx.cocoa.MissingSuperCall \
-
 #########################################################################
 #                            Build Targets                              #
 #########################################################################
@@ -286,6 +278,7 @@ all: check build
 
 # Check
 check: header
+# Ensure GCC is available
 ifneq ($(CC), gcc)
 	@echo "#                                                          #"
 	@echo "# CC=$(CC) not supported                                   #"
@@ -294,6 +287,7 @@ ifneq ($(CC), gcc)
 	@echo "############################################################"
 	exit 1
 endif
+# Echo simulator setting
 ifneq ($(SIMULATOR), VCS)
   ifneq ($(SIMULATOR), QUESTA)
 	@echo "#                                                          #"
@@ -304,7 +298,40 @@ ifneq ($(SIMULATOR), VCS)
 	exit 1
   endif
 endif
-
+# Check gate simulation libraries
+ifdef GLS_SIM
+  ifndef QUARTUS_HOME
+	@echo "** ERROR **: env(QUARTUS_HOME) has not been set." 
+	@echo "** ERROR **: GLS_SIM needs QUARTUS_HOME environment variable to be set."
+    ifdef QUARTUS_ROOT
+	@echo "** ERROR **: env(QUARTUS_ROOT) is set up. Copy its contents to env(QUARTUS_HOME)."
+	@echo "** ERROR **: This makefile references libraries based on env(QUARTUS_HOME)."
+    endif
+  else
+    ifeq ($(wildcard $(GLS_SAMPLE_LIB)),)
+	@echo "**ERROR** : env(QUARTUS_HOME) not set up correctly."
+	@echo "**ERROR** : Cannot find Quartus library files in known locations"
+    endif
+  endif
+endif
+# Check if some RTL simulator exists
+ifndef VCS_HOME
+  ifndef MTI_HOME
+	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
+	exit 1
+  endif
+	@echo "**ERROR** : env(VCS_HOME) is not set ! svdpi.h cannot be found !"
+	exit 1
+endif
+# Check if some RTL simulator exists
+ifndef SNPS_COMMAND
+  ifndef MENT_COMMAND
+	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
+	exit 1
+  endif
+	@echo "**ERROR** : Synopsys commands (vlogan, vcs) not found !"
+	exit 1
+endif
 
 # Print version number
 header:
