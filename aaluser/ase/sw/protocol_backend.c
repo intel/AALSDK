@@ -876,7 +876,7 @@ void start_simkill_countdown()
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
     mqueue_destroy(mq_array[ipc_iter].name);
 
-  free(mq_array);
+  // free(mq_array);
 
   // Destroy all open shared memory regions
   printf("SIM-C : Unlinking Shared memory regions.... \n");

@@ -117,7 +117,7 @@ void ipc_init()
   ase_eval_session_directory();
   
   // Malloc mq_array
-  mq_array = (struct ipc_t *)ase_malloc(ASE_MQ_INSTANCES * sizeof(struct ipc_t) );
+  // mq_array = (struct ipc_t *)ase_malloc(ASE_MQ_INSTANCES * sizeof(struct ipc_t) );
   
   // Create names
   /* strncpy(mq_array[0].name, "app2sim_alloc_ping_smq"	, ASE_MQ_NAME_LEN); */

@@ -434,8 +434,8 @@ struct ipc_t
   char path[ASE_FILEPATH_LEN];
   int  perm_flag;
 };
-// struct ipc_t mq_array[ASE_MQ_INSTANCES];
-struct ipc_t *mq_array;
+struct ipc_t mq_array[ASE_MQ_INSTANCES];
+//struct ipc_t *mq_array;
 
 
 /* ********************************************************************
