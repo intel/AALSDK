@@ -1,0 +1,156 @@
+;/*++
+
+;; Copyright (c) 2014-2016, Intel Corporation
+;;
+;; Redistribution  and  use  in source  and  binary  forms,  with  or  without
+;; modification, are permitted provided that the following conditions are met:
+;;
+;; * Redistributions of  source code  must retain the  above copyright notice,
+;;   this list of conditions and the following disclaimer.
+;; * Redistributions in binary form must reproduce the above copyright notice,
+;;   this list of conditions and the following disclaimer in the documentation
+;;   and/or other materials provided with the distribution.
+;; * Neither the name  of Intel Corporation  nor the names of its contributors
+;;   may be used to  endorse or promote  products derived  from this  software
+;;   without specific prior written permission.
+;;
+;; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+;; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE
+;; IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+;; ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
+;; LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
+;; CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF
+;; SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS
+;; INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN
+;; CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
+;; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
+;; POSSIBILITY OF SUCH DAMAGE.
+;;*****************************************************************************
+;; @file aalbus.inf
+;; @brief INF file for Intel(R) Quick Assist Software Technology Accelerator 
+;;        Abstraction Layer Software (AAL)
+;;        AAL Bus Driver.  This driver represents a software Bus used to manage 
+;;        instances of AAL Device Services.
+;; @ingroup System
+;; @verbatim
+;; Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+;;
+;; AUTHOR: Joseph Grecco, Intel Corporation
+;;
+;; HISTORY:
+;; WHEN:          WHO:     WHAT:
+;; @endverbatim
+;;****************************************************************************;
+--*/
+
+;;;
+;;;  Version Section - Provides Version and implementation information about the Package
+[Version]
+Signature="$WINDOWS NT$"                           ; Specifies OS.  This indicates All Windows OS.
+Class=System                                       ; Device Setup class
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}   ; GUID_DEVCLASS_SYSTEM from Devguid.h
+Provider=%INTC%                                    ; Provider String - Intel Corporation
+DriverVer=05/07/2014, 4.00.0001                    ; Version 4.00
+CatalogFile=AALDrivers.cat                         ; Catalog filename
+
+;; Specifies the target destination directory or directories for all copy, delete, and/or rename operations on 
+;;  files referenced by name elsewhere in the INF file.
+[DestinationDirs]
+DefaultDestDir = 12                                ; Drivers directory. http://msdn.microsoft.com/en-us/library/windows/hardware/ff553598(v=vs.85).aspx
+
+;; identifies the distribution disks or CD-ROM discs that contain the source files to be transferred to the 
+;;  target computer during installation. http://msdn.microsoft.com/en-us/library/windows/hardware/ff547478(v=vs.85).aspx
+[SourceDisksNames]
+1 = %DiskId1%,,,""                                 ; Disk 1 = "AAL Bus Installation Disk #1",no cab file,NA,"local dir"
+
+;; Names the source files that are used during installation, identifies the installation disks that contain those files, 
+;;  and provides the directory paths, if any, on the distribution disks that contain individual files.
+[SourceDisksFiles]
+aalbus.sys  = 1,,                                  ; aalbus.sys is on Disk 1 in install dir. Use file size
+
+;;******************
+;; Install Section
+;;******************
+
+;; Identifies the manufacturer of one or more devices that can be installed by using the INF file.
+[Manufacturer]
+%INTC%=Standard,NT$ARCH$                           ; "Standard == model" on XP or later
+
+;; For Win2K because it cannot parse decorated sections
+[Standard]
+
+;; bus pnp ids
+%AALBus.DeviceDesc%=AALBus_Device, root\aalbus
+
+;; For XP and later
+[Standard.NT$ARCH$]
+%AALBus.DeviceDesc%=AALBus_Device, root\aalbus
+
+;; Directive for copying files on install
+[AALBus_Device.NT]
+CopyFiles=Driver_Files                             ; Copy files listed in Driver_Files to "Destination_Dir"
+
+;; List of driver files
+[Driver_Files]
+aalbus.sys
+
+;; Device Dtiver Install Hardware Section
+[AALBus_Device.NT.HW]
+AddReg=AALBus_Device.NT.AddReg                     ; Add registry entries as per specified section
+
+;; Registry entries - http://msdn.microsoft.com/en-us/library/windows/hardware/ff546320(v=vs.85).aspx
+[AALBus_Device.NT.AddReg]
+
+;; specifies characteristics for the device. The characteristics value is a numeric value that 
+;;  is the result of using OR on one or more FILE_* file characteristics values, which are defined in Wdm.h and Ntddk.h.                        
+HKR,,DeviceCharacteristics,0x10001,0x0100          ; Use same security checks on relative opens
+
+;;Specifies a security descriptor for the device. The security-descriptor-string is a string with tokens to 
+;;  indicate the DACL (D:) security component.
+HKR,,Security,,"D:P(A;;GA;;;BA)(A;;GA;;;SY)(A;;GA;;;AU)"       ; Allow generic-all access to Built-in administrators and Local system and Authenticated Users
+
+
+;; Service installation - Specifies characteristics of the services associated with drivers, such as how and 
+;;                         when the services are loaded, and any dependencies on other underlying legacy drivers or services. 
+[AALBus_Device.NT.Services]
+AddService = aalbus,%SPSVCINST_ASSOCSERVICE%, aalbus_Service_Inst ;Service Name = aalbus, PcP Function driver name
+
+; -------------- aalbus Driver Service Install sections
+[aalbus_Service_Inst]
+DisplayName    = %aalbus.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START 
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\aalbus.sys
+LoadOrderGroup = Extended Base
+
+;; AALBus_Device Coinstaller installation ------
+[DestinationDirs]
+AALBus_Device_CoInstaller_CopyFiles = 11
+
+[AALBus_Device.NT.CoInstallers]
+AddReg=AALBus_Device_CoInstaller_AddReg
+CopyFiles=AALBus_Device_CoInstaller_CopyFiles
+
+[AALBus_Device_CoInstaller_CopyFiles]
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll
+
+[AALBus_Device_CoInstaller_AddReg]
+HKR,,CoInstallers32,0x00010000, "WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll,WdfCoInstaller"
+
+[SourceDisksFiles]
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
+
+[AALBus_Device.NT.Wdf]
+KmdfService = aalbus, aalbus_wdfsect
+[aalbus_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+;; String section has all of the string values used in the INF file.
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+INTC = "Intel Corp."
+StdMfg = "(Standard system devices)"
+DiskId1 = "AAL Bus Installation Disk #1"
+AALBus.DeviceDesc = "AAL Bus Driver"
+aalbus.SVCDESC = "AAL Bus Driver"
