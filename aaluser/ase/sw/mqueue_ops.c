@@ -35,6 +35,74 @@
 #include "ase_common.h"
 
 /*
+ * Named pipe string array
+ */
+const char * mq_name_arr[] = 
+  {
+    "app2sim_alloc_ping_smq"    ,    
+    "app2sim_mmioreq_smq"       ,
+    "app2sim_umsg_smq"          ,
+    "sim2app_alloc_pong_smq"    ,
+    "sim2app_mmiorsp_smq"       ,
+    "app2sim_portctrl_req_smq"  ,
+    "app2sim_dealloc_ping_smq"  ,
+    "sim2app_dealloc_pong_smq"  ,
+    "sim2app_portctrl_rsp_smq"  
+  }; 
+
+
+/*
+ * get_smq_perm_flag : Calculate perm_flag based on string name
+ */
+int get_smq_perm_flag(const char *mq_name_str)
+{
+  int ret_perm_flag;
+  char mq_str[ASE_MQ_NAME_LEN]; 
+  strncpy(mq_str, mq_name_str, ASE_MQ_NAME_LEN);
+
+  // Tokenize string and get first phrase --- "app2sim" OR "sim2app"
+  char *token;
+  token = strtok(mq_str, "_");
+
+  // If name looks weird, throw an error
+  if ( (strncmp(token, "sim2app", 7) != 0) && (strncmp(token, "app2sim", 7) != 0) )
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("  ** ERROR **: Named pipe name is neither app2sim nor sim2app!\n");
+      END_RED_FONTCOLOR;
+    #ifdef SIM_SIDE
+      start_simkill_countdown();
+    #else      
+      exit(1);
+    #endif
+    }
+  
+#ifdef SIM_SIDE
+  if (strncmp(token, "sim2app", 7) == 0)
+    {
+      ret_perm_flag = O_WRONLY;
+    }
+  else if  (strncmp(token, "app2sim", 7) == 0)
+    {
+      ret_perm_flag = O_RDONLY|O_NONBLOCK;
+    }
+#endif
+#ifdef APP_SIDE
+  if (strncmp(token, "sim2app", 7) == 0)
+    {
+      ret_perm_flag = O_RDONLY;
+    }
+  else if  (strncmp(token, "app2sim", 7) == 0)
+    {
+      ret_perm_flag = O_WRONLY;
+    }
+#endif
+  
+  return ret_perm_flag;
+}
+
+
+/*
  * ipc_init: Initialize IPC messaging structure
  *           DOES not create or open the IPC, simply initializes the structures
  */
@@ -52,41 +120,48 @@ void ipc_init()
   mq_array = (struct ipc_t *)ase_malloc(ASE_MQ_INSTANCES * sizeof(struct ipc_t) );
   
   // Create names
-  strncpy(mq_array[0].name, "app2sim_alloc_ping_smq"	, ASE_MQ_NAME_LEN);
-  strncpy(mq_array[1].name, "app2sim_mmioreq_smq"	, ASE_MQ_NAME_LEN);
-  strncpy(mq_array[2].name, "app2sim_umsg_smq"	        , ASE_MQ_NAME_LEN);
-  strncpy(mq_array[3].name, "sim2app_alloc_pong_smq"	, ASE_MQ_NAME_LEN);
-  strncpy(mq_array[4].name, "sim2app_mmiorsp_smq"	, ASE_MQ_NAME_LEN);
-  strncpy(mq_array[5].name, "app2sim_portctrl_req_smq"	, ASE_MQ_NAME_LEN);
-  strncpy(mq_array[6].name, "app2sim_dealloc_ping_smq"	, ASE_MQ_NAME_LEN);
-  strncpy(mq_array[7].name, "sim2app_dealloc_pong_smq"	, ASE_MQ_NAME_LEN);
-  strncpy(mq_array[8].name, "sim2app_portctrl_rsp_smq"	, ASE_MQ_NAME_LEN);
+  /* strncpy(mq_array[0].name, "app2sim_alloc_ping_smq"	, ASE_MQ_NAME_LEN); */
+  /* strncpy(mq_array[1].name, "app2sim_mmioreq_smq"	, ASE_MQ_NAME_LEN); */
+  /* strncpy(mq_array[2].name, "app2sim_umsg_smq"	        , ASE_MQ_NAME_LEN); */
+  /* strncpy(mq_array[3].name, "sim2app_alloc_pong_smq"	, ASE_MQ_NAME_LEN); */
+  /* strncpy(mq_array[4].name, "sim2app_mmiorsp_smq"	, ASE_MQ_NAME_LEN); */
+  /* strncpy(mq_array[5].name, "app2sim_portctrl_req_smq"	, ASE_MQ_NAME_LEN); */
+  /* strncpy(mq_array[6].name, "app2sim_dealloc_ping_smq"	, ASE_MQ_NAME_LEN); */
+  /* strncpy(mq_array[7].name, "sim2app_dealloc_pong_smq"	, ASE_MQ_NAME_LEN); */
+  /* strncpy(mq_array[8].name, "sim2app_portctrl_rsp_smq"	, ASE_MQ_NAME_LEN); */
 
-  // Calculate path
+  // Initialize named pipe array
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
-    sprintf(mq_array[ipc_iter].path, "%s/%s", ase_workdir_path, mq_array[ipc_iter].name);
-
-#ifdef SIM_SIDE
-  mq_array[0].perm_flag = O_RDONLY|O_NONBLOCK;
-  mq_array[1].perm_flag = O_RDONLY|O_NONBLOCK;
-  mq_array[2].perm_flag = O_RDONLY|O_NONBLOCK;
-  mq_array[3].perm_flag = O_WRONLY;
-  mq_array[4].perm_flag = O_WRONLY;
-  mq_array[5].perm_flag = O_RDONLY|O_NONBLOCK;
-  mq_array[6].perm_flag = O_RDONLY|O_NONBLOCK;
-  mq_array[7].perm_flag = O_WRONLY;
-  mq_array[8].perm_flag = O_WRONLY;
-#else
-  mq_array[0].perm_flag = O_WRONLY;
-  mq_array[1].perm_flag = O_WRONLY;
-  mq_array[2].perm_flag = O_WRONLY;
-  mq_array[3].perm_flag = O_RDONLY;
-  mq_array[4].perm_flag = O_RDONLY;
-  mq_array[5].perm_flag = O_WRONLY;
-  mq_array[6].perm_flag = O_WRONLY;
-  mq_array[7].perm_flag = O_RDONLY;
-  mq_array[8].perm_flag = O_RDONLY;
-#endif
+    {
+      // Set name
+      strncpy(mq_array[ipc_iter].name, mq_name_arr[ipc_iter], ASE_MQ_NAME_LEN);
+      // Compute path
+      sprintf(mq_array[ipc_iter].path, "%s/%s", ase_workdir_path, mq_array[ipc_iter].name);
+      // Set permission flag
+      mq_array[ipc_iter].perm_flag = get_smq_perm_flag(mq_name_arr[ipc_iter]);
+    }
+      
+/* #ifdef SIM_SIDE */
+/*   mq_array[0].perm_flag = O_RDONLY|O_NONBLOCK; */
+/*   mq_array[1].perm_flag = O_RDONLY|O_NONBLOCK; */
+/*   mq_array[2].perm_flag = O_RDONLY|O_NONBLOCK; */
+/*   mq_array[3].perm_flag = O_WRONLY; */
+/*   mq_array[4].perm_flag = O_WRONLY; */
+/*   mq_array[5].perm_flag = O_RDONLY|O_NONBLOCK; */
+/*   mq_array[6].perm_flag = O_RDONLY|O_NONBLOCK; */
+/*   mq_array[7].perm_flag = O_WRONLY; */
+/*   mq_array[8].perm_flag = O_WRONLY; */
+/* #else */
+/*   mq_array[0].perm_flag = O_WRONLY; */
+/*   mq_array[1].perm_flag = O_WRONLY; */
+/*   mq_array[2].perm_flag = O_WRONLY; */
+/*   mq_array[3].perm_flag = O_RDONLY; */
+/*   mq_array[4].perm_flag = O_RDONLY; */
+/*   mq_array[5].perm_flag = O_WRONLY; */
+/*   mq_array[6].perm_flag = O_WRONLY; */
+/*   mq_array[7].perm_flag = O_RDONLY; */
+/*   mq_array[8].perm_flag = O_RDONLY; */
+/* #endif */
 
   // Remove IPCs if already there
 #ifdef SIM_SIDE
