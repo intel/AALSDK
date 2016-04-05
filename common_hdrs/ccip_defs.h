@@ -558,21 +558,22 @@ struct CCIP_FME_DFL_PM {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt clock_buffer_supply_voltvalid :1; // clock buffer supply voltage valid
-            btUnsigned64bitInt core_supply_voltvalid :1; // core  supply voltage valid
-            btUnsigned64bitInt trans_supply_voltvalid :1; // transceiver  supply voltage valid
-            btUnsigned64bitInt fpga_supply_voltvalid :1; // fpga 1.8v  supply voltage valid
-            btUnsigned64bitInt volt_regulator_readmods :1; // Voltage regulator read modes
+            btUnsigned64bitInt clock_buffer_supply_i_valid :1; // clock buffer supply current valid
+            btUnsigned64bitInt core_supply_i_valid :1;         // core supply current valid
+            btUnsigned64bitInt trans_supply_i_valid :1;        // transceiver supply current valid
+            btUnsigned64bitInt fpga_supply_i_valid :1;         // fpga 1.8v supply current valid
+            btUnsigned64bitInt volt_regulator_readmods :1;     // Voltage regulator read modes
             btUnsigned64bitInt rsvd :3;
-            btUnsigned64bitInt clock_buffer_supply_voltvalue :8; // clock buffer supply voltage value
-            btUnsigned64bitInt core_supply_voltvalue :16; // core  supply voltage value
-            btUnsigned64bitInt trans_supply_voltvalue :8; // transceiver  supply voltage value
-            btUnsigned64bitInt fpga_supply_voltvalue :8; // fpga   supply voltage value
-            btUnsigned64bitInt volt_regulator_readmod_value :16; // read sample  sequence number
+            btUnsigned64bitInt clock_buffer_supply_i_value :8; // clock buffer supply current value
+            btUnsigned64bitInt core_supply_i_value :16;        // core supply current value
+            btUnsigned64bitInt trans_supply_i_value :8;        // transceiver supply current value
+            btUnsigned64bitInt fpga_supply_i_value :8;         // fpga supply current value
+            btUnsigned64bitInt sequence_number :16;            // read sample sequence number
          }; // end struct
       }; // end union
 
    } ccip_pm_rdvr; // end struct CCIP_PM_RDVR
+
 
    //Power Management Record Maximum values
    struct CCIP_PM_MAXVR {
@@ -580,12 +581,12 @@ struct CCIP_FME_DFL_PM {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt hw_set_field :1; //Hardware set field
+            btUnsigned64bitInt hw_set_field :1;          //Hardware set field
             btUnsigned64bitInt rsvd :7;
-            btUnsigned64bitInt max_clock_supply_voltrec :8; // Maximum clock buffer supply voltage recorded
-            btUnsigned64bitInt max_core_supply_voltrec :8; // Maximum core  supply voltage recorded
-            btUnsigned64bitInt max_trans_supply_voltrec :8; // Maximum Transceiver  supply voltage recorded
-            btUnsigned64bitInt max_fpga_supply_voltrec :8; // Maximum FPGA  supply voltage recorded
+            btUnsigned64bitInt max_clock_supply_i_rec :8; // Maximum clock buffer supply current recorded
+            btUnsigned64bitInt max_core_supply_i_rec :16; // Maximum core  supply current recorded
+            btUnsigned64bitInt max_trans_supply_i_rec :8; // Maximum Transceiver  supply current recorded
+            btUnsigned64bitInt max_fpga_supply_i_rec :8;  // Maximum FPGA  supply current recorded
             btUnsigned64bitInt rsvd1 :16;
          }; // end struct
       }; // end union
