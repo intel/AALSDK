@@ -154,7 +154,7 @@ void *mmio_response_watcher()
 	  // Wait until ACK from requesting thread
 	  while (mmio_rsp_pkt_accepted != 1)
 	    {
-	      usleep(500);
+	      usleep(100);
 	      /* printf("Waiting for mmio_rsp_pkt_accepted == 1\n"); */
 	      /* // usleep(500000); */
 	      /* sleep(1); */
@@ -622,7 +622,7 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
       // Wait until correct response found
       while (mmio_pkt->tid != mmio_rsp_pkt->tid)
 	{
-	  usleep(500);
+	  usleep(100);
 	}
 
       memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t));
@@ -678,7 +678,7 @@ void mmio_read64(uint32_t offset, uint64_t *data64)
       // Wait for correct response to be back
       while (mmio_pkt->tid != mmio_rsp_pkt->tid)
 	{
-	  usleep(5000);
+	  usleep(500);
 	};
 
       memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t));
@@ -1078,6 +1078,6 @@ void ase_portctrl(const char *ctrl_msg)
   mqueue_recv(sim2app_portctrl_rsp_rx, dummy_rxstr, ASE_MQ_MSGSIZE);
 
   // Allow simulator to parse message and sort itself out
-  usleep(1000);
+  // usleep(1000);
 }
 
