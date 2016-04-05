@@ -806,7 +806,7 @@ module ccip_sniffer
     * - Tracking key = MMIO TID
     */
    parameter int      MMIO_TRACKER_DEPTH = 2**CCIP_CFGHDR_TID_WIDTH;
-
+   
    // Tracker structure
    typedef struct {
       // Status management
@@ -819,8 +819,6 @@ module ccip_sniffer
 
    // Tracker status array
    logic [0:MMIO_TRACKER_DEPTH-1] 	       mmio_tracker_active_array;
-   logic [0:MMIO_TRACKER_DEPTH-1] 	       mmio_tracker_timeout_array;
-
 
    // Push/pop control process
    task update_mmio_activity(
@@ -846,6 +844,12 @@ module ccip_sniffer
 		   print_and_simkill();
 		end
 	    endcase // case ({push, pop})
+	    // If pop occured when not active
+	    if (~mmioread_tracker[tid].active && push) begin
+	       print_message_and_log(0, "ASE detected an unsolicited MMIO Read response !!\n");
+      	       print_message_and_log(0, "In system, this can cause a crash");
+      	       print_and_simkill();	       
+	    end
 	 end
       end
    endtask
@@ -892,16 +896,18 @@ module ccip_sniffer
 	    if (SoftReset|~mmioread_tracker[ii].active) begin
 	       mmioread_tracker[ii].timeout <= 0;	       
 	    end
-	    else if (mmioread_tracker[ii].timer_val <= `MMIO_RESPONSE_TIMEOUT) begin
-	       mmioread_tracker[ii].timeout <= 1;	       
+	    else if (mmioread_tracker[ii].timer_val >= `MMIO_RESPONSE_TIMEOUT) begin
+	       mmioread_tracker[ii].timeout <= 1;
+   	       print_message_and_log(0, "ASE timed out waiting for MMIO Read response to arrive !!");
+   	       print_message_and_log(0, "MMIO Read responses must return in 512 cycles");
+	       print_and_simkill();	       
 	    end
 	 end
-
+ 	 
 	 // Global flag
-	 assign mmio_tracker_timeout_array[ii] = mmioread_tracker[ii].timeout;
 	 assign mmio_tracker_active_array[ii]  = mmioread_tracker[ii].active;
 	 
       end
    endgenerate
-
+   
 endmodule // cci_sniffer
