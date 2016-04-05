@@ -400,6 +400,7 @@ extern "C" {
   void ase_portctrl(const char *);
   // Threaded watch processes
   void *mmio_response_watcher();
+  void *intr_request_watcher();
 #ifdef __cplusplus
 }
 #endif // __cplusplus

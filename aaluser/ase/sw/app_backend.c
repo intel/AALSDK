@@ -37,7 +37,7 @@
 
 // Lock
 // pthread_mutex_t app_lock;
-pthread_mutex_t mmio_lock;
+// pthread_mutex_t mmio_lock;
 
 // MMIO Outstanding counts
 uint32_t mmio_write_cnt = 0;
@@ -155,9 +155,6 @@ void *mmio_response_watcher()
 	  while (mmio_rsp_pkt_accepted != 1)
 	    {
 	      usleep(100);
-	      /* printf("Waiting for mmio_rsp_pkt_accepted == 1\n"); */
-	      /* // usleep(500000); */
-	      /* sleep(1); */
 	    }
 	  mmio_readrsp_cnt++;
 	}
@@ -168,6 +165,11 @@ void *mmio_response_watcher()
 /*
  * Interrupt request (FPGA->CPU) watcher
  */
+void *intr_request_watcher()
+{
+  
+}
+
 
 /*
  * Send SIMKILL
@@ -220,13 +222,13 @@ void session_init()
   /*     exit (EXIT_FAILURE); */
   /*   } */
 
-  if ( pthread_mutex_init(&mmio_lock, NULL) != 0)
-    {
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  MMIO Lock initialization failed, EXIT\n");
-      END_YELLOW_FONTCOLOR;
-      exit (EXIT_FAILURE);
-    }
+  /* if ( pthread_mutex_init(&mmio_lock, NULL) != 0) */
+  /*   { */
+  /*     BEGIN_YELLOW_FONTCOLOR; */
+  /*     printf("  [APP]  MMIO Lock initialization failed, EXIT\n"); */
+  /*     END_YELLOW_FONTCOLOR; */
+  /*     exit (EXIT_FAILURE); */
+  /*   } */
 
   if ( pthread_mutex_init(&mmio_tid_lock, NULL) != 0)
     {
@@ -441,7 +443,7 @@ void session_deinit()
 
       // Lock deinit
       // pthread_mutex_destroy(&app_lock);
-      pthread_mutex_destroy(&mmio_lock);
+      // pthread_mutex_destroy(&mmio_lock);
       pthread_mutex_destroy(&mmio_tid_lock);
     }
   else
