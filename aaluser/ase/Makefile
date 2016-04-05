@@ -62,7 +62,6 @@ TIMESCALE = 1ns/1ns
 # ASE Source directory
 ASE_SRCDIR = $(shell pwd)
 
-
 #########################################################################
 #                          Default options                              #
 #########################################################################
@@ -188,7 +187,7 @@ MENT_VSIM_OPT = -64 -c -l run.log
 MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) -do vsim_run.tcl
 
 #########################################################################
-#                         Valgring options                              #
+#                         Valgrind options                              #
 #########################################################################
 VALGRIND_OPTS = --tool=memcheck
 VALGRIND_OPTS+= -v --log-file=valgrind.log --error-limit=no
