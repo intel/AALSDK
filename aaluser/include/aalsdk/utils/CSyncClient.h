@@ -226,7 +226,7 @@ public:
       PrintExceptionDescription(rEvent); // Builtin function to print exception events
       Post();
    }
-   /// CSyncClient implementation of IServiceClient::serviceFreed
+   /// CSyncClient implementation of IServiceClient::serviceReleased
    void serviceReleased(TransactionID const &rTranID)
    {
       m_pCurrentService = NULL;
@@ -275,7 +275,7 @@ public:
    void syncRelease(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT)
    {
       m_pAALService->Release( TranID, timeout);
-      Wait();                                // Posted in CSyncClient::serviceFreed
+      Wait();                                // Posted in CSyncClient::serviceReleased
    }
 
    ///////////////////////////////////////////////////////////////////////////

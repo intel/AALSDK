@@ -140,7 +140,7 @@ public:
    /// ISingleAFUApp's internal semaphore is posted after this call.
    /// m_bIsOK (inherited from CAASBase) is set to false after this call.
    virtual void OnServiceAllocateFailed(const IEvent &)        = 0;
-   /// @brief Called in response to IServiceClient::serviceFreed notification.
+   /// @brief Called in response to IServiceClient::serviceReleased notification.
    /// @note Subclasses must override to implement application-specific behavior.
    ///
    /// ISingleAFUApp's internal semaphore is posted after this call.

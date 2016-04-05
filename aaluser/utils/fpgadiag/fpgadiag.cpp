@@ -292,6 +292,13 @@ void CMyApp::Stop()
 		 m_pFMEService = NULL;
    }
 
+   if( NULL != m_pALIBufferService ) {
+      // Release the Workspaces
+      m_pALIBufferService->bufferFree(m_InputVirt);
+      m_pALIBufferService->bufferFree(m_OutputVirt);
+      m_pALIBufferService->bufferFree(m_DSMVirt);
+   }
+
    if ( NULL != m_pNLBService ) {
 		 (dynamic_ptr<IAALService>(iidService, m_pNLBService))->Release(TransactionID());
 		 Wait(); // For service freed notification.
@@ -599,16 +606,6 @@ void CMyApp::serviceAllocateFailed(const IEvent &e)
    Post();
 }
 
-void CMyApp::serviceFreed(TransactionID const &tid)
-{
-	// Release the Workspaces
-	 m_pALIBufferService->bufferFree(m_InputVirt);
-	 m_pALIBufferService->bufferFree(m_OutputVirt);
-	 m_pALIBufferService->bufferFree(m_DSMVirt);
-
-	INFO("Service Freed");
-	Post();
-}
 
 void CMyApp::serviceEvent(const IEvent &e)
 {
@@ -625,7 +622,7 @@ void CMyApp::serviceEvent(const IEvent &e)
 
 void CMyApp::serviceReleased(TransactionID const &tid)
 {
-	INFO("Service Released");
+   INFO("Service Released");
    Post();
 }
 void CMyApp::serviceReleaseFailed(const IEvent &e)
