@@ -91,7 +91,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;HELLOAAL_SERVICE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BrowseInformation>true</BrowseInformation>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)aaluser\include;$(ProjectDir)..\..\Hello_AAL_Service\SW;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)aaluser\include;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;$(ProjectDir)..\..\Hello_AAL_Service\SW;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
