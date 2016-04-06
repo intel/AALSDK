@@ -421,7 +421,7 @@ extern "C" {
 #define ASE_MQ_MAXMSG     8
 #define ASE_MQ_MSGSIZE    1024
 #define ASE_MQ_NAME_LEN   64
-#define ASE_MQ_INSTANCES  9
+#define ASE_MQ_INSTANCES  10
 
 // Message presence setting
 #define ASE_MSG_PRESENT 0xD33D
@@ -648,6 +648,7 @@ int app2sim_portctrl_req_rx;  // Port Control messages in Rx mode
 int app2sim_dealloc_rx;
 int sim2app_dealloc_tx;
 int sim2app_portctrl_rsp_tx;
+int sim2app_intr_request_tx;
 #else
 int app2sim_alloc_tx;           // app2sim mesaage queue in RX mode
 int sim2app_alloc_rx;           // sim2app mesaage queue in TX mode
@@ -658,6 +659,7 @@ int app2sim_portctrl_req_tx;  // Port Control message in TX mode
 int app2sim_dealloc_tx;
 int sim2app_dealloc_rx;
 int sim2app_portctrl_rsp_rx;
+int sim2app_intr_request_rx;
 #endif // End SIM_SIDE
 
 // Defeature Atomics for BDX releases 

@@ -727,15 +727,16 @@ int ase_init()
     mqueue_create( mq_array[ipc_iter].name );
 
   // Open message queues
-  app2sim_alloc_rx    = mqueue_open(mq_array[0].name,  mq_array[0].perm_flag);
-  app2sim_mmioreq_rx  = mqueue_open(mq_array[1].name,  mq_array[1].perm_flag);
-  app2sim_umsg_rx     = mqueue_open(mq_array[2].name,  mq_array[2].perm_flag);
-  sim2app_alloc_tx    = mqueue_open(mq_array[3].name,  mq_array[3].perm_flag);
-  sim2app_mmiorsp_tx  = mqueue_open(mq_array[4].name,  mq_array[4].perm_flag);
+  app2sim_alloc_rx        = mqueue_open(mq_array[0].name,  mq_array[0].perm_flag);
+  app2sim_mmioreq_rx      = mqueue_open(mq_array[1].name,  mq_array[1].perm_flag);
+  app2sim_umsg_rx         = mqueue_open(mq_array[2].name,  mq_array[2].perm_flag);
+  sim2app_alloc_tx        = mqueue_open(mq_array[3].name,  mq_array[3].perm_flag);
+  sim2app_mmiorsp_tx      = mqueue_open(mq_array[4].name,  mq_array[4].perm_flag);
   app2sim_portctrl_req_rx = mqueue_open(mq_array[5].name,  mq_array[5].perm_flag);
-  app2sim_dealloc_rx  = mqueue_open(mq_array[6].name,  mq_array[6].perm_flag);
-  sim2app_dealloc_tx  = mqueue_open(mq_array[7].name,  mq_array[7].perm_flag);
+  app2sim_dealloc_rx      = mqueue_open(mq_array[6].name,  mq_array[6].perm_flag);
+  sim2app_dealloc_tx      = mqueue_open(mq_array[7].name,  mq_array[7].perm_flag);
   sim2app_portctrl_rsp_tx = mqueue_open(mq_array[8].name,  mq_array[8].perm_flag);
+  sim2app_intr_request_tx = mqueue_open(mq_array[9].name,  mq_array[9].perm_flag);
 
   // Calculate memory map regions
   printf("SIM-C : Calculating memory map...\n");

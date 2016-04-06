@@ -47,7 +47,8 @@ const char * mq_name_arr[] =
     "app2sim_portctrl_req_smq"  ,
     "app2sim_dealloc_ping_smq"  ,
     "sim2app_dealloc_pong_smq"  ,
-    "sim2app_portctrl_rsp_smq"  
+    "sim2app_portctrl_rsp_smq"  ,
+    "sim2app_intr_request_smq"
   }; 
 
 

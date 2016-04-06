@@ -266,6 +266,7 @@ void session_init()
   app2sim_dealloc_tx      = mqueue_open( mq_array[6].name, mq_array[6].perm_flag );
   sim2app_dealloc_rx      = mqueue_open( mq_array[7].name, mq_array[7].perm_flag );
   sim2app_portctrl_rsp_rx = mqueue_open( mq_array[8].name, mq_array[8].perm_flag );
+  sim2app_intr_request_rx = mqueue_open( mq_array[9].name, mq_array[9].perm_flag );
 
   // Message queues have been established
   mq_exist_status = MQ_ESTABLISHED;
