@@ -26,6 +26,9 @@
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtSem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtBarrier.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtCommon.h">

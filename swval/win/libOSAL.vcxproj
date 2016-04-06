@@ -119,7 +119,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_ASSERT=1;ENABLE_DEBUG=1;DBG_OSLTHREAD=1;DBG_CSEMAPHORE=1;DEBUG_BEYOND_LOGGER=1;OSAL_EXPORTS;_NO_BUILD_MESSAGES_;_CRT_RAND_S=1;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_ASSERT=1;ENABLE_DEBUG=1;DBG_OSLTHREAD=1;DBG_CSEMAPHORE=1;DBG_BARRIER=1;DEBUG_BEYOND_LOGGER=1;OSAL_EXPORTS;_NO_BUILD_MESSAGES_;_CRT_RAND_S=1;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\..\aaluser\include;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
@@ -169,7 +169,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_ASSERT=1;ENABLE_DEBUG=0;DBG_OSLTHREAD=1;DBG_CSEMAPHORE=1;DEBUG_BEYOND_LOGGER=1;OSAL_EXPORTS;_NO_BUILD_MESSAGES_;_CRT_RAND_S=1;WIN32;NDEBUG;_WINDOWS;_USRDLL;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_ASSERT=1;ENABLE_DEBUG=0;DBG_OSLTHREAD=1;DBG_CSEMAPHORE=1;DBG_BARRIER=1;DEBUG_BEYOND_LOGGER=1;OSAL_EXPORTS;_NO_BUILD_MESSAGES_;_CRT_RAND_S=1;WIN32;NDEBUG;_WINDOWS;_USRDLL;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\..\aaluser\include;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>

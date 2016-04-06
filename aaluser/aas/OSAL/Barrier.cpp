@@ -46,6 +46,31 @@
 # error TODO: Barrier for unknown OS.
 #endif // __AAL_UNKNOWN_OS__
 
+#if defined( __AAL_LINUX__ )
+# include <errno.h>
+# include <sys/time.h>
+#endif // __AAL_LINUX__
+
+#ifdef DBG_BARRIER
+# include "dbg_barrier.cpp"
+#else
+# define AutoLock0(__x) AutoLock(__x)
+# define AutoLock1(__x) AutoLock(__x)
+# define AutoLock2(__x) AutoLock(__x)
+# define AutoLock3(__x) AutoLock(__x)
+# define AutoLock4(__x) AutoLock(__x)
+# define AutoLock5(__x) AutoLock(__x)
+# define AutoLock6(__x) AutoLock(__x)
+# define AutoLock7(__x) AutoLock(__x)
+# if   defined( __AAL_LINUX__ )
+#    define _PThreadCondWait0             _PThreadCondWait
+#    define _PThreadCondTimedWait1        _PThreadCondTimedWait
+# elif defined( __AAL_WINDOWS__ )
+#    define _UnlockedWaitForSingleObject0 _UnlockedWaitForSingleObject
+#    define _UnlockedWaitForSingleObject1 _UnlockedWaitForSingleObject
+# endif // OS
+#endif // DBG_BARRIER
+
 BEGIN_NAMESPACE(AAL)
 
 //=============================================================================
@@ -58,6 +83,7 @@ Barrier::Barrier() :
    m_Flags(0),
    m_UnlockCount(0),
    m_CurCount(0),
+   m_UserDefined(NULL),
    m_AutoResetManager(this)
 #if defined( __AAL_WINDOWS__ )
    , m_hEvent(NULL)
@@ -75,15 +101,6 @@ Barrier::~Barrier()
    Destroy();
 }
 
-END_NAMESPACE(AAL)
-
-#if defined( __AAL_LINUX__ )
-# include <errno.h>
-# include <sys/time.h>
-#endif // __AAL_LINUX__
-
-BEGIN_NAMESPACE(AAL)
-
 //=============================================================================
 // Name: Create
 // Description: Creates or initializes a Barrier
@@ -96,7 +113,7 @@ BEGIN_NAMESPACE(AAL)
 //=============================================================================
 btBool Barrier::Create(btUnsignedInt UnlockCount, btBool bAutoReset)
 {
-   AutoLock(this);
+   AutoLock0(this);
    
    if ( flag_is_set(m_Flags, BARRIER_FLAG_INIT) ) {
       // Already initialized
@@ -150,7 +167,7 @@ btBool Barrier::Destroy()
 {
    btBool res = true;
    
-   AutoLock(this);
+   AutoLock1(this);
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
       // Not initialized.
@@ -194,7 +211,7 @@ btBool Barrier::Reset(btUnsignedInt UnlockCount)
 {
    btBool res = true;
 
-   AutoLock(this);
+   AutoLock2(this);
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
         flag_is_set(m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
@@ -235,7 +252,7 @@ btBool Barrier::Reset(btUnsignedInt UnlockCount)
 //=============================================================================
 btBool Barrier::CurrCounts(btUnsignedInt &rCurCount, btUnsignedInt &rUnlockCount)
 {
-   AutoLock(this);
+   AutoLock3(this);
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
       return false;
@@ -260,7 +277,7 @@ btBool Barrier::Post(btUnsignedInt nCount)
 {
    btBool res = true;
 
-   AutoLock(this);
+   AutoLock4(this);
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
         flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
@@ -320,7 +337,7 @@ btBool Barrier::UnblockAll()
 {
    btBool res = true;
 
-   AutoLock(this);
+   AutoLock5(this);
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
       // Not initialized.
@@ -356,6 +373,18 @@ btUnsignedInt Barrier::NumWaiters() const
 {
    AutoLock(this);
    return m_AutoResetManager.NumWaiters();
+}
+
+void Barrier::UserDefined(btObjectType User)
+{
+   AutoLock(this);
+   m_UserDefined = User;
+}
+
+btObjectType Barrier::UserDefined() const
+{
+   AutoLock(this);
+   return m_UserDefined;
 }
 
 Barrier::AutoResetManager::AutoResetManager(Barrier *pBarrier) :
@@ -694,7 +723,7 @@ void Barrier::AutoResetManager::WaitForAllWaitersToExit(CriticalSection *pCS)
 //=============================================================================
 btBool Barrier::Wait()
 {
-   AutoLock(this);
+   AutoLock6(this);
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
         flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
@@ -715,7 +744,7 @@ btBool Barrier::Wait()
       }
 
       {
-         _PThreadCondWait wait(this, &m_condition);
+         _PThreadCondWait0 wait(this, &m_condition);
       }
 
    }
@@ -744,7 +773,7 @@ btBool Barrier::Wait(btTime Timeout) // milliseconds
       return Wait();
    }
 
-   AutoLock(this);
+   AutoLock7(this);
 
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
         flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
@@ -785,7 +814,7 @@ btBool Barrier::Wait(btTime Timeout) // milliseconds
       int WaitRes = ETIMEDOUT;
 
       {
-         _PThreadCondTimedWait wait(this, &m_condition, &ts);
+         _PThreadCondTimedWait1 wait(this, &m_condition, &ts);
          WaitRes = wait.Result();
       }
 
@@ -819,7 +848,7 @@ btBool Barrier::Wait()
 {
    DWORD dwWaitResult = WAIT_FAILED;
 
-   AutoLock(this);
+   AutoLock6(this);
 
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
         flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
@@ -840,16 +869,16 @@ WAITLOOP:
 
    while ( m_CurCount < m_UnlockCount ) {
 
-      // If we're being unblocked then immediately return false.
-      if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
-         m_AutoResetManager.RemoveWaiter();
-         return false;
-      }
-
       // ASSERT: we are unlocked - don't wait while locked!
       {
-         _UnlockedWaitForSingleObject wait(this, m_hEvent, INFINITE);
+         _UnlockedWaitForSingleObject0 wait(this, m_hEvent, INFINITE);
          dwWaitResult = wait.Result();
+      }
+
+      // If we're being unblocked then immediately return false.
+      if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING | BARRIER_FLAG_DESTROYING) ) {
+         m_AutoResetManager.RemoveWaiter();
+         return false;
       }
 
       switch( dwWaitResult ) {
@@ -892,7 +921,7 @@ btBool Barrier::Wait(btTime Timeout) // milliseconds
       return Wait();
    }
 
-   AutoLock(this);
+   AutoLock7(this);
 
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
         flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
@@ -913,15 +942,15 @@ WAITLOOP:
 
    while ( m_CurCount < m_UnlockCount ) {
 
-      // If we're being unblocked then immediately return false.
-      if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
-         m_AutoResetManager.RemoveWaiter();
-         return false;
+      {
+         _UnlockedWaitForSingleObject1 wait(this, m_hEvent, (DWORD)Timeout);
+         dwWaitResult = wait.Result();
       }
 
-      {
-         _UnlockedWaitForSingleObject wait(this, m_hEvent, (DWORD)Timeout);
-         dwWaitResult = wait.Result();
+      // If we're being unblocked then immediately return false.
+      if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING | BARRIER_FLAG_DESTROYING) ) {
+         m_AutoResetManager.RemoveWaiter();
+         return false;
       }
 
       switch( dwWaitResult ) {
