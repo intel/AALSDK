@@ -344,17 +344,19 @@ CCIPDrvEvtDeviceAdd( IN WDFDRIVER       Driver,
 #endif 
 
 {
-   WDF_OBJECT_ATTRIBUTES  ioTargetAttrib;
+//   WDF_OBJECT_ATTRIBUTES  ioTargetAttrib;
    WDFIOTARGET  ioTarget;
    WDF_IO_TARGET_OPEN_PARAMS  openParams;
-
+   DECLARE_CONST_UNICODE_STRING(devname,L"\\Device\\aalbus\\AAL_IConfigManager");
+#if 0 
    WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(
       &ioTargetAttrib,
-      TARGET_DEVICE_INFO
+      AAL_PDO_DEVICE_CONTEXT
       );
+#endif
    status = WdfIoTargetCreate(
-      device,
-      &ioTargetAttrib,
+      hDevice,
+      WDF_NO_OBJECT_ATTRIBUTES,
       &ioTarget
       );
    if( !NT_SUCCESS( status ) ) {
@@ -362,7 +364,7 @@ CCIPDrvEvtDeviceAdd( IN WDFDRIVER       Driver,
    }
    WDF_IO_TARGET_OPEN_PARAMS_INIT_OPEN_BY_NAME(
       &openParams,
-      SymbolicLink,
+      &devname,
       STANDARD_RIGHTS_ALL
       );
    status = WdfIoTargetOpen(
@@ -373,9 +375,25 @@ CCIPDrvEvtDeviceAdd( IN WDFDRIVER       Driver,
       WdfObjectDelete( ioTarget );
       return status;
    }
+
+
+   status = WdfIoTargetQueryForInterface(
+      ioTarget,
+      &GUID_AALBUS_CONFIGMANAGER_QUERY_INTERFACE,
+      (PINTERFACE)&iupdateconfig,
+      sizeof( UPDATECONFIG_INTERFACE_STANDARD ),
+      1, // Version
+      NULL );
+
+   if( !NT_SUCCESS( status ) ) {
+
+#if DBG
+      DbgPrint( "WdfIoTargetQueryForInterface failed 0x%0x\n", status );
+#endif
+
+      return( status );
+   }
 }
-
-
    // Create the use mode interface to the driver
    status = ccidrv_initUMAPI( hDevice );
    if( !NT_SUCCESS( status ) ) {
