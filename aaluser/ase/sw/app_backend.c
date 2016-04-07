@@ -334,7 +334,7 @@ void session_init()
   printf("  [APP]  Creating MMIO ...\n");
   END_YELLOW_FONTCOLOR;
   mmio_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
-  memset(mmio_region, 0, sizeof(struct buffer_t));
+  /* memset(mmio_region, 0, sizeof(struct buffer_t)); */
   mmio_region->memsize = MMIO_LENGTH;
   mmio_region->is_mmiomap = 1;
   allocate_buffer(mmio_region, NULL);
@@ -349,7 +349,7 @@ void session_init()
   printf("  [APP]  Creating UMAS ... \n");
   END_YELLOW_FONTCOLOR;
   umas_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
-  memset(umas_region, 0, sizeof(struct buffer_t));
+  /* memset(umas_region, 0, sizeof(struct buffer_t)); */
   umas_region->memsize = UMAS_LENGTH;
   umas_region->is_umas = 1;
   allocate_buffer(umas_region, NULL);
@@ -1044,7 +1044,7 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
   umsgcmd_t *umsg_pkt;
 
   umsg_pkt = (struct umsgcmd_t *)ase_malloc( sizeof(struct umsgcmd_t) );
-  memset((char*)umsg_pkt, 0, sizeof(struct umsgcmd_t) );
+  /* memset((char*)umsg_pkt, 0, sizeof(struct umsgcmd_t) ); */
 
   umsg_pkt->id = umsg_id;
   memcpy((char*)umsg_pkt->qword, (char*)umsg_data, sizeof(uint64_t));

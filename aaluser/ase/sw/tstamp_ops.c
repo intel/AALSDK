@@ -119,7 +119,7 @@ char* get_timestamp(int dont_kill)
   tstamp_filepath = (char*)ase_malloc(ASE_FILEPATH_LEN);
 
   // Generate tstamp_filepath
-  memset(tstamp_filepath, 0, ASE_FILEPATH_LEN);
+  // memset(tstamp_filepath, 0, ASE_FILEPATH_LEN);
   sprintf(tstamp_filepath, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
 #ifdef ASE_DEBUG

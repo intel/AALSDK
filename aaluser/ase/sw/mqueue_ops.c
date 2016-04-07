@@ -202,7 +202,7 @@ int mqueue_open(char *mq_name, int perm_flag)
   char *mq_path;
 
   mq_path = ase_malloc (ASE_FILEPATH_LEN);
-  memset (mq_path, 0, ASE_FILEPATH_LEN);
+  /* memset (mq_path, 0, ASE_FILEPATH_LEN); */
   sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name);
 
   // Dummy function to open WRITE only MQs
@@ -282,7 +282,7 @@ void mqueue_destroy(char* mq_name_suffix)
   mq_path = ase_malloc (ASE_FILEPATH_LEN);
   if (mq_path != NULL)
     {
-      memset (mq_path, 0, ASE_FILEPATH_LEN);
+      /* memset (mq_path, 0, ASE_FILEPATH_LEN); */
       sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
       ret = unlink ( mq_path );
       if (ret == -1)

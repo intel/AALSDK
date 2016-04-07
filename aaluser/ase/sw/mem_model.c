@@ -246,7 +246,7 @@ void ase_dealloc_action(struct buffer_t *buf)
   // Traversal pointer
   struct buffer_t *dealloc_ptr;
   dealloc_ptr = (struct buffer_t *) ase_malloc(sizeof(struct buffer_t));
-  memset(dealloc_ptr, 0, sizeof(struct buffer_t));
+  /* memset(dealloc_ptr, 0, sizeof(struct buffer_t)); */
 
   // Search buffer and Invalidate
   dealloc_ptr = ll_search_buffer(buf->index);

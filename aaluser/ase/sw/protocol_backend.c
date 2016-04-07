@@ -568,7 +568,7 @@ int ase_listener()
       umsg_pkt = (struct umsgcmd_t *)ase_malloc(sizeof(struct umsgcmd_t) );
 
       // cleanse string before reading
-      memset(umsg_mapstr, 0, ASE_MQ_MSGSIZE);
+      /* memset(umsg_mapstr, 0, ASE_MQ_MSGSIZE); */
       if ( mqueue_recv(app2sim_umsg_rx, (char*)umsg_mapstr, sizeof(struct umsgcmd_t) ) == ASE_MSG_PRESENT)
 	{
 	  memcpy(umsg_pkt, (umsgcmd_t *)umsg_mapstr, sizeof(struct umsgcmd_t));
@@ -782,7 +782,7 @@ int ase_ready()
 
   // App run command
   app_run_cmd = ase_malloc (ASE_FILEPATH_LEN);
-  memset (app_run_cmd, 0, ASE_FILEPATH_LEN);
+  /* memset (app_run_cmd, 0, ASE_FILEPATH_LEN); */
 
   // Set test_cnt to 0
   glbl_test_cmplt_cnt = 0;
