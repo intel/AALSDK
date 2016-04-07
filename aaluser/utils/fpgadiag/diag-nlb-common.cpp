@@ -80,8 +80,6 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_RDS);
    } else if ( 0 == strcmp("--rdi", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_RDI);
-   } else if ( 0 == strcmp("--rdo", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_RDO);
    } else if ((0 == strcmp("--poll", option) ) || (0 == strcmp("--p", option))) {
 	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_POLL);
    } else if ((0 == strcmp("--csr-write", option)) || (0 == strcmp("--cw", option))) {
@@ -702,13 +700,6 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 	  } else {
 	     fprintf(fp, "Default=%s\n", nlbcl->defaults.rdi);
 	  }
-
-	  fprintf(fp, "                  = --rdo,                        readline-ownership,                             ");
-	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_RDO) ) {
-	     fprintf(fp, "yes\n");
-	  } else {
-	     fprintf(fp, "Default=%s\n", nlbcl->defaults.rdo);
-	  }
    }
 
    if ( 0 == strcasecmp(test.c_str(), "SW")) {
@@ -964,12 +955,10 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
        }
    }
 
-   // --rdi, --rds, --rdo
+   // --rdi, --rds
 
-   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_RDI|NLB_CMD_FLAG_RDS) ||
-		flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_RDI|NLB_CMD_FLAG_RDO) ||
-		flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_RDS|NLB_CMD_FLAG_RDO) ) {
-	   	os << "--rdi --rds and --rdo are mutually exclusive." << endl;
+   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_RDI|NLB_CMD_FLAG_RDS)) {
+	   	os << "--rdi and --rds are mutually exclusive." << endl;
 	   	return false;
    }
 

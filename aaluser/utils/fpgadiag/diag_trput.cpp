@@ -101,9 +101,6 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd)
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI)){
 	  cfg |= (csr_type)NLB_TEST_MODE_RDI;
    }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDO)){
-	  cfg |= (csr_type)NLB_TEST_MODE_RDO;
-   }
 
    // Select the channel.
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0)){

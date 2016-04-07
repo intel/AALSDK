@@ -176,7 +176,7 @@ struct NLBCmdLine
 
 #define NLB_CMD_FLAG_RDS          		(u64_type)0x08000000  		/* --rds             (readline - shared)                            	  */
 #define NLB_CMD_FLAG_RDI          		(u64_type)0x10000000  		/* --rdi             (readline - invalidate)                        	  */
-#define NLB_CMD_FLAG_RDO         		(u64_type)0x20000000  		/* --rdo             (readline - ownership)                         	  */
+//#define NLB_CMD_FLAG_RDO         		(u64_type)0x20000000  		/* --rdo             (readline - ownership)                         	  */
 
 #define NLB_CMD_FLAG_POLL         		(u64_type)0x40000000   		/* --poll            notice sent from CPU to FPGA via poll         		  */
 #define NLB_CMD_FLAG_CSR_WRITE    		(u64_type)0x200000000  		/* --csr-write       notice sent from CPU to FPGA via csr-write    		  */

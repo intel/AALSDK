@@ -115,10 +115,7 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
 
     if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI)){
        cfg |= (csr_type)NLB_TEST_MODE_RDI;
-	}
-    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDO)){
-       cfg |= (csr_type)NLB_TEST_MODE_RDO;
-    }
+	 }
 
     if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CSR_WRITE)){
        cfg |= (csr_type)NLB_TEST_MODE_CSR_WRITE;
