@@ -905,6 +905,8 @@ btInt INLB::ResetHandshake()
 btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize CoolSize, const NLBCmdLine &cmd)
 {
    btInt res = 0;
+   const btInt StopTimeoutMillis = 250;
+   btInt MaxPoll = StopTimeoutMillis;
 
    const btUnsigned32bitInt CoolOffData = 0xc001c001;
 
@@ -959,15 +961,21 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
 
    // Wait for test completion
-   while ( 0 == pAFUDSM->test_complete ) {
-      SleepMicro(100);
-   }
+   while ( 0 == pAFUDSM->test_complete &&
+         ( MaxPoll >= 0 )) {
+            MaxPoll -= 1;
+            SleepMilli(1);
+     }
 
    // Stop the device
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
    // Check the device status
+   if ( MaxPoll < 0 ) {
+     cerr << "The maximum timeout for test stop was exceeded." << endl;
+     ++res;
+   }
    if ( 0 != pAFUDSM->test_error ) {
       ++res;
    }
