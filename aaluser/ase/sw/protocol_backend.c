@@ -659,19 +659,19 @@ int ase_init()
   printf("SIM-C : PID of simulator is %d\n", ase_pid);
 
   // Evaluate PWD
-  ase_run_path = ase_malloc(ASE_FILEPATH_LEN);
-  ase_run_path = getenv("PWD");
+  /* ase_run_path = ase_malloc(ASE_FILEPATH_LEN); */
+  /* ase_run_path = getenv("PWD"); */
 
-#ifdef ASE_DEBUG
-  if (ase_run_path == NULL)
-    {
-      BEGIN_RED_FONTCOLOR;
-      printf("SIM-C : getenv(PWD) evaluated NULL -- this is unexpected !\n");
-      printf("        Needs Debug here\n");
-      start_simkill_countdown();
-      END_RED_FONTCOLOR;
-    }
-#endif
+/* #ifdef ASE_DEBUG */
+/*   if (ase_run_path == NULL) */
+/*     { */
+/*       BEGIN_RED_FONTCOLOR; */
+/*       printf("SIM-C : getenv(PWD) evaluated NULL -- this is unexpected !\n"); */
+/*       printf("        Needs Debug here\n"); */
+/*       start_simkill_countdown(); */
+/*       END_RED_FONTCOLOR; */
+/*     } */
+/* #endif */
 
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
@@ -679,10 +679,10 @@ int ase_init()
   // Evaluate IPCs
   ipc_init();
 
-  printf("SIM-C : ASE Session Directory located at =>\n");
+  printf("SIM-C : Current Directory located at =>\n");
   printf("        %s\n", ase_workdir_path);
-  printf("SIM-C : Current Working Directory =>\n");
-  printf("        %s\n", ase_run_path);
+  /* printf("SIM-C : Current Working Directory =>\n"); */
+  /* printf("        %s\n", ase_run_path); */
 
   // Create IPC cleanup setup
   create_ipc_listfile();
@@ -807,11 +807,11 @@ int ase_ready()
   // Display "Ready for simulation"
   BEGIN_GREEN_FONTCOLOR;
   printf("SIM-C : ** ATTENTION : BEFORE running the software application **\n");
-  printf("        Run the following command into terminal where application will run (copy-and-paste) =>\n");
+  printf("        Set env(ASE_WORKDIR) in terminal where application will run (copy-and-paste) =>\n");
   printf("        $SHELL   | Run:\n");
   printf("        ---------+---------------------------------------------------\n");
-  printf("        bash/zsh | export ASE_WORKDIR=%s\n", ase_run_path);
-  printf("        tcsh/csh | setenv ASE_WORKDIR %s\n", ase_run_path);
+  printf("        bash/zsh | export ASE_WORKDIR=%s\n", ase_workdir_path);
+  printf("        tcsh/csh | setenv ASE_WORKDIR %s\n", ase_workdir_path);
   printf("        For any other $SHELL, consult your Linux administrator\n");
   printf("\n");
   END_GREEN_FONTCOLOR;

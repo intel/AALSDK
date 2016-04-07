@@ -54,10 +54,11 @@ const char * mq_name_arr[] =
 
 /*
  * get_smq_perm_flag : Calculate perm_flag based on string name
+ *      Automates the assignment of MQ flags
+ *
  */
 int get_smq_perm_flag(const char *mq_name_str)
 {
-  int ret_perm_flag;
   char mq_str[ASE_MQ_NAME_LEN]; 
   strncpy(mq_str, mq_name_str, ASE_MQ_NAME_LEN);
 
@@ -65,7 +66,7 @@ int get_smq_perm_flag(const char *mq_name_str)
   char *token;
   token = strtok(mq_str, "_");
 
-  // If name looks weird, throw an error
+  // If name looks weird, throw an error, crash gracefully
   if ( (strncmp(token, "sim2app", 7) != 0) && (strncmp(token, "app2sim", 7) != 0) )
     {
       BEGIN_RED_FONTCOLOR;
@@ -81,25 +82,23 @@ int get_smq_perm_flag(const char *mq_name_str)
 #ifdef SIM_SIDE
   if (strncmp(token, "sim2app", 7) == 0)
     {
-      ret_perm_flag = O_WRONLY;
+      return O_WRONLY;
     }
   else if  (strncmp(token, "app2sim", 7) == 0)
     {
-      ret_perm_flag = O_RDONLY|O_NONBLOCK;
+      return O_RDONLY|O_NONBLOCK;
     }
-#endif
-#ifdef APP_SIDE
+#else
   if (strncmp(token, "sim2app", 7) == 0)
     {
-      ret_perm_flag = O_RDONLY;
+      return O_RDONLY;
     }
   else if  (strncmp(token, "app2sim", 7) == 0)
     {
-      ret_perm_flag = O_WRONLY;
+      return O_WRONLY;
     }
 #endif
-  
-  return ret_perm_flag;
+  return -1;
 }
 
 
@@ -119,17 +118,6 @@ void ipc_init()
   
   // Malloc mq_array
   // mq_array = (struct ipc_t *)ase_malloc(ASE_MQ_INSTANCES * sizeof(struct ipc_t) );
-  
-  // Create names
-  /* strncpy(mq_array[0].name, "app2sim_alloc_ping_smq"	, ASE_MQ_NAME_LEN); */
-  /* strncpy(mq_array[1].name, "app2sim_mmioreq_smq"	, ASE_MQ_NAME_LEN); */
-  /* strncpy(mq_array[2].name, "app2sim_umsg_smq"	        , ASE_MQ_NAME_LEN); */
-  /* strncpy(mq_array[3].name, "sim2app_alloc_pong_smq"	, ASE_MQ_NAME_LEN); */
-  /* strncpy(mq_array[4].name, "sim2app_mmiorsp_smq"	, ASE_MQ_NAME_LEN); */
-  /* strncpy(mq_array[5].name, "app2sim_portctrl_req_smq"	, ASE_MQ_NAME_LEN); */
-  /* strncpy(mq_array[6].name, "app2sim_dealloc_ping_smq"	, ASE_MQ_NAME_LEN); */
-  /* strncpy(mq_array[7].name, "sim2app_dealloc_pong_smq"	, ASE_MQ_NAME_LEN); */
-  /* strncpy(mq_array[8].name, "sim2app_portctrl_rsp_smq"	, ASE_MQ_NAME_LEN); */
 
   // Initialize named pipe array
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
@@ -140,30 +128,20 @@ void ipc_init()
       sprintf(mq_array[ipc_iter].path, "%s/%s", ase_workdir_path, mq_array[ipc_iter].name);
       // Set permission flag
       mq_array[ipc_iter].perm_flag = get_smq_perm_flag(mq_name_arr[ipc_iter]);
+      if (mq_array[ipc_iter].perm_flag == -1)
+	{
+	  BEGIN_RED_FONTCOLOR;
+        #ifdef SIM_SIDE 
+	  printf("SIM-C : Message pipes opened up with wrong permissions --- unexpected error");
+	  start_simkill_countdown();
+        #else
+	  printf("  [APP]  Message pipes opened up with wrong permissions --- unexpected error");
+	  exit(1);
+        #endif
+	  END_RED_FONTCOLOR;
+	}
     }
-      
-/* #ifdef SIM_SIDE */
-/*   mq_array[0].perm_flag = O_RDONLY|O_NONBLOCK; */
-/*   mq_array[1].perm_flag = O_RDONLY|O_NONBLOCK; */
-/*   mq_array[2].perm_flag = O_RDONLY|O_NONBLOCK; */
-/*   mq_array[3].perm_flag = O_WRONLY; */
-/*   mq_array[4].perm_flag = O_WRONLY; */
-/*   mq_array[5].perm_flag = O_RDONLY|O_NONBLOCK; */
-/*   mq_array[6].perm_flag = O_RDONLY|O_NONBLOCK; */
-/*   mq_array[7].perm_flag = O_WRONLY; */
-/*   mq_array[8].perm_flag = O_WRONLY; */
-/* #else */
-/*   mq_array[0].perm_flag = O_WRONLY; */
-/*   mq_array[1].perm_flag = O_WRONLY; */
-/*   mq_array[2].perm_flag = O_WRONLY; */
-/*   mq_array[3].perm_flag = O_RDONLY; */
-/*   mq_array[4].perm_flag = O_RDONLY; */
-/*   mq_array[5].perm_flag = O_WRONLY; */
-/*   mq_array[6].perm_flag = O_WRONLY; */
-/*   mq_array[7].perm_flag = O_RDONLY; */
-/*   mq_array[8].perm_flag = O_RDONLY; */
-/* #endif */
-
+     
   // Remove IPCs if already there
 #ifdef SIM_SIDE
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
@@ -187,15 +165,11 @@ void mqueue_create(char* mq_name_suffix)
   mq_path = ase_malloc (ASE_FILEPATH_LEN);
   sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
 
-#ifdef ASE_DEBUG
-  printf("mq_path = %s\n", mq_path);
-#endif
-
   ret = mkfifo(mq_path, S_IRUSR|S_IWUSR );
   if (ret == -1)
     {
       BEGIN_RED_FONTCOLOR;
-      printf("Error creating IPC\n");
+      printf("Error creating IPC %s\n", mq_path);
       printf("Consider re-compiling AALSDK libraries !\n");
       END_RED_FONTCOLOR;
     }
@@ -231,12 +205,6 @@ int mqueue_open(char *mq_name, int perm_flag)
   memset (mq_path, 0, ASE_FILEPATH_LEN);
   sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name);
 
-#ifdef ASE_DEBUG
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [DEBUG]  mq_path = %s\n", mq_path);
-  END_YELLOW_FONTCOLOR;
-#endif
-
   // Dummy function to open WRITE only MQs
   // Named pipe requires non-blocking write-only move on from here
   // only when reader is ready.
@@ -246,7 +214,7 @@ int mqueue_open(char *mq_name, int perm_flag)
     {
     #ifdef ASE_DEBUG
       BEGIN_YELLOW_FONTCOLOR;
-      printf("Opening IPC in write-only mode with dummy fd\n");
+      printf("  [DEBUG]  Opening IPC in write-only mode with dummy fd\n");
       END_YELLOW_FONTCOLOR;
     #endif
       dummy_fd = open(mq_path, O_RDONLY|O_NONBLOCK);
@@ -256,7 +224,7 @@ int mqueue_open(char *mq_name, int perm_flag)
   mq = open(mq_path, perm_flag);
   if (mq == -1)
     {
-      printf("Error opening IPC\n");
+      printf("Error opening IPC %s\n", mq_path);
 #ifdef SIM_SIDE
       ase_error_report("open", errno, ASE_OS_FOPEN_ERR);
       start_simkill_countdown();
@@ -341,7 +309,7 @@ void mqueue_send(int mq, const char* str, int size)
   int ret_tx;
 
   ret_tx = write(mq, (void*)str, size);
-#if ASE_DEBUG
+#ifdef ASE_DEBUG
   if ((ret_tx == 0) || (ret_tx != size))
     {
       perror("write");
