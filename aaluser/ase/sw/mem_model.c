@@ -324,31 +324,12 @@ void ase_destroy()
 #ifdef ASE_DEBUG
   char str[256];
   sprintf(str, "ASE destroy called");
-  buffer_msg_inject(str);
-#endif
+  buffer_msg_inject(1, str);
+#endif  
 
   struct buffer_t *ptr;
   // ptr = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
 
-/* #ifdef ASE_DEBUG */
-/*   ll_traverse_print(); */
-/* #endif */
-
-//  ptr = end;  
-#if 0
-  while((head != NULL)||(end != NULL))
-    {
-      ptr = end;
-      if(ptr->valid == ASE_BUFFER_VALID)
-	{
-	  ase_dealloc_action(ptr);
-	}
-      else
-	{
-	  ll_remove_buffer(ptr);
-	}
-    } 
-#else
   ptr = head;
   if (head != NULL)
     {
@@ -359,7 +340,6 @@ void ase_destroy()
 	  ptr = ptr->next;
 	}
     }
-#endif
 
 /* #ifdef ASE_DEBUG */
 /*   ll_traverse_print(); */

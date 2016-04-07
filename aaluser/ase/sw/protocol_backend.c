@@ -332,7 +332,6 @@ int ase_listener()
       if (mqueue_recv(app2sim_portctrl_req_rx, (char*)portctrl_msgstr, ASE_MQ_MSGSIZE) == ASE_MSG_PRESENT)
 	{
 	  sscanf(portctrl_msgstr, "%s %d", portctrl_cmd, &portctrl_value);
-	  // while(1);
 	  if ( memcmp(portctrl_cmd, "AFU_RESET", 9) == 0)
 	    {
 	      // AFU Reset control
@@ -386,6 +385,7 @@ int ase_listener()
 		  BEGIN_GREEN_FONTCOLOR;
 		  printf("SIM-C : Ready to run next test\n");	  
 		  END_GREEN_FONTCOLOR;
+		  buffer_msg_inject(0, TEST_SEPARATOR);
 		}
 	      else if (cfg->ase_mode == ASE_MODE_DAEMON_SIMKILL)
 		{
@@ -480,7 +480,7 @@ int ase_listener()
 	      sprintf(logger_str + strlen(logger_str), "\n");
 
 	      // Inject buffer message
-	      buffer_msg_inject ( logger_str );
+	      buffer_msg_inject (1, logger_str );
 	    }
 
 	  // Standard oneline message ---> Hides internal info
@@ -520,7 +520,7 @@ int ase_listener()
 	      ase_dealloc_action(&ase_buffer);
 	  
 	      // Inject buffer message
-	      buffer_msg_inject ( logger_str );
+	      buffer_msg_inject (1, logger_str );
 	  
 	      // Standard oneline message ---> Hides internal info
 	      ase_buffer.valid = ASE_BUFFER_INVALID;

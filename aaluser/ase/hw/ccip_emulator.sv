@@ -633,12 +633,14 @@ module ccip_emulator
     * ***************************************************************************/
    string buffer_msg;
    logic  buffer_msg_en;
-
+   logic  buffer_msg_tstamp_en;
+      
    // Inject task
-   task buffer_msg_inject (string logstr);
+   task buffer_msg_inject (int timestamp_en, string logstr);
       begin
 	 buffer_msg = logstr;
 	 buffer_msg_en = 1;
+	 buffer_msg_tstamp_en = timestamp_en[0];	 
 	 @(posedge clk);
 	 buffer_msg_en = 0;
 	 @(posedge clk);
@@ -2241,8 +2243,9 @@ module ccip_emulator
       .enable_logger    (cfg.enable_cl_view),
       .finish_logger    (finish_logger     ),
       // Buffer message injection
-      .log_string_en    (buffer_msg_en     ),
-      .log_string       (buffer_msg        ),
+      .log_string_en    (buffer_msg_en        ),
+      .log_timestamp_en (buffer_msg_tstamp_en ),
+      .log_string       (buffer_msg           ),      
       // CCIP ports
       .clk              (clk             ),
       .SoftReset        (SoftReset       ),

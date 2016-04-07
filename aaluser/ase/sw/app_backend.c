@@ -271,6 +271,12 @@ void session_init()
   // Message queues have been established
   mq_exist_status = MQ_ESTABLISHED;
 
+  // Issue soft reset
+  printf("  [APP]  session_init => Issuing Soft Reset...\n");
+  ase_portctrl("AFU_RESET 1");
+  usleep(100);
+  ase_portctrl("AFU_RESET 0");
+
   // Page table tracker (optional logger)
 #ifdef ASE_DEBUG
   fp_pagetable_log = fopen("app_pagetable.log", "w");

@@ -194,6 +194,9 @@ char *app_run_cmd;
 // Simkill message
 #define ASE_SIMKILL_MSG      0xDEADDEAD
 
+// Test complete separator
+#define TEST_SEPARATOR       "#####################################################"
+
 
 /* *******************************************************************************
  *
@@ -579,7 +582,7 @@ void mmio_response(struct mmio_t *mmio_pkt);
 void umsg_dispatch(int init, struct umsgcmd_t *umsg_pkt);
 
 // Buffer message injection
-void buffer_msg_inject (char *);
+void buffer_msg_inject (int, char *);
 
 // Count error flag dex
 extern int count_error_flag_ping();
