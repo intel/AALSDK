@@ -49,9 +49,14 @@ ASE_VERSION = 5.0.2-Beta
 
 # ASE switches (these tend to increase log sizes)
 ASE_DEBUG ?= 1
-ASE_PROFILE_ENABLE ?= 0
 ASE_DISABLE_LOGGER = 0
-ASE_LCOV_ENABLE = 1
+
+# Coverage settings (lcov in SW and VCS-CM in HW)
+ASE_COVERAGE ?= 1
+ifeq ($(ASE_COVERAGE),1)
+ASE_PROFILE_ENABLE ?= 1
+ASE_LCOV_ENABLE ?= 1
+endif
 
 # Enable Altera gates library
 GLS_SIM = 1
@@ -79,15 +84,15 @@ CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1
 CC_OPT+= -Wall 
 ifeq ($(ASE_DEBUG), 1)
 CC_OPT+= -D ASE_DEBUG=1
-ifeq ($(ASE_LCOV_ENABLE), 1)
-CC_OPT+= -fprofile-arcs -ftest-coverage
-endif
 endif
 ifeq ($(SIMULATOR), VCS)
 CC_OPT+= -I $(VCS_HOME)/include/
 endif
 ifeq ($(SIMULATOR), QUESTA)
 CC_OPT+= -I $(MTI_HOME)/include/
+endif
+ifeq ($(ASE_LCOV_ENABLE), 1)
+CC_OPT+= -fprofile-arcs -ftest-coverage
 endif
 
 
@@ -447,6 +452,9 @@ else
 	@echo "############################################################"
   endif
 endif
+ifeq ($(ASE_COVERAGE), 1)
+	make coverage
+endif
 
 # Open Wave file
 wave: check
@@ -484,8 +492,10 @@ scan-build:
 
 # Coverage
 coverage:
-	urg -dir ./work/coverage.vdb
-#	firefox urgReport/dashboard.html &
+	cd $(WORK) ; lcov --base-directory . --directory . --capture --output-file ase_libs.info ; genhtml -o lcov_coverage/ ase_libs.info ; cd -
+#urg -dir $(WORK)/coverage.vdb ; cd -
+	# firefox $(WORK)/urgReport/dashboard.html &
+	firefox ./$(WORK)/lcov_coverage/index.html &
 
 # Valgrind run
 valgrind_run:
@@ -498,14 +508,9 @@ test: all sim
 long_sim:
 	cd ./$(WORK)/; ./ase_simv -ucli -do $(ASE_SRCDIR)/vcs_run.tcl +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 
-splint:
-	cd sw ; splint -standard +posixlib -preproc -syntax -limit 10000 -nullassign -formatconst -retvalint +gnuextensions protocol_backend.c | tee ../splint.log ; cd -
-
 cppcheck:
-	cd sw ; cppcheck *.c -DSIM_SIDE=1 -D__x86_64__ --enable=all -v --check-config | tee ../lint.log ; cd -
+	cd sw ; cppcheck *.c -DSIM_SIDE=1 -D__x86_64__ --enable=all -v --check-config | tee ../lint.log -I /usr/include/ ; cd -
 
 gdb_sim:
 	cd ./$(WORK)/; gdb --args ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 
-generate_lcov:
-	cd $(WORK) ; lcov --base-directory . --directory . --capture --output-file ase_libs.info ; genhtml -o lcov_coverage/ ase_libs.info ; cd -
