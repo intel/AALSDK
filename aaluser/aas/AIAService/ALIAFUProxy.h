@@ -65,10 +65,8 @@ public:
       m_pAIA(NULL),
       m_devHandle(NULL)
    {
-      m_bIsOK = false;         // CAASBase set it to true
-
-      if(SetInterface(iidAFUProxy,dynamic_cast<IAFUProxy*>(this))!= EObjOK) {
-         return;
+      if ( EObjOK != SetInterface(iidAFUProxy, dynamic_cast<IAFUProxy *>(this)) ) {
+         m_bIsOK = false;         // CAASBase set it to true
       }
    }
    ~ALIAFUProxy();
