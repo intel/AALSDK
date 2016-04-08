@@ -238,26 +238,6 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
          flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CLKFREQ);
       }
 
-   } else if ( (0 == strcmp("--timeout-nsec", option)) || (0 == strcmp("--tn", option)) ) {
-
-      tsval = strtotimespec(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
-         nlbcl->to_nsec = nlbcl->defaults.to_nsec;
-#endif // OS
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_TONSEC);
-         printf("Invalid nsec value: %s. Defaulting to %ld\n", value, nlbcl->to_nsec);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_TONSEC);
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
-         nlbcl->to_nsec += tsval;
-#endif // OS
-      }
-
    } else if ( (0 == strcmp("--timeout-usec", option)) || (0 == strcmp("--tu", option)) ) {
 
       tsval = strtotimespec(value, &endptr, 0);
@@ -639,14 +619,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 	    0 == strcasecmp(test.c_str(), "WRITE") ||
 	    0 == strcasecmp(test.c_str(), "TRPUT")) {
 
-	   fprintf(fp, "      <TIMEOUT>   = --timeout-nsec=T  OR --tn=T,  timeout for --cont mode (nanoseconds portion),  ");
-	   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_TONSEC) ) {
-		  fprintf(fp, "%ld\n", nlbcl->to_nsec);
-	   } else {
-		  fprintf(fp, "Default=%ld\n", nlbcl->defaults.to_nsec);
-	   }
-
-	   fprintf(fp, "                    --timeout-usec=T  OR --tu=T,  timeout for --cont mode (microseconds portion), ");
+	   fprintf(fp, "      <TIMEOUT>   = --timeout-usec=T  OR --tu=T,  timeout for --cont mode (microseconds portion), ");
 	   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_TOUSEC) ) {
 		  fprintf(fp, "%ld\n", nlbcl->to_usec);
 	   } else {
@@ -1020,7 +993,6 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
 
       if ( flags_are_clr(cmd.cmdflags, NLB_CMD_FLAGS_TO) ) {
          // no timeout given - use defaults
-         cmd.to_nsec = cmd.defaults.to_nsec;
          cmd.to_usec = cmd.defaults.to_usec;
          cmd.to_msec = cmd.defaults.to_msec;
          cmd.to_sec  = cmd.defaults.to_sec;
@@ -1038,8 +1010,6 @@ do                                                    \
 # define CALC_TIME(x)                                         \
 do                                                            \
 {                                                             \
-   (x).tv_nsec += (timespec_type)cmd.to_nsec;                 \
-   NORM_TS(x);                                                \
    (x).tv_nsec += (timespec_type)(cmd.to_usec * 1000);        \
    NORM_TS(x);                                                \
    (x).tv_nsec += (timespec_type)(cmd.to_msec * 1000 * 1000); \

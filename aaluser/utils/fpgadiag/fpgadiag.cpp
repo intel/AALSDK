@@ -122,7 +122,6 @@ struct NLBCmdLine gCmdLine =
    0,
    0,
    0,
-   0,
 #endif // OS
    // defaults
    {
@@ -145,12 +144,10 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_WB,
       DEFAULT_RDS,
       DEFAULT_RDI,
-      DEFAULT_RDO,
       DEFAULT_CONT,
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
 #elif defined( __AAL_LINUX__ )
-      DEFAULT_TONSEC,
       DEFAULT_TOUSEC,
       DEFAULT_TOMSEC,
       DEFAULT_TOSEC,
@@ -166,7 +163,7 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_VH0,
       DEFAULT_VH1,
       DEFAULT_ST,
-	  DEFAULT_UT,
+	   DEFAULT_UT,
       DEFAULT_MINCX,
       DEFAULT_MAXCX,
       DEFAULT_CX,
@@ -519,7 +516,7 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 	      }
 
 	      // Documentation says HWALIAFU Service publishes
-	      //    IALIReset as subclass interface
+	      //    IALIUMsg as subclass interface
 	      m_pALIuMSGService = dynamic_ptr<IALIUMsg>(iidALI_UMSG_Service, pServiceBase);
 	      ASSERT(NULL != m_pALIuMSGService);
 	      if ( NULL == m_pALIuMSGService ) {
@@ -536,7 +533,7 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 	   }
 
 	   // Documentation says HWALIAFU Service publishes
-	   //    IALIBuffer as subclass interface. Used in Buffer Allocation and Free
+	   //    IALIPerf as subclass interface. Used to access performance monitors
 	   m_pALIPerf = dynamic_ptr<IALIPerf>(iidALI_PERF_Service, pServiceBase);
 	  /* ASSERT(NULL != m_pALIPerf);
 	   if ( NULL == m_pALIPerf ) {

@@ -76,12 +76,12 @@ struct NLBDefaults
    const char     *wb;
    const char     *rds;
    const char     *rdi;
-   const char     *rdo;
+  // const char     *rdo;
    const char     *cont;
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
 #elif defined( __AAL_LINUX__ )
-   timespec_type   to_nsec;
+   //timespec_type   to_nsec;
    timespec_type   to_usec;
    timespec_type   to_msec;
    timespec_type   to_sec;
@@ -154,7 +154,7 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_WB           		(u64_type)0x00004000  /* --wb              (write-back caching)                           */
 #define NLB_CMD_FLAG_PWR          		(u64_type)0x00008000  /* --pwr             (posted writes)                                */
 #define NLB_CMD_FLAG_CONT         		(u64_type)0x00010000  /* --cont            (continuous mode)                              */
-#define NLB_CMD_FLAG_TONSEC       		(u64_type)0x00020000  /* --timeout-nsec X  (nanosecond timeout for continuous mode)       */
+//#define NLB_CMD_FLAG_TONSEC       		(u64_type)0x00020000  /* --timeout-nsec X  (nanosecond timeout for continuous mode)       */
 #define NLB_CMD_FLAG_TOUSEC       		(u64_type)0x00040000  /* --timeout-usec X  (microsecond timeout for continuous mode)      */
 #define NLB_CMD_FLAG_TOMSEC       		(u64_type)0x00080000  /* --timeout-msec X  (millisecond timeout for continuous mode)      */
 #define NLB_CMD_FLAG_TOSEC        		(u64_type)0x00100000  /* --timeout-sec  X  (second timeout for continuous mode)           */
@@ -162,8 +162,7 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_TOHOUR       		(u64_type)0x00400000  /* --timeout-hour X  (hour timeout for continuous mode)             */
 #define NLB_CMD_FLAG_CLKFREQ      		(u64_type)0x00800000  /* --clock-freq X    (fpga clock frequency, default=200 MHz)        */
 
-#define NLB_CMD_FLAGS_TO          		(NLB_CMD_FLAG_TONSEC | \
-                                        NLB_CMD_FLAG_TOUSEC | \
+#define NLB_CMD_FLAGS_TO          		(NLB_CMD_FLAG_TOUSEC | \
                                         NLB_CMD_FLAG_TOMSEC | \
                                         NLB_CMD_FLAG_TOSEC  | \
                                         NLB_CMD_FLAG_TOMIN  | \
@@ -217,7 +216,7 @@ struct NLBCmdLine
 # error TODO
 #elif defined( __AAL_LINUX__ )
    struct timespec          timeout;
-   timespec_type            to_nsec;
+  // timespec_type            to_nsec;
    timespec_type            to_usec;
    timespec_type            to_msec;
    timespec_type            to_sec;
