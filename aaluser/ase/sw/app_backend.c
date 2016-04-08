@@ -272,7 +272,9 @@ void session_init()
   mq_exist_status = MQ_ESTABLISHED;
 
   // Issue soft reset
+  BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  session_init => Issuing Soft Reset...\n");
+  END_YELLOW_FONTCOLOR;
   ase_portctrl("AFU_RESET 1");
   usleep(100);
   ase_portctrl("AFU_RESET 0");
@@ -1085,8 +1087,5 @@ void ase_portctrl(const char *ctrl_msg)
 
   // Receive message
   mqueue_recv(sim2app_portctrl_rsp_rx, dummy_rxstr, ASE_MQ_MSGSIZE);
-
-  // Allow simulator to parse message and sort itself out
-  // usleep(1000);
 }
 

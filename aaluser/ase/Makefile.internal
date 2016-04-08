@@ -51,6 +51,7 @@ ASE_VERSION = 5.0.2-Beta
 ASE_DEBUG ?= 1
 ASE_PROFILE_ENABLE ?= 0
 ASE_DISABLE_LOGGER = 0
+ASE_LCOV_ENABLE = 1
 
 # Enable Altera gates library
 GLS_SIM = 1
@@ -78,6 +79,9 @@ CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1
 CC_OPT+= -Wall 
 ifeq ($(ASE_DEBUG), 1)
 CC_OPT+= -D ASE_DEBUG=1
+ifeq ($(ASE_LCOV_ENABLE), 1)
+CC_OPT+= -fprofile-arcs -ftest-coverage
+endif
 endif
 ifeq ($(SIMULATOR), VCS)
 CC_OPT+= -I $(VCS_HOME)/include/
@@ -104,7 +108,10 @@ WORK = work
 
 # -lrt option is required in order to use shared memory /dev/shm,
 # -message queues and pthreads
-ASE_LD_SWITCHES= -lrt -lpthread -lstdc++
+ASE_LD_SWITCHES = -lrt -lpthread -lstdc++
+ifeq ($(ASE_LCOV_ENABLE), 1)
+ASE_LD_SWITCHES+= -lgcov
+endif
 
 
 #########################################################################
@@ -499,3 +506,6 @@ cppcheck:
 
 gdb_sim:
 	cd ./$(WORK)/; gdb --args ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
+
+generate_lcov:
+	cd $(WORK) ; lcov --base-directory . --directory . --capture --output-file ase_libs.info ; genhtml -o lcov_coverage/ ase_libs.info ; cd -
