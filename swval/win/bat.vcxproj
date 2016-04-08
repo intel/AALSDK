@@ -25,7 +25,9 @@
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtDynLinkLibrary.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtEnvVar.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtSem.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtSleep.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtThread.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtTimer.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\main.cpp" />
   </ItemGroup>
   <ItemGroup>
