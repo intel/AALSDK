@@ -117,11 +117,13 @@ class AIASERVICE_API AIAService : public AAL::ServiceBase, public AAL::IServiceC
          m_pShutdownThread(NULL),
          m_state(Uninitialized)
       {
-         SetInterface(iidAIAService, dynamic_cast <AIAService *>(this));
-         if(!m_Semaphore.Create(1)){
-            return;
+         if ( EObjOK != SetInterface(iidAIAService, dynamic_cast <AIAService *>(this)) ) {
+            m_bIsOK = false;
          }
-         m_bIsOK = false;
+
+         if ( !m_Semaphore.Create(1) ) {
+            m_bIsOK = false;
+         }
       }
 
       virtual ~AIAService();
