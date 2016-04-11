@@ -151,7 +151,7 @@ btBool AIAService::init( IBase *pclientBase,
    AAL_INFO(LM_UAIA, "AIAService::init. in\n");
 
    //Singleton service already initialized
-   if(!m_bIsOK){
+   if(Initialized != m_state){ //TODO: make sure m_state is initialized to shutdown
 
       // Create a channel to the UI Driver now
       m_uida.Open();
@@ -183,6 +183,7 @@ btBool AIAService::init( IBase *pclientBase,
       //  the actual Services. Since it is initComplete() that normally registers the
       //  Service with the ServiceModule we must register directly.  No event is generated.
       getAALServiceModule()->AddToServiceList(this);
+      m_state = Initialized;
       AAL_INFO(LM_UAIA, "AIAService::Create, out\n");
    }
 
@@ -211,6 +212,7 @@ btBool AIAService::init( IBase *pclientBase,
 AIAService::~AIAService(void)
 {
    AAL_INFO(LM_UAIA, "AIAService::~AIAService. in\n");
+   m_state = Uninitialized;
 }
 
 
@@ -526,6 +528,7 @@ void AIAService::WaitForShutdown(TransactionID const &rtid,
 
    // Since we are a singleton that never presented to a
    //  client we don't do a ServiceBase::Release just complete now.
+   m_state = Uninitialized;
    ServiceBase::ReleaseComplete();
 }
 
