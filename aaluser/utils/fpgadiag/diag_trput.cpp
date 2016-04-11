@@ -128,7 +128,7 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd)
    ReadPerfMonitors();
    SavePerfMonitors();
 
-   cout << endl;
+   cout << endl << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
 		 	 //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
 	  cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
@@ -252,15 +252,15 @@ void  CNLBTrput::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
    bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
 
    cout << setw(10) << cls                         << ' '
-        << setw(10) << pAFUDSM->num_reads           << ' '
-        << setw(11) << pAFUDSM->num_writes          << ' '
-        << setw(12) << GetPerfMonitor(READ_HIT)     << ' '
-        << setw(12) << GetPerfMonitor(WRITE_HIT)    << ' '
-        << setw(13) << GetPerfMonitor(READ_MISS)    << ' '
-        << setw(13) << GetPerfMonitor(WRITE_MISS)   << ' '
-        << setw(10) << GetPerfMonitor(EVICTIONS)    << ' ';
+       << setw(10) << pAFUDSM->num_reads           << ' '
+       << setw(11) << pAFUDSM->num_writes          << ' '
+       << setw(12) << GetPerfMonitor(READ_HIT)     << ' '
+       << setw(12) << GetPerfMonitor(WRITE_HIT)    << ' '
+       << setw(13) << GetPerfMonitor(READ_MISS)    << ' '
+       << setw(13) << GetPerfMonitor(WRITE_MISS)   << ' '
+       << setw(10) << GetPerfMonitor(EVICTIONS)    << ' ';
 
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
+   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
       ticks = rawticks - startpenalty;
    }
    else{
@@ -269,13 +269,26 @@ void  CNLBTrput::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
    cout  << setw(16) << ticks;
 
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-      double rdbw = 0.0;
-      double wrbw = 0.0;
+       double rdbw = 0.0;
+       double wrbw = 0.0;
 
-      cout << "  "
-    	   << setw(14) << CalcReadBandwidth(cmd) << ' '
-           << setw(14) << CalcWriteBandwidth(cmd);
+       cout << "  "
+            << setw(14) << CalcReadBandwidth(cmd) << ' '
+            << setw(14) << CalcWriteBandwidth(cmd);
+   }
+   cout << endl << endl;
+
+   if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
+               //0123456789012 012345678901 012345678901 012345678901 012345678901 012345678901
+         cout << "VH0_Rd_Count VH0_Wr_Count VH1_Rd_Count VH1_Wr_Count VL0_Rd_Count VL0_Wr_Count " << endl;
       }
-      cout << endl;
-}
 
+   cout << setw(12) << GetPerfMonitor(PCIE0_READ)     << ' '
+        << setw(12) << GetPerfMonitor(PCIE0_WRITE)    << ' '
+        << setw(12) << GetPerfMonitor(PCIE1_READ)     << ' '
+        << setw(12) << GetPerfMonitor(PCIE1_WRITE)    << ' '
+        << setw(12) << GetPerfMonitor(UPI_READ)       << ' '
+        << setw(12) << GetPerfMonitor(UPI_WRITE)      << ' '
+        << endl << endl;
+
+}
