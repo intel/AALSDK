@@ -2,6 +2,7 @@
 #ifndef __GTTHREADGROUP_H__
 #define __GTTHREADGROUP_H__
 #include "gtCommon.h"
+#include "dbg_threadgroup.h"
 
 // Note: we don't 'delete this' in any of the operator()'s here, because the work items
 //       are all tracked within each test fixture to ensure none are lost.

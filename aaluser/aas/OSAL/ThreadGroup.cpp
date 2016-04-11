@@ -50,6 +50,17 @@
 #include "aalsdk/osal/ThreadGroup.h"
 #include "aalsdk/osal/Sleep.h"
 
+#ifdef DBG_THREADGROUP
+# include "dbg_threadgroup.cpp"
+#else
+# define AutoLock0(__x) AutoLock(__x)
+# define AutoLock1(__x) AutoLock(__x)
+# define AutoLock2(__x) AutoLock(__x)
+# define AutoLock3(__x) AutoLock(__x)
+# define AutoLock4(__x) AutoLock(__x)
+# define AutoLock5(__x) AutoLock(__x)
+#endif // DBG_THREADGROUP
+
 BEGIN_NAMESPACE(AAL)
 
 //////////////////////////////////////////////////////////////////////
@@ -235,6 +246,7 @@ OSLThreadGroup::ThrGrpState::ThrGrpState(btUnsignedInt NumThreads) :
    m_Flags(THRGRPSTATE_FLAG_OK),
    m_WorkSemTimeout(AAL_INFINITE_WAIT),
    m_Joiner(0),
+   m_UserDefined(NULL),
    m_ThrStartBarrier(),
    m_ThrJoinBarrier(),
    m_ThrExitBarrier(),
@@ -294,6 +306,18 @@ btUnsignedInt OSLThreadGroup::ThrGrpState::GetNumWorkItems() const
    return (btUnsignedInt) m_workqueue.size();
 }
 
+void OSLThreadGroup::ThrGrpState::UserDefined(btObjectType User)
+{
+   AutoLock(this);
+   m_UserDefined = User;
+}
+
+btObjectType OSLThreadGroup::ThrGrpState::UserDefined() const
+{
+   AutoLock(this);
+   return m_UserDefined;
+}
+
 //=============================================================================
 // Name: Add
 // Description: Submits a work object for disposition
@@ -311,7 +335,7 @@ btBool OSLThreadGroup::ThrGrpState::Add(IDispatchable *pDisp)
    }
 
    {
-      AutoLock(this);
+      AutoLock0(this);
 
       const eState state = State();
 
@@ -341,7 +365,7 @@ btBool OSLThreadGroup::ThrGrpState::Add(IDispatchable *pDisp)
 //=============================================================================
 void OSLThreadGroup::ThrGrpState::Stop()
 {
-   AutoLock(this);
+   AutoLock2(this);
 
    if ( Stopped != State(Stopped) ) {
       // State conflict, can't stop right now.
@@ -369,7 +393,7 @@ void OSLThreadGroup::ThrGrpState::Stop()
 //=============================================================================
 btBool OSLThreadGroup::ThrGrpState::Start()
 {
-   AutoLock(this);
+   AutoLock1(this);
 
    if ( Running == State(Running) ) {
       btInt s = (btInt) m_workqueue.size();
@@ -828,7 +852,7 @@ btBool OSLThreadGroup::ThrGrpState::Drain()
    btBool   res;
 
    {
-      AutoLock(this);
+      AutoLock3(this);
 
       const btUnsignedInt items = (btUnsignedInt) m_workqueue.size();
 
@@ -899,7 +923,7 @@ btBool OSLThreadGroup::ThrGrpState::Join(btTime Timeout)
    OSLThread *pThread = NULL;
 
    {
-      AutoLock(this);
+      AutoLock4(this);
 
       const eState st = State();
 
@@ -969,7 +993,7 @@ btBool OSLThreadGroup::ThrGrpState::Destroy(btTime Timeout)
    OSLThread *pThread = NULL;
 
    {
-      AutoLock(this);
+      AutoLock5(this);
 
       const btTID MyThrID = GetThreadID();
       pThread = ThreadRunningInThisGroup(MyThrID);

@@ -60,7 +60,7 @@ protected:
       return m_pGroup->Add(pDisp);
    }
 
-   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return (AAL::btUnsignedInt) GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThreadGroup           *m_pGroup;
    AAL::btUnsignedInt        m_MinThreads;
@@ -75,13 +75,14 @@ protected:
 template <typename T>
 class OSAL_ThreadGroup_vp : public ::testing::TestWithParam<T>
 {
-protected:
+public:
    OSAL_ThreadGroup_vp() :
       m_pGroup(NULL),
       m_MinThreads(0),
       m_MaxThreads(0),
       m_ThrPriority(OSLThread::THREADPRIORITY_NORMAL),
-      m_JoinTimeout(AAL_INFINITE_WAIT)
+      m_JoinTimeout(AAL_INFINITE_WAIT),
+      m_ScratchCounter(0)
    {}
    virtual ~OSAL_ThreadGroup_vp() {}
 
@@ -90,6 +91,7 @@ protected:
 
    virtual void SetUp()
    {
+      m_ScratchCounter = 0;
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          m_pThrs[i] = NULL;
@@ -142,13 +144,14 @@ protected:
       return m_pGroup->Add(pDisp);
    }
 
-   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return (AAL::btUnsignedInt) GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThreadGroup           *m_pGroup;
    AAL::btUnsignedInt        m_MinThreads;
    AAL::btUnsignedInt        m_MaxThreads;
    OSLThread::ThreadPriority m_ThrPriority;
    AAL::btTime               m_JoinTimeout;
+   AAL::btUnsignedInt        m_ScratchCounter;
    OSLThread                *m_pThrs[5];
    CSemaphore                m_Sems[4];
    disp_list_t               m_WorkList;
@@ -542,7 +545,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0087)
    }
 
    g->Stop();
-   EXPECT_LT(0, x);
    EXPECT_EQ(0, g->GetNumWorkItems());
 
    IDispatchable *pDisp = new NopD();
@@ -596,10 +598,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0088)
       }
    }
 
-   YIELD_X(3);
-
    g->Stop();
-   EXPECT_LT(0, y);
    EXPECT_EQ(0, g->GetNumWorkItems());
 
    EXPECT_TRUE(g->Drain());
@@ -684,7 +683,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0090)
    }
 
    g->Stop();
-   EXPECT_LT(0, x);
    EXPECT_EQ(0, g->GetNumWorkItems());
    EXPECT_EQ(m_MinThreads, CurrentThreads());
 
@@ -877,6 +875,22 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0093)
    // (Draining -> Joining). Both the Drain() and the Join() calls will return true
    // to indicate success.
 
+   class aal0093AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0093AfterThreadGroupAutoLock(OSAL_ThreadGroup_vp_uint_0 *pFixture) :
+         m_pFixture(pFixture)
+      {}
+
+      virtual void OnDrain()
+      {
+         ++m_pFixture->m_ScratchCounter;
+      }
+
+   protected:
+      OSAL_ThreadGroup_vp_uint_0 *m_pFixture;
+   } AfterAutoLock(this);
+
    // Use Thr1 to perform the Drain(), this thread to do the delete.
 
    ASSERT_EQ(0, CurrentThreads());
@@ -903,6 +917,8 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0093)
                               AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
+
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    AAL::btInt w = (AAL::btInt)m_MinThreads;
 
@@ -936,17 +952,17 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0093)
 
    EXPECT_EQ(50, g->GetNumWorkItems());
 
-   // Wake one worker, then block on m_Sems[0].
-   // The first worker wakes Thr1, then yields the cpu to Thr1.
-   // Thr1 begins the Drain().
-   // The first worker wakes this thread, then yields the cpu to this thread.
-   // This thread calls Destroy(), and begins to wait for the Drain() to complete.
-   // The first worker wakes the remaining workers. All workers process the work queue.
+   // Post m_Sems[3] to wake Thr1() to begin the Drain().
+   // Yield until the Drain() has started, by checking m_ScratchCounter.
+   // Once the Drain() begins and this thread resumes, wake one worker, then immediately call Destroy().
+   // Upon seeing the PostD, the first worker wakes the remaining workers. All workers process the work queue.
    // The queue becomes empty, and the Drain() completes successfully.
    // Seeing the Drain() completion, the Destroy() proceeds.
 
    EXPECT_TRUE(m_Sems[3].Post(1));
-   YIELD_X(20);
+
+   // Wait for the Drain() to begin before continuing.
+   YIELD_WHILE(0 == m_ScratchCounter);
 
    EXPECT_TRUE(m_Sems[1].Post(1));
 
@@ -983,6 +999,22 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0094)
    // (Draining -> Joining) Both the Drain() and the Join() calls will return true
    // to indicate success.
 
+   class aal0094AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0094AfterThreadGroupAutoLock(OSAL_ThreadGroup_vp_uint_0 *pFixture) :
+         m_pFixture(pFixture)
+      {}
+
+      virtual void OnDrain()
+      {
+         ++m_pFixture->m_ScratchCounter;
+      }
+
+   protected:
+      OSAL_ThreadGroup_vp_uint_0 *m_pFixture;
+   } AfterAutoLock(this);
+
    // Use Thr2 to perform the Drain(), this thread to do the Join().
 
    ASSERT_EQ(0, CurrentThreads());
@@ -1009,6 +1041,8 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0094)
                               AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
+
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    AAL::btInt w = (AAL::btInt)m_MinThreads;
 
@@ -1049,7 +1083,8 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0094)
    EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
 
-   YIELD_X(5);
+   // Wait for the Drain() to begin before Join()'ing.
+   YIELD_WHILE(0 == m_ScratchCounter);
 
    // Join the thread group.
    EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
@@ -1088,6 +1123,25 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0096)
    // attempts to Start() return false to indicate failure. The thread group remains
    // in the Joining state.
 
+   class aal0096AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0096AfterThreadGroupAutoLock(OSAL_ThreadGroup_vp_uint_0 *pFixture,
+                                      btInt                       Count) :
+         m_pFixture(pFixture),
+         m_Count(Count)
+      {}
+
+      virtual void OnDestroy(btTime )
+      {
+         m_pFixture->m_Sems[1].Post(m_Count);
+      }
+
+   protected:
+      OSAL_ThreadGroup_vp_uint_0 *m_pFixture;
+      btInt                       m_Count;
+   };
+
    // Use Thr4 to attempt the Start(), this thread to do the delete.
 
    ASSERT_EQ(0, CurrentThreads());
@@ -1117,6 +1171,9 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0096)
 
    AAL::btInt w = (AAL::btInt)m_MinThreads;
 
+   aal0096AfterThreadGroupAutoLock AfterAutoLock(this, w);
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
+
    ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
 
    // m_Sems[0] - count up sem, Post()'ed by each worker thread.
@@ -1137,8 +1194,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0096)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(Add( new SleepThenPostD(100, m_Sems[1], w-1)) );
-      } else if ( 5 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[3]) )); // Wakes Thr4 to attempt the Start().
       } else if ( 48 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
@@ -1151,12 +1206,11 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0096)
 
    EXPECT_EQ(50, g->GetNumWorkItems());
 
-   // Wake the first worker, which will sleep then wake the remaining workers.
-   // Meanwhile, this thread will be in the destructor, doing the Join().
+   // The AfterAutoLock callback wakes all the workers.
+   // Meanwhile, this thread will be in Destroy(), doing the Join().
    // Some worker wakes Thr4 to attempt the Start().
    // Some worker waits for Thr4 to exit so that Thr4 doesn't de-reference a pointer to the
    //  deleted thread group.
-   EXPECT_TRUE(m_Sems[1].Post(1));
 
    // Delete the thread group, invoking Join().
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
@@ -1189,6 +1243,25 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0097)
    // attempts to Start() return false to indicate failure. The thread group remains in
    // the Joining state.
 
+   class aal0097AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0097AfterThreadGroupAutoLock(OSAL_ThreadGroup_vp_uint_0 *pFixture,
+                                      btInt                       Count) :
+         m_pFixture(pFixture),
+         m_Count(Count)
+      {}
+
+      virtual void OnJoin(btTime )
+      {
+         m_pFixture->m_Sems[1].Post(m_Count);
+      }
+
+   protected:
+      OSAL_ThreadGroup_vp_uint_0 *m_pFixture;
+      btInt                       m_Count;
+   };
+
    // Use Thr5 to attempt the Start(), this thread to do the Join().
 
    ASSERT_EQ(0, CurrentThreads());
@@ -1218,6 +1291,9 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0097)
 
    AAL::btInt w = (AAL::btInt)m_MinThreads;
 
+   aal0097AfterThreadGroupAutoLock AfterAutoLock(this, w);
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
+
    ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
 
    // m_Sems[0] - count up sem, Post()'ed by each worker thread.
@@ -1238,8 +1314,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0097)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(Add( new SleepThenPostD(100, m_Sems[1], w-1)) );
-      } else if ( 5 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[3]) )); // Wakes Thr5 to attempt the Start().
       } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
@@ -1250,10 +1324,8 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0097)
 
    EXPECT_EQ(50, g->GetNumWorkItems());
 
-   // Wake the first worker, which will sleep then wake the remaining workers.
-   // Some worker will eventually wake Thr5 to attempt the Start().
-   // Meanwhile, this thread will be doing the Join().
-   EXPECT_TRUE(m_Sems[1].Post(1));
+   // The AfterAutoLock callback wakes all worker threads once Join() is entered.
+   // Some worker will wake Thr5 to attempt the Start(), which will fail.
 
    EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
 
@@ -1291,6 +1363,25 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0098)
    // When ~OSLThreadGroup() has transitioned a thread group to the Joining state,
    // attempts to Stop() fail. The thread group remains in the Joining state.
 
+   class aal0098AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0098AfterThreadGroupAutoLock(OSAL_ThreadGroup_vp_uint_0 *pFixture,
+                                      btInt                       Count) :
+         m_pFixture(pFixture),
+         m_Count(Count)
+      {}
+
+      virtual void OnDestroy(btTime )
+      {
+         m_pFixture->m_Sems[1].Post(m_Count);
+      }
+
+   protected:
+      OSAL_ThreadGroup_vp_uint_0 *m_pFixture;
+      btInt                       m_Count;
+   };
+
    // Use Thr6 to attempt the Stop(), this thread to do the delete.
 
    ASSERT_EQ(0, CurrentThreads());
@@ -1320,6 +1411,9 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0098)
 
    AAL::btInt w = (AAL::btInt)m_MinThreads;
 
+   aal0098AfterThreadGroupAutoLock AfterAutoLock(this, w);
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
+
    ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
 
    // m_Sems[0] - count up sem, Post()'ed by each worker thread.
@@ -1340,8 +1434,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0098)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(Add( new SleepThenPostD(100, m_Sems[1], w-1)) );
-      } else if ( 5 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[3]) )); // Wakes Thr6 to attempt the Stop().
       } else if ( 48 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
@@ -1354,12 +1446,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0098)
 
    EXPECT_EQ(50, g->GetNumWorkItems());
 
-   // Wake the first worker, which will sleep then wake the remaining workers.
-   // Meanwhile, this thread will be in the destructor, doing the Join().
+   // AfterAutoLock will wake the workers upon calling Destroy() below.
    // Some worker wakes Thr6, which attempts a Stop(), but fails.
    // Some worker waits for Thr6 to exit, so that Thr6 doesn't de-reference a pointer to the
    //  deleted thread group.
-   EXPECT_TRUE(m_Sems[1].Post(1));
 
    // Delete the thread group, invoking Join().
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
@@ -1391,6 +1481,25 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0099)
    // When an explicit call to Join() has transitioned a thread group to the Joining state,
    // attempts to Stop() fail. The thread group remains in the Joining state.
 
+   class aal0099AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0099AfterThreadGroupAutoLock(OSAL_ThreadGroup_vp_uint_0 *pFixture,
+                                      btInt                       Count) :
+         m_pFixture(pFixture),
+         m_Count(Count)
+      {}
+
+      virtual void OnJoin(btTime )
+      {
+         m_pFixture->m_Sems[1].Post(m_Count);
+      }
+
+   protected:
+      OSAL_ThreadGroup_vp_uint_0 *m_pFixture;
+      btInt                       m_Count;
+   };
+
    // Use Thr7 to attempt the Stop(), this thread to do the Join().
 
    ASSERT_EQ(0, CurrentThreads());
@@ -1420,6 +1529,9 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0099)
 
    AAL::btInt w = (AAL::btInt)m_MinThreads;
 
+   aal0099AfterThreadGroupAutoLock AfterAutoLock(this, w);
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
+
    ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
 
    // m_Sems[0] - count up sem, Post()'ed by each worker thread.
@@ -1440,8 +1552,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0099)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(Add( new SleepThenPostD(100, m_Sems[1], w-1)) );
-      } else if ( 5 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[3]) )); // Wakes Thr7 to attempt the Stop().
       } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
@@ -1452,10 +1562,9 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0099)
 
    EXPECT_EQ(50, g->GetNumWorkItems());
 
-   // Wake the first worker, which will sleep then wake the remaining workers.
+   // The AfterAutoLock callback wakes workers upon entering Join() below.
    // Some worker wakes Thr7 to attempt a Stop(), which fails.
    // Meanwhile, this thread will be doing the Join().
-   EXPECT_TRUE(m_Sems[1].Post(1));
 
    EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
 
@@ -1481,9 +1590,12 @@ void OSAL_ThreadGroup_vp_uint_0::Thr8(OSLThread *pThread, void *pContext)
    EXPECT_TRUE(pTC->m_Sems[3].Wait());
 
    ASSERT_NONNULL(pTC->m_pGroup);
-
-   YIELD_X(5);
    EXPECT_FALSE(pTC->m_pGroup->Drain());
+
+   // Drain() returns true if the ThreadGroup queue is empty. To make sure that
+   // doesn't happen, we'll resume workers here only after attempting the Drain().
+
+   EXPECT_TRUE(pTC->m_Sems[1].Post((AAL::btInt)pTC->m_MinThreads));
 
    // signal that we're done.
    EXPECT_TRUE(pTC->m_Sems[2].Post(1));
@@ -1494,6 +1606,25 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0100)
    // When ~OSLThreadGroup() has transitioned a thread group to the Joining state,
    // attempts to Drain() return false to indicate failure. The thread group remains
    // in the Joining state.
+
+   class aal0100AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0100AfterThreadGroupAutoLock(OSAL_ThreadGroup_vp_uint_0 *pFixture,
+                                      btInt                       Count) :
+         m_pFixture(pFixture),
+         m_Count(Count)
+      {}
+
+      virtual void OnDestroy(btTime )
+      {
+         m_pFixture->m_Sems[3].Post(m_Count);
+      }
+
+   protected:
+      OSAL_ThreadGroup_vp_uint_0 *m_pFixture;
+      btInt                       m_Count;
+   };
 
    // Use Thr8 to attempt the Drain(), this thread to do the delete.
 
@@ -1524,6 +1655,9 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0100)
 
    AAL::btInt w = (AAL::btInt)m_MinThreads;
 
+   aal0100AfterThreadGroupAutoLock AfterAutoLock(this, 1);
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
+
    ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
 
    // m_Sems[0] - count up sem, Post()'ed by each worker thread.
@@ -1544,8 +1678,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0100)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 30 == i ) {
-         EXPECT_TRUE(Add( new SleepThenPostD(100, m_Sems[1], w-1) ));
-      } else if ( 48 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new WaitD(m_Sems[2]) )); // Some worker waits for Thr8 to exit.
@@ -1556,13 +1688,11 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0100)
 
    EXPECT_EQ(50, g->GetNumWorkItems());
 
-   // Wake the first worker, which will sleep then wake the remaining workers.
-   // Meanwhile, this thread will be in the destructor, doing the Join().
-   // Some worker will wake Thr8 to attempt a Drain(), which should fail.
+   // The AfterAutoLock callback wakes Thr8 upon entering Destroy() below.
+   // Thr8 attempts the Drain(), which should fail, then wakes the worker threads.
+   //  This is done so that the Drain() isn't attempted on an empty queue, which will return true from Drain().
    // Some worker waits for Thr8 to complete, so that Thr8 doesn't de-reference the
    //  thread group pointer after it has been deleted.
-   EXPECT_TRUE(m_Sems[1].Post(1));
-   EXPECT_TRUE(m_Sems[3].Post(1));
 
    // Delete the thread group, invoking Join().
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
@@ -1586,9 +1716,12 @@ void OSAL_ThreadGroup_vp_uint_0::Thr9(OSLThread *pThread, void *pContext)
    EXPECT_TRUE(pTC->m_Sems[3].Wait());
 
    ASSERT_NONNULL(pTC->m_pGroup);
-
-   YIELD_X(5);
    EXPECT_FALSE(pTC->m_pGroup->Drain());
+
+   // Drain() returns true if the ThreadGroup queue is empty. To make sure that
+   // doesn't happen, we'll resume workers here only after attempting the Drain().
+
+   EXPECT_TRUE(pTC->m_Sems[1].Post((AAL::btInt)pTC->m_MinThreads));
 }
 
 TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0101)
@@ -1596,6 +1729,25 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0101)
    // When an explicit call to Join() has transitioned a thread group to the Joining state,
    // attempts to Drain() return false to indicate failure. The thread group remains in
    // the Joining state.
+
+   class aal0101AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0101AfterThreadGroupAutoLock(OSAL_ThreadGroup_vp_uint_0 *pFixture,
+                                      btInt                       Count) :
+         m_pFixture(pFixture),
+         m_Count(Count)
+      {}
+
+      virtual void OnJoin(btTime )
+      {
+         m_pFixture->m_Sems[3].Post(m_Count);
+      }
+
+   protected:
+      OSAL_ThreadGroup_vp_uint_0 *m_pFixture;
+      btInt                       m_Count;
+   };
 
    // Use Thr9 to attempt the Drain(), this thread to do the Join().
 
@@ -1626,6 +1778,9 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0101)
 
    AAL::btInt w = (AAL::btInt)m_MinThreads;
 
+   aal0101AfterThreadGroupAutoLock AfterAutoLock(this, 1);
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
+
    ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
 
    // m_Sems[0] - count up sem, Post()'ed by each worker thread.
@@ -1646,8 +1801,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0101)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 20 == i ) {
-         EXPECT_TRUE(Add( new SleepThenPostD(100, m_Sems[1], w-1) ));
-      } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
          EXPECT_TRUE(Add( new YieldD() ));
@@ -1656,11 +1809,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0101)
 
    EXPECT_EQ(50, g->GetNumWorkItems());
 
-   // Wake the first worker, which will sleep then wake the remaining workers.
-   // Meanwhile, this thread will be in Join().
-   // Some worker will wake Thr9 to attempt a Drain(), which should fail.
-   EXPECT_TRUE(m_Sems[1].Post(1));
-   EXPECT_TRUE(m_Sems[3].Post(1));
+   // The AfterAutoLock callback will wake Thr9 after entering Join() below.
+   // Thr9 will attempt a Drain() with all workers blocked. This is done so that Drain()
+   //  doesn't encounter an empty queue, which results in a true return status.
+   // After the failed Drain(), Thr9 wakes all of the worker threads, allowing the Join() to complete.
 
    EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
 
@@ -1698,6 +1850,25 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0102)
    // attempts to Join() return false to indicate failure for the second Join().
    // The first Join() is allowed to complete successfully.
 
+   class aal0102AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0102AfterThreadGroupAutoLock(OSAL_ThreadGroup_vp_uint_0 *pFixture,
+                                      btInt                       Count) :
+         m_pFixture(pFixture),
+         m_Count(Count)
+      {}
+
+      virtual void OnDestroy(btTime )
+      {
+         m_pFixture->m_Sems[1].Post(m_Count);
+      }
+
+   protected:
+      OSAL_ThreadGroup_vp_uint_0 *m_pFixture;
+      btInt                       m_Count;
+   };
+
    // Use Thr10 to attempt the 2nd Join(), this thread to do the delete.
 
    ASSERT_EQ(0, CurrentThreads());
@@ -1727,6 +1898,9 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0102)
 
    AAL::btInt w = (AAL::btInt)m_MinThreads;
 
+   aal0102AfterThreadGroupAutoLock AfterAutoLock(this, w);
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
+
    ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
 
    // m_Sems[0] - count up sem, Post()'ed by each worker thread.
@@ -1747,8 +1921,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0102)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(Add( new SleepThenPostD(100, m_Sems[1], w-1)) );
-      } else if ( 5 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[3]) )); // Wakes Thr10 to attempt the Join().
       } else if ( 48 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
@@ -1761,12 +1933,11 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0102)
 
    EXPECT_EQ(50, g->GetNumWorkItems());
 
-   // Wake the first worker, which will sleep then wake the remaining workers.
-   // Meanwhile, this thread will be in the destructor, doing the 1st Join().
+   // The AfterAutoLock callback wakes all workers upon entering Destroy() below.
+   // Meanwhile, this thread will be in Destroy(), doing the 1st Join().
    // Some worker wakes Thr10, which attempts another Join(), but fails.
    // Some worker waits for Thr10 to exit, so that Thr10 doesn't attempt to de-reference a
    //  pointer to the deleted thread group.
-   EXPECT_TRUE(m_Sems[1].Post(1));
 
    // Delete the thread group, invoking Join().
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
@@ -1790,7 +1961,6 @@ void OSAL_ThreadGroup_vp_uint_0::Thr11(OSLThread *pThread, void *pContext)
    EXPECT_TRUE(pTC->m_Sems[3].Wait());
 
    ASSERT_NONNULL(pTC->m_pGroup);
-
    EXPECT_FALSE(pTC->m_pGroup->Join(AAL_INFINITE_WAIT));
 }
 
@@ -1799,6 +1969,25 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0103)
    // When an explicit call to Join() has transitioned a thread group to the Joining state,
    // attempts to Join() return false to indicate failure for the second Join().
    // The first Join() is allowed to complete successfully.
+
+   class aal0103AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0103AfterThreadGroupAutoLock(OSAL_ThreadGroup_vp_uint_0 *pFixture,
+                                      btInt                       Count) :
+         m_pFixture(pFixture),
+         m_Count(Count)
+      {}
+
+      virtual void OnJoin(btTime )
+      {
+         m_pFixture->m_Sems[1].Post(m_Count);
+      }
+
+   protected:
+      OSAL_ThreadGroup_vp_uint_0 *m_pFixture;
+      btInt                       m_Count;
+   };
 
    // Use Thr11 to attempt the 2nd Join(), this thread to do the 1st Join().
 
@@ -1829,6 +2018,9 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0103)
 
    AAL::btInt w = (AAL::btInt)m_MinThreads;
 
+   aal0103AfterThreadGroupAutoLock AfterAutoLock(this, w);
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
+
    ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
 
    // m_Sems[0] - count up sem, Post()'ed by each worker thread.
@@ -1849,8 +2041,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0103)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(Add( new SleepThenPostD(100, m_Sems[1], w-1) ));
-      } else if ( 5 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[3]) )); // Wakes Thr11 to attempt the 2nd Join().
       } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
@@ -1861,10 +2051,8 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0103)
 
    EXPECT_EQ(50, g->GetNumWorkItems());
 
-   // Wake the first worker, which will sleep then wake the remaining workers.
-   // Meanwhile, this thread will be doing the 1st Join().
-   // Some worker wakes Thr11 to attempt a 2nd Join(), which fails.
-   EXPECT_TRUE(m_Sems[1].Post(1));
+   // The AfterAutoLock callback wakes all workers upon entering Join() below.
+   // A worker wakes Thr11 to attempt a 2nd Join(), which fails.
 
    EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
 
@@ -2068,7 +2256,7 @@ protected:
       return m_pGroup->Add(pDisp);
    }
 
-   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return (AAL::btUnsignedInt) GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThreadGroup           *m_pGroup;
    AAL::btUnsignedInt        m_MinThreads;
@@ -2184,7 +2372,7 @@ protected:
       return m_pGroup->Add(pDisp);
    }
 
-   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return (AAL::btUnsignedInt) GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThreadGroup           *m_pGroup;
    AAL::btUnsignedInt        m_MinThreads;

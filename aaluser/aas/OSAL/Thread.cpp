@@ -608,6 +608,9 @@ btBool ThreadIDEqual(btTID x, btTID y)
 void ExitCurrentThread(btUIntPtr ExitStatus)
 {
 #if   defined( __AAL_WINDOWS__ )
+# ifdef DBG_OSLTHREAD
+#    include "dbg_oslthread_2.cpp"
+# endif // DBG_OSLTHREAD
 
    ::ExitThread((DWORD)ExitStatus);
 
