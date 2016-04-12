@@ -90,7 +90,6 @@ BEGIN_NAMESPACE(AAL)
 CAALEvent::CAALEvent(IBase *pObject) :
    m_pObject(NULL),
    m_bIsOK(false),
-   m_Context(NULL),
    m_pServiceClient(NULL),
    m_pRuntimeClient(NULL),
    m_pEventHandler(NULL),
@@ -110,9 +109,6 @@ CAALEvent::CAALEvent(IBase *pObject) :
    // Save the objects
    m_pObject = pObject;
 
-   // Event inherits object's Application Context Value based on m_pObject
-   UpdateContext();
-
    m_bIsOK = true;
 }
 
@@ -124,7 +120,6 @@ CAALEvent::CAALEvent(IBase *pObject) :
 CAALEvent::CAALEvent(IBase *pObject, btIID SubClassID) :
    m_pObject(NULL),
    m_bIsOK(false),
-   m_Context(NULL),
    m_pServiceClient(NULL),
    m_pRuntimeClient(NULL),
    m_pEventHandler(NULL),
@@ -147,9 +142,6 @@ CAALEvent::CAALEvent(IBase *pObject, btIID SubClassID) :
 
    // Save the object
    m_pObject = pObject;
-
-   // Event inherits object's Application Context Value based on m_pObject
-   UpdateContext();
 
    m_bIsOK = true;
 }
@@ -268,7 +260,6 @@ btBool CAALEvent::operator == (const IEvent &rOther) const
 IBase &               CAALEvent::Object() const { AutoLock(this); return *m_pObject; }
 IBase *              CAALEvent::pObject() const { AutoLock(this); return  m_pObject; }
 btBool                  CAALEvent::IsOK() const { AutoLock(this); return  m_bIsOK;   }
-btApplicationContext CAALEvent::Context() const { AutoLock(this); return  m_Context; }
 
 void CAALEvent::setHandler(IServiceClient *pHandler)
 {
@@ -292,14 +283,6 @@ void CAALEvent::setHandler(btEventHandler pHandler)
    m_pServiceClient = NULL;
    m_pRuntimeClient = NULL;
    m_pEventHandler  = pHandler;
-}
-
-btApplicationContext CAALEvent::SetContext(btApplicationContext Ctx)
-{
-   AutoLock(this);
-   btApplicationContext res = m_Context;
-   m_Context = Ctx;
-   return res;
 }
 
 IEvent * CAALEvent::Clone() const
@@ -348,7 +331,6 @@ void CAALEvent::SetObject(IBase *pObject)
 {
    AutoLock(this);
    m_pObject = pObject;
-   UpdateContext();
 }
 
 //=============================================================================
@@ -397,22 +379,6 @@ void CAALEvent::operator()()
 void CAALEvent::Delete()
 {
    delete this;
-}
-
-//=============================================================================
-// Name:          CAALEvent::UpdateContext
-// Description:   Update m_Context based on m_pObject, cache the object context
-// Interface:     protected
-// Inputs:        object member m_pObject
-// Outputs:       void
-// Comments:      Utility function used for internal state maintenance
-//=============================================================================
-void CAALEvent::UpdateContext()
-{
-   AutoLock(this);
-   if ( (NULL != m_pObject) && m_pObject->IsOK() ) {
-      m_Context = m_pObject->Context();
-   }
 }
 
 //=============================================================================

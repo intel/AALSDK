@@ -125,8 +125,6 @@ public:
    virtual IBase &                  Object()                const;
    virtual IBase *                 pObject()                const;
    virtual btBool                     IsOK()                const;
-   virtual btApplicationContext    Context()                const;
-   virtual btApplicationContext SetContext(btApplicationContext Ctx);
    virtual IEvent *                  Clone()                const;
    // </IEvent>
 
@@ -156,8 +154,7 @@ public:
    virtual void Delete();
 
 protected:
-   /// Update m_Context based on m_pObject
-   void UpdateContext();
+
    /// Sets an interface pointer on the object.
    ///
    /// @param[in]  Interface   The name of the interface to set..
@@ -178,7 +175,6 @@ protected:
    CAALEvent(const CAALEvent &other) :
       m_pObject(other.m_pObject),
       m_bIsOK(other.m_bIsOK),
-      m_Context(other.m_Context),
       m_pServiceClient(other.m_pServiceClient),
       m_pRuntimeClient(other.m_pRuntimeClient),
       m_pEventHandler(other.m_pEventHandler),
@@ -188,7 +184,6 @@ protected:
 
    IBase                *m_pObject;
    btBool                m_bIsOK;
-   btApplicationContext  m_Context;
    IServiceClient       *m_pServiceClient;
    IRuntimeClient       *m_pRuntimeClient;
    btEventHandler        m_pEventHandler;

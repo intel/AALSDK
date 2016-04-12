@@ -93,8 +93,8 @@ class AASLIB_API CAASBase : public    IBase,
                             protected CriticalSection
 {
 public:
-   /// CAASBase construct with optional btApplicationContext.
-   CAASBase(btApplicationContext Context=NULL);
+   /// CAASBase constructor.
+   CAASBase();
    /// CAASBase Destructor.
    virtual ~CAASBase();
 
@@ -104,10 +104,7 @@ public:
    btBool            operator != (IBase const &rother) const;
    btBool            operator == (IBase const &rother) const;
    btBool                    IsOK()                    const;
-   btApplicationContext   Context()                    const;
    // </IBase>
-
-   void SetContext(btApplicationContext context);
 
 protected:
    EOBJECT     SetInterface(btIID              Interface,
@@ -116,8 +113,7 @@ protected:
    EOBJECT ReplaceInterface(btIID              Interface,
                             btGenericInterface pInterface);
 
-   btApplicationContext m_Context;
-   btBool               m_bIsOK;
+   btBool m_bIsOK;
 
 private:
    // No copying allowed
@@ -138,9 +134,8 @@ private:
 class AASLIB_API CAALBase : public CAASBase
 {
 public:
-   /// CAALBase construct with Event Handler and Application-specific Context.
-   CAALBase(btEventHandler       pEventHandler,
-            btApplicationContext Context=NULL);
+   /// CAALBase construct with Event Handler.
+   CAALBase(btEventHandler pEventHandler);
 
    /// Destroy this CAALBase.
    virtual void Destroy(TransactionID const &TransID) = 0;

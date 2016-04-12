@@ -237,28 +237,29 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    write_ccip_csr64(ptr,offset,fme_pm.ccip_pm_threshold.csr);
 
    // Power Management Read Write Voltage Regulator CSR
-   fme_pm.ccip_pm_rdvr.clock_buffer_supply_voltvalid = 0x1;
-   fme_pm.ccip_pm_rdvr.core_supply_voltvalid = 0x1;
-   fme_pm.ccip_pm_rdvr.trans_supply_voltvalid = 0x1;
-   fme_pm.ccip_pm_rdvr.fpga_supply_voltvalid =0x1;
-   fme_pm.ccip_pm_rdvr.clock_buffer_supply_voltvalue =0xAA;
-   fme_pm.ccip_pm_rdvr.core_supply_voltvalue =0xBB;
-   fme_pm.ccip_pm_rdvr.trans_supply_voltvalue =0xCC;
-   fme_pm.ccip_pm_rdvr.fpga_supply_voltvalue =0xDD;
+   fme_pm.ccip_pm_rdvr.clock_buffer_supply_i_valid = 0x1;
+   fme_pm.ccip_pm_rdvr.core_supply_i_valid = 0x1;
+   fme_pm.ccip_pm_rdvr.trans_supply_i_valid = 0x1;
+   fme_pm.ccip_pm_rdvr.fpga_supply_i_valid =0x1;
+   fme_pm.ccip_pm_rdvr.clock_buffer_supply_i_value =0xAA;
+   fme_pm.ccip_pm_rdvr.core_supply_i_value =0xBB;
+   fme_pm.ccip_pm_rdvr.trans_supply_i_value =0xCC;
+   fme_pm.ccip_pm_rdvr.fpga_supply_i_value =0xDD;
    fme_pm.ccip_pm_rdvr.volt_regulator_readmods =0x1;
-   fme_pm.ccip_pm_rdvr.volt_regulator_readmod_value =0x110;
+   fme_pm.ccip_pm_rdvr.sequence_number =0x110;
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_pm.ccip_pm_rdvr.csr);
 
+
+
    // Power Management Record Maximum Voltage Regulator CSR
    fme_pm.ccip_pm_mrdvr.hw_set_field =0x1;
-   fme_pm.ccip_pm_mrdvr.max_clock_supply_voltrec =0xAA;
-   fme_pm.ccip_pm_mrdvr.max_core_supply_voltrec =0xBB;
-   fme_pm.ccip_pm_mrdvr.max_fpga_supply_voltrec =0xCC;
-   fme_pm.ccip_pm_mrdvr.max_trans_supply_voltrec =0xDD;
+   fme_pm.ccip_pm_mrdvr.max_clock_supply_i_rec =0xAA;
+   fme_pm.ccip_pm_mrdvr.max_core_supply_i_rec =0xBB;
+   fme_pm.ccip_pm_mrdvr.max_trans_supply_i_rec =0xCC;
+   fme_pm.ccip_pm_mrdvr.max_fpga_supply_i_rec =0xDD;
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_pm.ccip_pm_mrdvr.csr);
-
 
    // FME Global Performance header
 
@@ -769,24 +770,23 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "threshold2_sts = %x \n",pfme_dev->m_pPowermgmt->ccip_pm_threshold.threshold2_sts);
 
 
-      PDEBUG( "clock_buffer_supply_voltvalid = %x \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.clock_buffer_supply_voltvalid);
-      PDEBUG( "core_supply_voltvalid = %x \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.core_supply_voltvalid);
-      PDEBUG( "trans_supply_voltvalid = %x \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.trans_supply_voltvalid);
-      PDEBUG( "fpga_supply_voltvalid = %x \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.fpga_supply_voltvalid);
-      PDEBUG( "clock_buffer_supply_voltvalue = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.clock_buffer_supply_voltvalue);
-      PDEBUG( "core_supply_voltvalue = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.core_supply_voltvalue);
-      PDEBUG( "trans_supply_voltvalue = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.trans_supply_voltvalue);
+      PDEBUG( "clock_buffer_supply_i_valid = %x \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.clock_buffer_supply_i_valid);
+      PDEBUG( "core_supply_i_valid = %x \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.core_supply_i_valid);
+      PDEBUG( "trans_supply_i_valid = %x \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.trans_supply_i_valid);
+      PDEBUG( "fpga_supply_i_valid = %x \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.fpga_supply_i_valid);
+      PDEBUG( "clock_buffer_supply_i_value = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.clock_buffer_supply_i_value);
+      PDEBUG( "core_supply_i_value = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.core_supply_i_value);
+      PDEBUG( "trans_supply_i_value = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.trans_supply_i_value);
 
-      PDEBUG( "fpga_supply_voltvalue = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.fpga_supply_voltvalue);
+      PDEBUG( "fpga_supply_i_value = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.fpga_supply_i_value);
       PDEBUG( "volt_regulator_readmods = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.volt_regulator_readmods);
-      PDEBUG( "volt_regulator_readmod_value = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.volt_regulator_readmod_value);
-
+      PDEBUG( "sequence_number = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_rdvr.sequence_number);
 
       PDEBUG( "hw_set_field = %x \n",pfme_dev->m_pPowermgmt->ccip_pm_mrdvr.hw_set_field);
-      PDEBUG( "max_clock_supply_voltrec = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_mrdvr.max_clock_supply_voltrec);
-      PDEBUG( "max_core_supply_voltrec = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_mrdvr.max_core_supply_voltrec);
-      PDEBUG( "max_fpga_supply_voltrec = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_mrdvr.max_fpga_supply_voltrec);
-      PDEBUG( "max_trans_supply_voltrec = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_mrdvr.max_trans_supply_voltrec);
+      PDEBUG( "max_clock_supply_i_rec = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_mrdvr.max_clock_supply_i_rec);
+      PDEBUG( "max_core_supply_i_rec = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_mrdvr.max_core_supply_i_rec);
+      PDEBUG( "max_trans_supply_i_rec = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_mrdvr.max_trans_supply_i_rec);
+      PDEBUG( "max_fpga_supply_i_rec = %d \n",pfme_dev->m_pPowermgmt->ccip_pm_mrdvr.max_fpga_supply_i_rec);
 
       PDEBUG( "FME Power Feature  END \n \n");
 

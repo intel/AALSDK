@@ -121,7 +121,6 @@ public:
    virtual void      serviceAllocated(IBase *,
                                       TransactionID const & = TransactionID());
    virtual void serviceAllocateFailed(const IEvent &);
-   virtual void          serviceFreed(TransactionID const & = TransactionID());
    virtual void          serviceEvent(const IEvent &);
    virtual void       serviceReleased(TransactionID const &rTranID = TransactionID());
    virtual void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent){};  // Ignored TODO better implementation

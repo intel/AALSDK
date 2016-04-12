@@ -316,11 +316,9 @@ public:
 
    void serviceAllocateFailed(const IEvent &rEvent);
 
-    void serviceReleased(const AAL::TransactionID&);
+   void serviceReleased(const AAL::TransactionID&);
 
-    void serviceReleaseFailed(const AAL::IEvent&);
-
-   void serviceFreed(TransactionID const &rTranID);
+   void serviceReleaseFailed(const AAL::IEvent&);
 
    void serviceEvent(const IEvent &rEvent);
    // <end IServiceClient interface>

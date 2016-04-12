@@ -13,16 +13,15 @@ class CAASBase_f_0 : public AAL::CAASBase,
 {
 public:
 	CAASBase_f_0() :
-      CAASBase((btApplicationContext) 33)
+      CAASBase()
    {}
 	virtual ~CAASBase_f_0() {}
 };
 
 TEST_F(CAASBase_f_0, aal0225)
 {
-   // CAASBase::CAASBase(btApplicationContext ) sets interface pointers for iidCBase and iidBase,
-   // When object initialization is successful, m_bIsOK is set to true. m_Context stores the
-   // input parameter for later retrieval by Context().
+   // CAASBase::CAASBase() sets interface pointers for iidCBase and iidBase,
+   // When object initialization is successful, m_bIsOK is set to true.
 
    EXPECT_TRUE(Has(iidBase));
    EXPECT_TRUE(Has(iidCBase));
@@ -32,8 +31,10 @@ TEST_F(CAASBase_f_0, aal0225)
 
    EXPECT_TRUE(IsOK());
 
+#if DEPRECATED
    const btApplicationContext ExpectCtx = (btApplicationContext)33;
    EXPECT_EQ(ExpectCtx, Context());
+#endif // DEPRECATED
 }
 
 //=============================================================================
@@ -52,14 +53,16 @@ public:
 
 TEST_F(CAASBase_f_1, aal0226)
 {
-   // When an CAASBase::CAASBase(btApplicationContext ) is created with the default
-   // constructor. m_bIsOK is set to true. m_Context stores the NULL application
-   // context for later retrieval by Context().
+   // When an CAASBase::CAASBase() is created with the default
+   // constructor. m_bIsOK is set to true.
 
    EXPECT_TRUE(IsOK());
+#if DEPRECATED
    EXPECT_NULL(Context());
+#endif // DEPRECATED
 }
 
+#if DEPRECATED
 TEST_F(CAASBase_f_0, aal0227)
 {
    // When the input parameter to CAASBase::SetContext(btApplicationContext )
@@ -81,6 +84,7 @@ TEST_F(CAASBase_f_0, aal0228)
 	SetContext(NULL);
 	EXPECT_NULL(Context());
 }
+#endif // DEPRECATED
 
 TEST_F(CAASBase_f_0, aal0229)
 {
@@ -305,7 +309,6 @@ TEST_F(CAASBase_f_0, aal0245)
       btBool          operator != (IBase const &rother) const { return true;  }
       btBool          operator == (IBase const &rother) const { return false; }
       btBool                  IsOK()                    const { return true;  }
-      btApplicationContext Context()                    const { return NULL;  }
    } a;
 
    CAASBase b;
@@ -505,15 +508,14 @@ TEST(CAALBaseTest, CAALBaseTest)
    class DerivedFromCAALBase : public CAALBase
    {
    public:
-      DerivedFromCAALBase(btEventHandler       h,
-                          btApplicationContext ctx) : CAALBase(h, ctx) {}
+      DerivedFromCAALBase(btEventHandler h) : CAALBase(h) {}
       virtual void Destroy(TransactionID const & ) {}
    };
 
-   DerivedFromCAALBase d0((btEventHandler)NULL, (btApplicationContext)NULL);
+   DerivedFromCAALBase d0((btEventHandler)NULL);
    EXPECT_FALSE(d0.IsOK()); // NULL event handler
 
-   DerivedFromCAALBase d1((btEventHandler)3, (btApplicationContext)NULL);
+   DerivedFromCAALBase d1((btEventHandler)3);
    EXPECT_TRUE(d1.IsOK());
 }
 

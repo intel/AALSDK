@@ -92,8 +92,6 @@ public:
    virtual btBool          operator == (IBase const &rother) const = 0;
    /// Internal state check.
    virtual btBool                  IsOK()                    const = 0;
-   /// Retrieve the application-specific context for the object.
-   virtual btApplicationContext Context()                    const = 0;
 };
 
 

@@ -122,7 +122,6 @@ struct NLBCmdLine gCmdLine =
    0,
    0,
    0,
-   0,
 #endif // OS
    // defaults
    {
@@ -145,12 +144,10 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_WB,
       DEFAULT_RDS,
       DEFAULT_RDI,
-      DEFAULT_RDO,
       DEFAULT_CONT,
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
 #elif defined( __AAL_LINUX__ )
-      DEFAULT_TONSEC,
       DEFAULT_TOUSEC,
       DEFAULT_TOMSEC,
       DEFAULT_TOSEC,
@@ -166,7 +163,7 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_VH0,
       DEFAULT_VH1,
       DEFAULT_ST,
-	  DEFAULT_UT,
+	   DEFAULT_UT,
       DEFAULT_MINCX,
       DEFAULT_MAXCX,
       DEFAULT_CX,
@@ -290,6 +287,13 @@ void CMyApp::Stop()
 		 (dynamic_ptr<IAALService>(iidService, m_pFMEService))->Release(TransactionID());
 		 Wait(); // For service freed notification.
 		 m_pFMEService = NULL;
+   }
+
+   if( NULL != m_pALIBufferService ) {
+      // Release the Workspaces
+      m_pALIBufferService->bufferFree(m_InputVirt);
+      m_pALIBufferService->bufferFree(m_OutputVirt);
+      m_pALIBufferService->bufferFree(m_DSMVirt);
    }
 
    if ( NULL != m_pNLBService ) {
@@ -512,7 +516,7 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 	      }
 
 	      // Documentation says HWALIAFU Service publishes
-	      //    IALIReset as subclass interface
+	      //    IALIUMsg as subclass interface
 	      m_pALIuMSGService = dynamic_ptr<IALIUMsg>(iidALI_UMSG_Service, pServiceBase);
 	      ASSERT(NULL != m_pALIuMSGService);
 	      if ( NULL == m_pALIuMSGService ) {
@@ -529,7 +533,7 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 	   }
 
 	   // Documentation says HWALIAFU Service publishes
-	   //    IALIBuffer as subclass interface. Used in Buffer Allocation and Free
+	   //    IALIPerf as subclass interface. Used to access performance monitors
 	   m_pALIPerf = dynamic_ptr<IALIPerf>(iidALI_PERF_Service, pServiceBase);
 	  /* ASSERT(NULL != m_pALIPerf);
 	   if ( NULL == m_pALIPerf ) {
@@ -599,16 +603,6 @@ void CMyApp::serviceAllocateFailed(const IEvent &e)
    Post();
 }
 
-void CMyApp::serviceFreed(TransactionID const &tid)
-{
-	// Release the Workspaces
-	 m_pALIBufferService->bufferFree(m_InputVirt);
-	 m_pALIBufferService->bufferFree(m_OutputVirt);
-	 m_pALIBufferService->bufferFree(m_DSMVirt);
-
-	INFO("Service Freed");
-	Post();
-}
 
 void CMyApp::serviceEvent(const IEvent &e)
 {
@@ -625,7 +619,7 @@ void CMyApp::serviceEvent(const IEvent &e)
 
 void CMyApp::serviceReleased(TransactionID const &tid)
 {
-	INFO("Service Released");
+   INFO("Service Released");
    Post();
 }
 void CMyApp::serviceReleaseFailed(const IEvent &e)
@@ -908,6 +902,8 @@ btInt INLB::ResetHandshake()
 btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize CoolSize, const NLBCmdLine &cmd)
 {
    btInt res = 0;
+   const btInt StopTimeoutMillis = 250;
+   btInt MaxPoll = StopTimeoutMillis;
 
    const btUnsigned32bitInt CoolOffData = 0xc001c001;
 
@@ -962,15 +958,21 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
 
    // Wait for test completion
-   while ( 0 == pAFUDSM->test_complete ) {
-      SleepMicro(100);
-   }
+   while ( 0 == pAFUDSM->test_complete &&
+         ( MaxPoll >= 0 )) {
+            MaxPoll -= 1;
+            SleepMilli(1);
+     }
 
    // Stop the device
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
    // Check the device status
+   if ( MaxPoll < 0 ) {
+     cerr << "The maximum timeout for test stop was exceeded." << endl;
+     ++res;
+   }
    if ( 0 != pAFUDSM->test_error ) {
       ++res;
    }

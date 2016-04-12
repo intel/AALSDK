@@ -1523,16 +1523,14 @@ void EmptyIAALUnMarshaller::importmsg(char const *pmsg, btWSSize len) {}
 ////////////////////////////////////////////////////////////////////////////////
 // IServiceClient
 
-EmptyIServiceClient::EmptyIServiceClient(btApplicationContext Ctx) :
-   CAASBase(Ctx)
+EmptyIServiceClient::EmptyIServiceClient()
 {
    if ( EObjOK != SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this)) ) {
       m_bIsOK = false;
    }
 }
 
-CallTrackingIServiceClient::CallTrackingIServiceClient(btApplicationContext Ctx) :
-   EmptyIServiceClient(Ctx)
+CallTrackingIServiceClient::CallTrackingIServiceClient()
 {}
 
 void CallTrackingIServiceClient::serviceAllocated(IBase               *pBase,
@@ -1567,8 +1565,7 @@ void CallTrackingIServiceClient::serviceEvent(const IEvent &e)
    l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
 }
 
-SynchronizingIServiceClient::SynchronizingIServiceClient(btApplicationContext Ctx) :
-   CallTrackingIServiceClient(Ctx)
+SynchronizingIServiceClient::SynchronizingIServiceClient()
 {
    m_Bar.Create(1, false);
 }
@@ -1616,16 +1613,14 @@ btBool SynchronizingIServiceClient::Post(btUnsignedInt Count) { return m_Bar.Pos
 ////////////////////////////////////////////////////////////////////////////////
 // IRuntimeClient
 
-EmptyIRuntimeClient::EmptyIRuntimeClient(btApplicationContext Ctx) :
-   CAASBase(Ctx)
+EmptyIRuntimeClient::EmptyIRuntimeClient()
 {
    if ( EObjOK != SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this)) ) {
       m_bIsOK = false;
    }
 }
 
-CallTrackingIRuntimeClient::CallTrackingIRuntimeClient(btApplicationContext Ctx) :
-   EmptyIRuntimeClient(Ctx)
+CallTrackingIRuntimeClient::CallTrackingIRuntimeClient()
 {}
 
 void CallTrackingIRuntimeClient::runtimeCreateOrGetProxyFailed(IEvent const &e)
@@ -1680,8 +1675,7 @@ void CallTrackingIRuntimeClient::runtimeEvent(const IEvent &e)
    l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
 }
 
-SynchronizingIRuntimeClient::SynchronizingIRuntimeClient(btApplicationContext Ctx) :
-   CallTrackingIRuntimeClient(Ctx)
+SynchronizingIRuntimeClient::SynchronizingIRuntimeClient()
 {
    m_Bar.Create(1, false);
 }
@@ -1795,8 +1789,7 @@ btBool CallTrackingISvcsFact::InitializeService(IBase               *newService,
 ////////////////////////////////////////////////////////////////////////////////
 // IRuntime
 
-EmptyIRuntime::EmptyIRuntime(btApplicationContext Ctx) :
-   CAASBase(Ctx),
+EmptyIRuntime::EmptyIRuntime() :
    m_start_returns(true),
    m_schedDispatchable_returns(true),
    m_getRuntimeProxy_returns(NULL),
@@ -1823,8 +1816,7 @@ IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, releaseRuntimeProxy, btBool,          
 IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, getRuntimeClient,    IRuntimeClient * , m_getRuntimeClient_returns   )
 IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, IsOK,                btBool,            m_IsOK_returns               )
 
-CallTrackingIRuntime::CallTrackingIRuntime(btApplicationContext Ctx) :
-   EmptyIRuntime(Ctx)
+CallTrackingIRuntime::CallTrackingIRuntime()
 {}
 
 btBool CallTrackingIRuntime::start(const NamedValueSet &rconfigParms)
@@ -1884,8 +1876,7 @@ btBool CallTrackingIRuntime::IsOK()
 ////////////////////////////////////////////////////////////////////////////////
 // IServiceBase
 
-EmptyIServiceBase::EmptyIServiceBase(btApplicationContext Ctx) :
-   AAL::CAASBase(Ctx),
+EmptyIServiceBase::EmptyIServiceBase() :
    m_initComplete_returns(false),
    m_initFailed_returns(false),
    m_ReleaseComplete_returns(false),
@@ -1920,8 +1911,7 @@ IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getRuntime,           IRuntime *, 
 IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getRuntimeClient,     IRuntimeClient *,      m_getRuntimeClient_returns)
 IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getAALServiceModule,  AALServiceModule *,    m_getAALServiceModule_returns)
 
-CallTrackingIServiceBase::CallTrackingIServiceBase(btApplicationContext Ctx) :
-   EmptyIServiceBase(Ctx)
+CallTrackingIServiceBase::CallTrackingIServiceBase()
 {}
 
 btBool CallTrackingIServiceBase::initComplete(TransactionID const &rtid)
@@ -2215,8 +2205,7 @@ void AllocSwvalSvcMod(AAL::IRuntime            *pRuntime,
 }
 
 
-EmptySwvalSvcClient::EmptySwvalSvcClient(btApplicationContext Ctx) :
-   EmptyIServiceClient(Ctx)
+EmptySwvalSvcClient::EmptySwvalSvcClient()
 {
    if ( EObjOK != SetInterface(iidSwvalSvcClient, dynamic_cast<ISwvalSvcClient *>(this)) ) {
       m_bIsOK = false;
@@ -2226,8 +2215,7 @@ EmptySwvalSvcClient::EmptySwvalSvcClient(btApplicationContext Ctx) :
 void EmptySwvalSvcClient::DidSomething(const AAL::TransactionID & , int ) {}
 
 
-CallTrackingSwvalSvcClient::CallTrackingSwvalSvcClient(btApplicationContext Ctx) :
-   CallTrackingIServiceClient(Ctx)
+CallTrackingSwvalSvcClient::CallTrackingSwvalSvcClient()
 {
    if ( EObjOK != SetInterface(iidSwvalSvcClient, dynamic_cast<ISwvalSvcClient *>(this)) ) {
       m_bIsOK = false;
@@ -2242,8 +2230,7 @@ void CallTrackingSwvalSvcClient::DidSomething(const AAL::TransactionID &tid, int
 }
 
 
-SynchronizingSwvalSvcClient::SynchronizingSwvalSvcClient(btApplicationContext Ctx) :
-   SynchronizingIServiceClient(Ctx)
+SynchronizingSwvalSvcClient::SynchronizingSwvalSvcClient()
 {
    if ( EObjOK != SetInterface(iidSwvalSvcClient, dynamic_cast<ISwvalSvcClient *>(this)) ) {
       m_bIsOK = false;

@@ -101,7 +101,7 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
 //=============================================================================
 static struct aal_device_addr nextAFU_addr = {
    .m_bustype   = aal_bustype_Host,
-   .m_busnum    = 1,       //
+   { .m_busnum  = 1 },     //
    .m_devicenum = 0,       //
    .m_functnum  = 1,       //
    .m_subdevnum = 0        // AFU

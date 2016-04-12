@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+
+$1/insdrv cci
+sleep 3
+$1/rmdrv
+
+exit 0
