@@ -258,7 +258,7 @@ struct ccip_device
    int                        m_numVFs;
    int                        m_maxVFs;
 
-   struct fme_device         *m_pfme_dev;    // FME Device
+   struct fme_device         *m_pfme_dev;       // FME Device
 
    struct pci_dev            *m_pcidev;         // Linux pci_dev pointer
 

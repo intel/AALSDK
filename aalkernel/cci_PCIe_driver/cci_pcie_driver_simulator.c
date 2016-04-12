@@ -237,6 +237,7 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
 
    // Create the CCI device object
    pccipdev = create_ccidevice();
+   ccip_dev_pci_dev(pccipdev) = NULL;
 
    // Save the Bus:Device:Function of simulated device
    ccip_dev_pcie_bustype(pccipdev)  = aal_bustype_Host;
@@ -244,7 +245,7 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
    ccip_dev_pcie_devnum(pccipdev)   = aaldevid_devaddr_devnum(*pdevid);
    ccip_dev_pcie_fcnnum(pccipdev)   = aaldevid_devaddr_fcnnum(*pdevid);
 
-   // Mark thsi device as simulated
+   // Mark this device as simulated
    ccip_set_simulated(pccipdev);
 
    // FME Device initialization

@@ -158,6 +158,7 @@ struct cci_aal_device   *
    // Record parentage
    cci_dev_pport(pcci_aaldev)    = pportdev;       // Save its port
    cci_dev_pfme(pcci_aaldev)     = ccip_port_dev_fme(pportdev);
+   cci_dev_pci_dev(pcci_aaldev) = ccip_dev_to_pci_dev( ccip_port_to_ccidev(pportdev) );
 
    // Device Address is the same as the Port. Set the AFU ID information
    // The following attributes describe the interfaces supported by the device
@@ -392,16 +393,23 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          btVirtAddr           krnl_virt   = NULL;
          struct aal_wsid     *wsidp       = NULL;
          struct aalui_WSMEvent WSID;
+         btHANDLE             iova;
 
          PDEBUG( "Allocating %lu bytes \n", (unsigned long)preq->ahmreq.u.wksp.m_size);
-
-         // Normal flow -- create the needed workspace.
-         krnl_virt = (btVirtAddr)kosal_alloc_contiguous_mem_nocache(preq->ahmreq.u.wksp.m_size);
-         if (NULL == krnl_virt) {
-            Message->m_errcode = uid_errnumNoMem;
-            break;
+         if( NULL== cci_dev_pci_dev(pdev) ) {
+            // Normal flow -- create the needed workspace.
+            krnl_virt = (btVirtAddr)kosal_alloc_contiguous_mem_nocache(preq->ahmreq.u.wksp.m_size);
+            if (NULL == krnl_virt) {
+               Message->m_errcode = uid_errnumNoMem;
+               break;
+            }
+         }else{
+            krnl_virt = kosal_alloc_dma_coherent( ccip_dev_pci_dev(pdev), preq->ahmreq.u.wksp.m_size, &iova);
+            if (NULL == krnl_virt) {
+               Message->m_errcode = uid_errnumNoMem;
+               break;
+            }
          }
-
          //------------------------------------------------------------
          // Create the WSID object and add to the list for this session
          //------------------------------------------------------------
@@ -429,7 +437,13 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          // Set up the return payload
          WSID.evtID           = uid_wseventAllocate;
          WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
-         WSID.wsParms.physptr = (btWSID)kosal_virt_to_phys(krnl_virt);
+         if( NULL== cci_dev_pci_dev(pdev) ) {
+            WSID.wsParms.physptr = (btWSID)kosal_virt_to_phys(krnl_virt);
+            wsidp->m_dmahandle = (btHANDLE)kosal_virt_to_phys(krnl_virt);
+         }else{
+            WSID.wsParms.physptr = (btWSID)iova;
+            wsidp->m_dmahandle = iova;
+         }
          WSID.wsParms.size    = preq->ahmreq.u.wksp.m_size;
 
          // Make this atomic. Check the original response buffer size for room
@@ -477,8 +491,11 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          }
 
          krnl_virt = (btVirtAddr)wsidp->m_id;
-
-         kosal_free_contiguous_mem(krnl_virt, wsidp->m_size);
+         if( NULL== cci_dev_pci_dev(pdev) ) {
+            kosal_free_contiguous_mem(krnl_virt, wsidp->m_size);
+         }else{
+            kosal_free_dma_coherent( ccip_dev_pci_dev(pdev), krnl_virt, wsidp->m_size, wsidp->m_dmahandle);
+         }
 
          // remove the wsid from the device and destroy
          kosal_list_del_init(&wsidp->m_list);
@@ -541,6 +558,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct aal_wsid               *wsidp         = NULL;
          struct aalui_WSMEvent          WSID;
          btWSSize                       size          = 0;
+         btHANDLE                       iova          = 0;
+
 
          if(false == get_port_feature( cci_dev_pport(pdev),
                                        CCIP_PORT_DFLID_USMG,
@@ -559,14 +578,25 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          PDEBUG( "Allocating %lu bytes for uMSG\n", (unsigned long)size);
 
          // Normal flow -- create the needed workspace.
-         krnl_virt = (btVirtAddr)kosal_alloc_contiguous_mem_nocache(size);
-         if (NULL == krnl_virt) {
-            Message->m_errcode = uid_errnumNoMem;
-            break;
+         if( NULL== cci_dev_pci_dev(pdev) ) {
+            // Normal flow -- create the needed workspace.
+            krnl_virt = (btVirtAddr)kosal_alloc_contiguous_mem_nocache(size);
+            if (NULL == krnl_virt) {
+               Message->m_errcode = uid_errnumNoMem;
+               break;
+            }
+            puMsgvirt->ccip_umsg_base_address.umsg_base_address = kosal_virt_to_phys(krnl_virt);
+         }else{
+            krnl_virt = kosal_alloc_dma_coherent( ccip_dev_pci_dev(pdev),size, &iova);
+            if (NULL == krnl_virt) {
+               Message->m_errcode = uid_errnumNoMem;
+               break;
+            }
+            puMsgvirt->ccip_umsg_base_address.umsg_base_address = (btPhysAddr)iova;
          }
 
+
          // Set the uMSG area
-         puMsgvirt->ccip_umsg_base_address.umsg_base_address = kosal_virt_to_phys(krnl_virt);
          PDEBUG("uMSG @ %p [%" PRIxPHYS_ADDR "]\n", krnl_virt, (btPhysAddr)puMsgvirt->ccip_umsg_base_address.umsg_base_address);
 
          // Enable uMsg operation
@@ -587,7 +617,13 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                   PDEBUG("Timed out waiting for uMSG engine to start\n");
                   Message->m_errcode = uid_errnumTimeout;
                   puMsgvirt->ccip_umsg_base_address.umsg_base_address = 0;
-                  kosal_free_contiguous_mem(krnl_virt, size);
+
+                  if( NULL== cci_dev_pci_dev(pdev) ) {
+                     kosal_free_contiguous_mem(krnl_virt, size);
+                  }else{
+                     kosal_free_dma_coherent( ccip_dev_pci_dev(pdev), krnl_virt, size, iova);
+                  }
+
                   return 0;
                }
             }

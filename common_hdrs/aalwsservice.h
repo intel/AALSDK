@@ -124,6 +124,7 @@ struct aal_wsid
 {
    struct aal_device *m_device;     // Device
    btWSID             m_id;         // ID, and pointer to workspace structure
+   btHANDLE           m_dmahandle;  // Optional DMA Handle
    btWSID             m_handle;     // Handle passed up to user mode
    kosal_map_handle   m_maphandle;  // Used by OS User mode mapping
    enum wstype        m_type;       // Type of allocation

@@ -494,12 +494,24 @@ struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev
    // enable PCIe error reporting
    pci_enable_pcie_error_reporting(pcidev);
 
-   // enable bus mastering (if not already set)
+   // enable bus mastering and configure DMA
    pci_set_master(pcidev);
    pci_save_state(pcidev);
 
+   if (!dma_set_mask(&pcidev->dev, DMA_BIT_MASK(64))) {
+      dma_set_coherent_mask(&pcidev->dev, DMA_BIT_MASK(64));
+   } else if (!dma_set_mask(&pcidev->dev, DMA_BIT_MASK(32))) {
+      dma_set_coherent_mask(&pcidev->dev, DMA_BIT_MASK(32));
+   } else {
+      PERR("No suitable DMA support available.\n");
+      goto ERR;
+   }
+
+
+   // If we are on the host node (aka Dom0) then we do not publish VF objects
    if(isPFDriver){
-      PINFO("VF Device detected on PF Driver.\nIgnoring.");
+      PINFO("VF Device detected on PF Driver.\nIgnoring.\n");
+//      return NULL;   Currently disabled during debug
    }
 
    // Create the CCI device object
@@ -679,9 +691,17 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
    // enable PCIe error reporting
    pci_enable_pcie_error_reporting(pcidev);
 
-   // enable bus mastering (if not already set)
+   // enable bus mastering and configure DMA
    pci_set_master(pcidev);
    pci_save_state(pcidev);
+   if (!dma_set_mask(&pcidev->dev, DMA_BIT_MASK(64))) {
+      dma_set_coherent_mask(&pcidev->dev, DMA_BIT_MASK(64));
+   } else if (!dma_set_mask(&pcidev->dev, DMA_BIT_MASK(32))) {
+      dma_set_coherent_mask(&pcidev->dev, DMA_BIT_MASK(32));
+   } else {
+      PERR("No suitable DMA support available.\n");
+      goto ERR;
+   }
 
    // Create the CCI device object
    //  Allocate a new CCI board device object
@@ -853,6 +873,7 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
             goto ERR;
          }
       }// End for loop
+
       ccip_portdev_numports(pccipdev) = i;
       ccip_portdev_maxVFs(pccipdev) = i;     // Can't have more VFs than ports for now
       if( 0 != pci_sriov_set_totalvfs(pcidev, ccip_portdev_maxVFs(pccipdev))){

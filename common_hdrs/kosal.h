@@ -128,6 +128,8 @@ typedef void * kosal_ownermodule;
 # define KOSAL_VIRT      AAL::btVirtAddr
 # define KOSAL_PHYS      AAL::btPhysAddr
 # define KOSAL_WSSIZE    AAL::btWSSize
+# define KOSAL_HANDLE    AAL::btHANDLE
+
 #else
 // C doesn't comprehend C++ namespaces.
 # define KOSAL_INT       btInt
@@ -143,6 +145,8 @@ typedef void * kosal_ownermodule;
 # define KOSAL_VIRT      btVirtAddr
 # define KOSAL_PHYS      btPhysAddr
 # define KOSAL_WSSIZE    btWSSize
+# define KOSAL_HANDLE    btHANDLE
+
 #endif // __cplusplus
 
 
@@ -895,7 +899,17 @@ KOSAL_WSSIZE kosal_round_up_to_page_size(KOSAL_WSSIZE s) {
    return (s & ~m) + (((KOSAL_WSSIZE)0 == r) ? 0 : PAGE_SIZE);
 }
 
+KOSAL_VIRT _kosal_alloc_dma_coherent(__ASSERT_HERE_PROTO KOSAL_HANDLE ,  KOSAL_WSSIZE , KOSAL_HANDLE *);
+#ifdef kosal_alloc_dma_coherent
+# undef kosal_alloc_dma_coherent
+#endif // _kosal_alloc_dma_coherent
+#define kosal_alloc_dma_coherent(__devhandle, __size, __pdmahandle) _kosal_alloc_dma_coherent(__ASSERT_HERE_ARGS __devhandle, __size, __pdmahandle)
 
+void _kosal_free_dma_coherent(__ASSERT_HERE_PROTO  KOSAL_HANDLE , KOSAL_VIRT , KOSAL_WSSIZE , KOSAL_HANDLE );
+# ifdef _kosal_free_dma_coherent
+#    undef _kosal_free_dma_coherent
+# endif // _kosal_free_dma_coherent
+# define kosal_free_dma_coherent(__devhandle, __ptr , __size, __dmahandle) _kosal_free_dma_coherent(__ASSERT_HERE_ARGS __devhandle, __ptr, __size, __dmahandle)
 //
 // Work queue
 //

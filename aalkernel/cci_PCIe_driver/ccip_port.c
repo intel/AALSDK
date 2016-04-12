@@ -160,6 +160,10 @@ struct cci_aal_device   *
    cci_dev_pport(pcci_aaldev) = pportdev;
    cci_dev_pfme(pcci_aaldev)  = ccip_port_dev_fme(pportdev);
 
+   // Save the PCI device handle
+   cci_dev_pci_dev(pcci_aaldev) = ccip_dev_to_pci_dev( ccip_port_to_ccidev(pportdev) );
+
+
    // Setup the AAL device's ID. This is the collection of attributes
    //  that uniquely identifies the AAL device, usually for the purpose
    //  of allocation through Resource Management

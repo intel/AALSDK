@@ -267,7 +267,11 @@ cci_flush_all_wsids(struct cci_PIPsession *psess)
 
    kosal_list_for_each_entry_safe( wsidp, tmp, &pownerSess->m_wshead, m_list, struct aal_wsid) {
       if( WSM_TYPE_VIRTUAL == wsidp->m_type){
-         kosal_free_contiguous_mem((btAny)wsidp->m_id, wsidp->m_size);
+         if( NULL== cci_dev_pci_dev(pdev) ) {
+            kosal_free_contiguous_mem((btAny)wsidp->m_id, wsidp->m_size);
+         }else{
+            kosal_free_dma_coherent( ccip_dev_pci_dev(pdev), (btAny)wsidp->m_id, wsidp->m_size, wsidp->m_dmahandle);
+         }
 
          // remove the wsid from the device and destroy
          PVERBOSE("Done Freeing PWS with id 0x%llx.\n",pwsid_to_wsidHandle(wsidp));
