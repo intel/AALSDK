@@ -103,10 +103,11 @@
 #define MMIO_MAX_OUTSTANDING       64
 
 // Number of UMsgs per AFU
-#define NUM_UMSG_PER_AFU               8
+#define NUM_UMSG_PER_AFU           8
 
 // UMAS region
-#define UMAS_LENGTH                    NUM_UMSG_PER_AFU * ASE_PAGESIZE
+#define UMAS_LENGTH                NUM_UMSG_PER_AFU * ASE_PAGESIZE
+#define UMAS_REGION_MEMSIZE        2*1024*1024
 
 
 /* *******************************************************************************
@@ -403,7 +404,9 @@ extern "C" {
   void ase_portctrl(const char *);
   // Threaded watch processes
   void *mmio_response_watcher();
+  void *umsg_watcher();
   void *intr_request_watcher();
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

@@ -92,6 +92,25 @@ volatile int mmio_rsp_pkt_available;
 volatile int mmio_rsp_pkt_accepted;
 
 /*
+ * UMsg listener/packet
+ */
+// umsgcmd_t *umsg_pkt;
+pthread_t umsg_watch_tid;
+
+// UMsg byte offset
+const int umsg_byteindex_arr[] = 
+  {
+    0x0, 0x1040, 0x2080, 0x30C0, 0x4100, 0x5140, 0x6180, 0x71C0
+  };
+
+// UMsg address array
+char* umsg_addr_array[NUM_UMSG_PER_AFU];
+
+// UMAS initialized flag
+volatile int umas_init_flag;
+
+
+/*
  * MSI-X watcher 
  */
 // MSI-X watcher 
@@ -303,8 +322,8 @@ void session_init()
   // Thread error integer
   int thr_err;
 
-  // Start MMIO watcher thread
-  printf("  [APP]  Starting MMIO Read watcher ... ");
+  // Start MMIO read response watcher watcher thread
+  printf("  [APP]  Starting MMIO Read Response watcher ... ");
   thr_err = pthread_create (&mmio_watch_tid, NULL, &mmio_response_watcher, NULL);
   if (thr_err != 0)
     {
@@ -318,9 +337,25 @@ void session_init()
     {
       printf("SUCCESS\n");
     }
+  
+  // Start UMSG watcher thread
+  /* printf("  [APP]  Starting UMsg watcher ... "); */
+  /* thr_err = pthread_create (&umsg_watch_tid, NULL, &umsg_watcher, NULL); */
+  /* if (thr_err != 0) */
+  /*   { */
+  /*     BEGIN_RED_FONTCOLOR; */
+  /*     printf("FAILED\n"); */
+  /*     perror("pthread_create"); */
+  /*     exit(1); */
+  /*     END_RED_FONTCOLOR; */
+  /*   } */
+  /* else */
+  /*   { */
+  /*     printf("SUCCESS\n"); */
+  /*   } */
 
   // Start MSI-X watcher thread
-  // printf("  [APP]  Starting Interrupt watcher ... \n");
+  // printf("  [APP]  Starting Interrupt watcher ... ");
 
   // Session start
   printf(" DONE\n");
@@ -354,11 +389,12 @@ void session_init()
 
   // Create UMSG region
   BEGIN_YELLOW_FONTCOLOR;
+  umas_init_flag = 0;
   printf("  [APP]  Creating UMAS ... \n");
   END_YELLOW_FONTCOLOR;
   umas_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
   /* memset(umas_region, 0, sizeof(struct buffer_t)); */
-  umas_region->memsize = UMAS_LENGTH;
+  umas_region->memsize = UMAS_REGION_MEMSIZE; //UMAS_LENGTH;
   umas_region->is_umas = 1;
   allocate_buffer(umas_region, NULL);
   umsg_umas_vbase = (uint64_t*)((uint64_t)umas_region->vbase);
@@ -366,6 +402,23 @@ void session_init()
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  UMAS Virtual Base address = %p\n", (void*)umsg_umas_vbase);
   END_YELLOW_FONTCOLOR;
+
+  printf("  [APP]  Starting UMsg watcher ... ");
+  thr_err = pthread_create (&umsg_watch_tid, NULL, &umsg_watcher, NULL);
+  if (thr_err != 0)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("FAILED\n");
+      perror("pthread_create");
+      exit(1);
+      END_RED_FONTCOLOR;
+    }
+  else
+    {
+      printf("SUCCESS\n");
+    }
+
+  while(umas_init_flag != 1);
 
   // Session status
   session_exist_status = ESTABLISHED;
@@ -391,6 +444,9 @@ void session_deinit()
       // Unmap UMAS region
       if (umas_exist_status == ESTABLISHED)
 	{
+	  // Close UMsg thread
+	  pthread_kill(umsg_watch_tid, SIGINT);
+	  // Deallocate the region
 	  BEGIN_YELLOW_FONTCOLOR;
 	  printf("  [APP]  Deallocating UMAS\n");
 	  deallocate_buffer(umas_region);
@@ -1035,7 +1091,8 @@ uint64_t* umsg_get_address(int umsg_id)
     {
       ret_vaddr = NULL;
       BEGIN_RED_FONTCOLOR;
-      printf("  [APP]  Requested umsg_id out of range... returning NULL\n");
+      printf("  [APP] **ERROR** Requested umsg_id out of range... EXITING\n");
+      exit(1);
       END_RED_FONTCOLOR;
     }
   return ret_vaddr;
@@ -1045,22 +1102,99 @@ uint64_t* umsg_get_address(int umsg_id)
 /*
  * umsg_send: Send Umsg
  */
+//#define SIMPLE_IMPL
+/* #ifdef SIMPLE_IMPL */
+/* void umsg_send (int umsg_id, uint64_t *umsg_data) */
+/* { */
+/*   FUNC_CALL_ENTRY; */
+
+/*   umsgcmd_t *umsg_pkt; */
+
+/*   umsg_pkt = (struct umsgcmd_t *)ase_malloc( sizeof(struct umsgcmd_t) ); */
+/*   /\* memset((char*)umsg_pkt, 0, sizeof(struct umsgcmd_t) ); *\/ */
+
+/*   umsg_pkt->id = umsg_id; */
+/*   memcpy((char*)umsg_pkt->qword, (char*)umsg_data, sizeof(uint64_t)); */
+
+/*   // Send Umsg packet to simulator */
+/*   mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt, sizeof(struct umsgcmd_t)); */
+
+/*   FUNC_CALL_EXIT; */
+/* } */
+/* #else */
+
+/*
+ * umsg_send: Write data to umsg region
+ */
 void umsg_send (int umsg_id, uint64_t *umsg_data)
 {
-  FUNC_CALL_ENTRY;
+  //uint64_t *target_addr;
+  //target_addr = (uint64_t*)((uint64_t)umas_region->vbase + umsg_addr_array[umsg_id]);
+  memcpy((char*)umsg_addr_array[umsg_id], (char*)umsg_data, sizeof(uint64_t));
+}
 
+// #endif
+
+/*
+ * Umsg watcher thread
+ * Setup UMSG tracker addresses, and watch for activity
+ */
+void *umsg_watcher()
+{
+  // Generic index
+  int cl_index;
+
+  // UMsg old data
+  char umsg_old_data[NUM_UMSG_PER_AFU][CL_BYTE_WIDTH];
+
+  // Declare and Allocate umsgcmd_t packet
   umsgcmd_t *umsg_pkt;
-
   umsg_pkt = (struct umsgcmd_t *)ase_malloc( sizeof(struct umsgcmd_t) );
-  /* memset((char*)umsg_pkt, 0, sizeof(struct umsgcmd_t) ); */
+  
+  // Patrol each UMSG line
+  for(cl_index = 0; cl_index < NUM_UMSG_PER_AFU; cl_index++)
+    {
+      // Original copy
+      memcpy( (char*)umsg_old_data[cl_index],
+	      (char*)((uint64_t)umas_region->vbase + umsg_byteindex_arr[cl_index]),
+	      CL_BYTE_WIDTH
+	      );
 
-  umsg_pkt->id = umsg_id;
-  memcpy((char*)umsg_pkt->qword, (char*)umsg_data, sizeof(uint64_t));
+      // Calculate addres
+      umsg_addr_array[cl_index] = (char*)((uint64_t)umas_region->vbase + umsg_byteindex_arr[cl_index]);      
+    #ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [DEBUG]  umsg_addr_array[%d] = %p\n", cl_index, umsg_addr_array[cl_index]);
+      END_YELLOW_FONTCOLOR;
+    #endif
+    }
 
-  // Send Umsg packet to simulator
-  mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt, sizeof(struct umsgcmd_t));
+  // Set UMsg initialized flag
+  umas_init_flag = 1;
 
-  FUNC_CALL_EXIT;
+  // While application is running
+  while(1)
+    {
+      // Walk through each line
+      for(cl_index = 0; cl_index < NUM_UMSG_PER_AFU ; cl_index++)
+	{
+	  if ( memcmp(umsg_addr_array[cl_index], umsg_old_data[cl_index], CL_BYTE_WIDTH) != 0)
+	    {
+	      printf("Change found... %d\n", cl_index);
+	      // Construct UMsg packet
+	      umsg_pkt->id = cl_index;	      
+	      memcpy((char*)umsg_pkt->qword, (char*)umsg_addr_array[cl_index], CL_BYTE_WIDTH);
+	      
+	      // Send UMsg
+	      mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt, sizeof(struct umsgcmd_t));
+
+	      // Update local mirror
+	      memcpy( (char*)umsg_old_data[cl_index], (char*)umsg_pkt->qword, CL_BYTE_WIDTH );
+	    }
+	}
+	
+    }
+
 }
 
 
