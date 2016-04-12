@@ -37,7 +37,7 @@
 
 // Lock
 // pthread_mutex_t app_lock;
-// pthread_mutex_t mmio_lock;
+pthread_mutex_t mmio_port_lock;
 
 // MMIO Outstanding counts
 uint32_t mmio_write_cnt = 0;
@@ -241,14 +241,16 @@ void session_init()
   /*     exit (EXIT_FAILURE); */
   /*   } */
 
-  /* if ( pthread_mutex_init(&mmio_lock, NULL) != 0) */
-  /*   { */
-  /*     BEGIN_YELLOW_FONTCOLOR; */
-  /*     printf("  [APP]  MMIO Lock initialization failed, EXIT\n"); */
-  /*     END_YELLOW_FONTCOLOR; */
-  /*     exit (EXIT_FAILURE); */
-  /*   } */
+  // Initialize MMIO lock
+  if ( pthread_mutex_init(&mmio_port_lock, NULL) != 0)
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  MMIO Lock initialization failed, EXIT\n");
+      END_YELLOW_FONTCOLOR;
+      exit (EXIT_FAILURE);
+    }
 
+  // MMIO TID counter lock
   if ( pthread_mutex_init(&mmio_tid_lock, NULL) != 0)
     {
       BEGIN_YELLOW_FONTCOLOR;
@@ -358,7 +360,7 @@ void session_init()
   // printf("  [APP]  Starting Interrupt watcher ... ");
 
   // Session start
-  printf(" DONE\n");
+  /* printf(" DONE\n"); */
   printf("  [APP]  Session started\n");
 
   // Send portctrl command to start a session
@@ -403,7 +405,9 @@ void session_init()
   printf("  [APP]  UMAS Virtual Base address = %p\n", (void*)umsg_umas_vbase);
   END_YELLOW_FONTCOLOR;
 
+  BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Starting UMsg watcher ... ");
+  END_YELLOW_FONTCOLOR;
   thr_err = pthread_create (&umsg_watch_tid, NULL, &umsg_watcher, NULL);
   if (thr_err != 0)
     {
@@ -508,7 +512,7 @@ void session_deinit()
 
       // Lock deinit
       // pthread_mutex_destroy(&app_lock);
-      // pthread_mutex_destroy(&mmio_lock);
+      pthread_mutex_destroy(&mmio_port_lock);
       pthread_mutex_destroy(&mmio_tid_lock);
     }
   else
@@ -529,6 +533,10 @@ void mmio_request_put(struct mmio_t *pkt)
 {
   FUNC_CALL_ENTRY;
 
+  // Lock MMIO port
+  pthread_mutex_lock (&mmio_port_lock);
+
+  // Update global count
   if (pkt->write_en == MMIO_WRITE_REQ) 
     {
       mmio_write_cnt++;
@@ -538,7 +546,11 @@ void mmio_request_put(struct mmio_t *pkt)
       mmio_readreq_cnt++;
     }
 
+  // Send packet
   mqueue_send( app2sim_mmioreq_tx, (char*)pkt, sizeof(mmio_t) );
+
+  // Unlock MMIO port
+  pthread_mutex_unlock (&mmio_port_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -550,8 +562,6 @@ void mmio_request_put(struct mmio_t *pkt)
 void mmio_write32 (uint32_t offset, uint32_t data)
 {
   FUNC_CALL_ENTRY;
-
-  // pthread_mutex_lock (&app_lock);
 
   if (offset < 0)
     {
@@ -1100,40 +1110,13 @@ uint64_t* umsg_get_address(int umsg_id)
 
 
 /*
- * umsg_send: Send Umsg
- */
-//#define SIMPLE_IMPL
-/* #ifdef SIMPLE_IMPL */
-/* void umsg_send (int umsg_id, uint64_t *umsg_data) */
-/* { */
-/*   FUNC_CALL_ENTRY; */
-
-/*   umsgcmd_t *umsg_pkt; */
-
-/*   umsg_pkt = (struct umsgcmd_t *)ase_malloc( sizeof(struct umsgcmd_t) ); */
-/*   /\* memset((char*)umsg_pkt, 0, sizeof(struct umsgcmd_t) ); *\/ */
-
-/*   umsg_pkt->id = umsg_id; */
-/*   memcpy((char*)umsg_pkt->qword, (char*)umsg_data, sizeof(uint64_t)); */
-
-/*   // Send Umsg packet to simulator */
-/*   mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt, sizeof(struct umsgcmd_t)); */
-
-/*   FUNC_CALL_EXIT; */
-/* } */
-/* #else */
-
-/*
  * umsg_send: Write data to umsg region
  */
 void umsg_send (int umsg_id, uint64_t *umsg_data)
 {
-  //uint64_t *target_addr;
-  //target_addr = (uint64_t*)((uint64_t)umas_region->vbase + umsg_addr_array[umsg_id]);
   memcpy((char*)umsg_addr_array[umsg_id], (char*)umsg_data, sizeof(uint64_t));
 }
 
-// #endif
 
 /*
  * Umsg watcher thread
