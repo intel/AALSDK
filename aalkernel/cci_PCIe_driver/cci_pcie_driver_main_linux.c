@@ -443,7 +443,7 @@ static int cci_pci_sriov_configure(struct pci_dev *pcidev, int num_vfs)
       PINFO("SRIOV Disabled on this device\n");
       pci_disable_sriov(pcidev);
    }else{
-      PINFO("SRIOV Disabled on this device for %d\n",num_vfs);
+      PINFO("SRIOV Enabled on this device for %d VF%s\n",num_vfs, (num_vfs >1 ? "s" : ""));
       pci_enable_sriov(pcidev, num_vfs);
    }
    return 0;
@@ -554,7 +554,8 @@ struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev
    //  constructed around the aaldevice base and are published
    //  with aalbus.
    //---------------------------------------------------------
-   //FME region
+
+   //In a VF there should be no FME region
    if(0 != ccip_fmedev_kvp_afu_mmio(pccipdev)){
       PERR("Invalid region [FME]\n");
       goto ERR;
