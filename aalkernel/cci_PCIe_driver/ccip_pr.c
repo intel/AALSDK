@@ -2016,9 +2016,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             return -EINVAL;
          } // end if else loop
 
-         return -EINVAL;
-
-
       }break;
 
       // Returns a workspace ID for the Config Space
