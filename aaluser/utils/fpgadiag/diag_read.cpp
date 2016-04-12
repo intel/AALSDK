@@ -301,14 +301,22 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
 
 	   // Check the device status
 	   if ( MaxPoll < 0 ) {
-		  cerr << "The maximum timeout for test stop was exceeded." << endl;
-		  ++res;
-		  break;
+	      cerr << "The maximum timeout for test stop was exceeded." << endl;
+	      ++res;
+	      break;
 	   }
 	   MaxPoll = StopTimeoutMillis;
 
 	   if ( 0 != pAFUDSM->test_error ) {
-		  cerr << "Error bit set in DSM.\n";
+	      cerr << "Error bit set in DSM.\n";
+	      cout << "DSM Test Error: 0x" << std::hex << pAFUDSM->test_error << endl;
+
+	      cout << "Mode error vector: " << endl;
+	      for (int i=0; i < 8; i++)
+	      {
+           cout << "[" << i << "]: 0x" << pAFUDSM->mode_error[i] << endl;
+	      }
+	      cout << std::dec << endl;
 	      ++res;
 	      break;
 	   }

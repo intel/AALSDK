@@ -299,8 +299,16 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd)
 
 		 if ( 0 != pAFUDSM->test_error ) {
 		    cerr << "Error bit set in DSM.\n";
-		    ++res;
-		    break;
+          cout << "DSM Test Error: 0x" << std::hex << pAFUDSM->test_error << endl;
+
+          cout << "Mode error vector: " << endl;
+          for (int i=0; i < 8; i++)
+          {
+            cout << "[" << i << "]: 0x" << pAFUDSM->mode_error[i] << endl;
+          }
+          cout << std::dec << endl;
+          ++res;
+          break;
 		 }
 
 		 //Checking for num_clocks underflow.
