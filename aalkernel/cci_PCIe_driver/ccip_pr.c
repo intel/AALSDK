@@ -492,6 +492,9 @@ void ccipdrv_event_afu_aysnc_pr_release_send(struct pr_program_context *ppr_prog
       ppr_program_ctx->m_kbufferptr = NULL;
    }
 
+   kosal_sem_put(cci_dev_pr_sem(ppr_program_ctx->m_pPR_dev));
+   PDEBUG("UN-LOCK RECONF \n");
+
    if(NULL != ppr_program_ctx){
       PDEBUG(" Free PR PRogram context \n");
       kosal_kfree(ppr_program_ctx, sizeof(struct pr_program_context));
@@ -536,6 +539,9 @@ void ccipdrv_event_reconfig_event_create_send( struct pr_program_context *ppr_pr
       kosal_free_user_buffer(ppr_program_ctx->m_kbufferptr, ppr_program_ctx->m_bufferlen);
    }
 
+   kosal_sem_put(cci_dev_pr_sem(ppr_program_ctx->m_pPR_dev));
+   PDEBUG("UN-LOCK RECONF \n");
+
    if(NULL != ppr_program_ctx){
       kosal_kfree(ppr_program_ctx, sizeof(struct pr_program_context));
    }
@@ -572,6 +578,9 @@ void  ccipdrv_event_activationchange_event_create_send( struct pr_program_contex
 
    ccidrv_sendevent(ppr_program_ctx->m_pownerSess,
                     AALQIP(pafuws_evt));
+
+   kosal_sem_put(cci_dev_pr_sem(ppr_program_ctx->m_pPR_dev));
+   PDEBUG("UN-LOCK RECONF \n");
 
    if(NULL != ppr_program_ctx){
       kosal_kfree(ppr_program_ctx, sizeof(struct pr_program_context));
@@ -988,6 +997,11 @@ void afu_revoke_sendevent(void* pr_context)
 
    PVERBOSE( "AFU owners count= %d \n",pafu_aal_dev->m_numowners);
 
+   if ( unlikely( kosal_sem_get_user_alertable(&pafu_aal_dev->m_sem) ) ) {
+      PDEBUG("kosal_sem_get_user_alertable interrupted \n");
+      return ;
+   }
+
    // Send revoke event to AFU owner application
    if ( !kosal_list_is_empty(&pafu_aal_dev->m_ownerlist) )  {
 
@@ -1009,6 +1023,8 @@ void afu_revoke_sendevent(void* pr_context)
       } // end list
 
    }// endif
+
+   kosal_sem_put(&pafu_aal_dev->m_sem);
 
    PTRACEOUT;
 }
@@ -1037,6 +1053,13 @@ void afu_request_release_sendevent(void* pr_context)
 
    PVERBOSE( "AFU owners count= %d \n",pafu_aal_dev->m_numowners);
 
+   // Lock the list from any updates
+   if ( unlikely( kosal_sem_get_user_alertable(&pafu_aal_dev->m_sem) ) ) {
+      PDEBUG("kosal_sem_get_user_alertable interrupted \n");
+      return ;
+   }
+
+
    // Send Release event to AFU owner application
    if ( !kosal_list_is_empty(&pafu_aal_dev->m_ownerlist) )  {
 
@@ -1060,6 +1083,8 @@ void afu_request_release_sendevent(void* pr_context)
       } // end list
 
    }// endif
+
+    kosal_sem_put(&pafu_aal_dev->m_sem);
 
    PTRACEOUT;
    return;
@@ -1090,6 +1115,13 @@ void sigtap_revoke_sendevent(void* pr_context)
 
    PVERBOSE( "sigtap_revoke_sendevent  owners count= %d \n",psigtap_aal_dev->m_numowners);
 
+
+   if ( unlikely( kosal_sem_get_user_alertable(&psigtap_aal_dev->m_sem) ) ) {
+      PDEBUG("kosal_sem_get_user_alertable interrupted \n");
+      return ;
+   }
+
+
    // Send Release event to AFU owner application
    if ( !kosal_list_is_empty(&psigtap_aal_dev->m_ownerlist) )  {
 
@@ -1112,6 +1144,8 @@ void sigtap_revoke_sendevent(void* pr_context)
       } // end list
 
    }// endif
+
+   kosal_sem_put(&psigtap_aal_dev->m_sem);
 
    PTRACEOUT;
    return;
@@ -1234,7 +1268,8 @@ void afu_release_siganltap(void* pr_context)
    } else if (( ppr_program_ctx->m_pAFU_dev->m_aaldev->m_numowners  >0) &&
               (0 == ppr_program_ctx->m_reconfTimeout) ) {
 
-      // AFU has  owners and Reconfigure timeout is 0 seconds , send Error Message  Deactivate timeout
+      // AFU has  owners and Reconfigure timeout is 0 seconds , s
+      // end Error Message  Deactivate timeout
       PDEBUG(" AFU has owner and reconfTimeout timeout. \n");
       // Send release event to application and timeout
       afu_request_release_sendevent((void*)ppr_program_ctx);
@@ -1561,6 +1596,13 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
       return -EIO;
    }
 
+   if ( unlikely( kosal_sem_get_user_alertable(cci_dev_pr_sem(pdev)))) {
+         PDEBUG("kosal_sem_get_user_alertable interrupted \n");
+         return -EINVAL ;
+      }
+
+   PDEBUG("LOCK RECONF \n");
+
    //=====================
    // Message processor
    //=====================
@@ -1575,6 +1617,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          btUnsigned64bitInt       reconfAction               = 0;
          btBool                   leaveDeactivated           = 0;
          struct pr_program_context* ppr_program_ctx          = NULL;
+         struct aal_device        *psigtapdev                = NULL;
 
          struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
 
@@ -1607,7 +1650,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             ccidrv_sendevent(pownerSess,
                              AALQIP(pafuws_evt));
 
-            return -EINVAL;
+            retval = -EINVAL;
+            goto ERROR;
 
          }
 
@@ -1630,7 +1674,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                      uid_errnumNoMem);
              ccidrv_sendevent(pownerSess,
                               AALQIP(pafuws_evt));
-             return -EINVAL;
+             retval = -ENOMEM;
+             goto ERROR;
          }
 
          // Assign PR context
@@ -1651,10 +1696,34 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          ppr_program_ctx->m_afuRevokeCount    = 0;
 
          // set timeout
-         if(reconfTimeout <= AFU_RES_RELEASE_TIMEOUT)
+         if(reconfTimeout <= AFU_RES_RELEASE_TIMEOUT) {
             ppr_program_ctx->m_timeElapsed =reconfTimeout;
+         }
 
-         // Case 3 - if AFU has no owner.
+         // Signal Tap Resource
+         psigtapdev = ccip_port_stap_dev(pportdev)->m_aaldev;
+
+
+         // Case 3 - if Signal tap object has owners.
+         // sends signal tap release event and Do pr in worker queue
+         // --------------------------------------------------------------------
+         if(psigtapdev->m_numowners  !=0) {
+
+            PDEBUG("Signaltap Owners count %d \n",psigtapdev->m_numowners);
+            // Send Revoke event to signal tap Service
+            sigtap_revoke_sendevent((void*)ppr_program_ctx);
+            KOSAL_INIT_WORK(&(ppr_program_ctx->m_workobject),sigtap_revoke_callback);
+
+            kosal_queue_delayed_work( cci_dev_workq_revokesigtap(pdev),
+                                     &(ppr_program_ctx->m_workobject),
+                                     AFU_RES_RELEASE_TIMEOUT);
+
+            return 0;
+
+         } // if end
+
+
+         // Case 4 - if AFU has no owner.
          // Sends OK event
          // --------------------------------------------------------------------
          if( 0 == paaldev->m_numowners)  {
@@ -1671,11 +1740,11 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                              &Message->m_tranID,
                                                              Message->m_context,
                                                              uid_errnumOK);
-            return 0;
+            goto CLEANUP;
 
          } else if (0 == reconfTimeout) {
 
-            // Case 4 - if AFU has owner and zero timeout.
+            // Case 5 - if AFU has owner and zero timeout.
             // Sends deactivate timeout error event
             // --------------------------------------------------------------------
 
@@ -1693,11 +1762,12 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                              Message->m_context,
                                                              uid_errnumDeActiveTimeout);
 
-            return -EINVAL;
+            retval = -EINVAL;
+            goto ERROR;
 
           } else if(reconfTimeout >0) {
 
-             // Case 5 - if  AFU has owner and timeout.
+             // Case 6 - if  AFU has owner and timeout.
              // Deactivate afu in worker queue
              // --------------------------------------------------------------------
             // AFU in use and a timeout has been specified
@@ -1717,7 +1787,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             return 0;
           } else {
 
-             // Case 6 - Invalid parameter.
+             // Case 7 - Invalid parameter.
              // sends Bad Parameter error event
              // --------------------------------------------------------------------
              PERR("Deactivate Bad Parameter \n");
@@ -1728,7 +1798,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                               Message->m_context,
                                                               uid_errnumBadParameter);
 
-             return -EINVAL;
+             retval = -EINVAL;
+             goto ERROR;
 
           } // end of if else
 
@@ -1750,6 +1821,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             ccidrv_sendevent(pownerSess,
                              AALQIP(pafuws_evt));
 
+            retval = -EINVAL;
             goto ERROR;
          }
 
@@ -1766,7 +1838,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
             ccidrv_sendevent(pownerSess,
                              AALQIP(pafuws_evt));
-            return 0;
+            retval = -EINVAL;
+            goto ERROR;
          }
 
 
@@ -1779,7 +1852,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          ccidrv_sendevent(pownerSess,
                           AALQIP(pafuws_evt));
 
-
+         goto CLEANUP;
 
       } break;
 
@@ -1829,7 +1902,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
             ccidrv_sendevent(pownerSess,
                              AALQIP(pafuws_evt));
-            return -EINVAL;
+            retval = -EINVAL;
+            goto ERROR;
          }
 
          kptr = kosal_get_user_buffer(uptr, buflen);
@@ -1847,7 +1921,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                              uid_errnumNoMem);
             ccidrv_sendevent(pownerSess,
                              AALQIP(pafuws_evt));
-            return -EINVAL;
+            retval = -ENOMEM;
+            goto ERROR;
          }
 
          PVERBOSE( " PR BitStream Buffer allocated  \n");
@@ -1869,7 +1944,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                             uid_errnumNoMem);
             ccidrv_sendevent(pownerSess,
                             AALQIP(pafuws_evt));
-            return -EINVAL;
+            retval = -ENOMEM;
+            goto ERROR;
          }
 
          // Assign PR context
@@ -1977,7 +2053,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                      &Message->m_tranID,
                                                      Message->m_context,
                                                      uid_errnumDeActiveTimeout);
-            return -EINVAL;
+            retval = -EINVAL;
+            goto ERROR;
 
          } else if ((paaldev->m_numowners >0) &&
                    (reconfTimeout >0) ) {
@@ -2014,8 +2091,11 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                      Message->m_context,
                                                      uid_errnumBadParameter);
 
-            return -EINVAL;
+            retval = -EINVAL;
+            goto ERROR;
          } // end if else loop
+       
+        goto CLEANUP;
 
       }break;
 
@@ -2077,6 +2157,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          // Add the new wsid onto the session
          aalsess_add_ws(pownerSess, wsidp->m_list);
 
+         goto CLEANUP;
       } break;
 
       AFU_COMMAND_CASE(ccipdrv_afucmdWKSP_ALLOC)
@@ -2101,6 +2182,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             ccidrv_sendevent(pownerSess,
                              AALQIP(pafuws_evt));
 
+            retval = -ENOMEM;
             goto ERROR;
          }
 
@@ -2144,6 +2226,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          // Send the event
          ccidrv_sendevent(pownerSess,
                           AALQIP(pafuws_evt));
+         goto CLEANUP;
 
       } break; // case fappip_afucmdWKSP_VALLOC
 
@@ -2227,6 +2310,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          // Send the event
          ccidrv_sendevent(pownerSess,
                           AALQIP(pafuws_evt));
+         goto CLEANUP;
       } break; // case fappip_afucmdWKSP_FREE
 
       default: {
@@ -2239,16 +2323,25 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                      Message->m_context,
                                                                      request_error);
 
-        ccidrv_sendevent( pownerSess,
+         kosal_sem_put(cci_dev_pr_sem(pdev));
+         ccidrv_sendevent( pownerSess,
                           AALQIP(pafuresponse_evt));
 
-         retval = -EINVAL;
+        retval = -EINVAL;
+       return retval;
       } break;
    } // switch (pmsg->cmd)
 
    ASSERT(0 == retval);
 
+CLEANUP:
+    kosal_sem_put(cci_dev_pr_sem(pdev));
+    PDEBUG("UN-LOCK RECONF \n");
+    return retval;
+
 ERROR:
+   kosal_sem_put(cci_dev_pr_sem(pdev));
+   PDEBUG("UN-LOCK RECONF \n");
    return retval;
 }
 

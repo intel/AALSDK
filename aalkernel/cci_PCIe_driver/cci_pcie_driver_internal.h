@@ -161,7 +161,9 @@ struct cci_aal_device {
    enum   cci_devtype         m_devtype;        // Type of the subclass (e.g., FME, PORT, AFU)
    struct fme_device         *m_pfme;
    struct port_device        *m_pport;
-//   struct afu_device         *m_pafu;
+
+   // PR command Handler semaphore
+   kosal_semaphore            m_pr_sem;
 
 };
 
@@ -232,6 +234,7 @@ struct cci_aal_device {
 
 #define cci_aaldev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
 #define cci_aaldev_psem(pdev)                  (&(pdev)->m_sem)
+#define cci_dev_pr_sem(pdev)                (&(pdev)->m_pr_sem)
 
 
 #define cci_aaldev_workq_deactivate(pdev)                ((pdev)->m_workq_deactivate )
