@@ -482,7 +482,7 @@ btVirtAddr _kosal_alloc_dma_coherent( __ASSERT_HERE_PROTO btHANDLE devhandle,
 
 #if   defined( __AAL_LINUX__ )
 
-   krnl_virt = (btVirtAddr)dma_alloc_coherent(devhandle, size_in_bytes, (dma_addr_t*)pdma_handle, GFP_KERNEL);
+   krnl_virt = (btVirtAddr)dma_alloc_coherent(&((struct pci_dev*)devhandle)->dev, size_in_bytes, (dma_addr_t*)pdma_handle, GFP_KERNEL);
    __ASSERT_HERE_IN_FN(NULL != krnl_virt);
    if ( NULL == krnl_virt ) {
       return NULL;
@@ -552,7 +552,7 @@ void _kosal_free_dma_coherent( __ASSERT_HERE_PROTO btHANDLE devhandle,
 #if   defined( __AAL_LINUX__ )
 
 
-      dma_free_coherent(devhandle, size_in_bytes, krnl_virt, (dma_addr_t)dma_handle);
+      dma_free_coherent(&((struct pci_dev*)devhandle)->dev, size_in_bytes, krnl_virt, (dma_addr_t)dma_handle);
 
 #elif defined( __AAL_WINDOWS__ )
 
