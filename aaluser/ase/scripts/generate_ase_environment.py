@@ -43,6 +43,9 @@ VHDL_FILE_LIST = "vhdl_files.list"
 VLOG_FILE_LIST = "vlog_files.list"
 TOOL_BRAND     = "VCS"
 
+# Forbidden characters
+SPECIAL_CHARS='\[]~!@#$%^&*(){}:;+$\''
+
 ##########################################################
 ###                                                    ###
 ###        DO NOT MODIFY BELOW THIS COMMENT BLOCK      ###
@@ -52,6 +55,8 @@ TOOL_BRAND     = "VCS"
 arg_list = []
 tolowarg_list = []
 valid_dirlist = []
+
+special_chars_in_path = 0
 
 #################### Run command and get string output #######################
 def commands_getoutput(cmd):
@@ -145,8 +150,11 @@ else:
     # Prepare list of candidate directories
     print ("Valid directories supplied => "); 
     str_dirlist = ""
+    special_chars_in_path = 0
     for loc in arg_list:
         loc = os.path.abspath(loc)        
+        if set(SPECIAL_CHARS).intersection(loc):
+            special_chars_in_path = 1
         if (os.path.isdir(str(loc))):            
             valid_dirlist.append(loc)
             str_dirlist = str_dirlist + loc + "/ "
@@ -274,5 +282,11 @@ elif tool_type == "QUESTA":
 
 # Print instructions
 print_instructions()
+
+# Print special character message
+if (special_chars_in_path == 1):
+    ase_functions.begin_red_fontcolor()
+    print("Special characters found in path name --- RTL simulator tools may have trouble deciphering paths")
+    ase_functions.end_red_fontcolor()
 
 
