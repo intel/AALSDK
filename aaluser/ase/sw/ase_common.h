@@ -404,7 +404,11 @@ extern "C" {
   void ase_portctrl(const char *);
   // Threaded watch processes
   void *mmio_response_watcher();
+#ifdef MT_UMSG_POLL
+  void *umsg_watcher(void *);
+#else
   void *umsg_watcher();
+#endif
   void *intr_request_watcher();
 
 #ifdef __cplusplus

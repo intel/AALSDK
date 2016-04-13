@@ -35,6 +35,8 @@
 
 #include "ase_common.h"
 
+//#define MT_UMSG_POLL
+
 // Lock
 // pthread_mutex_t app_lock;
 pthread_mutex_t mmio_port_lock;
@@ -94,8 +96,15 @@ volatile int mmio_rsp_pkt_accepted;
 /*
  * UMsg listener/packet
  */
-// umsgcmd_t *umsg_pkt;
+// UMsg Watch TID
+#ifdef MT_UMSG_POLL
+pthread_t umsg_watch_tid[NUM_UMSG_PER_AFU];
+#else
 pthread_t umsg_watch_tid;
+#endif
+
+// UMsg port lock
+pthread_mutex_t umsg_port_lock;
 
 // UMsg byte offset
 const int umsg_byteindex_arr[] = 
@@ -241,7 +250,7 @@ void session_init()
   /*     exit (EXIT_FAILURE); */
   /*   } */
 
-  // Initialize MMIO lock
+  // Initialize MMIO port lock
   if ( pthread_mutex_init(&mmio_port_lock, NULL) != 0)
     {
       BEGIN_YELLOW_FONTCOLOR;
@@ -255,6 +264,15 @@ void session_init()
     {
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  MMIO TID Lock initialization failed, EXIT\n");
+      END_YELLOW_FONTCOLOR;
+      exit (EXIT_FAILURE);
+    }
+
+  // Initialize UMsg port lock
+  if ( pthread_mutex_init(&umsg_port_lock, NULL) != 0)
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  UMsg Port Lock initialization failed, EXIT\n");
       END_YELLOW_FONTCOLOR;
       exit (EXIT_FAILURE);
     }
@@ -340,27 +358,10 @@ void session_init()
       printf("SUCCESS\n");
     }
   
-  // Start UMSG watcher thread
-  /* printf("  [APP]  Starting UMsg watcher ... "); */
-  /* thr_err = pthread_create (&umsg_watch_tid, NULL, &umsg_watcher, NULL); */
-  /* if (thr_err != 0) */
-  /*   { */
-  /*     BEGIN_RED_FONTCOLOR; */
-  /*     printf("FAILED\n"); */
-  /*     perror("pthread_create"); */
-  /*     exit(1); */
-  /*     END_RED_FONTCOLOR; */
-  /*   } */
-  /* else */
-  /*   { */
-  /*     printf("SUCCESS\n"); */
-  /*   } */
-
   // Start MSI-X watcher thread
   // printf("  [APP]  Starting Interrupt watcher ... ");
 
   // Session start
-  /* printf(" DONE\n"); */
   printf("  [APP]  Session started\n");
 
   // Send portctrl command to start a session
@@ -379,7 +380,6 @@ void session_init()
   printf("  [APP]  Creating MMIO ...\n");
   END_YELLOW_FONTCOLOR;
   mmio_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
-  /* memset(mmio_region, 0, sizeof(struct buffer_t)); */
   mmio_region->memsize = MMIO_LENGTH;
   mmio_region->is_mmiomap = 1;
   allocate_buffer(mmio_region, NULL);
@@ -395,7 +395,6 @@ void session_init()
   printf("  [APP]  Creating UMAS ... \n");
   END_YELLOW_FONTCOLOR;
   umas_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
-  /* memset(umas_region, 0, sizeof(struct buffer_t)); */
   umas_region->memsize = UMAS_REGION_MEMSIZE; //UMAS_LENGTH;
   umas_region->is_umas = 1;
   allocate_buffer(umas_region, NULL);
@@ -408,6 +407,26 @@ void session_init()
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Starting UMsg watcher ... ");
   END_YELLOW_FONTCOLOR;
+
+#ifdef MT_UMSG_POLL
+  int cl_index;
+  for(cl_index = 0; cl_index < NUM_UMSG_PER_AFU; cl_index++)
+    {
+      thr_err = pthread_create (&umsg_watch_tid[cl_index], NULL, &umsg_watcher, (void*) &cl_index);
+      if (thr_err != 0)
+	{
+	  BEGIN_RED_FONTCOLOR;
+	  printf("FAILED\n");
+	  perror("pthread_create");
+	  exit(1);
+	  END_RED_FONTCOLOR;
+	}
+      else
+	{
+	  printf("SUCCESS\n");
+	}      
+    }
+#else
   thr_err = pthread_create (&umsg_watch_tid, NULL, &umsg_watcher, NULL);
   if (thr_err != 0)
     {
@@ -421,8 +440,8 @@ void session_init()
     {
       printf("SUCCESS\n");
     }
-
   while(umas_init_flag != 1);
+#endif
 
   // Session status
   session_exist_status = ESTABLISHED;
@@ -442,14 +461,32 @@ void session_deinit()
   FUNC_CALL_ENTRY;
 
   int thr_err;
+  int umsg_id;
+  int ret;
 
   if (session_exist_status == ESTABLISHED)
     {
       // Unmap UMAS region
       if (umas_exist_status == ESTABLISHED)
 	{
-	  // Close UMsg thread
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("  [APP]  Closing Watcher threads\n");
+	  END_YELLOW_FONTCOLOR;
+	  // Close UMsg thread	  
+    #ifdef MT_UMSG_POLL
+	  for(umsg_id = 0; umsg_id < NUM_UMSG_PER_AFU ; umsg_id++)
+ 	    {
+	      ret = pthread_kill(umsg_watch_tid[umsg_id], SIGINT);
+	      if (ret != 0)
+		{
+		  printf("  [APP]  pthread_kill failed with ret=%d\n", ret);
+		}
+	    }
+	  // pthread_kill(*umsg_watch_tid, SIGINT);
+    #else
 	  pthread_kill(umsg_watch_tid, SIGINT);
+    #endif
+
 	  // Deallocate the region
 	  BEGIN_YELLOW_FONTCOLOR;
 	  printf("  [APP]  Deallocating UMAS\n");
@@ -474,7 +511,7 @@ void session_deinit()
       mmio_exist_status = NOT_ESTABLISHED;
 
       BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  Deinitializing simulation session ... ");
+      printf("  [APP]  Deinitializing simulation session \n");
       END_YELLOW_FONTCOLOR;
 
       // Send SIMKILL
@@ -514,6 +551,7 @@ void session_deinit()
       // pthread_mutex_destroy(&app_lock);
       pthread_mutex_destroy(&mmio_port_lock);
       pthread_mutex_destroy(&mmio_tid_lock);
+      pthread_mutex_destroy(&umsg_port_lock);
     }
   else
     {
@@ -950,14 +988,8 @@ void deallocate_buffer(struct buffer_t *mem)
 {
   FUNC_CALL_ENTRY;
 
-  // pthread_mutex_lock (&app_lock);
-
   int ret;
   char tmp_msg[ASE_MQ_MSGSIZE] = { 0, };
-
-#if 0
-  ase_buffer_info(mem);
-#endif
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Deallocating memory %s ...", mem->memname);
@@ -982,15 +1014,10 @@ void deallocate_buffer(struct buffer_t *mem)
       exit(1);
     }
 
-  //  close(mem->fd_app);
-  // free(mem);
-
   // Print if successful
   BEGIN_YELLOW_FONTCOLOR;
   printf("SUCCESS\n");
   END_YELLOW_FONTCOLOR;
-
-  // pthread_mutex_unlock (&app_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -1041,9 +1068,6 @@ void deallocate_buffer_by_index(int search_index)
 {
   FUNC_CALL_ENTRY;
 
-  // pthread_mutex_lock (&app_lock);
-
-  //int wsid;
   uint64_t *bufptr = (uint64_t*) NULL;
   struct wsmeta_t *wsptr;
   BEGIN_YELLOW_FONTCOLOR;
@@ -1079,8 +1103,6 @@ void deallocate_buffer_by_index(int search_index)
       printf("  [APP]  Buffer pointer was returned as NULL\n");
       END_RED_FONTCOLOR;
     }
-
-  // pthread_mutex_unlock (&app_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -1122,6 +1144,58 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
  * Umsg watcher thread
  * Setup UMSG tracker addresses, and watch for activity
  */
+#ifdef MT_UMSG_POLL
+// -------------------------------
+// Parallel UMSG watcher threads
+// -------------------------------
+void *umsg_watcher(void *thrptr)
+{
+  // Old known copy
+  char umsg_old_data[CL_BYTE_WIDTH];
+  int cl_id = *((int *) thrptr);  
+
+  // Declare and Allocate umsgcmd_t packet
+  umsgcmd_t *umsg_pkt;
+  umsg_pkt = (struct umsgcmd_t *)ase_malloc( sizeof(struct umsgcmd_t) );
+
+  // Initial copy
+  memcpy( (char*)umsg_old_data,
+	  (char*)((uint64_t)umas_region->vbase + umsg_byteindex_arr[cl_id]),
+	  CL_BYTE_WIDTH
+	  );
+  
+  // Calculate target address
+  umsg_addr_array[cl_id] =  (char*)((uint64_t)umas_region->vbase + umsg_byteindex_arr[cl_id]);      
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [DEBUG]  umsg_addr_array[%d] = %p\n", cl_id, umsg_addr_array[cl_id]);
+  END_YELLOW_FONTCOLOR;
+#endif
+  
+  // Start while loop
+  while(1)
+    {
+      if ( memcmp(umsg_addr_array[cl_id], umsg_old_data, CL_BYTE_WIDTH) != 0)
+	{
+	  printf("Change found... %d\n", cl_id);
+	  // Construct UMsg packet
+	  umsg_pkt->id = cl_id;	      
+	  memcpy((char*)umsg_pkt->qword, (char*)umsg_addr_array[cl_id], CL_BYTE_WIDTH);
+	  
+	  // Send UMsg
+	  pthread_mutex_lock (&umsg_port_lock);
+	  mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt, sizeof(struct umsgcmd_t));
+	  pthread_mutex_unlock (&umsg_port_lock);
+	  
+	  // Update local mirror
+	  memcpy( (char*)umsg_old_data, (char*)umsg_pkt->qword, CL_BYTE_WIDTH );
+	}      
+    }
+}
+#else
+// -------------------------------
+// Single UMSG thread patrol
+// -------------------------------
 void *umsg_watcher()
 {
   // Generic index
@@ -1163,7 +1237,6 @@ void *umsg_watcher()
 	{
 	  if ( memcmp(umsg_addr_array[cl_index], umsg_old_data[cl_index], CL_BYTE_WIDTH) != 0)
 	    {
-	      printf("Change found... %d\n", cl_index);
 	      // Construct UMsg packet
 	      umsg_pkt->id = cl_index;	      
 	      memcpy((char*)umsg_pkt->qword, (char*)umsg_addr_array[cl_index], CL_BYTE_WIDTH);
@@ -1174,11 +1247,10 @@ void *umsg_watcher()
 	      // Update local mirror
 	      memcpy( (char*)umsg_old_data[cl_index], (char*)umsg_pkt->qword, CL_BYTE_WIDTH );
 	    }
-	}
-	
+	}	
     }
-
 }
+#endif
 
 
 /*
