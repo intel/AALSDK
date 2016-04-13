@@ -2034,7 +2034,7 @@ public:
    OSLThread::ThreadPriority m_ThrPriority;
    AAL::btTime               m_JoinTimeout;
    OSLThread                *m_pThrs[16];
-   CSemaphore                m_Sems[4];
+   CSemaphore                m_Sems[5];
    AAL::btUnsignedInt        m_Scratch[16];
    disp_list_t               m_WorkList;
 
@@ -2642,7 +2642,6 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0152)
    // Thread group workers are currently blocked on m_Sems[1].
    // Thr6 waits to be signaled by m_Sems[2].
    ASSERT_TRUE(m_Sems[2].Create(0, 1));
-   ASSERT_TRUE(m_Sems[3].Create(0, INT_MAX));
 
    m_Scratch[0] = 0;
    m_pThrs[0] = new OSLThread(OSAL_ThreadGroupSR_vp_tuple_0::Thr6,
@@ -2697,46 +2696,76 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0153)
    // Destroy() overlap in that order, the later calls wait for the earlier to complete. All
    // calls complete successfully.
 
+   class aal0153AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0153AfterThreadGroupAutoLock(OSAL_ThreadGroupSR_vp_tuple_0 *pFixture) :
+         m_pFixture(pFixture)
+      {}
+
+      virtual void OnDrain()
+      {
+         // As the workers enter Drain(), they signal so by m_Sems[0] (count-up Sem).
+         m_pFixture->m_Sems[0].Post(1);
+      }
+
+      virtual void OnJoin(btTime )
+      {
+         // When the main thread enters Join(), it releases the self-referential Destroy() (m_Sems[2]).
+         m_pFixture->m_Sems[2].Post(1);
+      }
+
+   protected:
+      OSAL_ThreadGroupSR_vp_tuple_0 *m_pFixture;
+   } AfterAutoLock(this);
+
+
    AAL::btUnsignedInt Workers = 0;
    AAL::btUnsignedInt Drains  = 0;
 
    std::tr1::tie(Workers, Drains) = GetParam();
 
+   AAL::btInt d = (AAL::btInt) Drains;
+
    STAGE_WORKERS(Workers);
 
-   for ( i = 0 ; i < Drains + 50 ; ++i ) {
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
+
+   // This thread blocked on m_Sems[0] until all workers were ready.
+   // Thread group workers are currently blocked on m_Sems[1].
+   // The Dispatchable that performs self-referential Destroy() will first wait on
+   //  m_Sems[2] before doing so.
+   EXPECT_TRUE(m_Sems[2].Create(0, 1));
+
+   btInt x = 0;
+
+   for ( i = 0 ; i < 100 + Drains ; ++i ) {
       if ( i < Drains ) {
          EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
-      } else if ( Drains == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
-      } else if ( Drains + 1 == i ) {
-         EXPECT_TRUE(Add( new WaitD(m_Sems[1]) ));
-      } else if ( Drains + 4 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
-      } else if ( Drains + 9 == i ) {
-         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
+      } else if ( Drains + 10 == i ) {
+         EXPECT_TRUE(Add( new WaitThenDestroyThreadGroupD(m_Sems[2], g) ));
+      } else if (Drains + 99 == i) {
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
          EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
-   ASSERT_EQ(Drains + 50, g->GetNumWorkItems());
+   ASSERT_EQ(100 + Drains, g->GetNumWorkItems());
 
-   // Wake the first worker, then block on Sems[0].
-   // The first worker..
-   //  * invokes the self-referential Drain().
-   //  * Post()'s m_Sems[0] to wake this thread.
-   //  * blocks on m_Sems[1].
-   // This thread wakes, Post()'s m_Sems[1] to wake a worker, then begins the Join().
-   // If the resumed worker gets a timeslice before this thread calls Join(), it executes a
-   //  yield, giving the cpu back to this thread.
-   EXPECT_TRUE(m_Sems[1].Post(1));
+   // Wake all workers, then block on m_Sems[0].
+   // The AfterAutoLock callback Posts()'s m_Sems[0] as Drain()'s are entered.
+   EXPECT_TRUE(m_Sems[0].Reset(-d));
+   EXPECT_TRUE(m_Sems[1].Post(w));
    EXPECT_TRUE(m_Sems[0].Wait());
 
-   EXPECT_TRUE(m_Sems[1].Post(1));
+   // The Drain()'ers are all staged.
+
+   // The AfterAutoLock callback releases the self-referential Destroy() upon entering the Join() call.
    EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
 
    YIELD_WHILE(CurrentThreads() > 0);
+   EXPECT_EQ(1, x);
 }
 
 TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0154)
@@ -2745,12 +2774,49 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0154)
    // Destroy() overlap in that order, the later calls wait for the earlier to complete.
    // All calls complete successfully.
 
+   class aal0154AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0154AfterThreadGroupAutoLock(OSAL_ThreadGroupSR_vp_tuple_0 *pFixture) :
+         m_pFixture(pFixture)
+      {}
+
+      virtual void OnDrain()
+      {
+         // As the workers enter Drain(), they signal so by m_Sems[0] (count-up Sem).
+         m_pFixture->m_Sems[0].Post(1);
+      }
+
+      virtual void OnJoin(btTime )
+      {
+         // When a worker enters Join(), it wakes the main thread (m_Sems[2]).
+         m_pFixture->m_Sems[2].Post(1);
+      }
+
+      virtual void OnDestroy(btTime )
+      {
+         // When the main thread enters Destroy(), the Drain()'s and Join() are allowed to complete (m_Sems[3]).
+         m_pFixture->m_Sems[3].Post(1);
+      }
+
+   protected:
+      OSAL_ThreadGroupSR_vp_tuple_0 *m_pFixture;
+   } AfterAutoLock(this);
+
+
    AAL::btUnsignedInt Workers = 0;
    AAL::btUnsignedInt Drains  = 0;
 
    std::tr1::tie(Workers, Drains) = GetParam();
 
+   AAL::btInt d = (AAL::btInt) Drains;
+
    STAGE_WORKERS(Workers);
+
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
+
+   EXPECT_TRUE(m_Sems[2].Create(0, 1));
+   EXPECT_TRUE(m_Sems[3].Create(0, 1));
 
    AAL::btInt x = 0;
 
@@ -2758,11 +2824,9 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0154)
       if ( i < Drains ) {
          EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( Drains == i ) {
-         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
-      } else if ( Drains + 1 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
-      } else if ( Drains + 4 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new WaitThenJoinThreadGroupD(m_Sems[0], g) ));
+      } else if ( Drains + 15 == i ) {
+         EXPECT_TRUE(Add( new WaitD(m_Sems[3]) ));
       } else if ( Drains + 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
@@ -2772,16 +2836,17 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0154)
 
    ASSERT_EQ(Drains + 50, g->GetNumWorkItems());
 
-   // Wake the first worker, then block on Sems[0].
-   // The first worker..
-   //  * invokes the self-referential Drain().
-   //  * invokes the self-referential Join().
-   //  * Post()'s m_Sems[0], waking this thread.
-   //  * yeilds the cpu to this thread.
-   // This thread resumes and begins the Destroy().
-   // The thread group worker is time sliced and wakes the remaining workers.
-   EXPECT_TRUE(m_Sems[1].Post(1));
-   EXPECT_TRUE(m_Sems[0].Wait());
+   // Wake all workers, then block on m_Sems[2].
+   // The AfterAutoLock callback Post()'s m_Sems[0] as workers enter Drain().
+   // When Drain()'ers have posted up m_Sems[0], the self-referential Join() is released.
+   // The AfterAutoLock callback Post()'s m_Sems[2] upon entering the Join(), waking this thread.
+   EXPECT_TRUE(m_Sems[0].Reset(-d));
+   EXPECT_TRUE(m_Sems[1].Post(w));
+   EXPECT_TRUE(m_Sems[2].Wait());
+
+   // Some worker Wait()'s on m_Sems[3] so that the Drain() and Join() are kept
+   //  active until the Destroy() is begun.
+   // The AfterAutoLock callback Post()'s m_Sems[3] upon entering Destroy().
 
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
@@ -2795,22 +2860,54 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0155)
    // self-referential Destroy() overlap in that order, the later calls wait for the earlier
    // to complete. All calls complete successfully.
 
+   class aal0155AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0155AfterThreadGroupAutoLock(OSAL_ThreadGroupSR_vp_tuple_0 *pFixture) :
+         m_pFixture(pFixture)
+      {}
+
+      virtual void OnDrain()
+      {
+         // As the workers enter Drain(), they signal so by m_Sems[0] (count-up Sem).
+         m_pFixture->m_Sems[0].Post(1);
+      }
+
+      virtual void OnJoin(btTime )
+      {
+         // When a worker enters Join(), it wakes worker performing the self-referential Destroy (m_Sems[2]).
+         m_pFixture->m_Sems[2].Post(1);
+      }
+
+   protected:
+      OSAL_ThreadGroupSR_vp_tuple_0 *m_pFixture;
+   } AfterAutoLock(this);
+
+
    AAL::btUnsignedInt Workers = 0;
    AAL::btUnsignedInt Drains  = 0;
 
    std::tr1::tie(Workers, Drains) = GetParam();
 
+   AAL::btInt d = (AAL::btInt) Drains;
+
+   EXPECT_TRUE(m_Sems[2].Create(0, 1));
+
    STAGE_WORKERS(Workers);
+
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
+
+   AAL::btInt x = 0;
 
    for ( i = 0 ; i < Drains + 50 ; ++i ) {
       if ( i < Drains ) {
          EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( Drains == i ) {
-         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
-      } else if ( Drains + 1 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new WaitThenJoinThreadGroupD(m_Sems[0], g) ));
       } else if ( Drains + 5 == i ) {
-         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new WaitThenDestroyThreadGroupD(m_Sems[2], g) ));
+      } else if ( Drains + 49 == i ) {
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
          EXPECT_TRUE(Add( new YieldD() ));
       }
@@ -2818,15 +2915,16 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0155)
 
    ASSERT_EQ(Drains + 50, g->GetNumWorkItems());
 
-   // Wake the first worker.
-   // The first worker..
-   //  * invokes the self-referential Drain().
-   //  * invokes the self-referential Join().
-   //  * wakes the remaining workers.
-   // Some worker performs the self-referential Destroy().
-   EXPECT_TRUE(m_Sems[1].Post(1));
+   // Wake all workers.
+   // The AfterAutoLock callback Post()'s m_Sems[0] as workers enter the Drain() calls.
+   // Once m_Sems[0] is released, the self-referential Join() is allowed to progress.
+   // The AfterAutoLock callback Post()'s m_Sems[2] upon entering the Join().
+   // Once m_Sems[2] is released the self-referential Destroy() is unblocked.
+   EXPECT_TRUE(m_Sems[0].Reset(-d));
+   EXPECT_TRUE(m_Sems[1].Post(w));
 
    YIELD_WHILE(CurrentThreads() > 0);
+   EXPECT_EQ(1, x);
 }
 
 void OSAL_ThreadGroupSR_vp_tuple_0::Thr7(OSLThread *pThread, void *arg)
@@ -2867,19 +2965,59 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0156)
    // and an external Destroy() overlap in that order, the later calls wait for the earlier to
    // complete. All calls complete successfully.
 
+   class aal0156AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0156AfterThreadGroupAutoLock(OSAL_ThreadGroupSR_vp_tuple_0 *pFixture,
+                                      btInt                          Count) :
+         m_pFixture(pFixture),
+         m_Count(Count)
+      {}
+
+      virtual void OnDrain()
+      {
+         // As the Thr7's enter Drain(), they signal so by m_Sems[4] (count-up Sem).
+         m_pFixture->m_Sems[4].Post(1);
+      }
+
+      virtual void OnJoin(btTime )
+      {
+         // When Thr8 enters Join(), it wakes the main thread to do the external Destroy() (m_Sems[0]).
+         m_pFixture->m_Sems[0].Post(1);
+      }
+
+      virtual void OnDestroy(btTime )
+      {
+         // When the main thread enters Destroy(), it wakes all worker threads (m_Sems[1]).
+         m_pFixture->m_Sems[1].Post(m_Count);
+      }
+
+   protected:
+      OSAL_ThreadGroupSR_vp_tuple_0 *m_pFixture;
+      btInt                          m_Count;
+   };
+
+
    AAL::btUnsignedInt Workers   = 0;
    AAL::btUnsignedInt Externals = 0;
 
    std::tr1::tie(Workers, Externals) = GetParam();
 
+   const AAL::btInt e = (AAL::btInt) Externals;
+
    STAGE_WORKERS(Workers);
+
+   aal0156AfterThreadGroupAutoLock AfterAutoLock(this, w);
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    // This thread blocked on m_Sems[0] until all workers were ready.
    // Thread group workers are currently blocked on m_Sems[1].
    // The Drain()'ers wait to be signaled by m_Sems[2].
-   ASSERT_TRUE(m_Sems[2].Create(0, (AAL::btInt)Externals));
+   ASSERT_TRUE(m_Sems[2].Create(0, e));
    // The Join()'er waits to be signaled by m_Sems[3].
    ASSERT_TRUE(m_Sems[3].Create(0, 1));
+   // The Thr7's Post up m_Sems[4] as they enter Drain().
+   ASSERT_TRUE(m_Sems[4].Create(-e, 1));
 
    // m_pThrs[0] / Thr8 is the Join()'er
    m_Scratch[0] = 0;
@@ -2908,9 +3046,9 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0156)
       if ( 0 == i ) {
          EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
-      } else if ( Externals + 2 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
+      } else if ( 2 == i ) {
+         EXPECT_TRUE(Add( new WaitD(m_Sems[1]) ));
       } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
@@ -2921,30 +3059,25 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0156)
    ASSERT_EQ(50, g->GetNumWorkItems());
 
    // Wake Thr7's to begin the Drain().
-   EXPECT_TRUE(m_Sems[2].Post((AAL::btInt)Externals));
-   for ( i = 1 ; i <= Externals ; ++i ) {
-      YIELD_WHILE(0 == m_Scratch[i]);
-   }
-   YIELD_X(3 * Externals);
+   // The AfterAutoLock callback Post()'s m_Sems[4] as Thr7's enter Drain() calls.
+   EXPECT_TRUE(m_Sems[2].Post(e));
+   EXPECT_TRUE(m_Sems[4].Wait());
 
-   // Wake the first worker, then sleep on m_Sems[0].
-   // The first worker begins the self-Drain(), wakes us from sleep on m_Sems[0], then blocks
-   //  again on m_Sems[1].
+   // Wake the first worker.
+   // The first worker invokes the self-referential Drain().
+   // The first worker Post()'s m_Sems[0], waking this thread.
+   // The first worker goes back to sleep on m_Sems[1].
+   EXPECT_TRUE(m_Sems[0].Reset(0));
    EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
 
    // Wake Thr8 to begin the Join().
+   // The AfterAutoLock callback Post()'s m_Sems[0] upon entering Join().
    EXPECT_TRUE(m_Sems[3].Post(1));
-   YIELD_WHILE(0 == m_Scratch[0]);
+   EXPECT_TRUE(m_Sems[0].Wait());
 
-   YIELD_X(Externals);
-
-   // Wake the first worker. The first worker will wake the remaining workers.
-   EXPECT_TRUE(m_Sems[1].Post(1));
-
-   YIELD_X(Externals);
-
-   // This thread calls Destroy()
+   // This thread performs the external Destroy().
+   // The AfterAutoLock callback wakes all workers (m_Sems[1]) upon entering Destroy().
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(1, x);
 
@@ -2994,19 +3127,49 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0157)
    // and a self-referential Destroy() overlap in that order, the later calls wait for the earlier
    // to complete. All calls complete successfully.
 
+   class aal0157AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0157AfterThreadGroupAutoLock(OSAL_ThreadGroupSR_vp_tuple_0 *pFixture) :
+         m_pFixture(pFixture)
+      {}
+
+      virtual void OnDrain()
+      {
+         // As the Thr9's enter Drain(), they signal so by m_Sems[4] (count-up Sem).
+         m_pFixture->m_Sems[4].Post(1);
+      }
+
+      virtual void OnJoin(btTime )
+      {
+         // When Thr10 enters Join(), it wakes the main thread (m_Sems[0]).
+         m_pFixture->m_Sems[0].Post(1);
+      }
+
+   protected:
+      OSAL_ThreadGroupSR_vp_tuple_0 *m_pFixture;
+   } AfterAutoLock(this);
+
+
    AAL::btUnsignedInt Workers   = 0;
    AAL::btUnsignedInt Externals = 0;
 
    std::tr1::tie(Workers, Externals) = GetParam();
 
+   const AAL::btInt e = (AAL::btInt) Externals;
+
    STAGE_WORKERS(Workers);
+
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    // This thread blocked on m_Sems[0] until all workers were ready.
    // Thread group workers are currently blocked on m_Sems[1].
    // The Drain()'ers wait to be signaled by m_Sems[2].
-   ASSERT_TRUE(m_Sems[2].Create(0, (AAL::btInt)Externals));
+   ASSERT_TRUE(m_Sems[2].Create(0, e));
    // The Join()'er waits to be signaled by m_Sems[3].
    ASSERT_TRUE(m_Sems[3].Create(0, 1));
+   // As Thr9's enter Drain() calls they Post() up m_Sems[4].
+   ASSERT_TRUE(m_Sems[4].Create(-e, 1));
 
    // m_pThrs[0] / Thr10 is the Join()'er
    m_Scratch[0] = 0;
@@ -3029,15 +3192,19 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0157)
 
    EXPECT_EQ(1 + Externals + m_MinThreads, CurrentThreads());
 
+   btInt x = 0;
+
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
          EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
       } else if ( 2 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new WaitD(m_Sems[1]) ));
       } else if ( 5 == i ) {
          EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
+      } else if ( 49 == i ) {
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
          EXPECT_TRUE(Add( new YieldD() ));
       }
@@ -3046,26 +3213,26 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0157)
    ASSERT_EQ(50, g->GetNumWorkItems());
 
    // Wake Thr9's to begin the Drain().
-   EXPECT_TRUE(m_Sems[2].Post((AAL::btInt)Externals));
-   for ( i = 1 ; i <= Externals ; ++i ) {
-      YIELD_WHILE(0 == m_Scratch[i]);
-   }
-   YIELD_X(Externals);
+   // The AfterAutoLock callback Post()'s m_Sems[4] as Thr9's enter Drain() calls.
+   EXPECT_TRUE(m_Sems[2].Post(e));
+   EXPECT_TRUE(m_Sems[4].Wait());
 
-   // Wake the first worker, then sleep on m_Sems[0].
-   // The first worker begins the self-referential Drain(), Post()'s m_Sems[0] to wake this thread,
-   //  then sleeps again on m_Sems[1].
+   // Wake the first worker.
+   // The first worker invokes the self-referential Drain().
+   // The first worker Post()'s m_Sems[0], waking this thread.
+   // The first worker goes back to sleep on m_Sems[1].
+   EXPECT_TRUE(m_Sems[0].Reset(0));
    EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
 
    // Wake Thr10 to begin the Join().
+   // The AfterAutoLock callback Post()'s m_Sems[0] upon entering Join().
    EXPECT_TRUE(m_Sems[3].Post(1));
-   YIELD_WHILE(0 == m_Scratch[0]);
-   YIELD_X(3);
+   EXPECT_TRUE(m_Sems[0].Wait());
 
-   // Wake the first worker. The first worker will wake the remaining workers.
+   // Wake all workers.
    // Some worker does the self-referential Destroy().
-   EXPECT_TRUE(m_Sems[1].Post(1));
+   EXPECT_TRUE(m_Sems[1].Post(w));
 
    for ( i = 0 ; i <= Externals ; ++i ) {
       m_pThrs[i]->Join();
@@ -3073,6 +3240,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0157)
    }
 
    YIELD_WHILE(CurrentThreads() > 0);
+   EXPECT_EQ(1, x);
 }
 
 void OSAL_ThreadGroupSR_vp_tuple_0::Thr11(OSLThread *pThread, void *arg)
@@ -3097,17 +3265,56 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0158)
    // Join(), and an external Destroy() overlap in that order, the later calls wait for the
    // earlier to complete. All calls complete successfully.
 
+   class aal0158AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0158AfterThreadGroupAutoLock(OSAL_ThreadGroupSR_vp_tuple_0 *pFixture) :
+         m_pFixture(pFixture)
+      {}
+
+      virtual void OnDrain()
+      {
+         // As the Thr11's enter Drain(), they signal so by m_Sems[3] (count-up Sem).
+         m_pFixture->m_Sems[3].Post(1);
+      }
+
+      virtual void OnJoin(btTime )
+      {
+         // When a worker enters Join(), it wakes the main thread (m_Sems[0]).
+         m_pFixture->m_Sems[0].Post(1);
+      }
+
+      virtual void OnDestroy(btTime )
+      {
+         // When the main thread enters Destroy(), it allows the Drain()'s and Join() to complete (m_Sems[4]).
+         m_pFixture->m_Sems[4].Post(1);
+      }
+
+   protected:
+      OSAL_ThreadGroupSR_vp_tuple_0 *m_pFixture;
+   } AfterAutoLock(this);
+
+
    AAL::btUnsignedInt Workers   = 0;
    AAL::btUnsignedInt Externals = 0;
 
    std::tr1::tie(Workers, Externals) = GetParam();
 
+   const AAL::btInt e = (AAL::btInt) Externals;
+
    STAGE_WORKERS(Workers);
+
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    // This thread blocked on m_Sems[0] until all workers were ready.
    // Thread group workers are currently blocked on m_Sems[1].
    // The Drain()'ers wait to be signaled by m_Sems[2].
-   ASSERT_TRUE(m_Sems[2].Create(0, (AAL::btInt)Externals));
+   ASSERT_TRUE(m_Sems[2].Create(0, e));
+   // As Thr11's enter Drain() calls, they post up m_Sems[3].
+   ASSERT_TRUE(m_Sems[3].Create(-e, 1));
+   // Some worker blocks on m_Sems[4], guaranteeing that the Drain()'s
+   //  and Join() are active during Destroy().
+   ASSERT_TRUE(m_Sems[4].Create(0, 1));
 
    for ( i = 0 ; i < Externals ; ++i ) {
       m_Scratch[0] = i;
@@ -3125,14 +3332,14 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0158)
    AAL::btInt x = 0;
 
    for ( i = 0 ; i < 50 ; ++i ) {
-      if ( Externals == i ) {
+      if ( 0 == i ) {
          EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
-      } else if ( Externals + 1 == i ) {
-         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
-      } else if ( Externals + 2 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
-      } else if ( Externals + 5 == i ) {
+      } else if ( 1 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
+      } else if ( 5 == i ) {
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
+      } else if ( 48 == i ) {
+         EXPECT_TRUE(Add( new WaitD(m_Sems[4]) ));
       } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
@@ -3143,21 +3350,21 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0158)
    ASSERT_EQ(50, g->GetNumWorkItems());
 
    // Wake Thr11's to begin the Drain().
-   EXPECT_TRUE(m_Sems[2].Post((AAL::btInt)Externals));
+   // The AfterAutoLock callback Post()'s m_Sems[3] as Thr11's enter Drain() calls.
+   EXPECT_TRUE(m_Sems[2].Post(e));
+   EXPECT_TRUE(m_Sems[3].Wait());
 
-   for ( i = 0 ; i < Externals ; ++i ) {
-      YIELD_WHILE(0 == m_Scratch[i]);
-   }
-
-   // Wake the first worker, then block on m_Sems[0].
-   // The first worker invokes the self-referential Join(), Post()'s m_Sems[0] to wake this thread,
-   //  then wakes the remaining workers.
-   // This thread resumes and does the Destroy().
+   // Wake the first worker.
+   // The first worker invokes the self-referential Drain().
+   // The first worker Post()'s m_Sems[1], waking all remaining workers.
+   EXPECT_TRUE(m_Sems[0].Reset(0));
    EXPECT_TRUE(m_Sems[1].Post(1));
+
+   // Some worker picks up the self-referential Join().
+   // The AfterAutoLock callback Post()'s m_Sems[0] to wake this thread.
+   // The AfterAutoLock callback Post()'s m_Sems[4] upon entering the Destroy()
+   //  below, allowing the Drain() and Join() to complete.
    EXPECT_TRUE(m_Sems[0].Wait());
-
-   YIELD_X(Externals);
-
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
    for ( i = 0 ; i < Externals ; ++i ) {
@@ -3191,17 +3398,47 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0159)
    // Join(), and a self-referential Destroy() overlap in that order, the later calls wait for
    // the earlier to complete. All calls complete successfully.
 
+   class aal0159AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0159AfterThreadGroupAutoLock(OSAL_ThreadGroupSR_vp_tuple_0 *pFixture) :
+         m_pFixture(pFixture)
+      {}
+
+      virtual void OnDrain()
+      {
+         // As the Thr12's enter Drain(), they signal so by m_Sems[3] (count-up Sem).
+         m_pFixture->m_Sems[3].Post(1);
+      }
+
+      virtual void OnJoin(btTime )
+      {
+         // When a worker enters the Join(), it unblocks the Destroy() (m_Sems[0]).
+         m_pFixture->m_Sems[0].Post(1);
+      }
+
+   protected:
+      OSAL_ThreadGroupSR_vp_tuple_0 *m_pFixture;
+   } AfterAutoLock(this);
+
+
    AAL::btUnsignedInt Workers   = 0;
    AAL::btUnsignedInt Externals = 0;
 
    std::tr1::tie(Workers, Externals) = GetParam();
 
+   const AAL::btInt e = (AAL::btInt) Externals;
+
    STAGE_WORKERS(Workers);
+
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    // This thread blocked on m_Sems[0] until all workers were ready.
    // Thread group workers are currently blocked on m_Sems[1].
    // The Drain()'ers wait to be signaled by m_Sems[2].
-   ASSERT_TRUE(m_Sems[2].Create(0, (AAL::btInt)Externals));
+   ASSERT_TRUE(m_Sems[2].Create(0, e));
+   // As the Thr12's enter Drain() calls, they Post() up m_Sems[3].
+   ASSERT_TRUE(m_Sems[3].Create(-e, 1));
 
    for ( i = 0 ; i < Externals ; ++i ) {
       m_Scratch[0] = i;
@@ -3215,15 +3452,19 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0159)
 
    EXPECT_EQ(Externals + m_MinThreads, CurrentThreads());
 
+   AAL::btInt x = 0;
+
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
          EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
+      } else if ( 1 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w - 1) ));
       } else if ( 10 == i ) {
          EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
-      } else if ( 15 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 20 == i ) {
-         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new WaitThenDestroyThreadGroupD(m_Sems[0], g) ));
+      } else if ( 49 == i ) {
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
          EXPECT_TRUE(Add( new YieldD() ));
       }
@@ -3231,17 +3472,17 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0159)
 
    ASSERT_EQ(50, g->GetNumWorkItems());
 
-   // Wake Thr11's to begin the Drain().
-   EXPECT_TRUE(m_Sems[2].Post((AAL::btInt)Externals));
-
-   for ( i = 0 ; i < Externals ; ++i ) {
-      YIELD_WHILE(0 == m_Scratch[i]);
-   }
-   YIELD_X(Externals + 5);
+   // Wake Thr12's to begin the Drain().
+   // The AfterAutoLock callback Post()'s m_Sems[3] as Thr12's enter Drain() calls.
+   EXPECT_TRUE(m_Sems[2].Post(e));
+   EXPECT_TRUE(m_Sems[3].Wait());
 
    // Wake the first worker.
-   // The first worker invokes the self-referential Join(), then wakes the remaining workers.
-   // Some worker encounters the self-referential Destroy().
+   // The first worker invokes the self-referential Drain().
+   // The first worker wakes the remaining workers.
+   // The AfterAutoLock callback Post()'s m_Sems[0] when some worker enters the self-referential Join().
+   // Once m_Sems[0] is Post()'ed, the self-referential Destroy() is allowed to progress.
+   EXPECT_TRUE(m_Sems[0].Reset(0));
    EXPECT_TRUE(m_Sems[1].Post(1));
 
    for ( i = 0 ; i < Externals ; ++i ) {
@@ -3250,6 +3491,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0159)
    }
 
    YIELD_WHILE(CurrentThreads() > 0);
+   EXPECT_EQ(1, x);
 }
 
 void OSAL_ThreadGroupSR_vp_tuple_0::Thr13(OSLThread *pThread, void *arg)
@@ -3290,12 +3532,54 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0160)
    // and an external Destroy() overlap in that order, the later calls wait for the earlier to
    // complete. All calls complete successfully.
 
+   class aal0160AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0160AfterThreadGroupAutoLock(OSAL_ThreadGroupSR_vp_tuple_0 *pFixture) :
+         m_pFixture(pFixture),
+         m_WhichDrain(0)
+      {}
+
+      virtual void OnDrain()
+      {
+         if ( 0 == m_WhichDrain ) {
+            // The first Drain() call is from Thr13. Wake the main thread by m_Sems[0].
+            m_pFixture->m_Sems[0].Post(1);
+         } else {
+            // The self-referential Drain() calls signal readiness on m_Sems[4] (count-up).
+            m_pFixture->m_Sems[4].Post(1);
+         }
+         ++m_WhichDrain;
+      }
+
+      virtual void OnJoin(btTime )
+      {
+         // When Thr14 enters the Join(), it unblocks the main thread to do the Destroy() (m_Sems[0]).
+         m_pFixture->m_Sems[0].Post(1);
+      }
+
+      virtual void OnDestroy(btTime )
+      {
+         // When the main thread enters Destroy(), it unblocks m_Sems[2], allowing the Drain()'s and Join() to complete.
+         m_pFixture->m_Sems[2].Post(1);
+      }
+
+   protected:
+      OSAL_ThreadGroupSR_vp_tuple_0 *m_pFixture;
+      btUnsignedInt                  m_WhichDrain;
+   } AfterAutoLock(this);
+
+
    AAL::btUnsignedInt Workers = 0;
    AAL::btUnsignedInt Drains  = 0;
 
    std::tr1::tie(Workers, Drains) = GetParam();
 
+   const AAL::btInt d = (AAL::btInt) Drains;
+
    STAGE_WORKERS(Workers);
+
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    // This thread blocked on m_Sems[0] until all workers were ready.
    // Thread group workers are currently blocked on m_Sems[1].
@@ -3303,6 +3587,8 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0160)
    ASSERT_TRUE(m_Sems[2].Create(0, 1));
    // The Join()'er waits to be signaled by m_Sems[3].
    ASSERT_TRUE(m_Sems[3].Create(0, 1));
+   // The self-referential Drain()'ers Post() up m_Sems[4] on entering Drain() calls.
+   ASSERT_TRUE(m_Sems[4].Create(-d, 1));
 
    // m_pThrs[0] / Thr14 is the Join()'er
    m_Scratch[0] = 0;
@@ -3329,10 +3615,8 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0160)
    for ( i = 0 ; i < Drains + 50 ; ++i ) {
       if ( i < Drains ) {
          EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
-      } else if ( Drains == i ) {
-         EXPECT_TRUE(Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
-      } else if ( Drains + 20 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
+      } else if ( Drains + 48 == i ) {
+         EXPECT_TRUE(Add( new WaitD(m_Sems[2]) ));
       } else if ( Drains + 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
@@ -3342,26 +3626,27 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0160)
 
    ASSERT_EQ(Drains + 50, g->GetNumWorkItems());
 
-   // Wake Thr13 to begin the Drain().
+   // Wake Thr13 to begin the external Drain().
+   // The AfterAutoLock callback Post()'s m_Sems[0] upon entering Drain().
+   EXPECT_TRUE(m_Sems[0].Reset(0));
    EXPECT_TRUE(m_Sems[2].Post(1));
-   YIELD_WHILE(0 == m_Scratch[1]);
-   YIELD_X(5);
-
-   // Wake the first worker, then sleep on m_Sems[0].
-   // The first worker begins the self-Drain(), wakes us from sleep on m_Sems[0], then blocks
-   //  again on m_Sems[1].
-   EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
 
-   // Wake Thr14 to begin the Join().
-   EXPECT_TRUE(m_Sems[3].Post(1));
-   YIELD_WHILE(0 == m_Scratch[0]);
-   YIELD_X(10);
+   // Wake all workers.
+   // The AfterAutoLock callback Post()'s up m_Sems[4] upon entering Drain() calls.
+   EXPECT_TRUE(m_Sems[1].Post(w));
+   EXPECT_TRUE(m_Sems[4].Wait());
 
-   // Wake the first worker. The first worker will wake the remaining workers.
-   EXPECT_TRUE(m_Sems[1].Post(1));
+   // Wake Thr14 (m_Sems[3]) to perform the external Join().
+   // The AfterAutoLock callback Post()'s m_Sems[0] on entering Join().
+   EXPECT_TRUE(m_Sems[0].Reset(0));
+   EXPECT_TRUE(m_Sems[3].Post(1));
+   EXPECT_TRUE(m_Sems[0].Wait());
 
    // This thread calls Destroy()
+   // Some worker waits on m_Sems[2] to ensure that Drain()'s and Join() are
+   //  active during Destroy.
+   // The AfterAutoLock callback Post()'s m_Sems[2] on entering Destroy().
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(1, x);
 
@@ -3411,12 +3696,48 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0161)
    // and a self-referential Destroy() overlap in that order, the later calls wait for the
    // earlier to complete. All calls complete successfully.
 
+   class aal0161AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0161AfterThreadGroupAutoLock(OSAL_ThreadGroupSR_vp_tuple_0 *pFixture) :
+         m_pFixture(pFixture),
+         m_WhichDrain(0)
+      {}
+
+      virtual void OnDrain()
+      {
+         if ( 0 == m_WhichDrain ) {
+            // The first Drain() call is from Thr15. Wake the main thread by m_Sems[0].
+            m_pFixture->m_Sems[0].Post(1);
+         } else {
+            // The self-referential Drain() calls signal readiness on m_Sems[4] (count-up).
+            m_pFixture->m_Sems[4].Post(1);
+         }
+         ++m_WhichDrain;
+      }
+
+      virtual void OnJoin(btTime )
+      {
+         // When Thr16 enters the Join(), it unblocks the self-referential Destroy() (m_Sems[0]).
+         m_pFixture->m_Sems[0].Post(1);
+      }
+
+   protected:
+      OSAL_ThreadGroupSR_vp_tuple_0 *m_pFixture;
+      btUnsignedInt                  m_WhichDrain;
+   } AfterAutoLock(this);
+
+
    AAL::btUnsignedInt Workers   = 0;
    AAL::btUnsignedInt Drains = 0;
 
    std::tr1::tie(Workers, Drains) = GetParam();
 
+   const AAL::btInt d = (AAL::btInt) Drains;
+
    STAGE_WORKERS(Workers);
+
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    // This thread blocked on m_Sems[0] until all workers were ready.
    // Thread group workers are currently blocked on m_Sems[1].
@@ -3424,6 +3745,8 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0161)
    ASSERT_TRUE(m_Sems[2].Create(0, 1));
    // The Join()'er waits to be signaled by m_Sems[3].
    ASSERT_TRUE(m_Sems[3].Create(0, 1));
+   // The self-referential Drain()'ers Post() up m_Sems[4] on entering Drain() calls.
+   ASSERT_TRUE(m_Sems[4].Create(-d, 1));
 
    // m_pThrs[0] / Thr16 is the Join()'er
    m_Scratch[0] = 0;
@@ -3445,15 +3768,15 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0161)
 
    EXPECT_EQ(2 + m_MinThreads, CurrentThreads());
 
+   AAL::btInt x = 0;
+
    for ( i = 0 ; i < Drains + 50 ; ++i ) {
       if ( i < Drains ) {
          EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
-      } else if ( Drains == i ) {
-         EXPECT_TRUE(Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
-      } else if ( Drains + 1 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
-      } else if ( Drains + 4 == i ) {
-         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
+      } else if ( 4 + Drains == i ) {
+         EXPECT_TRUE(Add( new WaitThenDestroyThreadGroupD(m_Sems[0], g) ));
+      } else if ( 49 + Drains == i ) {
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
          EXPECT_TRUE(Add( new YieldD() ));
       }
@@ -3461,25 +3784,21 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0161)
 
    ASSERT_EQ(Drains + 50, g->GetNumWorkItems());
 
-   // Wake Thr15 to begin the Drain().
+   // Wake Thr15 to begin the external Drain().
+   // The AfterAutoLock callback Post()'s m_Sems[0] upon entering Drain().
+   EXPECT_TRUE(m_Sems[0].Reset(0));
    EXPECT_TRUE(m_Sems[2].Post(1));
-   YIELD_WHILE(0 == m_Scratch[1]);
-   YIELD_X(3);
-
-   // Wake the first worker, then sleep on m_Sems[0].
-   // The first worker begins the self-referential Drain(), Post()'s m_Sems[0] to wake this thread,
-   //  then sleeps again on m_Sems[1].
-   EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
 
-   // Wake Thr16 to begin the Join().
-   EXPECT_TRUE(m_Sems[3].Post(1));
-   YIELD_WHILE(0 == m_Scratch[0]);
-   YIELD_X(3);
+   // Wake all workers.
+   // The AfterAutoLock callback Post()'s up m_Sems[4] upon entering Drain() calls.
+   EXPECT_TRUE(m_Sems[1].Post(w));
+   EXPECT_TRUE(m_Sems[4].Wait());
 
-   // Wake the first worker. The first worker will wake the remaining workers.
-   // Some worker does the self-referential Destroy().
-   EXPECT_TRUE(m_Sems[1].Post(1));
+   // Wake Thr16 to begin the Join().
+   // The AfterAutoLock callback Post()'s m_Sems[0] on entering Join(),
+   //  unblocking the self-referential Destroy().
+   EXPECT_TRUE(m_Sems[3].Post(1));
 
    for ( i = 0 ; i < 2 ; ++i ) {
       m_pThrs[i]->Join();
@@ -3487,6 +3806,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0161)
    }
 
    YIELD_WHILE(CurrentThreads() > 0);
+   EXPECT_EQ(1, x);
 }
 
 void OSAL_ThreadGroupSR_vp_tuple_0::Thr17(OSLThread *pThread, void *arg)
@@ -3511,17 +3831,61 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0162)
    // Join(), and an external Destroy() overlap in that order, the later calls wait for the
    // earlier to complete. All calls complete successfully.
 
+   class aal0162AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0162AfterThreadGroupAutoLock(OSAL_ThreadGroupSR_vp_tuple_0 *pFixture) :
+         m_pFixture(pFixture),
+         m_WhichDrain(0)
+      {}
+
+      virtual void OnDrain()
+      {
+         if ( 0 == m_WhichDrain ) {
+            // The first Drain() call is from Thr17. Wake the main thread by m_Sems[0].
+            m_pFixture->m_Sems[0].Post(1);
+         } else {
+            // The self-referential Drain() calls signal readiness on m_Sems[3] (count-up).
+            m_pFixture->m_Sems[3].Post(1);
+         }
+         ++m_WhichDrain;
+      }
+
+      virtual void OnJoin(btTime )
+      {
+         // When a worker enters the Join(), it unblocks the main thread to do Destroy() (m_Sems[0]).
+         m_pFixture->m_Sems[0].Post(1);
+      }
+
+      virtual void OnDestroy(btTime )
+      {
+         // When the main thread enters Destroy(), unblock the worker (m_Sems[2]).
+         m_pFixture->m_Sems[2].Post(1);
+      }
+
+   protected:
+      OSAL_ThreadGroupSR_vp_tuple_0 *m_pFixture;
+      btUnsignedInt                  m_WhichDrain;
+   } AfterAutoLock(this);
+
+
    AAL::btUnsignedInt Workers = 0;
    AAL::btUnsignedInt Drains  = 0;
 
    std::tr1::tie(Workers, Drains) = GetParam();
 
+   const AAL::btInt d = (AAL::btInt) Drains;
+
    STAGE_WORKERS(Workers);
+
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    // This thread blocked on m_Sems[0] until all workers were ready.
    // Thread group workers are currently blocked on m_Sems[1].
    // The Drain()'ers wait to be signaled by m_Sems[2].
    ASSERT_TRUE(m_Sems[2].Create(0, 1));
+   // The self-referential Drain()'ers Post() up m_Sems[3] on entering Drain() calls.
+   ASSERT_TRUE(m_Sems[3].Create(-d, 1));
 
    m_Scratch[0] = 0;
 
@@ -3539,11 +3903,9 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0162)
       if ( i < Drains ) {
          EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( Drains == i ) {
-         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
-      } else if ( Drains + 1 == i ) {
-         EXPECT_TRUE(Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
-      } else if ( Drains + 5 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new WaitThenJoinThreadGroupD(m_Sems[3], g) ));
+      } else if ( Drains + 48 == i ) {
+         EXPECT_TRUE(Add( new WaitD(m_Sems[2]) ));
       } else if ( Drains + 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
@@ -3553,19 +3915,22 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0162)
 
    ASSERT_EQ(Drains + 50, g->GetNumWorkItems());
 
-   // Wake Thr17 to begin the Drain().
+   // Wake Thr17 to begin the external Drain().
+   EXPECT_TRUE(m_Sems[0].Reset(0));
    EXPECT_TRUE(m_Sems[2].Post(1));
-   YIELD_WHILE(0 == m_Scratch[0]);
-   YIELD_X(10);
-
-   // Wake the first worker, then block on m_Sems[0].
-   // The first worker invokes the self-referential Join(), Post()'s m_Sems[0] to wake this thread,
-   //  then goes back to sleep on m_Sems[1].
-   // This thread resumes, Post()'s m_Sems[1] to wake the first worker, and does the Destroy().
-   EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
 
-   EXPECT_TRUE(m_Sems[1].Post(1));
+   // Wake all workers.
+   // The AfterAutoLock callback Post()'s up m_Sems[3] upon entering Drain() calls.
+   // When m_Sems[3] become unblocked, the self-referential Join() is allowed to progress.
+   EXPECT_TRUE(m_Sems[2].Reset(0));
+   EXPECT_TRUE(m_Sems[1].Post(w));
+
+   // The AfterAutoLock callback Post()'s m_Sems[0] upon entering Join().
+   // A worker waits on m_Sems[2] to ensure that Drain()'s and Join() are
+   //  active during Destroy().
+   // The AfterAutoLock callback Post()'s m_Sems[2] on entering Destroy().
+   EXPECT_TRUE(m_Sems[0].Wait());
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
    m_pThrs[0]->Join();
@@ -3597,17 +3962,55 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0163)
    // Join(), and a self-referential Destroy() overlap in that order, the later calls wait for
    // the earlier to complete. All calls complete successfully.
 
+   class aal0163AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0163AfterThreadGroupAutoLock(OSAL_ThreadGroupSR_vp_tuple_0 *pFixture) :
+         m_pFixture(pFixture),
+         m_WhichDrain(0)
+      {}
+
+      virtual void OnDrain()
+      {
+         if ( 0 == m_WhichDrain ) {
+            // The first Drain() call is from Thr18. Wake the main thread by m_Sems[0].
+            m_pFixture->m_Sems[0].Post(1);
+         } else {
+            // The self-referential Drain() calls signal readiness on m_Sems[3] (count-up).
+            m_pFixture->m_Sems[3].Post(1);
+         }
+         ++m_WhichDrain;
+      }
+
+      virtual void OnJoin(btTime )
+      {
+         // When a worker enters the Join(), it unblocks the Destroy() (m_Sems[2]).
+         m_pFixture->m_Sems[2].Post(1);
+      }
+
+   protected:
+      OSAL_ThreadGroupSR_vp_tuple_0 *m_pFixture;
+      btUnsignedInt                  m_WhichDrain;
+   } AfterAutoLock(this);
+
+
    AAL::btUnsignedInt Workers = 0;
    AAL::btUnsignedInt Drains  = 0;
 
    std::tr1::tie(Workers, Drains) = GetParam();
 
+   const AAL::btInt d = (AAL::btInt) Drains;
+
    STAGE_WORKERS(Workers);
+
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    // This thread blocked on m_Sems[0] until all workers were ready.
    // Thread group workers are currently blocked on m_Sems[1].
    // The Drain()'ers wait to be signaled by m_Sems[2].
    ASSERT_TRUE(m_Sems[2].Create(0, 1));
+   // The self-referential Drain()'ers Post() up m_Sems[3] on entering Drain() calls.
+   ASSERT_TRUE(m_Sems[3].Create(-d, 1));
 
    m_Scratch[0] = 0;
    m_pThrs[0] = new OSLThread(OSAL_ThreadGroupSR_vp_tuple_0::Thr18,
@@ -3618,15 +4021,17 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0163)
 
    EXPECT_EQ(1 + m_MinThreads, CurrentThreads());
 
+   AAL::btInt x = 0;
+
    for ( i = 0 ; i < Drains + 50 ; ++i ) {
       if ( i < Drains ) {
          EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
-      } else if ( Drains == i ) {
-         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
-      } else if ( Drains + 1 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
-      } else if ( Drains + 4 == i ) {
-         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
+      } else if ( 10 + Drains == i ) {
+         EXPECT_TRUE(Add( new WaitThenJoinThreadGroupD(m_Sems[3], g) ));
+      } else if ( 15 + Drains == i ) {
+         EXPECT_TRUE(Add( new WaitThenDestroyThreadGroupD(m_Sems[2], g) ));
+      } else if ( 49 + Drains == i ) {
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
          EXPECT_TRUE(Add( new YieldD() ));
       }
@@ -3634,20 +4039,25 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0163)
 
    ASSERT_EQ(Drains + 50, g->GetNumWorkItems());
 
-   // Wake Thr18 to begin the Drain().
+   // Wake Thr18 to begin the external Drain().
+   EXPECT_TRUE(m_Sems[0].Reset(0));
    EXPECT_TRUE(m_Sems[2].Post(1));
-   YIELD_WHILE(0 == m_Scratch[0]);
-   YIELD_X(3);
+   EXPECT_TRUE(m_Sems[0].Wait());
 
-   // Wake the first worker.
-   // The first worker invokes the self-referential Join(), then wakes the remaining workers.
-   // Some worker encounters the self-referential Destroy().
-   EXPECT_TRUE(m_Sems[1].Post(1));
+   // Wake all workers.
+   // The AfterAutoLock callback Post()'s up m_Sems[3] upon entering Drain() calls.
+   EXPECT_TRUE(m_Sems[2].Reset(0));
+   EXPECT_TRUE(m_Sems[1].Post(w));
+
+   // When m_Sems[3] becomes unlocked, the Join() is allowed to progress.
+   // The AfterAutoLock callback Post()'s m_Sems[2] upon entering Join().
+   // When m_Sems[2] becomes unlocked, the Destroy() is allowed to progress.
 
    m_pThrs[0]->Join();
    EXPECT_EQ(2, m_Scratch[0]);
 
    YIELD_WHILE(CurrentThreads() > 0);
+   EXPECT_EQ(1, x);
 }
 
 // ::testing::Range(begin, end [, step])

@@ -474,19 +474,40 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0086)
    // will be in the Running state again. While draining, requests to add new work
    // items are denied. (Running -> Draining) (Draining -> Running)
 
+   class aal0086AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0086AfterThreadGroupAutoLock(OSAL_ThreadGroup_vp_uint_0 *pFixture,
+                                      btInt                       Count) :
+         m_pFixture(pFixture),
+         m_Count(Count)
+      {}
+
+      virtual void OnDrain()
+      {
+         // Upon entering Drain(), wake all worker threads.
+         m_pFixture->m_Sems[1].Post(m_Count);
+      }
+
+   protected:
+      OSAL_ThreadGroup_vp_uint_0 *m_pFixture;
+      btInt                       m_Count;
+   };
+
    STAGE_WORKERS(GetParam());
+
+   aal0086AfterThreadGroupAutoLock AfterAutoLock(this, w);
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    // All workers are dispatching and are currently blocked or will block on m_Sems[1].
 
    // Add a few more work items. They will hang out in the queue.
    AAL::btInt x = 0;
 
-   EXPECT_TRUE(Add( new SleepThenPostD(100, m_Sems[1], w-1) ));
-
-   for ( i = 0 ; i < 49 ; ++i ) {
+   for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i % 5 ) {
          EXPECT_TRUE(Add( new AddNopToThreadGroupD(g, 1, false) ));
-      } else if ( 48 == i ) {
+      } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
          EXPECT_TRUE(Add( new YieldD() ));
@@ -495,12 +516,8 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0086)
 
    EXPECT_EQ(50, g->GetNumWorkItems());
 
-   // Unblock one worker. That worker will sleep briefly, giving us a chance to call Drain.
-   // We will go to sleep on Drain() below. When the first worker wakes, he will wake the rest of
-   // the workers.
-   EXPECT_TRUE(m_Sems[1].Post(1));
+   // The AfterAutoLock callback wakes all workers upon entering the Drain() below.
 
-   // Wait for the Drain to complete.
    EXPECT_TRUE(g->Drain());
 
    EXPECT_EQ(1, x);
@@ -714,6 +731,26 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0092)
    // Nesting of OSLThreadGroup::Drain() calls is supported. Only the final Drain() call
    // may transition the state back to Running. (Draining -> Draining)
 
+   class aal0092AfterThreadGroupAutoLock : public ::AAL::Testing::EmptyAfterThreadGroupAutoLock
+   {
+   public:
+      aal0092AfterThreadGroupAutoLock(OSAL_ThreadGroup_vp_uint_0 *pFixture,
+                                      btInt                       Count) :
+         m_pFixture(pFixture),
+         m_Count(Count)
+      {}
+
+      virtual void OnDrain()
+      {
+         // Upon entering Drain(), wake all worker threads.
+         m_pFixture->m_Sems[1].Post(m_Count);
+      }
+
+   protected:
+      OSAL_ThreadGroup_vp_uint_0 *m_pFixture;
+      btInt                       m_Count;
+   };
+
    ASSERT_EQ(0, CurrentThreads());
 
    const AAL::btInt ThrCount = sizeof(m_pThrs) / sizeof(m_pThrs[0]);
@@ -744,6 +781,9 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0092)
 
    AAL::btInt w = (AAL::btInt)m_MinThreads;
 
+   aal0092AfterThreadGroupAutoLock AfterAutoLock(this, w);
+   g->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
+
    ASSERT_EQ(ThrCount + w, (AAL::btInt)CurrentThreads());
 
    // m_Sems[0] - count up sem, Post()'ed by each worker thread.
@@ -759,8 +799,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0092)
 
    // All of the thread group workers are in dispatch and will block on m_Sems[1].
    // Adding more work to the thread group will back up in the queue.
-
-   EXPECT_TRUE(Add( new SleepThenPostD(100, m_Sems[1], w-1) ));
 
    const AAL::btInt ItemsToAdd = 250;
 
@@ -822,11 +860,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0092)
       ++t;
    }
 
-   EXPECT_LE(ItemsToAdd + 1, g->GetNumWorkItems());
+   EXPECT_LE(ItemsToAdd, g->GetNumWorkItems());
 
-   // Wake one worker. He will consume the first item and wake the rest of the workers,
-   // which will in turn randomly wake the Thr0's as the queue drains.
-   EXPECT_TRUE(m_Sems[1].Post(1));
+   // The AfterAutoLock callback wakes all worker threads upon entering the Drain() below.
+   // Worker threads will randomly wake the Thr0's as the queue drains.
 
    EXPECT_TRUE(g->Drain());
    EXPECT_EQ(0, g->GetNumWorkItems());
