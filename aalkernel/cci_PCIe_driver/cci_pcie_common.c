@@ -439,6 +439,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
    // Initialize object
    kosal_list_init(&cci_dev_list_head(pcci_aaldev));
    kosal_mutex_init(cci_dev_psem(pcci_aaldev));
+   kosal_mutex_init(cci_dev_pr_sem(pcci_aaldev));
 
    return pcci_aaldev;
 }
