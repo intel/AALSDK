@@ -156,12 +156,12 @@ struct cci_aal_device   *
 
    // Make it an Port by setting the type field and giving a pointer to the
    //  Port device object of the CCIP board device
-   cci_dev_type(pcci_aaldev)  = cci_dev_Port;
-   cci_dev_pport(pcci_aaldev) = pportdev;
-   cci_dev_pfme(pcci_aaldev)  = ccip_port_dev_fme(pportdev);
+   cci_aaldev_type(pcci_aaldev)  = cci_dev_Port;
+   cci_aaldev_pport(pcci_aaldev) = pportdev;
+   cci_aaldev_pfme(pcci_aaldev)  = ccip_port_dev_fme(pportdev);
 
    // Save the PCI device handle
-   cci_dev_pci_dev(pcci_aaldev) = ccip_dev_to_pci_dev( ccip_port_to_ccidev(pportdev) );
+   cci_aaldev_pci_dev(pcci_aaldev) = ccip_dev_to_pci_dev( ccip_port_to_ccidev(pportdev) );
 
 
    // Setup the AAL device's ID. This is the collection of attributes
@@ -185,14 +185,14 @@ struct cci_aal_device   *
    aaldevid_pipguid(*paalid)             = CCIP_PORT_PIPIID;
    aaldevid_vendorid(*paalid)            = AAL_vendINTC;
 
-   cci_dev_phys_afu_mmio(pcci_aaldev)    = ccip_port_phys_mmio(pportdev);
-   cci_dev_kvp_afu_mmio(pcci_aaldev)     = ccip_port_kvp_mmio(pportdev);
-   cci_dev_len_afu_mmio(pcci_aaldev)     = ccip_port_mmio_len(pportdev);
+   cci_aaldev_phys_afu_mmio(pcci_aaldev)    = ccip_port_phys_mmio(pportdev);
+   cci_aaldev_kvp_afu_mmio(pcci_aaldev)     = ccip_port_kvp_mmio(pportdev);
+   cci_aaldev_len_afu_mmio(pcci_aaldev)     = ccip_port_mmio_len(pportdev);
 
 
    // Set the interface permissions
    // Enable MMIO-R
-   cci_dev_set_allow_map_mmior_space(pcci_aaldev);
+   cci_aaldev_set_allow_map_mmior_space(pcci_aaldev);
 
 
    // Create the AAL device and attach it to the CCI device object
@@ -209,19 +209,19 @@ struct cci_aal_device   *
 
    // Set the config space mapping permissions
    cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
-   if( cci_dev_allow_map_csr_read_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_csr_read_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRWRITE;
    }
 
-   if( cci_dev_allow_map_csr_write_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_csr_write_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRREAD;
    }
 
-   if( cci_dev_allow_map_mmior_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_mmior_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
    }
 
-   if( cci_dev_allow_map_umsg_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_umsg_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_UMSG;
    }
 
@@ -319,7 +319,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
          struct aalui_WSMEvent WSID;
 
-         if ( !cci_dev_allow_map_mmior_space(pdev) ) {
+         if ( !cci_aaldev_allow_map_mmior_space(pdev) ) {
             PERR("Failed ccipdrv_getMMIOR map Permission\n");
             PERR("Direct API access not permitted on this device\n");
             Message->m_errcode = uid_errnumPermission;
@@ -351,13 +351,13 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                    wsidp,
                    preq->ahmreq.u.wksp.m_wsid);
 
-         PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_afu_mmio(pdev), (int)cci_dev_len_afu_mmio(pdev));
+         PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_aaldev_phys_afu_mmio(pdev), (int)cci_aaldev_len_afu_mmio(pdev));
 
          // Set up the return payload
          WSID.evtID           = uid_wseventMMIOMap;
          WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
-         WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
-         WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
+         WSID.wsParms.physptr = cci_aaldev_phys_afu_mmio(pdev);
+         WSID.wsParms.size    = cci_aaldev_len_afu_mmio(pdev);
 
          // Make this atomic. Check the original response buffer size for room
          if(respBufSize >= sizeof(struct aalui_WSMEvent)){
@@ -383,7 +383,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          PVERBOSE("Getting feature ID %u\n",(unsigned int)featurenum);
 
-          if( true != get_port_feature(cci_dev_pport(pdev),featurenum, &pFeature, &pvFeature)){
+          if( true != get_port_feature(cci_aaldev_pport(pdev),featurenum, &pFeature, &pvFeature)){
             Message->m_errcode = uid_errnumBadParameter;
             PTRACEOUT;
             return 0;
@@ -401,8 +401,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          WSID.evtID           = uid_wseventMMIOMap;
          WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
-         WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
-         WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
+         WSID.wsParms.physptr = cci_aaldev_phys_afu_mmio(pdev);
+         WSID.wsParms.size    = cci_aaldev_len_afu_mmio(pdev);
 
          // Make this atomic. Check the orignal response buffer size for room
          if(respBufSize >= sizeof(struct aalui_WSMEvent)){

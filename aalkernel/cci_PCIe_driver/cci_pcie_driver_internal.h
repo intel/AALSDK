@@ -121,7 +121,7 @@ struct cci_aal_device {
 #define CCI_DEV_FLAG_ALLOW_MAP_UMSG_SPACE      0x00000040
 
    struct aal_device         *m_aaldev;         // AAL Device from which this is derived
-   struct pci_dev            *m_pcidev;         // Linux pci_dev pointer (or NULL if manual)
+   kosal_pci_dev            *m_pcidev;         // Linux pci_dev pointer (or NULL if manual)
 
    btUnsignedInt              m_flags;
 
@@ -169,75 +169,75 @@ struct cci_aal_device {
 #define pci_dev_to_cci_dev(ptr)              kosal_container_of(ptr, struct cci_aal_device. m_pcidev )
 #define aaldev_to_cci_aal_device(ptr)        aaldev_to_any(struct cci_aal_device, ptr)
 
-#define cci_dev_pfme(pdev)                  ( pdev->m_pfme )
-#define cci_dev_pport(pdev)                 ( pdev->m_pport )
-#define cci_dev_pafu(pdev)                  ( pdev->m_pafu )
+#define cci_aaldev_pfme(pdev)                  ( pdev->m_pfme )
+#define cci_aaldev_pport(pdev)                 ( pdev->m_pport )
+#define cci_aaldev_pafu(pdev)                  ( pdev->m_pafu )
 
-#define cci_dev_pci_dev(pdev)               ((pdev)->m_pcidev)
-   #define cci_dev_pci_dev_is_enabled(pdev)  ((pdev)->m_flags & CCI_DEV_FLAG_PCI_DEV_ENABLED)
-   #define cci_dev_pci_dev_set_enabled(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_PCI_DEV_ENABLED)
-   #define cci_dev_pci_dev_clr_enabled(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_PCI_DEV_ENABLED)
+#define cci_aaldev_pci_dev(pdev)               ((pdev)->m_pcidev)
+   #define cci_aaldev_pci_dev_is_enabled(pdev)  ((pdev)->m_flags & CCI_DEV_FLAG_PCI_DEV_ENABLED)
+   #define cci_aaldev_pci_dev_set_enabled(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_PCI_DEV_ENABLED)
+   #define cci_aaldev_pci_dev_clr_enabled(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_PCI_DEV_ENABLED)
 
-   #define cci_dev_pci_dev_is_region_requested(pdev)  ((pdev)->m_flags & CCI_DEV_FLAG_PCI_REGION_REQUESTED)
-   #define cci_dev_pci_dev_set_region_requested(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_PCI_REGION_REQUESTED)
-   #define cci_dev_pci_dev_clr_region_requested(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_PCI_REGION_REQUESTED)
+   #define cci_aaldev_pci_dev_is_region_requested(pdev)  ((pdev)->m_flags & CCI_DEV_FLAG_PCI_REGION_REQUESTED)
+   #define cci_aaldev_pci_dev_set_region_requested(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_PCI_REGION_REQUESTED)
+   #define cci_aaldev_pci_dev_clr_region_requested(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_PCI_REGION_REQUESTED)
 
-   #define cci_dev_allow_map_csr_read_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_CSR_READ_SPACE)
-   #define cci_dev_set_allow_map_csr_read_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_CSR_READ_SPACE)
-   #define cci_dev_clr_allow_map_csr_read_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_CSR_READ_SPACE)
+   #define cci_aaldev_allow_map_csr_read_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_CSR_READ_SPACE)
+   #define cci_aaldev_set_allow_map_csr_read_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_CSR_READ_SPACE)
+   #define cci_aaldev_clr_allow_map_csr_read_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_CSR_READ_SPACE)
 
-   #define cci_dev_allow_map_csr_write_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_CSR_WRITE_SPACE)
-   #define cci_dev_set_allow_map_csr_write_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_CSR_WRITE_SPACE)
-   #define cci_dev_clr_allow_map_csr_write_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_CSR_WRITE_SPACE)
+   #define cci_aaldev_allow_map_csr_write_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_CSR_WRITE_SPACE)
+   #define cci_aaldev_set_allow_map_csr_write_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_CSR_WRITE_SPACE)
+   #define cci_aaldev_clr_allow_map_csr_write_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_CSR_WRITE_SPACE)
 
-   #define cci_dev_allow_map_csr_space(pdev) ( cci_dev_allow_map_csr_read_space(pdev) || cci_dev_allow_map_csr_write_space(pdev) )
+   #define cci_aaldev_allow_map_csr_space(pdev) ( cci_aaldev_allow_map_csr_read_space(pdev) || cci_aaldev_allow_map_csr_write_space(pdev) )
 
-   #define cci_dev_allow_map_mmior_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
-   #define cci_dev_set_allow_map_mmior_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
-   #define cci_dev_clr_allow_map_mmior_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
+   #define cci_aaldev_allow_map_mmior_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
+   #define cci_aaldev_set_allow_map_mmior_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
+   #define cci_aaldev_clr_allow_map_mmior_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
 
-   #define cci_dev_allow_map_umsg_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
-   #define cci_dev_set_allow_map_umsg_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
-   #define cci_dev_clr_allow_map_umsg_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
+   #define cci_aaldev_allow_map_umsg_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
+   #define cci_aaldev_set_allow_map_umsg_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
+   #define cci_aaldev_clr_allow_map_umsg_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
 
-   #define cci_dev_is_simulated(pdev)  ((pdev)->m_flags & CCI_DEV_FLAG_SIMULATED_DEV)
-   #define cci_dev_set_simulated(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_SIMULATED_DEV)
-   #define cci_dev_clr_simulated(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_SIMULATED_DEV)
+   #define cci_aaldev_is_simulated(pdev)  ((pdev)->m_flags & CCI_DEV_FLAG_SIMULATED_DEV)
+   #define cci_aaldev_set_simulated(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_SIMULATED_DEV)
+   #define cci_aaldev_clr_simulated(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_SIMULATED_DEV)
 
-#define cci_dev_type(pdev)                  ((pdev)->m_devtype)
+#define cci_aaldev_type(pdev)                  ((pdev)->m_devtype)
 
-#define cci_dev_board_type(pdev)            ((pdev)->m_boardtype)
+#define cci_aaldev_board_type(pdev)            ((pdev)->m_boardtype)
 
 #define cci_set_simulated(pdev)             ((pdev)->m_simulated = 1)
 #define cci_clr_simulated(pdev)             ((pdev)->m_simulated = 0)
 #define cci_is_simulated(pdev)             ((pdev)->m_simulated == 1)
 
-#define cci_dev_protocol(pdev)              ((pdev)->m_protocolID)
+#define cci_aaldev_protocol(pdev)              ((pdev)->m_protocolID)
 
-#define cci_dev_phys_afu_mmio(pdev)         ((pdev)->m_phys_afu_mmio)
-#define cci_dev_kvp_afu_mmio(pdev)          ((pdev)->m_kvp_afu_mmio)
-#define cci_dev_len_afu_mmio(pdev)          ((pdev)->m_len_afu_mmio)
+#define cci_aaldev_phys_afu_mmio(pdev)         ((pdev)->m_phys_afu_mmio)
+#define cci_aaldev_kvp_afu_mmio(pdev)          ((pdev)->m_kvp_afu_mmio)
+#define cci_aaldev_len_afu_mmio(pdev)          ((pdev)->m_len_afu_mmio)
 
-#define cci_dev_phys_afu_umsg(pdev)         ((pdev)->m_phys_afu_umsg)
-#define cci_dev_kvp_afu_umsg(pdev)          ((pdev)->m_kvp_afu_umsg)
-#define cci_dev_len_afu_umsg(pdev)          ((pdev)->m_len_afu_umsg)
+#define cci_aaldev_phys_afu_umsg(pdev)         ((pdev)->m_phys_afu_umsg)
+#define cci_aaldev_kvp_afu_umsg(pdev)          ((pdev)->m_kvp_afu_umsg)
+#define cci_aaldev_len_afu_umsg(pdev)          ((pdev)->m_len_afu_umsg)
 
 
-#define cci_dev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
+#define cci_aaldev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
 #define cci_aaldev_to_aaldev(pdev)          ( (pdev)->m_aaldev )
 
 
-#define cci_dev_list_head(pdev)             ((pdev)->m_list)
+#define cci_aaldev_list_head(pdev)             ((pdev)->m_list)
 #define cci_list_to_cci_aal_device(plist)    kosal_list_entry(plist, struct cci_aal_device, m_list)
 
-#define cci_dev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
-#define cci_dev_psem(pdev)                  (&(pdev)->m_sem)
+#define cci_aaldev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
+#define cci_aaldev_psem(pdev)                  (&(pdev)->m_sem)
 
 
-#define cci_dev_workq_deactivate(pdev)                ((pdev)->m_workq_deactivate )
-#define cci_dev_workq_prcconfigure(pdev)              ((pdev)->m_workq_prconifg )
-#define cci_dev_workq_revokeafu(pdev)                 ((pdev)->m_workq_revokeafu )
-#define cci_dev_workq_revokesigtap(pdev)              ((pdev)->m_workq_revokesigtap )
+#define cci_aaldev_workq_deactivate(pdev)                ((pdev)->m_workq_deactivate )
+#define cci_aaldev_workq_prcconfigure(pdev)              ((pdev)->m_workq_prconifg )
+#define cci_aaldev_workq_revokeafu(pdev)                 ((pdev)->m_workq_revokeafu )
+#define cci_aaldev_workq_revokesigtap(pdev)              ((pdev)->m_workq_revokesigtap )
 
 ///============================================================================
 /// Name: ccip_device
@@ -260,7 +260,7 @@ struct ccip_device
 
    struct fme_device         *m_pfme_dev;       // FME Device
 
-   struct pci_dev            *m_pcidev;         // Linux pci_dev pointer
+   kosal_pci_dev            *m_pcidev;         // Linux pci_dev pointer
 
    btUnsignedInt              m_flags;
 
@@ -294,7 +294,7 @@ struct ccip_device
 
 }; // end struct ccip_afu_device
 
-#define pci_dev_to_ccip_dev(ptr)             ccip_container_of(ptr, struct pci_dev, m_pcidev, struct ccip_device)
+#define pci_dev_to_ccip_dev(ptr)             ccip_container_of(ptr, kosal_pci_dev, m_pcidev, struct ccip_device)
 #define ccip_dev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
 #define ccip_dev_to_aaldev(pdev)             ((pdev)->m_aaldev)
 #define ccip_dev_to_fme_dev(pdev)            ((pdev)->m_pfme_dev)
@@ -302,7 +302,7 @@ struct ccip_device
 
 #define ccip_dev_pci_dev(pdev)               ((pdev)->m_pcidev)
 
-#define cci_dev_board_type(pdev)             ((pdev)->m_boardtype)
+#define cci_aaldev_board_type(pdev)             ((pdev)->m_boardtype)
 
 #define ccip_set_simulated(pdev)             ((pdev)->m_simulated = 1)
 #define ccip_clr_simulated(pdev)             ((pdev)->m_simulated = 0)

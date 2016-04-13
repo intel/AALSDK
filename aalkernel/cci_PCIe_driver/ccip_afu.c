@@ -153,12 +153,12 @@ struct cci_aal_device   *
    ASSERT(NULL != pcci_aaldev);
 
    // Make it a User AFU
-   cci_dev_type(pcci_aaldev)     = cci_dev_UAFU;
+   cci_aaldev_type(pcci_aaldev)     = cci_dev_UAFU;
 
    // Record parentage
-   cci_dev_pport(pcci_aaldev)    = pportdev;       // Save its port
-   cci_dev_pfme(pcci_aaldev)     = ccip_port_dev_fme(pportdev);
-   cci_dev_pci_dev(pcci_aaldev) = ccip_dev_to_pci_dev( ccip_port_to_ccidev(pportdev) );
+   cci_aaldev_pport(pcci_aaldev)    = pportdev;       // Save its port
+   cci_aaldev_pfme(pcci_aaldev)     = ccip_port_dev_fme(pportdev);
+   cci_aaldev_pci_dev(pcci_aaldev) = ccip_dev_to_pci_dev( ccip_port_to_ccidev(pportdev) );
 
    // Device Address is the same as the Port. Set the AFU ID information
    // The following attributes describe the interfaces supported by the device
@@ -168,12 +168,12 @@ struct cci_aal_device   *
 
    // Set the interface permissions
    // Enable MMIO-R
-   cci_dev_set_allow_map_mmior_space(pcci_aaldev);
+   cci_aaldev_set_allow_map_mmior_space(pcci_aaldev);
 
    // Setup the MMIO region parameters
-   cci_dev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)pafu_hdr;
-   cci_dev_len_afu_mmio(pcci_aaldev)   = CCI_MMIO_SIZE;
-   cci_dev_phys_afu_mmio(pcci_aaldev)  = phys_mmio;
+   cci_aaldev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)pafu_hdr;
+   cci_aaldev_len_afu_mmio(pcci_aaldev)   = CCI_MMIO_SIZE;
+   cci_aaldev_phys_afu_mmio(pcci_aaldev)  = phys_mmio;
 
    // Create the AAL device and attach it to the CCI device object
    cci_aaldev_to_aaldev(pcci_aaldev)  =  aaldev_create( "CCIPAFU",          // AAL device base name
@@ -189,19 +189,19 @@ struct cci_aal_device   *
 
    // Set the config space mapping permissions
    cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
-   if( cci_dev_allow_map_csr_read_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_csr_read_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRWRITE;
    }
 
-   if( cci_dev_allow_map_csr_write_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_csr_write_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRREAD;
    }
 
-   if( cci_dev_allow_map_mmior_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_mmior_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
    }
 
-   if( cci_dev_allow_map_umsg_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_umsg_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_UMSG;
    }
 
@@ -297,7 +297,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    switch ( pmsg->cmd ) {
 
       AFU_COMMAND_CASE(ccipdrv_afucmdPort_afuQuiesceAndHalt) {
-         if(0 != port_afu_quiesce_and_halt( cci_dev_pport(pdev) )){
+         if(0 != port_afu_quiesce_and_halt( cci_aaldev_pport(pdev) )){
             // Failure event
             PERR("TIMEOUT\n");
             Message->m_errcode = uid_errnumTimeout;
@@ -310,7 +310,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
       } break;
 
       AFU_COMMAND_CASE(ccipdrv_afucmdPort_afuEnable) {
-         if(0 != port_afu_Enable( cci_dev_pport(pdev) )){
+         if(0 != port_afu_Enable( cci_aaldev_pport(pdev) )){
             PERR("TIMEOUT\n");
             // Failure event
             Message->m_errcode = uid_errnumTimeout;
@@ -329,7 +329,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct aalui_WSMEvent WSID;
          struct aal_wsid   *wsidp            = NULL;
 
-         if ( !cci_dev_allow_map_mmior_space(pdev) ) {
+         if ( !cci_aaldev_allow_map_mmior_space(pdev) ) {
             PERR("Failed ccipdrv_getMMIOR map Permission\n");
             PERR("Direct API access not permitted on this device\n");
             Message->m_errcode = uid_errnumPermission;
@@ -361,13 +361,13 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                    wsidp,
                    preq->ahmreq.u.wksp.m_wsid);
 
-         PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_afu_mmio(pdev), (int)cci_dev_len_afu_mmio(pdev));
+         PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_aaldev_phys_afu_mmio(pdev), (int)cci_aaldev_len_afu_mmio(pdev));
 
          // Set up the return payload
          WSID.evtID           = uid_wseventMMIOMap;
          WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
-         WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
-         WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
+         WSID.wsParms.physptr = cci_aaldev_phys_afu_mmio(pdev);
+         WSID.wsParms.size    = cci_aaldev_len_afu_mmio(pdev);
 
          // Make this atomic. Check the original response buffer size for room
          if(respBufSize >= sizeof(struct aalui_WSMEvent)){
@@ -396,7 +396,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          btHANDLE             iova;
 
          PDEBUG( "Allocating %lu bytes \n", (unsigned long)preq->ahmreq.u.wksp.m_size);
-         if( NULL== cci_dev_pci_dev(pdev) ) {
+         if( NULL== cci_aaldev_pci_dev(pdev) ) {
             // Normal flow -- create the needed workspace.
             krnl_virt = (btVirtAddr)kosal_alloc_contiguous_mem_nocache(preq->ahmreq.u.wksp.m_size);
             if (NULL == krnl_virt) {
@@ -437,7 +437,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          // Set up the return payload
          WSID.evtID           = uid_wseventAllocate;
          WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
-         if( NULL== cci_dev_pci_dev(pdev) ) {
+         if( NULL== cci_aaldev_pci_dev(pdev) ) {
             WSID.wsParms.physptr = (btWSID)kosal_virt_to_phys(krnl_virt);
             wsidp->m_dmahandle = (btHANDLE)kosal_virt_to_phys(krnl_virt);
          }else{
@@ -491,7 +491,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          }
 
          krnl_virt = (btVirtAddr)wsidp->m_id;
-         if( NULL== cci_dev_pci_dev(pdev) ) {
+         if( NULL== cci_aaldev_pci_dev(pdev) ) {
             kosal_free_contiguous_mem(krnl_virt, wsidp->m_size);
          }else{
             kosal_free_dma_coherent( ccip_dev_pci_dev(pdev), krnl_virt, wsidp->m_size, wsidp->m_dmahandle);
@@ -513,7 +513,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct ccidrvreq    *presp                         = (struct ccidrvreq *)Message->m_response;
          struct CCIP_PORT_DFL_UMSG            *puMsgvirt    = NULL;
 
-         if(false == get_port_feature( cci_dev_pport(pdev),
+         if(false == get_port_feature( cci_aaldev_pport(pdev),
                                        CCIP_PORT_DFLID_USMG,
                                        NULL,
                                        (btVirtAddr*)&puMsgvirt)){
@@ -536,7 +536,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct ccidrvreq    *preq                          = (struct ccidrvreq *)pmsg->payload;
          struct CCIP_PORT_DFL_UMSG            *puMsgvirt    = NULL;
 
-         if(false == get_port_feature( cci_dev_pport(pdev),
+         if(false == get_port_feature( cci_aaldev_pport(pdev),
                                        CCIP_PORT_DFLID_USMG,
                                        NULL,
                                        (btVirtAddr*)&puMsgvirt)){
@@ -561,7 +561,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          btHANDLE                       iova          = 0;
 
 
-         if(false == get_port_feature( cci_dev_pport(pdev),
+         if(false == get_port_feature( cci_aaldev_pport(pdev),
                                        CCIP_PORT_DFLID_USMG,
                                        NULL,
                                        (btVirtAddr*)&puMsgvirt)){
@@ -578,7 +578,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          PDEBUG( "Allocating %lu bytes for uMSG\n", (unsigned long)size);
 
          // Normal flow -- create the needed workspace.
-         if( NULL== cci_dev_pci_dev(pdev) ) {
+         if( NULL== cci_aaldev_pci_dev(pdev) ) {
             // Normal flow -- create the needed workspace.
             krnl_virt = (btVirtAddr)kosal_alloc_contiguous_mem_nocache(size);
             if (NULL == krnl_virt) {
@@ -618,7 +618,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                   Message->m_errcode = uid_errnumTimeout;
                   puMsgvirt->ccip_umsg_base_address.umsg_base_address = 0;
 
-                  if( NULL== cci_dev_pci_dev(pdev) ) {
+                  if( NULL== cci_aaldev_pci_dev(pdev) ) {
                      kosal_free_contiguous_mem(krnl_virt, size);
                   }else{
                      kosal_free_dma_coherent( ccip_dev_pci_dev(pdev), krnl_virt, size, iova);

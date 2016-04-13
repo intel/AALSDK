@@ -93,7 +93,7 @@ struct fme_device
    struct CCIP_FME_DFL_PR     *m_pPRmgmt;       // FME  PR Management  DFL
 
 
-   struct pci_dev            *m_pcidev;         // Linux pci_dev pointer (or NULL if manual)
+   kosal_pci_dev            *m_pcidev;         // Linux pci_dev pointer (or NULL if manual)
 
    // Private semaphore
    kosal_semaphore            m_sem;

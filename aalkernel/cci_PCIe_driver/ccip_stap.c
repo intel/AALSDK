@@ -149,14 +149,14 @@ struct cci_aal_device   *
    }
 
    // Make it a User AFU
-   cci_dev_type(pcci_aaldev)     = cci_dev_STAP;
+   cci_aaldev_type(pcci_aaldev)     = cci_dev_STAP;
 
    // Record parentage
-   cci_dev_pport(pcci_aaldev)    = pportdev;       // Save its port
-   cci_dev_pfme(pcci_aaldev)     = ccip_port_dev_fme(pportdev);
+   cci_aaldev_pport(pcci_aaldev)    = pportdev;       // Save its port
+   cci_aaldev_pfme(pcci_aaldev)     = ccip_port_dev_fme(pportdev);
 
    // Save the PCI devcie handle
-   cci_dev_pci_dev(pcci_aaldev)  = ccip_dev_to_pci_dev( ccip_port_to_ccidev(pportdev) );
+   cci_aaldev_pci_dev(pcci_aaldev)  = ccip_dev_to_pci_dev( ccip_port_to_ccidev(pportdev) );
 
    // Device Address is the same as the Port. Set the AFU ID information
    // The following attributes describe the interfaces supported by the device
@@ -165,9 +165,9 @@ struct cci_aal_device   *
    aaldevid_pipguid(*paalid)             = CCIP_STAP_PIPIID;
 
    // Setup the MMIO region parameters
-   cci_dev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)ccip_port_stap(pportdev);
-   cci_dev_len_afu_mmio(pcci_aaldev)   = sizeof(struct CCIP_PORT_DFL_STAP);
-   cci_dev_phys_afu_mmio(pcci_aaldev)  = kosal_virt_to_phys((btVirtAddr)ccip_port_stap(pportdev));
+   cci_aaldev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)ccip_port_stap(pportdev);
+   cci_aaldev_len_afu_mmio(pcci_aaldev)   = sizeof(struct CCIP_PORT_DFL_STAP);
+   cci_aaldev_phys_afu_mmio(pcci_aaldev)  = kosal_virt_to_phys((btVirtAddr)ccip_port_stap(pportdev));
 
    // Create the AAL device and attach it to the CCI device object
    cci_aaldev_to_aaldev(pcci_aaldev) =  aaldev_create( "CCIPSTAP",         // AAL device base name
@@ -184,7 +184,7 @@ struct cci_aal_device   *
    // Set the config space mapping permissions
    cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
 
-   if( cci_dev_allow_map_mmior_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_mmior_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
    }
 
@@ -295,12 +295,12 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                    wsidp,
                    preq->ahmreq.u.wksp.m_wsid);
 
-         PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_afu_mmio(pdev), (int)cci_dev_len_afu_mmio(pdev));
+         PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_aaldev_phys_afu_mmio(pdev), (int)cci_aaldev_len_afu_mmio(pdev));
 
          WSID.evtID           = uid_wseventMMIOMap;
          WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
-         WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
-         WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
+         WSID.wsParms.physptr = cci_aaldev_phys_afu_mmio(pdev);
+         WSID.wsParms.size    = cci_aaldev_len_afu_mmio(pdev);
 
          // Make this atomic. Check the original response buffer size for room
          if(respBufSize >= sizeof(struct aalui_WSMEvent)){

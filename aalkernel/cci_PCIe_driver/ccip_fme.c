@@ -185,7 +185,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct aalui_WSMEvent WSID;
          struct aal_wsid   *wsidp            = NULL;
 
-         if ( !cci_dev_allow_map_mmior_space(pdev) ) {
+         if ( !cci_aaldev_allow_map_mmior_space(pdev) ) {
             PERR("Failed ccipdrv_getMMIOR map Permission\n");
             PERR("Direct API access not permitted on this device\n");
             Message->m_errcode = uid_errnumPermission;
@@ -217,13 +217,13 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                    wsidp,
                    preq->ahmreq.u.wksp.m_wsid);
 
-         PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_afu_mmio(pdev), (int)cci_dev_len_afu_mmio(pdev));
+         PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_aaldev_phys_afu_mmio(pdev), (int)cci_aaldev_len_afu_mmio(pdev));
 
          // Set up the return payload
          WSID.evtID           = uid_wseventMMIOMap;
          WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
-         WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
-         WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
+         WSID.wsParms.physptr = cci_aaldev_phys_afu_mmio(pdev);
+         WSID.wsParms.size    = cci_aaldev_len_afu_mmio(pdev);
 
          // Make this atomic. Check the original response buffer size for room
          if(respBufSize >= sizeof(struct aalui_WSMEvent)){
@@ -244,7 +244,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct CCIP_PERF_COUNTERS perfcounter;
          PVERBOSE("ccipdrv_getPerfMonitor \n");
 
-         res= get_perfmon_counters(cci_dev_pfme(pdev) ,&perfcounter);
+         res= get_perfmon_counters(cci_aaldev_pfme(pdev) ,&perfcounter);
          if(0 != res )
          {
             Message->m_errcode = uid_errnumPermission;

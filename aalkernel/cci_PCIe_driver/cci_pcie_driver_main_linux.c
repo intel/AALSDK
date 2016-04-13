@@ -1029,12 +1029,12 @@ cci_remove_device(struct ccip_device *pccipdev)
       ccip_fmedev_kvp_afu_mmio(pccipdev) = NULL;
    }
 
-   if( cci_dev_pci_dev_is_enabled(pccipdev) ) {
+   if( cci_aaldev_pci_dev_is_enabled(pccipdev) ) {
       if(!ccip_is_simulated(pccipdev)){
          PVERBOSE("Disabling PCIe device\n");
-         pci_disable_device(cci_dev_pci_dev(pccipdev));
+         pci_disable_device(cci_aaldev_pci_dev(pccipdev));
       }
-      cci_dev_pci_dev_clr_enabled(pccipdev);
+      cci_aaldev_pci_dev_clr_enabled(pccipdev);
    }
 
    // Destroy the device

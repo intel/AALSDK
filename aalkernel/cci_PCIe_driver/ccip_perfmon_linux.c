@@ -193,7 +193,7 @@ DEVICE_ATTR(perfmon_bin_0,0444, perf_monitor_attrib_show_bin,NULL);
 /// @param[in] pfme_dev - fme device pointer
 /// @return    error code
 ///============================================================================
-bt32bitInt create_perfmonitor(struct pci_dev* ppcidev,
+bt32bitInt create_perfmonitor(kosal_pci_dev* ppcidev,
                               struct fme_device* pfme_dev)
 {
    int res =0;
@@ -225,7 +225,7 @@ ERR:
 /// @param[in] ppcidev  pci device pointer.
 /// @return    error code
 ///============================================================================
-bt32bitInt remove_perfmonitor(struct pci_dev* ppcidev)
+bt32bitInt remove_perfmonitor(kosal_pci_dev* ppcidev)
 {
    int res =0;
 

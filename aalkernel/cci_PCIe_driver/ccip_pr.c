@@ -190,7 +190,7 @@ int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
                                                               struct cci_aal_device,
                                                               task_handler );
 #endif
-   struct fme_device *pfme_dev = cci_dev_pfme(pdev);
+   struct fme_device *pfme_dev = cci_aaldev_pfme(pdev);
    struct CCIP_FME_DFL_PR     *pr_dev = ccip_fme_pr(pfme_dev);
    bt32bitCSR csr = 0;
    btBool bPR_Ready = 0;
@@ -609,7 +609,7 @@ void program_afu_callback(struct kosal_work_object * pwork)
       return ;
    }
 
-   pfme_dev = cci_dev_pfme(ppr_program_ctx->m_pPR_dev);
+   pfme_dev = cci_aaldev_pfme(ppr_program_ctx->m_pPR_dev);
    pr_dev   = ccip_fme_pr(pfme_dev);
 
    kptr = ppr_program_ctx->m_kbufferptr;
@@ -956,7 +956,7 @@ btBool  reconfigure_activateAFU(struct port_device  *pportdev,struct cci_aal_dev
        }
 
        // Add the device to the CCI Board device's device list
-       kosal_list_add( &cci_dev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
+       kosal_list_add( &cci_aaldev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
 
     } // End if(~0ULL == pafu_hdr->ccip_dfh.csr){
 
@@ -1177,7 +1177,7 @@ void afu_revoke_callback(struct kosal_work_object *pwork)
       ppr_program_ctx->m_afuRevokeCount ++;
 
       KOSAL_INIT_WORK(&(ppr_program_ctx->m_workobject),afu_revoke_callback);
-      kosal_queue_delayed_work(cci_dev_workq_revokeafu(ppr_program_ctx->m_pPR_dev),
+      kosal_queue_delayed_work(cci_aaldev_workq_revokeafu(ppr_program_ctx->m_pPR_dev),
                                &(ppr_program_ctx->m_workobject),
                                PR_WQ_REVOKE_TIMEOUT);
 
@@ -1250,7 +1250,7 @@ void afu_release_siganltap(void* pr_context)
       // starts Reconfigure timer worker thread if Reconfigure timeout is more then 0 seconds
       KOSAL_INIT_WORK(&(ppr_program_ctx->m_workobject),afu_release_timeout_callback);
 
-      kosal_queue_delayed_work(cci_dev_workq_deactivate(ppr_program_ctx->m_pPR_dev),
+      kosal_queue_delayed_work(cci_aaldev_workq_deactivate(ppr_program_ctx->m_pPR_dev),
                               &(ppr_program_ctx->m_workobject),
                                ppr_program_ctx->m_timeElapsed);
 
@@ -1300,7 +1300,7 @@ void sigtap_revoke_callback(struct kosal_work_object *pwork)
       ppr_program_ctx->m_sigtapRevokeCount ++ ;
       KOSAL_INIT_WORK(&(ppr_program_ctx->m_workobject),sigtap_revoke_callback);
 
-      kosal_queue_delayed_work(cci_dev_workq_revokesigtap(ppr_program_ctx->m_pPR_dev),
+      kosal_queue_delayed_work(cci_aaldev_workq_revokesigtap(ppr_program_ctx->m_pPR_dev),
                               &(ppr_program_ctx->m_workobject),
                               PR_WQ_REVOKE_TIMEOUT);
    } else {
@@ -1381,7 +1381,7 @@ void afu_release_timeout_callback(struct kosal_work_object *pwork)
       }
 
       KOSAL_INIT_WORK(&(ppr_program_ctx->m_workobject),afu_release_timeout_callback);
-      kosal_queue_delayed_work(cci_dev_workq_deactivate(ppr_program_ctx->m_pPR_dev),
+      kosal_queue_delayed_work(cci_aaldev_workq_deactivate(ppr_program_ctx->m_pPR_dev),
                                &(ppr_program_ctx->m_workobject),
                                callbacktimeout);
 
@@ -1439,12 +1439,12 @@ struct cci_aal_device   *
    }
 
    // Make it a User AFU
-   cci_dev_type(pcci_aaldev) = cci_dev_PR;
+   cci_aaldev_type(pcci_aaldev) = cci_dev_PR;
 
    // Record parentage
-   cci_dev_pport(pcci_aaldev)    = pportdev;       // Save its port
-   cci_dev_pfme(pcci_aaldev)     = ccip_port_dev_fme(pportdev);
-   cci_dev_pci_dev(pcci_aaldev)  = ccip_dev_to_pci_dev( ccip_port_to_ccidev(pportdev) );
+   cci_aaldev_pport(pcci_aaldev)    = pportdev;       // Save its port
+   cci_aaldev_pfme(pcci_aaldev)     = ccip_port_dev_fme(pportdev);
+   cci_aaldev_pci_dev(pcci_aaldev)  = ccip_dev_to_pci_dev( ccip_port_to_ccidev(pportdev) );
 
    // Device Address is the same as the Port. Set the AFU ID information
    // The following attributes describe the interfaces supported by the device
@@ -1453,9 +1453,9 @@ struct cci_aal_device   *
    aaldevid_pipguid(*paalid)             = CCIP_PR_PIPIID;
 
    // Setup the MMIO region parameters
-   cci_dev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)ccip_port_pr(pportdev);
-   cci_dev_len_afu_mmio(pcci_aaldev)   = sizeof(struct CCIP_PORT_DFL_PR);
-   cci_dev_phys_afu_mmio(pcci_aaldev)  = kosal_virt_to_phys((btVirtAddr)ccip_port_pr(pportdev));
+   cci_aaldev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)ccip_port_pr(pportdev);
+   cci_aaldev_len_afu_mmio(pcci_aaldev)   = sizeof(struct CCIP_PORT_DFL_PR);
+   cci_aaldev_phys_afu_mmio(pcci_aaldev)  = kosal_virt_to_phys((btVirtAddr)ccip_port_pr(pportdev));
 
    // Create the AAL device and attach it to the CCI device object
    cci_aaldev_to_aaldev(pcci_aaldev) =  aaldev_create( "CCIPPR",           // AAL device base name
@@ -1470,10 +1470,10 @@ struct cci_aal_device   *
    //
 
    // Initialize the worker thread
-   cci_dev_workq_deactivate( pcci_aaldev )        = kosal_create_workqueue( "ReconfTimeOut", cci_aaldev_to_aaldev( pcci_aaldev ) );
-   cci_dev_workq_prcconfigure( pcci_aaldev )      = kosal_create_workqueue( "PRreconfiguration", cci_aaldev_to_aaldev( pcci_aaldev ) );
-   cci_dev_workq_revokeafu( pcci_aaldev )         = kosal_create_workqueue( "RevokeAFU", cci_aaldev_to_aaldev( pcci_aaldev ) );
-   cci_dev_workq_revokesigtap( pcci_aaldev )      = kosal_create_workqueue( "RevokeSigtap", cci_aaldev_to_aaldev( pcci_aaldev ) );
+   cci_aaldev_workq_deactivate( pcci_aaldev )        = kosal_create_workqueue( "ReconfTimeOut", cci_aaldev_to_aaldev( pcci_aaldev ) );
+   cci_aaldev_workq_prcconfigure( pcci_aaldev )      = kosal_create_workqueue( "PRreconfiguration", cci_aaldev_to_aaldev( pcci_aaldev ) );
+   cci_aaldev_workq_revokeafu( pcci_aaldev )         = kosal_create_workqueue( "RevokeAFU", cci_aaldev_to_aaldev( pcci_aaldev ) );
+   cci_aaldev_workq_revokesigtap( pcci_aaldev )      = kosal_create_workqueue( "RevokeSigtap", cci_aaldev_to_aaldev( pcci_aaldev ) );
 
    // Set how many owners are allowed access to this device simultaneously
    cci_aaldev_to_aaldev(pcci_aaldev)->m_maxowners = 1;
@@ -1481,7 +1481,7 @@ struct cci_aal_device   *
    // Set the config space mapping permissions
    cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
 
-   if( cci_dev_allow_map_mmior_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_mmior_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
    }
 
@@ -1587,7 +1587,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          PDEBUG("reconfAction=%lld\n",reconfAction);
 
          // Port for this AAL PR object
-         pportdev = cci_dev_pport(pdev);
+         pportdev = cci_aaldev_pport(pdev);
 
          // Find the AFU device associated with this port
          // Make sure device is not in use. If it is notify user and start time out timer.
@@ -1710,7 +1710,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             // starts Reconfigure timer worker thread if Reconfigure timeout is more then 0 seconds
             KOSAL_INIT_WORK(&(ppr_program_ctx->m_workobject),afu_release_timeout_callback);
 
-            kosal_queue_delayed_work( cci_dev_workq_deactivate(pdev),
+            kosal_queue_delayed_work( cci_aaldev_workq_deactivate(pdev),
                                    &(ppr_program_ctx->m_workobject),
                                    ppr_program_ctx->m_timeElapsed);
 
@@ -1737,7 +1737,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
       AFU_COMMAND_CASE(ccipdrv_activateAFU) {
 
          // Port for this AAL PR object
-         struct port_device  *pportdev                         = cci_dev_pport(pdev);
+         struct port_device  *pportdev                         = cci_aaldev_pport(pdev);
          struct ccipdrv_event_afu_response_event *pafuws_evt   = NULL;
          // Find the AFU device associated with this port
          if(NULL != ccip_port_uafu_dev(pportdev)){
@@ -1813,7 +1813,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          PDEBUG("reconfTimeout=%lld\n",reconfTimeout);
          PDEBUG("reconfAction=%lld\n" ,reconfAction);
 
-         pportdev = cci_dev_pport(pdev);
+         pportdev = cci_aaldev_pport(pdev);
 
          // Case 1 - if bitstream buffer is null or buffer length is zero.
          // sends bad parameter error event .
@@ -1906,7 +1906,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             sigtap_revoke_sendevent((void*)ppr_program_ctx);
             KOSAL_INIT_WORK(&(ppr_program_ctx->m_workobject),sigtap_revoke_callback);
 
-            kosal_queue_delayed_work( cci_dev_workq_revokesigtap(pdev),
+            kosal_queue_delayed_work( cci_aaldev_workq_revokesigtap(pdev),
                                      &(ppr_program_ctx->m_workobject),
                                      AFU_RES_RELEASE_TIMEOUT);
 
@@ -1925,7 +1925,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
             KOSAL_INIT_WORK(&(ppr_program_ctx->m_workobject),program_afu_callback);
 
-            kosal_queue_delayed_work(cci_dev_workq_prcconfigure(pdev),
+            kosal_queue_delayed_work(cci_aaldev_workq_prcconfigure(pdev),
                                      &(ppr_program_ctx->m_workobject),
                                      PR_WQ_TIMEOUT);
 
@@ -1953,7 +1953,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
             KOSAL_INIT_WORK(&(ppr_program_ctx->m_workobject),program_afu_callback);
 
-            kosal_queue_delayed_work(cci_dev_workq_prcconfigure(pdev),
+            kosal_queue_delayed_work(cci_aaldev_workq_prcconfigure(pdev),
                                     &(ppr_program_ctx->m_workobject),
                                     PR_WQ_TIMEOUT);
             return 0;
@@ -1995,7 +1995,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             // starts Reconfigure timer worker thread if Reconfigure timeout is more then 0 seconds
             KOSAL_INIT_WORK(&(ppr_program_ctx->m_workobject),afu_release_timeout_callback);
 
-            kosal_queue_delayed_work(cci_dev_workq_deactivate(pdev),
+            kosal_queue_delayed_work(cci_aaldev_workq_deactivate(pdev),
                                   &(ppr_program_ctx->m_workobject),
                                   ppr_program_ctx->m_timeElapsed);
 
@@ -2026,7 +2026,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct aalui_WSMEvent WSID;
          struct aal_wsid   *wsidp            = NULL;
 
-         if ( !cci_dev_allow_map_mmior_space(pdev) ) {
+         if ( !cci_aaldev_allow_map_mmior_space(pdev) ) {
             PERR("Failed ccipdrv_getMMIOR map Permission\n");
             PERR("Direct API access not permitted on this device\n");
             Message->m_errcode = uid_errnumPermission;
@@ -2058,13 +2058,13 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                    wsidp,
                    preq->ahmreq.u.wksp.m_wsid);
 
-         PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_afu_mmio(pdev), (int)cci_dev_len_afu_mmio(pdev));
+         PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_aaldev_phys_afu_mmio(pdev), (int)cci_aaldev_len_afu_mmio(pdev));
 
          // Set up the return payload
          WSID.evtID           = uid_wseventMMIOMap;
          WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
-         WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
-         WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
+         WSID.wsParms.physptr = cci_aaldev_phys_afu_mmio(pdev);
+         WSID.wsParms.size    = cci_aaldev_len_afu_mmio(pdev);
 
          // Make this atomic. Check the original response buffer size for room
          if(respBufSize >= sizeof(struct aalui_WSMEvent)){

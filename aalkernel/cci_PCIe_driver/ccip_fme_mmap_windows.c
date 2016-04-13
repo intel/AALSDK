@@ -137,18 +137,18 @@ cci_mmap(struct aaldev_ownerSession *pownerSess,
 
       // Verify that we can fulfill the request - we set flags at create time.
       if( WSID_CSRMAP_WRITEAREA == wsidp->m_id ) {
-         ASSERT( cci_dev_allow_map_csr_write_space( pdev ) );
+         ASSERT( cci_aaldev_allow_map_csr_write_space( pdev ) );
 
-         if( !cci_dev_allow_map_csr_write_space( pdev ) ) {
+         if( !cci_aaldev_allow_map_csr_write_space( pdev ) ) {
             PERR( "Denying request to map CSR Write space for device 0x%p.\n", pdev );
             goto ERROR;
          }
       }
 
       if( WSID_CSRMAP_READAREA == wsidp->m_id ) {
-         ASSERT( cci_dev_allow_map_csr_read_space( pdev ) );
+         ASSERT( cci_aaldev_allow_map_csr_read_space( pdev ) );
 
-         if( !cci_dev_allow_map_csr_read_space( pdev ) ) {
+         if( !cci_aaldev_allow_map_csr_read_space( pdev ) ) {
             PERR( "Denying request to map CSR Read space for device 0x%p.\n", pdev );
             goto ERROR;
          }
@@ -157,25 +157,25 @@ cci_mmap(struct aaldev_ownerSession *pownerSess,
       switch( wsidp->m_id ) {
          case WSID_MAP_MMIOR:
          {
-            if( !cci_dev_allow_map_mmior_space( pdev ) ) {
-               PERR( "Denying request to map cci_dev_allow_map_mmior_space Read space for device 0x%p.\n", pdev );
+            if( !cci_aaldev_allow_map_mmior_space( pdev ) ) {
+               PERR( "Denying request to map cci_aaldev_allow_map_mmior_space Read space for device 0x%p.\n", pdev );
                goto ERROR;
             }
 
-            ptr = (void *)cci_dev_kvp_afu_mmio( pdev );
-            size = cci_dev_len_afu_mmio( pdev );
+            ptr = (void *)cci_aaldev_kvp_afu_mmio( pdev );
+            size = cci_aaldev_len_afu_mmio( pdev );
          }
          break;
 
          case WSID_MAP_UMSG:
          {
-            if( !cci_dev_allow_map_umsg_space( pdev ) ) {
-               PERR( "Denying request to map cci_dev_allow_map_umsg_space Read space for device 0x%p.\n", pdev );
+            if( !cci_aaldev_allow_map_umsg_space( pdev ) ) {
+               PERR( "Denying request to map cci_aaldev_allow_map_umsg_space Read space for device 0x%p.\n", pdev );
                goto ERROR;
             }
 
-            ptr = (void *)cci_dev_phys_afu_umsg( pdev );
-            size = cci_dev_len_afu_umsg( pdev );
+            ptr = (void *)cci_aaldev_phys_afu_umsg( pdev );
+            size = cci_aaldev_len_afu_umsg( pdev );
          }
          break;
          

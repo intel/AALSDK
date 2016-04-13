@@ -154,7 +154,7 @@ BindSession(struct aaldev_ownerSession *pownerSess)
    pownerSess->m_PIPHandle = pSess;
 
    // Save the session in the device
-   cci_dev_to_PIPsessionp(pdev) = pSess;
+   cci_aaldev_to_PIPsessionp(pdev) = pSess;
 
    return 1;
 }
@@ -193,12 +193,12 @@ int UnbindSession(struct aaldev_ownerSession *pownerSess)
    PDEBUG("UnBinding UI Session\n");
 
    // Stop all on-going processing
-   kosal_sem_get_krnl( cci_dev_psem(pdev) );
+   kosal_sem_get_krnl( cci_aaldev_psem(pdev) );
 
    // If this is a uAFU make sure it is stopped
-   if( cci_dev_UAFU ==  cci_dev_type(pdev) ){
+   if( cci_dev_UAFU ==  cci_aaldev_type(pdev) ){
       PDEBUG("Quiescing User AFU\n");
-      if(true == get_port_feature( cci_dev_pport(pdev),
+      if(true == get_port_feature( cci_aaldev_pport(pdev),
                                    CCIP_PORT_DFLID_USMG,
                                    NULL,
                                    (btVirtAddr*)&puMsgvirt)){
@@ -222,11 +222,11 @@ int UnbindSession(struct aaldev_ownerSession *pownerSess)
       }
 
       // Reset the AFU
-      port_afu_quiesce_and_halt( cci_dev_pport(pdev));
-      port_afu_Enable( cci_dev_pport(pdev));
+      port_afu_quiesce_and_halt( cci_aaldev_pport(pdev));
+      port_afu_Enable( cci_aaldev_pport(pdev));
    }
 
-   kosal_sem_put( cci_dev_psem(pdev) );
+   kosal_sem_put( cci_aaldev_psem(pdev) );
 
    // Free all allocated workspaces not yet freed
    cci_flush_all_wsids(pSess);
@@ -267,7 +267,7 @@ cci_flush_all_wsids(struct cci_PIPsession *psess)
 
    kosal_list_for_each_entry_safe( wsidp, tmp, &pownerSess->m_wshead, m_list, struct aal_wsid) {
       if( WSM_TYPE_VIRTUAL == wsidp->m_type){
-         if( NULL== cci_dev_pci_dev(pdev) ) {
+         if( NULL== cci_aaldev_pci_dev(pdev) ) {
             kosal_free_contiguous_mem((btAny)wsidp->m_id, wsidp->m_size);
          }else{
             kosal_free_dma_coherent( ccip_dev_pci_dev(pdev), (btAny)wsidp->m_id, wsidp->m_size, wsidp->m_dmahandle);
