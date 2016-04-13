@@ -29,6 +29,7 @@
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtSleep.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtThread.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtThreadGroup.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtThreadGroupSR.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtTimer.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\main.cpp" />
   </ItemGroup>
