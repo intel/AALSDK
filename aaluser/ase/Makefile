@@ -326,23 +326,46 @@ ifdef GLS_SIM
   endif
 endif
 # Check if some RTL simulator exists
-ifndef VCS_HOME
-  ifndef MTI_HOME
-	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
-	exit 1
-  endif
+ifeq ($(SIMULATOR), VCS)
+  ifndef VCS_HOME
 	@echo "**ERROR** : env(VCS_HOME) is not set ! svdpi.h cannot be found !"
 	exit 1
-endif
-# Check if some RTL simulator exists
-ifndef SNPS_COMMAND
-  ifndef MENT_COMMAND
-	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
-	exit 1
   endif
+  ifndef SNPS_COMMAND
 	@echo "**ERROR** : Synopsys commands (vlogan, vcs) not found !"
 	exit 1
+  endif
+else 
+  ifeq ($(SIMULATOR), QUESTA)
+    ifndef MTI_HOME
+	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
+	exit 1
+    endif	
+    ifndef MENT_COMMAND
+	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
+	exit 1
+    endif
+  else
+     @echo "**ERROR**: Unknown RTL simulator tool in use --- this is unsupported !"
+  endif
 endif
+# ifndef VCS_HOME
+#   ifndef MTI_HOME
+# 	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
+# 	exit 1
+#   endif
+# 	@echo "**ERROR** : env(VCS_HOME) is not set ! svdpi.h cannot be found !"
+# 	exit 1
+# endif
+# # Check if some RTL simulator exists
+# ifndef SNPS_COMMAND
+#   ifndef MENT_COMMAND
+# 	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
+# 	exit 1
+#   endif
+# 	@echo "**ERROR** : Synopsys commands (vlogan, vcs) not found !"
+# 	exit 1
+# endif
 
 # Print version number
 header:
