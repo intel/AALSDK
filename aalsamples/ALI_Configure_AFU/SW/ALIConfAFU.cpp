@@ -435,6 +435,7 @@ btInt ALIConfAFUApp::run()
    //=============================
    MSG("Running Test");
    if(true == m_bIsOK){
+      #if 0 /* Deactivate no longer needed. RedMine 700 */
       // Deactivate AFU Resource
       m_pALIReconfService->reconfDeactivate(TransactionID(), NamedValueSet());
       m_Sem.Wait();
@@ -442,7 +443,7 @@ btInt ALIConfAFUApp::run()
          ERR("Deactivate failed\n");
          goto done_1;
       }
-
+      #endif
 
       //nvs.Add(AALCONF_FILENAMEKEY,"/home/lab/pr/bitstream.rbf");
       nvs.Add(AALCONF_FILENAMEKEY,configCmdLine.bitstream_file);

@@ -124,9 +124,6 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI)){
       cfg |= (csr_type)NLB_TEST_MODE_RDI;
    }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDO)){
-	  cfg |= (csr_type)NLB_TEST_MODE_RDO;
-   }
 
    // Select the channel.
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0)){
@@ -216,19 +213,6 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
     ReadPerfMonitors();
     SavePerfMonitors();
 
-    cout << endl;
-	if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-			  //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
-	   cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
-			   << Normalized(cmd) << ")'";
-
-	   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-			 		// 01234567890123 01234567890123
-		   cout << "   Rd_Bandwidth   Wr_Bandwidth";
-	   }
-	   cout << endl;
-	}
-
 	if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE)){
 	   char * c = (char *)malloc (MAX_CPU_CACHE_SIZE); //Allocate 100MB of space - TODO Increase Cache size when LLC is increased
 	   int iterator;
@@ -282,7 +266,7 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
 		   absolute = Timer() + Timer(&ts);
 	   }
 	   else{	//In non-cont mode, wait till test completes and then stop the device.
-		   	    // Wait for test completion or timeout
+		   	// Wait for test completion or timeout
 		   while ( 0 == pAFUDSM->test_complete &&
 		         ( MaxPoll >= 0 )) {
 			   MaxPoll -= 1;
@@ -295,34 +279,42 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
 
 	   ReadPerfMonitors();
 
-	   PrintOutput(cmd, (sz / CL(1)));
+	   // Check the device status
+      if ( MaxPoll < 0 ) {
+         cerr << "The maximum timeout for test stop was exceeded." << endl;
+         ++res;
+         break;
+      }
 
+      if ( 0 != pAFUDSM->test_error ) {
+         cerr << "Error bit set in DSM.\n";
+         cout << "DSM Test Error: 0x" << std::hex << pAFUDSM->test_error << endl;
+
+         cout << "Mode error vector: " << endl;
+         for (int i=0; i < 8; i++)
+         {
+           cout << "[" << i << "]: 0x" << pAFUDSM->mode_error[i] << endl;
+         }
+         cout << std::dec << endl;
+
+         ++res;
+         break;
+      }
+
+      //Checking for num_clocks underflow.
+      if(pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead))
+      {
+         cerr << "Number of Clocks underflow.\n";
+         ++res;
+         break;
+      }
+
+	   PrintOutput(cmd, (sz / CL(1)));
 	   SavePerfMonitors();
 
 	   // Increment Cachelines.
 	   sz += CL(mcl);
-
-	   // Check the device status
-	   if ( MaxPoll < 0 ) {
-		  cerr << "The maximum timeout for test stop was exceeded." << endl;
-		  ++res;
-		  break;
-	   }
 	   MaxPoll = StopTimeoutMillis;
-
-	   if ( 0 != pAFUDSM->test_error ) {
-		  cerr << "Error bit set in DSM.\n";
-	      ++res;
-	      break;
-	   }
-
-	   //Checking for num_clocks underflow.
-	   if(pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead))
-	   {
-	      cerr << "Number of Clocks is negative.\n";
-         ++res;
-         break;
-	   }
    }
 
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
@@ -339,36 +331,63 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
 
 void  CNLBRead::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 {
-	nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
-	bt64bitCSR ticks;
-	bt64bitCSR rawticks     = pAFUDSM->num_clocks;
-	bt32bitCSR startpenalty = pAFUDSM->start_overhead;
-	bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
+   nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
+   bt64bitCSR ticks;
+   bt64bitCSR rawticks     = pAFUDSM->num_clocks;
+   bt32bitCSR startpenalty = pAFUDSM->start_overhead;
+   bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
 
-	cout << setw(10) << cls 						 << ' '
-		 << setw(10) << pAFUDSM->num_reads    		 << ' '
-		 << setw(11) << pAFUDSM->num_writes   		 << ' '
-		 << setw(12) << GetPerfMonitor(READ_HIT)     << ' '
-		 << setw(12) << GetPerfMonitor(WRITE_HIT)    << ' '
-		 << setw(13) << GetPerfMonitor(READ_MISS)    << ' '
-		 << setw(13) << GetPerfMonitor(WRITE_MISS)   << ' '
-		 << setw(10) << GetPerfMonitor(EVICTIONS)    << ' ';
+   cout << endl << endl;
+   if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
+           //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
+      cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
+            << Normalized(cmd) << ")'";
 
-	if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
-		ticks = rawticks - startpenalty;
-	}
-	else{
-		ticks = rawticks - (startpenalty + endpenalty);
-	}
-	cout  << setw(16) << ticks;
+      if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
+               // 01234567890123 01234567890123
+         cout << "   Rd_Bandwidth   Wr_Bandwidth";
+      }
+      cout << endl;
+   }
 
-	if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-		double rdbw = 0.0;
-		double wrbw = 0.0;
+   cout << setw(10) << cls                         << ' '
+        << setw(10) << pAFUDSM->num_reads          << ' '
+        << setw(11) << pAFUDSM->num_writes         << ' '
+        << setw(12) << GetPerfMonitor(READ_HIT)    << ' '
+        << setw(12) << GetPerfMonitor(WRITE_HIT)   << ' '
+        << setw(13) << GetPerfMonitor(READ_MISS)   << ' '
+        << setw(13) << GetPerfMonitor(WRITE_MISS)  << ' '
+        << setw(10) << GetPerfMonitor(EVICTIONS)   << ' ';
 
-		cout << "  "
-			 << setw(14) << CalcReadBandwidth(cmd) << ' '
-			 << setw(14) << CalcWriteBandwidth(cmd);
-	}
-	cout << endl;
+   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
+      ticks = rawticks - startpenalty;
+   }
+   else{
+      ticks = rawticks - (startpenalty + endpenalty);
+   }
+   cout  << setw(16) << ticks;
+
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
+       double rdbw = 0.0;
+       double wrbw = 0.0;
+
+       cout << "  "
+            << setw(14) << CalcReadBandwidth(cmd) << ' '
+            << setw(14) << CalcWriteBandwidth(cmd);
+   }
+   cout << endl << endl;
+
+   if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
+               //0123456789012 012345678901 012345678901 012345678901 012345678901 012345678901
+         cout << "VH0_Rd_Count VH0_Wr_Count VH1_Rd_Count VH1_Wr_Count VL0_Rd_Count VL0_Wr_Count " << endl;
+      }
+
+   cout << setw(12) << GetPerfMonitor(PCIE0_READ)     << ' '
+        << setw(12) << GetPerfMonitor(PCIE0_WRITE)    << ' '
+        << setw(12) << GetPerfMonitor(PCIE1_READ)     << ' '
+        << setw(12) << GetPerfMonitor(PCIE1_WRITE)    << ' '
+        << setw(12) << GetPerfMonitor(UPI_READ)       << ' '
+        << setw(12) << GetPerfMonitor(UPI_WRITE)      << ' '
+        << endl << endl;
+
 }
