@@ -393,7 +393,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          btVirtAddr           krnl_virt   = NULL;
          struct aal_wsid     *wsidp       = NULL;
          struct aalui_WSMEvent WSID;
-         btHANDLE             iova;
+         btHANDLE             iova        = NULL;;
 
          PDEBUG( "Allocating %lu bytes \n", (unsigned long)preq->ahmreq.u.wksp.m_size);
          if( NULL== cci_aaldev_pci_dev(pdev) ) {

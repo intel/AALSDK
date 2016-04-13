@@ -1714,7 +1714,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             sigtap_revoke_sendevent((void*)ppr_program_ctx);
             KOSAL_INIT_WORK(&(ppr_program_ctx->m_workobject),sigtap_revoke_callback);
 
-            kosal_queue_delayed_work( cci_dev_workq_revokesigtap(pdev),
+            kosal_queue_delayed_work( cci_aaldev_workq_revokesigtap(pdev),
                                      &(ppr_program_ctx->m_workobject),
                                      AFU_RES_RELEASE_TIMEOUT);
 
