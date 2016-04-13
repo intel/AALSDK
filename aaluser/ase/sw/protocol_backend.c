@@ -110,7 +110,7 @@ void sv2c_config_dex(const char *str)
 
   if ( (sv2c_config_filepath != NULL) && (access(sv2c_config_filepath, F_OK)==0) )
     {
-      printf("SIM-C : +CONFIG %s file was found\n", sv2c_config_filepath);
+      printf("SIM-C : +CONFIG %s file found !\n", sv2c_config_filepath);
     }
   else
     {
@@ -139,7 +139,7 @@ void sv2c_script_dex(const char *str)
   // Check for existance of file
   if ((sv2c_config_filepath != NULL) && (access(sv2c_script_filepath, F_OK)==0))
     {
-      printf("SIM-C : +SCRIPT %s file was found\n", sv2c_script_filepath);
+      printf("SIM-C : +SCRIPT %s file found !\n", sv2c_script_filepath);
     }
   else
     {
@@ -229,7 +229,6 @@ void rd_memline_dex(cci_pkt *pkt )
 
   uint64_t phys_addr;
   uint64_t *rd_target_vaddr = (uint64_t*)NULL;
-  // int ret_fd;
 
   // Get cl_addr, deduce rd_target_vaddr
   phys_addr = (uint64_t)pkt->cl_addr << 6;
@@ -658,21 +657,6 @@ int ase_init()
   ase_pid = getpid();
   printf("SIM-C : PID of simulator is %d\n", ase_pid);
 
-  // Evaluate PWD
-  /* ase_run_path = ase_malloc(ASE_FILEPATH_LEN); */
-  /* ase_run_path = getenv("PWD"); */
-
-/* #ifdef ASE_DEBUG */
-/*   if (ase_run_path == NULL) */
-/*     { */
-/*       BEGIN_RED_FONTCOLOR; */
-/*       printf("SIM-C : getenv(PWD) evaluated NULL -- this is unexpected !\n"); */
-/*       printf("        Needs Debug here\n"); */
-/*       start_simkill_countdown(); */
-/*       END_RED_FONTCOLOR; */
-/*     } */
-/* #endif */
-
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
 
@@ -681,8 +665,6 @@ int ase_init()
 
   printf("SIM-C : Current Directory located at =>\n");
   printf("        %s\n", ase_workdir_path);
-  /* printf("SIM-C : Current Working Directory =>\n"); */
-  /* printf("        %s\n", ase_run_path); */
 
   // Create IPC cleanup setup
   create_ipc_listfile();
@@ -788,22 +770,25 @@ int ase_ready()
   glbl_test_cmplt_cnt = 0;
 
   // Indicate readiness with .ase_ready file
-  ase_ready_filepath = ase_malloc (ASE_FILEPATH_LEN);
-  sprintf(ase_ready_filepath, "%s/%s", ase_workdir_path, ASE_READY_FILENAME);
+  /* ase_ready_filepath = ase_malloc (ASE_FILEPATH_LEN); */
+  /* sprintf(ase_ready_filepath, "%s/%s", ase_workdir_path, ASE_READY_FILENAME); */
 
-  // Write .ase_ready file
-  fp_ase_ready = fopen( ase_ready_filepath, "w");
-  if (fp_ase_ready != NULL) 
-    {
-      fprintf(fp_ase_ready, "%d", ase_pid);
-      fclose(fp_ase_ready);
-    }
-  else
-    {
-      printf("SIM-C : Error creating ready file\n");
-      ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
-    }
+  /* // Write .ase_ready file */
+  /* fp_ase_ready = fopen( ase_ready_filepath, "w"); */
+  /* if (fp_ase_ready != NULL)  */
+  /*   { */
+  /*     fprintf(fp_ase_ready, "%d", ase_pid); */
+  /*     fclose(fp_ase_ready); */
+  /*   } */
+  /* else */
+  /*   { */
+  /*     printf("SIM-C : Error creating ready file\n"); */
+  /*     ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR); */
+  /*   } */
 
+  // Write lock file
+  ase_write_lock_file();
+  
   // Display "Ready for simulation"
   BEGIN_GREEN_FONTCOLOR;
   printf("SIM-C : ** ATTENTION : BEFORE running the software application **\n");
@@ -937,55 +922,6 @@ void start_simkill_countdown()
   simkill();
 
   FUNC_CALL_EXIT;
-}
-
-
-/*
- * Parse strings and remove unnecessary characters
- */
-// Remove spaces
-void remove_spaces(char* in_str)
-{
-  char* i;
-  char* j;
-  i = in_str;
-  j = in_str;
-  while(*j != 0)
-    {
-      *i = *j++;
-      if(*i != ' ')
-	i++;
-    }
-  *i = 0;
-}
-
-
-// Remove tabs
-void remove_tabs(char* in_str)
-{
-  char *i = in_str;
-  char *j = in_str;
-  while(*j != 0)
-    {
-      *i = *j++;
-      if(*i != '\t')
-  	i++;
-    }
-  *i = 0;
-}
-
-// Remove newline
-void remove_newline(char* in_str)
-{
-  char *i = in_str;
-  char *j = in_str;
-  while(*j != 0)
-    {
-      *i = *j++;
-      if(*i != '\n')
-  	i++;
-    }
-  *i = 0;
 }
 
 

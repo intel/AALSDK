@@ -116,7 +116,7 @@
  *
  * *******************************************************************************/
 // SHM memory name length
-#define ASE_SHM_NAME_LEN   40
+#define ASE_FILENAME_LEN   40
 
 // ASE filepath length
 #define ASE_FILEPATH_LEN  256
@@ -136,9 +136,6 @@ char *tstamp_filepath;
 
 // IPC control list
 char *ipclist_filepath;
-
-// Ready filepath
-char *ase_ready_filepath;
 
 // CONFIG,SCRIPT parameter paths received from SV (initial)
 char *sv2c_config_filepath;
@@ -213,7 +210,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
   int index;                      // Tracking id                     | INTERNAL
   int valid;                      // Valid buffer indicator          | INTERNAL
   int metadata;                   // MQ marshalling command          | INTERNAL
-  char memname[ASE_SHM_NAME_LEN]; // Shared memory name              | INTERNAL
+  char memname[ASE_FILENAME_LEN]; // Shared memory name              | INTERNAL
   uint32_t memsize;               // Memory size                     |   APP
   uint64_t vbase;                 // SW virtual address              |   APP
   uint64_t pbase;                 // SIM virtual address             |   SIM
@@ -345,11 +342,12 @@ void ase_buffer_t_to_str(struct buffer_t *, char *);
 void ase_str_to_buffer_t(char *, struct buffer_t *);
 int ase_dump_to_file(struct buffer_t*, char*);
 uint64_t ase_rand64();
-//char* ase_eval_session_directory();
-// void ase_eval_session_directory(char *);
 void ase_eval_session_directory();
 char* ase_malloc (size_t);
 int ase_instance_running();
+void remove_spaces (char*);
+void remove_tabs (char*);
+void remove_newline (char*);
 
 // Message queue operations
 void ipc_init();
@@ -564,6 +562,7 @@ extern void ase_config_dex(struct ase_cfg_t *);
 // DPI-C import(SV to C) calls
 int ase_init();
 int ase_ready();
+void ase_write_lock_file();
 int ase_listener();
 void ase_config_parse(char*);
 
@@ -600,8 +599,18 @@ void update_glbl_dealloc(int);
 /*
  * ASE Ready session control files, for wrapping with autorun script
  */
-FILE *fp_ase_ready; // = (FILE *)NULL;
+// READY file name 
 #define ASE_READY_FILENAME ".ase_ready.pid"
+//   File pointer
+FILE *fp_ase_ready;
+// Ready filepath
+char *ase_ready_filepath;
+
+
+// ASE lock file
+/* FILE *fp_ase_lock; */
+/* #define ASE_LOCK_FILENAME ".ase_lock" */
+/* char *ase_lock_filepath; */
 
 // ASE seed 
 uint64_t ase_addr_seed;
@@ -626,6 +635,9 @@ uint64_t sysmem_phys_hi;
 
 // ASE PID
 int ase_pid;
+
+// ASE hostname
+char *ase_hostname;
 
 // Workspace information log (information dump of 
 FILE *fp_workspace_log; // = (FILE *)NULL;

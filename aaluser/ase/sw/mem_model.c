@@ -299,7 +299,7 @@ void ase_empty_buffer(struct buffer_t *buf)
   buf->valid = ASE_BUFFER_INVALID;
   buf->metadata = 0;
   //  strcpy(buf->memname, "");
-  memset(buf->memname, 0, ASE_SHM_NAME_LEN);
+  memset(buf->memname, 0, ASE_FILENAME_LEN);
   buf->memsize = 0;
   buf->vbase = (uint64_t)NULL;
   buf->pbase = (uint64_t)NULL;

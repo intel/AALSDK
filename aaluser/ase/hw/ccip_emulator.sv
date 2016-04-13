@@ -570,8 +570,10 @@ module ccip_emulator
    // User clock generator
    initial begin : uclk_proc
       begin
-	 `ifdef ASE_DEBUG
-	 $display("  [DEBUG] User clock frequency = %f\n", `UCLK_DURATION);
+         `ifdef ASE_DEBUG
+	 `BEGIN_YELLOW_FONTCOLOR;	 
+	 $display("  [DEBUG]  User clock frequency = %f", `UCLK_DURATION);
+	 `END_YELLOW_FONTCOLOR;	 
 	 `endif
 	 usrClk = 0;
 	 forever begin
