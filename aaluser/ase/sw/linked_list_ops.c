@@ -35,10 +35,11 @@
 
 #include "ase_common.h"
 
-// --------------------------------------------------------------------
-// ll_print_info: Print linked list node info
-// Thu Oct  2 15:50:06 PDT 2014 : Modified for cleanliness
-// --------------------------------------------------------------------
+/*
+ * ll_print_info: Print linked list node info
+ * Thu Oct  2 15:50:06 PDT 2014 : Modified for cleanliness
+ * Prints buffer info
+ */
 void ll_print_info(struct buffer_t *print_ptr)
 {
   FUNC_CALL_ENTRY;

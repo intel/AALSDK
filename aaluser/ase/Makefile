@@ -349,23 +349,7 @@ else
      @echo "**ERROR**: Unknown RTL simulator tool in use --- this is unsupported !"
   endif
 endif
-# ifndef VCS_HOME
-#   ifndef MTI_HOME
-# 	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
-# 	exit 1
-#   endif
-# 	@echo "**ERROR** : env(VCS_HOME) is not set ! svdpi.h cannot be found !"
-# 	exit 1
-# endif
-# # Check if some RTL simulator exists
-# ifndef SNPS_COMMAND
-#   ifndef MENT_COMMAND
-# 	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
-# 	exit 1
-#   endif
-# 	@echo "**ERROR** : Synopsys commands (vlogan, vcs) not found !"
-# 	exit 1
-# endif
+
 
 # Print version number
 header:
@@ -516,8 +500,8 @@ scan-build:
 # Coverage
 coverage:
 	cd $(WORK) ; lcov --base-directory . --directory . --capture --output-file ase_libs.info ; genhtml -o lcov_coverage/ ase_libs.info ; cd -
-#urg -dir $(WORK)/coverage.vdb ; cd -
-	# firefox $(WORK)/urgReport/dashboard.html &
+#	urg -dir $(WORK)/coverage.vdb ; cd -
+#	firefox $(WORK)/urgReport/dashboard.html &
 	firefox ./$(WORK)/lcov_coverage/index.html &
 
 # Valgrind run
