@@ -45,6 +45,8 @@ int glbl_test_cmplt_cnt;
 // Global umsg mode, lookup before issuing UMSG
 int glbl_umsgmode;
 
+// Session status
+int session_empty;
 
 /*
  * Generate scope data
@@ -361,7 +363,8 @@ int ase_listener()
 	      sprintf(tstamp_filepath, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 	      // Print timestamp
 	      printf("SIM-C : Session ID => %s\n", get_timestamp(0) );	  
-
+	      
+	      session_empty = 0;
 	      // Send portctrl_rsp message
 	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
 	    }
@@ -376,7 +379,7 @@ int ase_listener()
 	      // Update regression counter
 	      glbl_test_cmplt_cnt = glbl_test_cmplt_cnt + 1;
 	      // Mode specific exit behaviour
-	      if (cfg->ase_mode == ASE_MODE_DAEMON_NO_SIMKILL)
+	      if ((cfg->ase_mode == ASE_MODE_DAEMON_NO_SIMKILL) && (session_empty == 0))
 		{
 		  printf("SIM-C : ASE running in daemon mode (see ase.cfg)\n");
 		  printf("        Reseting buffers ... Simulator RUNNING\n");
@@ -384,6 +387,7 @@ int ase_listener()
 		  BEGIN_GREEN_FONTCOLOR;
 		  printf("SIM-C : Ready to run next test\n");	  
 		  END_GREEN_FONTCOLOR;
+		  session_empty = 1;
 		  buffer_msg_inject(0, TEST_SEPARATOR);
 		}
 	      else if (cfg->ase_mode == ASE_MODE_DAEMON_SIMKILL)
