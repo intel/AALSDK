@@ -233,7 +233,11 @@ btBool ServiceBase::_init(IBase               *pclientBase,
       return false;
    }
    // Register Service Revoke interface.
-   if ( EObjOK != SetInterface(iidServiceRevoke, dynamic_cast<IServiceRevoke *>(this)) ) {
+   //   If there is already a revoke interface registered then we are a singlton
+   //   and have already been down this path.
+
+   EOBJECT ret = SetInterface(iidServiceRevoke, dynamic_cast<IServiceRevoke *>(this));
+   if ( (EObjOK != ret) && (EObjDuplicateName != ret) ) {
        m_bIsOK = false;
        return false;
     }
