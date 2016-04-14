@@ -134,6 +134,9 @@ char *ase_run_path;
 #define TSTAMP_FILENAME ".ase_timestamp"
 char *tstamp_filepath;
 
+// READY file name 
+#define ASE_READY_FILENAME ".ase_ready.pid"
+
 // IPC control list
 char *ipclist_filepath;
 
@@ -381,6 +384,7 @@ extern "C" {
   // Session control
   void session_init();
   void session_deinit();
+  void ase_read_lock_file(const char*);
   // Shared memory alloc/dealloc operations
   void allocate_buffer(struct buffer_t *, uint64_t *);
   void deallocate_buffer(struct buffer_t *);
@@ -500,6 +504,8 @@ void *bt_buffer[4096];
 char **bt_strings;
 
 
+
+
 /* *********************************************************************
  *
  * SIMULATION-ONLY (SIM_SIDE) declarations
@@ -599,8 +605,6 @@ void update_glbl_dealloc(int);
 /*
  * ASE Ready session control files, for wrapping with autorun script
  */
-// READY file name 
-#define ASE_READY_FILENAME ".ase_ready.pid"
 //   File pointer
 FILE *fp_ase_ready;
 // Ready filepath

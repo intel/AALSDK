@@ -373,10 +373,11 @@ void ase_write_lock_file()
 /*
  * ase_read_lock_file() : Read an existing lock file and decipher contents
  */
-void ase_read_lock_file(const char *ready_filepath)
+void ase_read_lock_file(const char *workdir)
 {
   // Allocate string
   FILE *fp_exp_ready;
+  char *exp_ready_filepath;
   char *line;
   size_t len;
 
@@ -384,13 +385,13 @@ void ase_read_lock_file(const char *ready_filepath)
   char *value;
 
   char *readback_workdir_path;
-  char readback_hostname[ASE_FILENAME_LEN];
-  char curr_hostname[ASE_FILENAME_LEN];
+  char *readback_hostname;
+  char *curr_hostname;
   int readback_pid;
   int ret_err;
 
   // Null check and exit
-  if (ready_filepath == NULL)
+  if (workdir == NULL)
     {
       BEGIN_RED_FONTCOLOR;
     #ifdef SIM_SIDE
@@ -398,7 +399,7 @@ void ase_read_lock_file(const char *ready_filepath)
     #else
       printf("  [APP]  ");
     #endif
-      printf("ase_read_lock_file : Input ASE ready file path is NULL \n");
+      printf("ase_read_lock_file : Input ASE workdir path is NULL \n");
       END_RED_FONTCOLOR;
     #ifdef SIM_SIDE
       start_simkill_countdown();
@@ -407,11 +408,15 @@ void ase_read_lock_file(const char *ready_filepath)
     #endif
     }
 
+  // Calculate ready file path
+  exp_ready_filepath = ase_malloc(ASE_FILEPATH_LEN);
+  sprintf(exp_ready_filepath, "%s/%s", workdir, ASE_READY_FILENAME);
+
   // Check if file exists
-  if (access(ready_filepath, F_OK) != -1)  // File exists
+  if (access(exp_ready_filepath, F_OK) != -1)  // File exists
     {
       // Open file
-      fp_exp_ready = fopen(ready_filepath, "r");
+      fp_exp_ready = fopen(exp_ready_filepath, "r");
       if (fp_exp_ready == NULL)
 	{
 	  BEGIN_RED_FONTCOLOR;
@@ -429,9 +434,13 @@ void ase_read_lock_file(const char *ready_filepath)
         #endif
 	}
 
-      // Read file contents
+      // Malloc/memset
       line = ase_malloc(256);
-      while(getline(&line, &len, fp_exp_ready) != -1)
+      readback_hostname = ase_malloc(ASE_FILENAME_LEN);
+      curr_hostname = ase_malloc(ASE_FILENAME_LEN);
+
+      // Read file line by line
+      while( getline(&line, &len, fp_exp_ready) != -1)
 	{
 	  // LHS/RHS tokenizing
 	  parameter = strtok(line, "=");
@@ -439,8 +448,10 @@ void ase_read_lock_file(const char *ready_filepath)
 	  // Trim contents
 	  remove_spaces (parameter);
 	  remove_tabs (parameter);
+	  remove_newline (parameter);
 	  remove_spaces (value);
 	  remove_tabs (value);
+	  remove_newline(value);
 	  // Line 1/2/3 check
 	  if ( strcmp (parameter, "pid") == 0)
 	    {
@@ -473,8 +484,8 @@ void ase_read_lock_file(const char *ready_filepath)
 	  // Check here
 	  if (strcmp(curr_hostname, readback_hostname) != 0)
 	    {
-	      BEGIN_RED_FONTCOLOR;
-	      printf("** ERROR ** => Hostname specified in ASE lock file is different as current hostname\n");
+	      BEGIN_RED_FONTCOLOR;	      
+	      printf("** ERROR ** => Hostname specified in ASE lock file (%s) is different as current hostname (%s)\n", readback_hostname, curr_hostname);
 	      printf("** ERROR ** => Ensure that ASE Simulator and AAL application are running on the same host !\n");	      
 	      END_RED_FONTCOLOR;
 	    #ifdef SIM_SIDE

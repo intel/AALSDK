@@ -253,27 +253,27 @@ void session_init()
   // Initialize MMIO port lock
   if ( pthread_mutex_init(&mmio_port_lock, NULL) != 0)
     {
-      BEGIN_YELLOW_FONTCOLOR;
+      BEGIN_RED_FONTCOLOR;
       printf("  [APP]  MMIO Lock initialization failed, EXIT\n");
-      END_YELLOW_FONTCOLOR;
+      END_RED_FONTCOLOR;
       exit (EXIT_FAILURE);
     }
 
   // MMIO TID counter lock
   if ( pthread_mutex_init(&mmio_tid_lock, NULL) != 0)
     {
-      BEGIN_YELLOW_FONTCOLOR;
+      BEGIN_RED_FONTCOLOR;
       printf("  [APP]  MMIO TID Lock initialization failed, EXIT\n");
-      END_YELLOW_FONTCOLOR;
+      END_RED_FONTCOLOR;
       exit (EXIT_FAILURE);
     }
 
   // Initialize UMsg port lock
   if ( pthread_mutex_init(&umsg_port_lock, NULL) != 0)
     {
-      BEGIN_YELLOW_FONTCOLOR;
+      BEGIN_RED_FONTCOLOR;
       printf("  [APP]  UMsg Port Lock initialization failed, EXIT\n");
-      END_YELLOW_FONTCOLOR;
+      END_RED_FONTCOLOR;
       exit (EXIT_FAILURE);
     }
 
@@ -282,6 +282,9 @@ void session_init()
   printf("  [APP]  ASE Session Directory located at =>\n");
   printf("         %s\n", ase_workdir_path);
   END_YELLOW_FONTCOLOR;
+
+  // Read ready file and check sanity
+  ase_read_lock_file(ase_workdir_path);
 
   // Register kill signals
   signal(SIGTERM, send_simkill);
