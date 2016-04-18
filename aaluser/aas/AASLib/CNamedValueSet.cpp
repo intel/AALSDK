@@ -2969,7 +2969,7 @@ std::istream & operator >> (std::istream &s, INamedValueSet &rnvs)
 //                 the buffer as a c-string will result in a non-NULL-terminated
 //                 string. It is unlikely that you will want to do that.
 //=============================================================================
-void BufFromString(void *pBuf, std::string const &s)
+AASLIB_API void BufFromString(void *pBuf, std::string const &s)
 {
    size_t len = s.length();
 

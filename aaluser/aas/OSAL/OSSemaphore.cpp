@@ -68,6 +68,19 @@
 # include <sys/time.h>
 #endif // OS
 
+#ifdef DBG_CSEMAPHORE
+# include "dbg_csemaphore.cpp"
+#else
+# define AutoLock0(__x) AutoLock(__x)
+# define AutoLock1(__x) AutoLock(__x)
+# define AutoLock2(__x) AutoLock(__x)
+# define AutoLock3(__x) AutoLock(__x)
+# define AutoLock4(__x) AutoLock(__x)
+# define AutoLock5(__x) AutoLock(__x)
+# define AutoLock6(__x) AutoLock(__x)
+# define AutoLock7(__x) AutoLock(__x)
+#endif // DBG_CSEMAPHORE
+
 BEGIN_NAMESPACE(AAL)
 
 //=============================================================================
@@ -77,11 +90,11 @@ BEGIN_NAMESPACE(AAL)
 // Comments:
 //=============================================================================
 CSemaphore::CSemaphore() :
-   m_bInitialized(false),
+   m_State(0),
    m_MaxCount(0),
    m_CurCount(0),
    m_WaitCount(0),
-   m_bUnBlocking(false)
+   m_UserDefined(NULL)
 #if   defined( __AAL_WINDOWS__ )
    , m_hEvent(NULL)
 #endif // OS
@@ -112,17 +125,19 @@ CSemaphore::~CSemaphore()
 btBool CSemaphore::Create(btInt nInitialCount, btUnsignedInt nMaxCount)
 {
    // We always protect m_bInitialized with our internal lock (CriticalSection).
-   AutoLock(this);
+   AutoLock0(this);
 
-   if ( m_bInitialized ) {
+   if ( flag_is_set(m_State, SEM_ST_OK) ) {
+      // Already initialized.
       return false;
    }
 
 #if   defined( __AAL_WINDOWS__ )
-   m_hEvent = CreateSemaphore(NULL,                           // no inheritance
-                              0,                              // nonsignaled
-                              1,                              // max of 1
-                              NULL);
+   m_hEvent = CreateEvent(NULL,  // Default security attributes, no inheritance.
+                          true,  // Manual reset event.
+                          false, // Not signaled.
+                          NULL); // No name.
+
    if ( NULL == m_hEvent ) {
       return false;
    }
@@ -131,8 +146,6 @@ btBool CSemaphore::Create(btInt nInitialCount, btUnsignedInt nMaxCount)
       return false;
    }
 #endif // OS
-
-   m_bUnBlocking = false;
 
    if ( nInitialCount < 0 ) {
       // count up sem
@@ -163,7 +176,10 @@ btBool CSemaphore::Create(btInt nInitialCount, btUnsignedInt nMaxCount)
 
    }
 
-   return m_bInitialized = true;
+   flag_clrf(m_State, SEM_ST_UNBLOCKED);
+   flag_setf(m_State, SEM_ST_OK);
+
+   return true;
 }
 //=============================================================================
 // Name: Destroy 
@@ -177,9 +193,11 @@ btBool CSemaphore::Destroy()
 {
    btBool res = false;
 
-   AutoLock(this);
+   AutoLock1(this);
 
-   if ( m_bInitialized ) {
+   if ( flag_is_set(m_State, SEM_ST_OK) ) {
+
+      UnblockAll();
 
 #if   defined( __AAL_WINDOWS__ )
       res = ( 0 != CloseHandle(m_hEvent) );
@@ -190,7 +208,8 @@ btBool CSemaphore::Destroy()
       }
 #endif // OS
 
-      m_bInitialized = false;
+      // No longer initialized.
+      flag_clrf(m_State, SEM_ST_OK);
    }
 
    return res;
@@ -207,9 +226,10 @@ btBool CSemaphore::Destroy()
 //=============================================================================
 btBool CSemaphore::Reset(btInt nCount)
 {
-   AutoLock(this);
+   AutoLock2(this);
 
-   if ( !m_bInitialized ) {
+   if ( flag_is_clr(m_State, SEM_ST_OK) ) {
+      // Not initialized.
       return false;
    }
 
@@ -222,24 +242,8 @@ btBool CSemaphore::Reset(btInt nCount)
       return false;
    }
 
-#if defined( __AAL_WINDOWS__ )
-   // The Windows semaphore count is managed internal to the Semaphore API's.
-   // We have to interact with the API's here to affect the counter..
-   long prevcount = 0;
-   BOOL ret = ReleaseSemaphore(m_hEvent, 1, &prevcount);
-   if( (false != ret) && (prevcount) ){
-       // Clear the semaphore count
-      while ( prevcount-- ) {
-         WaitForSingleObject(m_hEvent, 0);
-      }
-   }
-   // Set to the new value
-   if(0 != nCount) {
-      ReleaseSemaphore(m_hEvent, nCount, &prevcount);
-   }
-#endif // OS
-
    m_CurCount = nCount;
+
    // Increment the current count if it is negative
    //  so that nInitialCount Posts will make count == 1 (not zero)
    //  So if CurCount is -2 making it -1 will result in 2 Posts() bring the semaphore to
@@ -247,6 +251,13 @@ btBool CSemaphore::Reset(btInt nCount)
    if ( m_CurCount < 0 ) {
       m_CurCount++;
    }
+
+#ifdef __AAL_WINDOWS__
+   if ( m_CurCount <= 0 ) {
+      // Cause new waiters to block. (manual reset event)
+      ResetEvent(m_hEvent);
+   }
+#endif // __AAL_WINDOWS__
 
    return true;
 }
@@ -262,9 +273,10 @@ btBool CSemaphore::Reset(btInt nCount)
 //=============================================================================
 btBool CSemaphore::CurrCounts(btInt &rcurrCount, btInt &rmaxCount)
 {
-   AutoLock(this);
+   AutoLock3(this);
 
-   if ( !m_bInitialized ) {
+   if ( flag_is_clr(m_State, SEM_ST_OK) ) {
+      // Not initialized.
       return false;
    }
 
@@ -285,9 +297,10 @@ btBool CSemaphore::CurrCounts(btInt &rcurrCount, btInt &rmaxCount)
 //=============================================================================
 btBool CSemaphore::Post(btInt nCount)
 {
-   AutoLock(this);
+   AutoLock4(this);
 
-   if ( !m_bInitialized ) {
+   if ( flag_is_clr(m_State, SEM_ST_OK) ) {
+      // Not initialized.
       return false;
    }
 
@@ -301,7 +314,7 @@ btBool CSemaphore::Post(btInt nCount)
 
    if ( m_CurCount > 0 ) {
 
-#if defined( __AAL_LINUX__ )
+#if   defined( __AAL_LINUX__ )
 
       if ( 1 == m_CurCount ) {
          // Release 1 (or at least minimal) thread
@@ -311,9 +324,11 @@ btBool CSemaphore::Post(btInt nCount)
          pthread_cond_broadcast(&m_condition);      // Signal
       }
 
-#elif  defined( __AAL_WINDOWS__ )
-      // Release m_CurCount waiting threads
-      ReleaseSemaphore(m_hEvent, m_CurCount, NULL );   // Release  (signal)
+#elif defined( __AAL_WINDOWS__ )
+
+      // Resume waiters from sleep.
+      SetEvent(m_hEvent);
+
 #endif
 
    }
@@ -335,28 +350,37 @@ btBool CSemaphore::Post(btInt nCount)
 //=============================================================================
 btBool CSemaphore::UnblockAll()
 {
-   AutoLock(this);
+   AutoLock5(this);
 
-   if ( !m_bInitialized ) {
+   if ( flag_is_clr(m_State, SEM_ST_OK) ) {
+      // Not initialized.
       return false;
    }
 
    btBool res = true;
 
-   m_bUnBlocking = true;
-   m_CurCount    = 0;
+   flag_setf(m_State, SEM_ST_UNBLOCKED);
+   m_CurCount = 0;
 
    // Check to see if there is anyone waiting
    if ( m_WaitCount > 0 ) {
-#if defined( __AAL_LINUX__ )
+
+#if   defined( __AAL_LINUX__ )
+
       // Wake ALL threads
       if ( 0 != pthread_cond_broadcast(&m_condition) ) {      // Signal
          res = false;
       }
-#elif  defined( __AAL_WINDOWS__ )
-      // Release All waiting threads
-      ReleaseSemaphore(m_hEvent, m_WaitCount, NULL );   // Release  (signal)
+
+#elif defined( __AAL_WINDOWS__ )
+
+      // Resume waiters from sleep.
+      if ( !SetEvent(m_hEvent) ) {
+         res = false;
+      }
+
 #endif
+
    }
 
    return res;
@@ -374,18 +398,19 @@ btBool CSemaphore::UnblockAll()
 //=============================================================================
 btUnsignedInt CSemaphore::NumWaiters()
 {
+   AutoLock(this);
    return m_WaitCount;
 }
 
 
 #define ADD_WAITER() ++m_WaitCount
-#define DEL_WAITER()                            \
-do                                              \
-{                                               \
-   --m_WaitCount;                               \
-   if ( (m_WaitCount == 0) && m_bUnBlocking ) { \
-      m_bUnBlocking = false;                    \
-   }                                            \
+#define DEL_WAITER()                        \
+do                                          \
+{                                           \
+   --m_WaitCount;                           \
+   if ( 0 == m_WaitCount ) {                \
+      flag_clrf(m_State, SEM_ST_UNBLOCKED); \
+   }                                        \
 }while(0)
 
 
@@ -406,7 +431,8 @@ btBool CSemaphore::Wait(btTime Timeout) // milliseconds
 
    {
       AutoLock(this);
-      if ( !m_bInitialized ) {
+      if ( flag_is_clr(m_State, SEM_ST_OK) ) {
+         // Not initialized.
          return false;
       }
    }
@@ -426,7 +452,7 @@ btBool CSemaphore::Wait(btTime Timeout) // milliseconds
    ts.tv_nsec = ts.tv_nsec % 1000000000;
 
    // Protect the predicate check (locks the mutex used in wait)
-   AutoLock(this);
+   AutoLock7(this);
 
    ADD_WAITER();
 
@@ -439,15 +465,22 @@ btBool CSemaphore::Wait(btTime Timeout) // milliseconds
       // * when the caller wakes, the lock is guaranteed to be held (locked) by the caller.
       // In this way, the examination and mutation of the counter predicate occur atomically.
 
-      if ( ETIMEDOUT == __LockObj.PthreadCondTimedWait(&m_condition, &ts) ) {
+      int WaitRes = EINVAL;
+
+      {
+         _PThreadCondTimedWait wait(this, &m_condition, &ts);
+         WaitRes = wait.Result();
+      }
+
+      if ( ETIMEDOUT == WaitRes ) {
          DEL_WAITER();
          // Unlock the mutex locked by the return from wait
          return false;
       }
 
-      // If we being unblocked then immediately return false and do not
-      //   modify predicate.
-      if ( m_bUnBlocking ) {
+      // If we are being unblocked, then immediately return false and do not
+      //   modify the predicate.
+      if ( flag_is_set(m_State, SEM_ST_UNBLOCKED) ) {
          DEL_WAITER();
          return false;
       }
@@ -474,9 +507,10 @@ btBool CSemaphore::Wait(btTime Timeout) // milliseconds
 //=============================================================================
 btBool CSemaphore::Wait()
 {
-   AutoLock(this);
+   AutoLock6(this);
 
-   if ( !m_bInitialized ) {
+   if ( flag_is_clr(m_State, SEM_ST_OK) ) {
+      // Not initialized.
       return false;
    }
 
@@ -493,11 +527,13 @@ btBool CSemaphore::Wait()
       // * when the caller wakes, the lock is guaranteed to be held (locked) by the caller.
       // In this way, the examination and mutation of the counter predicate occur atomically.
 
-      __LockObj.PthreadCondWait(&m_condition); // Infinite wait
+      {
+         _PThreadCondWait wait(this, &m_condition); // Infinite wait
+      }
 
-      // If we being unblocked then immediately return false and do not
-      //   modify predicate.
-      if ( m_bUnBlocking ) {
+      // If we are being unblocked, then immediately return false and do not
+      //   modify the predicate.
+      if ( flag_is_set(m_State, SEM_ST_UNBLOCKED) ) {
          DEL_WAITER();
          return false;
       }
@@ -520,61 +556,71 @@ btBool CSemaphore::Wait()
 //=============================================================================
 btBool CSemaphore::Wait(btTime Timeout) // milliseconds
 {
-   DWORD dwWaitResult;
+   DWORD dwWaitResult = WAIT_FAILED;
 
    if ( AAL_INFINITE_WAIT == Timeout ) {
       return Wait();
    }
 
-   AutoLock(this);
+   AutoLock7(this);
 
-   if ( !m_bInitialized ) {
+   if ( flag_is_clr(m_State, SEM_ST_OK) ) {
+      // Not initialized.
       return false;
    }
 
    ADD_WAITER();
 
-   // We don't have easy access to the counter inside the Windows semaphore object, so
-   // we implement our own, redundant, copy.
-   // Because we implement our own counter, we must guard it with a lock. We use the lock
-   // inherited from CriticalSection to do so.
    // We mustn't put the caller to sleep while we hold our internal lock, else we are exposed
-   // to deadlock wrt other threads attempting to query this CSemaphore object.
+   // to deadlock wrt other threads attempting to query this CSemaphore object. This is handled
+   // by the _UnlockedWaitForSingleObject variable and the surrounding scope block, which forces
+   // its destructor to fire in the appropriate place.
 
 WAITLOOP:
    while ( m_CurCount <= 0 ) {
 
-      dwWaitResult = __LockObj.WaitForSingleObject(m_hEvent,        // handle to Semaphore
-                                                   (DWORD)Timeout); // time-out interval
+      {
+         _UnlockedWaitForSingleObject wait(this, m_hEvent, (DWORD)Timeout);
+         dwWaitResult = wait.Result();
+      }
+
+      // If we are being unblocked, then immediately return false and do not
+      //   modify the predicate.
+      if ( flag_is_set(m_State, SEM_ST_UNBLOCKED) ) {
+         DEL_WAITER();
+         return false;
+      }
 
       switch( dwWaitResult ) {
-         case WAIT_OBJECT_0 : break; // semaphore was signaled
+         case WAIT_OBJECT_0 : break; // event was signaled
          default : {
             DEL_WAITER();
             return false;     // timeout or error
          }
       }
 
-      // If we being unblocked then immediately return false and do not
-      //   modify predicate.
-      if ( m_bUnBlocking ) {
-         DEL_WAITER();
-         return false;
-      }
-
    }
-
-   // ASSERT: we are locked.
 
    // We must guard both the check and the update of m_CurCount as the atomic operation.
    // If the check fails, we must wait again (we were preempted, and some other thread got our
    // posted counter before we acquired our internal lock).
+   // This is a fundamental distinction from pthreads, where the mutex is guaranteed to be
+   // locked upon resume from sleep. Not so here.
 
    if ( m_CurCount <= 0 ) {
       goto WAITLOOP;
    }
 
+   // m_CurCount > 0
+
    m_CurCount--;
+
+   DEL_WAITER();
+
+   if ( 0 == m_CurCount ) {
+      // Make subsequent calls to Wait() block on the event. (manual reset event)
+      ResetEvent(m_hEvent);
+   }
 
    return true;
 }
@@ -589,59 +635,84 @@ WAITLOOP:
 //=============================================================================
 btBool CSemaphore::Wait()
 {
-   DWORD dwWaitResult;
+   DWORD dwWaitResult = WAIT_FAILED;
 
-   AutoLock(this);
+   AutoLock6(this);
 
-   if ( !m_bInitialized ) {
+   if ( flag_is_clr(m_State, SEM_ST_OK) ) {
+      // Not initialized.
       return false;
    }
 
    ADD_WAITER();
 
-   // We don't have easy access to the counter inside the Windows semaphore object, so
-   // we implement our own, redundant, copy.
-   // Because we implement our own counter, we must guard it with a lock. We use the lock
-   // inherited from CriticalSection to do so.
    // We mustn't put the caller to sleep while we hold our internal lock, else we are exposed
-   // to deadlock wrt other threads attempting to query this CSemaphore object.
+   // to deadlock wrt other threads attempting to query this CSemaphore object. This is handled
+   // by the _UnlockedWaitForSingleObject variable and the surrounding scope block, which forces
+   // its destructor to fire in the appropriate place.
 
 WAITLOOP:
    while ( m_CurCount <= 0 ) {
 
-      dwWaitResult = __LockObj.WaitForSingleObject(m_hEvent,    // handle to Semaphore
-                                                   INFINITE);   // no time-out interval
+      {
+         _UnlockedWaitForSingleObject wait(this, m_hEvent, INFINITE);
+         dwWaitResult = wait.Result();
+      }
+
+      // If we are being unblocked, then immediately return false and do not
+      //   modify the predicate.
+      if ( flag_is_set(m_State, SEM_ST_UNBLOCKED) ) {
+         DEL_WAITER();
+         return false;
+      }
 
       switch( dwWaitResult ) {
-         case WAIT_OBJECT_0 : break; // semaphore was signaled
+         case WAIT_OBJECT_0 : break; // event was signaled
          default : {
             DEL_WAITER();
             return false;     // error (using INFINITE above)
          }
       }
 
-      // If we being unblocked then immediately return false and do not
-      //   modify predicate.
-      if ( m_bUnBlocking ) {
-         DEL_WAITER();
-         return false;
-      }
    }
 
    // We must guard both the check and the update of m_CurCount as the atomic operation.
    // If the check fails, we must wait again (we were preempted, and some other thread got our
    // posted counter before we acquired our internal lock).
+   // This is a fundamental distinction from pthreads, where the mutex is guaranteed to be
+   // locked upon resume from sleep. Not so here.
 
    if ( m_CurCount <= 0 ) {
       goto WAITLOOP;
    }
 
+   // m_CurCount > 0
+
    m_CurCount--;
+
+   DEL_WAITER();
+
+   if ( 0 == m_CurCount ) {
+      // Make subsequent calls to Wait() block on the event. (manual reset event)
+      ResetEvent(m_hEvent);
+   }
 
    return true;
 }
 
 #endif // OS
+
+void CSemaphore::UserDefined(btObjectType User)
+{
+   AutoLock(this);
+   m_UserDefined = User;
+}
+
+btObjectType CSemaphore::UserDefined() const
+{
+   AutoLock(this);
+   return m_UserDefined;
+}
 
 END_NAMESPACE(AAL)
 

@@ -23,14 +23,11 @@ public:
 
    btUnsigned32bitInt Count() const { return m_Count; }
 
-   btUnsigned32bitInt Seed(btUnsigned32bitInt s);
-
    virtual eBasicTypes BasicType() const { return btNamedValueSet_t; }
 
 protected:
-   btUnsigned32bitInt m_Count;
-   btUnsigned32bitInt m_Seed;
-   btUnsigned32bitInt m_SaveSeed;
+   bt32bitInt          m_Count;
+   RepeatableRandomInt m_RNG;
 
    INamedValueSet *  Zero();
    INamedValueSet *   One();
@@ -815,13 +812,11 @@ void TNVSTester<V, Verifier, GivesValues, GivesNumKeys, GivesStringKeys>::ToFrom
 
    NamedValueSet a0;
 
-   EXPECT_EQ(
 #if NVS_IO_WORKAROUND
-            ENamedValuesEndOfFile
+   EXPECT_EQ(ENamedValuesEndOfFile, a0.FromStr(nvsStr));
 #else
-            ENamedValuesOK
+   EXPECT_EQ(ENamedValuesOK,        a0.FromStr(nvsStr));
 #endif // NVS_IO_WORKAROUND
-            , a0.FromStr( nvsStr ));
 
    n = 99;
    EXPECT_EQ(ENamedValuesOK, a0.GetNumNames(&n));
@@ -869,13 +864,11 @@ void TNVSTester<V, Verifier, GivesValues, GivesNumKeys, GivesStringKeys>::ToFrom
 
    NamedValueSet b0;
 
-   EXPECT_EQ(
 #if NVS_IO_WORKAROUND
-            ENamedValuesEndOfFile
+   EXPECT_EQ(ENamedValuesEndOfFile, b0.FromStr(nvsStr));
 #else
-            ENamedValuesOK
+   EXPECT_EQ(ENamedValuesOK,        b0.FromStr(nvsStr));
 #endif // NVS_IO_WORKAROUND
-            , b0.FromStr( nvsStr ));
 
    n = 99;
    EXPECT_EQ(ENamedValuesOK, b0.GetNumNames(&n));
@@ -923,13 +916,11 @@ void TNVSTester<V, Verifier, GivesValues, GivesNumKeys, GivesStringKeys>::ToFrom
 
    NamedValueSet a0;
 
-   EXPECT_EQ(
 #if NVS_IO_WORKAROUND
-            ENamedValuesEndOfFile
+   EXPECT_EQ(ENamedValuesEndOfFile, a0.FromStr(nvsStr));
 #else
-            ENamedValuesOK
+   EXPECT_EQ(ENamedValuesOK,        a0.FromStr(nvsStr));
 #endif // NVS_IO_WORKAROUND
-            , a0.FromStr( nvsStr ));
 
    n = 99;
    EXPECT_EQ(ENamedValuesOK, a0.GetNumNames(&n));
@@ -977,13 +968,11 @@ void TNVSTester<V, Verifier, GivesValues, GivesNumKeys, GivesStringKeys>::ToFrom
 
    NamedValueSet b0;
 
-   EXPECT_EQ(
 #if NVS_IO_WORKAROUND
-            ENamedValuesEndOfFile
+   EXPECT_EQ(ENamedValuesEndOfFile, b0.FromStr(nvsStr));
 #else
-            ENamedValuesOK
+   EXPECT_EQ(ENamedValuesOK,        b0.FromStr(nvsStr));
 #endif // NVS_IO_WORKAROUND
-            , b0.FromStr( nvsStr ));
 
    n = 99;
    EXPECT_EQ(ENamedValuesOK, b0.GetNumNames(&n));
@@ -1862,13 +1851,11 @@ void TArrayNVSTester<V, Verifier, GivesArrays, GivesNumKeys, GivesStringKeys>::T
 
    NamedValueSet a0;
 
-   EXPECT_EQ(
 #if NVS_IO_WORKAROUND
-            ENamedValuesEndOfFile
+   EXPECT_EQ(ENamedValuesEndOfFile, a0.FromStr(nvsStr));
 #else
-            ENamedValuesOK
+   EXPECT_EQ(ENamedValuesOK,        a0.FromStr(nvsStr));
 #endif // NVS_IO_WORKAROUND
-            , a0.FromStr( nvsStr ));
 
    n = 99;
    EXPECT_EQ(ENamedValuesOK, a0.GetNumNames(&n));
@@ -1916,13 +1903,11 @@ void TArrayNVSTester<V, Verifier, GivesArrays, GivesNumKeys, GivesStringKeys>::T
 
    NamedValueSet a0;
 
-   EXPECT_EQ(
 #if NVS_IO_WORKAROUND
-            ENamedValuesEndOfFile
+   EXPECT_EQ(ENamedValuesEndOfFile, a0.FromStr(nvsStr));
 #else
-            ENamedValuesOK
+   EXPECT_EQ(ENamedValuesOK,        a0.FromStr(nvsStr));
 #endif // NVS_IO_WORKAROUND
-            , a0.FromStr( nvsStr ));
 
    n = 99;
    EXPECT_EQ(ENamedValuesOK, a0.GetNumNames(&n));

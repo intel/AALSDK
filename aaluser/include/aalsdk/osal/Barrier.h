@@ -132,6 +132,15 @@ public:
    ///                 UnblockAll(), or Timeout expired.
    btBool Wait(btTime Timeout);
 
+   /// Associate a User-Defined pointer with this Barrier object.
+   ///
+   /// @param[in]  User  A User-Defined data item, not touched by Barrier.
+   void UserDefined(btObjectType User);
+   /// Retrieve the User-Defined pointer associated with this Barrier object.
+   ///
+   /// @return The User-Defined pointer, or NULL if none was set.
+   btObjectType UserDefined() const;
+
 private:
    btUnsignedInt m_Flags;
 #define BARRIER_FLAG_INIT       0x00000001
@@ -141,10 +150,11 @@ private:
 #define BARRIER_FLAG_DESTROYING 0x00000010
    btUnsignedInt m_UnlockCount;
    btUnsignedInt m_CurCount;
+   btObjectType  m_UserDefined;
 
    // We always reference m_AutoResetManager within the context of the Barrier
    //  locks, so there is no need to be concerned with locking within AutoResetManager.
-   class AutoResetManager
+   class OSAL_API AutoResetManager
    {
    public:
       AutoResetManager(Barrier *pBarrier);
@@ -154,7 +164,7 @@ private:
       void Destroy();
 
       void UnblockAll();
-      void AddWaiter(_AutoLock * );
+      void AddWaiter(CriticalSection * );
       void RemoveWaiter();
 
       btUnsignedInt NumWaiters() const;
@@ -162,7 +172,7 @@ private:
       void AutoResetBegin();
       void AutoResetEnd();
 
-      void WaitForAllWaitersToExit(_AutoLock * );
+      void WaitForAllWaitersToExit(CriticalSection * );
 
    protected:
       Barrier       *m_pBarrier;
@@ -177,8 +187,8 @@ private:
       pthread_cond_t m_Zcondition;
 #endif // OS
 
-      void WaitForAutoResetCompletion(_AutoLock *  );
-      void WaitForAutoResetCompletion(_AutoLock * , btTime );
+      void WaitForAutoResetCompletion(CriticalSection *  );
+      void WaitForAutoResetCompletion(CriticalSection * , btTime );
    };
 
    AutoResetManager   m_AutoResetManager;

@@ -53,7 +53,7 @@
 
 BEGIN_NAMESPACE(AAL)
 
-class IThreadGroup
+class OSAL_API IThreadGroup
 {
 public:
    virtual ~IThreadGroup() {}
@@ -93,6 +93,15 @@ public:
 
    virtual btBool                Destroy(btTime )         = 0;
 
+   /// Associate a User-Defined pointer with this IThreadGroup.
+   ///
+   /// @param[in]  User  A User-Defined data item, not touched by IThreadGroup.
+   virtual void              UserDefined(btObjectType )   = 0;
+   /// Retrieve the User-Defined pointer associated with this IThreadGroup object.
+   ///
+   /// @return The User-Defined pointer, or NULL if none was set.
+   virtual btObjectType      UserDefined() const          = 0;
+
 protected:
    virtual btBool     CreateWorkerThread(ThreadProc ,
                                          OSLThread::ThreadPriority ,
@@ -130,6 +139,8 @@ public:
    virtual void                     Stop()                     { m_pState->Stop();                   }
    virtual btBool                  Start()                     { return m_pState->Start();           }
    virtual btBool                Destroy(btTime Timeout);
+   virtual void              UserDefined(btObjectType User)    { m_pState->UserDefined(User);        }
+   virtual btObjectType      UserDefined() const               { return m_pState->UserDefined();     }
    // </IThreadGroup>
 
 protected:
@@ -165,6 +176,8 @@ private:
       virtual void                     Stop();
       virtual btBool                  Start();
       virtual btBool                Destroy(btTime );
+      virtual void              UserDefined(btObjectType );
+      virtual btObjectType      UserDefined() const;
       // </IThreadGroup>
 
    protected:
@@ -184,6 +197,7 @@ private:
       btUnsignedInt m_Flags;
       btTime        m_WorkSemTimeout;
       btTID         m_Joiner;
+      btObjectType  m_UserDefined;
       Barrier       m_ThrStartBarrier;
       Barrier       m_ThrJoinBarrier;
       Barrier       m_ThrExitBarrier;

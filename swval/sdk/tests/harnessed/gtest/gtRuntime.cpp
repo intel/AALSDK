@@ -287,6 +287,7 @@ TEST(AALRuntime, aal0802)
    // {AAL_SVC_CMD_VER_AGE, AALRUNTIME_VERSION_AGE}.
 
 #if   defined( __AAL_LINUX__ )
+
    std::string lt_objdir(LT_OBJDIR);
    if ( ( lt_objdir.length() > 0 ) && ( '/' == lt_objdir[lt_objdir.length() - 1] ) ) {
       lt_objdir = lt_objdir.substr(0, lt_objdir.length() - 1);
@@ -301,8 +302,6 @@ TEST(AALRuntime, aal0802)
    EXPECT_EQ(0, RequireLD_LIBRARY_PATH(path.c_str()));
    //std::cerr << "During, LD_LIBRARY_PATH=" << LD_LIBRARY_PATH << std::endl;
 
-#elif defined( __AAL_WINDOWS__ )
-# error Implement path resolution for Windows.
 #endif // OS
 
    OSServiceModule mod;
@@ -341,8 +340,6 @@ TEST(AALRuntime, aal0802)
    EXPECT_EQ(0, UnRequireLD_LIBRARY_PATH(path.c_str()));
    //std::cerr << "After,  LD_LIBRARY_PATH=" << LD_LIBRARY_PATH << std::endl;
 
-#elif defined( __AAL_WINDOWS__ )
-# error Implement path resolution for Windows.
 #endif // OS
 }
 

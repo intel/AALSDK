@@ -163,6 +163,87 @@ X UniqueIntRand(X *p, btUnsignedInt n, X mod, btUnsigned32bitInt *R)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/*
+
+In Linux, the thread-safe Random Number Generator int rand_r(unsigned int *seedp) uses
+the data value stored at the input parameter as an input seed for generating the next
+number. With this implementation of rand_r(), the sequence of random numbers is
+repeatable.
+
+  eg.
+   unsigned s;
+   int      r;
+
+   s = 3;
+   r = rand_r(&s); // say that r == 5
+   r = rand_r(&s); // say that r == 1
+   r = rand_r(&s); // say that r == 2
+   ...
+   s = 3;
+   r = rand_r(&s); // we expect r == 5
+   r = rand_r(&s); // we expect r == 1
+   r = rand_r(&s); // we expect r == 2
+
+This behavior enables snapshot and replay, which is essential for test cases that
+rely on random numbers.
+
+In Windows, the thread-safe RNG errno_t rand_s(unsigned int *randomValue) does not
+consider the data value stored at the input parameter and does not produce a repeatable
+sequence.
+
+Because of this lack of repeatability in the RNG sequence as create by rand_s(), we
+fall back to wrapping synchronization around srand() and rand() to enable repeatable
+RNG sequences in both Linux and Windows.
+
+*/
+
+#if 0
+// This implementation uses srand() and rand(), but there was a segfault in
+// Windows when calling srand(). Needs further debugging.
+
+class RepeatableRandomInt
+{
+public:
+   RepeatableRandomInt(unsigned Seed);
+
+   void Snapshot();
+   void Replay();
+
+   int rng();
+
+protected:
+   unsigned m_Seed;
+   unsigned m_CallCount;
+   unsigned m_SaveCallCount;
+
+#if   defined( __AAL_WINDOWS__ )
+   static CRITICAL_SECTION sm_Lock;
+#elif defined( __AAL_LINUX__ )
+   static pthread_mutex_t  sm_Lock;
+#endif // OS
+};
+#endif // 0
+
+// This implementation cheats by creating a fixed sequence of random numbers.
+class RepeatableRandomInt
+{
+public:
+   RepeatableRandomInt(unsigned Seed);
+
+   void Snapshot();
+   void Replay();
+
+   int rng();
+
+protected:
+   unsigned m_Index;
+   unsigned m_SaveIndex;
+
+   static int sm_RandomInts[100];
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 template <typename S>
 class IOStreamMixin
 {

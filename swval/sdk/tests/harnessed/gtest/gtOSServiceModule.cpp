@@ -321,8 +321,14 @@ public:
    // </IRuntimeClient>
 };
 
+#if   defined( __AAL_LINUX__ )
+# define MY_BUILTIN_STORAGE_CLASS __declspec(0)
+#elif defined( __AAL_WINDOWS__ )
+// We're defining the Built-in Service Module below locally, so we need the effective storage class to be __declspec(dllexport)
+# define MY_BUILTIN_STORAGE_CLASS __declspec(dllexport)
+#endif // OS
 
-AAL_DECLARE_BUILTIN_MOD(libswvalsvcmod, SWVALSVCMOD_API)
+AAL_DECLARE_BUILTIN_MOD(libswvalsvcmod, MY_BUILTIN_STORAGE_CLASS)
 
 #define BUILTIN_SWVALSVCMOD_VERSION          "5.4.3"
 #define BUILTIN_SWVALSVCMOD_VERSION_CURRENT  5
@@ -331,7 +337,7 @@ AAL_DECLARE_BUILTIN_MOD(libswvalsvcmod, SWVALSVCMOD_API)
 
 AAL_BEGIN_BUILTIN_SVC_MOD(AAL::InProcSvcsFact< CBuiltinSwvalSvcMod >,
                           libswvalsvcmod,
-                          SWVALSVCMOD_API,
+                          MY_BUILTIN_STORAGE_CLASS,
                           BUILTIN_SWVALSVCMOD_VERSION,
                           BUILTIN_SWVALSVCMOD_VERSION_CURRENT,
                           BUILTIN_SWVALSVCMOD_VERSION_REVISION,

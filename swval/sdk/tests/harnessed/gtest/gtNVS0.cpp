@@ -77,27 +77,27 @@ TEST(NVS, aal0252)
    EXPECT_EQ(ENamedValuesOK, n.Add(j, b));
    EXPECT_EQ(ENamedValuesOK, n.Add(k, b));
 
-   btByte by;
+   btByte by = 0;
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, by));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, by));
 
-   bt32bitInt s32;
+   bt32bitInt s32 = 0;
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, s32));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, s32));
 
-   btUnsigned32bitInt u32;
+   btUnsigned32bitInt u32 = 0;
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, u32));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, u32));
 
-   bt64bitInt s64;
+   bt64bitInt s64 = 0;
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, s64));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, s64));
 
-   btUnsigned64bitInt u64;
+   btUnsigned64bitInt u64 = 0;
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, u64));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, u64));
 
-   btFloat f;
+   btFloat f = 0.0;
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, f));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, f));
 

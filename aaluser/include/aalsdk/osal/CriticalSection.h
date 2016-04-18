@@ -81,6 +81,7 @@ public:
 #endif // OS
    }
 
+protected:
 
    /// Obtain the critical section. (blocking)
    void Lock()
@@ -121,6 +122,7 @@ public:
   //    ASSERT(0 == res);
 #endif // OS
    }
+
 private:
 #if   defined( __AAL_WINDOWS__ )
                 CRITICAL_SECTION m_Lock;
@@ -130,13 +132,22 @@ private:
 #endif // OS
 
    friend class _AutoLock;
+
+#if   defined( __AAL_WINDOWS__ )
+   friend class _UnlockedWaitForSingleObject;
+#elif defined( __AAL_LINUX__ )
+   friend class _PThreadCondWait;
+   friend class _PThreadCondTimedWait;
+#endif // OS
+
+   friend class _UnlockedDispatch;
 };
 
 
 /// It is possible that the object may be immutable or in a const method so safely cast away the const
 #define AutoLock(__p) AAL::_AutoLock __LockObj(const_cast<AAL::CriticalSection *>(dynamic_cast<AAL::CriticalSection const *>(__p)))
 /// Stack-based convenience auto-Mutex objects. Use AutoLock to declare.
-class _AutoLock
+class OSAL_API _AutoLock
 {
 public:
 
@@ -171,41 +182,102 @@ public:
       m_p->Unlock();
    }
 
-#if   defined( __AAL_WINDOWS__ )
+protected:
+   CriticalSection *m_p;
+};
 
-   DWORD WaitForSingleObject(HANDLE h, DWORD dwTimeout)
+#if defined( __AAL_WINDOWS__ )
+
+// Unlocks the CriticalSection, then waits for the HANDLE with timeout.
+// Declare on the stack so that destructor ensures lock safety.
+class OSAL_API _UnlockedWaitForSingleObject
+{
+public:
+   _UnlockedWaitForSingleObject(CriticalSection *pCS, HANDLE h, DWORD dwTimeout) :
+      m_pCS(pCS),
+      m_Result(WAIT_FAILED)
    {
-      // Don't wait while locked.
-      m_p->Unlock();
-      DWORD dwResult = ::WaitForSingleObject(h, dwTimeout);
-      m_p->Lock();
-      return dwResult;
+      ASSERT(NULL != pCS);
+      ASSERT(NULL != h);
+      m_pCS->Unlock(); // Don't sleep while locked.
+      m_Result = WaitForSingleObject(h, dwTimeout);
    }
+
+   virtual ~_UnlockedWaitForSingleObject()
+   {
+      m_pCS->Lock();
+   }
+
+   DWORD Result() const { return m_Result; }
+
+protected:
+   CriticalSection *m_pCS;
+   DWORD            m_Result;
+};
 
 #elif defined( __AAL_LINUX__ )
 
-   /// Infinite wait on condition variable.
-   int PthreadCondWait(pthread_cond_t *pCond)
+/// Infinite wait on condition variable.
+class _PThreadCondWait
+{
+public:
+   _PThreadCondWait(CriticalSection *pCS, pthread_cond_t *pCond) :
+      m_Result(EINVAL)
    {
-      return ::pthread_cond_wait(pCond, &m_p->m_Lock);
+      ASSERT(NULL != pCS);
+      ASSERT(NULL != pCond);
+      m_Result = ::pthread_cond_wait(pCond, &pCS->m_Lock);
    }
-   /// Timed wait on condition variable.
-   int PthreadCondTimedWait(pthread_cond_t *pCond, struct timespec *pTS)
+   virtual ~_PThreadCondWait() {}
+
+   int Result() const { return m_Result; }
+
+protected:
+   int m_Result;
+};
+
+class _PThreadCondTimedWait
+{
+public:
+   _PThreadCondTimedWait(CriticalSection *pCS, pthread_cond_t *pCond, struct timespec *pTS) :
+      m_Result(EINVAL)
    {
-      return ::pthread_cond_timedwait(pCond, &m_p->m_Lock, pTS);
+      ASSERT(NULL != pCS);
+      ASSERT(NULL != pCond);
+      ASSERT(NULL != pTS);
+      m_Result = ::pthread_cond_timedwait(pCond, &pCS->m_Lock, pTS);
    }
+   virtual ~_PThreadCondTimedWait() {}
 
-#endif // __AAL_LINUX__
+   int Result() const { return m_Result; }
 
-   void UnlockedDispatch(IDispatchable *pDisp)
+protected:
+   int m_Result;
+};
+
+#endif // __AAL_WINDOWS__
+
+// Unlock the CriticalSection, then fire the Dispatchable.
+// Declare on the stack so that destructor ensures lock safety.
+class OSAL_API _UnlockedDispatch
+{
+public:
+   _UnlockedDispatch(CriticalSection *pCS, IDispatchable *pDisp) :
+      m_pCS(pCS)
    {
-      m_p->Unlock();
+      ASSERT(NULL != m_pCS);
+      ASSERT(NULL != pDisp);
+      m_pCS->Unlock();
       pDisp->operator() ();
-      m_p->Lock();
+   }
+
+   virtual ~_UnlockedDispatch()
+   {
+      m_pCS->Lock();
    }
 
 protected:
-   CriticalSection *m_p;
+   CriticalSection *m_pCS;
 };
 
 END_NAMESPACE(AAL)
