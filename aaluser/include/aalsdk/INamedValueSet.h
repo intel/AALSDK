@@ -469,12 +469,12 @@ protected:
    friend class NamedValueSet;
 };
 
-std::ostream & operator << (std::ostream & , const INamedValueSet & );
-std::istream & operator >> (std::istream & ,       INamedValueSet & );
+AASLIB_API std::ostream & operator << (std::ostream & , const INamedValueSet & );
+AASLIB_API std::istream & operator >> (std::istream & ,       INamedValueSet & );
 
 // NamedValueSet Factory Methods
-INamedValueSet * NewNVS();
-void DeleteNVS(INamedValueSet * );
+AASLIB_API INamedValueSet * NewNVS();
+AASLIB_API void DeleteNVS(INamedValueSet * );
 
 //=============================================================================
 // Name: CValue
@@ -489,7 +489,7 @@ void DeleteNVS(INamedValueSet * );
 //              pass these and the NamedValueSet object that holds them by
 //              reference.
 //=============================================================================
-class CValue
+class AASLIB_API CValue
 {
    //Simple types
    typedef union Val_t

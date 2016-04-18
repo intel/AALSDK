@@ -1099,7 +1099,6 @@ TEST_F(ServiceReleased_f_1, aal0758)
 
    btObjectType  x = NULL;
    TransactionID tid;
-   IBase        *pSvc;
 
    ASSERT_EQ(1, m_TIDSvcClient.LogEntries());
    EXPECT_STREQ("IServiceClient::serviceReleased", m_TIDSvcClient.Entry(0).MethodName());
@@ -1178,7 +1177,6 @@ TEST_F(ServiceReleased_f_2, aal0759)
 
    btObjectType  x = NULL;
    TransactionID tid;
-   IBase        *pSvc;
 
    ASSERT_EQ(1, m_TIDSvcClient.LogEntries());
    EXPECT_STREQ("IServiceClient::serviceReleased", m_TIDSvcClient.Entry(0).MethodName());

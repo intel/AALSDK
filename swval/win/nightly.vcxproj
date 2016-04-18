@@ -19,7 +19,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtAIAService.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtCommon.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtCritSect.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtDynLinkLibrary.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtOSServiceModule.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtSem.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtThread.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtThreadGroup.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtThreadGroupSR.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -117,8 +125,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;GTEST_LINKED_AS_SHARED_LIBRARY=1;TEST_SUITE_NIGHTLY=1;__AAL_USER__=1;ENABLE_DEBUG=1;ENABLE_ASSERT=1;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;$(SolutionDir)..\..\aaluser\include;$(SolutionDir)..\sdk\tests\swvalmod;$(SolutionDir)..\gtest\gtest-1.7.0\include;$(SolutionDir)..\gtest\gtest-1.7.0</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;GTEST_LINKED_AS_SHARED_LIBRARY=1;TEST_SUITE_NIGHTLY=1;DBG_CSEMAPHORE=1;DBG_BARRIER=1;DBG_THREADGROUP=1;__AAL_USER__=1;ENABLE_DEBUG=1;ENABLE_ASSERT=1;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;$(SolutionDir)..\..\aaluser\include;$(SolutionDir)..\..\aaluser\aas\OSAL;$(SolutionDir)..\sdk\tests\swvalmod;$(SolutionDir)..\gtest\gtest-1.7.0\include;$(SolutionDir)..\gtest\gtest-1.7.0</AdditionalIncludeDirectories>
       <BrowseInformation>true</BrowseInformation>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
@@ -160,8 +168,8 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;GTEST_LINKED_AS_SHARED_LIBRARY=1;TEST_SUITE_NIGHTLY=1;__AAL_USER__=1;ENABLE_DEBUG=0;ENABLE_ASSERT=1;_NO_BUILD_MESSAGES_;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;$(SolutionDir)..\..\aaluser\include;$(SolutionDir)..\sdk\tests\swvalmod;$(SolutionDir)..\gtest\gtest-1.7.0\include;$(SolutionDir)..\gtest\gtest-1.7.0</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;GTEST_LINKED_AS_SHARED_LIBRARY=1;TEST_SUITE_NIGHTLY=1;DBG_CSEMAPHORE=1;DBG_BARRIER=1;DBG_THREADGROUP=1;__AAL_USER__=1;ENABLE_DEBUG=0;ENABLE_ASSERT=1;_NO_BUILD_MESSAGES_;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;$(SolutionDir)..\..\aaluser\include;$(SolutionDir)..\..\aaluser\aas\OSAL;$(SolutionDir)..\sdk\tests\swvalmod;$(SolutionDir)..\gtest\gtest-1.7.0\include;$(SolutionDir)..\gtest\gtest-1.7.0</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
