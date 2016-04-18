@@ -510,7 +510,7 @@ btInt ErrorMonApp::run(btBool bClear)
       m_Sem.Wait();
       if(!m_bIsOK){
          ERR("Allocation failed\n");
-         goto done_0;
+         goto done_1;
       }
    }
 
@@ -534,12 +534,13 @@ btInt ErrorMonApp::run(btBool bClear)
    // Clean-up and return
    // Release() the Service through the Services IAALService::Release() method
 
-   // Release FME Resource
-   (dynamic_ptr<IAALService>(iidService, m_pFMEService))->Release(TransactionID());
-   m_Sem.Wait();
-
    // Release PORT Resource
    (dynamic_ptr<IAALService>(iidService, m_pPortService))->Release(TransactionID());
+   m_Sem.Wait();
+
+done_1:
+   // Release FME Resource
+   (dynamic_ptr<IAALService>(iidService, m_pFMEService))->Release(TransactionID());
    m_Sem.Wait();
 
 done_0:
