@@ -109,6 +109,7 @@ void final_ipc_cleanup()
     }
   
   // Parse through list
+  printf("SIM-C : Removing message queues and buffer handles ... ");
   while(1)
     {
       fscanf(local_ipc_fp, "%s\t%s", ipc_type, ipc_name);
@@ -118,29 +119,42 @@ void final_ipc_cleanup()
 
       if (strcmp (ipc_type, "MQ") == 0)
       	{
+        #ifdef ASE_DEBUG
       	  printf("        Removing MQ  %s ... ", ipc_name);
+        #endif
       	  if ( unlink(ipc_name) == -1 )
       	    {
+            #ifdef ASE_DEBUG
       	      printf("\n");
+            #endif
       	    }
       	  else
       	    {
+            #ifdef ASE_DEBUG
       	      printf("DONE\n");
+            #endif
       	    }
       	}
       else if (strcmp (ipc_type, "SHM") == 0)
       	{
+        #ifdef ASE_DEBUG
       	  printf("        Removing SHM %s ... ", ipc_name);
+        #endif
       	  if ( shm_unlink(ipc_name) == -1 )
       	    {
+            #ifdef ASE_DEBUG	    
 	      printf("\n");
+            #endif
       	    }
       	  else
       	    {
+            #ifdef ASE_DEBUG
       	      printf("DONE\n");
+            #endif
       	    }
       	}
     }
+  printf("DONE\n");
 
   // Close both files
   fclose(local_ipc_fp);

@@ -79,8 +79,8 @@ void ase_buffer_info(struct buffer_t *mem)
   
   BEGIN_YELLOW_FONTCOLOR;
   // printf("BUFFER parameters...\n");
-  printf("\tfd_app      = %d \n",    mem->fd_app);
-  printf("\tfd_ase      = %d \n",    mem->fd_ase);
+  /* printf("\tfd_app      = %d \n",    mem->fd_app); */
+  /* printf("\tfd_ase      = %d \n",    mem->fd_ase); */
   printf("\tindex       = %d \n",    mem->index);
   printf("\tvalid       = %s \n",    (mem->valid == 0xffff) ? "VALID" : "INVALID" );
   printf("\tAPPVirtBase = %p \n",    (void *)mem->vbase); 
@@ -210,6 +210,10 @@ void ase_eval_session_directory()
 	  END_RED_FONTCOLOR;
 	  perror("opendir");
 	  exit(1);
+	}
+      else
+	{
+	  closedir(ase_dir);
 	}
     }
 #endif

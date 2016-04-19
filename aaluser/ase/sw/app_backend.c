@@ -35,12 +35,17 @@
 
 #include "ase_common.h"
 
-// Lock
-pthread_mutex_t app_lock;
+//#define MT_UMSG_POLL
 
-// CSR Map
+// Lock
+// pthread_mutex_t app_lock;
+pthread_mutex_t mmio_port_lock;
+
+// MMIO Outstanding counts
 uint32_t mmio_write_cnt = 0;
-uint32_t mmio_read_cnt = 0;
+uint32_t mmio_readreq_cnt = 0;
+uint32_t mmio_readrsp_cnt = 0;
+// uint32_t mmio_rsp_num_outstanding = 0;
 
 // MQ established
 uint32_t mq_exist_status = MQ_NOT_ESTABLISHED;
@@ -50,7 +55,7 @@ uint32_t mmio_exist_status = NOT_ESTABLISHED;
 uint32_t umas_exist_status = NOT_ESTABLISHED;
 
 // Session status
-uint32_t session_exis_status = NOT_ESTABLISHED;
+uint32_t session_exist_status = NOT_ESTABLISHED;
 
 // CSR map storage
 struct buffer_t *mmio_region;
@@ -59,8 +64,8 @@ struct buffer_t *mmio_region;
 struct buffer_t *umas_region;
 
 // Workspace metadata table
-struct wsmeta_t *wsmeta_head = (struct wsmeta_t *) NULL; 
-struct wsmeta_t *wsmeta_end = (struct wsmeta_t *) NULL;  
+struct wsmeta_t *wsmeta_head = (struct wsmeta_t *) NULL;
+struct wsmeta_t *wsmeta_end = (struct wsmeta_t *) NULL;
 
 // Buffer index count
 int asebuf_index_count = 0;    // global count/index
@@ -74,6 +79,127 @@ FILE *fp_pagetable_log = (FILE *)NULL;
 #endif
 
 /*
+ * MMIO Read response watcher
+ */
+// MMIO Tid
+int glbl_mmio_tid;
+pthread_mutex_t mmio_tid_lock;
+
+// Tracker thread Id
+pthread_t mmio_watch_tid;
+
+// MMIO Response packet handoff control
+mmio_t *mmio_rsp_pkt;
+volatile int mmio_rsp_pkt_available;
+volatile int mmio_rsp_pkt_accepted;
+
+/*
+ * UMsg listener/packet
+ */
+// UMsg Watch TID
+#ifdef MT_UMSG_POLL
+pthread_t umsg_watch_tid[NUM_UMSG_PER_AFU];
+#else
+pthread_t umsg_watch_tid;
+#endif
+
+// UMsg port lock
+pthread_mutex_t umsg_port_lock;
+
+// UMsg byte offset
+const int umsg_byteindex_arr[] = 
+  {
+    0x0, 0x1040, 0x2080, 0x30C0, 0x4100, 0x5140, 0x6180, 0x71C0
+  };
+
+// UMsg address array
+char* umsg_addr_array[NUM_UMSG_PER_AFU];
+
+// UMAS initialized flag
+volatile int umas_init_flag;
+
+
+/*
+ * MSI-X watcher 
+ */
+// MSI-X watcher 
+pthread_t msix_watch_tid;
+
+
+/*
+ * MMIO Generate TID
+ * - Creation of TID must be atomic
+ */
+uint32_t generate_mmio_tid()
+{
+  // *FIXME*: TID credit must not overrun, no more than 64 outstanding MMIO Requests
+  while ((mmio_readreq_cnt - mmio_readrsp_cnt) == MMIO_MAX_OUTSTANDING)
+    {
+      printf("  [APP]  MMIO TIDs have run out --- waiting for some to get released !\n");
+      usleep(100000);
+    }
+
+  // Return value
+  uint32_t ret_mmio_tid;
+
+  // Lock access to resource
+  pthread_mutex_lock(&mmio_tid_lock);
+
+  // Increment and mask
+  ret_mmio_tid = glbl_mmio_tid & MMIO_TID_BITMASK;
+  glbl_mmio_tid++;
+
+  // Unlock access to resource
+  pthread_mutex_unlock(&mmio_tid_lock);
+
+  // Return ID
+  return ret_mmio_tid;
+}
+
+
+/*
+ * THREAD: MMIO Read thread watcher
+ */
+void *mmio_response_watcher()
+{
+  mmio_rsp_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
+  int ret;
+
+  // start watching for messages
+  while(1)
+    {
+      // Set available/accepted flag to 0
+      mmio_rsp_pkt_accepted = 0;
+      mmio_rsp_pkt_available = 0;
+
+      // If received, update global message
+      ret = mqueue_recv( sim2app_mmiorsp_rx, (char*)mmio_rsp_pkt, sizeof(mmio_t) );
+      if (ret == ASE_MSG_PRESENT) 
+	{
+	  // Mark as available
+	  mmio_rsp_pkt_available = 1;
+	  
+	  // Wait until ACK from requesting thread
+	  while (mmio_rsp_pkt_accepted != 1)
+	    {
+	      usleep(100);
+	    }
+	  mmio_readrsp_cnt++;
+	}
+    }
+}
+
+
+/*
+ * Interrupt request (FPGA->CPU) watcher
+ */
+void *intr_request_watcher()
+{
+  
+}
+
+
+/*
  * Send SIMKILL
  */
 void send_simkill()
@@ -81,8 +207,8 @@ void send_simkill()
   // Simkill
   char ase_simkill_msg[ASE_MQ_MSGSIZE];
   memset(ase_simkill_msg, 0, ASE_MQ_MSGSIZE);
-  snprintf(ase_simkill_msg, ASE_MQ_MSGSIZE, "%u", ASE_SIMKILL_MSG);
-  mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
+  sprintf(ase_simkill_msg, "ASE_SIMKILL 0");
+  ase_portctrl(ase_simkill_msg);
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  CTRL-C was seen... SW application will exit\n");
@@ -94,8 +220,7 @@ void send_simkill()
   mqueue_close(app2sim_alloc_tx);
   mqueue_close(sim2app_alloc_rx);
   mqueue_close(app2sim_umsg_tx);
-  mqueue_close(app2sim_simkill_tx);
-  mqueue_close(app2sim_portctrl_req_tx); 
+  mqueue_close(app2sim_portctrl_req_tx);
   mqueue_close(app2sim_dealloc_tx);
   mqueue_close(sim2app_dealloc_rx);
   mqueue_close(sim2app_portctrl_rsp_rx);
@@ -117,18 +242,42 @@ void session_init()
   ipc_init();
 
   // Initialize lock
-  if ( pthread_mutex_init(&app_lock, NULL) != 0)
+  /* if ( pthread_mutex_init(&app_lock, NULL) != 0) */
+  /*   { */
+  /*     BEGIN_YELLOW_FONTCOLOR; */
+  /*     printf("  [APP]  Lock initialization failed, EXIT\n"); */
+  /*     END_YELLOW_FONTCOLOR; */
+  /*     exit (EXIT_FAILURE); */
+  /*   } */
+
+  // Initialize MMIO port lock
+  if ( pthread_mutex_init(&mmio_port_lock, NULL) != 0)
     {
       BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  Lock initialization failed, EXIT\n");
+      printf("  [APP]  MMIO Lock initialization failed, EXIT\n");
       END_YELLOW_FONTCOLOR;
       exit (EXIT_FAILURE);
     }
-  
+
+  // MMIO TID counter lock
+  if ( pthread_mutex_init(&mmio_tid_lock, NULL) != 0)
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  MMIO TID Lock initialization failed, EXIT\n");
+      END_YELLOW_FONTCOLOR;
+      exit (EXIT_FAILURE);
+    }
+
+  // Initialize UMsg port lock
+  if ( pthread_mutex_init(&umsg_port_lock, NULL) != 0)
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  UMsg Port Lock initialization failed, EXIT\n");
+      END_YELLOW_FONTCOLOR;
+      exit (EXIT_FAILURE);
+    }
+
   // Initialize ase_workdir_path
-  // ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
-  // ase_workdir_path = ase_eval_session_directory();  
-  // ase_eval_session_directory ();  
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  ASE Session Directory located at =>\n");
   printf("         %s\n", ase_workdir_path);
@@ -138,7 +287,6 @@ void session_init()
   signal(SIGTERM, send_simkill);
   signal(SIGINT , send_simkill);
   signal(SIGQUIT, send_simkill);
-  signal(SIGKILL, send_simkill); // *FIXME*: This possibly doesnt work // 
   signal(SIGHUP,  send_simkill);
 
   // Ignore SIGPIPE *FIXME*: Look for more elegant solution
@@ -148,21 +296,32 @@ void session_init()
   printf("  [APP]  Initializing simulation session ... \n");
   END_YELLOW_FONTCOLOR;
 
-  app2sim_alloc_tx    = mqueue_open( mq_array[0].name, mq_array[0].perm_flag );
-  app2sim_mmioreq_tx  = mqueue_open( mq_array[1].name, mq_array[1].perm_flag );
-  app2sim_umsg_tx     = mqueue_open( mq_array[2].name, mq_array[2].perm_flag );
-  app2sim_simkill_tx  = mqueue_open( mq_array[3].name, mq_array[3].perm_flag );
-  sim2app_alloc_rx    = mqueue_open( mq_array[4].name, mq_array[4].perm_flag );
-  sim2app_mmiorsp_rx  = mqueue_open( mq_array[5].name, mq_array[5].perm_flag );
-  app2sim_portctrl_req_tx = mqueue_open( mq_array[6].name, mq_array[6].perm_flag );
-  app2sim_dealloc_tx  = mqueue_open( mq_array[7].name, mq_array[7].perm_flag );
-  sim2app_dealloc_rx  = mqueue_open( mq_array[8].name, mq_array[8].perm_flag );
-  sim2app_portctrl_rsp_rx = mqueue_open( mq_array[9].name, mq_array[9].perm_flag );
+  app2sim_alloc_tx        = mqueue_open( mq_array[0].name, mq_array[0].perm_flag );
+  app2sim_mmioreq_tx      = mqueue_open( mq_array[1].name, mq_array[1].perm_flag );
+  app2sim_umsg_tx         = mqueue_open( mq_array[2].name, mq_array[2].perm_flag );
+  sim2app_alloc_rx        = mqueue_open( mq_array[3].name, mq_array[3].perm_flag );
+  sim2app_mmiorsp_rx      = mqueue_open( mq_array[4].name, mq_array[4].perm_flag );
+  app2sim_portctrl_req_tx = mqueue_open( mq_array[5].name, mq_array[5].perm_flag );
+  app2sim_dealloc_tx      = mqueue_open( mq_array[6].name, mq_array[6].perm_flag );
+  sim2app_dealloc_rx      = mqueue_open( mq_array[7].name, mq_array[7].perm_flag );
+  sim2app_portctrl_rsp_rx = mqueue_open( mq_array[8].name, mq_array[8].perm_flag );
+  sim2app_intr_request_rx = mqueue_open( mq_array[9].name, mq_array[9].perm_flag );
 
+  // Message queues have been established
+  mq_exist_status = MQ_ESTABLISHED;
+
+  // Issue soft reset
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [APP]  session_init => Issuing Soft Reset...\n");
+  END_YELLOW_FONTCOLOR;
+  ase_portctrl("AFU_RESET 1");
+  usleep(100);
+  ase_portctrl("AFU_RESET 0");
+
+  // Page table tracker (optional logger)
 #ifdef ASE_DEBUG
-  // Page table tracker
   fp_pagetable_log = fopen("app_pagetable.log", "w");
-  if (fp_pagetable_log == NULL) 
+  if (fp_pagetable_log == NULL)
     {
       BEGIN_RED_FONTCOLOR;
       printf("  [APP]  APP pagetable logger initialization failed !\n");
@@ -175,14 +334,34 @@ void session_init()
       END_YELLOW_FONTCOLOR;
     }
 #endif
-
-  // Message queues have been established
-  mq_exist_status = MQ_ESTABLISHED;
-
   BEGIN_YELLOW_FONTCOLOR;
 
+  // Set MMIO Tid to 0
+  glbl_mmio_tid = 0;
+
+  // Thread error integer
+  int thr_err;
+
+  // Start MMIO read response watcher watcher thread
+  printf("  [APP]  Starting MMIO Read Response watcher ... ");
+  thr_err = pthread_create (&mmio_watch_tid, NULL, &mmio_response_watcher, NULL);
+  if (thr_err != 0)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("FAILED\n");
+      perror("pthread_create");
+      exit(1);
+      END_RED_FONTCOLOR;
+    }
+  else
+    {
+      printf("SUCCESS\n");
+    }
+  
+  // Start MSI-X watcher thread
+  // printf("  [APP]  Starting Interrupt watcher ... ");
+
   // Session start
-  printf(" DONE\n");
   printf("  [APP]  Session started\n");
 
   // Send portctrl command to start a session
@@ -196,30 +375,76 @@ void session_init()
   tstamp_string = (char*) ase_malloc(20);
   tstamp_string = get_timestamp(0);
 
-  // Creating CSR map 
+  // Creating CSR map
+  BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Creating MMIO ...\n");
+  END_YELLOW_FONTCOLOR;
   mmio_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
-  memset(mmio_region, 0, sizeof(struct buffer_t));
   mmio_region->memsize = MMIO_LENGTH;
-  mmio_region->is_mmiomap = 1;  
+  mmio_region->is_mmiomap = 1;
   allocate_buffer(mmio_region, NULL);
   mmio_afu_vbase = (uint64_t*)((uint64_t)mmio_region->vbase + MMIO_AFU_OFFSET);
   mmio_exist_status = ESTABLISHED;
-  printf("  [APP]  AFU MMIO Virtual Base Address = %p\n", (void*) mmio_afu_vbase); 
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [APP]  AFU MMIO Virtual Base Address = %p\n", (void*) mmio_afu_vbase);
+  END_YELLOW_FONTCOLOR;
 
   // Create UMSG region
+  BEGIN_YELLOW_FONTCOLOR;
+  umas_init_flag = 0;
   printf("  [APP]  Creating UMAS ... \n");
+  END_YELLOW_FONTCOLOR;
   umas_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
-  memset(umas_region, 0, sizeof(struct buffer_t));
-  umas_region->memsize = UMAS_LENGTH;
+  umas_region->memsize = UMAS_REGION_MEMSIZE; //UMAS_LENGTH;
   umas_region->is_umas = 1;
   allocate_buffer(umas_region, NULL);
   umsg_umas_vbase = (uint64_t*)((uint64_t)umas_region->vbase);
   umas_exist_status = ESTABLISHED;
+  BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  UMAS Virtual Base address = %p\n", (void*)umsg_umas_vbase);
+  END_YELLOW_FONTCOLOR;
+
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [APP]  Starting UMsg watcher ... ");
+  END_YELLOW_FONTCOLOR;
+
+#ifdef MT_UMSG_POLL
+  int cl_index;
+  for(cl_index = 0; cl_index < NUM_UMSG_PER_AFU; cl_index++)
+    {
+      thr_err = pthread_create (&umsg_watch_tid[cl_index], NULL, &umsg_watcher, (void*) &cl_index);
+      if (thr_err != 0)
+	{
+	  BEGIN_RED_FONTCOLOR;
+	  printf("FAILED\n");
+	  perror("pthread_create");
+	  exit(1);
+	  END_RED_FONTCOLOR;
+	}
+      else
+	{
+	  printf("SUCCESS\n");
+	}      
+    }
+#else
+  thr_err = pthread_create (&umsg_watch_tid, NULL, &umsg_watcher, NULL);
+  if (thr_err != 0)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("FAILED\n");
+      perror("pthread_create");
+      exit(1);
+      END_RED_FONTCOLOR;
+    }
+  else
+    {
+      printf("SUCCESS\n");
+    }
+  while(umas_init_flag != 1);
+#endif
 
   // Session status
-  session_exis_status = ESTABLISHED;
+  session_exist_status = ESTABLISHED;
 
   END_YELLOW_FONTCOLOR;
 
@@ -235,11 +460,34 @@ void session_deinit()
 {
   FUNC_CALL_ENTRY;
 
-  if (session_exis_status == ESTABLISHED)
+  int thr_err;
+  int umsg_id;
+  int ret;
+
+  if (session_exist_status == ESTABLISHED)
     {
       // Unmap UMAS region
-      if (umas_exist_status == ESTABLISHED) 
+      if (umas_exist_status == ESTABLISHED)
 	{
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("  [APP]  Closing Watcher threads\n");
+	  END_YELLOW_FONTCOLOR;
+	  // Close UMsg thread	  
+    #ifdef MT_UMSG_POLL
+	  for(umsg_id = 0; umsg_id < NUM_UMSG_PER_AFU ; umsg_id++)
+ 	    {
+	      ret = pthread_kill(umsg_watch_tid[umsg_id], SIGINT);
+	      if (ret != 0)
+		{
+		  printf("  [APP]  pthread_kill failed with ret=%d\n", ret);
+		}
+	    }
+	  // pthread_kill(*umsg_watch_tid, SIGINT);
+    #else
+	  pthread_kill(umsg_watch_tid, SIGINT);
+    #endif
+
+	  // Deallocate the region
 	  BEGIN_YELLOW_FONTCOLOR;
 	  printf("  [APP]  Deallocating UMAS\n");
 	  deallocate_buffer(umas_region);
@@ -263,29 +511,32 @@ void session_deinit()
       mmio_exist_status = NOT_ESTABLISHED;
 
       BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  Deinitializing simulation session ... ");
+      printf("  [APP]  Deinitializing simulation session \n");
       END_YELLOW_FONTCOLOR;
 
       // Send SIMKILL
-      char ase_simkill_msg[ASE_MQ_MSGSIZE];
-      memset(ase_simkill_msg, 0, ASE_MQ_MSGSIZE);
-      sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
-      mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
-  
+      char session_ctrlcmd[ASE_MQ_MSGSIZE];
+      memset(session_ctrlcmd, 0, ASE_MQ_MSGSIZE);
+      sprintf(session_ctrlcmd, "ASE_SIMKILL 0");
+      ase_portctrl(session_ctrlcmd);
+
 #ifdef ASE_DEBUG
       fclose(fp_pagetable_log);
 #endif
 
+      // Close MMIO Response tracker thread
+      pthread_kill(mmio_watch_tid, SIGINT);
+
+      // close message queue
       mqueue_close(app2sim_mmioreq_tx);
       mqueue_close(sim2app_mmiorsp_rx);
       mqueue_close(app2sim_alloc_tx);
       mqueue_close(sim2app_alloc_rx);
       mqueue_close(app2sim_umsg_tx);
-      mqueue_close(app2sim_simkill_tx);
       mqueue_close(app2sim_portctrl_req_tx);
       mqueue_close(app2sim_dealloc_tx);
       mqueue_close(sim2app_dealloc_rx);
-
+      mqueue_close(sim2app_portctrl_rsp_rx);
 
       BEGIN_YELLOW_FONTCOLOR;
       printf(" DONE\n");
@@ -295,11 +546,14 @@ void session_deinit()
       /* free(umas_region); */
       /* free(mmio_region); */
       // free(ase_workdir_path);
-  
+
       // Lock deinit
-      pthread_mutex_destroy(&app_lock);
+      // pthread_mutex_destroy(&app_lock);
+      pthread_mutex_destroy(&mmio_port_lock);
+      pthread_mutex_destroy(&mmio_tid_lock);
+      pthread_mutex_destroy(&umsg_port_lock);
     }
-  else 
+  else
     {
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  Session already deinitialized, call ignored !\n");
@@ -317,23 +571,28 @@ void mmio_request_put(struct mmio_t *pkt)
 {
   FUNC_CALL_ENTRY;
 
+  // Lock MMIO port
+  pthread_mutex_lock (&mmio_port_lock);
+
+  // Update global count
+  if (pkt->write_en == MMIO_WRITE_REQ) 
+    {
+      mmio_write_cnt++;
+    }
+  else if (pkt->write_en == MMIO_READ_REQ) 
+    {
+      mmio_readreq_cnt++;
+    }
+
+  // Send packet
   mqueue_send( app2sim_mmioreq_tx, (char*)pkt, sizeof(mmio_t) );
 
-  FUNC_CALL_EXIT;
-}
-
-
-/*
- * MMIO Response get
- */
-void mmio_response_get(struct mmio_t *pkt)
-{
-  FUNC_CALL_ENTRY;
-
-  mqueue_recv( sim2app_mmiorsp_rx, (char*)pkt, sizeof(mmio_t) );
+  // Unlock MMIO port
+  pthread_mutex_unlock (&mmio_port_lock);
 
   FUNC_CALL_EXIT;
 }
+
 
 /*
  * MMIO Write 32-bit
@@ -341,8 +600,6 @@ void mmio_response_get(struct mmio_t *pkt)
 void mmio_write32 (uint32_t offset, uint32_t data)
 {
   FUNC_CALL_ENTRY;
-  
-  // pthread_mutex_lock (&app_lock);
 
   if (offset < 0)
     {
@@ -356,6 +613,7 @@ void mmio_write32 (uint32_t offset, uint32_t data)
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
+      mmio_pkt->tid = generate_mmio_tid();
       mmio_pkt->write_en = MMIO_WRITE_REQ;
       mmio_pkt->width = MMIO_WIDTH_32;
       mmio_pkt->addr = offset;
@@ -370,12 +628,12 @@ void mmio_write32 (uint32_t offset, uint32_t data)
       memcpy(mmio_vaddr, (char*)&data, sizeof(uint32_t));
 
       // Display
-      mmio_write_cnt++;
+      // mmio_write_cnt++;
       BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  MMIO Write #%d : offset = 0x%x, data = 0x%08x\n", mmio_write_cnt, offset, data);
+      printf("  [APP]  MMIO Write     : tid = 0x%03x, offset = 0x%x, data = 0x%08x\n", mmio_pkt->tid, mmio_pkt->addr, data);
       END_YELLOW_FONTCOLOR;
       free(mmio_pkt);
-    }  
+    }
 
 
   FUNC_CALL_EXIT;
@@ -403,6 +661,7 @@ void mmio_write64 (uint32_t offset, uint64_t data)
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
+      mmio_pkt->tid= generate_mmio_tid();
       mmio_pkt->write_en = MMIO_WRITE_REQ;
       mmio_pkt->width = MMIO_WIDTH_64;
       mmio_pkt->addr = offset;
@@ -416,9 +675,9 @@ void mmio_write64 (uint32_t offset, uint64_t data)
       mmio_request_put(mmio_pkt);
       *mmio_vaddr = data;
 
-      mmio_write_cnt++;
+      // mmio_write_cnt++;
       BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  MMIO Write #%d : offset = 0x%x, data = 0x%llx\n", mmio_write_cnt, offset, (unsigned long long)data);
+      printf("  [APP]  MMIO Write     : tid = 0x%03x, offset = 0x%x, data = 0x%llx\n", mmio_pkt->tid, mmio_pkt->addr, (unsigned long long)data);
       END_YELLOW_FONTCOLOR;
 
       free(mmio_pkt);
@@ -463,34 +722,34 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
+      mmio_pkt->tid      = generate_mmio_tid();
       mmio_pkt->write_en = MMIO_READ_REQ;
       mmio_pkt->width = MMIO_WIDTH_32;
       mmio_pkt->addr = offset;
       mmio_pkt->resp_en = 0;
+      
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  MMIO Read      : tid = 0x%03x, offset = 0x%x\n", mmio_pkt->tid, mmio_pkt->addr);
+      END_YELLOW_FONTCOLOR;
 
-      // Messaging
       mmio_request_put(mmio_pkt);
-      mmio_response_get(mmio_pkt);
+
+      // Wait until correct response found
+      while (mmio_pkt->tid != mmio_rsp_pkt->tid)
+	{
+	  usleep(100);
+	}
+
+      memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t));
+      mmio_rsp_pkt_accepted = 1;
 
       // Display
-      mmio_read_cnt++;
       BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  MMIO Read #%d  : offset = 0x%x\n", mmio_read_cnt, offset);
-      
-      // Write data
-      // data = (uint32_t*)((uint64_t)mmio_afu_vbase + offset);
-      *data32 = (uint32_t)mmio_pkt->qword[0];
-      
-      /* #ifdef ASE_DEBUG */
-      /*       BEGIN_YELLOW_FONTCOLOR; */
-      /*       printf("  [DEBUG]  mmio_response =>\n"); */
-      /*       printf("  [DEBUG]  width=%d, addr=%x, resp_en=%d\n", mmio_pkt->width, mmio_pkt->addr, mmio_pkt->resp_en); */
-      /*       printf("  [DEBUG]  data=%llx\n", mmio_pkt->qword[0]); */
-      /*       printf("  [DEBUG]  *data=%08x\n", (uint32_t)*data32); */
-      /*       END_YELLOW_FONTCOLOR; */
-      /* #endif */
 
-      printf("  [APP]  MMIO Read Resp : %08x\n", (uint32_t)*data32);
+      // Write data
+      *data32 = (uint32_t)mmio_pkt->qword[0];
+
+      printf("  [APP]  MMIO Read Resp : tid = 0x%03x, %08x\n", mmio_pkt->tid, (uint32_t)*data32);
       END_YELLOW_FONTCOLOR;
       free(mmio_pkt);
     }
@@ -518,32 +777,35 @@ void mmio_read64(uint32_t offset, uint64_t *data64)
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
+      mmio_pkt->tid      = generate_mmio_tid();
       mmio_pkt->write_en = MMIO_READ_REQ;
-      mmio_pkt->width = MMIO_WIDTH_64;
-      mmio_pkt->addr = offset;
-      mmio_pkt->resp_en = 0;
+      mmio_pkt->width    = MMIO_WIDTH_64;
+      mmio_pkt->addr     = offset;
+      mmio_pkt->resp_en  = 0;
+      
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  MMIO Read      : tid = 0x%03x, offset = 0x%x\n", mmio_pkt->tid, mmio_pkt->addr);
+      END_RED_FONTCOLOR;
 
-      // Messaging
+      // Send request
       mmio_request_put(mmio_pkt);
-      mmio_response_get(mmio_pkt);
+
+      // Wait for correct response to be back
+      while (mmio_pkt->tid != mmio_rsp_pkt->tid)
+	{
+	  usleep(500);
+	};
+
+      memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t));
+      mmio_rsp_pkt_accepted = 1;
 
       // Display
-      mmio_read_cnt++;
       BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  MMIO Read #%d  : offset = 0x%x\n", mmio_read_cnt, offset);
-      
+
       // Write data
-      // data = (uint64_t*)((uint64_t)mmio_afu_vbase + offset);
       *data64 = mmio_pkt->qword[0];
 
-/* #ifdef ASE_DEBUG */
-/*       BEGIN_YELLOW_FONTCOLOR; */
-/*       printf("  [DEBUG]  mmio_response =>\n"); */
-/*       printf("  [DEBUG]  width=%d, addr=%x, resp_en=%d\n", mmio_pkt->width, mmio_pkt->addr, mmio_pkt->resp_en); */
-/*       printf("  [DEBUG]  data=%llx\n", mmio_pkt->qword[0]); */
-/*       END_YELLOW_FONTCOLOR; */
-/* #endif */
-      printf("  [APP]  MMIO Read Resp : %llx\n", (unsigned long long)*data64);
+      printf("  [APP]  MMIO Read Resp : tid = 0x%03x, data = %llx\n", mmio_pkt->tid, (unsigned long long)*data64);
       END_YELLOW_FONTCOLOR;
       free(mmio_pkt);
     }
@@ -562,7 +824,7 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   FUNC_CALL_ENTRY;
 
   // pthread_mutex_lock (&app_lock);
-
+  int fd_alloc;
   char tmp_msg[ASE_MQ_MSGSIZE]  = { 0, };
 
   BEGIN_YELLOW_FONTCOLOR;
@@ -584,12 +846,12 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   // Autogenerate a memname, by defualt the first region id=0 will be
   // called "/mmio", subsequent regions will be called strcat("/buf", id)
   // Initially set all characters to NULL
-  memset(mem->memname, 0, sizeof(mem->memname));  
+  memset(mem->memname, 0, sizeof(mem->memname));
   if(mem->is_mmiomap == 1)
     {
       sprintf(mem->memname, "/mmio.%s", tstamp_string);
     }
-  else if (mem->is_umas == 1) 
+  else if (mem->is_umas == 1)
     {
       sprintf(mem->memname, "/umas.%s", tstamp_string);
     }
@@ -606,22 +868,22 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   // Tue May  5 19:24:21 PDT 2015
   // https://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html
   // S_IREAD | S_IWRITE are obselete
-  mem->fd_app = shm_open(mem->memname, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
-  if(mem->fd_app < 0)
+  fd_alloc = shm_open(mem->memname, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
+  if(fd_alloc < 0)
     {
       perror("shm_open");
       exit(1);
     }
-      
+
 
   // Mmap shared memory region
   if (suggested_vaddr == (uint64_t*) NULL)
     {
-      mem->vbase = (uint64_t) mmap(NULL, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED, mem->fd_app, 0);
+      mem->vbase = (uint64_t) mmap(NULL, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED, fd_alloc, 0);
     }
   else
     {
-      mem->vbase = (uint64_t) mmap(suggested_vaddr, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, mem->fd_app, 0);
+      mem->vbase = (uint64_t) mmap(suggested_vaddr, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, fd_alloc, 0);
     }
 
   // Check
@@ -630,11 +892,11 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
       perror("mmap");
       exit(1);
     }
-  
-  
+
+
   // Extend memory to required size
   int ret;
-  ret = ftruncate(mem->fd_app, (off_t)mem->memsize);
+  ret = ftruncate(fd_alloc, (off_t)mem->memsize);
 #ifdef ASE_DEBUG
   if (ret != 0)
     {
@@ -685,25 +947,24 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   struct wsmeta_t *ws;
   ws = (struct wsmeta_t *) ase_malloc(sizeof(struct wsmeta_t));
   ws->index = mem->index;
-  ws->buf_structaddr = (uint64_t*)mem;  
+  ws->buf_structaddr = (uint64_t*)mem;
   append_wsmeta(ws);
-
   // pthread_mutex_unlock(&app_lock);
 
-#ifdef ASE_DEBUG  
-  if (fp_pagetable_log != NULL) 
+#ifdef ASE_DEBUG
+  if (fp_pagetable_log != NULL)
     {
-      if (mem->index % 20 == 0) 
+      if (mem->index % 20 == 0)
 	{
-	  fprintf(fp_pagetable_log, 
-		  "Index\tfd_app\tfd_ase\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
-	}      
-      fprintf(fp_pagetable_log, 
-	      "%d\t%d\t%d\t%p\t%p\t%x\t%s\t\t%p\n",
+	  fprintf(fp_pagetable_log,
+		  "Index\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
+	}
+      fprintf(fp_pagetable_log,
+	      "%d\t%p\t%p\t%x\t%s\t\t%p\n",
 	      mem->index,
-	      mem->fd_app,
-	      mem->fd_ase,
-	      (void*)mem->vbase, 
+	      /* fd_alloc, */
+	      /* mem->fd_ase, */
+	      (void*)mem->vbase,
 	      (void*)mem->pbase,
 	      mem->memsize,
 	      mem->memname,
@@ -712,7 +973,7 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
     }
 #endif
 
-  close(mem->fd_app);
+  close(fd_alloc);
 
   FUNC_CALL_EXIT;
 }
@@ -727,17 +988,8 @@ void deallocate_buffer(struct buffer_t *mem)
 {
   FUNC_CALL_ENTRY;
 
-  // pthread_mutex_lock (&app_lock);
-
   int ret;
   char tmp_msg[ASE_MQ_MSGSIZE] = { 0, };
-  /* char *mq_name; */
-  /* mq_name = ase_malloc (ASE_MQ_NAME_LEN); */
-  /* memset(mq_name, 0, ASE_MQ_NAME_LEN); */
-
-#if 0
-  ase_buffer_info(mem);
-#endif 
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Deallocating memory %s ...", mem->memname);
@@ -753,7 +1005,7 @@ void deallocate_buffer(struct buffer_t *mem)
   // Wait for response to deallocate
   mqueue_recv(sim2app_dealloc_rx, tmp_msg, ASE_MQ_MSGSIZE);
   ase_str_to_buffer_t(tmp_msg, mem);
-  
+
   // Unmap the memory accordingly
   ret = munmap((void*)mem->vbase, (size_t)mem->memsize);
   if(0 != ret)
@@ -762,15 +1014,10 @@ void deallocate_buffer(struct buffer_t *mem)
       exit(1);
     }
 
-  //  close(mem->fd_app);
-  // free(mem);
-
   // Print if successful
   BEGIN_YELLOW_FONTCOLOR;
   printf("SUCCESS\n");
   END_YELLOW_FONTCOLOR;
-
-  // pthread_mutex_unlock (&app_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -784,17 +1031,17 @@ void append_wsmeta(struct wsmeta_t *new)
 {
   FUNC_CALL_ENTRY;
 
-  if (wsmeta_head == NULL) 
+  if (wsmeta_head == NULL)
     {
       wsmeta_head = new;
       wsmeta_end = new;
     }
-  
+
   wsmeta_end->next = new;
   new->next = NULL;
   wsmeta_end = new;
   wsmeta_end->valid = 1;
- 
+
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
   struct wsmeta_t *wsptr;
@@ -821,9 +1068,6 @@ void deallocate_buffer_by_index(int search_index)
 {
   FUNC_CALL_ENTRY;
 
-  // pthread_mutex_lock (&app_lock);
-
-  //int wsid;
   uint64_t *bufptr = (uint64_t*) NULL;
   struct wsmeta_t *wsptr;
   BEGIN_YELLOW_FONTCOLOR;
@@ -846,7 +1090,7 @@ void deallocate_buffer_by_index(int search_index)
 	}
     }
   END_YELLOW_FONTCOLOR;
-  
+
   // Call deallocate
   if ((bufptr != NULL) && (wsptr->valid == 1))
     {
@@ -860,8 +1104,6 @@ void deallocate_buffer_by_index(int search_index)
       END_RED_FONTCOLOR;
     }
 
-  // pthread_mutex_unlock (&app_lock);
-
   FUNC_CALL_EXIT;
 }
 
@@ -870,7 +1112,7 @@ void deallocate_buffer_by_index(int search_index)
  * UMSG Get Address
  * umsg_get_address: Takes in umsg_id, and returns App virtual address
  */
-uint64_t* umsg_get_address(int umsg_id) 
+uint64_t* umsg_get_address(int umsg_id)
 {
   uint64_t* ret_vaddr;
   if ((umsg_id >= 0) && (umsg_id < NUM_UMSG_PER_AFU))
@@ -881,7 +1123,8 @@ uint64_t* umsg_get_address(int umsg_id)
     {
       ret_vaddr = NULL;
       BEGIN_RED_FONTCOLOR;
-      printf("  [APP]  Requested umsg_id out of range... returning NULL\n");
+      printf("  [APP] **ERROR** Requested umsg_id out of range... EXITING\n");
+      exit(1);
       END_RED_FONTCOLOR;
     }
   return ret_vaddr;
@@ -889,36 +1132,136 @@ uint64_t* umsg_get_address(int umsg_id)
 
 
 /*
- * umsg_send: Send Umsg
+ * umsg_send: Write data to umsg region
  */
 void umsg_send (int umsg_id, uint64_t *umsg_data)
 {
-  FUNC_CALL_ENTRY;
-
-  umsgcmd_t *umsg_pkt;
-    
-  umsg_pkt = (struct umsgcmd_t *)ase_malloc( sizeof(struct umsgcmd_t) );
-  memset((char*)umsg_pkt, 0, sizeof(struct umsgcmd_t) );
-
-  umsg_pkt->id = umsg_id;
-  memcpy((char*)umsg_pkt->qword, (char*)umsg_data, sizeof(uint64_t));
-
-  // Send Umsg packet to simulator
-  mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt, sizeof(struct umsgcmd_t));
-
-  FUNC_CALL_EXIT;
+  memcpy((char*)umsg_addr_array[umsg_id], (char*)umsg_data, sizeof(uint64_t));
 }
 
 
 /*
+ * Umsg watcher thread
+ * Setup UMSG tracker addresses, and watch for activity
+ */
+#ifdef MT_UMSG_POLL
+// -------------------------------
+// Parallel UMSG watcher threads
+// -------------------------------
+void *umsg_watcher(void *thrptr)
+{
+  // Old known copy
+  char umsg_old_data[CL_BYTE_WIDTH];
+  int cl_id = *((int *) thrptr);  
+
+  // Declare and Allocate umsgcmd_t packet
+  umsgcmd_t *umsg_pkt;
+  umsg_pkt = (struct umsgcmd_t *)ase_malloc( sizeof(struct umsgcmd_t) );
+
+  // Initial copy
+  memcpy( (char*)umsg_old_data,
+	  (char*)((uint64_t)umas_region->vbase + umsg_byteindex_arr[cl_id]),
+	  CL_BYTE_WIDTH
+	  );
+  
+  // Calculate target address
+  umsg_addr_array[cl_id] =  (char*)((uint64_t)umas_region->vbase + umsg_byteindex_arr[cl_id]);      
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [DEBUG]  umsg_addr_array[%d] = %p\n", cl_id, umsg_addr_array[cl_id]);
+  END_YELLOW_FONTCOLOR;
+#endif
+  
+  // Start while loop
+  while(1)
+    {
+      if ( memcmp(umsg_addr_array[cl_id], umsg_old_data, CL_BYTE_WIDTH) != 0)
+	{
+	  printf("Change found... %d\n", cl_id);
+	  // Construct UMsg packet
+	  umsg_pkt->id = cl_id;	      
+	  memcpy((char*)umsg_pkt->qword, (char*)umsg_addr_array[cl_id], CL_BYTE_WIDTH);
+	  
+	  // Send UMsg
+	  pthread_mutex_lock (&umsg_port_lock);
+	  mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt, sizeof(struct umsgcmd_t));
+	  pthread_mutex_unlock (&umsg_port_lock);
+	  
+	  // Update local mirror
+	  memcpy( (char*)umsg_old_data, (char*)umsg_pkt->qword, CL_BYTE_WIDTH );
+	}      
+    }
+}
+#else
+// -------------------------------
+// Single UMSG thread patrol
+// -------------------------------
+void *umsg_watcher()
+{
+  // Generic index
+  int cl_index;
+
+  // UMsg old data
+  char umsg_old_data[NUM_UMSG_PER_AFU][CL_BYTE_WIDTH];
+
+  // Declare and Allocate umsgcmd_t packet
+  umsgcmd_t *umsg_pkt;
+  umsg_pkt = (struct umsgcmd_t *)ase_malloc( sizeof(struct umsgcmd_t) );
+  
+  // Patrol each UMSG line
+  for(cl_index = 0; cl_index < NUM_UMSG_PER_AFU; cl_index++)
+    {
+      // Original copy
+      memcpy( (char*)umsg_old_data[cl_index],
+	      (char*)((uint64_t)umas_region->vbase + umsg_byteindex_arr[cl_index]),
+	      CL_BYTE_WIDTH
+	      );
+
+      // Calculate addres
+      umsg_addr_array[cl_index] = (char*)((uint64_t)umas_region->vbase + umsg_byteindex_arr[cl_index]);      
+    #ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [DEBUG]  umsg_addr_array[%d] = %p\n", cl_index, umsg_addr_array[cl_index]);
+      END_YELLOW_FONTCOLOR;
+    #endif
+    }
+
+  // Set UMsg initialized flag
+  umas_init_flag = 1;
+
+  // While application is running
+  while(1)
+    {
+      // Walk through each line
+      for(cl_index = 0; cl_index < NUM_UMSG_PER_AFU ; cl_index++)
+	{
+	  if ( memcmp(umsg_addr_array[cl_index], umsg_old_data[cl_index], CL_BYTE_WIDTH) != 0)
+	    {
+	      // Construct UMsg packet
+	      umsg_pkt->id = cl_index;	      
+	      memcpy((char*)umsg_pkt->qword, (char*)umsg_addr_array[cl_index], CL_BYTE_WIDTH);
+	      
+	      // Send UMsg
+	      mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt, sizeof(struct umsgcmd_t));
+
+	      // Update local mirror
+	      memcpy( (char*)umsg_old_data[cl_index], (char*)umsg_pkt->qword, CL_BYTE_WIDTH );
+	    }
+	}	
+    }
+}
+#endif
+
+
+/*
  * ase_portctrl: Send port control message to simulator
- * 
+ *
  * AFU_RESET
  * UMSG_MODE <mode_bits>[7:0]
- * 
+ *
  * ## WARNING ##: Do not remove __attribute__ optimization control
- * The extra delay is required for portctrl command to be parsed 
- * by simulator. Removing this CAN have unintended program control 
+ * The extra delay is required for portctrl command to be parsed
+ * by simulator. Removing this CAN have unintended program control
  * or race conditions
  *
  */
@@ -933,9 +1276,5 @@ void ase_portctrl(const char *ctrl_msg)
 
   // Receive message
   mqueue_recv(sim2app_portctrl_rsp_rx, dummy_rxstr, ASE_MQ_MSGSIZE);
-
-  // Allow simulator to parse message and sort itself out
-  usleep(1000);
 }
-
 

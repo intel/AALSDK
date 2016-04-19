@@ -148,19 +148,6 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
    ReadPerfMonitors();
    SavePerfMonitors();
 
-   cout << endl << endl;
-   if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-		 	   //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
-		cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
-			 << Normalized(cmd) << ")'";
-
-		if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-				  	 // 01234567890123 01234567890123
-			cout << "   Rd_Bandwidth   Wr_Bandwidth";
-		}
-		cout << endl;
-   }
-
 #if   defined( __AAL_WINDOWS__ )
 #error TODO
 #elif defined( __AAL_LINUX__ )
@@ -220,49 +207,49 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 
 	    ReadPerfMonitors();
 
-	    PrintOutput(cmd, NumCacheLines);
-
-	    SavePerfMonitors();
-
-	    // Verify the buffers
-	    if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, NumCacheLines) != 0 ){
-	 	   cerr << "Data mismatch in Input and Output buffers.\n";
-	       ++res;
-	       break;
-	    }
-
-	    // Verify the device
-	    if ( 0 != pAFUDSM->test_error ) {
-	       cerr << "Error bit set in DSM.\n";
-          cout << "DSM Test Error: 0x" << std::hex << pAFUDSM->test_error << endl;
-
-          cout << "Mode error vector: " << endl;
-          for (int i=0; i < 8; i++)
-          {
-            cout << "[" << i << "]: 0x" << pAFUDSM->mode_error[i] << endl;
-          }
-          cout << std::dec << endl;
-          ++res;
-          break;
-	    }
-
-	    //Checking for num_clocks underflow.
-	    if(pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead)){
-          cerr << "Number of Clocks is negative.\n";
-          ++res;
-          break;
+	    // Check the device status
+       if ( MaxPoll < 0 ) {
+         cerr << "The maximum timeout for test stop was exceeded." << endl;
+         ++res;
+         break;
        }
+
+       // Verify the device
+       if ( 0 != pAFUDSM->test_error ) {
+           cerr << "Error bit set in DSM.\n";
+           cout << "DSM Test Error: 0x" << std::hex << pAFUDSM->test_error << endl;
+
+           cout << "Mode error vector: " << endl;
+           for (int i=0; i < 8; i++)
+           {
+             cout << "[" << i << "]: 0x" << pAFUDSM->mode_error[i] << endl;
+           }
+           cout << std::dec << endl;
+
+           ++res;
+           break;
+       }
+
+       // Verify the buffers
+       if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, NumCacheLines) != 0 ){
+          cerr << "Data mismatch in Input and Output buffers.\n";
+           ++res;
+           break;
+       }
+
+       //Checking for num_clocks underflow.
+        if(pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead)){
+           cerr << "Number of Clocks underflow.\n";
+           ++res;
+           break;
+       }
+
+	    PrintOutput(cmd, NumCacheLines);
+	    SavePerfMonitors();
 
 	   //Increment number of cachelines
 	   sz += CL(mcl);
 	   NumCacheLines += mcl;
-
-	   // Check the device status
-	   if ( MaxPoll < 0 ) {
-		  cerr << "The maximum timeout for test stop was exceeded." << endl;
-		  ++res;
-		  break;
-	   }
 
 	   MaxPoll = StopTimeoutMillis;
    }
@@ -285,6 +272,19 @@ void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
    bt64bitCSR rawticks     = pAFUDSM->num_clocks;
    bt32bitCSR startpenalty = pAFUDSM->start_overhead;
    bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
+
+   cout << endl << endl;
+   if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
+            //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
+      cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
+          << Normalized(cmd) << ")'";
+
+      if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
+                // 01234567890123 01234567890123
+         cout << "   Rd_Bandwidth   Wr_Bandwidth";
+      }
+      cout << endl;
+   }
 
    cout << setw(10) << cls                         << ' '
        << setw(10) << pAFUDSM->num_reads           << ' '

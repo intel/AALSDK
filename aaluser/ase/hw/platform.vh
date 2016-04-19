@@ -25,16 +25,6 @@
 
 
 /*
- * ASE Channel randomization features
- */
-// `define ASE_RANDOMIZE_TRANSACTIONS 
-
-// parameter CCI_AFU_LOW_OFFSET  = 14'h1000 / 4;
-// parameter AFU_CSR_LO_BOUND    = 16'h1000;
-// parameter AFU_CSR_HI_BOUND    = 16'hFFFF;
-
-
-/*
  * Select the platform to test
  * Options: GENERIC | QPI_JKT
  * 
@@ -49,12 +39,6 @@
   `define DEFEATURE_ATOMICS
  `endif
 
-/*
- * Relevant CSRs that control CCI or AFU behaviour
- */
-// parameter CCI_RESET_CTRL_OFFSET = 14'h280;
-// parameter CCI_RESET_CTRL_BITLOC = 24;
-
 
 /*
  * Platform Specific parameters
@@ -64,11 +48,7 @@
  * LP_INITDONE_READINESS_LATENCY = Amount of time LP takes to be ready after reset is released 
  */
 
- // `define UMSG_HINT2DATA_DELAY          40
- // `define UMSG_NOHINT_DATADELAY         50
  `define UMSG_DELAY_TIMER_LOG2         8
- // `define UMSG_MAX_MSG_LOG2             5
- // `define UMSG_MAX_MSG                  2**`UMSG_MAX_MSG_LOG2
 
  `define SOFT_RESET_DURATION           256
 
@@ -105,13 +85,12 @@
 
  `endif
 
-// parameter NUM_TOTAL_LINKS = `NUM_VL_LINKS + `NUM_VH_LINKS;
-// parameter VL_LO_INDEX     = 0;
-// parameter VL_HI_INDEX     = `NUM_VL_LINKS-1;
-// parameter VH_LO_INDEX     = `NUM_VL_LINKS;
-// parameter VH_HI_INDEX     = NUM_TOTAL_LINKS - 1;
-
-`define MMIO_RESPONSE_TIMEOUT      128
+/*
+ * MMIO Specifications
+ */ 
+`define MMIO_RESPONSE_TIMEOUT        512
+`define MMIO_RESPONSE_TIMEOUT_RADIX  $clog2(`MMIO_RESPONSE_TIMEOUT) + 1
+`define MMIO_MAX_OUTSTANDING         64
 
 
 /*
@@ -131,7 +110,6 @@
 `define MMIO_READ_LATRANGE          15
 `define RDLINE_S_LATRANGE          8,16
 `define RDLINE_I_LATRANGE          8,16
-// `define RDLINE_E_LATRANGE          8,16
 `define WRLINE_M_LATRANGE          4,7
 `define WRLINE_I_LATRANGE          4,7
 `define UMSG_START2HINT_LATRANGE   39,41   // 200 ns

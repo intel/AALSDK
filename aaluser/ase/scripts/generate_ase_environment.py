@@ -26,6 +26,8 @@
 from __future__ import print_function
 import ase_functions
 import os, re, sys
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 if sys.version_info < (2, 7):
     import commands

@@ -38,33 +38,6 @@
 
 #include "ase_common.h"
 
-// ---------------------------------------------------------------------
-// ase_mqueue_teardown(): Teardown DPI message queues
-// Close and unlink DPI message queues
-// ---------------------------------------------------------------------
-#if 0
-void ase_mqueue_teardown()
-{
-  FUNC_CALL_ENTRY;
-
-  // Close message queues
-  mqueue_close(app2sim_alloc_rx);       
-  mqueue_close(sim2app_alloc_tx);       
-  mqueue_close(app2sim_mmioreq_rx);
-  mqueue_close(sim2app_mmiorsp_tx);
-  mqueue_close(app2sim_umsg_rx);
-  mqueue_close(app2sim_simkill_rx);
-  mqueue_close(app2sim_portctrl_req_rx);
-  mqueue_close(app2sim_dealloc_rx);       
-  mqueue_close(sim2app_dealloc_tx);       
-
-  int ipc_iter;
-  for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
-    mqueue_destroy(mq_array[ipc_iter].name);
-
-  FUNC_CALL_EXIT;
-}
-#endif
 
 // ---------------------------------------------------------------
 // ASE graceful shutdown - Called if: error() occurs 
@@ -150,6 +123,7 @@ void ase_alloc_action(struct buffer_t *mem)
   FUNC_CALL_ENTRY;
 
   struct buffer_t *new_buf;
+  int fd_alloc;
 
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
@@ -158,8 +132,8 @@ void ase_alloc_action(struct buffer_t *mem)
 #endif
 
   // Obtain a file descriptor
-  mem->fd_ase = shm_open(mem->memname, O_RDWR, S_IRUSR|S_IWUSR);
-  if(mem->fd_ase < 0)
+  fd_alloc = shm_open(mem->memname, O_RDWR, S_IRUSR|S_IWUSR);
+  if(fd_alloc < 0)
     {
       /* perror("shm_open"); */
       ase_error_report("shm_open", errno, ASE_OS_SHM_ERR);
@@ -173,7 +147,7 @@ void ase_alloc_action(struct buffer_t *mem)
 #endif
 
   // Mmap to pbase, find one with unique low 38 bit
-  mem->pbase = (uint64_t)mmap(NULL, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED, mem->fd_ase, 0);
+  mem->pbase = (uint64_t)mmap(NULL, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED, fd_alloc, 0);
   if(mem->pbase == (uint64_t)NULL)
     {
       ase_error_report("mmap", errno, ASE_OS_MEMMAP_ERR);
@@ -181,8 +155,8 @@ void ase_alloc_action(struct buffer_t *mem)
       ase_perror_teardown();
       start_simkill_countdown(); // RRS: exit(1);
     }
-  ftruncate(mem->fd_ase, (off_t)mem->memsize);
-  close(mem->fd_ase);
+  ftruncate(fd_alloc, (off_t)mem->memsize);
+  close(fd_alloc);
 
   // Record fake address
   mem->fake_paddr = get_range_checked_physaddr(mem->memsize);
@@ -235,14 +209,16 @@ void ase_alloc_action(struct buffer_t *mem)
       if (mem->index % 20 == 0) 
 	{
 	  fprintf(fp_pagetable_log, 
-		  "Index\tfd_app\tfd_ase\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
+		  "Index\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
+	  // "Index\tfd_app\tfd_ase\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
 	}
       
       fprintf(fp_pagetable_log, 
-	      "%d\t%d\t%d\t%p\t%p\t%x\t%s\t\t%p\n",
+	      /* "%d\t%d\t%d\t%p\t%p\t%x\t%s\t\t%p\n", */
+	      "%d\t%p\t%p\t%x\t%s\t\t%p\n",
 	      mem->index,
-	      mem->fd_app,
-	      mem->fd_ase,
+	      /* mem->fd_app, */
+	      /* mem->fd_ase, */
 	      (void*)mem->vbase, 
 	      (void*)mem->pbase,
 	      mem->memsize,
@@ -270,7 +246,7 @@ void ase_dealloc_action(struct buffer_t *buf)
   // Traversal pointer
   struct buffer_t *dealloc_ptr;
   dealloc_ptr = (struct buffer_t *) ase_malloc(sizeof(struct buffer_t));
-  memset(dealloc_ptr, 0, sizeof(struct buffer_t));
+  /* memset(dealloc_ptr, 0, sizeof(struct buffer_t)); */
 
   // Search buffer and Invalidate
   dealloc_ptr = ll_search_buffer(buf->index);
@@ -317,8 +293,8 @@ void ase_dealloc_action(struct buffer_t *buf)
 // --------------------------------------------------------------------
 void ase_empty_buffer(struct buffer_t *buf)
 {
-  buf->fd_app = 0;
-  buf->fd_ase = 0;
+  /* buf->fd_app = 0; */
+  /* buf->fd_ase = 0; */
   buf->index = 0;
   buf->valid = ASE_BUFFER_INVALID;
   buf->metadata = 0;
@@ -348,31 +324,12 @@ void ase_destroy()
 #ifdef ASE_DEBUG
   char str[256];
   sprintf(str, "ASE destroy called");
-  buffer_msg_inject(str);
-#endif
+  buffer_msg_inject(1, str);
+#endif  
 
   struct buffer_t *ptr;
   // ptr = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
 
-/* #ifdef ASE_DEBUG */
-/*   ll_traverse_print(); */
-/* #endif */
-
-//  ptr = end;  
-#if 0
-  while((head != NULL)||(end != NULL))
-    {
-      ptr = end;
-      if(ptr->valid == ASE_BUFFER_VALID)
-	{
-	  ase_dealloc_action(ptr);
-	}
-      else
-	{
-	  ll_remove_buffer(ptr);
-	}
-    } 
-#else
   ptr = head;
   if (head != NULL)
     {
@@ -383,7 +340,6 @@ void ase_destroy()
 	  ptr = ptr->next;
 	}
     }
-#endif
 
 /* #ifdef ASE_DEBUG */
 /*   ll_traverse_print(); */
@@ -391,54 +347,6 @@ void ase_destroy()
   
   FUNC_CALL_EXIT;
 }
-
-
-// ------------------------------------------------------------------------------
-// ase_dbg_memtest : A memory read write test (DEBUG feature)
-// To run the test ASE_MEMTEST_ENABLE must be enabled.
-// - This test runs alongside a process shm_dbg_memtest.
-// - shm_dbg_memtest() is started before MEM_ALLOC_REQ message is sent to DPI
-//   The simply starts writing 0xCAFEBABE to memory region
-// - ase_dbg_memtest() is started after the MEM_ALLOC_REPLY message is sent back
-//   This reads all the data, verifies it is 0xCAFEBABE and writes 0x00000000 there
-// PURPOSE: To make sure all the shared memory regions are initialised correctly
-// -------------------------------------------------------------------------------
-#if 0
-void ase_dbg_memtest(struct buffer_t *mem)
-{
-  uint32_t *memptr;
-  uint32_t *low_addr, *high_addr;
-
-  // Memory test errors counter
-  int memtest_errors = 0;
-
-  // Calculate DPI low and high address
-  low_addr = (uint32_t*)mem->pbase;
-  high_addr = (uint32_t*)((uint64_t)mem->pbase + mem->memsize);
-
-  // Start checker
-  for(memptr = low_addr; memptr < high_addr; memptr++)
-    {
-      if(*memptr != 0xCAFEBABE)
-	memtest_errors++;
-      *memptr = 0x0;
-    }
-
-  // Print result
-  if(memtest_errors == 0)
-    {
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("SIM-C : MEMTEST -> Passed !!\n");
-      END_YELLOW_FONTCOLOR;
-    }
-  else
-    {
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("SIM-C : MEMTEST -> Failed with %d errors !!\n", memtest_errors);
-      END_YELLOW_FONTCOLOR;
-    }
-}
-#endif
 
 
 /*
@@ -512,7 +420,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 
   // Traversal ptr
   struct buffer_t *trav_ptr = (struct buffer_t *)NULL;
-  int buffer_found = 0;
+  // int buffer_found = 0;
 
   if (req_paddr != 0)
     {
@@ -542,7 +450,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 	      real_offset = (uint64_t)req_paddr - (uint64_t)trav_ptr->fake_paddr;
 	      calc_pbase = trav_ptr->pbase;
 	      ase_pbase = (uint64_t*)(calc_pbase + real_offset);
-	      buffer_found = 1;
+	      // buffer_found = 1;
 	      
 	      // Debug only
 #ifdef ASE_DEBUG
@@ -561,13 +469,12 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
     }
   else 
     {
-      buffer_found = 0;
+      // buffer_found = 0;
       trav_ptr = NULL;
     }
 
   // If accesses are correct, ASE should not reach this point
-  // if(trav_ptr == NULL)
-  if(buffer_found == 0)
+  if(trav_ptr == NULL)
     {
       BEGIN_RED_FONTCOLOR;
       printf("@ERROR: ASE has detected a memory operation to an unallocated memory region.\n"

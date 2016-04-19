@@ -65,6 +65,10 @@
 #include "svdpi.h"
 #endif
 
+#ifndef SIM_SIDE
+#define APP_SIDE
+#endif
+
 /*
  * Return integers
  */
@@ -86,18 +90,24 @@
 #define SIZEOF_1GB_BYTES     (uint64_t)pow(1024, 3)
 
 // Size of page
-#define ASE_PAGESIZE   0x1000        // 4096 bytes
-#define CCI_CHUNK_SIZE 2*1024*1024   // CCI 2 MB physical chunks 
+#define ASE_PAGESIZE         0x1000        // 4096 bytes
+#define CCI_CHUNK_SIZE       2*1024*1024   // CCI 2 MB physical chunks 
 
-// CSR memory map size
+//MMIO memory map size
 #define MMIO_LENGTH                512*1024   // 512 KB MMIO size
 #define MMIO_AFU_OFFSET            256*1024
 
+// MMIO Tid width
+#define MMIO_TID_BITWIDTH          9
+#define MMIO_TID_BITMASK           (uint32_t)(pow((uint32_t)2, MMIO_TID_BITWIDTH)-1)
+#define MMIO_MAX_OUTSTANDING       64
+
 // Number of UMsgs per AFU
-#define NUM_UMSG_PER_AFU               8
+#define NUM_UMSG_PER_AFU           8
 
 // UMAS region
-#define UMAS_LENGTH                    NUM_UMSG_PER_AFU * ASE_PAGESIZE
+#define UMAS_LENGTH                NUM_UMSG_PER_AFU * ASE_PAGESIZE
+#define UMAS_REGION_MEMSIZE        2*1024*1024
 
 
 /* *******************************************************************************
@@ -182,12 +192,11 @@ char *app_run_cmd;
                                               // IPCs, manual intervention required
 #define ASE_UNDEF_ERROR                0xFF   // Undefined error, pls report
 
-// Remote Start Stop messages
-/* #define HDR_ASE_READY_STAT   0xFACEFEED */
-/* #define HDR_ASE_KILL_CTRL    0xC00CB00C */
-
 // Simkill message
 #define ASE_SIMKILL_MSG      0xDEADDEAD
+
+// Test complete separator
+#define TEST_SEPARATOR       "#####################################################"
 
 
 /* *******************************************************************************
@@ -199,8 +208,8 @@ char *app_run_cmd;
 // Buffer information structure
 struct buffer_t                   //  Descriptiion                    Computed by
 {                                 // --------------------------------------------
-  int fd_app;                     // File descriptor                 |   APP
-  int fd_ase;                     // File descriptor                 |   SIM
+  /* int fd_app;                     // File descriptor                 |   APP */
+  /* int fd_ase;                     // File descriptor                 |   SIM */
   int index;                      // Tracking id                     | INTERNAL
   int valid;                      // Valid buffer indicator          | INTERNAL
   int metadata;                   // MQ marshalling command          | INTERNAL
@@ -213,7 +222,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
   int is_privmem;                 // Flag memory as a private memory |    
   int is_mmiomap;                 // Flag memory as CSR map          |   
   int is_umas;                    // Flag memory as UMAS region      |
-  struct buffer_t *prev;
+  // struct buffer_t *prev;
   struct buffer_t *next;
 };
 
@@ -234,6 +243,7 @@ struct wsmeta_t
  * MMIO transaction packet
  */
 typedef struct mmio_t {
+  int tid;
   int write_en;
   int width;
   int addr;
@@ -350,9 +360,6 @@ void mqueue_destroy(char*);
 void mqueue_send(int, const char*, int);
 int mqueue_recv(int, char*, int);
 
-// Debug interface
-// void shm_dbg_memtest(struct buffer_t *);
-
 // Timestamp functions
 void put_timestamp();
 char* get_timestamp(int);
@@ -382,6 +389,7 @@ extern "C" {
   void deallocate_buffer_by_index(int);
   void append_wsmeta(struct wsmeta_t *);
   // MMIO activity
+  uint32_t generate_mmio_tid();
   void mmio_request_put(struct mmio_t *);
   void mmio_response_get(struct mmio_t *);
   void mmio_write32(uint32_t index, uint32_t data);
@@ -394,11 +402,20 @@ extern "C" {
   void umsg_set_attribute(uint32_t hint_mask);
   // Driver activity
   void ase_portctrl(const char *);
+  // Threaded watch processes
+  void *mmio_response_watcher();
+#ifdef MT_UMSG_POLL
+  void *umsg_watcher(void *);
+#else
+  void *umsg_watcher();
+#endif
+  void *intr_request_watcher();
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
 
-#define DUMPSTRVAR(varname) fprintf(fp_workspace_log, "%s", #varname);
+#define DUMPSTRVAR(varname) fprintf(DUMPSTRVAR_str, "%s", #varname);
 
 
 /* ********************************************************************
@@ -427,8 +444,8 @@ struct ipc_t
   char path[ASE_FILEPATH_LEN];
   int  perm_flag;
 };
-// struct ipc_t mq_array[ASE_MQ_INSTANCES];
-struct ipc_t *mq_array;
+struct ipc_t mq_array[ASE_MQ_INSTANCES];
+//struct ipc_t *mq_array;
 
 
 /* ********************************************************************
@@ -558,11 +575,13 @@ void sw_reset_response();
 
 // Read system memory line
 void rd_memline_dex( cci_pkt *pkt );
+
 // Write system memory line
 void wr_memline_dex( cci_pkt *pkt );
 
 // MMIO request 
 void mmio_dispatch(int init, struct mmio_t *mmio_pkt);
+
 // MMIO Read response
 void mmio_response(struct mmio_t *mmio_pkt);
 
@@ -570,26 +589,12 @@ void mmio_response(struct mmio_t *mmio_pkt);
 void umsg_dispatch(int init, struct umsgcmd_t *umsg_pkt);
 
 // Buffer message injection
-void buffer_msg_inject (char *);
+void buffer_msg_inject (int, char *);
 
 // Count error flag dex
 extern int count_error_flag_ping();
 void count_error_flag_pong(int);
 void update_glbl_dealloc(int);
-
-
-/*
- * Request/Response options
- */
-// RX0 channel
-/* #define ASE_RX0_CSR_WRITE    0x0 */
-/* #define ASE_RX0_WR_RESP      0x1 */
-/* #define ASE_RX0_RD_RESP      0x4 */
-/* #define ASE_RX0_INTR_CMPLT   0x8   // CCI 1.8 */
-/* #define ASE_RX0_UMSG         0xf   // CCI 1.8 */
-/* // RX1 channel */
-/* #define ASE_RX1_WR_RESP      0x1 */
-/* #define ASE_RX1_INTR_CMPLT   0x8   // CCI 1.8 */
 
 
 /*
@@ -649,22 +654,22 @@ int sim2app_alloc_tx;           // sim2app mesaage queue in TX mode
 int app2sim_mmioreq_rx;   // MMIO Request path
 int sim2app_mmiorsp_tx;   // MMIO Response path
 int app2sim_umsg_rx;      // UMSG    message queue in RX mode
-int app2sim_simkill_rx;   // app2sim message queue in RX mode
 int app2sim_portctrl_req_rx;  // Port Control messages in Rx mode
 int app2sim_dealloc_rx;
 int sim2app_dealloc_tx;
 int sim2app_portctrl_rsp_tx;
+int sim2app_intr_request_tx;
 #else
 int app2sim_alloc_tx;           // app2sim mesaage queue in RX mode
 int sim2app_alloc_rx;           // sim2app mesaage queue in TX mode
 int app2sim_mmioreq_tx;   // MMIO Request path
 int sim2app_mmiorsp_rx;   // MMIO Response path
 int app2sim_umsg_tx;      // UMSG    message queue in RX mode
-int app2sim_simkill_tx;   // app2sim message queue in RX mode
 int app2sim_portctrl_req_tx;  // Port Control message in TX mode 
 int app2sim_dealloc_tx;
 int sim2app_dealloc_rx;
 int sim2app_portctrl_rsp_rx;
+int sim2app_intr_request_rx;
 #endif // End SIM_SIDE
 
 // Defeature Atomics for BDX releases 

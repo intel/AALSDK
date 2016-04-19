@@ -523,9 +523,6 @@ public:
    /// Quiesce is destructive, e.g. outstanding transactions are lost. So state must
    ///    be Reset afterwards.
    ///
-   /// TODO: Implementation needs to be via driver transaction so that driver is in
-   ///          control, in case it needs to perform its own reset operations.
-   ///
    /// @param[in]  rInputArgs      Pointer to Optional Arguments if ever needed. Defaults to NULL.
    /// @return     e_Reset         e_OK if succeeded, other values if a problem.
    ///             e_Error_Quiesce_Timeout indicates that the link did not quiesce within
@@ -540,9 +537,6 @@ public:
    /// It is an error to do anything other than strictly alternate afuQuiesceAndHalt
    ///    and afuReEnable.
    ///
-   /// TODO: Implementation needs to be via driver transaction so that driver is in
-   ///          control, in case it needs to perform its own reset operations.
-   ///
    /// @param[in]  rInputArgs  Pointer to Optional Arguments if ever needed. Defaults to NULL.
    /// @return     e_Reset     e_OK if succeeded. No errors expected.
    ///
@@ -556,9 +550,6 @@ public:
    ///    processing of memory transactions will be disabled,
    ///    the AFU will be sent a Reset signal,
    ///    and transactions will be re-enabled.
-   ///
-   /// TODO: Implementation needs to be via driver transaction so that driver is in
-   ///          control, in case it needs to perform its own reset operations.
    ///
    /// @param[in]  rInputArgs              Pointer to Optional Arguments if ever needed. Defaults to NULL.
    /// @return     e_Reset                 e_OK if succeeded, other values if a problem.
@@ -628,8 +619,6 @@ public:
    ///    the AFU will be yanked. Then, a CleanIt!(tm) AFU will be loaded to clear
    ///    out all the gates and clear the FPGA memory banks.
    ///
-   /// TODO: Implementation needs to be via driver transaction
-   ///
    /// @param[in]  rInputArgs Pointer to input Arguments.
    /// @return     void. Callback in IALIReconfigureClient.
    ///
@@ -643,8 +632,6 @@ public:
    ///    parameter is an NVS. It is also possible in the NVS to specify a PR number
    ///    if that is relevant, e.g. for the PF driver.
    ///
-   /// TODO: Implementation needs to be via driver transaction
-   ///
    /// @param[in]  rInputArgs Pointer to input Arguments.
    /// @return     void. Callback in IALIReconfigureClient.
    ///
@@ -656,8 +643,6 @@ public:
    /// Once the AFU has been reconfigured there needs to be a "probe" to load
    ///    the AFU configuration information, e.g. AFU_ID, so that the associated
    ///    service can be loaded and the whole shebang returned to the application.
-   ///
-   /// TODO: Implementation needs to be via driver transaction
    ///
    /// @param[in]  rInputArgs Pointer to input Arguments.
    /// @return     void. Callback in IALIReconfigureClient.
@@ -686,8 +671,6 @@ public:
 
    /// @brief Deactivate succeeded callback.
    ///
-   /// TODO: Implementation needs to be via driver transaction
-   ///
    /// @param[in]  rTranID Transaction from original reconfDeactivate call.
    /// @return     void.
    ///
@@ -703,8 +686,6 @@ public:
 
    /// @brief Configuration successful.
    ///
-   /// TODO: Implementation needs to be via driver transaction
-   ///
    /// @param[in]  rTranID Transaction from original reconfConfigure call.
    /// @return     void.
    ///
@@ -719,8 +700,6 @@ public:
    virtual void configureFailed( IEvent const &rEvent ) = 0;
 
    /// @brief Activate succeeded callback.
-   ///
-   /// TODO: Implementation needs to be via driver transaction
    ///
    /// @param[in]  rTranID Transaction from original reconfActivate call.
    /// @return     void.

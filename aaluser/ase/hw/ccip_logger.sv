@@ -47,6 +47,7 @@ module ccip_logger
     input int 				     enable_logger,
     input int 				     finish_logger,
     // Buffer message injection
+    input logic 			     log_timestamp_en,
     input logic 			     log_string_en,
     ref string 				     log_string,
     //////////////////////////////////////////////////////////
@@ -242,8 +243,14 @@ module ccip_logger
 	 end
 	 // Buffer messages
 	 if (log_string_en) begin
-	    $fwrite(log_fd, "-----------------------------------------------------\n");
-	    $fwrite(log_fd, "%d\t%s\n", $time, log_string);
+	    if (log_timestamp_en) begin
+	       $fwrite(log_fd, "-----------------------------------------------------\n");
+	       $fwrite(log_fd, "%d\t%s\n", $time, log_string);
+	    end
+	    else begin
+	       $fwrite(log_fd, "-----------------------------------------------------\n");
+	       $fwrite(log_fd, "%s\n", log_string);	       
+	    end
 	 end
 	 /////////////////////// CONFIG CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* SW -> AFU MMIO Write *******************/
