@@ -396,11 +396,23 @@ void _runtime::allocService(Runtime             *pProxy,
                             TransactionID const &rTranID)
 {
    IDispatchable *pDisp = NULL;
+   ClientMap_itr  cmItr;
 
    AutoLock(this);
 
+   if ( Started != m_state ) {
+      pDisp = new RuntimeAllocateServiceFailed(m_pOwnerClient,
+                                               new CExceptionTransactionEvent(NULL,
+                                                                              extranevtServiceAllocateFailed,
+                                                                              rTranID,
+                                                                              errAllocationFailure,
+                                                                              reasRuntimeNotStarted,
+                                                                              "Runtime not started"));
+      goto _SCHED;
+   }
+
    // Make sure the Proxy is valid
-   ClientMap_itr cmItr = m_mClientMap.find(pProxy);
+   cmItr = m_mClientMap.find(pProxy);
 
    if ( m_mClientMap.end() == cmItr ) {
       pDisp = new RuntimeAllocateServiceFailed(m_pOwnerClient,

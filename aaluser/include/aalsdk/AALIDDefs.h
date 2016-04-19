@@ -365,6 +365,8 @@
 #define reasParentReleased             AAL_ReasCode   (0x001B)
 #define reasSingletoneExists           AAL_ReasCode   (0x001C)
 #define reasTimeout                    AAL_ReasCode   (0x001D)
+#define reasRuntimeNotStarted          AAL_ReasCode   (0x001E)
+#define reasRuntimeAlreadyStarted      AAL_ReasCode   (0x001F)
 
 #define strNoError                     "No error."
 #define strInternalSystemFailure       "Internal system failure!"
