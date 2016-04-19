@@ -43,7 +43,6 @@
 //****************************************************************************
 #ifndef __SIGTAPSERVICE_H__
 #define __SIGTAPSERVICE_H__
-#include <aalsdk/service/ALIAFUService.h>
 #include <aalsdk/service/IALIAFU.h>
 #include <aalsdk/aas/AALService.h>
 
