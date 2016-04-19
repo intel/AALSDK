@@ -29,7 +29,7 @@
 ///         and reporting changes in AAL resources (e.g., accelerators)
 /// @ingroup System
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation.
 /// COMMENTS: The AAL Bus suports the dynamic management and 
@@ -122,8 +122,8 @@ DriverEntry( IN PDRIVER_OBJECT DriverObject,
    PTRACEIN;
 
    // Sign on message
-   DbgPrint("Intel(R) QuickAssist Technology Accelerator Abstraction Layer\n");
-   DbgPrint("Intel(R) AAL Bus\n");
+   DbgPrint("Accelerator Abstraction Layer\n");
+   DbgPrint("AAL Bus\n");
    DbgPrint("Copyright (c) 2014-2016 Intel Corporation\n");
    DbgPrint("Built %s %s\n", __DATE__, __TIME__);
       

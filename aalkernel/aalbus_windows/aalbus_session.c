@@ -29,7 +29,7 @@
 ///        AAL bus session objects used for connections with user mode
 /// @ingroup System
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation.
 /// COMMENTS: 

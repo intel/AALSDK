@@ -29,7 +29,7 @@
 ///        associated with the AAL Virtual device being registered.
 /// @ingroup System
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation.
 ///

@@ -29,7 +29,7 @@
 ///          UpdateConfig interface. This module implements that interface
 /// @ingroup System
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation.
 ///

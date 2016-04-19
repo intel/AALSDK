@@ -27,13 +27,12 @@
 ;; POSSIBILITY OF SUCH DAMAGE.
 ;;*****************************************************************************
 ;; @file aalbus.inf
-;; @brief INF file for Intel(R) Quick Assist Software Technology Accelerator 
-;;        Abstraction Layer Software (AAL)
+;; @brief INF file for Accelerator Abstraction Layer Software (AAL)
 ;;        AAL Bus Driver.  This driver represents a software Bus used to manage 
 ;;        instances of AAL Device Services.
 ;; @ingroup System
 ;; @verbatim
-;; Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+;; Accelerator Abstraction Layer
 ;;
 ;; AUTHOR: Joseph Grecco, Intel Corporation
 ;;

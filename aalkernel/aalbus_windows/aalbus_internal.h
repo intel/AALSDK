@@ -28,7 +28,7 @@
 /// @brief Private definitions for the AAL Windows Bus driver.
 /// @ingroup System
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation.
 ///
