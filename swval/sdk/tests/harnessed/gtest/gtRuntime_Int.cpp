@@ -467,18 +467,20 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST_F(Runtime_Int_f_3, DISABLED_aal0791)
+TEST_F(Runtime_Int_f_3, aal0791)
 {
-   // Allocating a sw-only AAL non-Service module. (AAL_BEGIN_MOD, not AAL_BEGIN_SVC_MOD)
+   // Attempting to allocate a sw-only AAL Service from a non-Service module
+   // (AAL_BEGIN_MOD, not AAL_BEGIN_SVC_MOD) results in
+   // IRuntimeClient::runtimeAllocateServiceFailed and IServiceClient::serviceAllocateFailed.
+
 
    TransactionID tid;
    tid.ID(791);
 
    AllocSwvalMod(m_pRuntime, &m_ServiceClient, tid);
-   m_ServiceClient.Wait();
 
-   ASSERT_EQ(1, m_ServiceClient.LogEntries());
-
+   VerifyServiceAllocFailed(&m_RuntimeClient);
+   VerifyServiceAllocFailed(&m_ServiceClient);
 }
 
 TEST_F(Runtime_Int_f_3, aal0792)
