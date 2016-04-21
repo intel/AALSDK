@@ -179,9 +179,8 @@ module ccip_emulator
 	   eREQ_WRLINE_I : txasehdr.txhdr.reqtype = ASE_WRLINE_I;
 	   eREQ_WRLINE_M : txasehdr.txhdr.reqtype = ASE_WRLINE_M;
 	   eREQ_WRFENCE  : txasehdr.txhdr.reqtype = ASE_WRFENCE;
-`ifdef DEFEATRUE_ATOMIC
-	   eREQ_ATOMIC   : txasehdr.txhdr.reqtype = ASE_ATOMIC_REQ;
-`endif
+	   // eREQ_WRPUSH   : txasehdr.txhdr.reqtype = ASE_WRPUSH;	   
+	   // eREQ_ATOMIC   : txasehdr.txhdr.reqtype = ASE_ATOMIC_REQ;
 	   eREQ_INTR     : txasehdr.txhdr.reqtype = ASE_INTR_REQ;
 	 endcase // case (inhdr.req_type)
 	 // Accomodating MCL addr[41:2]=X when SOP=0
@@ -845,7 +844,7 @@ module ccip_emulator
    endfunction
 
    // MMIO Response trigger
-   always @(posedge clk) begin
+   always @(posedge clk) begin : mmio_read_proc
       mmioresp_read <= ~mmioresp_empty;
    end
 
