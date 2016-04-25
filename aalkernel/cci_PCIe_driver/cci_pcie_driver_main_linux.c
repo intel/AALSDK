@@ -260,7 +260,9 @@ static struct cci_pcie_driver_info driver_info = {
       .id_table         = cci_pcie_id_tbl,
       .probe            = cci_pci_probe,
       .remove           = cci_pci_remove,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
       .sriov_configure  = cci_pci_sriov_configure
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0) */
    },
 };
 
@@ -876,6 +878,8 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
 
       ccip_portdev_numports(pccipdev) = i;
       ccip_portdev_maxVFs(pccipdev) = i;     // Can't have more VFs than ports for now
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
       if( 0 != pci_sriov_set_totalvfs(pcidev, ccip_portdev_maxVFs(pccipdev))){
          ccip_portdev_maxVFs(pccipdev) = 0;
          PINFO("Device not does not support SRIOV.");
@@ -883,6 +887,8 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          PERR("Failed to enable SRIOV\n");
          ccip_portdev_maxVFs(pccipdev) = 0;
       }
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0) */
+
    }
 
    // This is a PF driver
