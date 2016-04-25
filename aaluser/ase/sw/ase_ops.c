@@ -458,7 +458,7 @@ void ase_read_lock_file(const char *workdir)
 	  remove_spaces (value);
 	  remove_tabs (value);
 	  remove_newline(value);
-	  // Line 1/2/3 check
+	  // Line 1/2/3/4 check
 	  if ( strcmp (parameter, "pid") == 0)
 	    {
 	      readback_pid = atoi(value);
