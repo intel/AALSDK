@@ -542,7 +542,7 @@ void session_deinit()
       mqueue_close(sim2app_portctrl_rsp_rx);
 
       BEGIN_YELLOW_FONTCOLOR;
-      printf(" DONE\n");
+      // printf(" DONE\n");
       printf("  [APP]  Session ended\n");
       END_YELLOW_FONTCOLOR;
 

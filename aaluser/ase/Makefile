@@ -52,7 +52,7 @@ ASE_DEBUG ?= 1
 ASE_DISABLE_LOGGER = 0
 
 # Coverage settings (lcov in SW and VCS-CM in HW)
-ASE_COVERAGE ?= 1
+ASE_COVERAGE ?= 0
 ifeq ($(ASE_COVERAGE),1)
 ASE_PROFILE_ENABLE ?= 1
 ASE_LCOV_ENABLE ?= 1
@@ -153,7 +153,7 @@ endif
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
-SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK)
+SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) +lint=TFIPC-L
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
   SNPS_VCS_OPT+=  -race
