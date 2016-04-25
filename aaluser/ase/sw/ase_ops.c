@@ -315,6 +315,7 @@ char* ase_malloc (size_t size)
  * | pid = <pid>
  * | host = <hostname>
  * | dir = <$PWD>
+ * | uid = <ASE Unique ID>
  * ------------------------------
  *
  */
@@ -358,6 +359,9 @@ void ase_write_lock_file()
   // Line 3
   fprintf(fp_ase_ready, "dir  = %s\n", ase_workdir_path);
 
+  // Line 4
+  fprintf(fp_ase_ready, "uid  = %s\n", ASE_UNIQUE_ID);
+
   ////////////////////////////////////////////
   // Close file
   fclose(fp_ase_ready);
@@ -387,6 +391,8 @@ void ase_read_lock_file(const char *workdir)
   char *readback_workdir_path;
   char *readback_hostname;
   char *curr_hostname;
+  char *readback_uid;
+  char *curr_uid;
   int readback_pid;
   int ret_err;
 
@@ -452,7 +458,7 @@ void ase_read_lock_file(const char *workdir)
 	  remove_spaces (value);
 	  remove_tabs (value);
 	  remove_newline(value);
-	  // Line 1/2/3 check
+	  // Line 1/2/3/4 check
 	  if ( strcmp (parameter, "pid") == 0)
 	    {
 	      readback_pid = atoi(value);
@@ -465,6 +471,11 @@ void ase_read_lock_file(const char *workdir)
 	    {
 	      readback_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
 	      strncpy(readback_workdir_path, value, ASE_FILEPATH_LEN);
+	    }
+	  else if ( strcmp (parameter, "uid") == 0)
+	    {
+	      readback_uid = ase_malloc(ASE_FILEPATH_LEN);
+	      strncpy(readback_uid, value, ASE_FILEPATH_LEN);
 	    }
 	}
       fclose(fp_exp_ready);
@@ -495,6 +506,27 @@ void ase_read_lock_file(const char *workdir)
 	    #endif
 	    }
 	}
+      
+      // If readback_uid (Readback unique ID from lock file) doesnt match ase_common.h
+      curr_uid = ase_malloc(ASE_FILENAME_LEN);
+      strncpy(curr_uid, ASE_UNIQUE_ID, ASE_FILENAME_LEN);
+      
+      // Check
+      if (strcmp(curr_uid, readback_uid) != 0)
+	{
+	  BEGIN_RED_FONTCOLOR;
+	  printf("** ERROR ** => Application UID does not match known release UID\n");
+	  printf("** ERROR ** => Simulator built with UID=%s, Application built with UID=%s\n", readback_uid, curr_uid );
+	  printf("** ERROR ** => Ensure that ASE simulator and AAL application are compiled from the same System Release version !\n");
+	  printf("** ERROR ** => Simulation cannot proceed ... EXITING\n");
+	  END_RED_FONTCOLOR;
+        #ifdef SIM_SIDE
+	  start_simkill_countdown();
+        #else
+	  exit(1);
+	#endif
+	}
+
     }
   else // File does not exist
     {

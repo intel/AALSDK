@@ -70,9 +70,10 @@ package ase_pkg;
 			     ASE_RDLINE_I   = 4'h2,			     
 			     ASE_WRLINE_I   = 4'h3,
 			     ASE_WRLINE_M   = 4'h4,
-			     ASE_WRFENCE    = 4'h5,
-			     ASE_INTR_REQ   = 4'h6, 
-			     ASE_ATOMIC_REQ = 4'h7 
+			     ASE_WRPUSH     = 4'h5,
+			     ASE_WRFENCE    = 4'h6,
+			     ASE_INTR_REQ   = 4'h7, 
+			     ASE_ATOMIC_REQ = 4'h8 
 			     } ccip_reqtype_t;  		
 
    // Response types

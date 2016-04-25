@@ -118,6 +118,9 @@ char* umsg_addr_array[NUM_UMSG_PER_AFU];
 // UMAS initialized flag
 volatile int umas_init_flag;
 
+// Time elapsed
+clock_t start_clk, end_clk;
+double wall_clk_duration;
 
 /*
  * MSI-X watcher 
@@ -236,6 +239,9 @@ void send_simkill()
 void session_init()
 {
   FUNC_CALL_ENTRY;
+
+  // Start clock_t
+  start_clk = clock();
 
   setvbuf(stdout, NULL, (int)_IONBF, (size_t)0);
 
@@ -542,8 +548,14 @@ void session_deinit()
       mqueue_close(sim2app_portctrl_rsp_rx);
 
       BEGIN_YELLOW_FONTCOLOR;
-      // printf(" DONE\n");
-      printf("  [APP]  Session ended\n");
+      printf(" DONE\n");
+      
+      // Clock end
+      end_clk = clock();
+      wall_clk_duration = (end_clk - start_clk)/(double)CLOCKS_PER_SEC;
+      
+      // printf("  [APP]  Session ended (time elapsed => %f sec)\n", wall_clk_duration);
+      printf("  [APP]  Session ended \n");
       END_YELLOW_FONTCOLOR;
 
       /* free(umas_region); */
