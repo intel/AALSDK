@@ -95,8 +95,8 @@ module outoforder_wrf_channel
     parameter string DEBUG_LOGNAME       = "channel.log",
     parameter int    NUM_WAIT_STATIONS   = 4,
     parameter int    COUNT_WIDTH         = 8,
-    parameter int    VISIBLE_DEPTH_BASE2 = 8,
-    parameter int    VISIBLE_FULL_THRESH = 220,
+    parameter int    VISIBLE_DEPTH_BASE2 = 4,
+    parameter int    VISIBLE_FULL_THRESH = 8,
     parameter int    WRITE_CHANNEL       = 0
     )
    (
@@ -115,7 +115,8 @@ module outoforder_wrf_channel
     // Status signals
     output logic 		       empty,
     output logic 		       almfull,
-    output logic 		       full
+    output logic 		       full,
+    output logic 		       overflow_error
     );
 
 `ifdef ASE_DEBUG
@@ -280,6 +281,18 @@ module outoforder_wrf_channel
       end
    end
 
+   // Overflow check
+   always @(posedge clk) begin
+      if (rst) begin
+	 overflow_error <= 0;	 
+      end
+      else if ((infifo_cnt == VISIBLE_DEPTH-1) && write_en) begin
+	 overflow_error <= 1;
+   `ifdef ASE_DEBUG
+	 $fwrite(log_fd, "%d | ** Overflow Error detected **\n", $time);	 
+   `endif
+      end
+   end
 
    //////////////////////////////////////////////////////////////
    // Scoreboard logic
@@ -1217,7 +1230,6 @@ module outoforder_wrf_channel
 
    //////////////////////////////////////////////////////////////////////
    // Read guard *FIXME*
-
    always @(posedge clk) begin : read_out_proc
       if (rst) begin
 	 valid_out <= 0;	 

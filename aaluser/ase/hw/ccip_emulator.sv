@@ -1225,7 +1225,12 @@ module ccip_emulator
 
    // Register UMSG fifo count
    always @(posedge clk) begin
-      umsgfifo_cnt <= umsgfifo_cnt_tmp;
+      if (ase_reset) begin
+	 umsgfifo_cnt <= 0;
+      end
+      else begin
+	 umsgfifo_cnt <= umsgfifo_cnt_tmp;
+      end
    end
 
 
