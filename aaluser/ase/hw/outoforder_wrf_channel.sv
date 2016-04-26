@@ -95,8 +95,8 @@ module outoforder_wrf_channel
     parameter string DEBUG_LOGNAME       = "channel.log",
     parameter int    NUM_WAIT_STATIONS   = 4,
     parameter int    COUNT_WIDTH         = 8,
-    parameter int    VISIBLE_DEPTH_BASE2 = 4,
-    parameter int    VISIBLE_FULL_THRESH = 8,
+    parameter int    VISIBLE_DEPTH_BASE2 = 8,
+    parameter int    VISIBLE_FULL_THRESH = 220,
     parameter int    WRITE_CHANNEL       = 0
     )
    (

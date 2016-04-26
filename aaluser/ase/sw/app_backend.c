@@ -78,6 +78,7 @@ char *tstamp_string;
 FILE *fp_pagetable_log = (FILE *)NULL;
 #endif
 
+
 /*
  * MMIO Read response watcher
  */
@@ -93,11 +94,13 @@ mmio_t *mmio_rsp_pkt;
 volatile int mmio_rsp_pkt_available;
 volatile int mmio_rsp_pkt_accepted;
 
+
 /*
  * UMsg listener/packet
  */
 // UMsg Watch TID
-#ifdef MT_UMSG_POLL
+// #ifdef MT_UMSG_POLL
+#if 0
 pthread_t umsg_watch_tid[NUM_UMSG_PER_AFU];
 #else
 pthread_t umsg_watch_tid;
@@ -119,8 +122,12 @@ char* umsg_addr_array[NUM_UMSG_PER_AFU];
 volatile int umas_init_flag;
 
 // Time elapsed
-clock_t start_clk, end_clk;
-double wall_clk_duration;
+/* clock_t start_clk, end_clk; */
+/* double wall_clk_duration; */
+
+struct timespec time_snapshot;
+unsigned long long runtime_nsec;
+
 
 /*
  * MSI-X watcher 
@@ -165,11 +172,14 @@ uint32_t generate_mmio_tid()
  */
 void *mmio_response_watcher()
 {
+  // Mark as thread that can be cancelled anytime
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
   mmio_rsp_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
   int ret;
 
   // start watching for messages
-  while(1)
+  while(mmio_exist_status == ESTABLISHED)
     {
       // Set available/accepted flag to 0
       mmio_rsp_pkt_accepted = 0;
@@ -241,7 +251,7 @@ void session_init()
   FUNC_CALL_ENTRY;
 
   // Start clock_t
-  start_clk = clock();
+  /* start_clk = clock(); */
 
   setvbuf(stdout, NULL, (int)_IONBF, (size_t)0);
 
@@ -351,22 +361,6 @@ void session_init()
   // Thread error integer
   int thr_err;
 
-  // Start MMIO read response watcher watcher thread
-  printf("  [APP]  Starting MMIO Read Response watcher ... ");
-  thr_err = pthread_create (&mmio_watch_tid, NULL, &mmio_response_watcher, NULL);
-  if (thr_err != 0)
-    {
-      BEGIN_RED_FONTCOLOR;
-      printf("FAILED\n");
-      perror("pthread_create");
-      exit(1);
-      END_RED_FONTCOLOR;
-    }
-  else
-    {
-      printf("SUCCESS\n");
-    }
-  
   // Start MSI-X watcher thread
   // printf("  [APP]  Starting Interrupt watcher ... ");
 
@@ -413,12 +407,34 @@ void session_init()
   printf("  [APP]  UMAS Virtual Base address = %p\n", (void*)umsg_umas_vbase);
   END_YELLOW_FONTCOLOR;
 
+
+  // Start MMIO read response watcher watcher thread
+  BEGIN_YELLOW_FONTCOLOR;  
+  printf("  [APP]  Starting MMIO Read Response watcher ... ");
+  END_YELLOW_FONTCOLOR;
+  thr_err = pthread_create (&mmio_watch_tid, NULL, &mmio_response_watcher, NULL);
+  if (thr_err != 0)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("FAILED\n");
+      perror("pthread_create");
+      exit(1);
+      END_RED_FONTCOLOR;
+    }
+  else
+    {
+      printf("SUCCESS\n");
+    }
+  
+
+
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Starting UMsg watcher ... ");
   END_YELLOW_FONTCOLOR;
 
-#ifdef MT_UMSG_POLL
-  int cl_index;
+  // #ifdef MT_UMSG_POLL
+#if 0
+ int cl_index;
   for(cl_index = 0; cl_index < NUM_UMSG_PER_AFU; cl_index++)
     {
       thr_err = pthread_create (&umsg_watch_tid[cl_index], NULL, &umsg_watcher, (void*) &cl_index);
@@ -472,6 +488,7 @@ void session_deinit()
   int thr_err;
   int umsg_id;
   int ret;
+  void** join_ret;
 
   if (session_exist_status == ESTABLISHED)
     {
@@ -482,18 +499,26 @@ void session_deinit()
 	  printf("  [APP]  Closing Watcher threads\n");
 	  END_YELLOW_FONTCOLOR;
 	  // Close UMsg thread	  
-    #ifdef MT_UMSG_POLL
+	  // #ifdef MT_UMSG_POLL
+    #if 0
 	  for(umsg_id = 0; umsg_id < NUM_UMSG_PER_AFU ; umsg_id++)
  	    {
-	      ret = pthread_kill(umsg_watch_tid[umsg_id], SIGINT);
+	      ret = pthread_kill(umsg_watch_tid[umsg_id], 0);
 	      if (ret != 0)
 		{
 		  printf("  [APP]  pthread_kill failed with ret=%d\n", ret);
 		}
 	    }
-	  // pthread_kill(*umsg_watch_tid, SIGINT);
+	  // pthread_kill(*umsg_watch_tid, 0);
     #else
-	  pthread_kill(umsg_watch_tid, SIGINT);
+	  /* ret = pthread_kill(umsg_watch_tid, 0); */
+	  /* if (ret != 0) */
+	  /*   { */
+	  /*     printf("  [APP]  pthread_kill failed with ret=%d\n", ret); */
+	  /*   } */
+	  /* umas_exist_status = NOT_ESTABLISHED; */
+	  /* pthread_join (umsg_watch_tid, join_ret); */
+	  pthread_cancel (umsg_watch_tid);
     #endif
 
 	  // Deallocate the region
@@ -501,7 +526,6 @@ void session_deinit()
 	  printf("  [APP]  Deallocating UMAS\n");
 	  deallocate_buffer(umas_region);
 	  END_YELLOW_FONTCOLOR;
-	  umas_exist_status = NOT_ESTABLISHED;
 	}
     #ifdef ASE_DEBUG
       else
@@ -534,7 +558,13 @@ void session_deinit()
 #endif
 
       // Close MMIO Response tracker thread
-      pthread_kill(mmio_watch_tid, SIGINT);
+      /* ret = pthread_kill(mmio_watch_tid, 0); */
+      /* if (ret != 0) */
+      /* 	{ */
+      /* 	  printf("  [APP]  pthread_kill failed with ret=%d\n", ret); */
+      /* 	} */
+      /* pthread_join (mmio_watch_tid, join_ret); */
+      pthread_cancel (mmio_watch_tid);
 
       // close message queue
       mqueue_close(app2sim_mmioreq_tx);
@@ -548,14 +578,17 @@ void session_deinit()
       mqueue_close(sim2app_portctrl_rsp_rx);
 
       BEGIN_YELLOW_FONTCOLOR;
-      printf(" DONE\n");
+      // printf(" DONE\n");
       
       // Clock end
-      end_clk = clock();
-      wall_clk_duration = (end_clk - start_clk)/(double)CLOCKS_PER_SEC;
+      // end_clk = clock();
+      // wall_clk_duration = (end_clk - start_clk)/(double)CLOCKS_PER_SEC;
       
-      // printf("  [APP]  Session ended (time elapsed => %f sec)\n", wall_clk_duration);
-      printf("  [APP]  Session ended \n");
+      clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time_snapshot);
+      runtime_nsec = time_snapshot.tv_sec*1e9 + time_snapshot.tv_nsec;
+
+      printf("  [APP]  Session ended (time elapsed => %llu nsec)\n", runtime_nsec );
+      // printf("  [APP]  Session ended \n");
       END_YELLOW_FONTCOLOR;
 
       /* free(umas_region); */
@@ -1159,7 +1192,8 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
  * Umsg watcher thread
  * Setup UMSG tracker addresses, and watch for activity
  */
-#ifdef MT_UMSG_POLL
+// #ifdef MT_UMSG_POLL
+#if 0 
 // -------------------------------
 // Parallel UMSG watcher threads
 // -------------------------------
@@ -1188,7 +1222,7 @@ void *umsg_watcher(void *thrptr)
 #endif
   
   // Start while loop
-  while(1)
+  while(umas_exist_status == ESTABLISHED)
     {
       if ( memcmp(umsg_addr_array[cl_id], umsg_old_data, CL_BYTE_WIDTH) != 0)
 	{
@@ -1213,6 +1247,9 @@ void *umsg_watcher(void *thrptr)
 // -------------------------------
 void *umsg_watcher()
 {
+  // Mark as thread that can be cancelled anytime
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+  
   // Generic index
   int cl_index;
 
@@ -1245,7 +1282,7 @@ void *umsg_watcher()
   umas_init_flag = 1;
 
   // While application is running
-  while(1)
+  while(umas_exist_status == ESTABLISHED)
     {
       // Walk through each line
       for(cl_index = 0; cl_index < NUM_UMSG_PER_AFU ; cl_index++)
