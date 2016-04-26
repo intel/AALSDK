@@ -282,13 +282,7 @@ btBool ServiceBase::initFailed(IEvent const *ptheEvent)
       return getAALServiceModule()->ServiceInitFailed(dynamic_cast<IBase *>(this), ptheEvent);
    }
 
-   // TODO IS THIS A VALID PATH
-   ASSERT(false);
-/*
-   return getRuntime()->schedDispatchable( new ServiceAllocateFailed(getServiceClient(),
-                                                                     getRuntimeClient(),
-                                                                     ptheEvent) );
-                                                                     */
+   return false;
 }
 
 void ServiceBase::serviceRevoke()
