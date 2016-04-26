@@ -578,17 +578,13 @@ void session_deinit()
       mqueue_close(sim2app_portctrl_rsp_rx);
 
       BEGIN_YELLOW_FONTCOLOR;
-      // printf(" DONE\n");
       
-      // Clock end
-      // end_clk = clock();
-      // wall_clk_duration = (end_clk - start_clk)/(double)CLOCKS_PER_SEC;
-      
+      // Clock snapshot
       clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time_snapshot);
       runtime_nsec = time_snapshot.tv_sec*1e9 + time_snapshot.tv_nsec;
 
       printf("  [APP]  Session ended (time elapsed => %llu nsec)\n", runtime_nsec );
-      // printf("  [APP]  Session ended \n");
+
       END_YELLOW_FONTCOLOR;
 
       /* free(umas_region); */
