@@ -52,7 +52,7 @@ ASE_DEBUG ?= 1
 ASE_DISABLE_LOGGER = 0
 
 # Coverage settings (lcov in SW and VCS-CM in HW)
-ASE_COVERAGE ?= 1
+ASE_COVERAGE ?= 0
 ifeq ($(ASE_COVERAGE),1)
 ASE_PROFILE_ENABLE ?= 1
 ASE_LCOV_ENABLE ?= 1
@@ -131,7 +131,7 @@ SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 # SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
-# SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+USE_PLATFORM_CCIP  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
+SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+USE_PLATFORM_CCIP  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
 SNPS_VLOGAN_OPT+= +lint=all,noVCDE,noNS,NCEID,CAWM,TFIPC,IPDP,PCWM
 ifeq ($(ASE_DEBUG), 1)
   ifeq ($(ASE_DISABLE_LOGGER), 1)
@@ -153,7 +153,7 @@ endif
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
-SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK)
+SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) +lint=TFIPC-L
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
   SNPS_VCS_OPT+=  -race
@@ -326,23 +326,30 @@ ifdef GLS_SIM
   endif
 endif
 # Check if some RTL simulator exists
-ifndef VCS_HOME
-  ifndef MTI_HOME
-	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
-	exit 1
-  endif
+ifeq ($(SIMULATOR), VCS)
+  ifndef VCS_HOME
 	@echo "**ERROR** : env(VCS_HOME) is not set ! svdpi.h cannot be found !"
 	exit 1
-endif
-# Check if some RTL simulator exists
-ifndef SNPS_COMMAND
-  ifndef MENT_COMMAND
-	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
-	exit 1
   endif
+  ifndef SNPS_COMMAND
 	@echo "**ERROR** : Synopsys commands (vlogan, vcs) not found !"
 	exit 1
+  endif
+else 
+  ifeq ($(SIMULATOR), QUESTA)
+    ifndef MTI_HOME
+	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
+	exit 1
+    endif	
+    ifndef MENT_COMMAND
+	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
+	exit 1
+    endif
+  else
+     @echo "**ERROR**: Unknown RTL simulator tool in use --- this is unsupported !"
+  endif
 endif
+
 
 # Print version number
 header:
@@ -493,8 +500,8 @@ scan-build:
 # Coverage
 coverage:
 	cd $(WORK) ; lcov --base-directory . --directory . --capture --output-file ase_libs.info ; genhtml -o lcov_coverage/ ase_libs.info ; cd -
-#urg -dir $(WORK)/coverage.vdb ; cd -
-	# firefox $(WORK)/urgReport/dashboard.html &
+#	urg -dir $(WORK)/coverage.vdb ; cd -
+#	firefox $(WORK)/urgReport/dashboard.html &
 	firefox ./$(WORK)/lcov_coverage/index.html &
 
 # Valgrind run

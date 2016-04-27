@@ -47,17 +47,6 @@ include ase_sources.mk
 # ASE Version
 ASE_VERSION = 5.0.2-Beta
 
-# ASE switches (these tend to increase log sizes)
-ASE_DEBUG ?= 1
-ASE_DISABLE_LOGGER = 0
-
-# Coverage settings (lcov in SW and VCS-CM in HW)
-ASE_COVERAGE ?= 0
-ifeq ($(ASE_COVERAGE),1)
-ASE_PROFILE_ENABLE ?= 1
-ASE_LCOV_ENABLE ?= 1
-endif
-
 # Enable Altera gates library
 GLS_SIM = 1
 GLS_SAMPLE_LIB = $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
@@ -82,17 +71,11 @@ MENT_COMMAND = $(shell command -v vsim)
 ## C Compiler options
 CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1
 CC_OPT+= -Wall 
-ifeq ($(ASE_DEBUG), 1)
-CC_OPT+= -D ASE_DEBUG=1
-endif
 ifeq ($(SIMULATOR), VCS)
 CC_OPT+= -I $(VCS_HOME)/include/
 endif
 ifeq ($(SIMULATOR), QUESTA)
 CC_OPT+= -I $(MTI_HOME)/include/
-endif
-ifeq ($(ASE_LCOV_ENABLE), 1)
-CC_OPT+= -fprofile-arcs -ftest-coverage
 endif
 
 
@@ -113,10 +96,7 @@ WORK = work
 
 # -lrt option is required in order to use shared memory /dev/shm,
 # -message queues and pthreads
-ASE_LD_SWITCHES = -lrt -lpthread -lstdc++
-ifeq ($(ASE_LCOV_ENABLE), 1)
-ASE_LD_SWITCHES+= -lgcov
-endif
+ASE_LD_SWITCHES= -lrt -lpthread -lstdc++
 
 
 #########################################################################
@@ -131,14 +111,7 @@ SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 # SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
-SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+USE_PLATFORM_CCIP  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
 SNPS_VLOGAN_OPT+= +lint=all,noVCDE,noNS,NCEID,CAWM,TFIPC,IPDP,PCWM
-ifeq ($(ASE_DEBUG), 1)
-  ifeq ($(ASE_DISABLE_LOGGER), 1)
-   SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
-  endif
-  SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +warn
-endif
 ifdef GLS_SIM
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
@@ -153,18 +126,8 @@ endif
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
-SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) +lint=TFIPC-L
+SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK)
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
-ifeq ($(ASE_DEBUG), 1)
-  SNPS_VCS_OPT+=  -race
-  ifeq ($(ASE_PROFILE_ENABLE), 1)
-    SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
-    SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
-    SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
-    SNPS_VCS_OPT+= -simprofile +prof
-  endif
-# SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
-endif
 
 ## Simulation options
 VCS_SIM_OPT = -l run.log -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
@@ -181,7 +144,7 @@ MENT_VLOG_OPT = -64 -nologo +librescan -work $(WORK)
 MENT_VLOG_OPT+= -dpiheader work/dpiheader.h
 MENT_VLOG_OPT+= +incdir+$(ASE_INCDIR)+$(DUT_INCDIR)+$(WORK)
 MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
-MENT_VLOG_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
+# MENT_VLOG_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
 ifdef GLS_SIM
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
@@ -197,88 +160,6 @@ endif
 ## VSIM elaboration, and run options
 MENT_VSIM_OPT = -64 -c -l run.log
 MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) -do vsim_run.tcl
-
-#########################################################################
-#                         Valgrind options                              #
-#########################################################################
-VALGRIND_OPTS = --tool=memcheck
-VALGRIND_OPTS+= -v --log-file=valgrind.log --error-limit=no
-VALGRIND_OPTS+= --track-fds=yes --trace-children=yes
-VALGRIND_OPTS+= --leak-check=full --track-origins=yes
-VALGRIND_OPTS+= --show-reachable=yes
-VALGRIND_OPTS+= --show-leak-kinds=definite,possible
-VALGRIND_OPTS+= --undef-value-errors=yes
-
-
-#########################################################################
-#                          Clang settings                               #
-#########################################################################
-CLANG_VERSION=3.6
-
-CLANG_OPT = -v -v -v -k -analyze-headers --use-cc=gcc -stats
-CLANG_OPT+= -maxloop 100
-CLANG_OPT+= -o $(PWD)/scanbuild/
-CLANG_OPT+= --use-analyzer=/usr/bin/clang-3.6
-CLANG_OPT+= \
-	-enable-checker alpha.core.BoolAssignment \
-	-enable-checker alpha.core.CastSize \
-	-enable-checker alpha.core.CastToStruct \
-	-enable-checker alpha.core.FixedAddr \
-	-enable-checker alpha.core.IdenticalExpr \
-	-enable-checker alpha.core.PointerArithm \
-	-enable-checker alpha.core.PointerSub \
-	-enable-checker alpha.core.SizeofPtr \
-	-enable-checker alpha.cplusplus.VirtualCall \
-	-enable-checker alpha.deadcode.UnreachableCode \
-	-enable-checker alpha.osx.cocoa.Dealloc \
-	-enable-checker alpha.osx.cocoa.DirectIvarAssignment \
-	-enable-checker alpha.osx.cocoa.DirectIvarAssignmentForAnnotatedFunctions \
-	-enable-checker alpha.osx.cocoa.InstanceVariableInvalidation \
-	-enable-checker alpha.osx.cocoa.MissingInvalidationMethod \
-	-enable-checker alpha.security.ArrayBound \
-	-enable-checker alpha.security.ArrayBoundV2 \
-	-enable-checker alpha.security.MallocOverflow \
-	-enable-checker alpha.security.ReturnPtrRange \
-	-enable-checker alpha.unix.Chroot \
-	-enable-checker alpha.unix.MallocWithAnnotations \
-	-enable-checker alpha.unix.PthreadLock \
-	-enable-checker alpha.unix.SimpleStream \
-	-enable-checker alpha.unix.Stream \
-	-enable-checker alpha.unix.cstring.BufferOverlap \
-	-enable-checker alpha.unix.cstring.NotNullTerminated \
-	-enable-checker alpha.unix.cstring.OutOfBounds \
-	-enable-checker debug.ConfigDumper \
-	-enable-checker debug.DumpDominators \
-	-enable-checker debug.DumpLiveVars \
-	-enable-checker debug.DumpTraversal \
-	-enable-checker debug.ExprInspection \
-	-enable-checker debug.Stats \
-	-enable-checker debug.ViewExplodedGraph \
-	-enable-checker llvm.Conventions \
-	-enable-checker osx.API \
-	-enable-checker osx.SecKeychainAPI \
-	-enable-checker osx.cocoa.AtSync \
-	-enable-checker osx.cocoa.ClassRelease \
-	-enable-checker osx.cocoa.IncompatibleMethodTypes \
-	-enable-checker osx.cocoa.Loops \
-	-enable-checker osx.cocoa.NSAutoreleasePool \
-	-enable-checker osx.cocoa.NSError \
-	-enable-checker osx.cocoa.NilArg \
-	-enable-checker osx.cocoa.NonNilReturnValue \
-	-enable-checker osx.cocoa.RetainCount \
-	-enable-checker osx.cocoa.SelfInit \
-	-enable-checker osx.cocoa.UnusedIvars \
-	-enable-checker osx.cocoa.VariadicMethodTypes \
-	-enable-checker osx.coreFoundation.CFError \
-	-enable-checker osx.coreFoundation.CFNumber \
-	-enable-checker osx.coreFoundation.CFRetainRelease \
-	-enable-checker osx.coreFoundation.containers.OutOfBounds \
-	-enable-checker osx.coreFoundation.containers.PointerSizedValues \
-	-enable-checker security.FloatLoopCounter \
-	-enable-checker security.insecureAPI.rand \
-	-enable-checker security.insecureAPI.strcpy \
-	-enable-checker debug.TaintTest \
-	-enable-checker alpha.security.taint.TaintPropagation \
 
 
 #########################################################################
@@ -326,28 +207,22 @@ ifdef GLS_SIM
   endif
 endif
 # Check if some RTL simulator exists
-ifeq ($(SIMULATOR), VCS)
-  ifndef VCS_HOME
-	@echo "**ERROR** : env(VCS_HOME) is not set ! svdpi.h cannot be found !"
-	exit 1
-  endif
-  ifndef SNPS_COMMAND
-	@echo "**ERROR** : Synopsys commands (vlogan, vcs) not found !"
-	exit 1
-  endif
-else 
-  ifeq ($(SIMULATOR), QUESTA)
-    ifndef MTI_HOME
+ifndef VCS_HOME
+  ifndef MTI_HOME
 	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
 	exit 1
-    endif	
-    ifndef MENT_COMMAND
+  endif
+	@echo "**ERROR** : env(VCS_HOME) is not set ! svdpi.h cannot be found !"
+	exit 1
+endif
+# Check if some RTL simulator exists
+ifndef SNPS_COMMAND
+  ifndef MENT_COMMAND
 	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
 	exit 1
-    endif
-  else
-     @echo "**ERROR**: Unknown RTL simulator tool in use --- this is unsupported !"
   endif
+	@echo "**ERROR** : Synopsys commands (vlogan, vcs) not found !"
+	exit 1
 endif
 
 
@@ -459,9 +334,6 @@ else
 	@echo "############################################################"
   endif
 endif
-ifeq ($(ASE_COVERAGE), 1)
-	make coverage
-endif
 
 # Open Wave file
 wave: check
@@ -486,38 +358,4 @@ clean: header
 
 distclean: header clean
 	./distclean.sh
-
-
-#########################################################################
-#                            Internal only                              #
-#########################################################################
-# Source scan-build
-scan-build:
-	rm -rf scanbuild
-	mkdir -p scanbuild
-	scan-build-3.6 $(CLANG_OPT) make sw_build | tee scan-build.log
-
-# Coverage
-coverage:
-	cd $(WORK) ; lcov --base-directory . --directory . --capture --output-file ase_libs.info ; genhtml -o lcov_coverage/ ase_libs.info ; cd -
-#	urg -dir $(WORK)/coverage.vdb ; cd -
-#	firefox $(WORK)/urgReport/dashboard.html &
-	firefox ./$(WORK)/lcov_coverage/index.html &
-
-# Valgrind run
-valgrind_run:
-	cd ./$(WORK)/; valgrind $(VALGRIND_OPTS) ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
-
-# Test
-test: all sim
-
-# On long regression runs, dont create a run.log
-long_sim:
-	cd ./$(WORK)/; ./ase_simv -ucli -do $(ASE_SRCDIR)/vcs_run.tcl +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
-
-cppcheck:
-	cd sw ; cppcheck *.c -DSIM_SIDE=1 -D__x86_64__ --enable=all -v --check-config | tee ../lint.log -I /usr/include/ ; cd -
-
-gdb_sim:
-	cd ./$(WORK)/; gdb --args ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 

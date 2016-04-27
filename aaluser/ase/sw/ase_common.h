@@ -72,7 +72,7 @@
 /*
  * ASE Unique ID Check
  */
-#define ASE_UNIQUE_ID "SR-5.0.2-Beta-a9083b2"
+#define ASE_UNIQUE_ID "SR-5.0.2-Beta-c21259b"
 
 
 /*
