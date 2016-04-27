@@ -576,7 +576,8 @@ void _runtime::removeProxy(Runtime *pRuntimeProxy)
 //=============================================================================
 void _runtime::releaseRuntimeInstance(Runtime *pRuntimeProxy)
 {
-   IDispatchable *pDisp = NULL;
+   IDispatchable *pDisp  = NULL;
+   btBool         DoStop = false;
 
    {
       AutoLock(&TheRuntimeMtx);
@@ -606,18 +607,34 @@ void _runtime::releaseRuntimeInstance(Runtime *pRuntimeProxy)
       }
 
       if ( IsOK() && ( Stopped != m_state ) ) {
-         // Stop and clean up properly  TODO
+         DoStop = true;
       }
+   }
 
-      if(m_mClientMap.size() >1){
+   if ( DoStop ) {
+      // Prepare our sem. We will wait for notification from serviceReleased() before continuing.
+      // (Don't wait while locked.)
+      m_sem.Reset(0);
+
+      dynamic_ptr<IAALService>(iidService, m_pBrokerbase)->Release(TransactionID(Broker));
+
+      m_sem.Wait();
+
+      ASSERT(Stopped == m_state);
+   }
+
+   {
+      AutoLock(&TheRuntimeMtx);
+
+      if ( m_mClientMap.size() > 1 ) {
           AAL_DEBUG(LM_AAS, "Unclean destroy of primary Runtime. Num Proxies " << m_mClientMap.size() << std::endl);
-      }else{
+      } else {
           // Take owner off of Proxy list
          m_mClientMap.erase(m_pOwner);
          AAL_DEBUG(LM_AAS, "releaseRuntimeInstance: Num Proxies " << m_mClientMap.size() << std::endl);
       }
-      delete this;
 
+      delete this;
       pTheRuntime = NULL;
    }
 
@@ -846,6 +863,8 @@ void _runtime::serviceReleased(TransactionID const &rTranID)
 
          // Fire and final event and wait for it to be dispatched.
          FireAndWait( new RuntimeStopped(m_pOwnerClient, m_pOwner) );
+
+         m_sem.Post(1);
       } break;
 
       default :

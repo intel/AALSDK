@@ -225,6 +225,32 @@ TEST_F(Runtime_Int_f_2, aal0790)
    EXPECT_TRUE(IsOK());
 }
 
+TEST_F(Runtime_Int_f_2, aal0806)
+{
+   // When Runtime::start() is called, then the Runtime object is destroyed without
+   // explicitly calling Runtime::stop(), the Runtime is transitioned to the stopped
+   // state before the destructor returns.
+
+   NamedValueSet args;
+
+   EXPECT_TRUE(start(args));
+   m_RuntimeClient.Wait();
+
+   delete m_pRuntime;
+
+   ASSERT_EQ(2, m_RuntimeClient.LogEntries()) << m_RuntimeClient;
+   EXPECT_STREQ("IRuntimeClient::runtimeStopped", m_RuntimeClient.Entry(1).MethodName());
+
+   btObjectType x = NULL;
+   m_RuntimeClient.Entry(1).GetParam("pRuntime", &x);
+
+   ASSERT_NONNULL(x);
+   IRuntime *pRT = reinterpret_cast<IRuntime *>(x);
+   EXPECT_EQ(dynamic_cast<IRuntime *>(m_pRuntime), pRT);
+
+   m_pRuntime = NULL;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename RTClient,
