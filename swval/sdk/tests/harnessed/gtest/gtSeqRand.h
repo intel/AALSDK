@@ -126,8 +126,6 @@ public:
 
    btUnsigned32bitInt Count() const { return m_Count; }
 
-   btUnsigned32bitInt Seed(btUnsigned32bitInt ) { return 0; }
-
    virtual eBasicTypes BasicType() const = 0;
 
 protected:
@@ -146,17 +144,16 @@ public:
    TValueRandomizer(const X *pValues, btUnsigned32bitInt Count) :
       m_pValues(pValues),
       m_Count(Count),
-      m_Seed(GlobalTestConfig::GetInstance().RandSeed()),
-      m_SaveSeed(m_Seed)
+      m_RNG(GlobalTestConfig::GetInstance().RandSeed())
    {}
    virtual ~TValueRandomizer() {}
 
-   void Snapshot() { m_SaveSeed = m_Seed;     }
-   void Replay()   { m_Seed     = m_SaveSeed; }
+   void Snapshot() { m_RNG.Snapshot(); }
+   void Replay()   { m_RNG.Replay();   }
 
    const X & Value()
    {
-      btUnsigned32bitInt i = ::GetRand(&m_Seed) % m_Count;
+      btUnsigned32bitInt i = ((btUnsigned32bitInt) m_RNG.rng()) % m_Count;
       return *(m_pValues + i);
    }
 
@@ -166,19 +163,12 @@ public:
       btUnsigned32bitInt i;
       do
       {
-         i = ::GetRand(&m_Seed) % m_Count;
+         i = ((btUnsigned32bitInt) m_RNG.rng()) % m_Count;
       }while ( c.equal(*(m_pValues + i), x) );
       return *(m_pValues + i);
    }
 
    btUnsigned32bitInt Count() const { return m_Count; }
-
-   btUnsigned32bitInt Seed(btUnsigned32bitInt s)
-   {
-      btUnsigned32bitInt prev = m_Seed;
-      m_Seed = s;
-      return prev;
-   }
 
    virtual eBasicTypes BasicType() const = 0;
 
@@ -187,8 +177,7 @@ protected:
 
    const X                 *m_pValues;
    const btUnsigned32bitInt m_Count;
-   btUnsigned32bitInt       m_Seed;
-   btUnsigned32bitInt       m_SaveSeed;
+   RepeatableRandomInt      m_RNG;
 };
 
 template <typename ElemT, typename Compare, typename ArrT>

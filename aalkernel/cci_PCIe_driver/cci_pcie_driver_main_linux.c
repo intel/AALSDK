@@ -53,16 +53,16 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-//        FILE: cci_pcie_driver_pdde_linux.c
+//        FILE: cci_pcie_driver_main.c
 //     CREATED: 10/14/2015
 //      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
-//              Ananda Ravuri, Intel <ananda.ravuri@intel.com>
-// PURPOSE: This file implements the Physical Device Discovery and Enumeration
+// PURPOSE: This file implements init/exit entry points for the
+//          AAL FPGA device driver for
 //          functionality of the AAL FPGA device driver.
 // HISTORY:
 // COMMENTS: Linux specific
 // WHEN:          WHO:     WHAT:
-// 10/14/2015    JG       Initial version started
+// 10/14/2015     JG       Initial version started
 //****************************************************************************
 #include "aalsdk/kernel/kosal.h"
 
@@ -78,14 +78,16 @@
 
 #include "ccip_fme.h"
 #include "ccip_port.h"
-#include "ccip_perfmon.h"
-
+#include "ccip_perfmon_linux.h"
 
 extern int print_sim_fme_device(struct fme_device *);
 extern int print_sim_port_device(struct port_device *pport_dev);
 
 /// g_device_list - Global device list for this module.
-struct list_head g_device_list;
+kosal_list_head g_device_list;
+
+static btBool isPFDriver = 0;
+
 
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -106,7 +108,7 @@ MODULE_LICENSE    (DRV_LICENSE);
 //    sudo insmod ccidrv           # Normal load. PCIe enumeration enabled
 //    sudo insmod ccidrv sim=4     # Instantiate 4 simulated AFUs
 
-ulong sim = 0;
+unsigned long  sim = 0;
 MODULE_PARM_DESC(sim, "Simulation: #=Number of simulated AFUs to instantiate");
 module_param    (sim, ulong, S_IRUGO);
 
@@ -119,10 +121,7 @@ module_param    (sim, ulong, S_IRUGO);
 // DRV_NAME is defined in mem-int.h
 //=============================================================================
 
-btUnsignedInt debug = 0
-#if 0
-/* Type and Level selection flags */
-   | PTRACE_FLAG
+btUnsignedInt debug = PTRACE_FLAG
    | PVERBOSE_FLAG
    | PDEBUG_FLAG
    | PINFO_FLAG
@@ -135,7 +134,7 @@ btUnsignedInt debug = 0
    | CCIPCIE_DBG_MMAP
    | CCIPCIE_DBG_CMD
    | CCIPCIE_DBG_CFG
-#endif
+
 ;
 
 /******************************************************************************
@@ -176,9 +175,7 @@ static ssize_t ahmpip_attrib_store_debug(struct device_driver *drv,
 // Attributes for debug
 DRIVER_ATTR(debug,S_IRUGO|S_IWUSR|S_IWGRP, ahmpip_attrib_show_debug,ahmpip_attrib_store_debug);
 
-
-
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
 /////////////////              PCIE INTERFACES             ////////////////////
@@ -191,16 +188,33 @@ DRIVER_ATTR(debug,S_IRUGO|S_IWUSR|S_IWGRP, ahmpip_attrib_show_debug,ahmpip_attri
 //=============================================================================
 static int cci_pci_probe(struct pci_dev * , const struct pci_device_id * );
 static void cci_pci_remove(struct pci_dev * );
-
+#if 0
 static
 struct ccip_device *
 cci_pcie_stub_probe( struct pci_dev             *pcidev,
                      const struct pci_device_id *pcidevid);
-
+#endif
 static
 struct ccip_device *
 cci_enumerate_device( struct pci_dev             *pcidev,
                      const struct pci_device_id *pcidevid);
+
+static
+struct ccip_device *
+cci_enumerate_vf_device( struct pci_dev             *pcidev,
+                         const struct pci_device_id *pcidevid);
+static int cci_pci_sriov_configure(struct pci_dev *, int);
+
+static int  ccidrv_init(void);
+static void ccidrv_exit(void);
+
+module_init(ccidrv_init);
+module_exit(ccidrv_exit);
+
+extern int ccidrv_initDriver(void/*callback*/);
+extern int ccidrv_initUMAPI(void);
+void ccidrv_exitUMAPI(void);
+
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -217,6 +231,7 @@ cci_enumerate_device( struct pci_dev             *pcidev,
 ///=================================================================
 static struct pci_device_id cci_pcie_id_tbl[] = {
    { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP0   ), .driver_data = (kernel_ulong_t)cci_enumerate_device },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_VF   ),     .driver_data = (kernel_ulong_t)cci_enumerate_vf_device },
    { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP1),    .driver_data = (kernel_ulong_t)0 },
    { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP2),    .driver_data = (kernel_ulong_t)0},
    { 0, }
@@ -241,10 +256,13 @@ struct cci_pcie_driver_info
 static struct cci_pcie_driver_info driver_info = {
    .isregistered = 0,
    .pcidrv = {
-      .name     = CCI_PCI_DRIVER_NAME,
-      .id_table = cci_pcie_id_tbl,
-      .probe    = cci_pci_probe,
-      .remove   = cci_pci_remove,
+      .name             = CCI_PCI_DRIVER_NAME,
+      .id_table         = cci_pcie_id_tbl,
+      .probe            = cci_pci_probe,
+      .remove           = cci_pci_remove,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
+      .sriov_configure  = cci_pci_sriov_configure
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0) */
    },
 };
 
@@ -298,7 +316,7 @@ static inline int cci_getBARAddress( struct pci_dev   *ppcidev,
    *pvirtaddr = ioremap_nocache(*pphysaddr, *psize);
    return 1;
 }
-
+#if 0
 //=============================================================================
 // Name: cci_pcie_stub_probe
 // Description: Called if either the PCIe_DEVICE_ID_RCiEP1 or PCIe_DEVICE_ID_RCiEP2
@@ -339,7 +357,7 @@ struct ccip_device * cci_pcie_stub_probe( struct pci_dev             *pcidev,
    }
    return (struct ccip_device *) (-1);
 }
-
+#endif
 //=============================================================================
 // Name: cci_pci_probe
 // Description: Called during the device probe by PCIe subsystem.
@@ -412,6 +430,224 @@ cci_pci_probe( struct pci_dev             *pcidev,
 ///////////////////////////////////////////////////////////////////////////////
 //=============================================================================
 //=============================================================================
+//=============================================================================
+// Name: cci_pci_sriov_configure
+// Description: Callback used during SRIOV device initialization
+// Inputs: pcidev - kernel-provided device pointer.
+//         num_vfs - Number of VFs to enable.
+// Returns: 0 = success.
+// Comments:
+//=============================================================================
+static int cci_pci_sriov_configure(struct pci_dev *pcidev, int num_vfs)
+{
+
+   if (num_vfs == 0){
+      PINFO("SRIOV Disabled on this device\n");
+      pci_disable_sriov(pcidev);
+   }else{
+      PINFO("SRIOV Enabled on this device for %d VF%s\n",num_vfs, (num_vfs >1 ? "s" : ""));
+      pci_enable_sriov(pcidev, num_vfs);
+   }
+   return 0;
+}
+
+//=============================================================================
+// Name: cci_enumerate_vf_device
+// Description: Called during the device probe to initiate the enumeration of
+//              the Virtual Function device attributes and construct the
+//              internal objects.
+// Inputs: pcidev - kernel-provided device pointer.
+//         pcidevid - kernel-provided device id pointer.
+// Returns: 0 = success.
+// Comments:
+//=============================================================================
+static
+struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev,
+                                              const struct pci_device_id *pcidevid)
+{
+
+   struct ccip_device *pccipdev        = NULL;
+   struct port_device *pportdev        = NULL;
+   int                 res             = 0;
+
+   PTRACEIN;
+
+   // Check arguments
+   ASSERT(pcidev);
+   if ( NULL == pcidev ) {
+      PTRACEOUT_INT(-EINVAL);
+      return NULL;
+   }
+   ASSERT(pcidevid);
+   if ( NULL == pcidevid ) {
+      PTRACEOUT_INT(-EINVAL);
+      return NULL;
+    }
+
+   // Setup the PCIe device
+   //----------------------
+   res = pci_enable_device(pcidev);
+   if ( res < 0 ) {
+      PERR("Failed to enable device res=%d\n", res);
+      PTRACEOUT_INT(res);
+      return NULL;
+   }
+
+   // enable PCIe error reporting
+   pci_enable_pcie_error_reporting(pcidev);
+
+   // enable bus mastering and configure DMA
+   pci_set_master(pcidev);
+   pci_save_state(pcidev);
+
+   if (!dma_set_mask(&pcidev->dev, DMA_BIT_MASK(64))) {
+      dma_set_coherent_mask(&pcidev->dev, DMA_BIT_MASK(64));
+   } else if (!dma_set_mask(&pcidev->dev, DMA_BIT_MASK(32))) {
+      dma_set_coherent_mask(&pcidev->dev, DMA_BIT_MASK(32));
+   } else {
+      PERR("No suitable DMA support available.\n");
+      goto ERR;
+   }
+
+
+   // If we are on the host node (aka Dom0) then we do not publish VF objects
+   if(isPFDriver){
+      PINFO("VF Device detected on PF Driver.\nIgnoring.\n");
+//      return NULL;   Currently disabled during debug
+   }
+
+   // Create the CCI device object
+   //  Allocate a new CCI board device object
+   //  and populate it with its resource information
+   //----------------------------------------------
+   pccipdev = create_ccidevice();
+
+   // Save the PCI device in the CCI object
+   ccip_dev_pci_dev(pccipdev) = pcidev;
+
+   // Acquire the BAR region
+   //  64 Bit BARs are actually spread
+   //  across 2 consecutive BARs. So we
+   //  use 0 and 2 rather than 0 and 1
+   //------------------------------------
+   {
+      btPhysAddr           pbarPhyAddr    = 0;
+      btVirtAddr           pbarVirtAddr   = 0;
+      size_t               barsize        = 0;
+
+
+      // As this is a VF we only expect 1 BAR for the Port
+      if( !cci_getBARAddress(  pcidev,
+                               0,
+                              &pbarPhyAddr,
+                              &pbarVirtAddr,
+                              &barsize) ){
+         goto ERR;
+      }
+
+      // Save the BAR information in the CCI Device object. For a VF it's a Port
+      ccip_portdev_phys_afu_mmio(pccipdev,0)    = __PHYS_ADDR_CAST(pbarPhyAddr);
+      ccip_portdev_kvp_afu_mmio(pccipdev,0)     = pbarVirtAddr;
+      ccip_portdev_len_afu_mmio(pccipdev,0)     = barsize;
+
+      PDEBUG("ccip_portdev_phys_afu_mmio(pccipdev) : %lx\n", ccip_portdev_phys_afu_mmio(pccipdev,0));
+      PDEBUG("ccip_portdev_kvp_afu_mmio(pccipdev) : %lx\n",(long unsigned int) ccip_portdev_kvp_afu_mmio(pccipdev,0));
+      PDEBUG("ccip_portdev_len_afu_mmio(pccipdev): %zu\n", ccip_portdev_len_afu_mmio(pccipdev,0));
+
+   }
+
+   // Save the Bus:Device:Function of PCIe device
+   ccip_dev_pcie_bustype(pccipdev)  = aal_bustype_PCIe;
+   ccip_dev_pcie_busnum(pccipdev)   = pcidev->bus->number;
+   ccip_dev_pcie_devnum(pccipdev)   = PCI_SLOT(pcidev->devfn);
+   ccip_dev_pcie_fcnnum(pccipdev)   = PCI_FUNC(pcidev->devfn);
+
+   // Enumerate the device
+   //  Instantiate internal objects. Objects that represent
+   //  objects that can be allocated through the AALBus are
+   //  constructed around the aaldevice base and are published
+   //  with aalbus.
+   //---------------------------------------------------------
+
+   //In a VF there should be no FME region
+   if(0 != ccip_fmedev_kvp_afu_mmio(pccipdev)){
+      PERR("Invalid region [FME]\n");
+      goto ERR;
+   }
+
+
+   // Port Device initialization
+   //  The resources may reside in different Bars and at different offsets.
+   //  The driver must keep track of all resources it claims so it can
+   //  free them later.
+   //----------------------------------------------------------------------
+
+
+   // Discover and create Port device
+   //   Enumerates the Port feature list, creates the Port object.
+   //   Then add the new port object onto the list
+   //-------------------------------------------------------------
+   pportdev = get_port_device( ccip_portdev_phys_afu_mmio(pccipdev,0),
+                               ccip_portdev_kvp_afu_mmio(pccipdev,0),
+                               ccip_portdev_len_afu_mmio(pccipdev,0));
+
+   if ( NULL == pportdev ) {
+      PERR("Could not allocate memory for FME object\n");
+      res = -ENOMEM;
+      goto ERR;
+   }
+
+   PDEBUG("Created Port Device\n");
+   port_afu_Enable(pportdev);
+
+   // Point to our parent
+   ccip_port_to_ccidev(pportdev) = pccipdev;
+
+   // Inherits B:D:F from board
+   ccip_port_bustype(pportdev)   = ccip_dev_pcie_bustype(pccipdev);
+   ccip_port_busnum(pportdev)    = ccip_dev_pcie_busnum(pccipdev);
+   ccip_port_devnum(pportdev)    = ccip_dev_pcie_devnum(pccipdev);
+   ccip_port_fcnnum(pportdev)    = ccip_dev_pcie_fcnnum(pccipdev);
+
+   // Log the Port MMIO
+   print_sim_port_device(pportdev);
+
+   PDEBUG("Adding to list\n");
+
+   // Added it to the port list
+   kosal_list_add(&ccip_port_dev_list(pccipdev), &ccip_port_list_head(pportdev));
+
+   // No access to FME for VF
+   ccip_port_dev_fme(pportdev) = NULL;
+
+   PDEBUG("Creating Allocatable objects\n");
+
+   // Instantiate allocatable objects including AFUs if present.
+   //   Subdevice addresses start at 10x the 1 based port number to leave room for
+   //   10 devices beneath the port. E.e., STAP, PR, User AFU
+   if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, 0) ){
+      goto ERR;
+   }
+   ccip_set_VFdev(pccipdev);
+
+   return pccipdev;
+ERR:
+{
+
+  if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev,0)) {
+     PVERBOSE("Freeing Port BAR 0\n");
+     iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
+     pci_release_region(pcidev, 0);
+  }
+
+  if ( NULL != pccipdev ) {
+     kfree(pccipdev);
+  }
+}
+
+   PTRACEOUT_INT(res);
+   return NULL;
+}
 
 //=============================================================================
 // Name: cci_enumerate_device
@@ -457,9 +693,17 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
    // enable PCIe error reporting
    pci_enable_pcie_error_reporting(pcidev);
 
-   // enable bus mastering (if not already set)
+   // enable bus mastering and configure DMA
    pci_set_master(pcidev);
    pci_save_state(pcidev);
+   if (!dma_set_mask(&pcidev->dev, DMA_BIT_MASK(64))) {
+      dma_set_coherent_mask(&pcidev->dev, DMA_BIT_MASK(64));
+   } else if (!dma_set_mask(&pcidev->dev, DMA_BIT_MASK(32))) {
+      dma_set_coherent_mask(&pcidev->dev, DMA_BIT_MASK(32));
+   } else {
+      PERR("No suitable DMA support available.\n");
+      goto ERR;
+   }
 
    // Create the CCI device object
    //  Allocate a new CCI board device object
@@ -631,8 +875,24 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
             goto ERR;
          }
       }// End for loop
+
+      ccip_portdev_numports(pccipdev) = i;
+      ccip_portdev_maxVFs(pccipdev) = i;     // Can't have more VFs than ports for now
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
+      if( 0 != pci_sriov_set_totalvfs(pcidev, ccip_portdev_maxVFs(pccipdev))){
+         ccip_portdev_maxVFs(pccipdev) = 0;
+         PINFO("Device not does not support SRIOV.");
+      }else if(0 != pci_enable_sriov(pcidev,ccip_portdev_maxVFs(pccipdev) )){
+         PERR("Failed to enable SRIOV\n");
+         ccip_portdev_maxVFs(pccipdev) = 0;
+      }
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0) */
+
    }
 
+   // This is a PF driver
+   isPFDriver = 1;
    return pccipdev;
 ERR:
 {
@@ -671,8 +931,6 @@ ERR:
    return NULL;
 }
 
-
-
 //=============================================================================
 // Name: cci_pci_remove
 // Description: Entry point called when a device registered with the PCIe
@@ -706,7 +964,7 @@ cci_pci_remove(struct pci_dev *pcidev)
 
       // Run through list of devices.  Use safe variant
       //  as we will be deleting entries
-      list_for_each_safe(This, tmp, &g_device_list) {
+      kosal_list_for_each_safe(This, tmp, &g_device_list) {
 
          pccidev = ccip_list_to_ccip_device(This);
 
@@ -777,12 +1035,12 @@ cci_remove_device(struct ccip_device *pccipdev)
       ccip_fmedev_kvp_afu_mmio(pccipdev) = NULL;
    }
 
-   if( cci_dev_pci_dev_is_enabled(pccipdev) ) {
+   if( cci_aaldev_pci_dev_is_enabled(pccipdev) ) {
       if(!ccip_is_simulated(pccipdev)){
          PVERBOSE("Disabling PCIe device\n");
-         pci_disable_device(cci_dev_pci_dev(pccipdev));
+         pci_disable_device(cci_aaldev_pci_dev(pccipdev));
       }
-      cci_dev_pci_dev_clr_enabled(pccipdev);
+      cci_aaldev_pci_dev_clr_enabled(pccipdev);
    }
 
    // Destroy the device
@@ -818,7 +1076,7 @@ ccidrv_initDriver(void/*callback*/)
    PTRACEIN;
 
    // Initialize the list of devices controlled by this driver
-   INIT_LIST_HEAD(&g_device_list);
+   kosal_list_init(&g_device_list);
 
    // Display whether we are running with real or simulated hardware
    PINFO("Using %s configuration.\n", (0 == sim) ? "FPGA hardware" : "simulated hardware");
@@ -927,4 +1185,61 @@ ccidrv_exitDriver(void)
    PINFO("<- %s removed.\n", DRV_DESCRIPTION);
    PTRACEOUT;
 }
+
+
+
+//=============================================================================
+// Name: ccidrv_init
+// Description: Entry point called when the module is loaded
+// Interface: public
+// Inputs: none.
+// Outputs: none.
+// Comments: none.
+//=============================================================================
+static int
+ccidrv_init(void)
+{
+   int ret                          = 0;     // Return code
+
+   PTRACEIN;
+
+   //--------------------
+   // Display the sign-on
+   //--------------------
+   PINFO("Accelerator Abstraction Layer\n");
+   PINFO("-> %s\n",         DRV_DESCRIPTION);
+   PINFO("-> Version %s\n", DRV_VERSION);
+   PINFO("-> License %s\n", DRV_LICENSE);
+   PINFO("-> %s\n",       DRV_COPYRIGHT);
+
+   // Call the framework initialization
+   ret = ccidrv_initDriver(/* Callback */);
+   if( 0 == ret ){
+
+      // Initialize the User mode interface
+      ret = ccidrv_initUMAPI();
+   }
+
+   PTRACEOUT_INT(ret);
+   return ret;
+}
+
+
+//=============================================================================
+// Name: cciv4drv_exit
+// Description: Exit called when module is unloaded
+// Interface: public
+// Inputs: none.
+// Outputs: none.
+// Comments:
+//=============================================================================
+static
+void
+ccidrv_exit(void)
+{
+   // Exit the framework
+   ccidrv_exitUMAPI();
+   ccidrv_exitDriver();
+}
+
 

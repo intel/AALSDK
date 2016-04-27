@@ -85,13 +85,6 @@
 
 #include "aalsdk/osal/Env.h"               // for checking environment vars
 
-//#include <aas/ResMgrUtilities.h>        // TEST CODE
-//#include <aas/Utilities.h>              // TEST CODE
-//#include <fstream>                      // TEST CODE
-//#include <aas/kernel/aalui.h>           // TEST CODE
-//#include <aas/AALRMUser.h>              // Definitions for user mode RM users
-//#include <aas/CAALObjectFactory.h>      // for AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED - TEST CODE
-
 AAL::IResMgrService *pResMgr;				  // used by signal handler to retrieve file descriptor
 const unsigned maxErrors =  10;           // abort (or in the future reset, perhaps) after this many errors have been seen
                                           //    The value 0 means do not test
@@ -187,6 +180,7 @@ public:
     void serviceAllocateFailed(const IEvent &rEvent);
     void serviceReleaseFailed(const AAL::IEvent&);
     void serviceReleased(TransactionID const &rTranID);
+    virtual void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent){};  // Ignored TODO better implementation
     void serviceEvent(const IEvent &rEvent);
 
     // Class-specific methods

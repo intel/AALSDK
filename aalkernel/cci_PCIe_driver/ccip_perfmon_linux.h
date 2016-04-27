@@ -4,7 +4,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2015-2016, Intel Corporation.
+//  Copyright(c) 2011-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -24,7 +24,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2015-2016, Intel Corporation.
+//  Copyright(c) 2011-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -53,85 +53,43 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-//        FILE: cci_pcie_driver_main.c
-//     CREATED: 10/14/2015
-//      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
-// PURPOSE: This file implements init/exit entry points for the
-//          AAL FPGA device driver for CCI protocol compliant devices.
+/// @file ccip_perfmon_linux.h
+/// @brief  Definitions for ccip performance counter.
+/// @ingroup aalkernel_ccip
+/// @verbatim
+//        FILE: ccip_perfmon.h
+//     CREATED: Sept 24, 2015
+//      AUTHOR: Ananda Ravuri, Intel Corporation
+//              Joseph Grecco, Intel Corporation
+// 
+// PURPOSE:
 // HISTORY:
-// COMMENTS: Linux specific
+// COMMENTS:
 // WHEN:          WHO:     WHAT:
-// 10/14/2015     JG       Initial version started
-//****************************************************************************
-#include "aalsdk/kernel/kosal.h"
+// 02/19/2016     JG       Refactored OS specific portion
+//****************************************************************************///
+#ifndef __AALKERNEL_CCIP_PERFMON_LINUX_H_
+#define __AALKERNEL_CCIP_PERFMON_LINUX_H_
 
-#define MODULE_FLAGS CCIPCIE_DBG_MOD // Prints all
-
-#include "cci_pcie_driver_internal.h"
-
-static int  ccidrv_init(void);
-static void ccidrv_exit(void);
-
-module_init(ccidrv_init);
-module_exit(ccidrv_exit);
+#include <ccip_perfmon.h>
 
 
-extern int ccidrv_initDriver(void/*callback*/);
-extern int ccidrv_initUMAPI(void);
-void ccidrv_exitUMAPI(void);
+/// Name:    create_perfmonitor
+/// @brief   creates performance monitor
+///
+/// @param[in] ppcidev  pci device  pointer.
+/// @param[in] pfme_dev fme device pointer.
+/// @return    error code
+bt32bitInt create_perfmonitor(kosal_pci_dev* ppcidev,
+                              struct fme_device* pfme_dev);
 
-//=============================================================================
-// Name: ccidrv_init
-// Description: Entry point called when the module is loaded
-// Interface: public
-// Inputs: none.
-// Outputs: none.
-// Comments: none.
-//=============================================================================
-static int
-ccidrv_init(void)
-{
-   int ret                          = 0;     // Return code
-
-   PTRACEIN;
-
-   //--------------------
-   // Display the sign-on
-   //--------------------
-   PINFO("Accelerator Abstraction Layer\n");
-   PINFO("-> %s\n",         DRV_DESCRIPTION);
-   PINFO("-> Version %s\n", DRV_VERSION);
-   PINFO("-> License %s\n", DRV_LICENSE);
-   PINFO("-> %s\n",       DRV_COPYRIGHT);
-
-   // Call the framework initialization
-   ret = ccidrv_initDriver(/* Callback */);
-   if( 0 == ret ){
-
-      // Initialize the User mode interface
-      ret = ccidrv_initUMAPI();
-   }
-
-   PTRACEOUT_INT(ret);
-   return ret;
-}
+/// Name:    remove_perfmonitor
+/// @brief   removes perfoemanceee counters
+///
+/// @param[in] ppcidev  pci device  pointer.
+/// @return    error code
+bt32bitInt remove_perfmonitor(kosal_pci_dev* ppcidev);
 
 
-//=============================================================================
-// Name: cciv4drv_exit
-// Description: Exit called when module is unloaded
-// Interface: public
-// Inputs: none.
-// Outputs: none.
-// Comments:
-//=============================================================================
-static
-void
-ccidrv_exit(void)
-{
-   // Exit the framework
-   ccidrv_exitUMAPI();
-   ccidrv_exitDriver();
-}
 
-
+#endif //__AALKERNEL_CCIP_PERFMON_LINUX_H_

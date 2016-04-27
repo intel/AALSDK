@@ -39,6 +39,7 @@
 #include <aalsdk/AALDefs.h>
 #include <aalsdk/osal/IDispatchable.h>
 #include <aalsdk/IServiceClient.h>
+#include <aalsdk/aas/IServiceRevoke.h>
 #include <aalsdk/Runtime.h>
 #include <aalsdk/aas/AALService.h>
 
@@ -241,6 +242,27 @@ public:
    virtual void operator() ();
 protected:
    IRuntimeClient *m_pRTClient;
+   const IEvent   *m_pEvent;
+};
+
+/// @brief Delivers IServiceRevoke::serviceRevoked(const IEvent & );
+class AASLIB_API ServiceRevoke : public IDispatchable
+{
+public:
+   ServiceRevoke(IServiceRevoke *pRevoke);
+   virtual void operator() ();
+protected:
+   IServiceRevoke *m_pRevoke;
+};
+
+class AASLIB_API ReleaseServiceRequest : public IDispatchable
+{
+public:
+   ReleaseServiceRequest(IBase *, const IEvent   *);
+   ~ReleaseServiceRequest();
+   virtual void operator() ();
+protected:
+   IBase          *m_pSvcBase;
    const IEvent   *m_pEvent;
 };
 

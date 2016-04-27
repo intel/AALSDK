@@ -54,15 +54,16 @@
 //******************************************************************************
 //****************************************************************************
 /// @file ccip_perfmon.c
-/// @brief  Definitions for ccip.
+/// @brief  CCI-P FME performance counters.
 /// @ingroup aalkernel_ccip
 /// @verbatim
 //        FILE: ccip_perfmon.c
 //     CREATED: Sept 24, 2015
-//      AUTHOR:
+//      AUTHOR: Ananda Ravuri, Intel Corporation
+//              Joseph Grecco, Intel Corporation
 //
-// PURPOSE:   This file contains the definations of the CCIP FME
-//             Device Feature List and CSR.
+// PURPOSE:   This file contains the implementation of the CCIP FME
+//            performance counters
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
@@ -74,116 +75,6 @@
 
 #include "ccip_perfmon.h"
 #include "ccip_fme.h"
-
-
-///============================================================================
-/// Name: perf_monitor_attrib_show_hr
-/// @brief Writes and show CCIP Performance counters to sysfs
-///
-/// @param[in] pdev - device pointer
-/// @param[in] attr - device attribute.
-/// @param[in] buf - char buffer.
-/// @return    size of buffer
-///============================================================================
-static ssize_t perf_monitor_attrib_show_hr(struct device *pdev,
-                                           struct device_attribute *attr,
-                                           char *buf)
-{
-   struct CCIP_PERF_COUNTERS perf_mon;
-   struct fme_device* pfme_dev = dev_get_drvdata(pdev);
-
-   if(NULL == pfme_dev )  {
-     return (snprintf(buf,PAGE_SIZE,"%d\n",0));
-   }
-
-   get_perfmonitor_snapshot(pfme_dev, &perf_mon);
-
-   return (snprintf(buf,PAGE_SIZE,   "%s : %lu \n"
-                                     "%s : %lu \n"
-                                     "%s : %lu \n"
-                                     "%s : %lu \n"
-                                     "%s : %lu \n"
-                                     "%s : %lu \n"
-                                     "%s : %lu \n"
-                                     "%s : %lu \n"
-                                     "%s : %lu \n"
-                                     "%s : %lu \n"
-                                     "%s : %lu \n"
-                                     "%s : %lu \n"
-                                     "%s : %lu \n",
-                                     NUM_COUNTERS,               (unsigned long int) perf_mon.num_counters.value ,
-                                     PMONITOR_VERSION,           (unsigned long int) perf_mon.version.value ,
-                                     CACHE_READ_HIT,             (unsigned long int) perf_mon.read_hit.value ,
-                                     CACHE_WRITE_HIT,            (unsigned long int) perf_mon.write_hit.value ,
-                                     CACHE_READ_MISS,            (unsigned long int) perf_mon.read_miss.value,
-                                     CACHE_WRITE_MISS,           (unsigned long int) perf_mon.write_miss.value,
-                                     CACHE_EVICTIONS,            (unsigned long int) perf_mon.evictions.value,
-                                     FABRIC_PCIE0_READ,          (unsigned long int) perf_mon.pcie0_read.value ,
-                                     FABRIC_PCIE0_WRITE,         (unsigned long int) perf_mon.pcie0_write.value ,
-                                     FABRIC_PCIE1_READ,          (unsigned long int) perf_mon.pcie1_read.value ,
-                                     FABRIC_PCIE1_WRITE,         (unsigned long int) perf_mon.pcie1_write.value ,
-                                     FABRIC_UPI_READ,            (unsigned long int) perf_mon.upi_read.value ,
-                                     FABRIC_UPI_WRITE,           (unsigned long int) perf_mon.upi_write.value
-                                     ));
-
-}
-
-DEVICE_ATTR(perfmon_hr_0,0444, perf_monitor_attrib_show_hr,NULL);
-
-///============================================================================
-/// Name: perf_monitor_attrib_show_bin
-/// @brief shows CCIP Performance counters
-///
-/// @param[in] pdev - device pointer
-/// @param[in] attr - device attribute.
-/// @param[in] buf - char buffer.
-/// @return    size of buffer
-///============================================================================
-static ssize_t perf_monitor_attrib_show_bin(struct device *pdev,
-                                            struct device_attribute *bin_attr,
-                                            char *buf)
-{
-   struct CCIP_PERF_COUNTERS perf_mon;
-   struct fme_device* pfme_dev= dev_get_drvdata(pdev);
-
-   if(NULL == pfme_dev )  {
-      return (snprintf(buf,PAGE_SIZE,"%d\n",0));
-   }
-
-   get_perfmonitor_snapshot(pfme_dev, &perf_mon);
-
-   return (snprintf(buf,PAGE_SIZE,  "%lu  "
-                                    "%lu  "
-                                    "%lu  "
-                                    "%lu  "
-                                    "%lu  "
-                                    "%lu  "
-                                    "%lu  "
-                                    "%lu  "
-                                    "%lu  "
-                                    "%lu  "
-                                    "%lu  "
-                                    "%lu  "
-                                    "%lu  ",
-                                     (unsigned long int) perf_mon.num_counters.value,
-                                     (unsigned long int) perf_mon.version.value ,
-                                     (unsigned long int) perf_mon.read_hit.value ,
-                                     (unsigned long int) perf_mon.write_hit.value,
-                                     (unsigned long int) perf_mon.read_miss.value ,
-                                     (unsigned long int) perf_mon.write_miss.value,
-                                     (unsigned long int) perf_mon.evictions.value ,
-                                     (unsigned long int) perf_mon.pcie0_read.value ,
-                                     (unsigned long int) perf_mon.pcie0_write.value,
-                                     (unsigned long int) perf_mon.pcie1_read.value ,
-                                     (unsigned long int) perf_mon.pcie1_write.value ,
-                                     (unsigned long int) perf_mon.upi_read.value ,
-                                     (unsigned long int) perf_mon.upi_write.value
-                                    ));
-
- }
-
-
-DEVICE_ATTR(perfmon_bin_0,0444, perf_monitor_attrib_show_bin,NULL);
 
 
 ///============================================================================
@@ -264,15 +155,15 @@ ERR:
 /// @param[in] event_code - fabric counters code.
 /// @param[in] pfme_dev - fme device pointer
 /// @param[in] pPerf - Performance counters pointer.
-/// @return    error code
+/// @return    0 = success
 ///============================================================================
 
 bt32bitInt update_fabric_event_counters(bt32bitInt event_code ,
                                        struct fme_device *pfme_dev,
                                        struct CCIP_PERF_COUNTERS* pPerf)
 {
-   bt32bitInt res =0;
-   bt32bitInt counter =0;
+   bt32bitInt res       = 0;
+   bt32bitInt counter   = 0;
 
    PTRACEIN;
 
@@ -283,7 +174,7 @@ bt32bitInt update_fabric_event_counters(bt32bitInt event_code ,
       counter++;
       if (counter > CACHE_EVENT_COUNTER_MAX_TRY)    {
          PERR("Max Try \n");
-         res = -ETIME;
+         res = 1;
          goto ERR;
       }
 
@@ -354,7 +245,7 @@ ERR:
 /// @param[in] event_code - cache counters code.
 /// @param[in] pfme_dev - fme device pointer
 /// @param[in] pPerf - Performance counters pointer.
-/// @return    error code
+/// @return    0 = success
 ///============================================================================
 bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
                                        struct fme_device *pfme_dev,
@@ -373,7 +264,7 @@ bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
       counter++;
       if (counter > CACHE_EVENT_COUNTER_MAX_TRY)   {
          PERR("Max Try \n");
-         res = -ETIME;
+         res = 1;
          goto ERR;
       }
 
@@ -430,68 +321,6 @@ ERR:
    PTRACEOUT_INT(res);
    return  res;
 
-}
-
-///============================================================================
-/// Name: create_perfmonitor
-/// @brief create Performance counters
-///
-/// @param[in] ppcidev - pci device pointer
-/// @param[in] pfme_dev - fme device pointer
-/// @return    error code
-///============================================================================
-bt32bitInt create_perfmonitor(struct pci_dev* ppcidev,
-                              struct fme_device* pfme_dev)
-{
-   int res =0;
-
-   PTRACEIN;
-   if( (NULL == ppcidev) && (NULL == pfme_dev))  {
-
-       PERR("Invalid input pointers \n");
-       res = -EINVAL;
-       goto ERR;
-    }
-
-   device_create_file(&(ppcidev->dev),&dev_attr_perfmon_hr_0);
-   device_create_file(&(ppcidev->dev),&dev_attr_perfmon_bin_0);
-
-   dev_set_drvdata(&(ppcidev->dev),pfme_dev);
-
-   PTRACEOUT_INT(res);
-   return res;
-ERR:
-   PTRACEOUT_INT(res);
-   return  res;
-}
-
-///============================================================================
-/// Name: remove_perfmonitor
-/// @brief remove Performance counters
-///
-/// @param[in] ppcidev  pci device pointer.
-/// @return    error code
-///============================================================================
-bt32bitInt remove_perfmonitor(struct pci_dev* ppcidev)
-{
-   int res =0;
-
-   PTRACEIN;
-
-   if( (NULL == ppcidev) ) {
-       PERR("Invalid input pointers \n");
-       res = -EINVAL;
-       goto ERR;
-    }
-
-   device_remove_file(&(ppcidev->dev),&dev_attr_perfmon_hr_0);
-   device_remove_file(&(ppcidev->dev),&dev_attr_perfmon_bin_0);
-
-   PTRACEOUT_INT(res);
-   return res;
-ERR:
-   PTRACEOUT_INT(res);
-   return  res;
 }
 
 ///============================================================================

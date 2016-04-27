@@ -107,13 +107,18 @@ typedef enum
    uid_errnumDeviceBusy,                         // 26
    uid_errnumTimeout,                            // 27
    uid_errnumNoAFU,                              // 28
-   uid_errnumAFUActivated,                       // 29
-   uid_errnumPRTimeout,                          // 30
-   uid_errnumPROperation,                        // 31
-   uid_errnumPRCRC,                              // 32
-   uid_errnumPRIncompatibleBitstream,            // 33
-   uid_errnumPRIPProtocal,                       // 34
-   uid_errnumPRFIFO                              // 35
+   uid_errnumAFUNotActivated,                    // 29
+   uid_errnumDeActiveTimeout,                    // 30
+   uid_errnumPRTimeout,                          // 31
+   uid_errnumPROperation,                        // 32
+   uid_errnumPRCRC,                              // 33
+   uid_errnumPRIncompatibleBitstream,            // 34
+   uid_errnumPRIPProtocal,                       // 35
+   uid_errnumPRFIFO,                             // 36
+   uid_errnumAFUActivationFail,                  // 37
+   uid_errnumPRDeviceBusy                        // 38
+
+
 
 
 } uid_errnum_e;
@@ -121,33 +126,36 @@ typedef enum
 typedef enum
 {
    // Management
-   reqid_UID_Bind=1,                // Use default API Version
-   reqid_UID_ExtendedBindInfo,      // Pass additional Bind parms
-   reqid_UID_UnBind,                // Release a device
+   reqid_UID_Bind=1,                      // Use default API Version
+   reqid_UID_ExtendedBindInfo,            // Pass additional Bind parms
+   reqid_UID_UnBind,                      // Release a device
 
    // Provision
-   reqid_UID_Activate,              // Activate the device
-   reqid_UID_Deactivate,            // Deactivate the device
+   reqid_UID_Activate,                    // Activate the device
+   reqid_UID_Deactivate,                  // Deactivate the device
 
    // Administration
-   reqid_UID_Shutdown,              // Request that the Service session shutdown
+   reqid_UID_Shutdown,                    // Request that the Service session shutdown
 
-   reqid_UID_SendAFU,               // Send AFU a message
+   reqid_UID_SendAFU,                     // Send AFU a message
 
    // Response and Event IDs
-   rspid_UID_Shutdown=0xF000,       // Service is shutdown
-   rspid_UID_UnbindComplete,        // Release Device Response
-   rspid_UID_BindComplete,          // Bind has completed
+   rspid_UID_Shutdown=0xF000,             // Service is shutdown
+   rspid_UID_UnbindComplete,              // Release Device Response
+   rspid_UID_BindComplete,                // Bind has completed
 
-   rspid_UID_Activate,              // Activate the device
-   rspid_UID_Deactivate,            // Deactivate the device
+   rspid_UID_Activate,                    // Activate the device
+   rspid_UID_Deactivate,                  // Deactivate the device
 
-   rspid_AFU_Response,              // Response from AFU request
-   rspid_AFU_Event,                 // Event from AFU
+   rspid_AFU_Response,                    // Response from AFU request
+   rspid_AFU_Event,                       // Event from AFU
 
-   rspid_PIP_Event,                 // Event from PIP
+   rspid_AFU_PR_Release_Request_Event,    // Event from PR to request the Service release
+   rspid_AFU_PR_Revoke_Event,             // Event from PR to Revoke AFU
 
-   rspid_WSM_Response,              // Event from Workspace manager
+   rspid_PIP_Event,                       // Event from PIP
+
+   rspid_WSM_Response,                    // Event from Workspace manager
 
    rspid_UID_Response,
    rspid_UID_Event,
@@ -274,6 +282,14 @@ struct ahm_req
          btWSSize           size;   /* IN   */
          btUnsigned64bitInt mem_id; /* OUT  */
       } mem_uv2id;
+
+      // PR reconfiguration
+      struct {
+        btVirtAddr               vaddr;           /* IN   */
+        btWSSize                 size;            /* IN   */
+        btTime                   reconfTimeout;   /* IN   */
+        btUnsigned64bitInt       reconfAction;    /* IN   */
+      } pr_config;
    } u;
 };
 
@@ -284,6 +300,17 @@ struct ccidrvreq
    stTransactionID_t afutskTranID;
    btTime            pollrate;
 };
+
+typedef enum
+{
+   ReConf_Action_Honor_request  =0x0,
+   ReConf_Action_Honor_Owner    =0x1,
+   ReConf_Action_InActive       =0x80
+}aalconf_reconfig_action_e;
+
+// Mask off Inactive Flag
+#define RECONF_ACTION_HONOR_PARAMETER(p)    (p & (btUnsigned64bitInt)~(ReConf_Action_InActive))
+#define RECONF_ACTION_ACTIVATE_PARAMETER(p) (p & ReConf_Action_InActive)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -335,6 +362,19 @@ struct aalui_AFUResponse
    btUnsignedInt       payloadsize;
 };
 #define aalui_AFURespPayload(__ptr) ( ((btVirtAddr)(__ptr)) + sizeof(struct aalui_AFUResponse) )
+
+
+//=============================================================================
+// Name: aalui_PREvent
+// Description: Partial reconfiguration release request event.
+//=============================================================================
+//=============================================================================
+struct aalui_PREvent {
+   btUnsigned32bitInt         respID;
+   btUnsigned64bitInt         evtData;
+   btUnsigned64bitInt         reconfTimeout;
+};
+
 
 //=============================================================================
 // Name: aalui_Shutdown
@@ -411,6 +451,21 @@ struct aalui_WSMEvent
    struct aalui_WSMParms wsParms;
 };
 
+//=============================================================================
+// Name: aalui_taskComplete
+// Type[Dir]: Request[IN] Event/Response [OUT]
+// Object: AFU engine
+// Description: Single or mult0 descriptor AFU task completed
+// Comments:
+//=============================================================================
+typedef struct aalui_taskComplete
+{
+   btObjectType       context;
+   stTransactionID_t  afutskTranID;
+   btByte             data[32];
+   TTASK_MODE         mode;
+   btUnsigned16bitInt delim;
+} aalui_taskComplete;
 
 //=============================================================================
 // Name: ccipdrv_DeviceAttributes
@@ -437,8 +492,6 @@ struct  PERFCOUNTER_EVENT
 {
    char  name[50];
    btUnsigned64bitInt value;
-   //btUnsigned64bitInt offset;
-   //btUnsigned64bitInt rsvd[9];
 };
 
 struct  CCIP_PERF_COUNTERS

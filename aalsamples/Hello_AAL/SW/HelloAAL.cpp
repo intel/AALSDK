@@ -257,9 +257,11 @@ public:
 
    void serviceAllocateFailed(const IEvent &rEvent);
 
-    void serviceReleaseFailed(const IEvent &rEvent);
+   void serviceReleaseFailed(const IEvent &rEvent);
 
-    void serviceReleased(TransactionID const &rTranID);
+   void serviceReleased(TransactionID const &rTranID);
+
+   void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent);
 
    void serviceEvent(const IEvent &rEvent);
    // <end IServiceClient interface>
@@ -367,6 +369,16 @@ void HelloAALApp::serviceAllocateFailed(const IEvent &rEvent)
     MSG("Service Released");
    m_Sem.Post(1);
 }
+
+ void HelloAALApp::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
+ {
+    MSG("Service unexpected requested back");
+    if(NULL != m_pAALService){
+       IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService);
+       ASSERT(pIAALService);
+       pIAALService->Release(TransactionID());
+    }
+ }
 
 void HelloAALApp::HelloApp(TransactionID const &rTranID)
 {

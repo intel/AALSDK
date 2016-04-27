@@ -166,6 +166,7 @@ class AIASERVICE_API AIAService : public AAL::ServiceBase, public AAL::IServiceC
       void serviceAllocated(IBase *pServiceBase,TransactionID const &rTranID = TransactionID()){};
       void serviceAllocateFailed(const IEvent &rEvent){};
       void serviceReleased(TransactionID const &rTranID = TransactionID());
+      virtual void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent){};
       void serviceReleaseFailed(const IEvent &rEvent);
       void serviceEvent(const IEvent &rEvent){};
        // </IServiceClient>

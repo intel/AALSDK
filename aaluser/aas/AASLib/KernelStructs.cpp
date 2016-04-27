@@ -565,6 +565,9 @@ std::ostream & operator << (std::ostream &s, const uid_msgIDs_e &enumeration)
       uid_msgIDs_e_CASE(rspid_UID_Deactivate,       "Deactivate the device "                    );
       uid_msgIDs_e_CASE(rspid_AFU_Response,         "Response from AFU request "                );
       uid_msgIDs_e_CASE(rspid_AFU_Event,            "Event from AFU "                           );
+
+      uid_msgIDs_e_CASE(rspid_AFU_PR_Revoke_Event,  "Event form PR to Revoke AFU"               );
+
       uid_msgIDs_e_CASE(rspid_PIP_Event,            "Event from PIP "                           );
       uid_msgIDs_e_CASE(rspid_WSM_Response,         "Event from Workspace manager "             );
       uid_msgIDs_e_CASE(rspid_UID_Response,         "Generic Response "                         );
@@ -804,7 +807,7 @@ std::ostream & operator << (std::ostream &s, const uid_wseventID_e &enumeration)
       uid_wseventID_e_CASE(uid_wseventAllocate);
       uid_wseventID_e_CASE(uid_wseventFree);
       uid_wseventID_e_CASE(uid_wseventGetPhys);
-      uid_wseventID_e_CASE(uid_wseventCSRMap);
+//      uid_wseventID_e_CASE(uid_wseventCSRMap);
 
       default:
          s << "uid_wseventID_e is " << static_cast<unsigned>(enumeration) <<

@@ -73,9 +73,10 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST_F(Runtime_Int_f_2, DISABLED_aal0783)
+TEST_F(Runtime_Int_f_2, aal0783)
 {
-   // When Runtime::start(), then Runtime::stop() is called with no intervening service allocation.
+   // When Runtime::start(), then Runtime::stop() is called with no intervening service allocation,
+   // IRuntimeClient::runtimeStopped is delivered do the RuntimeClient.
 
    NamedValueSet args;
 
@@ -103,6 +104,15 @@ TEST_F(Runtime_Int_f_2, DISABLED_aal0783)
    EXPECT_TRUE(args == *pNVS);
 
    stop();
+   m_RuntimeClient.Wait();
+
+   ASSERT_EQ(2, m_RuntimeClient.LogEntries()) << m_RuntimeClient;
+
+   EXPECT_STREQ("IRuntimeClient::runtimeStopped", m_RuntimeClient.Entry(1).MethodName());
+
+   x = NULL;
+   m_RuntimeClient.Entry(1).GetParam("pRuntime", &x);
+   ASSERT_NONNULL(x);
 }
 
 TEST_F(Runtime_Int_f_2, aal0784)
@@ -129,9 +139,10 @@ TEST_F(Runtime_Int_f_2, aal0784)
    EXPECT_EQ(dynamic_cast<IRuntime *>(m_pRuntime), pRT);
 }
 
-TEST_F(Runtime_Int_f_2, DISABLED_aal0785)
+TEST_F(Runtime_Int_f_2, aal0785)
 {
    // When Runtime::allocService() is called without a prior Runtime::start(),
+   // IRuntimeClient::runtimeAllocateServiceFailed() is delivered to the RuntimeClient.
 
    NamedValueSet nvs;
    TransactionID tid;
@@ -140,8 +151,11 @@ TEST_F(Runtime_Int_f_2, DISABLED_aal0785)
    m_RuntimeClient.Wait();
 
    ASSERT_EQ(1, m_RuntimeClient.LogEntries()) << m_RuntimeClient;
+   EXPECT_STREQ("IRuntimeClient::runtimeAllocateServiceFailed", m_RuntimeClient.Entry(0).MethodName());
 
-
+   btObjectType x = NULL;
+   m_RuntimeClient.Entry(0).GetParam("e", &x);
+   ASSERT_NONNULL(x);
 }
 
 TEST_F(Runtime_Int_f_2, aal0786)
@@ -209,6 +223,32 @@ TEST_F(Runtime_Int_f_2, aal0790)
    // When Runtime::IsOK() is called without a prior Runtime::start(), the function returns true.
 
    EXPECT_TRUE(IsOK());
+}
+
+TEST_F(Runtime_Int_f_2, aal0806)
+{
+   // When Runtime::start() is called, then the Runtime object is destroyed without
+   // explicitly calling Runtime::stop(), the Runtime is transitioned to the stopped
+   // state before the destructor returns.
+
+   NamedValueSet args;
+
+   EXPECT_TRUE(start(args));
+   m_RuntimeClient.Wait();
+
+   delete m_pRuntime;
+
+   ASSERT_EQ(2, m_RuntimeClient.LogEntries()) << m_RuntimeClient;
+   EXPECT_STREQ("IRuntimeClient::runtimeStopped", m_RuntimeClient.Entry(1).MethodName());
+
+   btObjectType x = NULL;
+   m_RuntimeClient.Entry(1).GetParam("pRuntime", &x);
+
+   ASSERT_NONNULL(x);
+   IRuntime *pRT = reinterpret_cast<IRuntime *>(x);
+   EXPECT_EQ(dynamic_cast<IRuntime *>(m_pRuntime), pRT);
+
+   m_pRuntime = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -453,18 +493,20 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST_F(Runtime_Int_f_3, DISABLED_aal0791)
+TEST_F(Runtime_Int_f_3, aal0791)
 {
-   // Allocating a sw-only AAL non-Service module. (AAL_BEGIN_MOD, not AAL_BEGIN_SVC_MOD)
+   // Attempting to allocate a sw-only AAL Service from a non-Service module
+   // (AAL_BEGIN_MOD, not AAL_BEGIN_SVC_MOD) results in
+   // IRuntimeClient::runtimeAllocateServiceFailed and IServiceClient::serviceAllocateFailed.
+
 
    TransactionID tid;
    tid.ID(791);
 
    AllocSwvalMod(m_pRuntime, &m_ServiceClient, tid);
-   m_ServiceClient.Wait();
 
-   ASSERT_EQ(1, m_ServiceClient.LogEntries());
-
+   VerifyServiceAllocFailed(&m_RuntimeClient);
+   VerifyServiceAllocFailed(&m_ServiceClient);
 }
 
 TEST_F(Runtime_Int_f_3, aal0792)

@@ -66,12 +66,13 @@
 /// WHEN:          WHO:     WHAT:
 /// 12/27/2012     JG       Initial version
 //****************************************************************************
-#include <linux/vmalloc.h>
 #include "aalsdk/kernel/kosal.h"
 #define MODULE_FLAGS KOSAL_DBG_MOD
 
 #if defined( __AAL_LINUX__ )
+#include <linux/vmalloc.h>
 # include <linux/delay.h>
+#include <linux/dma-mapping.h>
 #endif // __AAL_LINUX__
 
 #if defined( __AAL_UNKNOWN_OS__ )
@@ -289,7 +290,7 @@ btVirtAddr _kosal_kzmalloc(__ASSERT_HERE_PROTO btWSSize size_in_bytes)
 
    krnl_virt = (btVirtAddr)MmAllocateNonCachedMemory((SIZE_T)size_in_bytes);
    if(krnl_virt){
-      RtlZeroMemory(krnl_virt, 0 , (SIZE_T)size_in_bytes);
+      RtlZeroMemory(krnl_virt, (SIZE_T)size_in_bytes);
    }
 #endif // OS
 
@@ -452,28 +453,143 @@ void _kosal_free_contiguous_mem(__ASSERT_HERE_PROTO btAny krnl_virt, btWSSize si
 #endif // OS
 }
 
+//=============================================================================
+/// _kosal_alloc_dma_coherent
+/// @brief     Allocate a buffer of DMA-able coherent contiguous memory
+/// @param[in] devhandle OS specific
+///            size in bytes
+///            pdma_handle Address to return DMA address for device
+/// @return    pointer to memory. NULL if failure.
+/// @note
+//=============================================================================
+btVirtAddr _kosal_alloc_dma_coherent( __ASSERT_HERE_PROTO btHANDLE devhandle,
+                                       btWSSize size_in_bytes,
+                                      btHANDLE *pdma_handle)
+{
+#if defined( __AAL_WINDOWS__ )
+   PHYSICAL_ADDRESS minaddr = { 0ULL };
+   PHYSICAL_ADDRESS maxaddr = { 0xFFFFFFFFFFFFFFFFULL };
+   PHYSICAL_ADDRESS alignment;
+   maxaddr.LowPart= 0xffffffff;
+   maxaddr.HighPart= 0xffffffff;
+#endif // __AAL_WINDOWS__
+
+   btVirtAddr krnl_virt = NULL;
+
+   __ASSERT_HERE_IN_FN(size_in_bytes > 0);
+
+
+
+#if   defined( __AAL_LINUX__ )
+
+   krnl_virt = (btVirtAddr)dma_alloc_coherent(&((struct pci_dev*)devhandle)->dev, size_in_bytes, (dma_addr_t*)pdma_handle, GFP_KERNEL);
+   __ASSERT_HERE_IN_FN(NULL != krnl_virt);
+   if ( NULL == krnl_virt ) {
+      return NULL;
+   }
+
+
+#elif defined( __AAL_WINDOWS__ )
+   // MmAllocateContiguousMemorySpecifyCache allocates a block of nonpaged memory that is contiguous
+   //  in physical address space. The routine maps this block to a contiguous block of virtual memory
+   //  in the system address space and returns the virtual address of the base of this block.
+   //  The routine aligns the starting address of a contiguous memory allocation to a memory page boundary.
+
+   alignment.QuadPart = kosal_round_up_to_page_size(size_in_bytes);
+   krnl_virt = (btVirtAddr)MmAllocateContiguousMemorySpecifyCache((SIZE_T)size_in_bytes,
+                                                                  minaddr,
+                                                                  maxaddr,
+                                                                  alignment,
+                                                                  MmNonCached);
+   __ASSERT_HERE_IN_FN(NULL != krnl_virt);
+   if ( NULL == krnl_virt ) {
+      return NULL;
+   }
+
+#endif // OS
+
+   // Recommended security practice..
+   memset(krnl_virt, 0, (size_t)size_in_bytes);
+
+   PMEMORY_HERE("_kosal_alloc_dma_coherent(size=%llu [0x%llx]) = 0x%" PRIxUINTPTR_T " [phys=0x%" PRIxPHYS_ADDR "]\n",
+                   size_in_bytes, size_in_bytes,
+                   __UINTPTR_T_CAST(krnl_virt),
+                 (long unsigned int)*pdma_handle);
+
+   return krnl_virt;
+}
+
+//=============================================================================
+/// kosal_free_contiguous_mem
+/// @brief     Free buffer of contiguous physical pages allocated through
+///            kosal_alloc_contiguous_mem_nocache
+/// @param[in] size in bytes
+/// @return    pointer to memory. NULL if failure.
+/// @note
+//=============================================================================
+void _kosal_free_dma_coherent( __ASSERT_HERE_PROTO btHANDLE devhandle,
+                               btVirtAddr krnl_virt,
+                               btWSSize size_in_bytes,
+                               btHANDLE dma_handle)
+{
+#if   defined( __AAL_WINDOWS__ )
+   UNREFERENCED_PARAMETER(size_in_bytes);
+#endif // __AAL_WINDOWS__
+
+   __ASSERT_HERE_IN_FN(NULL != krnl_virt);
+   __ASSERT_HERE_IN_FN(size_in_bytes > 0);
+
+   PMEMORY_HERE("_kosal_free_dma_coherent(ptr=0x%" PRIxUINTPTR_T " [phys=0x%" PRIxPHYS_ADDR "], bytes=%llu [0x%llx])\n",
+                   __UINTPTR_T_CAST(krnl_virt),
+                   kosal_virt_to_phys(krnl_virt),
+                   size_in_bytes, size_in_bytes);
+
+   // Recommended security practice..
+   if ( NULL != krnl_virt ) {
+      memset(krnl_virt, 0, (size_t)size_in_bytes);
+   }
+
+#if   defined( __AAL_LINUX__ )
+
+
+      dma_free_coherent(&((struct pci_dev*)devhandle)->dev, size_in_bytes, krnl_virt, (dma_addr_t)dma_handle);
+
+#elif defined( __AAL_WINDOWS__ )
+
+   if ( NULL != krnl_virt ) {
+      MmFreeContiguousMemory(krnl_virt);
+   }
+
+#endif // OS
+}
 
 #if   defined( __AAL_LINUX__ )
 
 void task_poller(struct work_struct *work)
 {
    struct delayed_work *delayedWork = container_of(work, struct delayed_work, work);
-   pwork_object         pwork       = container_of(delayedWork, work_object, workobj);
+   struct kosal_work_object *pwork  = container_of(delayedWork, struct kosal_work_object, workobj);
 
    pwork->fnct(pwork->context);
+
 }
+void kosal_queue_delayed_work(kosal_work_queue wq, struct kosal_work_object *pwo, KOSAL_TIME msec) {
+
+   queue_delayed_work(wq,&(pwo->workobj),msecs_to_jiffies(msec));
+}
+
 
 #elif defined( __AAL_WINDOWS__ )
 
 void WorkItemCallback(IN PDEVICE_OBJECT pdevObject, IN PVOID Context) {
-   pwork_object pwork = (pwork_object)Context;
+   struct kosal_work_object *pwork = ( struct kosal_work_object * )Context;
    UNREFERENCED_PARAMETER(pdevObject);
    kosal_mdelay(pwork->msec_delay);
    pwork->fnct(pwork->context);
    return;
 }
 
-void kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, btTime msec)
+void kosal_queue_delayed_work(kosal_work_queue wq, struct kosal_work_object *pwo, btTime msec)
 {
    pwo->msec_delay = msec;
    IoQueueWorkItem(wq, WorkItemCallback, DelayedWorkQueue, pwo);
@@ -497,6 +613,8 @@ void kosal_wake_up_interruptible(kosal_poll_object *pwaitq)
 
 btVirtAddr _kosal_get_user_buffer( __ASSERT_HERE_PROTO btVirtAddr user_prt, btWSSize size_in_bytes)
 {
+
+
 #if   defined( __AAL_LINUX__ )
    unsigned long ret;
    btVirtAddr pkbuffer = vmalloc(size_in_bytes);
@@ -511,13 +629,28 @@ btVirtAddr _kosal_get_user_buffer( __ASSERT_HERE_PROTO btVirtAddr user_prt, btWS
       return NULL;
    }
    return pkbuffer;
+#elif defined( __AAL_WINDOWS__ )  //TODO
+   UNREFERENCED_PARAMETER(user_prt);
+   UNREFERENCED_PARAMETER(size_in_bytes);
+
+   __ASSERT_HERE_IN_FN( NULL != user_prt );
+   __ASSERT_HERE_IN_FN( 0 != size_in_bytes );
+   return NULL;
 #endif
 }
 
 void _kosal_free_user_buffer(__ASSERT_HERE_PROTO btVirtAddr user_prt,  btWSSize size_in_bytes)
 {
+
 #if   defined( __AAL_LINUX__ )
    vfree(user_prt);
+#elif defined( __AAL_WINDOWS__ )  // TODO
+   UNREFERENCED_PARAMETER( user_prt );
+   UNREFERENCED_PARAMETER( size_in_bytes );
+
+   __ASSERT_HERE_IN_FN( NULL != user_prt );
+   __ASSERT_HERE_IN_FN( 0 != size_in_bytes );
+
 #endif
 }
 

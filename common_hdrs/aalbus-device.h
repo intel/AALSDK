@@ -280,6 +280,24 @@ aaldev_owner_init(struct aaldev_owner *pdevown,
    ownerSess_Init(&pdevown->m_sess, ownerContext);
 }
 
+//=============================================================================
+// Name: AAL_PDO_DEVICE_CONTEXT
+// Description: The context of the AAL Device.  
+// Interface: public
+// Comments:
+//=============================================================================
+typedef struct _AAL_PDO_DEVICE_CONTEXT
+{
+   // Common AAL Device Structure
+   struct aal_device            *m_aaldevice;
+   struct device_attributes     *m_pdevAttributes;
+   // UNUSED
+   //   AAL_BUS_WMI_STD_DATA   StdAALdeviceData;
+   //   WDFDEVICE              pMontorConfigAPIControlDevice;
+
+
+} AAL_PDO_DEVICE_CONTEXT, *PAAL_PDO_DEVICE_CONTEXT;
+
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 //                            AAL Class

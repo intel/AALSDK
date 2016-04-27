@@ -69,9 +69,8 @@
 
 #include "aalsdk/kernel/aalbus.h"              // for AAL_vendINTC
 #include "aalsdk/kernel/aalui-events.h"
-#include "aalsdk/kernel/aalui.h"
 #include "aalsdk/kernel/aalids.h"
-#include "aalsdk/kernel/aalbus-device.h"
+//#include "aalsdk/kernel/aalbus-device.h"
 #include "aalsdk/kernel/spl2defs.h"
 
 #include "cci_pcie_driver_PIPsession.h"
@@ -155,7 +154,7 @@ BindSession(struct aaldev_ownerSession *pownerSess)
    pownerSess->m_PIPHandle = pSess;
 
    // Save the session in the device
-   cci_dev_to_PIPsessionp(pdev) = pSess;
+   cci_aaldev_to_PIPsessionp(pdev) = pSess;
 
    return 1;
 }
@@ -194,12 +193,12 @@ int UnbindSession(struct aaldev_ownerSession *pownerSess)
    PDEBUG("UnBinding UI Session\n");
 
    // Stop all on-going processing
-   kosal_sem_get_krnl( cci_dev_psem(pdev) );
+   kosal_sem_get_krnl( cci_aaldev_psem(pdev) );
 
    // If this is a uAFU make sure it is stopped
-   if( cci_dev_UAFU ==  cci_dev_type(pdev) ){
+   if( cci_dev_UAFU ==  cci_aaldev_type(pdev) ){
       PDEBUG("Quiescing User AFU\n");
-      if(true == get_port_feature( cci_dev_pport(pdev),
+      if(true == get_port_feature( cci_aaldev_pport(pdev),
                                    CCIP_PORT_DFLID_USMG,
                                    NULL,
                                    (btVirtAddr*)&puMsgvirt)){
@@ -223,11 +222,11 @@ int UnbindSession(struct aaldev_ownerSession *pownerSess)
       }
 
       // Reset the AFU
-      port_afu_quiesce_and_halt( cci_dev_pport(pdev));
-      port_afu_Enable( cci_dev_pport(pdev));
+      port_afu_quiesce_and_halt( cci_aaldev_pport(pdev));
+      port_afu_Enable( cci_aaldev_pport(pdev));
    }
 
-   kosal_sem_put( cci_dev_psem(pdev) );
+   kosal_sem_put( cci_aaldev_psem(pdev) );
 
    // Free all allocated workspaces not yet freed
    cci_flush_all_wsids(pSess);
@@ -266,15 +265,19 @@ cci_flush_all_wsids(struct cci_PIPsession *psess)
 
    PVERBOSE("Freeing allocated workspaces.\n");
 
-   list_for_each_entry_safe(wsidp, tmp, &pownerSess->m_wshead, m_list) {
+   kosal_list_for_each_entry_safe( wsidp, tmp, &pownerSess->m_wshead, m_list, struct aal_wsid) {
       if( WSM_TYPE_VIRTUAL == wsidp->m_type){
-         kosal_free_contiguous_mem((btAny)wsidp->m_id, wsidp->m_size);
+         if( NULL== cci_aaldev_pci_dev(pdev) ) {
+            kosal_free_contiguous_mem((btAny)wsidp->m_id, wsidp->m_size);
+         }else{
+            kosal_free_dma_coherent( ccip_dev_pci_dev(pdev), (btAny)wsidp->m_id, wsidp->m_size, wsidp->m_dmahandle);
+         }
 
          // remove the wsid from the device and destroy
-         PVERBOSE("Done Freeing PWS with id 0x%llx.\n",pwsid_to_wsidhandle(wsidp));
+         PVERBOSE("Done Freeing PWS with id 0x%llx.\n",pwsid_to_wsidHandle(wsidp));
       }
 
-      list_del_init(&wsidp->m_list);
+      kosal_list_del_init(&wsidp->m_list);
 
       ccidrv_freewsid(wsidp);
    } // end list_for_each_entry

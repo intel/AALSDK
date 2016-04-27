@@ -365,6 +365,8 @@
 #define reasParentReleased             AAL_ReasCode   (0x001B)
 #define reasSingletoneExists           AAL_ReasCode   (0x001C)
 #define reasTimeout                    AAL_ReasCode   (0x001D)
+#define reasRuntimeNotStarted          AAL_ReasCode   (0x001E)
+#define reasRuntimeAlreadyStarted      AAL_ReasCode   (0x001F)
 
 #define strNoError                     "No error."
 #define strInternalSystemFailure       "Internal system failure!"
@@ -418,6 +420,8 @@
 
 #define iidRuntime                   __AAL_IID(AAL_sysAAL, 0x0008)   // Class implements IRuntime
 
+#define iidServiceRevoke             __AAL_IID(AAL_sysAAL, 0x0009)   // IServiceRevoke
+
 /// @}
 
 /// @addtogroup Events
@@ -431,6 +435,9 @@
 #define iidTranEvent                 __AAL_TranEvt(AAL_sysAAS, 0x0000)
 /// IExceptionTransactionEvent interface id.
 #define iidExTranEvent               __AAL_ExTranEvt(AAL_sysAAS, 0x0000)
+
+/// IReleaseRequestEvent interface id.
+#define iidReleaseRequestEvent       __AAL_ExTranEvt(AAL_sysAAS, 0x0000)
 
 /// @}
 

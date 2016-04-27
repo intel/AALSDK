@@ -55,7 +55,7 @@ btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr 
    int mmapFlags;               // mmap flags
 
    ASSERT(NULL != pRet);
-
+#if defined( __AAL_LINUX__ )
    // extract target VA from optArgs
    if ( ENamedValuesOK == optArgs.Get(ALI_MMAP_TARGET_VADDR, &pTargetVirtAddr) ) {
       mmapFlags = MAP_SHARED | MAP_FIXED;
@@ -63,6 +63,11 @@ btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr 
       pTargetVirtAddr = NULL;    // no mapping requested
       mmapFlags = MAP_SHARED;
    }
+#elif defined( __AAL_WINDOWS__ )
+#pragma message("***NEED A WINDOWS IMPLEMENTATION??***")
+#else
+# error Implement kOSAL for unknown OS.
+#endif
 
 
 #if   defined( __AAL_WINDOWS__ )

@@ -54,29 +54,27 @@
 //******************************************************************************
 //****************************************************************************
 /// @file ccip_perfmon.h
-/// @brief  Definitions for ccip.
+/// @brief  Definitions for ccip performance counter.
 /// @ingroup aalkernel_ccip
 /// @verbatim
 //        FILE: ccip_perfmon.h
 //     CREATED: Sept 24, 2015
-//      AUTHOR:
-//
+//      AUTHOR: Ananda Ravuri, Intel Corporation
+//              Joseph Grecco, Intel Corporation
+// 
 // PURPOSE:
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
+// 02/19/2016     JG       Refactored OS specific portion
 //****************************************************************************///
-
-
-#ifndef __AALKERNEL_CCIP_PERFMON_DEF_H_
-#define __AALKERNEL_CCIP_PERFMON_DEF_H_
+#ifndef __AALKERNEL_CCIP_PERFMON_H_
+#define __AALKERNEL_CCIP_PERFMON_H_
 
 #include <aalsdk/kernel/aaltypes.h>
 #include <aalsdk/kernel/ccipdriver.h>
 #include <aalsdk/kernel/ccip_defs.h>
 #include "cci_pcie_driver_internal.h"
-
-
 
 BEGIN_NAMESPACE(AAL)
 
@@ -98,23 +96,6 @@ BEGIN_NAMESPACE(AAL)
 #define FABRIC_UPI_READ         "UPI Read"
 #define FABRIC_UPI_WRITE        "UPI Write"
 #define VTD_COUNTER              "VT-d"
-
-
-/// Name:    create_perfmonitor
-/// @brief   creates performance monitor
-///
-/// @param[in] ppcidev  pci device  pointer.
-/// @param[in] pfme_dev fme device pointer.
-/// @return    error code
-bt32bitInt create_perfmonitor(struct pci_dev* ppcidev,
-                              struct fme_device* pfme_dev);
-
-/// Name:    remove_perfmonitor
-/// @brief   removes perfoemanceee counters
-///
-/// @param[in] ppcidev  pci device  pointer.
-/// @return    error code
-bt32bitInt remove_perfmonitor(struct pci_dev* ppcidev);
 
 
 /// Name:    get_perfmonitor_counters
@@ -159,4 +140,4 @@ bt32bitInt get_perfmon_counters(struct fme_device* pfme_dev,
 
 END_NAMESPACE(AAL)
 
-#endif //__AALKERNEL_CCIP_PERFMON_DEF_H_
+#endif //__AALKERNEL_CCIP_PERFMON_H_

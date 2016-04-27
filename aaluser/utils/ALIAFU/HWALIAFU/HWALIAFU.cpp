@@ -51,6 +51,7 @@
 
 #include "ALIAIATransactions.h"
 #include "HWALIAFU.h"
+#include "aalsdk/aas/Dispatchables.h"
 
 BEGIN_NAMESPACE(AAL)
 
@@ -73,6 +74,8 @@ BEGIN_NAMESPACE(AAL)
 #endif // VERBOSE
 #define VERBOSE(x) AAL_VERBOSE(LM_AFU, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
 
+// Bitstream File extension
+#define BITSTREAM_FILE_EXTENSION ".rbf"
 // ===========================================================================
 //
 // Dispatchables for client callbacks
@@ -464,6 +467,11 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
 
 }
 
+void HWALIAFU::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
+{
+   ERR("Recieved unhandled serviceReleaseRequest() from AFU PRoxy\n");
+}
+
 // Service allocated failed callback
 void HWALIAFU::serviceAllocateFailed(const IEvent &rEvent) {
    m_bIsOK = false;
@@ -555,9 +563,11 @@ btBool HWALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * const
       return false;
    }
 
+   volatile btUnsigned64bitInt * vPtr = reinterpret_cast<btUnsigned64bitInt *>( m_MMIORmap + Offset );
+
    // m_MMIORmap is btVirtAddr is char*, so offset is in bytes
-   // FIXME: volatile might not be necessary, need to investigate further
-   *pValue = *( reinterpret_cast<volatile btUnsigned64bitInt *>(m_MMIORmap + Offset) );
+//   *pValue = *( reinterpret_cast<btUnsigned64bitInt *>(m_MMIORmap + Offset) );
+   *pValue = *vPtr;
 
    return true;
 }
@@ -1057,11 +1067,30 @@ btBool HWALIAFU::performanceCountersGet ( INamedValueSet * const  pResult,
 void HWALIAFU::reconfDeactivate( TransactionID const &rTranID,
                                  NamedValueSet const &rInputArgs)
 {
-   AFUDeactivateTransaction deactivatetrans(rTranID);
+   AFUDeactivateTransaction deactivatetrans(rTranID,rInputArgs);
+
+   if(!deactivatetrans.IsOK() ){
+
+      AAL_ERR( LM_All,"Deactivate failed");
+      getRuntime()->schedDispatchable(new AFUDeactivateFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                                                                                                              rTranID,
+                                                                                                              errCauseUnknown,
+                                                                                                              reasBadConfiguration,
+                                                                                                              "Error: Bad input Configuration")));
+
+         return;
+     }
+
    // Send transaction
    m_pAFUProxy->SendTransaction(&deactivatetrans);
    if(deactivatetrans.getErrno() != uid_errnumOK){
       AAL_ERR( LM_All,"Deactivate failed");
+
+      getRuntime()->schedDispatchable(new AFUDeactivateFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                                                                                                              rTranID,
+                                                                                                              errCauseUnknown,
+                                                                                                              reasUnknown,
+                                                                                                              "Error: Failed transaction")));
       return;
    }
 
@@ -1082,11 +1111,10 @@ void HWALIAFU::reconfDeactivate( TransactionID const &rTranID,
 void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
                                 NamedValueSet const &rInputArgs)
 {
-   btByte        *bufptr      = NULL;
-   std::streampos    filesize    = 0;
+   btByte *bufptr                = NULL;
+   std::streampos filesize       = 0;
 
    if(rInputArgs.Has(AALCONF_FILENAMEKEY)){
-
       btcString filename;
       rInputArgs.Get(AALCONF_FILENAMEKEY, &filename);
 
@@ -1135,7 +1163,7 @@ void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
 
 
       bitfile.seekg( 0, std::ios::beg );
-      bufptr = reinterpret_cast<btByte*>(malloc(filesize));
+      bufptr = new(std::nothrow) btByte[filesize];
 
       if(NULL == bufptr) {
          // Memory  allocation failed  error Message "Failed to allocate file buffer"
@@ -1169,7 +1197,7 @@ void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
 #endif
    }
 
-   AFUConfigureTransaction configuretrans(reinterpret_cast<btVirtAddr>(bufptr), filesize, rTranID);
+   AFUConfigureTransaction configuretrans(reinterpret_cast<btVirtAddr>(bufptr), filesize, rTranID,rInputArgs);
    // Send transaction
    m_pAFUProxy->SendTransaction(&configuretrans);
    if(configuretrans.getErrno() != uid_errnumOK){
@@ -1179,10 +1207,12 @@ void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
                                                                                                                errCauseUnknown,
                                                                                                                reasUnknown,
                                                                                                                "Error: Failed transaction")));
-      free(bufptr);
+      if(bufptr)
+         delete bufptr;
       return;
    }
-   free(bufptr);
+   if(bufptr)
+      delete bufptr;
 }
 
 /// @brief Activate an AFU after it has been reconfigured.
@@ -1204,6 +1234,12 @@ void HWALIAFU::reconfActivate( TransactionID const &rTranID,
    m_pAFUProxy->SendTransaction(&activatetrans);
    if(activatetrans.getErrno() != uid_errnumOK){
       AAL_ERR( LM_All,"Activate failed");
+
+      getRuntime()->schedDispatchable(new AFUActivateFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                                                                                                            rTranID,
+                                                                                                            errCauseUnknown,
+                                                                                                            reasUnknown,
+                                                                                                            "Error: Failed transaction")));
       return;
    }
 
@@ -1222,13 +1258,32 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
 
    ASSERT(NULL != puidEvent);
 
-//   std::cerr << "Got AFU event type " << puidEvent->MessageID() << "\n" << std::endl;
+  // std::cerr << "Got AFU event type " << puidEvent->MessageID() << "\n" << std::endl;
 
    switch(puidEvent->MessageID())
    {
-   //===========================
-   // WSM response
-   // ==========================
+
+   case rspid_AFU_PR_Revoke_Event:
+   {
+      //std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Revoked_Event \n" << std::endl;
+     // std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
+
+      getRuntime()->schedDispatchable( new ServiceRevoke(dynamic_ptr<IServiceRevoke>(iidServiceRevoke,this)) );
+
+   }
+   break;
+
+   case rspid_AFU_PR_Release_Request_Event:
+   {
+      //std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Release_Request_Event \n" << std::endl;
+      struct aalui_PREvent *pResult = reinterpret_cast<struct aalui_PREvent *>(puidEvent->Payload());
+      getRuntime()->schedDispatchable( new ReleaseServiceRequest(m_pSvcClient, new CReleaseRequestEvent(NULL,
+                                                                                                        pResult->reconfTimeout,
+                                                                                                        IReleaseRequestEvent::resource_revokeing,
+                                                                                                        "AFU Release Request")) );
+   }
+   break;
+
    case rspid_WSM_Response:
       {
          // TODO check result code

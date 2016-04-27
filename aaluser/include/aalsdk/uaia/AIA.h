@@ -57,7 +57,7 @@
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/AALTransactionID.h>
 #include <aalsdk/AALNamedValueSet.h>
-#include <aalsdk/kernel/aalui.h> 				// uid_msgIDs_e
+#include <aalsdk/kernel/ccipdriver.h>           // uid_msgIDs_e
 #include <aalsdk/utils/AALWorkSpaceUtilities.h> // WorkSpaceMapper
 #include <aalsdk/CUnCopyable.h>
 

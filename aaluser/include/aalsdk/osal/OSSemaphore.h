@@ -175,12 +175,24 @@ public:
    /// @retval  false  Semaphore not initialized.
    btBool Wait();
 
+   /// Associate a User-Defined pointer with this CSemaphore object.
+   ///
+   /// @param[in]  User  A User-Defined data item, not touched by CSemaphore.
+   void UserDefined(btObjectType User);
+   /// Retrieve the User-Defined pointer associated with this CSemaphore object.
+   ///
+   /// @return The User-Defined pointer, or NULL if none was set.
+   btObjectType UserDefined() const;
+
 private:
-   btBool          m_bInitialized;
+   // flags for m_State
+#define SEM_ST_OK        0x00000001
+#define SEM_ST_UNBLOCKED 0x00000002
+   btUnsignedInt   m_State;
    btInt           m_MaxCount;
    btInt           m_CurCount;
    btUnsignedInt   m_WaitCount;
-   btBool          m_bUnBlocking;
+   btObjectType    m_UserDefined;
 
 #if   defined( __AAL_WINDOWS__ )
    HANDLE          m_hEvent;

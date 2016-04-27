@@ -20,21 +20,6 @@
     <ClCompile Include="..\AASResourceManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\CAASResourceManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\CRegistrarDatabase.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\InstanceRecord.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\RegDBSkeleton.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ResMgrAlgorithms.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\aalsdk\rm\CAASResourceManager.h">
@@ -46,7 +31,13 @@
     <ClInclude Include="..\..\..\include\aalsdk\rm\InstanceRecord.h">
       <Filter>Header Files\aalsdk\rm</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\aalsdk\rm\RegDBSkeleton.h">
+    <ClInclude Include="..\..\include\aalsdk\rm\AALResourceManager.h">
+      <Filter>Header Files\aalsdk\rm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\aalsdk\rm\AALResourceManagerClient.h">
+      <Filter>Header Files\aalsdk\rm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\aalsdk\rm\AALResourceManagerProxy.h">
       <Filter>Header Files\aalsdk\rm</Filter>
     </ClInclude>
   </ItemGroup>

@@ -65,6 +65,8 @@
 #ifndef __CCI_PCIE_DRIVER_SIMULATOR_H__
 #define __CCI_PCIE_DRIVER_SIMULATOR_H__
 
+#include "aalsdk/kernel/kosal.h"
+
 #define CCI_SIM_APERTURE_SIZE     (  0x120000  )       /// Size of device CSR region, in bytes
 
 // Using NLB AFU ID
@@ -79,8 +81,8 @@
 
 //
 // Prototypes
-int cci_sim_discover_devices(ulong numdevices,
-                             struct list_head *g_device_list);
+int cci_sim_discover_devices(unsigned  numdevices,
+                             kosal_list_head *g_device_list);
 
 
 

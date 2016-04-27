@@ -228,7 +228,7 @@ enum e_CCIP_PR_Megafun_status {
 #define CCIP_FME_GUIDH              (0xBFAf2AE94A5246E3ULL)
 #define CCIP_FME_PIPIID             (0x4DDEA2705E7344D1ULL)
 
-#define CCIP_DEV_FME_SUBDEV         (-1)
+#define CCIP_DEV_FME_SUBDEV         ((btUnsigned16bitInt)(-1))
 #define CCIP_DEV_PORT_SUBDEV(s)     (s + 0x10)
 #define CCIP_DEV_AFU_SUBDEV(s)      (s + 0x20)
 
@@ -262,8 +262,13 @@ enum e_CCIP_PR_Megafun_status {
 #define PCIe_DEVICE_ID_RCiEP0       0xBCBD
 #define PCIe_DEVICE_ID_RCiEP1       0xBCBE
 
+/// VF Device
+#define PCIe_DEVICE_ID_VF           0xBCBF
+
 /// QPI Device ID
 #define PCIe_DEVICE_ID_RCiEP2       0xBCBC
+
+
 
 /// MMIO Space map
 #define FME_DFH_AFUIDL  0x8

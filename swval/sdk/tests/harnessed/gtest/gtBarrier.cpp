@@ -4,6 +4,8 @@
 #endif // HAVE_CONFIG_H
 #include "gtCommon.h"
 
+#include "dbg_barrier.h"
+
 TEST(OSAL_Barrier, aal0172)
 {
    // Barrier::~Barrier() should behave robustly when no call to Barrier::Create() was made.
@@ -80,7 +82,7 @@ protected:
    AAL::btBool Wait() { return m_Barrier.Wait(); }
    AAL::btBool Wait(AAL::btTime Timeout) { return m_Barrier.Wait(Timeout); }
 
-   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return (AAL::btUnsignedInt) GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    AAL::btUnsignedInt m_UnlockCount;
    AAL::btBool        m_bAutoReset;
@@ -866,7 +868,22 @@ TEST_F(OSAL_Barrier_f, aal0194)
    // If a thread calls Wait() again while unblocking, the Wait() call fails immediately.
    EXPECT_TRUE(UnblockAll());
 
-   YIELD_N(); // Give plenty of time for waiters to have made it through Wait() a 2nd time.
+   // Make sure all of the threads have resumed from the first Wait().
+   btBool Continue;
+   do
+   {
+      Continue = true;
+
+      for ( t = 0 ; t < T ; ++t ) {
+         if ( 0 == m_Scratch[t] ) {
+            Continue = false;
+         }
+      }
+
+      if ( !Continue ) {
+         cpu_yield();
+      }
+   }while( !Continue );
 
    // The last unblocked waiter resumes, and completes the UnblockAll(), resetting the Barrier
    // to locked, current count == 0.
@@ -896,16 +913,19 @@ TEST_F(OSAL_Barrier_f, aal0194)
 
 class OSAL_Barrier_Destroy_f : public ::testing::Test
 {
-protected:
+public:
    OSAL_Barrier_Destroy_f() :
       m_pBarrier(NULL),
       m_UnlockCount(0),
-      m_bAutoReset(false)
+      m_bAutoReset(false),
+      m_ScratchCounter(0)
    {}
    virtual ~OSAL_Barrier_Destroy_f() {}
 
    virtual void SetUp()
    {
+      m_ScratchCounter = 0;
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          m_pThrs[i] = NULL;
@@ -937,6 +957,7 @@ protected:
    AAL::btBool Destroy()
    {
       if ( NULL != m_pBarrier ) {
+         m_pBarrier->UserDefined(NULL);
          delete m_pBarrier;
          m_pBarrier = NULL;
          return true;
@@ -959,11 +980,12 @@ protected:
    AAL::btBool Wait() { return m_pBarrier->Wait(); }
    AAL::btBool Wait(AAL::btTime Timeout) { return m_pBarrier->Wait(Timeout); }
 
-   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return (AAL::btUnsignedInt) GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    Barrier           *m_pBarrier;
    AAL::btUnsignedInt m_UnlockCount;
    AAL::btBool        m_bAutoReset;
+   AAL::btUnsignedInt m_ScratchCounter;
    OSLThread         *m_pThrs[5];
    AAL::btUnsignedInt m_Scratch[5];
    CSemaphore         m_Sems[2];
@@ -1038,7 +1060,30 @@ TEST_F(OSAL_Barrier_Destroy_f, aal0198)
    // unblocked and return false from their Wait() calls. The Barrier::Destroy() waits for all
    // waiters to return from Wait() calls before destroying the Barrier.
 
+   class aal0198AfterBarrierAutoLock : public ::AAL::Testing::EmptyAfterBarrierAutoLock
+   {
+   public:
+      aal0198AfterBarrierAutoLock(OSAL_Barrier_Destroy_f *pFixture) :
+         m_pFixture(pFixture)
+      {}
+
+      virtual void OnWait()
+      {
+         ++m_pFixture->m_ScratchCounter;
+      }
+
+      virtual void OnWait(btTime )
+      {
+         ++m_pFixture->m_ScratchCounter;
+      }
+
+   protected:
+      OSAL_Barrier_Destroy_f *m_pFixture;
+   } AfterAutoLock(this);
+
    EXPECT_TRUE(Create(2, true)); // auto-reset Barrier.
+
+   m_pBarrier->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    EXPECT_TRUE(m_Sems[0].Create(0, 1));
 
@@ -1067,8 +1112,8 @@ TEST_F(OSAL_Barrier_Destroy_f, aal0198)
    }
    m_Scratch[0] = m_Scratch[1] = 0;
 
-   // Give threads plenty of time to be asleep in Barrier::Wait() calls.
-   YIELD_N();
+   // Wait until all threads are asleep in Barrier::Wait() calls.
+   YIELD_WHILE(m_ScratchCounter < T);
 
    EXPECT_TRUE(CurrCounts(c, u));
    EXPECT_EQ(0, c);
@@ -1115,7 +1160,30 @@ TEST_F(OSAL_Barrier_Destroy_f, aal0199)
    // all waiters are unblocked and return false from their Wait() calls. The Barrier::Destroy()
    // waits for all waiters to return from Wait() calls before destroying the Barrier.
 
+   class aal0199AfterBarrierAutoLock : public ::AAL::Testing::EmptyAfterBarrierAutoLock
+   {
+   public:
+      aal0199AfterBarrierAutoLock(OSAL_Barrier_Destroy_f *pFixture) :
+         m_pFixture(pFixture)
+      {}
+
+      virtual void OnWait()
+      {
+         ++m_pFixture->m_ScratchCounter;
+      }
+
+      virtual void OnWait(btTime)
+      {
+         ++m_pFixture->m_ScratchCounter;
+      }
+
+   protected:
+      OSAL_Barrier_Destroy_f *m_pFixture;
+   } AfterAutoLock(this);
+
    EXPECT_TRUE(Create(2, false)); // manual-reset Barrier.
+
+   m_pBarrier->UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    EXPECT_TRUE(m_Sems[0].Create(0, 1));
 
@@ -1144,8 +1212,8 @@ TEST_F(OSAL_Barrier_Destroy_f, aal0199)
    }
    m_Scratch[0] = m_Scratch[1] = 0;
 
-   // Give threads plenty of time to be asleep in Barrier::Wait() calls.
-   YIELD_N();
+   // Wait until all threads are asleep in Barrier::Wait() calls.
+   YIELD_WHILE(m_ScratchCounter < T);
 
    EXPECT_TRUE(CurrCounts(c, u));
    EXPECT_EQ(0, c);
@@ -1166,15 +1234,18 @@ TEST_F(OSAL_Barrier_Destroy_f, aal0199)
 template <typename T>
 class OSAL_Barrier_vp : public ::testing::TestWithParam<T>
 {
-protected:
+public:
    OSAL_Barrier_vp() :
       m_UnlockCount(0),
-      m_bAutoReset(false)
+      m_bAutoReset(false),
+      m_ScratchCounter(0)
    {}
    virtual ~OSAL_Barrier_vp() {}
 
    virtual void SetUp()
    {
+      m_ScratchCounter = 0;
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          m_pThrs[i] = NULL;
@@ -1185,6 +1256,8 @@ protected:
    }
    virtual void TearDown()
    {
+      m_Barrier.UserDefined(NULL);
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          if ( NULL != m_pThrs[i] ) {
@@ -1217,10 +1290,11 @@ protected:
    AAL::btBool Wait() { return m_Barrier.Wait(); }
    AAL::btBool Wait(AAL::btTime Timeout) { return m_Barrier.Wait(Timeout); }
 
-   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return (AAL::btUnsignedInt) GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    AAL::btUnsignedInt m_UnlockCount;
    AAL::btBool        m_bAutoReset;
+   AAL::btUnsignedInt m_ScratchCounter;
    Barrier            m_Barrier;
    OSLThread         *m_pThrs[5];
    AAL::btUnsignedInt m_Scratch[5];
@@ -1229,7 +1303,7 @@ protected:
 
 class OSAL_Barrier_vp_uint_0 : public OSAL_Barrier_vp< AAL::btUnsignedInt >
 {
-protected:
+public:
    static void Thr0(OSLThread * , void * );
 
    static void Thr1(OSLThread * , void * );
@@ -1243,20 +1317,39 @@ void OSAL_Barrier_vp_uint_0::Thr0(OSLThread *pThread, void *pArg)
    OSAL_Barrier_vp_uint_0 *f = reinterpret_cast<OSAL_Barrier_vp_uint_0 *>(pArg);
    ASSERT_NONNULL(f);
 
-   f->m_Scratch[0] = 1;
    EXPECT_TRUE(f->Wait());
-   EXPECT_TRUE(f->Wait()); // not an auto-reset Barrier..
+   EXPECT_TRUE(f->Wait()); // not an auto-reset Barrier, so we run through all the Wait()'s once unlocked..
    EXPECT_TRUE(f->Wait());
-   f->m_Scratch[1] = 1;
 }
 
 TEST_P(OSAL_Barrier_vp_uint_0, aal0175)
 {
    // Calling Barrier::Create() with UnlockCount > 0 results in an unlock count of UnlockCount.
 
+   class aal0175AfterBarrierAutoLock : public ::AAL::Testing::EmptyAfterBarrierAutoLock
+   {
+   public:
+      aal0175AfterBarrierAutoLock(OSAL_Barrier_vp_uint_0 *pFixture) :
+         m_pFixture(pFixture),
+         m_Count(0)
+      {}
+
+      virtual void OnWait()
+      {
+         m_pFixture->m_Scratch[m_Count++] = 1;
+      }
+
+   protected:
+      OSAL_Barrier_vp_uint_0 *m_pFixture;
+      btUnsignedInt           m_Count;
+   } AfterAutoLock(this);
+
+
    const AAL::btUnsignedInt U = GetParam();
 
    ASSERT_TRUE(Create(U, false));
+
+   m_Barrier.UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    AAL::btUnsignedInt c = 0;
    AAL::btUnsignedInt u = 0;
@@ -1276,7 +1369,7 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0175)
 
    AAL::btUnsignedInt i;
    for ( i = 0 ; i < m_UnlockCount - 1 ; ++i ) {
-      EXPECT_EQ(0, m_Scratch[1]);
+      EXPECT_EQ(0, m_Scratch[1] + m_Scratch[2]);
 
       c = u = 0;
       EXPECT_TRUE(CurrCounts(c, u));
@@ -1288,9 +1381,9 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0175)
 
    EXPECT_EQ(1, NumWaiters());
 
-   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[1]));
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[1] + m_Scratch[2]));
 
-   // Post()'ing 1 unlocks the Barrier, because the unlock count is 1.
+   // The Barrier is at m_UnlockCount - 1, so Post()'ing 1 unlocks it.
    EXPECT_TRUE(Post(1));
 
    c = u = 0;
@@ -1298,7 +1391,7 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0175)
    EXPECT_EQ(c, U);
    EXPECT_EQ(u, U);
 
-   YIELD_WHILE(0 == m_Scratch[1]);
+   YIELD_WHILE(0 == m_Scratch[2]);
 
    m_pThrs[0]->Join();
    EXPECT_EQ(0, CurrentThreads());
@@ -1355,6 +1448,28 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0184)
    //  reset to the locked state, with current count = 0. Future Wait() calls block on the
    //  Barrier until the current count reaches the unlock count again.
 
+   class aal0184AfterBarrierAutoLock : public ::AAL::Testing::EmptyAfterBarrierAutoLock
+   {
+   public:
+      aal0184AfterBarrierAutoLock(OSAL_Barrier_vp_uint_0 *pFixture) :
+         m_pFixture(pFixture)
+      {}
+
+      virtual void OnWait()
+      {
+         ++m_pFixture->m_ScratchCounter;
+      }
+
+      virtual void OnWait(btTime )
+      {
+         ++m_pFixture->m_ScratchCounter;
+      }
+
+   protected:
+      OSAL_Barrier_vp_uint_0 *m_pFixture;
+   } AfterAutoLock(this);
+
+
    const AAL::btUnsignedInt U = GetParam();
    const AAL::btUnsignedInt T = sizeof(m_pThrs) / sizeof(m_pThrs[0]);
 
@@ -1363,6 +1478,8 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0184)
    ASSERT_TRUE(m_Sems[2].Create(0, T));
 
    ASSERT_TRUE(Create(U, true));
+
+   m_Barrier.UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    m_Scratch[1] = 1000; // Timeout for Thr3's.
 
@@ -1395,6 +1512,9 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0184)
    // Allow threads to proceed into the Barrier Wait() loop.
    EXPECT_TRUE(m_Sems[1].Post(T));
 
+   YIELD_WHILE(m_ScratchCounter < T);
+
+   // Make m_UnlockCount - 1 Post()'s. All threads remain blocked in Barrier::Wait().
    AAL::btUnsignedInt i;
    for ( i = 0 ; i < U - 1 ; ++i ) {
       EXPECT_TRUE(Post(1));
@@ -1417,10 +1537,10 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0184)
    EXPECT_EQ(U - 1, c);
    EXPECT_EQ(U,     u);
 
-   // This Post() unblocks all the waiters.
+   // This Post() unblocks all the Barrier waiters.
    EXPECT_TRUE(Post(1));
 
-   // Wait for all waiters to resume.
+   // Wait for all waiters to resume from Barrier Wait().
    for ( t = 0 ; t < T ; ++t ) {
       YIELD_WHILE(0 == m_Scratch[t]);
    }
@@ -1437,11 +1557,10 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0184)
    // Release all threads so that they call Wait() the 2nd time.
    EXPECT_TRUE(m_Sems[2].Post(T));
 
-   // Wait for all waiters to loop back for the 2nd Wait() call.
-   for ( t = 0 ; t < T ; ++t ) {
-      YIELD_WHILE(1 == m_Scratch[t]);
-   }
+   // Wait for all waiters to loop back for the 2nd Barrier Wait() call.
+   YIELD_WHILE(m_ScratchCounter < (2 * T));
 
+   // Make m_UnlockCount - 1 Post()'s. All threads remain blocked in Barrier::Wait().
    for ( i = 0 ; i < U - 1 ; ++i ) {
       EXPECT_TRUE(Post(1));
       for ( t = 0 ; t < T ; ++t ) {
@@ -1462,7 +1581,7 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0184)
    EXPECT_EQ(U - 1, c);
    EXPECT_EQ(U,     u);
 
-   // This Post() unblocks all the waiters from the 2nd Wait().
+   // This Post() unblocks all the waiters from the 2nd Barrier Wait().
    EXPECT_TRUE(Post(1));
 
    // Wait for all waiters to resume.
@@ -1530,6 +1649,23 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0187)
    // so long as an intervening Barrier::Destroy() call is made. The same is true for a
    // manual-reset Barrier transitioning to an auto-reset Barrier.
 
+   class aal0187AfterBarrierAutoLock : public ::AAL::Testing::EmptyAfterBarrierAutoLock
+   {
+   public:
+      aal0187AfterBarrierAutoLock(OSAL_Barrier_vp_uint_0 *pFixture) :
+         m_pFixture(pFixture)
+      {}
+
+      virtual void OnSleep()
+      {
+         ++m_pFixture->m_ScratchCounter;
+      }
+
+   protected:
+      OSAL_Barrier_vp_uint_0 *m_pFixture;
+   } AfterAutoLock(this);
+
+
    const AAL::btUnsignedInt U = GetParam();
    const AAL::btUnsignedInt T = sizeof(m_pThrs) / sizeof(m_pThrs[0]);
 
@@ -1537,6 +1673,8 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0187)
    ASSERT_TRUE(m_Sems[1].Create(0, T));
 
    ASSERT_TRUE(Create(U, true)); // auto-reset Barrier.
+
+   m_Barrier.UserDefined(reinterpret_cast<btObjectType>(&AfterAutoLock));
 
    m_Scratch[1] = 2; // number of loops in m_Scratch[1]
 
@@ -1556,16 +1694,17 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0187)
 
    EXPECT_EQ(t, CurrentThreads());
 
-   AAL::btUnsignedInt i;
+   YIELD_WHILE(m_ScratchCounter < T);
 
    EXPECT_TRUE(Post(U - 1));
-   // Give plenty of time for threads to have resumed.
+   // Give plenty of time for threads to have errantly resumed from Barrier Wait().
    YIELD_N();
    for ( t = 0 ; t < T ; ++t ) {
       EXPECT_EQ(0, m_Scratch[t]);
    }
 
    EXPECT_EQ(t, NumWaiters());
+   EXPECT_EQ(T, m_ScratchCounter);
 
    AAL::btUnsignedInt c = 0;
    AAL::btUnsignedInt u = 0;
@@ -1573,13 +1712,11 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0187)
    EXPECT_EQ(U - 1, c);
    EXPECT_EQ(U,     u);
 
-   // This Post() unblocks all the waiters from the 1st Wait().
+   // This Post() unblocks all the waiters from the 1st Barrier::Wait().
    EXPECT_TRUE(Post(1));
 
    // Pause until all of the threads loop back into Wait().
-   for ( t = 0 ; t < T ; ++t ) {
-      YIELD_WHILE(0 == m_Scratch[t]);
-   }
+   YIELD_WHILE(m_ScratchCounter < (2 * T));
 
    // Give plenty of time for threads to have resumed.
    YIELD_N();
@@ -1588,23 +1725,26 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0187)
    for ( t = 0 ; t < T ; ++t ) {
       EXPECT_EQ(1, m_Scratch[t]);
    }
+   EXPECT_EQ(2 * T, m_ScratchCounter);
 
    EXPECT_TRUE(Post(U - 1));
-   // Give plenty of time for threads to have resumed.
+   // Give plenty of time for threads to have errantly resumed from Barrier Wait().
    YIELD_N();
    for ( t = 0 ; t < T ; ++t ) {
       EXPECT_EQ(1, m_Scratch[t]);
    }
+   EXPECT_EQ(2 * T, m_ScratchCounter);
 
    c = u = 0;
    EXPECT_TRUE(CurrCounts(c, u));
    EXPECT_EQ(U - 1, c);
    EXPECT_EQ(U,     u);
 
-   // This Post() unblocks all the waiters from the 2nd Wait().
+   // This Post() unblocks all the waiters from the 2nd Barrier::Wait().
    EXPECT_TRUE(Post(1));
 
-   // Pause until all of the threads loop back into Wait().
+   // Pause until all of the threads resume from Barrier::Wait().
+   // Threads will block on m_Sems[1].
    for ( t = 0 ; t < T ; ++t ) {
       YIELD_WHILE(1 == m_Scratch[t]);
    }
@@ -1617,13 +1757,14 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0187)
    // Re-create as a manual-reset Barrier.
    ASSERT_TRUE(Create(U, false)); // manual-reset Barrier.
 
-   // Allow threads to progress to the next phase of the test.
+   // Allow threads to resume from m_Sems[1], progressing to the next phase of the test.
    EXPECT_TRUE(m_Sems[1].Post(T));
 
    for ( t = 0 ; t < T ; ++t ) {
       YIELD_WHILE(0 != m_Scratch[t]);
    }
 
+   YIELD_WHILE(m_ScratchCounter < (3 * T));
    EXPECT_EQ(t, NumWaiters());
 
    c = u = 99;
@@ -1632,7 +1773,7 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0187)
    EXPECT_EQ(U, u);
 
    EXPECT_TRUE(Post(U - 1));
-   // Give plenty of time for threads to have resumed.
+   // Give plenty of time for threads to have errantly resumed from Barrier Wait().
    YIELD_N();
    for ( t = 0 ; t < T ; ++t ) {
       EXPECT_EQ(0, m_Scratch[t]);
@@ -1647,11 +1788,11 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0187)
    EXPECT_TRUE(Post(1));
 
    // The Barrier is now a manual-reset Barrier, and nobody is resetting it. The threads calling
-   // Wait() will flow through the Wait() call twice.
+   // Wait() will flow through the Wait() call twice without blocking.
    for ( t = 0 ; t < T ; ++t ) {
       YIELD_WHILE(2 != m_Scratch[t]);
    }
-
+   EXPECT_EQ(3 * T, m_ScratchCounter);
 
 
    // Destroy the manual-reset Barrier.
@@ -1663,9 +1804,8 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0187)
    // Allow threads to progress to the next phase of the test.
    EXPECT_TRUE(m_Sems[1].Post(T));
 
-   for ( t = 0 ; t < T ; ++t ) {
-      YIELD_WHILE(0 != m_Scratch[t]);
-   }
+   YIELD_WHILE(m_ScratchCounter < (4 * T));
+
 
    EXPECT_EQ(t, NumWaiters());
    c = u = 99;
@@ -1674,21 +1814,20 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0187)
    EXPECT_EQ(U, u);
 
    EXPECT_TRUE(Post(U - 1));
-   // Give plenty of time for threads to have resumed.
+   // Give plenty of time for threads to have errantly resumed from Barrier Wait().
    YIELD_N();
    for ( t = 0 ; t < T ; ++t ) {
       EXPECT_EQ(0, m_Scratch[t]);
    }
 
-   // This Post() unblocks all the waiters from the 1st Wait().
+   // This Post() unblocks all the waiters from the 1st Barrier Wait().
    EXPECT_TRUE(Post(1));
 
    // Pause until all of the threads loop back into Wait().
-   for ( t = 0 ; t < T ; ++t ) {
-      YIELD_WHILE(0 == m_Scratch[t]);
-   }
+   YIELD_WHILE(m_ScratchCounter < (5 * T));
 
-   // Give plenty of time for threads to have resumed.
+
+   // Give plenty of time for threads to have errantly resumed from Barrier Wait().
    YIELD_N();
 
    // This is an auto-reset Barrier, so we expect threads to have blocked again.
@@ -1697,7 +1836,7 @@ TEST_P(OSAL_Barrier_vp_uint_0, aal0187)
    }
 
    EXPECT_TRUE(Post(U - 1));
-   // Give plenty of time for threads to have resumed.
+   // Give plenty of time for threads to have errantly resumed from Barrier Wait().
    YIELD_N();
    for ( t = 0 ; t < T ; ++t ) {
       EXPECT_EQ(1, m_Scratch[t]);
@@ -1796,7 +1935,7 @@ protected:
    AAL::btBool Wait() { return m_Barrier.Wait(); }
    AAL::btBool Wait(AAL::btTime Timeout) { return m_Barrier.Wait(Timeout); }
 
-   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return (AAL::btUnsignedInt) GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    AAL::btUnsignedInt m_UnlockCount;
    AAL::btBool        m_bAutoReset;
@@ -1954,14 +2093,20 @@ TEST_P(OSAL_Barrier_vp_tuple_0, aal0185)
    EXPECT_EQ(0, NumWaiters());
 }
 
+#if defined( __AAL_LINUX__ )
+// Linux-only. The only candidates for user-defined signals in Windows are SIGILL and SIGTERM, per:
+// https://msdn.microsoft.com/en-us/library/xdkz3x12.aspx
+//
+// Both SIGILL and SIGTERM cause the process to terminate, as determined by running this test case in Windows.
+
 void OSAL_Barrier_vp_tuple_0::Thr1(OSLThread *pThread, void *pArg)
 {
    OSAL_Barrier_vp_tuple_0 *f = reinterpret_cast<OSAL_Barrier_vp_tuple_0 *>(pArg);
    ASSERT_NONNULL(f);
 
-#if defined( __AAL_LINUX__ )
-   btUnsignedInt idx = SignalHelper::GetInstance().ThreadRegister(GetThreadID());
-#endif // __AAL_LINUX__
+   SignalHelper &sig = SignalHelper::GetInstance();
+
+   btUnsignedInt idx = sig.ThreadRegister(GetThreadID());
 
    const AAL::btUnsignedInt t = f->m_Scratch[0]; // my unique thread index.
 
@@ -1969,8 +2114,10 @@ void OSAL_Barrier_vp_tuple_0::Thr1(OSLThread *pThread, void *pArg)
 
    EXPECT_TRUE(f->Wait());
 
-#if defined( __AAL_LINUX__ )
-   YIELD_WHILE(SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) < f->m_Signals);
+#if   defined( __AAL_WINDOWS__ )
+   YIELD_WHILE(sig.GetCount(SignalHelper::IDX_SIGUSR1, idx) < f->m_Signals);
+#elif defined( __AAL_LINUX__ )
+   YIELD_WHILE(sig.GetCount(SignalHelper::IDX_SIGIO, idx) < f->m_Signals);
 #endif // __AAL_LINUX__
 
    f->m_Scratch[t] = 1;
@@ -1982,12 +2129,10 @@ TEST_P(OSAL_Barrier_vp_tuple_0, aal0195)
    // call to Barrier::Post() nor Barrier::UnblockAll() is made by another thread, the blocked
    // thread waits infinitely, even in the presence of signals.
 
-#if   defined( __AAL_WINDOWS__ )
-   FAIL() << "need to implement for windows";
-#elif defined( __AAL_LINUX__ )
-   SignalHelper::GetInstance().RegistryReset();
-   SignalHelper::GetInstance().ThreadRegister(GetThreadID());
-#endif // OS
+   SignalHelper &sig = SignalHelper::GetInstance();
+
+   sig.RegistryReset();
+   sig.ThreadRegister(GetThreadID());
 
    AAL::btUnsignedInt NumThreads;
    AAL::btUnsignedInt SignalAttempts;
@@ -2017,8 +2162,7 @@ TEST_P(OSAL_Barrier_vp_tuple_0, aal0195)
    m_Scratch[0] = 0;
 
    EXPECT_EQ(t, CurrentThreads());
-
-   AAL::btUnsignedInt s;
+   YIELD_WHILE(NumWaiters() < NumThreads);
 
    const btTime  sleepeach = 5;
    btBool        Done      = false;
@@ -2027,18 +2171,25 @@ TEST_P(OSAL_Barrier_vp_tuple_0, aal0195)
    while ( !Done ) {
 
       for ( t = 0 ; t < NumThreads ; ++t ) {
+
+         idx = sig.ThreadLookup(m_pThrs[t]->tid());
+
 #if   defined( __AAL_WINDOWS__ )
-         FAIL() << "need to implement for windows";
-#elif defined( __AAL_LINUX__ )
 
-         idx = SignalHelper::GetInstance().ThreadLookup(m_pThrs[t]->tid());
-
-         if ( SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) >= m_Signals ) {
+         if ( sig.GetCount(SignalHelper::IDX_SIGUSR1, idx) >= m_Signals ) {
             continue;
          }
+         EXPECT_EQ(0, sig.Raise(SignalHelper::IDX_SIGUSR1, m_pThrs[t]->tid()));
 
-         EXPECT_EQ(0, pthread_kill(m_pThrs[t]->tid(), SIGIO));
+#elif defined( __AAL_LINUX__ )
+
+         if ( sig.GetCount(SignalHelper::IDX_SIGIO, idx) >= m_Signals ) {
+            continue;
+         }
+         EXPECT_EQ(0, sig.Raise(SignalHelper::IDX_SIGIO, m_pThrs[t]->tid()));
+
 #endif // OS
+
       }
 
       sleep_millis(sleepeach);
@@ -2051,15 +2202,19 @@ TEST_P(OSAL_Barrier_vp_tuple_0, aal0195)
       EXPECT_EQ(t, NumWaiters());
 
       Done = true;
-#if defined( __AAL_LINUX__ )
+
       for ( t = 0 ; t < NumThreads ; ++t ) {
-         idx = SignalHelper::GetInstance().ThreadLookup(m_pThrs[t]->tid());
-         if ( SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) < m_Signals ) {
+         idx = sig.ThreadLookup(m_pThrs[t]->tid());
+#if   defined( __AAL_WINDOWS__ )
+         if ( sig.GetCount(SignalHelper::IDX_SIGUSR1, idx) < m_Signals) {
+#elif defined( __AAL_LINUX__ )
+         if ( sig.GetCount(SignalHelper::IDX_SIGIO, idx) < m_Signals ) {
+#endif // OS
             Done = false;
             break;
          }
       }
-#endif // __AAL_LINUX__
+
    }
 
    // Unlock the Barrier, allowing threads to exit.
@@ -2073,10 +2228,9 @@ TEST_P(OSAL_Barrier_vp_tuple_0, aal0195)
    EXPECT_EQ(0, CurrentThreads());
    EXPECT_EQ(0, NumWaiters());
 
-#if defined( __AAL_LINUX__ )
-   SignalHelper::GetInstance().RegistryReset();
-#endif // __AAL_LINUX__
+   sig.RegistryReset();
 }
+#endif // __AAL_LINUX__
 
 // ::testing::Range(begin, end [, step])
 // ::testing::Values(v1, v2, v3)
@@ -2102,6 +2256,8 @@ INSTANTIATE_TEST_CASE_P(My, OSAL_Barrier_vp_tuple_0,
 
 #if GTEST_HAS_TR1_TUPLE
 
+#if defined( __AAL_LINUX__ )
+
 // Value-parameterized test fixture (tuple)
 class OSAL_Barrier_vp_tuple_1 : public OSAL_Barrier_vp_tuple_0
 {
@@ -2112,14 +2268,18 @@ protected:
    static void Thr0(OSLThread * , void * );
 };
 
+// Linux-only. The only candidates for user-defined signals in Windows are SIGILL and SIGTERM, per:
+// https://msdn.microsoft.com/en-us/library/xdkz3x12.aspx
+//
+// Both SIGILL and SIGTERM cause the process to terminate, as determined by running this test case in Windows.
 void OSAL_Barrier_vp_tuple_1::Thr0(OSLThread *pThread, void *pArg)
 {
    OSAL_Barrier_vp_tuple_1 *f = reinterpret_cast<OSAL_Barrier_vp_tuple_1 *>(pArg);
    ASSERT_NONNULL(f);
 
-#if defined( __AAL_LINUX__ )
-   btUnsignedInt idx = SignalHelper::GetInstance().ThreadRegister(GetThreadID());
-#endif // __AAL_LINUX__
+   SignalHelper &sig = SignalHelper::GetInstance();
+
+   btUnsignedInt idx = sig.ThreadRegister(GetThreadID());
 
    const AAL::btUnsignedInt t       = f->m_Scratch[0]; // my unique thread index.
    const AAL::btTime        Timeout = f->m_Scratch[1]; // timeout to Wait().
@@ -2128,12 +2288,13 @@ void OSAL_Barrier_vp_tuple_1::Thr0(OSLThread *pThread, void *pArg)
    EXPECT_TRUE(f->m_Sems[1].Wait());
 
    EXPECT_FALSE(f->Wait(Timeout));
-
-#if defined( __AAL_LINUX__ )
-   YIELD_WHILE(SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) < f->m_Signals);
-#endif // __AAL_LINUX__
-
    ++f->m_Scratch[t];
+
+#if   defined( __AAL_WINDOWS__ )
+   YIELD_WHILE(sig.GetCount(SignalHelper::IDX_SIGUSR1, idx) < f->m_Signals);
+#elif defined( __AAL_LINUX__ )
+   YIELD_WHILE(sig.GetCount(SignalHelper::IDX_SIGIO, idx) < f->m_Signals);
+#endif // __AAL_LINUX__
 }
 
 TEST_P(OSAL_Barrier_vp_tuple_1, aal0196)
@@ -2143,14 +2304,12 @@ TEST_P(OSAL_Barrier_vp_tuple_1, aal0196)
    // thread waits at least X milliseconds before resuming, even in the presence of signals.
    // Upon timing out, the Wait() call returns false, indicating failure.
 
-#if   defined( __AAL_WINDOWS__ )
-   FAIL() << "need to implement for windows";
-#elif defined( __AAL_LINUX__ )
-   SignalHelper::GetInstance().RegistryReset();
-   SignalHelper::GetInstance().ThreadRegister(GetThreadID());
-#endif // OS
+   SignalHelper &sig = SignalHelper::GetInstance();
 
-   m_Signals = 15;
+   sig.RegistryReset();
+   sig.ThreadRegister(GetThreadID());
+
+   m_Signals = 5;
 
    AAL::btUnsignedInt NumThreads;
    AAL::btTime        Timeout;
@@ -2179,7 +2338,7 @@ TEST_P(OSAL_Barrier_vp_tuple_1, aal0196)
    // For the "go" signal.
    ASSERT_TRUE(m_Sems[1].Create(0, NumThreads));
 
-   m_Scratch[1] = Timeout;
+   m_Scratch[1] = (AAL::btUnsignedInt) Timeout;
 
    AAL::btUnsignedInt t;
    for ( t = 0 ; t < NumThreads ; ++t ) {
@@ -2201,7 +2360,7 @@ TEST_P(OSAL_Barrier_vp_tuple_1, aal0196)
 
    btTime       slept     = 0;
    const btTime sleepeach = 5;
-   const btTime thresh    = Timeout - ( Timeout / 5 ); // within 20%
+   const btTime thresh    = Timeout - ( Timeout / 2 ); // within 50%
 
    // Wake all threads, allowing them to block on the Barrier.
    EXPECT_TRUE(m_Sems[1].Post(NumThreads));
@@ -2214,44 +2373,60 @@ TEST_P(OSAL_Barrier_vp_tuple_1, aal0196)
       slept += sleepeach;
 
       for ( t = 0 ; t < NumThreads ; ++t ) {
-#if   defined( __AAL_WINDOWS__ )
-         FAIL() << "need to implement for windows";
-#elif defined( __AAL_LINUX__ )
 
-         idx = SignalHelper::GetInstance().ThreadLookup(m_pThrs[t]->tid());
-         if ( SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) >= m_Signals ) {
+         idx = sig.ThreadLookup(m_pThrs[t]->tid());
+#if   defined( __AAL_WINDOWS__ )
+         if ( sig.GetCount(SignalHelper::IDX_SIGUSR1, idx) >= m_Signals ) {
+#elif defined( __AAL_LINUX__ )
+         if ( sig.GetCount(SignalHelper::IDX_SIGIO, idx) >= m_Signals ) {
+#endif // OS
+
+            // All of the signals have been delivered.
             continue;
          }
 
          EXPECT_EQ(0, m_Scratch[t]);
-         pthread_kill(m_pThrs[t]->tid(), SIGIO);
+
+#if   defined( __AAL_WINDOWS__ )
+         sig.Raise(SignalHelper::IDX_SIGUSR1, m_pThrs[t]->tid());
+#elif defined( __AAL_LINUX__ )
+         sig.Raise(SignalHelper::IDX_SIGIO, m_pThrs[t]->tid());
 #endif // OS
+
       }
 
       if ( slept < thresh ) {
+         // Only perform the following checks if we're not within our timeout threshold.
          c = u = 0;
          EXPECT_TRUE(CurrCounts(c, u));
          EXPECT_EQ(1, c);
          EXPECT_EQ(2, u);
 
          EXPECT_EQ(t, CurrentThreads());
-         EXPECT_EQ(t, NumWaiters());
+         //EXPECT_EQ(t, NumWaiters());
       }
 
       Done = true;
       for ( t = 0 ; t < NumThreads ; ++t ) {
-#if   defined( __AAL_WINDOWS__ )
-         FAIL() << "need to implement for windows";
-#elif defined( __AAL_LINUX__ )
 
-         idx = SignalHelper::GetInstance().ThreadLookup(m_pThrs[t]->tid());
-         if ( SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) < m_Signals ) {
-            if ( ESRCH != pthread_kill(m_pThrs[t]->tid(), SIGIO) ) {
+         idx = sig.ThreadLookup(m_pThrs[t]->tid());
+
+#if   defined( __AAL_WINDOWS__ )
+         if ( sig.GetCount(SignalHelper::IDX_SIGUSR1, idx) < m_Signals ) {
+            if ( 0 == sig.Raise(SignalHelper::IDX_SIGUSR1, m_pThrs[t]->tid()) ) {
+               Done = false;
+               break;
+            }
+         }
+#elif defined( __AAL_LINUX__ )
+         if ( sig.GetCount(SignalHelper::IDX_SIGIO, idx) < m_Signals ) {
+            if ( ESRCH != sig.Raise(SignalHelper::IDX_SIGIO, m_pThrs[t]->tid()) ) {
                Done = false;
                break;
             }
          }
 #endif // OS
+
       }
    }
 
@@ -2270,9 +2445,7 @@ TEST_P(OSAL_Barrier_vp_tuple_1, aal0196)
    EXPECT_EQ(0, CurrentThreads());
    EXPECT_EQ(0, NumWaiters());
 
-#if defined( __AAL_LINUX__ )
-   SignalHelper::GetInstance().RegistryReset();
-#endif // __AAL_LINUX__
+   sig.RegistryReset();
 }
 
 // ::testing::Range(begin, end [, step])
@@ -2286,11 +2459,12 @@ INSTANTIATE_TEST_CASE_P(My, OSAL_Barrier_vp_tuple_1,
                                                              (AAL::btUnsignedInt)5,
                                                              (AAL::btUnsignedInt)10,
                                                              (AAL::btUnsignedInt)25),
-                                           ::testing::Values((AAL::btTime)10,
-                                                             (AAL::btTime)25,
-                                                             (AAL::btTime)50,
-                                                             (AAL::btTime)100)
+                                           ::testing::Values((AAL::btTime)150,
+                                                             (AAL::btTime)200,
+                                                             (AAL::btTime)250)
                                           ));
+
+#endif // __AAL_LINUX__
 
 #endif // GTEST_HAS_TR1_TUPLE
 

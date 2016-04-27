@@ -86,8 +86,8 @@ btBool Environment::Get(std::string var, std::string &val)
 
 #elif defined( __AAL_WINDOWS__ )
 
-   char* temp_val = NULL;
-   const char* temp_var;
+   char       *temp_val = NULL;
+   const char *temp_var;
 
    temp_var = var.c_str();
 
@@ -99,20 +99,23 @@ btBool Environment::Get(std::string var, std::string &val)
    }
 
    if ( 0 == bufsize ) {
+      // variable exists and is empty.
       val.assign("");
       return true;
    }
 
-   temp_val = new char[bufsize];
+   temp_val = new(std::nothrow) char[bufsize];
 
    if ( NULL == temp_val ) {
       return false;
    }
-   GetEnvironmentVariable(temp_var, temp_val, bufsize);
+
+   bufsize = GetEnvironmentVariable(temp_var, temp_val, bufsize);
+   ASSERT(0 != bufsize);
 
    val.assign(temp_val);
 
-   delete temp_val;
+   delete[] temp_val;
 
    return true;
 #endif // OS
@@ -124,25 +127,37 @@ btBool Environment::Set(std::string var, std::string val, btBool overwrite)
 
 #if   defined( __AAL_LINUX__ )
 
-   const char* temp_var = var.c_str();
-   const char* temp_val = val.c_str();
+   const char *temp_var = var.c_str();
+   const char *temp_val;
 
+   temp_val = std::getenv(temp_var);
+
+   if ( ( NULL != temp_val ) && !overwrite ) {
+      // The variable exists, but we've been told not to overwrite it.
+      return false;
+   }
+
+   temp_val = val.c_str();
    int ret = setenv(temp_var, temp_val, overwrite ? 1 : 0);
 
    return 0 == ret;
 
 #elif defined( __AAL_WINDOWS__ )
 
-   if( !overwrite ) {
-      if ( Environment::Get(var, val) ) {
-         // Already exists
-         return false;
-      }
+   const char *temp_var = var.c_str();
+
+   DWORD bufsize = GetEnvironmentVariable(temp_var, NULL, 0);
+
+   if ( ( 0 == bufsize ) && ( ERROR_ENVVAR_NOT_FOUND == GetLastError() ) ) {
+      // variable doesn't exist.
+      ;
+   } else if ( !overwrite ) {
+      // The variable exists, but we've been told not to overwrite it.
+      return false;
    }
 
-   btBool ret = SetEnvironmentVariable(var.c_str() ,val.c_str());
+   return SetEnvironmentVariable(temp_var, val.c_str());
 
-   return ret;
 #endif // OS
 }
 

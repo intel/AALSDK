@@ -56,7 +56,7 @@
 #include <aalsdk/ResMgr.h>                // Definitions for user mode RM users
                                           // Types, Events, aalrm, aalrm_server, aalrm_client
                                           // Interestingly, for just operator<<, not needed
-#include <aalsdk/kernel/aalui.h>          // user mode UI users, as well
+#include <aalsdk/kernel/ccipdriver.h>          // user mode UI users, as well
 //#include <aalsdk/kernel/fappip.h>         // FAP PIP interface
 #include <aalsdk/kernel/aalmafu.h>        // MAFU interface
 #include <aalsdk/kernel/AALWorkspace.h>   // TTASK_MODE, TDESC_TYPE

@@ -106,11 +106,9 @@ OSLThread::OSLThread(ThreadProc                     pProc,
                      void                          *pContext,
                      btBool                         ThisThread) :
 #if   defined( __AAL_WINDOWS__ )
-   m_hEvent(NULL),
-   m_hJoinEvent(NULL),
+   m_hThread(NULL),
 #elif defined( __AAL_LINUX__ )
    m_Thread(),
-   m_Semaphore(),
 #endif // OS
    m_tid(),
    m_pProc(pProc),
@@ -127,22 +125,9 @@ OSLThread::OSLThread(ThreadProc                     pProc,
       m_nPriority = OSLThread::sm_DefaultPriority;
    }
 
-#if   defined( __AAL_WINDOWS__ )
-
-   m_hEvent     = CreateEvent(NULL, false, false, NULL);
-   m_hJoinEvent = CreateEvent(NULL, false, false, NULL);
-
-   if ( ( NULL == m_hEvent ) || ( NULL == m_hJoinEvent ) ) {
-      return;
-   }
-
-#elif defined( __AAL_LINUX__ )
-
    if ( !m_Semaphore.Create(0, INT_MAX) ) { // (Without setting THR_ST_OK.)
       return;
    }
-
-#endif // OS
 
    if ( NULL == pProc ) { // (Without setting THR_ST_OK.)
       return;
@@ -161,8 +146,14 @@ OSLThread::OSLThread(ThreadProc                     pProc,
 #if   defined( __AAL_WINDOWS__ )
       // Create a new thread to run the thread function.
 
-      uintptr_t res = _beginthread(OSLThread::StartThread, 0, this);
-      if ( -1L == res ) {
+      m_hThread = CreateThread(NULL,
+                               0,
+                               OSLThread::StartThread,
+                               this,
+                               0,
+                               NULL);
+
+      if ( NULL == m_hThread ) {
          flag_clrf(m_State, THR_ST_OK);
       }
 
@@ -192,7 +183,7 @@ OSLThread::OSLThread(ThreadProc                     pProc,
 #endif // DBG_OSLTHREAD
 
 #if   defined( __AAL_WINDOWS__ )
-void   OSLThread::StartThread(void *p)
+DWORD WINAPI OSLThread::StartThread(LPVOID p)
 #elif defined( __AAL_LINUX__ )
 void * OSLThread::StartThread(void *p)
 #endif // OS
@@ -201,9 +192,9 @@ void * OSLThread::StartThread(void *p)
 
    if ( NULL == pThread ) {
 #if   defined( __AAL_WINDOWS__ )
-      return;
+      return (DWORD)-1;
 #elif defined( __AAL_LINUX__ )
-      return NULL;
+      return (void *)-1;
 #endif // OS
    }
 
@@ -211,7 +202,7 @@ void * OSLThread::StartThread(void *p)
 
 #if   defined( __AAL_WINDOWS__ )
 
-      ::SetThreadPriority(GetCurrentThread(), pThread->m_nPriority);
+      SetThreadPriority(GetCurrentThread(), pThread->m_nPriority);
 
 #elif defined( __AAL_LINUX__ )
 
@@ -243,12 +234,10 @@ void * OSLThread::StartThread(void *p)
    }
 
 #if   defined( __AAL_WINDOWS__ )
-   SetEvent(pThread->m_hJoinEvent);
-#endif // __AAL_WINDOWS__
-
-#if defined( __AAL_LINUX__ )
+   return 0;
+#elif defined( __AAL_LINUX__ )
    return NULL;
-#endif // __AAL_LINUX__
+#endif // OS
 }
 
 //=============================================================================
@@ -261,22 +250,12 @@ void * OSLThread::StartThread(void *p)
 //=============================================================================
 OSLThread::~OSLThread()
 {
-#if   defined( __AAL_WINDOWS__ )
-
-   SetEvent(m_hJoinEvent);
-   CloseHandle(m_hJoinEvent);
-   CloseHandle(m_hEvent);
-
-#elif defined( __AAL_LINUX__ )
-
    // The thread is exiting. Post to the internal semaphore so that all waiters can wake (Wait() / Signal()).
    btInt CurrentCount = 0;
    btInt MaxCount     = 0;
 
    m_Semaphore.CurrCounts(CurrentCount, MaxCount);
    m_Semaphore.Post(INT_MAX - CurrentCount);
-
-#endif // OS
 
    {
       AutoLock(this);
@@ -305,6 +284,10 @@ OSLThread::~OSLThread()
                  //       Use pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) to cancel
                  //       a thread asap.
    }
+
+#ifdef __AAL_WINDOWS__
+   CloseHandle(m_hThread);
+#endif // __AAL_WINDOWS__
 }
 
 //=============================================================================
@@ -337,7 +320,7 @@ void OSLThread::Unblock()
 #if   defined( __AAL_WINDOWS__ )
 
    //TODO
-   SetEvent(m_hEvent);
+//   SetEvent(m_hEvent);
 
 #elif defined( __AAL_LINUX__ )
 
@@ -357,15 +340,7 @@ void OSLThread::Unblock()
 //=============================================================================
 void OSLThread::Signal()
 {
-#if   defined( __AAL_WINDOWS__ )
-
-   SetEvent(m_hEvent);
-
-#elif defined( __AAL_LINUX__ )
-
    m_Semaphore.Post(1);
-
-#endif // OS
 }
 
 //=============================================================================
@@ -378,15 +353,7 @@ void OSLThread::Signal()
 //=============================================================================
 void OSLThread::Wait(btTime ulMilliseconds)
 {
-#if   defined( __AAL_WINDOWS__ )
-
-   WaitForSingleObject(m_hEvent, (DWORD)ulMilliseconds);
-
-#elif defined( __AAL_LINUX__ )
-
    m_Semaphore.Wait(ulMilliseconds);
-
-#endif // OS
 }
 
 //=============================================================================
@@ -399,15 +366,7 @@ void OSLThread::Wait(btTime ulMilliseconds)
 //=============================================================================
 void OSLThread::Wait()
 {
-#if   defined( __AAL_WINDOWS__ )
-
-   Wait(INFINITE);
-
-#elif defined( __AAL_LINUX__ )
-
    m_Semaphore.Wait();
-
-#endif // OS
 }
 
 //=============================================================================
@@ -447,7 +406,8 @@ void OSLThread::Join()
 
 #if   defined( __AAL_WINDOWS__ )
 
-   ::WaitForSingleObject(m_hJoinEvent, INFINITE);
+   WaitForSingleObject(m_hThread, INFINITE);
+   CloseHandle(m_hThread);
 
 #elif defined( __AAL_LINUX__ )
 
@@ -483,13 +443,9 @@ void OSLThread::Detach()
       flag_setf(m_State, THR_ST_DETACHED);
    }
 
-#if   defined( __AAL_WINDOWS__ )
-
-#elif defined( __AAL_LINUX__ )
-
+#if defined( __AAL_LINUX__ )
    // Detach it to free resources.
    ::pthread_detach(m_Thread);
-
 #endif // OS
 }
 
@@ -528,7 +484,7 @@ void OSLThread::Cancel()
 
 #if   defined( __AAL_WINDOWS__ )
 
-   // TODO OSLThread::Cancel for Windows
+   TerminateThread(m_hThread, (DWORD)-1);
 
 #elif defined( __AAL_LINUX__ )
 
@@ -652,6 +608,9 @@ btBool ThreadIDEqual(btTID x, btTID y)
 void ExitCurrentThread(btUIntPtr ExitStatus)
 {
 #if   defined( __AAL_WINDOWS__ )
+# ifdef DBG_OSLTHREAD
+#    include "dbg_oslthread_2.cpp"
+# endif // DBG_OSLTHREAD
 
    ::ExitThread((DWORD)ExitStatus);
 

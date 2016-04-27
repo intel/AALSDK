@@ -15,6 +15,7 @@ libgtest_la_LDFLAGS=$(GTEST_LDFLAGS)
 
 COMMON_CPPFLAGS=\
 -I$(top_srcdir)/include \
+-I$(top_srcdir)/aas/OSAL \
 -I$(top_srcdir)/aas/AALRuntime \
 -I$(top_srcdir)/aas/AIAService \
 -I$(top_srcdir)/aas/RRMBrokerService \

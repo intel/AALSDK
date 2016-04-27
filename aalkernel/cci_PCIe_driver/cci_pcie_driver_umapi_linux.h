@@ -57,7 +57,7 @@
 //     CREATED: 10/20/2015
 //      AUTHOR: Joseph Grecco
 //
-// PURPOSE:  This file contains private definitions for the
+// PURPOSE:  This file contains Linux definitions for the
 //           Accelerator Abstraction Layer (AAL)
 //           User Mode Interface for the AAL CCI device driver
 // HISTORY:
@@ -70,6 +70,7 @@
 #include "aalsdk/kernel/kosal.h"
 #include "aalsdk/kernel/aalbus.h"
 #include "aalsdk/kernel/ccipdriver.h"
+#include "cci_pcie_driver_umapi.h"
 
 #define DEV_NAME          "aalui"
 
@@ -91,68 +92,12 @@
 struct um_APIdriver {
    dev_t           m_devtype;
 
-#if   defined( __AAL_LINUX__ )
    struct file_operations      m_fops;  // Interface
    struct cdev                 m_cdev;  // character device
    btInt                       m_major; // major number of device node
-#elif defined( __AAL_WINDOWS__ )
-   btInt (*ioctl)(btAny ,
-                  btUnsigned32bitInt ,
-                  btAny ,
-                  btWSSize ,
-                  btAny ,
-                  btWSSize * );
-   btUnsigned64bitInt
-         (*poll)(kosal_poll_object,
-                 btAny );
-#endif
 
    struct device              *m_device;
    struct class               *m_class;
-
-   // List of current sessions
-   // this is the head, and is linked with ccidrv_session->m_sessions
-   kosal_semaphore          m_qsem;
-   kosal_list_head          m_sessq;
-
-   // Private semaphore
-   kosal_semaphore          m_sem;
-
-   /* list of allocated wsids */
-   kosal_semaphore          wsid_list_sem;
-   kosal_list_head          wsid_list_head;
-};
-
-//=============================================================================
-// Name: ccidrv_session
-// Description: Session structure holds state and other context for a user
-//              session with the device subsystem.
-//=============================================================================
-struct ccidrv_session {
-   // PIP to UI driver interface
-   struct aal_uiapi           m_msgHandler;
-
-   // Owning driver module (UDDI in this case)
-   struct ui_driver          *m_aaldriver;
-
-   // Head of list of devices (struct aaldev_owner->m_devicelist) owned by this session
-   kosal_list_head            m_devicelist;
-
-   // Wait queue used for poll
-   kosal_poll_object          m_waitq;
-
-   // Private semaphore
-   kosal_semaphore            m_sem;
-
-   // Link to global UDDI session list.  head is ui_driver->m_sessq.
-   kosal_list_head            m_sessions;
-
-   // Event queue
-   aal_queue_t                m_eventq;
-
-   // Pid of process associated with this session
-   btPID                      m_pid;
-
 };
 
 

@@ -121,15 +121,15 @@ struct cci_aal_device {
 #define CCI_DEV_FLAG_ALLOW_MAP_UMSG_SPACE      0x00000040
 
    struct aal_device         *m_aaldev;         // AAL Device from which this is derived
-   struct pci_dev            *m_pcidev;         // Linux pci_dev pointer (or NULL if manual)
+   kosal_pci_dev            *m_pcidev;         // Linux pci_dev pointer (or NULL if manual)
 
    btUnsignedInt              m_flags;
 
    // Used for being added to the global list of devices.
-   struct list_head           m_list;           // List itself
+   kosal_list_head            m_list;           // List itself
 
    // Private semaphore
-   struct semaphore           m_sem;
+   kosal_semaphore            m_sem;
 
    enum aal_bus_types_e       m_boardtype;
 
@@ -138,25 +138,32 @@ struct cci_aal_device {
    int                        m_protocolID;
 
    // For background tasks handling
-   kosal_work_queue           m_workq;
-   work_object                task_handler;
+   kosal_work_queue           m_workq_deactivate;
+
+   kosal_work_queue           m_workq_prconifg;
+
+   kosal_work_queue           m_workq_revokeafu;
+
+   kosal_work_queue           m_workq_revokesigtap;
 
    // AFU MMIO Space
    btVirtAddr                 m_kvp_afu_mmio;   // kv address of MMIO space
    btPhysAddr                 m_phys_afu_mmio;  // Physical address of MMIO space
-   size_t                     m_len_afu_mmio;   // Bytes
+   btUnsigned64bitInt         m_len_afu_mmio;   // Bytes
 
    // AFU uMSG Space
    btVirtAddr                 m_kvp_afu_umsg;    // kv address of CSR space
    btPhysAddr                 m_phys_afu_umsg;   // Physical address of CSR space
-   size_t                     m_len_afu_umsg;    // Bytes
+   btUnsigned64bitInt         m_len_afu_umsg;    // Bytes
 
    struct cci_PIPsession     *m_pPIPSession;     // PIP session object
 
    enum   cci_devtype         m_devtype;        // Type of the subclass (e.g., FME, PORT, AFU)
    struct fme_device         *m_pfme;
    struct port_device        *m_pport;
-//   struct afu_device         *m_pafu;
+
+   // PR command Handler semaphore
+   kosal_semaphore            m_pr_sem;
 
 };
 
@@ -164,72 +171,76 @@ struct cci_aal_device {
 #define pci_dev_to_cci_dev(ptr)              kosal_container_of(ptr, struct cci_aal_device. m_pcidev )
 #define aaldev_to_cci_aal_device(ptr)        aaldev_to_any(struct cci_aal_device, ptr)
 
-#define cci_dev_pfme(pdev)                  ( pdev->m_pfme )
-#define cci_dev_pport(pdev)                 ( pdev->m_pport )
-#define cci_dev_pafu(pdev)                  ( pdev->m_pafu )
+#define cci_aaldev_pfme(pdev)                  ( pdev->m_pfme )
+#define cci_aaldev_pport(pdev)                 ( pdev->m_pport )
+#define cci_aaldev_pafu(pdev)                  ( pdev->m_pafu )
 
-#define cci_dev_pci_dev(pdev)               ((pdev)->m_pcidev)
-   #define cci_dev_pci_dev_is_enabled(pdev)  ((pdev)->m_flags & CCI_DEV_FLAG_PCI_DEV_ENABLED)
-   #define cci_dev_pci_dev_set_enabled(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_PCI_DEV_ENABLED)
-   #define cci_dev_pci_dev_clr_enabled(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_PCI_DEV_ENABLED)
+#define cci_aaldev_pci_dev(pdev)               ((pdev)->m_pcidev)
+   #define cci_aaldev_pci_dev_is_enabled(pdev)  ((pdev)->m_flags & CCI_DEV_FLAG_PCI_DEV_ENABLED)
+   #define cci_aaldev_pci_dev_set_enabled(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_PCI_DEV_ENABLED)
+   #define cci_aaldev_pci_dev_clr_enabled(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_PCI_DEV_ENABLED)
 
-   #define cci_dev_pci_dev_is_region_requested(pdev)  ((pdev)->m_flags & CCI_DEV_FLAG_PCI_REGION_REQUESTED)
-   #define cci_dev_pci_dev_set_region_requested(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_PCI_REGION_REQUESTED)
-   #define cci_dev_pci_dev_clr_region_requested(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_PCI_REGION_REQUESTED)
+   #define cci_aaldev_pci_dev_is_region_requested(pdev)  ((pdev)->m_flags & CCI_DEV_FLAG_PCI_REGION_REQUESTED)
+   #define cci_aaldev_pci_dev_set_region_requested(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_PCI_REGION_REQUESTED)
+   #define cci_aaldev_pci_dev_clr_region_requested(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_PCI_REGION_REQUESTED)
 
-   #define cci_dev_allow_map_csr_read_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_CSR_READ_SPACE)
-   #define cci_dev_set_allow_map_csr_read_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_CSR_READ_SPACE)
-   #define cci_dev_clr_allow_map_csr_read_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_CSR_READ_SPACE)
+   #define cci_aaldev_allow_map_csr_read_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_CSR_READ_SPACE)
+   #define cci_aaldev_set_allow_map_csr_read_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_CSR_READ_SPACE)
+   #define cci_aaldev_clr_allow_map_csr_read_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_CSR_READ_SPACE)
 
-   #define cci_dev_allow_map_csr_write_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_CSR_WRITE_SPACE)
-   #define cci_dev_set_allow_map_csr_write_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_CSR_WRITE_SPACE)
-   #define cci_dev_clr_allow_map_csr_write_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_CSR_WRITE_SPACE)
+   #define cci_aaldev_allow_map_csr_write_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_CSR_WRITE_SPACE)
+   #define cci_aaldev_set_allow_map_csr_write_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_CSR_WRITE_SPACE)
+   #define cci_aaldev_clr_allow_map_csr_write_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_CSR_WRITE_SPACE)
 
-   #define cci_dev_allow_map_csr_space(pdev) ( cci_dev_allow_map_csr_read_space(pdev) || cci_dev_allow_map_csr_write_space(pdev) )
+   #define cci_aaldev_allow_map_csr_space(pdev) ( cci_aaldev_allow_map_csr_read_space(pdev) || cci_aaldev_allow_map_csr_write_space(pdev) )
 
-   #define cci_dev_allow_map_mmior_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
-   #define cci_dev_set_allow_map_mmior_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
-   #define cci_dev_clr_allow_map_mmior_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
+   #define cci_aaldev_allow_map_mmior_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
+   #define cci_aaldev_set_allow_map_mmior_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
+   #define cci_aaldev_clr_allow_map_mmior_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
 
-   #define cci_dev_allow_map_umsg_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
-   #define cci_dev_set_allow_map_umsg_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
-   #define cci_dev_clr_allow_map_umsg_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
+   #define cci_aaldev_allow_map_umsg_space(pdev)     ((pdev)->m_flags & CCI_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
+   #define cci_aaldev_set_allow_map_umsg_space(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
+   #define cci_aaldev_clr_allow_map_umsg_space(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
 
-   #define cci_dev_is_simulated(pdev)  ((pdev)->m_flags & CCI_DEV_FLAG_SIMULATED_DEV)
-   #define cci_dev_set_simulated(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_SIMULATED_DEV)
-   #define cci_dev_clr_simulated(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_SIMULATED_DEV)
+   #define cci_aaldev_is_simulated(pdev)  ((pdev)->m_flags & CCI_DEV_FLAG_SIMULATED_DEV)
+   #define cci_aaldev_set_simulated(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_SIMULATED_DEV)
+   #define cci_aaldev_clr_simulated(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_SIMULATED_DEV)
 
-#define cci_dev_type(pdev)                  ((pdev)->m_devtype)
+#define cci_aaldev_type(pdev)                  ((pdev)->m_devtype)
 
-#define cci_dev_board_type(pdev)            ((pdev)->m_boardtype)
+#define cci_aaldev_board_type(pdev)            ((pdev)->m_boardtype)
 
 #define cci_set_simulated(pdev)             ((pdev)->m_simulated = 1)
 #define cci_clr_simulated(pdev)             ((pdev)->m_simulated = 0)
 #define cci_is_simulated(pdev)             ((pdev)->m_simulated == 1)
 
-#define cci_dev_protocol(pdev)              ((pdev)->m_protocolID)
+#define cci_aaldev_protocol(pdev)              ((pdev)->m_protocolID)
 
-#define cci_dev_phys_afu_mmio(pdev)         ((pdev)->m_phys_afu_mmio)
-#define cci_dev_kvp_afu_mmio(pdev)          ((pdev)->m_kvp_afu_mmio)
-#define cci_dev_len_afu_mmio(pdev)          ((pdev)->m_len_afu_mmio)
+#define cci_aaldev_phys_afu_mmio(pdev)         ((pdev)->m_phys_afu_mmio)
+#define cci_aaldev_kvp_afu_mmio(pdev)          ((pdev)->m_kvp_afu_mmio)
+#define cci_aaldev_len_afu_mmio(pdev)          ((pdev)->m_len_afu_mmio)
 
-#define cci_dev_phys_afu_umsg(pdev)         ((pdev)->m_phys_afu_umsg)
-#define cci_dev_kvp_afu_umsg(pdev)          ((pdev)->m_kvp_afu_umsg)
-#define cci_dev_len_afu_umsg(pdev)          ((pdev)->m_len_afu_umsg)
+#define cci_aaldev_phys_afu_umsg(pdev)         ((pdev)->m_phys_afu_umsg)
+#define cci_aaldev_kvp_afu_umsg(pdev)          ((pdev)->m_kvp_afu_umsg)
+#define cci_aaldev_len_afu_umsg(pdev)          ((pdev)->m_len_afu_umsg)
 
 
-#define cci_dev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
+#define cci_aaldev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
 #define cci_aaldev_to_aaldev(pdev)          ( (pdev)->m_aaldev )
 
 
-#define cci_dev_list_head(pdev)             ((pdev)->m_list)
+#define cci_aaldev_list_head(pdev)             ((pdev)->m_list)
 #define cci_list_to_cci_aal_device(plist)    kosal_list_entry(plist, struct cci_aal_device, m_list)
 
-#define cci_dev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
-#define cci_dev_psem(pdev)                  (&(pdev)->m_sem)
+#define cci_aaldev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
+#define cci_aaldev_psem(pdev)                  (&(pdev)->m_sem)
+#define cci_dev_pr_sem(pdev)                (&(pdev)->m_pr_sem)
 
-#define cci_dev_workq(pdev)                 ( (pdev)->m_workq )
-#define cci_dev_task_handler(pdev)          ((pdev)->task_handler)
+
+#define cci_aaldev_workq_deactivate(pdev)                ((pdev)->m_workq_deactivate )
+#define cci_aaldev_workq_prcconfigure(pdev)              ((pdev)->m_workq_prconifg )
+#define cci_aaldev_workq_revokeafu(pdev)                 ((pdev)->m_workq_revokeafu )
+#define cci_aaldev_workq_revokesigtap(pdev)              ((pdev)->m_workq_revokesigtap )
 
 ///============================================================================
 /// Name: ccip_device
@@ -246,22 +257,25 @@ struct ccip_device
    // Head of the list of ports devices
    kosal_list_head            m_portlisthead;
 
+   int                        m_isVF;
+   int                        m_numVFs;
+   int                        m_maxVFs;
 
-   struct fme_device         *m_pfme_dev;    // FME Device
+   struct fme_device         *m_pfme_dev;       // FME Device
 
-   struct pci_dev            *m_pcidev;         // Linux pci_dev pointer
+   kosal_pci_dev            *m_pcidev;         // Linux pci_dev pointer
 
    btUnsignedInt              m_flags;
 
    // Private semaphore
-   struct semaphore           m_sem;
+   kosal_semaphore            m_sem;
 
    int                        m_simulated;
 
    enum aal_bus_types_e       m_bustype;
    btUnsigned32bitInt         m_busNum;
-   btUnsigned32bitInt         m_devicenum;      // device number
-   btUnsigned32bitInt         m_functnum;       // function number
+   btUnsigned16bitInt         m_devicenum;      // device number
+   btUnsigned16bitInt         m_functnum;       // function number
 
    btInt                      m_resources;      // Bit mask indicating bars that have been reserved
 
@@ -270,6 +284,7 @@ struct ccip_device
    btPhysAddr                 m_phys_fme_mmio;  // Physical address of MMIO space
    size_t                     m_len_fme_mmio;   // Bytes
 
+   btUnsigned64bitInt         m_num_ports;
    btVirtAddr                 m_kvp_port_mmio[5];   // kv address of MMIO space
    btPhysAddr                 m_phys_port_mmio[5];  // Physical address of MMIO space
    size_t                     m_len_port_mmio[5];
@@ -282,7 +297,7 @@ struct ccip_device
 
 }; // end struct ccip_afu_device
 
-#define pci_dev_to_ccip_dev(ptr)             ccip_container_of(ptr, struct pci_dev, m_pcidev, struct ccip_device)
+#define pci_dev_to_ccip_dev(ptr)             ccip_container_of(ptr, kosal_pci_dev, m_pcidev, struct ccip_device)
 #define ccip_dev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
 #define ccip_dev_to_aaldev(pdev)             ((pdev)->m_aaldev)
 #define ccip_dev_to_fme_dev(pdev)            ((pdev)->m_pfme_dev)
@@ -290,11 +305,14 @@ struct ccip_device
 
 #define ccip_dev_pci_dev(pdev)               ((pdev)->m_pcidev)
 
-#define cci_dev_board_type(pdev)             ((pdev)->m_boardtype)
+#define cci_aaldev_board_type(pdev)             ((pdev)->m_boardtype)
 
 #define ccip_set_simulated(pdev)             ((pdev)->m_simulated = 1)
 #define ccip_clr_simulated(pdev)             ((pdev)->m_simulated = 0)
 #define ccip_is_simulated(pdev)              ((pdev)->m_simulated == 1)
+
+#define ccip_set_VFdev(pdev)                 ((pdev)->m_isVF = 1)
+#define ccip_is_VFdev(pdev)                  ((pdev)->m_isVF == 1)
 
 #define ccip_set_resource(pdev,r)            ((pdev)->m_resources |= (1<<r))
 #define ccip_has_resource(pdev,r)            ((pdev)->m_resources & (1<<r))
@@ -313,9 +331,13 @@ struct ccip_device
 #define ccip_fmedev_kvp_afu_mmio(pdev)       ((pdev)->m_kvp_fme_mmio)
 #define ccip_fmedev_len_afu_mmio(pdev)       ((pdev)->m_len_fme_mmio)
 
+#define ccip_portdev_numports(pdev)          ((pdev)->m_num_ports)
 #define ccip_portdev_phys_afu_mmio(pdev,n)   ((pdev)->m_phys_port_mmio[n])
 #define ccip_portdev_kvp_afu_mmio(pdev,n)    ((pdev)->m_kvp_port_mmio[n])
 #define ccip_portdev_len_afu_mmio(pdev,n)    ((pdev)->m_len_port_mmio[n])
+
+#define ccip_portdev_maxVFs(pdev)            ((pdev)->m_maxVFs)
+#define ccip_portdev_numVFs(pdev)            ((pdev)->m_numVFs)
 
 #define ccip_dev_pcie_bustype(pdev)          ((pdev)->m_bustype)
 #define ccip_dev_pcie_busnum(pdev)           ((pdev)->m_busNum)
@@ -328,14 +350,14 @@ struct ccip_device
 /// @param[in]  offset        offset of CSR  .
 /// @param[in]  value    value  going to be write in CSR.
 /// @return   void
-int write_ccip_csr64(btVirtAddr baseAddress, btCSROffset offset,bt64bitCSR value);
+int write_ccip_csr64(btVirtAddr baseAddress, btUnsigned64bitInt offset,bt64bitCSR value);
 
 /// @brief   read 64 bit control and status registers.
 ///
 /// @param[in]  baseAddress   base CSR address.
 /// @param[in]  offset        offset of CSR  .
 /// @return    64 bit  CSR value
-bt64bitCSR read_ccip_csr64(btVirtAddr baseAddress ,  btCSROffset offset );
+bt64bitCSR read_ccip_csr64( btVirtAddr baseAddress, btUnsigned64bitInt offset );
 
 
 //=============================================================================
@@ -345,7 +367,6 @@ bt64bitCSR read_ccip_csr64(btVirtAddr baseAddress ,  btCSROffset offset );
 //=============================================================================
 struct ccip_device;   // forward reference
 struct port_device;
-
 
 struct ccip_device * create_ccidevice(void);
 void  destroy_ccidevice(struct ccip_device *pccidev);
@@ -360,7 +381,6 @@ extern void cci_remove_device(struct ccip_device *);
 extern void cci_release_device(pkosal_os_dev pdev);
 extern void ccidrv_exitDriver(void);
 
-
 extern struct ccidrv_session * ccidrv_session_create(btPID );
 extern btInt ccidrv_session_destroy(struct ccidrv_session * );
 extern struct aal_wsid *find_wsid( const struct ccidrv_session *,
@@ -372,31 +392,6 @@ extern struct aal_wsid* ccidrv_getwsid( struct aal_device *pdev,
 extern btInt
 ccidrv_sendevent( struct aaldev_ownerSession *,
                   struct aal_q_item *);
-
-
-#if 0
-void cci_release_device( struct device *pdev );
-
-extern int
-cci_sim_mmap(struct aaldev_ownerSession* pownerSess,
-               struct aal_wsid *wsidp,
-               btAny os_specific);
-
-extern int
-cci_publish_aaldevice(struct cci_aal_device *);
-
-
-
-extern int
-cci_destroy_device(struct cci_aal_device* );
-
-extern void
-cci_remove_device(struct cci_aal_device *);
-
-
-extern void
-cci_flush_all_wsids(struct cci_PIPsession *psess);
-#endif
 
 #endif // __AALKERNEL_CCI_PCIE_DRIVER_INTERNAL_H__
 

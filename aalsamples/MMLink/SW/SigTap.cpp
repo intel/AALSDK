@@ -114,7 +114,8 @@ public:
 
    void serviceReleaseFailed(const IEvent &rEvent);
 
-    void serviceReleased(TransactionID const &rTranID);
+   void serviceReleased(TransactionID const &rTranID);
+   virtual void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent){};  // Ignored TODO better implementation
 
    void serviceEvent(const IEvent &rEvent);
    // <end IServiceClient interface>

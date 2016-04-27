@@ -110,6 +110,7 @@ typedef struct module *kosal_ownermodule;
 
 // Undefined - Used for reference counting
 typedef void * kosal_ownermodule;
+
 #endif
 
 
@@ -117,6 +118,7 @@ typedef void * kosal_ownermodule;
 # define KOSAL_INT       AAL::btInt
 # define KOSAL_UINT      AAL::btUnsignedInt
 # define KOSAL_U32       AAL::btUnsigned32bitInt
+# define KOSAL_U64       AAL::btUnsigned64bitInt
 # define KOSAL_PID       AAL::btPID
 # define KOSAL_TID       AAL::btTID
 # define KOSAL_BYTEARRAY AAL::btByteArray
@@ -126,11 +128,14 @@ typedef void * kosal_ownermodule;
 # define KOSAL_VIRT      AAL::btVirtAddr
 # define KOSAL_PHYS      AAL::btPhysAddr
 # define KOSAL_WSSIZE    AAL::btWSSize
+# define KOSAL_HANDLE    AAL::btHANDLE
+
 #else
 // C doesn't comprehend C++ namespaces.
 # define KOSAL_INT       btInt
 # define KOSAL_UINT      btUnsignedInt
 # define KOSAL_U32       btUnsigned32bitInt
+# define KOSAL_U64       btUnsigned64bitInt
 # define KOSAL_PID       btPID
 # define KOSAL_TID       btTID
 # define KOSAL_BYTEARRAY btByteArray
@@ -140,6 +145,8 @@ typedef void * kosal_ownermodule;
 # define KOSAL_VIRT      btVirtAddr
 # define KOSAL_PHYS      btPhysAddr
 # define KOSAL_WSSIZE    btWSSize
+# define KOSAL_HANDLE    btHANDLE
+
 #endif // __cplusplus
 
 
@@ -152,6 +159,7 @@ typedef void * kosal_ownermodule;
 #define AALBUS_DBG_FILE    ((KOSAL_UINT)1 <<  1)
 #define AALBUS_DBG_MMAP    ((KOSAL_UINT)1 <<  2)
 #define AALBUS_DBG_IOCTL   ((KOSAL_UINT)1 <<  3)
+#define AALBUS_DBG_POLL    ((KOSAL_UINT)1 <<  4)
 
 #define AALRMC_DBG_MOD     ((KOSAL_UINT)1 <<  0)
 #define AALRMC_DBG_FILE    ((KOSAL_UINT)1 <<  1)
@@ -846,8 +854,10 @@ do                                                \
 //
 #if   defined( __AAL_LINUX__ )
 # include <linux/slab.h>
+#define kosal_map_handle   btAny
 #elif defined( __AAL_WINDOWS__ )
 # include <ntddk.h>
+#define kosal_map_handle   PMDL
 #endif // OS
 
 KOSAL_VIRT _kosal_kmalloc(__ASSERT_HERE_PROTO KOSAL_WSSIZE );
@@ -889,14 +899,25 @@ KOSAL_WSSIZE kosal_round_up_to_page_size(KOSAL_WSSIZE s) {
    return (s & ~m) + (((KOSAL_WSSIZE)0 == r) ? 0 : PAGE_SIZE);
 }
 
+KOSAL_VIRT _kosal_alloc_dma_coherent(__ASSERT_HERE_PROTO KOSAL_HANDLE ,  KOSAL_WSSIZE , KOSAL_HANDLE *);
+#ifdef kosal_alloc_dma_coherent
+# undef kosal_alloc_dma_coherent
+#endif // _kosal_alloc_dma_coherent
+#define kosal_alloc_dma_coherent(__devhandle, __size, __pdmahandle) _kosal_alloc_dma_coherent(__ASSERT_HERE_ARGS __devhandle, __size, __pdmahandle)
 
+void _kosal_free_dma_coherent(__ASSERT_HERE_PROTO  KOSAL_HANDLE , KOSAL_VIRT , KOSAL_WSSIZE , KOSAL_HANDLE );
+# ifdef _kosal_free_dma_coherent
+#    undef _kosal_free_dma_coherent
+# endif // _kosal_free_dma_coherent
+# define kosal_free_dma_coherent(__devhandle, __ptr , __size, __dmahandle) _kosal_free_dma_coherent(__ASSERT_HERE_ARGS __devhandle, __ptr, __size, __dmahandle)
 //
 // Work queue
 //
 #if   defined( __AAL_LINUX__ )
 # include <linux/workqueue.h>
-   //struct workqueue_struct   * kosal_work_queue
-   #define kosal_create_workqueue(pd)  create_workqueue( aaldev_to_basedev(pd) )
+   // Dev must be the an aal_device pointer but is not currently used here
+   #define kosal_create_workqueue(name, dev)  create_workqueue(name)
+   #define kosal_destroy_workqueue(wq)   destroy_workqueue(wq)
     // Worker thread items
 
    #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,19)
@@ -905,52 +926,59 @@ KOSAL_WSSIZE kosal_round_up_to_page_size(KOSAL_WSSIZE s) {
    # error Linux version < 2.6.19 not supported
    #endif
 
-   typedef void (*osfunc)(void * , void * );
+   typedef void (*osfunc)(struct work_struct *work);
 
 
-//   typedef struct work_object *pwork_object;
-   struct work_object;
+   // typedef struct work_object *pwork_object;
+   struct kosal_work_object;
 
-   typedef void (*kosal_work_handler)(struct work_object * );
+   typedef void (*kosal_work_handler)(struct kosal_work_object * );
 
-   typedef struct {
-    struct delayed_work  workobj;
+   struct kosal_work_object{
+      struct delayed_work  workobj;
       void *               context;
       osfunc               callback;
       kosal_work_handler   fnct;
-   } work_object, *pwork_object;
+   };
 
 
 
    void task_poller(struct work_struct *work);
 
 
-#define KOSAL_INIT_WORK(w,f)      do {(w->fnct) = f; \
-                                      (w->context)=(&w); \
-                                      (w->callback)=WorkItemCallback; \
-                                      INIT_DELAYED_WORK(w->workobj,f); \
-                                     }while(0);
+#define KOSAL_INIT_WORK(w,f)        do {((w)->fnct) = f; \
+                                         ((w)->context)=(w); \
+                                         ((w)->callback)=task_poller; \
+                                         INIT_DELAYED_WORK(&((w)->workobj),task_poller); \
+                                    }while(0)
+
 
 #define kosal_init_waitqueue_head(q) init_waitqueue_head(q)
+
+void kosal_queue_delayed_work(kosal_work_queue wq, struct kosal_work_object* pwo, KOSAL_TIME msec);
+
 
 #elif defined( __AAL_WINDOWS__ )
    typedef PIO_WORKITEM    kosal_work_queue;
 
 #define kosal_init_waitqueue_head(q)
 
-#define kosal_create_workqueue(pd)  IoAllocateWorkItem(aaldev_to_basedev(pd))
+// Name not currently used
+#define kosal_create_workqueue(name, pd)     IoAllocateWorkItem(aaldev_to_basedev(pd))
+
+#define kosal_destroy_workqueue(wq)          IoFreeWorkItem(wq)
 //kosal_create_workqueue
 
 typedef void (*osfunc)(PDEVICE_OBJECT,PVOID);
 
-typedef void(*kosal_work_handler)(pwork_object);
+typedef void(*kosal_work_handler)(pkosal_work_object);
 
-typedef struct {
+struct kosal_work_object{
    void *               context;
    osfunc               callback;
    KOSAL_TIME           msec_delay;
    kosal_work_handler   fnct;
-}work_object;
+};
 
 #define KOSAL_INIT_WORK(w,f)      do {((w)->fnct) = f; \
                                       ((w)->context)=(w); \
@@ -958,12 +986,8 @@ typedef struct {
                                      }while(0)
 
 
-
-
-typedef work_object *pwork_object;
-
 void WorkItemCallback(IN PDEVICE_OBJECT pdevObject, IN PVOID Context);
-void kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, KOSAL_TIME msec);
+void kosal_queue_delayed_work(kosal_work_queue wq, struct kosal_work_object* pwo, KOSAL_TIME msec);
 #if 0
 static void
    kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, KOSAL_TIME msec)
@@ -1002,6 +1026,9 @@ do                                            \
 # include <wdf.h>
 # include <wdftypes.h>
 typedef WDFREQUEST        kosal_poll_object; 
+
+// Macro to hide relationship of Request to Poll Object
+#define AAL_WDFREQUEST_TO_POLLOBJ(po) (kosal_poll_object)(po)
 
 # define kosal_poll_object_is_valid(__kpo_ptr) ( (NULL != (__kpo_ptr)) && (NULL != *(__kpo_ptr)) )
 

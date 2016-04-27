@@ -90,7 +90,7 @@
 
 static int CommandHandler( struct aaldev_ownerSession *,
                            struct aal_pipmessage*);
-static int cci_mmap(struct aaldev_ownerSession *pownerSess,
+extern int cci_mmap(struct aaldev_ownerSession *pownerSess,
                            struct aal_wsid *wsidp,
                            btAny os_specific);
 
@@ -116,23 +116,6 @@ struct aal_ipip cci_AFUpip = {
    .binddevice    = NULL,      // Binds the PIP to the device
    .unbinddevice  = NULL,      // Binds the PIP to the device
 };
-
-//=============================================================================
-// Name: cci_release_uafu_device
-// Description: callback for notification that an AAL Device is being destroyed.
-// Interface: public
-// Inputs: pdev: kernel-provided generic device structure.
-// Outputs: none.
-// Comments:
-//=============================================================================
-void
-cci_release_uafu_device(struct device *pdev)
-{
-// TODO RESET AFU
-   PTRACEIN;
-
-   PTRACEOUT;
-}
 
 ///============================================================================
 /// Name: cci_create_AAL_UAFU_Device
@@ -170,11 +153,12 @@ struct cci_aal_device   *
    ASSERT(NULL != pcci_aaldev);
 
    // Make it a User AFU
-   cci_dev_type(pcci_aaldev)     = cci_dev_UAFU;
+   cci_aaldev_type(pcci_aaldev)     = cci_dev_UAFU;
 
    // Record parentage
-   cci_dev_pport(pcci_aaldev)    = pportdev;       // Save its port
-   cci_dev_pfme(pcci_aaldev)     = ccip_port_dev_fme(pportdev);
+   cci_aaldev_pport(pcci_aaldev)    = pportdev;       // Save its port
+   cci_aaldev_pfme(pcci_aaldev)     = ccip_port_dev_fme(pportdev);
+   cci_aaldev_pci_dev(pcci_aaldev) = ccip_dev_to_pci_dev( ccip_port_to_ccidev(pportdev) );
 
    // Device Address is the same as the Port. Set the AFU ID information
    // The following attributes describe the interfaces supported by the device
@@ -184,12 +168,12 @@ struct cci_aal_device   *
 
    // Set the interface permissions
    // Enable MMIO-R
-   cci_dev_set_allow_map_mmior_space(pcci_aaldev);
+   cci_aaldev_set_allow_map_mmior_space(pcci_aaldev);
 
    // Setup the MMIO region parameters
-   cci_dev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)pafu_hdr;
-   cci_dev_len_afu_mmio(pcci_aaldev)   = CCI_MMIO_SIZE;
-   cci_dev_phys_afu_mmio(pcci_aaldev)  = phys_mmio;
+   cci_aaldev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)pafu_hdr;
+   cci_aaldev_len_afu_mmio(pcci_aaldev)   = CCI_MMIO_SIZE;
+   cci_aaldev_phys_afu_mmio(pcci_aaldev)  = phys_mmio;
 
    // Create the AAL device and attach it to the CCI device object
    cci_aaldev_to_aaldev(pcci_aaldev)  =  aaldev_create( "CCIPAFU",          // AAL device base name
@@ -205,19 +189,19 @@ struct cci_aal_device   *
 
    // Set the config space mapping permissions
    cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
-   if( cci_dev_allow_map_csr_read_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_csr_read_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRWRITE;
    }
 
-   if( cci_dev_allow_map_csr_write_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_csr_write_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRREAD;
    }
 
-   if( cci_dev_allow_map_mmior_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_mmior_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
    }
 
-   if( cci_dev_allow_map_umsg_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_umsg_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_UMSG;
    }
 
@@ -313,7 +297,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    switch ( pmsg->cmd ) {
 
       AFU_COMMAND_CASE(ccipdrv_afucmdPort_afuQuiesceAndHalt) {
-         if(0 != port_afu_quiesce_and_halt( cci_dev_pport(pdev) )){
+         if(0 != port_afu_quiesce_and_halt( cci_aaldev_pport(pdev) )){
             // Failure event
             PERR("TIMEOUT\n");
             Message->m_errcode = uid_errnumTimeout;
@@ -326,7 +310,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
       } break;
 
       AFU_COMMAND_CASE(ccipdrv_afucmdPort_afuEnable) {
-         if(0 != port_afu_Enable( cci_dev_pport(pdev) )){
+         if(0 != port_afu_Enable( cci_aaldev_pport(pdev) )){
             PERR("TIMEOUT\n");
             // Failure event
             Message->m_errcode = uid_errnumTimeout;
@@ -345,7 +329,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct aalui_WSMEvent WSID;
          struct aal_wsid   *wsidp            = NULL;
 
-         if ( !cci_dev_allow_map_mmior_space(pdev) ) {
+         if ( !cci_aaldev_allow_map_mmior_space(pdev) ) {
             PERR("Failed ccipdrv_getMMIOR map Permission\n");
             PERR("Direct API access not permitted on this device\n");
             Message->m_errcode = uid_errnumPermission;
@@ -377,13 +361,13 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                    wsidp,
                    preq->ahmreq.u.wksp.m_wsid);
 
-         PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_afu_mmio(pdev), (int)cci_dev_len_afu_mmio(pdev));
+         PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_aaldev_phys_afu_mmio(pdev), (int)cci_aaldev_len_afu_mmio(pdev));
 
          // Set up the return payload
          WSID.evtID           = uid_wseventMMIOMap;
-         WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
-         WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
-         WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
+         WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
+         WSID.wsParms.physptr = cci_aaldev_phys_afu_mmio(pdev);
+         WSID.wsParms.size    = cci_aaldev_len_afu_mmio(pdev);
 
          // Make this atomic. Check the original response buffer size for room
          if(respBufSize >= sizeof(struct aalui_WSMEvent)){
@@ -409,16 +393,23 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          btVirtAddr           krnl_virt   = NULL;
          struct aal_wsid     *wsidp       = NULL;
          struct aalui_WSMEvent WSID;
+         btHANDLE             iova        = NULL;;
 
          PDEBUG( "Allocating %lu bytes \n", (unsigned long)preq->ahmreq.u.wksp.m_size);
-
-         // Normal flow -- create the needed workspace.
-         krnl_virt = (btVirtAddr)kosal_alloc_contiguous_mem_nocache(preq->ahmreq.u.wksp.m_size);
-         if (NULL == krnl_virt) {
-            Message->m_errcode = uid_errnumNoMem;
-            break;
+         if( NULL== cci_aaldev_pci_dev(pdev) ) {
+            // Normal flow -- create the needed workspace.
+            krnl_virt = (btVirtAddr)kosal_alloc_contiguous_mem_nocache(preq->ahmreq.u.wksp.m_size);
+            if (NULL == krnl_virt) {
+               Message->m_errcode = uid_errnumNoMem;
+               break;
+            }
+         }else{
+            krnl_virt = kosal_alloc_dma_coherent( ccip_dev_pci_dev(pdev), preq->ahmreq.u.wksp.m_size, &iova);
+            if (NULL == krnl_virt) {
+               Message->m_errcode = uid_errnumNoMem;
+               break;
+            }
          }
-
          //------------------------------------------------------------
          // Create the WSID object and add to the list for this session
          //------------------------------------------------------------
@@ -445,8 +436,14 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          // Set up the return payload
          WSID.evtID           = uid_wseventAllocate;
-         WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
-         WSID.wsParms.physptr = (btWSID)kosal_virt_to_phys(krnl_virt);
+         WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
+         if( NULL== cci_aaldev_pci_dev(pdev) ) {
+            WSID.wsParms.physptr = (btWSID)kosal_virt_to_phys(krnl_virt);
+            wsidp->m_dmahandle = (btHANDLE)kosal_virt_to_phys(krnl_virt);
+         }else{
+            WSID.wsParms.physptr = (btWSID)iova;
+            wsidp->m_dmahandle = iova;
+         }
          WSID.wsParms.size    = preq->ahmreq.u.wksp.m_size;
 
          // Make this atomic. Check the original response buffer size for room
@@ -494,11 +491,14 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          }
 
          krnl_virt = (btVirtAddr)wsidp->m_id;
-
-         kosal_free_contiguous_mem(krnl_virt, wsidp->m_size);
+         if( NULL== cci_aaldev_pci_dev(pdev) ) {
+            kosal_free_contiguous_mem(krnl_virt, wsidp->m_size);
+         }else{
+            kosal_free_dma_coherent( ccip_dev_pci_dev(pdev), krnl_virt, wsidp->m_size, wsidp->m_dmahandle);
+         }
 
          // remove the wsid from the device and destroy
-         list_del_init(&wsidp->m_list);
+         kosal_list_del_init(&wsidp->m_list);
          ccidrv_freewsid(wsidp);
 
          PVERBOSE("Sending the WKSP Free event.\n");
@@ -513,7 +513,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct ccidrvreq    *presp                         = (struct ccidrvreq *)Message->m_response;
          struct CCIP_PORT_DFL_UMSG            *puMsgvirt    = NULL;
 
-         if(false == get_port_feature( cci_dev_pport(pdev),
+         if(false == get_port_feature( cci_aaldev_pport(pdev),
                                        CCIP_PORT_DFLID_USMG,
                                        NULL,
                                        (btVirtAddr*)&puMsgvirt)){
@@ -536,7 +536,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct ccidrvreq    *preq                          = (struct ccidrvreq *)pmsg->payload;
          struct CCIP_PORT_DFL_UMSG            *puMsgvirt    = NULL;
 
-         if(false == get_port_feature( cci_dev_pport(pdev),
+         if(false == get_port_feature( cci_aaldev_pport(pdev),
                                        CCIP_PORT_DFLID_USMG,
                                        NULL,
                                        (btVirtAddr*)&puMsgvirt)){
@@ -558,8 +558,10 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct aal_wsid               *wsidp         = NULL;
          struct aalui_WSMEvent          WSID;
          btWSSize                       size          = 0;
+         btHANDLE                       iova          = 0;
 
-         if(false == get_port_feature( cci_dev_pport(pdev),
+
+         if(false == get_port_feature( cci_aaldev_pport(pdev),
                                        CCIP_PORT_DFLID_USMG,
                                        NULL,
                                        (btVirtAddr*)&puMsgvirt)){
@@ -576,14 +578,25 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          PDEBUG( "Allocating %lu bytes for uMSG\n", (unsigned long)size);
 
          // Normal flow -- create the needed workspace.
-         krnl_virt = (btVirtAddr)kosal_alloc_contiguous_mem_nocache(size);
-         if (NULL == krnl_virt) {
-            Message->m_errcode = uid_errnumNoMem;
-            break;
+         if( NULL== cci_aaldev_pci_dev(pdev) ) {
+            // Normal flow -- create the needed workspace.
+            krnl_virt = (btVirtAddr)kosal_alloc_contiguous_mem_nocache(size);
+            if (NULL == krnl_virt) {
+               Message->m_errcode = uid_errnumNoMem;
+               break;
+            }
+            puMsgvirt->ccip_umsg_base_address.umsg_base_address = kosal_virt_to_phys(krnl_virt);
+         }else{
+            krnl_virt = kosal_alloc_dma_coherent( ccip_dev_pci_dev(pdev),size, &iova);
+            if (NULL == krnl_virt) {
+               Message->m_errcode = uid_errnumNoMem;
+               break;
+            }
+            puMsgvirt->ccip_umsg_base_address.umsg_base_address = (btPhysAddr)iova;
          }
 
+
          // Set the uMSG area
-         puMsgvirt->ccip_umsg_base_address.umsg_base_address = kosal_virt_to_phys(krnl_virt);
          PDEBUG("uMSG @ %p [%" PRIxPHYS_ADDR "]\n", krnl_virt, (btPhysAddr)puMsgvirt->ccip_umsg_base_address.umsg_base_address);
 
          // Enable uMsg operation
@@ -604,7 +617,13 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                   PDEBUG("Timed out waiting for uMSG engine to start\n");
                   Message->m_errcode = uid_errnumTimeout;
                   puMsgvirt->ccip_umsg_base_address.umsg_base_address = 0;
-                  kosal_free_contiguous_mem(krnl_virt, size);
+
+                  if( NULL== cci_aaldev_pci_dev(pdev) ) {
+                     kosal_free_contiguous_mem(krnl_virt, size);
+                  }else{
+                     kosal_free_dma_coherent( ccip_dev_pci_dev(pdev), krnl_virt, size, iova);
+                  }
+
                   return 0;
                }
             }
@@ -636,7 +655,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          // Set up the return payload
          WSID.evtID           = uid_wseventAllocate;
-         WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
+         WSID.wsParms.wsid    = pwsid_to_wsidHandle(wsidp);
          WSID.wsParms.physptr = (btWSID) puMsgvirt->ccip_umsg_base_address.umsg_base_address;
          WSID.wsParms.size    = size;
 
@@ -677,251 +696,3 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 ERROR:
    return retval;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-////////////////////                                     //////////////////////
-/////////////////             CCI SIM PIP MMAP             ////////////////////
-////////////////////                                     //////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-//=============================================================================
-//=============================================================================
-
-//=============================================================================
-// Name: csr_vmaopen
-// Description: Called when the vma is mapped
-// Interface: public
-// Inputs: none.
-// Outputs: none.
-// Comments:
-//=============================================================================
-#ifdef NOT_USED
-static void csr_vmaopen(struct vm_area_struct *pvma)
-{
-   PINFO("CSR VMA OPEN.\n" );
-}
-#endif
-
-
-//=============================================================================
-// Name: wksp_vmaclose
-// Description: called when vma is unmapped
-// Interface: public
-// Inputs: none.
-// Outputs: none.
-// Comments:
-//=============================================================================
-#ifdef NOT_USED
-static void csr_vmaclose(struct vm_area_struct *pvma)
-{
-   PINFO("CSR VMA CLOSE.\n" );
-}
-#endif
-
-#ifdef NOT_USED
-static struct vm_operations_struct csr_vma_ops =
-{
-   .open    = csr_vmaopen,
-   .close   = csr_vmaclose,
-};
-#endif
-
-
-//=============================================================================
-// Name: cci_mmap
-// Description: Method used for mapping kernel memory to user space. Called by
-//              uidrv.
-// Interface: public
-// Inputs: none.
-// Outputs: none.
-// Comments: This method front ends all operations that require mapping shared
-//           memory. It examines the wsid to determine the appropriate service
-//           to perform the map operation.
-//=============================================================================
-int
-cci_mmap(struct aaldev_ownerSession *pownerSess,
-               struct aal_wsid *wsidp,
-               btAny os_specific)
-{
-
-   struct vm_area_struct     *pvma = (struct vm_area_struct *) os_specific;
-
-   struct cci_PIPsession   *pSess = NULL;
-   struct cci_aal_device       *pdev = NULL;
-   unsigned long              max_length = 0; // mmap length requested by user
-   int                        res = -EINVAL;
-
-   ASSERT(pownerSess);
-   ASSERT(wsidp);
-
-   // Get the spl2 aal_device and the memory manager session
-   pSess = (struct cci_PIPsession *) aalsess_pipHandle(pownerSess);
-   ASSERT(pSess);
-   if ( NULL == pSess ) {
-      PDEBUG("CCI AFU mmap: no Session");
-      goto ERROR;
-   }
-
-   pdev = cci_PIPsessionp_to_ccidev(pSess);
-   ASSERT(pdev);
-   if ( NULL == pdev ) {
-      PDEBUG("CCI AFU mmap: no device");
-      goto ERROR;
-   }
-
-   PINFO("WS ID = 0x%llx.\n", wsidp->m_id);
-
-   pvma->vm_ops = NULL;
-
-   // Special case - check the wsid type for WSM_TYPE_CSR. If this is a request to map the
-   // CSR region, then satisfy the request by mapping PCIe BAR 0.
-   if ( WSM_TYPE_MMIO == wsidp->m_type ) {
-      void *ptr;
-      size_t size;
-      switch ( wsidp->m_id )
-      {
-            case WSID_CSRMAP_WRITEAREA:
-            case WSID_CSRMAP_READAREA:
-            case WSID_MAP_MMIOR:
-            case WSID_MAP_UMSG:
-            break;
-         default:
-            PERR("Attempt to map invalid WSID type %d\n", (int) wsidp->m_id);
-            goto ERROR;
-      }
-
-      // Verify that we can fulfill the request - we set flags at create time.
-      if ( WSID_CSRMAP_WRITEAREA == wsidp->m_id ) {
-         ASSERT(cci_dev_allow_map_csr_write_space(pdev));
-
-         if ( !cci_dev_allow_map_csr_write_space(pdev) ) {
-            PERR("Denying request to map CSR Write space for device 0x%p.\n", pdev);
-            goto ERROR;
-         }
-      }
-
-      if ( WSID_CSRMAP_READAREA == wsidp->m_id ) {
-         ASSERT(cci_dev_allow_map_csr_read_space(pdev));
-
-         if ( !cci_dev_allow_map_csr_read_space(pdev) ) {
-            PERR("Denying request to map CSR Read space for device 0x%p.\n", pdev);
-            goto ERROR;
-         }
-      }
-
-      if ( WSID_MAP_MMIOR == wsidp->m_id )
-      {
-         if ( !cci_dev_allow_map_mmior_space(pdev) ) {
-            PERR("Denying request to map cci_dev_allow_map_mmior_space Read space for device 0x%p.\n", pdev);
-            goto ERROR;
-         }
-
-         ptr = (void *) cci_dev_phys_afu_mmio(pdev);
-         size = cci_dev_len_afu_mmio(pdev);
-
-         PVERBOSE("Mapping CSR %s Aperture Physical=0x%p size=%" PRIuSIZE_T " at uvp=0x%p\n",
-            ((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),
-            ptr,
-            size,
-            (void *)pvma->vm_start);
-
-         // Map the region to user VM
-         res = remap_pfn_range(pvma,               // Virtual Memory Area
-            pvma->vm_start,                        // Start address of virtual mapping
-            ((unsigned long) ptr) >> PAGE_SHIFT,   // Pointer in Pages (Page Frame Number)
-            size,
-            pvma->vm_page_prot);
-
-         if ( unlikely(0 != res) ) {
-            PERR("remap_pfn_range error at CSR mmap %d\n", res);
-            goto ERROR;
-         }
-
-         // Successfully mapped MMR region.
-         return 0;
-      }
-
-      if ( WSID_MAP_UMSG == wsidp->m_id )
-      {
-         if ( !cci_dev_allow_map_umsg_space(pdev) ) {
-            PERR("Denying request to map cci_dev_allow_map_umsg_space Read space for device 0x%p.\n", pdev);
-            goto ERROR;
-         }
-
-         ptr = (void *) cci_dev_phys_afu_umsg(pdev);
-         size = cci_dev_len_afu_umsg(pdev);
-
-         PVERBOSE("Mapping CSR %s Aperture Physical=0x%p size=%" PRIuSIZE_T " at uvp=0x%p\n",
-            ((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),
-            ptr,
-            size,
-            (void *)pvma->vm_start);
-
-         // Map the region to user VM
-         res = remap_pfn_range(pvma,                             // Virtual Memory Area
-            pvma->vm_start,                   // Start address of virtual mapping
-            ((unsigned long) ptr) >> PAGE_SHIFT, // Pointer in Pages (Page Frame Number)
-            size,
-            pvma->vm_page_prot);
-
-         if ( unlikely(0 != res) ) {
-            PERR("remap_pfn_range error at CSR mmap %d\n", res);
-            goto ERROR;
-         }
-
-         // Successfully mapped UMSG region.
-         return 0;
-      }
-
-      // TO REST OF CHECKS
-
-      // Map the PCIe BAR as the CSR region.
-      ptr = (void *) cci_dev_phys_afu_mmio(pdev);
-      size = cci_dev_len_afu_mmio(pdev);
-
-      PVERBOSE("Mapping CSR %s Aperture Physical=0x%p size=%" PRIuSIZE_T " at uvp=0x%p\n",
-         ((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),
-         ptr,
-         size,
-         (void *)pvma->vm_start);
-
-      // Map the region to user VM
-      res = remap_pfn_range(pvma,                             // Virtual Memory Area
-         pvma->vm_start,                   // Start address of virtual mapping
-         ((unsigned long) ptr) >> PAGE_SHIFT, // Pointer in Pages (Page Frame Number)
-         size,
-         pvma->vm_page_prot);
-
-      if ( unlikely(0 != res) ) {
-         PERR("remap_pfn_range error at CSR mmap %d\n", res);
-         goto ERROR;
-      }
-
-      // Successfully mapped CSR region.
-      return 0;
-   }
-
-   //------------------------
-   // Map normal workspace
-   //------------------------
-
-   max_length = min(wsidp->m_size, (btWSSize)(pvma->vm_end - pvma->vm_start));
-
-   PVERBOSE( "MMAP: start 0x%lx, end 0x%lx, KVP 0x%p, size=%" PRIu64 " 0x%" PRIx64 " max_length=%ld flags=0x%lx\n",
-      pvma->vm_start, pvma->vm_end, (btVirtAddr)wsidp->m_id, wsidp->m_size, wsidp->m_size, max_length, pvma->vm_flags);
-
-   res = remap_pfn_range(pvma,                              // Virtual Memory Area
-      pvma->vm_start,                    // Start address of virtual mapping, from OS
-      (kosal_virt_to_phys((btVirtAddr) wsidp->m_id) >> PAGE_SHIFT),   // physical memory backing store in pfn
-      max_length,                        // size in bytes
-      pvma->vm_page_prot);               // provided by OS
-   if ( unlikely(0 != res) ) {
-      PERR("remap_pfn_range error at workspace mmap %d\n", res);
-      goto ERROR;
-   }
-
-   ERROR:
-   return res;
-}
-

@@ -123,6 +123,7 @@ public:
    virtual void serviceAllocateFailed(const IEvent &);
    virtual void          serviceEvent(const IEvent &);
    virtual void       serviceReleased(TransactionID const &rTranID = TransactionID());
+   virtual void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent){};  // Ignored TODO better implementation
    virtual void  serviceReleaseFailed(const IEvent &rEvent);
    // </IServiceClient>
 

@@ -53,9 +53,9 @@
 #include "_MessageDelivery.h"
 
 
-#if defined ( __AAL_WINDOWS__ )
-#pragma warning( pop )
-#endif // __AAL_WINDOWS__
+//#if defined ( __AAL_WINDOWS__ )
+//#pragma warning( pop )
+//#endif // __AAL_WINDOWS__
 
 
 BEGIN_NAMESPACE(AAL)

@@ -151,6 +151,8 @@ public:
    void runtimeAllocateServiceSucceeded(IBase               *pClient,
                                         TransactionID const &rTranID);
 
+   void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent);
+
    void runtimeEvent(const IEvent &rEvent);
 
    btBool isOK()  {return m_bIsOK;}
@@ -607,6 +609,16 @@ void HelloALIHSSIApp::serviceAllocateFailed(const IEvent &rEvent)
                                                      TransactionID const &rTranID)
  {
      MSG("Runtime Allocate Service Succeeded");
+ }
+
+ void HelloALIHSSIApp::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
+ {
+    MSG("Service unexpected requested back");
+    if(NULL != m_pAALService){
+       IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService);
+       ASSERT(pIAALService);
+       pIAALService->Release(TransactionID());
+    }
  }
 
  void HelloALIHSSIApp::runtimeEvent(const IEvent &rEvent)

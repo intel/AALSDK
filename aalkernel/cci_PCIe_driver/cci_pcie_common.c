@@ -110,12 +110,12 @@ struct ccip_device * create_ccidevice()
    }
 
    // Initialize object
-   kosal_list_init(&cci_dev_list_head(pccipdev));
-   kosal_list_init(&cci_dev_list_head(pccipdev));
+   kosal_list_init(&cci_aaldev_list_head(pccipdev));
+   kosal_list_init(&cci_aaldev_list_head(pccipdev));
    kosal_list_init(&ccip_aal_dev_list(pccipdev));
    kosal_list_init(&ccip_port_dev_list(pccipdev));
 
-   kosal_mutex_init(cci_dev_psem(pccipdev));
+   kosal_mutex_init(cci_aaldev_psem(pccipdev));
 
    return pccipdev;
 }
@@ -127,8 +127,8 @@ struct ccip_device * create_ccidevice()
 ///============================================================================
 void  destroy_ccidevice(struct ccip_device *pccidev)
 {
-   struct list_head *paaldev_list = &ccip_aal_dev_list(pccidev);
-   struct list_head *port_list = &ccip_port_dev_list(pccidev);
+   kosal_list_head *paaldev_list = &ccip_aal_dev_list(pccidev);
+   kosal_list_head *port_list = &ccip_port_dev_list( pccidev );
 
    PVERBOSE("Destroying CCI devices\n");
 
@@ -140,7 +140,7 @@ void  destroy_ccidevice(struct ccip_device *pccidev)
 
       // Run through list of devices.  Use safe variant
       //  as we will be deleting entries
-      list_for_each_safe(This, tmp, paaldev_list) {
+      kosal_list_for_each_safe(This, tmp, paaldev_list) {
 
          pcci_aaldev = cci_list_to_cci_aal_device(This);
 
@@ -161,7 +161,7 @@ void  destroy_ccidevice(struct ccip_device *pccidev)
 
       // Run through list of devices.  Use safe variant
       //  as we will be deleting entries
-      list_for_each_safe(This, tmp, port_list) {
+      kosal_list_for_each_safe(This, tmp, port_list) {
 
          pportdev = cci_list_to_cci_port_device(This);
          destroy_port_device(pportdev);
@@ -179,7 +179,7 @@ void  destroy_ccidevice(struct ccip_device *pccidev)
 
    // Remove ourselves from any lists
    kosal_sem_get_krnl( &pccidev->m_sem );
-   kosal_list_del(&cci_dev_list_head(pccidev));
+   kosal_list_del(&cci_aaldev_list_head(pccidev));
    kosal_sem_put( &pccidev->m_sem );
 
    kosal_kfree(pccidev, sizeof(struct ccip_device));
@@ -214,9 +214,9 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
 
    // Make it an FME by setting the type field and giving a pointer to the
    //  FME device object of the CCIP board device
-   cci_dev_type(pcci_aaldev) = cci_dev_FME;
-   cci_dev_pfme(pcci_aaldev) = ccip_dev_to_fme_dev(pccipdev);
-
+   cci_aaldev_type(pcci_aaldev) = cci_dev_FME;
+   cci_aaldev_pfme(pcci_aaldev) = ccip_dev_to_fme_dev(pccipdev);
+   cci_aaldev_pci_dev(pcci_aaldev) = ccip_dev_to_pci_dev(pccipdev);
 
    // Setup the AAL device's ID. This is the collection of attributes
    //  that uniquely identifies the AAL device, usually for the purpose
@@ -260,13 +260,13 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
 
    // Set the interface permissions
    // Enable MMIO-R
-   cci_dev_set_allow_map_mmior_space(pcci_aaldev);
+   cci_aaldev_set_allow_map_mmior_space(pcci_aaldev);
 
 
    // Setup the MMIO region parameters
-   cci_dev_kvp_afu_mmio(pcci_aaldev)   = ccip_fmedev_kvp_afu_mmio(pccipdev);
-   cci_dev_len_afu_mmio(pcci_aaldev)   = ccip_fmedev_len_afu_mmio(pccipdev);
-   cci_dev_phys_afu_mmio(pcci_aaldev)  = ccip_fmedev_phys_afu_mmio(pccipdev);
+   cci_aaldev_kvp_afu_mmio(pcci_aaldev)   = ccip_fmedev_kvp_afu_mmio(pccipdev);
+   cci_aaldev_len_afu_mmio(pcci_aaldev)   = ccip_fmedev_len_afu_mmio(pccipdev);
+   cci_aaldev_phys_afu_mmio(pcci_aaldev)  = ccip_fmedev_phys_afu_mmio(pccipdev);
 
    // Create the AAL device and attach it to the CCI device object
    cci_aaldev_to_aaldev(pcci_aaldev) =  aaldev_create( "CCIPFME",           // AAL device base name
@@ -282,19 +282,19 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
 
    // Set the config space mapping permissions
    cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
-   if( cci_dev_allow_map_csr_read_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_csr_read_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRWRITE;
    }
 
-   if( cci_dev_allow_map_csr_write_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_csr_write_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRREAD;
    }
 
-   if( cci_dev_allow_map_mmior_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_mmior_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
    }
 
-   if( cci_dev_allow_map_umsg_space(pcci_aaldev) ){
+   if( cci_aaldev_allow_map_umsg_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_UMSG;
    }
 
@@ -315,14 +315,14 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
                                                                      aaldevid_devaddr_fcnnum(aalid),
                                                                      aaldevid_devaddr_subdevnum(aalid),
 																	 aaldevid_devaddr_instanceNum(aalid));
-      kosal_kfree(cci_dev_kvp_afu_mmio(pcci_aaldev), cci_dev_len_afu_mmio(pcci_aaldev));
-      kosal_kfree(cci_dev_kvp_afu_umsg(pcci_aaldev),cci_dev_len_afu_umsg(pcci_aaldev));
+      kosal_kfree(cci_aaldev_kvp_afu_mmio(pcci_aaldev), cci_aaldev_len_afu_mmio(pcci_aaldev));
+      kosal_kfree(cci_aaldev_kvp_afu_umsg(pcci_aaldev),cci_aaldev_len_afu_umsg(pcci_aaldev));
       cci_destroy_aal_device(pcci_aaldev);
-      return -EINVAL;
+      return false;
    }
 
    // Add the device to the CCI Board device's device list
-   kosal_list_add(&cci_dev_list_head(pcci_aaldev), &ccip_aal_dev_list(pccipdev));
+   kosal_list_add(&cci_aaldev_list_head(pcci_aaldev), &ccip_aal_dev_list(pccipdev));
 
    return true;
 }
@@ -357,7 +357,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
    }
 
    // Add the device to the CCI Board device's device list
-   kosal_list_add( &cci_dev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
+   kosal_list_add( &cci_aaldev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
 
    //=======================================
    // Instantiate a Signal Tap device
@@ -370,8 +370,9 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
       return false;     // TODO This is a BUG if we get here but should cleanup correctly.
    }
 
+   ccip_port_stap_dev(pportdev)  = pcci_aaldev;
    // Add the device to the CCI Board device's device list
-   kosal_list_add( &cci_dev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
+   kosal_list_add( &cci_aaldev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
 
    //========================
    // Instantiate a PR Device
@@ -385,7 +386,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
    }
 
    // Add the device to the CCI Board device's device list
-   kosal_list_add( &cci_dev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
+   kosal_list_add( &cci_aaldev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
 
    //=========================================
    // Instantiate a User AFU if one is present
@@ -411,7 +412,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
          }
 
          // Add the device to the CCI Board device's device list
-         kosal_list_add( &cci_dev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
+         kosal_list_add( &cci_aaldev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
 
       } // End if(~0ULL == pafu_hdr->ccip_dfh.csr){
    } //End block
@@ -436,8 +437,9 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
    }
 
    // Initialize object
-   kosal_list_init(&cci_dev_list_head(pcci_aaldev));
-   kosal_mutex_init(cci_dev_psem(pcci_aaldev));
+   kosal_list_init(&cci_aaldev_list_head(pcci_aaldev));
+   kosal_mutex_init(cci_aaldev_psem(pcci_aaldev));
+   kosal_mutex_init(cci_dev_pr_sem(pcci_aaldev));
 
    return pcci_aaldev;
 }
@@ -457,7 +459,23 @@ int cci_destroy_aal_device( struct cci_aal_device* pcci_aaldev)
       return -EINVAL;
    }
 
-   kosal_list_del( &cci_dev_list_head(pcci_aaldev));
+   if(NULL != pcci_aaldev->m_workq_deactivate) {
+      kosal_destroy_workqueue(pcci_aaldev->m_workq_deactivate);
+   }
+
+   if(NULL != pcci_aaldev->m_workq_prconifg) {
+      kosal_destroy_workqueue(pcci_aaldev->m_workq_prconifg);
+   }
+
+   if(NULL != pcci_aaldev->m_workq_revokeafu) {
+      kosal_destroy_workqueue(pcci_aaldev->m_workq_revokeafu);
+    }
+
+   if(NULL != pcci_aaldev->m_workq_revokesigtap) {
+      kosal_destroy_workqueue(pcci_aaldev->m_workq_revokesigtap);
+    }
+
+   kosal_list_del( &cci_aaldev_list_head(pcci_aaldev));
 
    kosal_kfree(pcci_aaldev, sizeof(struct cci_aal_device));
    return 0;
@@ -481,7 +499,7 @@ cci_release_device(pkosal_os_dev pdev)
    PTRACEIN;
 
    PDEBUG("Called with struct aal_device * 0x%p\n", paaldev);
-//   kosal_list_del( &cci_dev_list_head(pcci_aaldev));
+//   kosal_list_del( &cci_aaldev_list_head(pcci_aaldev));
 
    // DO NOT call factory release here. It will be done by the framework.
    PTRACEOUT;
@@ -498,7 +516,9 @@ cci_release_device(pkosal_os_dev pdev)
 int cci_publish_aaldevice(struct cci_aal_device * pcci_aaldev)
 {
    btInt ret = 0;
-
+#if defined( __AAL_WINDOWS__ )
+   UNREFERENCED_PARAMETER(pcci_aaldev);
+#else
    // Pointer to the AAL Bus interface
    struct aal_bus       *pAALbus = aalbus_get_bus();
 
@@ -509,8 +529,8 @@ int cci_publish_aaldevice(struct cci_aal_device * pcci_aaldev)
       return -ENODEV;
    }
    PVERBOSE("Published CCI device\n");
-
-   return 0;
+#endif
+   return ret;
 } //cci_publish_aaldevice
 
 //=============================================================================

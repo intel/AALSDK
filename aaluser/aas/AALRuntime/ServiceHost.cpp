@@ -68,7 +68,7 @@ ServiceHost::ServiceHost(btcString root_name) :
    m_pDynLinkLib = new(std::nothrow) DynLinkLibrary(std::string(m_modparms.full_name));
 
    if ( ( NULL == m_pDynLinkLib ) || !m_pDynLinkLib->IsOK() ) {
-      goto _ERR;
+      return; // m_bIsOK remains false.
    }
 
    m_modparms.entry_point_fn = (AALSvcEntryPoint)m_pDynLinkLib->GetSymAddress(std::string(m_modparms.entry_point_name));
@@ -76,20 +76,13 @@ ServiceHost::ServiceHost(btcString root_name) :
    if ( ( NULL == m_modparms.entry_point_fn ) ||
         ( 0 != m_modparms.entry_point_fn(AAL_SVC_CMD_GET_PROVIDER, &m_pProvider) ) ||
         ( NULL == m_pProvider ) ) {
-      goto _ERR;
+      return; // m_bIsOK remains false.
    }
 
    m_name  = std::string(root_name);
    m_bIsOK = true;
 
    return;
-
-_ERR:
-   // m_bIsOK remains false.
-   if ( NULL != m_pDynLinkLib ) {
-      delete m_pDynLinkLib;
-      m_pDynLinkLib = NULL;
-   }
 }
 
 //=============================================================================

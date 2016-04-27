@@ -131,7 +131,7 @@ END_C_DECLS
 #endif // HAVE_LTDL_H
 
 
-#ifdef __AAL_WINDOWS__
+#if defined( __AAL_WINDOWS__ ) && !defined( DBG_OSLTHREAD )
    BOOL APIENTRY DllMain(HANDLE hModule,
                          DWORD  ul_reason_for_call,
                          LPVOID lpReserved)

@@ -396,11 +396,23 @@ void _runtime::allocService(Runtime             *pProxy,
                             TransactionID const &rTranID)
 {
    IDispatchable *pDisp = NULL;
+   ClientMap_itr  cmItr;
 
    AutoLock(this);
 
+   if ( Started != m_state ) {
+      pDisp = new RuntimeAllocateServiceFailed(m_pOwnerClient,
+                                               new CExceptionTransactionEvent(NULL,
+                                                                              extranevtServiceAllocateFailed,
+                                                                              rTranID,
+                                                                              errAllocationFailure,
+                                                                              reasRuntimeNotStarted,
+                                                                              "Runtime not started"));
+      goto _SCHED;
+   }
+
    // Make sure the Proxy is valid
-   ClientMap_itr cmItr = m_mClientMap.find(pProxy);
+   cmItr = m_mClientMap.find(pProxy);
 
    if ( m_mClientMap.end() == cmItr ) {
       pDisp = new RuntimeAllocateServiceFailed(m_pOwnerClient,
@@ -564,7 +576,8 @@ void _runtime::removeProxy(Runtime *pRuntimeProxy)
 //=============================================================================
 void _runtime::releaseRuntimeInstance(Runtime *pRuntimeProxy)
 {
-   IDispatchable *pDisp = NULL;
+   IDispatchable *pDisp  = NULL;
+   btBool         DoStop = false;
 
    {
       AutoLock(&TheRuntimeMtx);
@@ -594,18 +607,34 @@ void _runtime::releaseRuntimeInstance(Runtime *pRuntimeProxy)
       }
 
       if ( IsOK() && ( Stopped != m_state ) ) {
-         // Stop and clean up properly  TODO
+         DoStop = true;
       }
+   }
 
-      if(m_mClientMap.size() >1){
+   if ( DoStop ) {
+      // Prepare our sem. We will wait for notification from serviceReleased() before continuing.
+      // (Don't wait while locked.)
+      m_sem.Reset(0);
+
+      dynamic_ptr<IAALService>(iidService, m_pBrokerbase)->Release(TransactionID(Broker));
+
+      m_sem.Wait();
+
+      ASSERT(Stopped == m_state);
+   }
+
+   {
+      AutoLock(&TheRuntimeMtx);
+
+      if ( m_mClientMap.size() > 1 ) {
           AAL_DEBUG(LM_AAS, "Unclean destroy of primary Runtime. Num Proxies " << m_mClientMap.size() << std::endl);
-      }else{
+      } else {
           // Take owner off of Proxy list
          m_mClientMap.erase(m_pOwner);
          AAL_DEBUG(LM_AAS, "releaseRuntimeInstance: Num Proxies " << m_mClientMap.size() << std::endl);
       }
-      delete this;
 
+      delete this;
       pTheRuntime = NULL;
    }
 
@@ -651,8 +680,11 @@ _runtime::~_runtime()
 // Name: InstallDefaults
 // Description: Install Default Services
 // Interface: public
-// Outputs: none.
-// Comments:
+// Outputs: return false ONLY if and event was NOT generated internally.
+// Comments: If something fails during installation of defaults but we are sane
+//           enough to generate a meaningful event return true. Only return
+//           false if no event was generated. Returning false will result in
+//           caller generating a failure event which is redundant.
 //=============================================================================
 btBool _runtime::InstallDefaults()
 {
@@ -660,7 +692,9 @@ btBool _runtime::InstallDefaults()
 
    // Service Broker. The m_Proxy is _runtime's Proxy which has a pointer to _runtime's IRuntimeClient
    m_pBrokerSvcHost = new ServiceHost(AAL_SVC_MOD_ENTRY_POINT(localServiceBroker));
-   m_pBrokerSvcHost->InstantiateService(m_pProxy, dynamic_cast<IBase *>(this), NamedValueSet(), TransactionID(Broker));
+   if(!m_pBrokerSvcHost->InstantiateService(m_pProxy, dynamic_cast<IBase *>(this), NamedValueSet(), TransactionID(Broker))){
+      return false;
+   }
 
    m_sem.Wait(); // for the local Broker
 
@@ -668,16 +702,6 @@ btBool _runtime::InstallDefaults()
       return true;
    }
 
-   // Dispatch the event ourselves, because MDS is no more.
-
-   // Fire the final event and wait for it to be dispatched.
-   FireAndWait( new RuntimeCreateOrGetProxyFailed(m_pOwnerClient,
-                                                  new CExceptionTransactionEvent(m_pOwner,
-                                                                                 extranevtRuntimeCreateorProxy,
-                                                                                 TransactionID(),
-                                                                                 errCreationFailure,
-                                                                                 reasSubModuleFailed,
-                                                                                 "Failed to load Broker Service")) );
    return false;
 }
 
@@ -839,12 +863,27 @@ void _runtime::serviceReleased(TransactionID const &rTranID)
 
          // Fire and final event and wait for it to be dispatched.
          FireAndWait( new RuntimeStopped(m_pOwnerClient, m_pOwner) );
+
+         m_sem.Post(1);
       } break;
 
       default :
          ASSERT(false);
       break;
    }
+}
+
+//=============================================================================
+// Name: serviceReleaseRequest
+// Description: A Service requested to be Released
+// Interface: public
+// Inputs: rEvent - Event detailing request
+// Outputs: none.
+// Comments: Not much to do but report. TODO - Dosomething proper
+//=============================================================================
+void _runtime::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
+{
+   AAL_DEBUG(LM_AAS, "_runtime::serviceReleaseRequest received but not currently supported" << std::endl);
 }
 
 //=============================================================================

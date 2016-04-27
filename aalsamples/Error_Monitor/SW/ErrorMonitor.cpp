@@ -164,6 +164,8 @@ public:
 
     void runtimeAllocateServiceFailed( IEvent const &rEvent);
 
+    void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent);
+
     void runtimeAllocateServiceSucceeded(IBase               *pClient,
                                          TransactionID const &rTranID);
 
@@ -510,7 +512,7 @@ btInt ErrorMonApp::run(btBool bClear)
       m_Sem.Wait();
       if(!m_bIsOK){
          ERR("Allocation failed\n");
-         goto done_0;
+         goto done_1;
       }
    }
 
@@ -534,12 +536,13 @@ btInt ErrorMonApp::run(btBool bClear)
    // Clean-up and return
    // Release() the Service through the Services IAALService::Release() method
 
-   // Release FME Resource
-   (dynamic_ptr<IAALService>(iidService, m_pFMEService))->Release(TransactionID());
-   m_Sem.Wait();
-
    // Release PORT Resource
    (dynamic_ptr<IAALService>(iidService, m_pPortService))->Release(TransactionID());
+   m_Sem.Wait();
+
+done_1:
+   // Release FME Resource
+   (dynamic_ptr<IAALService>(iidService, m_pFMEService))->Release(TransactionID());
    m_Sem.Wait();
 
 done_0:
@@ -669,10 +672,20 @@ void ErrorMonApp::runtimeAllocateServiceFailed( IEvent const &rEvent)
 }
 
 void ErrorMonApp::runtimeAllocateServiceSucceeded(IBase *pClient,
-                                                    TransactionID const &rTranID)
+                                                  TransactionID const &rTranID)
 {
    TransactionID const * foo = &rTranID;
    MSG("Runtime Allocate Service Succeeded");
+}
+
+void ErrorMonApp::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
+{
+   MSG("Service unexpected requested back");
+   if(NULL != pServiceBase){
+      IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
+      ASSERT(pIAALService);
+      pIAALService->Release(TransactionID());
+   }
 }
 
 void ErrorMonApp::runtimeEvent(const IEvent &rEvent)

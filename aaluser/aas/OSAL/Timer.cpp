@@ -137,10 +137,6 @@ int Timer::Compare(const Timer &other) const
 {
 #if   defined( __AAL_WINDOWS__ )
 
-   if ( m_Start.QuadPart == other.m_Start.QuadPart ) {
-      return 0;
-   }
-
    return (int)(m_Start.QuadPart - other.m_Start.QuadPart);
 
 #elif defined( __AAL_LINUX__ )

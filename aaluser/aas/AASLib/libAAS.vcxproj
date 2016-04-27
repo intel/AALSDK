@@ -70,9 +70,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\bin\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
-    <ExtensionsToDeleteOnClean>$(SolutionDir)..\include\aalsdk\aas\AASService.h;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <OutDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\obj\$(ProjectName)\</IntDir>
+    <ExtensionsToDeleteOnClean>$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -82,9 +82,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\bin\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
-    <ExtensionsToDeleteOnClean>$(SolutionDir)..\include\aalsdk\aas\AASService.h;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <OutDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\obj\$(ProjectName)\</IntDir>
+    <ExtensionsToDeleteOnClean>$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -113,7 +113,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;AASLIB_EXPORTS;AASREGISTRAR_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;_WINDOWS;_USRDLL;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)aaluser\include;$(SolutionDir)aaluser\win</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)aaluser\win;$(SolutionDir)aaluser\include;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc</AdditionalIncludeDirectories>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -151,8 +151,8 @@
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=0;ENABLE_ASSERT=1;DEBUG_BEYOND_LOGGER=1;AASLIB_EXPORTS;aalrt_EXPORTS;AASREGISTRAR_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include;$(SolutionDir)..\aalkernel\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=0;ENABLE_ASSERT=1;DEBUG_BEYOND_LOGGER=1;AASLIB_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)aaluser\win;$(SolutionDir)aaluser\include;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>

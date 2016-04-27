@@ -408,7 +408,8 @@ private:
 class UAIA_API AFUDeactivateTransaction : public IAIATransaction
 {
 public:
-   AFUDeactivateTransaction(AAL::TransactionID const &rTranID);
+   AFUDeactivateTransaction(AAL::TransactionID const &rTranID,
+                            AAL::NamedValueSet const &rInputArgs = AAL::NamedValueSet());
    AAL::btBool                      IsOK() const;
 
    AAL::btVirtAddr                  getPayloadPtr() const;

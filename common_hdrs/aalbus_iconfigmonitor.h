@@ -52,53 +52,90 @@
 //  (INCLUDING  NEGLIGENCE  OR OTHERWISE) ARISING  IN ANY WAY  OUT  OF THE USE
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
-//****************************************************************************
-//        FILE: aalbus_imonitorconfig.h
+//******************************************************************************
+//        FILE: aalbus_iconfigmonitor.h
 //     CREATED: May 15, 2014
 //      AUTHOR: Joseph Grecco, Intel Corporation.
 //
-// PURPOSE: Definitions for the AAL IMonitorConfig AAL Bus interface
+// PURPOSE: Definitions for the AAL IMonitorConfig AAL Bus Service interface.  
+//          This interface is used by resource monitors/managers to be notified
+//          when device resoures change.
 // HISTORY:
 // WHEN:          WHO:     WHAT:
-//****************************************************************************
-#ifndef __AALSDK_KERNEL_BUS_IMONITOR_CONFIG_H__
-#define __AALSDK_KERNEL_BUS_IMONITOR_CONFIG_H__
+//******************************************************************************
+#ifndef __AALSDK_KERNEL_BUS_ICONFIG_MONITOR_H__
+#define __AALSDK_KERNEL_BUS_ICONFIG_MONITOR_H__
+
+#include <aalsdk/kernel/kosal.h>
+#include <aalsdk/kernel/iaaldevice.h>
+#include <aalsdk/kernel/aalbus_Defs.h>
+#include <aalsdk/kernel/AALTransactionID_s.h>
+
+
+//==========================================
+// Definitions for accessing the Service API
+//==========================================
+#if defined(__AAL_WINDOWS__)
+
+// Device names
+#define AALBUS_CONFMON_SERVICE_NAME_STRING            L"\\Device\\AAL_IConfigMonitor"
+#define AALBUS_CONFMON_SERVICE_SYMBOLIC_NAME_STRING   L"\\DosDevices\\AAL_IConfigMonitor"
+#define AALBUS_CONFMON_SERVICE_DOSNAME__STRING        "\\\\.\\AAL_IConfigMonitor"
 
 //
-// Define an Interface Guid for toaster device class.
-// This GUID is used to register (IoRegisterDeviceInterface)
-// an instance of an interface so that user application
-// can control the toaster device.
-//
-// {701D4F32-26CB-4A87-BBC4-D1EB0A3B51D2}
+// Interface Guid for config monitor Service.
 DEFINE_GUID(GUID_DEVINTERFACE_AALBUS_CONFIG_STATE_MONITOR,
    0x701d4f32, 0x26cb, 0x4a87, 0xbb, 0xc4, 0xd1, 0xeb, 0xa, 0x3b, 0x51, 0xd2);
+// {701D4F32-26CB-4A87-BBC4-D1EB0A3B51D2}
 
-BEGIN_NAMESPACE(AAL)
 
-#define NTDEVICE_MONITORCONFIG_NAME_STRING      L"\\Device\\AAL_IMonitorConfig"
-#define SYMBOLIC_MONITORCONFIG_NAME_STRING      L"\\DosDevices\\AAL_IMonitorConfig"
-
+// Device Control API Commands
 #define FILE_DEVICE_BUSENUM         FILE_DEVICE_BUS_EXTENDER
 
-#define AALBUS_MONITOR_CONFIG_IOCTL(_index_) \
+#define AALBUS_CONFIG_MONITOR_IOCTL(_index_) \
     CTL_CODE (FILE_DEVICE_BUSENUM, (_index_ + 0xF), METHOD_BUFFERED, FILE_READ_DATA)
 
-#define IOCTL_BUSENUM_PLUGIN_HARDWARE               AALBUS_MONITOR_CONFIG_IOCTL(0x0)
-#define IOCTL_BUSENUM_UNPLUG_HARDWARE               AALBUS_MONITOR_CONFIG_IOCTL(0x1)
-#define IOCTL_BUSENUM_EJECT_HARDWARE                AALBUS_MONITOR_CONFIG_IOCTL(0x2)
+
+#define IOCTL_CONFMON_POLL			               AALBUS_CONFIG_MONITOR_IOCTL(0x0)
+#define IOCTL_CONFMON_CANCEL_POLL               AALBUS_CONFIG_MONITOR_IOCTL(0x1)
+#define IOCTL_CONFMON_GETMSG_DESC               AALBUS_CONFIG_MONITOR_IOCTL(0x2)
+#define IOCTL_CONFMON_GETMSG                    AALBUS_CONFIG_MONITOR_IOCTL(0x3)
+#define IOCTL_CONFMON_ENABLEEVENTS              AALBUS_CONFIG_MONITOR_IOCTL(0x4)
+
+#else if defined (__AAL_LINUX__)
+
+// Device node name
+#define AALBUS_CONFMON_SERVICE_NAME_STRING           "AAL_IConfigMonitor"
+
+#endif
 
 
-typedef struct _AAL_BUS_MONITORCONFIG_CONTEXT {
+BEGIN_NAMESPACE( AAL )
 
-   PVOID   ControlData; // Store your control data here
+BEGIN_C_DECLS
 
-} AAL_BUS_MONITORCONFIG_CONTEXT, *PAAL_BUS_MONITORCONFIG_CONTEXT;
+//=============================================================================
+// Name: aalbus_configmonitor_message
+// Description: Structure used for sending and receiving messages between the
+//              Resource monitor and the AAL kernel service.
+// Comments:
+//=============================================================================
+struct aalbus_configmonitor_message {
+   // Message header
+   btWSSize                size;
+   krms_cfgUpDate_e        id;                  // Type of update
+   btObjectType            req_handle;          // Request Handle used in response [IN/OUT]
+   struct aal_device_id    device_id;           // Standard device attributes
+   btUnsignedInt           maxOwners;           // Max number of owners
+   btWSSize                attribute_size;      // Length of attributes 
+};
+// Attributes follow the base structure and is a variable length object.  Returns NULL if none
+#define aalbus_configmon_msg_attributes(t,p) ( p->attribute_size != 0 ? ((t)((btByteArray)p+sizeof(struct aalbus_configmonitor_message))) : NULL )
 
-WDF_DECLARE_CONTEXT_TYPE_WITH_NAME( AAL_BUS_MONITORCONFIG_CONTEXT,
-                                    MonitorConfigGetContext)
 
-END_NAMESPACE(AAL)
+END_C_DECLS
 
-#endif //__AALSDK_KERNEL_BUS_IMONITOR_CONFIG_H__
+END_NAMESPACE( AAL )
+
+#endif //__AALSDK_KERNEL_BUS_ICONFIG_MONITOR_H__
 

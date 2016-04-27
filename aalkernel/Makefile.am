@@ -88,7 +88,7 @@ encoderhdrsdir=$(kernelhdrsdir)/encoder_sample_kbae
 kernelhdrs_HEADERS=\
 include/aalsdk/kernel/aalbus-device.h \
 include/aalsdk/kernel/aalbus.h \
-include/aalsdk/kernel/aalbus_imonitorconfig.h \
+include/aalsdk/kernel/aalbus_iconfigmonitor.h \
 include/aalsdk/kernel/aalbus-ipip.h \
 include/aalsdk/kernel/aalbus_iupdate_config.h \
 include/aalsdk/kernel/aaldefs.h \
@@ -114,7 +114,6 @@ include/aalsdk/kernel/ahmpipdefs.h \
 include/aalsdk/kernel/ccidefs.h \
 include/aalsdk/kernel/fappip.h \
 include/aalsdk/kernel/spl2defs.h \
-include/aalsdk/kernel/aalui.h \
 include/aalsdk/kernel/ccipdriver.h \
 include/aalsdk/kernel/ccip_defs.h \
 include/aalsdk/kernel/KernelStructs.h \

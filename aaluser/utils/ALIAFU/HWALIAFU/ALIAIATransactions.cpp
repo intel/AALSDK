@@ -662,7 +662,8 @@ AFUActivateTransaction::~AFUActivateTransaction() {
 //       want to change the behavior so that it notifies owners and/or yanks
 //       AFU away then it must become asynchronous.
 //=============================================================================
-AFUDeactivateTransaction::AFUDeactivateTransaction(AAL::TransactionID const &rTranID) :
+AFUDeactivateTransaction::AFUDeactivateTransaction(AAL::TransactionID const &rTranID,
+                                                   AAL::NamedValueSet const &rInputArgs):
    m_msgID(reqid_UID_SendAFU),
    m_tid_t(rTranID),
    m_bIsOK(false),
@@ -673,14 +674,44 @@ AFUDeactivateTransaction::AFUDeactivateTransaction(AAL::TransactionID const &rTr
 
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
    // BufferFree-AIATransaction.
-   m_size = sizeof(struct aalui_CCIdrvMessage);
+   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req );
 
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
 
+   // Point at payload
+    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
+
+   btTime reconfTimeout            = 0;
+   btUnsigned64bitInt reconfAction = 0;
+
+   // DeActive Timeout
+   if(rInputArgs.Has(AALCONF_MILLI_TIMEOUT)){
+
+      rInputArgs.Get(AALCONF_MILLI_TIMEOUT, &reconfTimeout);
+   }
+
+   // ReConfiguration Action Flags
+   if(rInputArgs.Has(AALCONF_RECONF_ACTION)){
+
+      rInputArgs.Get(AALCONF_RECONF_ACTION, &reconfAction);
+
+      if((AALCONF_RECONF_ACTION_HONOR_REQUEST_ID != reconfAction ) &&
+        (AALCONF_RECONF_ACTION_HONOR_OWNER_ID != reconfAction ))    {
+
+           m_bIsOK = false;
+           return ;
+         }
+
+   }
+
+   req->u.pr_config.reconfTimeout  = reconfTimeout;
+   req->u.pr_config.reconfAction   = reconfAction;
+
    // fill out aalui_CCIdrvMessage
    afumsg->cmd     = ccipdrv_deactivateAFU;
-   afumsg->size    = 0;
+   afumsg->size    = sizeof(struct ahm_req) ;
+
 
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
@@ -738,12 +769,45 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
    // Point at payload
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
 
+   btTime reconfTimeout = 0;
+
+   // DeActive Timeout
+   if(rNVS.Has(AALCONF_MILLI_TIMEOUT)){
+
+      rNVS.Get(AALCONF_MILLI_TIMEOUT, &reconfTimeout);
+   }
+
+   // ReConfiguration Action Flags
+   // Assume default action
+   req->u.pr_config.reconfAction = ReConf_Action_Honor_request;
+   if(rNVS.Has(AALCONF_RECONF_ACTION)){
+
+      btUnsigned64bitInt reconfAction = 0;
+      rNVS.Get(AALCONF_RECONF_ACTION, &reconfAction);
+
+      if(reconfAction == AALCONF_RECONF_ACTION_HONOR_OWNER_ID){
+         req->u.pr_config.reconfAction = ReConf_Action_Honor_Owner;
+      }
+   }
+
+   // What state should the AFU be left in?
+   if(rNVS.Has(AALCONF_REACTIVATE_DISABLED)){
+      btBool bDisabled = true;   // Asssume if the key present it probably true
+      rNVS.Get(AALCONF_REACTIVATE_DISABLED, &bDisabled);
+
+      if(bDisabled == true){
+         req->u.pr_config.reconfAction |= ReConf_Action_InActive;
+         //printf("Creating disabled\n");
+      }
+   }
+
    // fill out aalui_CCIdrvMessage
    afumsg->cmd     = ccipdrv_configureAFU;
    afumsg->size    = sizeof(struct ahm_req) ;
 
-   req->u.mem_uv2id.vaddr  = pBuf;
-   req->u.mem_uv2id.size   = len;
+   req->u.pr_config.vaddr  = pBuf;
+   req->u.pr_config.size   = len;
+   req->u.pr_config.reconfTimeout  = reconfTimeout;
 
 // package in AIA transaction
    m_payload = reinterpret_cast<AAL::btVirtAddr>(afumsg);

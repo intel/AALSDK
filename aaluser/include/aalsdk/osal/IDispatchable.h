@@ -137,7 +137,15 @@ public:
 
 protected:
    DispatchableGroup() {}
+
+#if defined( _MSC_VER )
+#pragma warning( push )
+#pragma warning( disable:4251 )  // Cannot export template definitions
+#endif // _MSC_VER
    std::list<IDispatchable *> m_DispList;
+#if defined( _MSC_VER )
+#pragma warning( pop )
+#endif // _MSC_VER
 };
 
 END_NAMESPACE(AAL)

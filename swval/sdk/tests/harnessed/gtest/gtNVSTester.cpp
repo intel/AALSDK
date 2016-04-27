@@ -10,8 +10,7 @@
 
 CNVSRandomizer::CNVSRandomizer() :
    m_Count(5),
-   m_Seed(GlobalTestConfig::GetInstance().RandSeed()),
-   m_SaveSeed(m_Seed)
+   m_RNG(GlobalTestConfig::GetInstance().RandSeed())
 {}
 
 CNVSRandomizer::~CNVSRandomizer()
@@ -22,18 +21,18 @@ CNVSRandomizer::~CNVSRandomizer()
 void CNVSRandomizer::Snapshot()
 {
    ClearList();
-   m_SaveSeed = m_Seed;
+   m_RNG.Snapshot();
 }
 
 void CNVSRandomizer::Replay()
 {
    ClearList();
-   m_Seed = m_SaveSeed;
+   m_RNG.Replay();
 }
 
 const INamedValueSet * CNVSRandomizer::Value()
 {
-   btUnsigned32bitInt i = ::GetRand(&m_Seed) % m_Count;
+   bt32bitInt i = m_RNG.rng() % m_Count;
    switch ( i ) {
       case 0 : return Zero();
       case 1 : return One();
@@ -51,13 +50,6 @@ const INamedValueSet * CNVSRandomizer::ValueOtherThan(const INamedValueSet *nvs)
       p = Value();
    }while ( p->operator == (*nvs) );
    return p;
-}
-
-btUnsigned32bitInt CNVSRandomizer::Seed(btUnsigned32bitInt s)
-{
-   btUnsigned32bitInt prev = m_Seed;
-   m_Seed = s;
-   return prev;
 }
 
 INamedValueSet * CNVSRandomizer::Alloc()

@@ -51,9 +51,9 @@ AAL_DECLARE_SVC_MOD(localServiceBroker, AALRUNTIME_API)
 BEGIN_NAMESPACE(AAL)
 
 
-class _ServiceBroker : public  ServiceBase,
-                       private CUnCopyable,
-                       public  IServiceBroker
+class AALRUNTIME_API _ServiceBroker : public  ServiceBase,
+                                      private CUnCopyable,
+                                      public  IServiceBroker
 {
 public:
    // Loadable Service

@@ -181,6 +181,9 @@ struct aal_device_id {
    btUnsigned32bitInt     m_vendor;      // Vendor ID
 
    btUnsigned64bitInt     m_pipGUID;     // PIP GUID  TODO must reconcile with btIID
+#define AAL_DEVICE_MAX_GUID_STRING_SIZE 80
+   char                   m_deviguid[AAL_DEVICE_MAX_GUID_STRING_SIZE]; // Should replace PIP Guid
+
    btUnsigned64bitInt     m_ahmGUID;     // AHM GUID
 
    btUnsigned64bitInt     m_afuGUIDl;    // AFU GUID low order
@@ -253,6 +256,44 @@ struct aal_device_id {
 
 
 //=============================================================================
+// Name:        device_attributes
+// Description: 
+// Comments:  
+//=============================================================================
+struct device_attributes {
+   btWSSize                 size;                      // size with attributes
+   struct aal_device_id     device_id;                 // AAL Bus device Identifer
+   btObjectType            *Handle;                    // Device Handle
+
+#define DEVICE_MAX_BASENAME_LEN   256                  // Maximum size of name base
+   btByte                  basename[DEVICE_MAX_BASENAME_LEN + 1]; // Base name of device
+
+   btUnsignedInt           maxOwners;                 // Max number of owners
+
+#define MAFU_CONFIGURE_UNLIMTEDSHARES  (~0U)
+   btUnsigned16bitInt      enableDirectAPI;
+   btWSSize                extended_attrib_size;   // Length of optional attributes
+   btWSSize                pub_attrib_size;        // Length of public attributes
+};
+
+#define AALBUS_INIT_DEVICE_ATTIBUTES(p)  memset( p, 0, sizeof( struct device_attributes));
+
+#if defined( __AAL_KERNEL__ )
+#define aalbus_destroy_device_attrib(p)  kosal_kfree(p, p->size) 
+#else 
+#define aalbus_destroy_device_attrib(p) free(p) 
+#endif
+
+#define aalbus_config_dev_pattributes(d) ( WdfObjectGetAALContext( d )->m_pdevAttributes )
+
+// Extended attributes follow the base attributes and is a variable length object.  Returns NULL if none
+#define aalbus_config_dev_pextattributes(t,p) (   p->extended_attrib_size != 0 ? ((t)((btByteArray)p+sizeof(struct device_attributes))) : NULL )
+
+// Public attributes follow the extended attributes (if any) and is a variable length object. Returns NULL if none.
+#define aalbus_config_dev_ppubattributes(t,p) ( p->pub_attrib_size != 0 ? ((t)( (btByteArray)p+sizeof(struct device_attributes) + p->extended_attrib_size) ) : NULL)
+
+
+//=============================================================================
 // Name: device_attrib
 // Description: Device attributes
 //=============================================================================
@@ -269,7 +310,7 @@ struct device_attrib {
 
 
 // Device Add Owner result codes
-typedef enum {
+typedef enum aaldev_AddOwner_e{
    aaldev_addowner_OK = 0,
    aaldev_addowner_MaxOwners,
    aaldev_addowner_DupOwner,
@@ -280,7 +321,7 @@ typedef enum {
 } aaldev_AddOwner_e;
 
 // Config update event types
-typedef enum {
+typedef enum krms_cfgUpDate_e{
    krms_ccfgUpdate_DevAdded,
    krms_ccfgUpdate_DevRemoved,
    krms_ccfgUpdate_DevOwnerAdded,
@@ -288,7 +329,7 @@ typedef enum {
    krms_ccfgUpdate_DevOwnerRemoved,
    krms_ccfgUpdate_DevActivated,
    krms_ccfgUpdate_DevQuiesced
-} krms_cfgUpDate_e;
+}krms_cfgUpDate_e;
 
 struct aalrms_configUpDateEvent {
    krms_cfgUpDate_e        id;         // Type of update
@@ -332,8 +373,22 @@ struct aaldev_ownerSession {
 #define aalsess_uiHandle(os)        ((os)->m_UIHandle)
 #define aalsess_add_ws(os,ih)       kosal_list_add_head(&ih, &(os)->m_wshead);
 
-// AAL_DEVICE  Public interface
-struct aaldevice_interface {
+//=============================================================================
+// Name: aaldevice_interface
+// Description: Public interface to aal_device
+// Interface: public
+// Comments:
+//=============================================================================
+typedef struct aaldevice_interface {
+#if defined( __AAL_WINDOWS__ )
+   INTERFACE      InterfaceHeader;        // TODO converge with Linux aal_interface
+
+   struct device_attributes     *( *getDevAttributes )( WDFDEVICE );  // Fix this too
+#endif
+   btAny( *getExtendedAttributes )( void );
+   btAny( *getPublicAttributes )( void );
+   btBool( *sendDeviceUpdate )( void );
+
    aaldev_AddOwner_e    (*addOwner)(struct aal_device * ,
                                     btPID ,
                                     btObjectType ,
@@ -358,7 +413,8 @@ struct aaldevice_interface {
                                     struct aaldev_owner * );
    btInt                  (*remove)(struct aal_device * );
    void            (*releasedevice)(pkosal_os_dev );
-};
+}AAL_DEVICE_INTERFACE, *PAAL_DEVICE_INTERFACE;
+
 
 // Convenience macros
 #define dev_addOwner(p,id,m,o,s)    (p)->i.addOwner(p,id,m,o,s)
@@ -373,6 +429,7 @@ struct aaldevice_interface {
 #define dev_setrelease(p,f)       (p)->i.releasedevice=f
 #define dev_release(p,d)          (p)->i.releasedevice(d)
 #endif
+
 
 
 END_C_DECLS

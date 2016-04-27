@@ -60,8 +60,8 @@ BEGIN_NAMESPACE(AAL)
 // Comments:  This object is operational and meets its minimum functional
 //            requirements pior to init()
 //=============================================================================
-class _MessageDelivery : public CAASBase,
-                         public IMessageDeliveryService
+class AALRUNTIME_API _MessageDelivery : public CAASBase,
+                                        public IMessageDeliveryService
 {
 public:
    _MessageDelivery();

@@ -52,7 +52,7 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-#include <aalsdk/kernel/aalui.h>
+#include <aalsdk/kernel/ccipdriver.h>
 
 #include <aalsdk/AAL.h>
 #include <aalsdk/AALLoggerExtern.h>

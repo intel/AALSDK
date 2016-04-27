@@ -395,6 +395,72 @@ protected:
    CExceptionTransactionEvent(IBase * );
 };
 
+// Concrete implementation of IReleaseRequestEvent.
+///
+/// CReleaseRequestEvent serves as the base class for all Resource Release Request event response.
+class AASLIB_API CReleaseRequestEvent : public CAALEvent,
+                                        public IReleaseRequestEvent
+{
+public:
+   /// CReleaseRequestEvent Constructor.
+   ///
+   /// The native sub-class id is set to iidReleaseRequestEvent.
+   ///
+   /// @param[in]  pObject          An IBase associated with this event.
+   /// @param[in]  Timeout          Resource Release timeout in milliseconds..
+   /// @param[in]  Reason           Numeric reason code.
+   /// @param[in]  Description      A textual description of the event.
+   CReleaseRequestEvent(IBase               *pObject,
+                        btUnsigned64bitInt   Timeout,
+                        ReleaseReason_e      Reason,
+                        btcString            Description);
+   /// CReleaseRequestEvent Constructor.
+   ///
+   /// @param[in]  pObject          An IBase associated with this event.
+   /// @param[in]  SubClassID       The native sub-class id for this event.
+   /// @param[in]  Timeout          Resource Release timeout in milliseconds.
+   /// @param[in]  Reason           Numeric reason code.
+   /// @param[in]  Description      A textual description of the event.
+   CReleaseRequestEvent(IBase               *pObject,
+                        btIID                SubClassID,
+                        btUnsigned64bitInt   Timeout,
+                        ReleaseReason_e      Reason,
+                        btcString            Description);
+
+   // <IReleaseRequestEvent>
+   btUnsigned64bitInt  Timeout()      const;
+   ReleaseReason_e     Reason()       const;
+   btString            Description()  const;
+   // </IReleaseRequestEvent>
+
+
+
+protected:
+
+   /// CReleaseRequestEvent copy constructor.
+   CReleaseRequestEvent(const CReleaseRequestEvent &other) :
+      CAALEvent(other),
+      m_Reason(other.m_Reason),
+      m_Timeout(other.m_Timeout),
+      m_strDescription(other.m_strDescription)
+   {}
+
+   btUnsigned64bitInt  m_Timeout;
+   ReleaseReason_e     m_Reason;
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable:4251)
+#endif // _MSC_VER
+   std::string   m_strDescription;
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif // _MSC_VER
+
+   // These are prohibited.
+   CReleaseRequestEvent();
+   CReleaseRequestEvent(IBase * );
+};
+
 /// @}
 
 END_NAMESPACE(AAL)

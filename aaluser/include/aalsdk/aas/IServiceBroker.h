@@ -30,7 +30,7 @@
 //
 // PURPOSE:   Definitions for the public IServiceBroker interface
 // HISTORY:
-// COMMENTS:  Service Broker is responsibel for servicing requests for Service
+// COMMENTS:  Service Broker is responsible for servicing requests for Service
 //            allocation. It interacts with components such as the Resource
 //            manager.
 // WHEN:          WHO:     WHAT:

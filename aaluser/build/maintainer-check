@@ -1178,7 +1178,7 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'ResMgrService.h' \
 'aalbus-device.h' \
 'aalbus.h' \
-'aalbus_imonitorconfig.h' \
+'aalbus_iconfigmonitor.h' \
 'aalbus-ipip.h' \
 'aalbus_iupdate_config.h' \
 'aaldefs.h' \
@@ -1197,7 +1197,6 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'AALTransactionID_s.h' \
 'aaltypes.h' \
 'aalui-events.h' \
-'aalui.h' \
 'AALWorkspace.h' \
 'aalwsservice.h' \
 'ahmpipdefs.h' \

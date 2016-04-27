@@ -124,7 +124,9 @@ struct aal_wsid
 {
    struct aal_device *m_device;     // Device
    btWSID             m_id;         // ID, and pointer to workspace structure
+   btHANDLE           m_dmahandle;  // Optional DMA Handle
    btWSID             m_handle;     // Handle passed up to user mode
+   kosal_map_handle   m_maphandle;  // Used by OS User mode mapping
    enum wstype        m_type;       // Type of allocation
    btWSSize           m_size;       // Size of workspace
    kosal_list_head    m_list;       // Device owner list it is on
@@ -141,12 +143,16 @@ struct aal_wsid
 
 #else
 
+#     define wsid_to_maphandle(pwsid)     ( pwsid->m_maphandle )
+
 #  if   defined ( __AAL_WINDOWS__ )
 // Do nothing for Windows
-#     define wsidobjp_to_wid(id)    ( (btWSID)(id) )
-#     define wsid_to_wsidobjp(id)   ( (struct aal_wsid *)id )
+#     define wsid_to_wsidHandle(id) ( (btWSID)(id) )
+#     define pwsid_to_wsidHandle( pwsid ) ( (btWSID)( pwsid->m_handle ) )
 
-#     define pgoff_to_wsidobj(off)  ( (struct aal_wsid *)(off))
+#     define wsid_to_wsidobjp(id)      ( (struct aal_wsid *)id )
+
+#     define pgoff_to_wsidobj(off)     ( (struct aal_wsid *)(off))
 
 #  elif defined ( __AAL_LINUX__ )
 
@@ -157,7 +163,7 @@ struct aal_wsid
 //#     define pgoff_to_wsid(off)        ( ((btWSID)(off)) >>19 )
 #     define pgoff_to_wsidHandle(off)  ((btWSID)off<<12)
 
-#     define pwsid_to_wsidhandle(pwsid) ((btWSID)(pwsid->m_handle))
+#     define pwsid_to_wsidHandle(pwsid) ((btWSID)(pwsid->m_handle))
 
 
 // DEPRECATING

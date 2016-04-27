@@ -41,7 +41,7 @@
 
 //READ: This ia a read-only test with no data checking. AFU reads CSR_NUM_LINES starting from CSR_SRC_ADDR.
 //This test is used to stress the read path and measure 100% read bandwidth and latency.
-#include <aalsdk/kernel/aalui.h>
+#include <aalsdk/kernel/ccipdriver.h>
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"

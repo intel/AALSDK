@@ -166,6 +166,34 @@ public:
    virtual NamedValueSet & Parm()       = 0;
 };
 
+
+//=============================================================================
+// Resource Release Request defined event interfaces
+//=============================================================================
+
+/// Base interface for Resource Release Request-specific Events.
+class AASLIB_API IReleaseRequestEvent
+{
+public:
+   /// IReleaseRequestEvent Destructor.
+   virtual ~IReleaseRequestEvent() {};
+
+   /// AFU Release reason types
+   enum  ReleaseReason_e {
+       resource_revokeing
+   };
+
+   /// Retrieve AFU Release timeout in milliseconds .
+   virtual btUnsigned64bitInt Timeout() const= 0;
+
+   /// Retrieve Resource Release  Exception reason code.
+   virtual ReleaseReason_e Reason()     const= 0;
+
+   /// Retrieve a string description of the Resource Release Request event.
+   virtual btString Description()       const = 0;
+};
+
+
 /// Print information in Exception and ExceptionTransaction Events.
 AASLIB_API void PrintExceptionDescription(IEvent const &theEvent);
 

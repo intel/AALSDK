@@ -376,6 +376,7 @@ public:
                                       TransactionID const &rTranID = TransactionID());
    virtual void serviceAllocateFailed(const IEvent &rEvent);
    virtual void       serviceReleased(TransactionID const &rTranID = TransactionID());
+   virtual void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent);
    virtual void  serviceReleaseFailed(const IEvent &rEvent);
    virtual void          serviceEvent(const IEvent &rEvent);
    // </IServiceClient>

@@ -39,6 +39,14 @@ testsuite
 .project
 .settings
 
+# microsoft visual studio
+.vs/
+*.sdf
+
+# google test
+gtest-1.6.0/
+gtest-1.7.0/
+
 # symlinks we must ignore
 kernel
 
