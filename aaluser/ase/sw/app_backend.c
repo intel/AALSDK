@@ -580,8 +580,15 @@ void session_deinit()
       clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time_snapshot);
       runtime_nsec = time_snapshot.tv_sec*1e9 + time_snapshot.tv_nsec;
 
-      // Session end
-      printf("  [APP]  Session ended (time elapsed => %llu nsec)\n", runtime_nsec );
+      // Session end, set locale
+
+      printf("  [APP]  Session ended (time elapsed => ");
+
+      // Set locale, inherit locale, and reset back
+      char *oldLocale = setlocale(LC_NUMERIC, NULL);
+      setlocale(LC_NUMERIC, "");
+      printf("%'llu nsec)\n", runtime_nsec);
+      setlocale(LC_NUMERIC, oldLocale);
 
       END_YELLOW_FONTCOLOR;
 

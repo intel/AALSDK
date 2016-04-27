@@ -60,6 +60,7 @@
 #include <sys/file.h>
 #include <dirent.h>
 #include <execinfo.h>
+#include <locale.h>
 
 #ifdef SIM_SIDE 
 #include "svdpi.h"
