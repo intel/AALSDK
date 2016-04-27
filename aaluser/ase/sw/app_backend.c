@@ -250,9 +250,6 @@ void session_init()
 {
   FUNC_CALL_ENTRY;
 
-  // Start clock_t
-  /* start_clk = clock(); */
-
   setvbuf(stdout, NULL, (int)_IONBF, (size_t)0);
 
   ipc_init();
@@ -583,6 +580,7 @@ void session_deinit()
       clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time_snapshot);
       runtime_nsec = time_snapshot.tv_sec*1e9 + time_snapshot.tv_nsec;
 
+      // Session end
       printf("  [APP]  Session ended (time elapsed => %llu nsec)\n", runtime_nsec );
 
       END_YELLOW_FONTCOLOR;

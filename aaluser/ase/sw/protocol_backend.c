@@ -57,6 +57,7 @@ void scope_function()
   scope = svGetScope();
 }
 
+
 /*
  * ASE instance already running 
  * - If instance is found, return its process ID, else return 0 
@@ -65,7 +66,7 @@ int ase_instance_running()
 {
   FUNC_CALL_ENTRY;
 
-  FILE *fp_ready_check = (FILE *)NULL;
+  //FILE *fp_ready_check = (FILE *)NULL;
   int ase_simv_pid;
 
   // If Ready file does not exist
@@ -76,19 +77,20 @@ int ase_instance_running()
   // If ready file exists
   else
     {
-      // Read contents of file and send to 
-      fp_ready_check = fopen(ASE_READY_FILENAME, "r");
-      // If success
-      if (fp_ready_check != NULL)
-	{
-	  fscanf(fp_ready_check, "%d", &ase_simv_pid);
-	  fclose(fp_ready_check);
-	}
-      // If failed
-      else
-	{
-	  ase_simv_pid = -1;
-	}
+      ase_simv_pid = ase_read_lock_file( getenv("PWD") );
+      /* // Read contents of file and send to  */
+      /* fp_ready_check = fopen(ASE_READY_FILENAME, "r"); */
+      /* // If success */
+      /* if (fp_ready_check != NULL) */
+      /* 	{ */
+      /* 	  fscanf(fp_ready_check, "%d", &ase_simv_pid); */
+      /* 	  fclose(fp_ready_check); */
+      /* 	} */
+      /* // If failed */
+      /* else */
+      /* 	{ */
+      /* 	  ase_simv_pid = -1; */
+      /* 	} */
     }
 
   FUNC_CALL_EXIT;

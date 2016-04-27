@@ -390,7 +390,7 @@ extern "C" {
   // Session control
   void session_init();
   void session_deinit();
-  void ase_read_lock_file(const char*);
+  int ase_read_lock_file(const char*);
   // Shared memory alloc/dealloc operations
   void allocate_buffer(struct buffer_t *, uint64_t *);
   void deallocate_buffer(struct buffer_t *);

@@ -367,7 +367,7 @@ void ase_write_lock_file()
   fclose(fp_ase_ready);
 
   // Notice on stdout
-  printf("SIM-C : ASE lock file .ase_lock written in work directory\n");
+  printf("SIM-C : ASE lock file .ase_ready.pid written in work directory\n");
 
   FUNC_CALL_EXIT;
 }
@@ -377,7 +377,7 @@ void ase_write_lock_file()
 /*
  * ase_read_lock_file() : Read an existing lock file and decipher contents
  */
-void ase_read_lock_file(const char *workdir)
+int ase_read_lock_file(const char *workdir)
 {
   // Allocate string
   FILE *fp_exp_ready;
@@ -534,4 +534,7 @@ void ase_read_lock_file(const char *workdir)
       printf("ASE Ready file was not found at env(ASE_WORKDIR) !\n");
       END_RED_FONTCOLOR;
     }
+
+  // Return PID of Simulator instance
+  return readback_pid;
 }
