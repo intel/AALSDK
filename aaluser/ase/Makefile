@@ -118,7 +118,7 @@ ifdef GLS_SIM
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
-  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
+#  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
@@ -151,14 +151,14 @@ ifdef GLS_SIM
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
-  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
+#  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
 endif
 
 ## VSIM elaboration, and run options
-MENT_VSIM_OPT = -64 -c -l run.log
+MENT_VSIM_OPT = -64 -c -l run.log -dpioutoftheblue 1
 MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) -do vsim_run.tcl
 
 
@@ -209,20 +209,16 @@ endif
 # Check if some RTL simulator exists
 ifndef VCS_HOME
   ifndef MTI_HOME
-	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
-	exit 1
+	@echo "**ERROR** : env(MTI_HOME) is not set !"
   endif
-	@echo "**ERROR** : env(VCS_HOME) is not set ! svdpi.h cannot be found !"
-	exit 1
+	@echo "**ERROR** : env(VCS_HOME) is not set !"
 endif
 # Check if some RTL simulator exists
 ifndef SNPS_COMMAND
   ifndef MENT_COMMAND
 	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
-	exit 1
   endif
 	@echo "**ERROR** : Synopsys commands (vlogan, vcs) not found !"
-	exit 1
 endif
 
 

@@ -337,7 +337,7 @@ module outoforder_wrf_channel
 	    $fwrite (log_fd, "%d | WrFence inserted in channel\n", $time);
 	 end
 	 `endif
-	 infifo.push_back({ tid_in, data_in, CCIP_TX_HDR_WIDTH'(hdr_in) });
+	 infifo.push_back({ tid_in, data_in, (CCIP_TX_HDR_WIDTH)'(hdr_in) });
       end
    end
 
@@ -427,7 +427,7 @@ module outoforder_wrf_channel
 	 wrfence_rsp.resptype = ASE_WRFENCE_RSP;
 	 wrfence_rsp.mdata    = wrfence.mdata;
 	 // Cast back and return
-	 wrfence_rsp_vec = CCIP_RX_HDR_WIDTH'(wrfence_rsp);
+	 wrfence_rsp_vec = (CCIP_RX_HDR_WIDTH)'(wrfence_rsp);
 	 return wrfence_rsp_vec;
       end
    endfunction
@@ -456,11 +456,11 @@ module outoforder_wrf_channel
 	      VC_VA:
 		begin
 		   // Fence activatd
-		   vl0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
-		   vh0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
-		   vh1_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
+		   vl0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		   vh0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		   vh1_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
 		   // Wrfence response
-		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), CCIP_TX_HDR_WIDTH'(infifo_hdr_out) } );
+		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out) } );
 	 `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VA\n", $time, infifo_tid_out);
 	 `endif
@@ -469,8 +469,8 @@ module outoforder_wrf_channel
 	      // If single channel fence, stage requisite response
 	      VC_VL0:
 		begin
-		   vl0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
-		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), CCIP_TX_HDR_WIDTH'(infifo_hdr_out) } );
+		   vl0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out) } );
 	 `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VL0\n", $time, infifo_tid_out);
 	 `endif
@@ -478,8 +478,8 @@ module outoforder_wrf_channel
 
 	      VC_VH0:
 		begin
-		   vh0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
-		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), CCIP_TX_HDR_WIDTH'(infifo_hdr_out) } );
+		   vh0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out) } );
 	 `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VH0\n", $time, infifo_tid_out);
 	 `endif
@@ -487,8 +487,8 @@ module outoforder_wrf_channel
 
 	      VC_VH1:
 		begin
-		   vh1_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
-		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), CCIP_TX_HDR_WIDTH'(infifo_hdr_out) } );
+		   vh1_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out) } );
 	 `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VH1\n", $time, infifo_tid_out);
 	 `endif
@@ -511,7 +511,7 @@ module outoforder_wrf_channel
 	      VC_VL0:
 		begin
 		   vc_push = 3'b100;
-		   vl0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
+		   vl0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
 	 `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc : tid=%x sent to VL0\n", $time, infifo_tid_out);
 	 `endif
@@ -520,7 +520,7 @@ module outoforder_wrf_channel
 	      VC_VH0:
 		begin
 		   vc_push = 3'b010;
-		   vh0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
+		   vh0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
 	 `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc : tid=%x sent to VH0\n", $time, infifo_tid_out);
 	 `endif
@@ -529,7 +529,7 @@ module outoforder_wrf_channel
 	      VC_VH1:
 		begin
 		   vc_push = 3'b001;
-		   vh1_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
+		   vh1_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
 	 `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc : tid=%x sent to VH1\n", $time, infifo_tid_out);
 	 `endif
@@ -991,7 +991,7 @@ module outoforder_wrf_channel
 		      outfifo_write_en        = 1;
 		      rxhdr.clnum             = ASE_1CL;
 		      txhdr.addr              = base_addr + 0;
-		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+		      array.push_back({ records[ptr].tid, records[ptr].data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
 	       	      records[ptr].record_pop = 1;
 		      unroll_active = 0;
                       `ifdef ASE_DEBUG
@@ -1007,7 +1007,7 @@ module outoforder_wrf_channel
 		      outfifo_write_en        = 1;
 		      rxhdr.clnum             = ASE_1CL;
 		      txhdr.addr              = base_addr + 0;
-		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+		      array.push_back({ records[ptr].tid, records[ptr].data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
 		      outfifo_write_en        = 1;
                       `ifdef ASE_DEBUG
 	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
@@ -1015,7 +1015,7 @@ module outoforder_wrf_channel
 		      @(posedge clk);
 		      rxhdr.clnum             = ASE_2CL;
 		      txhdr.addr              = base_addr + 1;
-		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+		      array.push_back({ records[ptr].tid, records[ptr].data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
 	       	      records[ptr].record_pop = 1;
 		      unroll_active           = 0;
                       `ifdef ASE_DEBUG
@@ -1040,28 +1040,28 @@ module outoforder_wrf_channel
 		      outfifo_write_en        = 1;
 		      rxhdr.clnum             = ASE_1CL;
 		      txhdr.addr              = base_addr + 0;
-		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+		      array.push_back({ records[ptr].tid, records[ptr].data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
                       `ifdef ASE_DEBUG
 	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
                       `endif
 		      @(posedge clk);
 		      rxhdr.clnum             = ASE_2CL;
 		      txhdr.addr              = base_addr + 1;
-		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+		      array.push_back({ records[ptr].tid, records[ptr].data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
                       `ifdef ASE_DEBUG
 	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
                       `endif
 		      @(posedge clk);
 		      rxhdr.clnum             = ASE_3CL;
 		      txhdr.addr              = base_addr + 2;
-		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+		      array.push_back({ records[ptr].tid, records[ptr].data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
                       `ifdef ASE_DEBUG
 	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
                       `endif
 		      @(posedge clk);
 		      rxhdr.clnum             = ASE_4CL;
 		      txhdr.addr              = base_addr + 3;
-		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+		      array.push_back({ records[ptr].tid, records[ptr].data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
 	       	      records[ptr].record_pop = 1;
 		      unroll_active           = 0;
                       `ifdef ASE_DEBUG
@@ -1076,7 +1076,7 @@ module outoforder_wrf_channel
 	       outfifo_write_en        = 1;
 	       rxhdr.clnum             = txhdr.len;
 	       txhdr.addr              = base_addr + 0;
-	       array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+	       array.push_back({ records[ptr].tid, records[ptr].data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
 	       records[ptr].record_pop = 1;
 	       unroll_active = 0;
                `ifdef ASE_DEBUG
@@ -1142,7 +1142,7 @@ module outoforder_wrf_channel
 		   vh1_wrfence_deassert <= 1;
 		   latbuf_pop_proc_status	<= 3'b100;
 		   glbl_wrfence_pop_status <= 1;
-		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });
+		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
 		end
 	     end
 
@@ -1154,7 +1154,7 @@ module outoforder_wrf_channel
 		   vh1_wrfence_deassert <= 0;
 		   latbuf_pop_proc_status	<= 3'b101;
 		   glbl_wrfence_pop_status <= 1;
-		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });
+		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
 		end
 	     end
 
@@ -1166,7 +1166,7 @@ module outoforder_wrf_channel
 		   vh1_wrfence_deassert <= 0;
 		   latbuf_pop_proc_status	<= 3'b110;
 		   glbl_wrfence_pop_status <= 1;
-		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });
+		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
 		end
 	     end
 
@@ -1178,7 +1178,7 @@ module outoforder_wrf_channel
 		   vh1_wrfence_deassert <= 1;
 		   latbuf_pop_proc_status	<= 3'b111;
 		   glbl_wrfence_pop_status <= 1;
-		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });
+		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
 		end
 	     end
 	 endcase

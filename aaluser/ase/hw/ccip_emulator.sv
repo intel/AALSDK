@@ -719,7 +719,7 @@ module ccip_emulator
 		  hdr.len = 2'b01;
 		  cwlp_data = {448'b0, mmio_pkt.qword[0][63:0]};
 	       end
-	       cwlp_header = CCIP_CFG_HDR_WIDTH'(hdr);
+	       cwlp_header = (CCIP_CFG_HDR_WIDTH)'(hdr);
 	       cwlp_wrvalid = 1;
 	       cwlp_rdvalid = 0;
 	       mmio_pkt.resp_en = 1;
@@ -739,7 +739,7 @@ module ccip_emulator
 	       end
 	       hdr.rsvd9    = 1'b0;
 	       hdr.tid      = mmio_pkt.tid[CCIP_CFGHDR_TID_WIDTH-1:0];
-	       cwlp_header  = CCIP_CFG_HDR_WIDTH'(hdr);
+	       cwlp_header  = (CCIP_CFG_HDR_WIDTH)'(hdr);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 1;
 	       @(posedge clk);
@@ -810,7 +810,7 @@ module ccip_emulator
       .clk        ( clk ),
       .rst        ( ase_reset ),
       .wr_en      ( C2TxMmioRdValid ),
-      .data_in    ( {CCIP_MMIO_TID_WIDTH'(C2TxHdr), C2TxData} ),
+      .data_in    ( {(CCIP_MMIO_TID_WIDTH)'(C2TxHdr), C2TxData} ),
       .rd_en      ( mmioresp_read & ~mmioresp_empty ),
       .data_out   ( mmioresp_dout ),
       .data_out_v ( mmioresp_valid ),
@@ -1207,7 +1207,7 @@ module ccip_emulator
       .clk        ( clk ),
       .rst        ( ase_reset ),
       .wr_en      ( umsgfifo_write ),
-      .data_in    ( { ASE_UMSG_HDR_WIDTH'(umsgfifo_hdr_in), umsgfifo_data_in} ),
+      .data_in    ( { (ASE_UMSG_HDR_WIDTH)'(umsgfifo_hdr_in), umsgfifo_data_in} ),
       .rd_en      ( umsgfifo_read & ~umsgfifo_empty ),
       .data_out   ( { umsgfifo_hdrvec_out, umsgfifo_data_out} ),
       .data_out_v ( umsgfifo_valid ),
@@ -1529,7 +1529,8 @@ module ccip_emulator
       .read_en		( cf2as_latbuf_ch0_read ),
       .empty		( cf2as_latbuf_ch0_empty ),
       .almfull          ( C0TxAlmFull ),
-      .full             ( cf2as_ch0_realfull )
+      .full             ( cf2as_ch0_realfull ),
+      .overflow_error   ( )
       );
 
    // Read TX0
@@ -1610,7 +1611,8 @@ module ccip_emulator
       .read_en		( cf2as_latbuf_ch1_read  ),
       .empty		( cf2as_latbuf_ch1_empty ),
       .almfull          ( C1TxAlmFull ),
-      .full             ( cf2as_ch1_realfull )
+      .full             ( cf2as_ch1_realfull ),
+      .overflow_error   ( )
       );
 
 
@@ -1705,7 +1707,7 @@ module ccip_emulator
       .clk             ( clk ),
       .rst             ( ase_reset ),
       .wr_en           ( rdrsp_write ),
-      .data_in         ( { CCIP_RX_HDR_WIDTH'(rdrsp_hdr_in), rdrsp_data_in } ),
+      .data_in         ( { (CCIP_RX_HDR_WIDTH)'(rdrsp_hdr_in), rdrsp_data_in } ),
       .rd_en           ( ~rdrsp_empty && rdrsp_read ),
       .data_out        ( { rdrsp_hdr_out_vec, rdrsp_data_out } ),
       .data_out_v      ( rdrsp_valid ),
@@ -1733,7 +1735,7 @@ module ccip_emulator
       .clk             ( clk ),
       .rst             ( ase_reset ),
       .wr_en           ( atomics_write ),
-      .data_in         ( { CCIP_RX_HDR_WIDTH'(atomics_hdr_in), atomics_data_in } ),
+      .data_in         ( { (CCIP_RX_HDR_WIDTH)'(atomics_hdr_in), atomics_data_in } ),
       .rd_en           ( ~atomics_empty && atomics_read ),
       .data_out        ( { atomics_hdr_out_vec, atomics_data_out } ),
       .data_out_v      ( atomics_valid ),
@@ -1765,7 +1767,7 @@ module ccip_emulator
       .clk             ( clk ),
       .rst             ( ase_reset ),
       .wr_en           ( wr1rsp_write ),
-      .data_in         ( CCIP_RX_HDR_WIDTH'(wr1rsp_hdr_in) ),
+      .data_in         ( (CCIP_RX_HDR_WIDTH)'(wr1rsp_hdr_in) ),
       .rd_en           ( ~wr1rsp_empty && wr1rsp_read ),
       .data_out        ( wr1rsp_hdr_out_vec ),
       .data_out_v      ( wr1rsp_valid ),
