@@ -78,7 +78,7 @@
 #endif
 
 #include <aalsdk/kernel/aaltypes.h>
-#include "cci_pcie_driver_internal.h"
+
 
 BEGIN_NAMESPACE(AAL)
 
@@ -292,7 +292,7 @@ struct CCIP_DFH {
          btUnsigned64bitInt Feature_ID :12;      // Feature ID
          btUnsigned64bitInt Feature_rev :4;      // Feature revision
          btUnsigned64bitInt next_DFH_offset :24; // Next Device Feature header offset
-         btUnsigned64bitInt end_of_list :1;      // End of Device feature list
+         btUnsigned64bitInt eol :1;              // End of Device feature list
          btUnsigned64bitInt rsvd :19;            // Reserved
          btUnsigned64bitInt Type :4;             // Type of Device
 
@@ -454,73 +454,76 @@ CASSERT(sizeof(struct CCIP_FME_HDR) == (8 * 8));
 ///  Feature Type: = Private
 ///  Feature Revision: 0
 ///============================================================================
+
+
+
+// Temperature Threshold
+struct CCIP_TEMP_THRESHOLD {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt tmp_thshold1 :7;                // temperature Threshold 1
+         btUnsigned64bitInt tmp_thshold1_status :1;         // temperature Threshold 1 enable /disable
+         btUnsigned64bitInt tmp_thshold2 :7;                // temperature Threshold 2
+         btUnsigned64bitInt tmp_thshold2_status :1;         // temperature Threshold 2 enable /disable
+         btUnsigned64bitInt rsvd4 :8;
+         btUnsigned64bitInt therm_trip_thshold :7;          // Thermeal Trip Threshold
+         btUnsigned64bitInt rsvd3 :1;
+         btUnsigned64bitInt thshold1_status :1;             // Threshold 1 Status
+         btUnsigned64bitInt thshold2_status :1;             // Threshold 2 Status
+         btUnsigned64bitInt rsvd5 :1;
+         btUnsigned64bitInt therm_trip_thshold_status :1;   // Thermeal Trip Threshold status
+         btUnsigned64bitInt rsvd2 :8;
+         btUnsigned64bitInt thshold_policy :1;              // threshold policy
+         btUnsigned64bitInt rsvd :19;
+
+     }; //end struct
+   }; // end union
+
+}; // end struct CCIP_TMP_THRESHOLD
+
+
+// Temperature Sensor Read values
+struct CCIP_TEMP_RDSSENSOR_FMT1 {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt tmp_reading :7; // Reads out FPGA temperature in celsius.
+         btUnsigned64bitInt rsvd2 :1;
+         btUnsigned64bitInt tmp_reading_seq_num :16; // Temperature reading sequence number
+         btUnsigned64bitInt tmp_reading_valid :1; // Temperature reading is valid
+         btUnsigned64bitInt rsvd1 :7;
+         btUnsigned64bitInt dbg_mode :8; //Debug mode
+         btUnsigned64bitInt rsvd :24;
+
+      }; // end struct
+   } ; // end union
+
+}; // end struct CCIP_TMP_RDSSENSOR_FMT1
+
+// Temperature sensor read values
+struct CCIP_TEMP_RDSSENSOR_FMT2 {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt rsvd :64;  // TBD
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_TMP_RDSSENSOR_FMT2
+
+
 struct CCIP_FME_DFL_THERM {
 
    // Thermal  Management Feature Header
-   struct CCIP_DFH  ccip_fme_tmp_dflhdr ;
+   struct CCIP_DFH                     ccip_fme_tmp_dflhdr ;
 
-   // Temperature Threshold
-   struct CCIP_TEMP_THRESHOLD {
-
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt tmp_thshold1 :7; // temperature Threshold 1
-            btUnsigned64bitInt tmp_thshold1_status :1; // temperature Threshold 1 enable /disable
-            btUnsigned64bitInt tmp_thshold2 :7; // temperature Threshold 2
-            btUnsigned64bitInt tmp_thshold2_status :1; // temperature Threshold 2 enable /disable
-            btUnsigned64bitInt proc_hot_setpoint :7; // proc hot set point
-            btUnsigned64bitInt rsvd4 :1;
-            btUnsigned64bitInt therm_trip_thshold :7; // Thermeal Trip Threshold
-            btUnsigned64bitInt rsvd3 :1;
-            btUnsigned64bitInt thshold1_status :1; // Threshold 1 Status
-            btUnsigned64bitInt thshold2_status :1; // Threshold 2 Status
-            btUnsigned64bitInt setproc_temp_reach_setpoint :1; // Set temperature reaches proc hot set point
-            btUnsigned64bitInt therm_trip_thshold_status :1; //  Thermeal Trip Threshold status
-            btUnsigned64bitInt rsvd2 :4;
-            btUnsigned64bitInt force_proc_hot :1; //  force proc hot
-            btUnsigned64bitInt therm_proc_hot :1; //  Thermeal Trip Hot
-            btUnsigned64bitInt rsvd1 :2;
-            btUnsigned64bitInt thshold_policy :1; // threshold policy
-
-            // enum e_AFU_Power_State thshold_policy :1; // threshold policy;
-
-            btUnsigned64bitInt rsvd :19;
-         }; //end struct
-      }; // end union
-
-   }ccip_tmp_threshold; // end struct CCIP_TMP_THRESHOLD
-
-   // Temperature Sensor Read values
-   struct CCIP_TEMP_RDSSENSOR_FMT1 {
-
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt tmp_reading :7; // Reads out FPGA temperature in celsius.
-            btUnsigned64bitInt rsvd2 :1;
-            btUnsigned64bitInt tmp_reading_seq_num :16; // Temperature reading sequence number
-            btUnsigned64bitInt tmp_reading_valid :1; // Temperature reading is valid
-            btUnsigned64bitInt rsvd1 :7;
-            btUnsigned64bitInt dbg_mode :8; //Debug mode
-            btUnsigned64bitInt rsvd :24;
-
-         }; // end struct
-      } ; // end union
-
-   }ccip_tmp_rdssensor_fm1; // end struct CCIP_TMP_RDSSENSOR_FMT1
-
-   // Temperature sensor read values
-   struct CCIP_TEMP_RDSSENSOR_FMT2 {
-
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt rsvd :64;  // TBD
-         }; // end struct
-      }; // end union
-
-   }ccip_tmp_rdssensor_fm2; // end struct CCIP_TMP_RDSSENSOR_FMT2
+   struct CCIP_TEMP_THRESHOLD          ccip_tmp_threshold;
+   struct CCIP_TEMP_RDSSENSOR_FMT1     ccip_tmp_rdssensor_fm1;
+   struct CCIP_TEMP_RDSSENSOR_FMT2     ccip_tmp_rdssensor_fm2;
 
 }; //end struct CCIP_FME_TMP_DFL
 CASSERT(sizeof(struct CCIP_FME_DFL_THERM) == (4*8));
@@ -533,6 +536,23 @@ CASSERT(sizeof(struct CCIP_FME_DFL_THERM) == (4*8));
 ///  Feature Type: = Private
 ///  Feature Revision: 0
 ///============================================================================
+
+
+//Power Management Status
+struct CCIP_PM_STATUS {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt pwr_consumed :17;
+         btUnsigned64bitInt fpga_latency_report :1; // FPGA Latency Tolerance Reporting (LTR)
+         btUnsigned64bitInt rsvd3 :45;
+      }; // end struct
+   }; // end union
+
+} ; // end struct CCIP_PM_STATUS
+CASSERT(sizeof(struct CCIP_PM_STATUS) == (1*8));
+
 struct CCIP_FME_DFL_PM {
 
    // FME Power Management Feature header
@@ -714,6 +734,18 @@ struct CCIP_FME_DFL_FPMON {
 };
 CASSERT(sizeof(struct CCIP_FME_DFL_FPMON) == (7*8));
 
+struct CCIP_FME_ERROR {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt rsvd :64;  // TBD
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_ERROR
+CASSERT(sizeof(struct CCIP_FME_ERROR) == (1 *8));
+
 ///============================================================================
 /// Name: CCIP_FME_DFL_GERROR
 /// @brief   FPGA Management Engine Performance Global Error Feature
@@ -727,42 +759,15 @@ struct CCIP_FME_DFL_GERROR {
    struct CCIP_DFH ccip_gerror_dflhdr;
 
    //FME  Error mask  CSR
-   struct CCIP_FME_ERROR_MASK {
-
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt rsvd :64; // TBD
-         }; // end struct
-      }; // end union
-
-   }ccip_fme_error_mask; //end CCIP_FME_ERROR_MASK
+   struct CCIP_FME_ERROR ccip_fme_error_mask;
 
 
    // FME error CSR
-   struct CCIP_FME_ERROR {
-
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt rsvd :64;  // TBD
-         }; // end struct
-      }; // end union
-
-   } ccip_fme_error; // end struct CCIP_FME_ERROR
+   struct CCIP_FME_ERROR  ccip_fme_error;
 
 
    // FME first error CSR
-   struct CCIP_FME_FIRST_ERROR {
-
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt rsvd :64; // TBD
-         }; //end struct
-      }; // end union
-
-   } ccip_fme_first_error; // end struct CCIP_FME_FIRST_ERROR
+   struct CCIP_FME_ERROR ccip_fme_first_error;
 
 }; //end CCIP_FME_GERROR_feature
 CASSERT(sizeof(struct CCIP_FME_DFL_GERROR) ==(4* 8));
@@ -940,6 +945,9 @@ struct CCIP_PORT_HDR {
 }; // end struct CCIP_FME_HDR
 CASSERT(sizeof(struct CCIP_PORT_HDR) == (9 *8));
 
+
+
+
 /******************************************************************************
  *  64-bit FPGA Port Error  Feature List
  *  Feature ID =0x10
@@ -947,70 +955,62 @@ CASSERT(sizeof(struct CCIP_PORT_HDR) == (9 *8));
  *  Feature Type = Private
  *  offset 0x40 bytes form Device Feature Header
  ******************************************************************************/
+
+// CCIP Port Error CSR
+struct CCIP_PORT_ERROR {
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt tx_ch0_overflow :1;       //Tx Channel0 : Overflow
+            btUnsigned64bitInt tx_ch0_invalidreq :1;     //Tx Channel0 : Invalid request encoding
+            btUnsigned64bitInt tx_ch0_req_cl_len3 :1;    //Tx Channel0 : Request with cl_len=3
+            btUnsigned64bitInt tx_ch0_req_cl_len2 :1;    //Tx Channel0 : Request with cl_len=2
+            btUnsigned64bitInt tx_ch0_req_cl_len4 :1;    //Tx Channel0 : Request with cl_len=4
+
+            btUnsigned64bitInt rsvd :11;
+
+            btUnsigned64bitInt tx_ch1_overflow :1;       //Tx Channel1 : Overflow
+            btUnsigned64bitInt tx_ch1_invalidreq :1;     //Tx Channel1 : Invalid request encoding
+            btUnsigned64bitInt tx_ch1_req_cl_len3 :1;    //Tx Channel1 : Request with cl_len=3
+            btUnsigned64bitInt tx_ch1_req_cl_len2 :1;    //Tx Channel1 : Request with cl_len=2
+            btUnsigned64bitInt tx_ch1_req_cl_len4 :1;    //Tx Channel1 : Request with cl_len=4
+
+
+            btUnsigned64bitInt tx_ch1_insuff_datapayload :1; //Tx Channel1 : Insufficient data payload
+            btUnsigned64bitInt tx_ch1_datapayload_overrun:1; //Tx Channel1 : Data payload overrun
+            btUnsigned64bitInt tx_ch1_incorr_addr  :1;       //Tx Channel1 : Incorrect address
+            btUnsigned64bitInt tx_ch1_sop_detcted  :1;       //Tx Channel1 : NON-Zero SOP Detected
+            btUnsigned64bitInt tx_ch1_atomic_req  :1;        //Tx Channel1 : Illegal VC_SEL, atomic request VLO
+            btUnsigned64bitInt rsvd1 :6;
+
+            btUnsigned64bitInt mmioread_timeout :1;         // MMIO Read Timeout in AFU
+            btUnsigned64bitInt tx_ch2_fifo_overflow :1;     //Tx Channel2 : FIFO overflow
+
+            btUnsigned64bitInt rsvd2 :6;
+
+            btUnsigned64bitInt num_pending_req_overflow :1; //Number of pending Requests: counter overflow
+
+            btUnsigned64bitInt rsvd3 :23;
+         }; // end struct
+      }; // end union
+
+};
+CASSERT(sizeof(struct CCIP_PORT_ERROR) == (1 *8));
+
+
 struct CCIP_PORT_DFL_ERR {
 
    // Port Error Header
    struct CCIP_DFH ccip_port_err_dflhdr;
 
-   struct CCIP_PORT_ERROR_MASK {
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt rsvd :64; //Reserved
-         };
-      };
+   // Port error Mask
+   struct CCIP_PORT_ERROR ccip_port_error_mask;
 
-   }ccip_port_error_mask; // end struct CCIP_PORT_ERROR_MASK
+   //Port Error
+   struct CCIP_PORT_ERROR ccip_port_error;
 
-   struct CCIP_PORT_ERROR {
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt tx_channel0_overflow :1; //Tx channel 0 : overflow
-            btUnsigned64bitInt tx_channel0_encode :1; //Tx channel 0 : request encoding mismatch with valid signal
-            btUnsigned64bitInt tx_channel0_invalidreq :1; //Tx channel 0 : invalid encoding request
-            btUnsigned64bitInt tx_channel0_sop :1; //Tx channel 0 : sop field not set
-            btUnsigned64bitInt rsvd :4;
-
-            btUnsigned64bitInt tx_channel1_overflow :1; //Tx channel 1 : overflow
-            btUnsigned64bitInt tx_channel1_encode :1; //Tx channel 1 : request encoding mismatch with valid signal
-            btUnsigned64bitInt tx_channel1_invalidreq :1; //Tx channel 1 : invalid encoding request
-            btUnsigned64bitInt tx_channel1_payloadinsuff :1; //Tx channel 1 : insufficient data payload
-            btUnsigned64bitInt tx_channel1_ploverrun :1; //Tx channel 1 : playload over run
-            btUnsigned64bitInt tx_channel1_incorrect :1; //Tx channel 1 : incorrect address
-            btUnsigned64bitInt rsvd1 :2;
-
-            btUnsigned64bitInt tx_cfg_status :1; // Cfg channel
-            btUnsigned64bitInt rsvd3 :37;
-         }; // end struct
-      }; // end union
-
-   }ccip_port_error; // end struct CCIP_PORT_ERROR
-
-   // First Error register
-   struct CCIP_PORT_FIRST_ERROR {
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt tx_channel0_overflow :1; //Tx channel 0 : overflow
-            btUnsigned64bitInt tx_channel0_encode :1; //Tx channel 0 : request encoding mismatch with valid signal
-            btUnsigned64bitInt tx_channel0_invalidreq :1; //Tx channel 0 : invalid encoding request
-            btUnsigned64bitInt tx_channel0_sop :1; //Tx channel 0 : sop field not set
-            btUnsigned64bitInt rsvd :4;
-            btUnsigned64bitInt tx_channel1_overflow :1; //Tx channel 1 : overflow
-            btUnsigned64bitInt tx_channel1_encode :1; //Tx channel 1 : request encoding mismatch with valid signal
-            btUnsigned64bitInt tx_channel1_invalidreq :1; //Tx channel 1 : invalid encoding request
-            btUnsigned64bitInt tx_channel1_payloadinsuff :1; //Tx channel 1 : insufficient data payload
-            btUnsigned64bitInt tx_channel1_ploverrun :1; //Tx channel 1 : playload over run
-            btUnsigned64bitInt tx_channel1_incorrect :1; //Tx channel 1 : incorrect address
-            btUnsigned64bitInt rsvd1 :2;
-            btUnsigned64bitInt tx_cfg_status :1; // Cfg channel
-            btUnsigned64bitInt rsvd3 :37;
-         }; // end struct
-      }; // end union
-
-   }ccip_port_first_error; // end struct CCIP_PORT_FIRST_ERROR
-
+   //Port First Error
+   struct CCIP_PORT_ERROR ccip_port_first_error;
 
    // port malformed request0
    struct CCIP_PORT_MALFORMED_REQ_0 {
