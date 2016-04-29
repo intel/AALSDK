@@ -278,7 +278,7 @@ if tool_type == "VCS":
 elif tool_type == "QUESTA":
     ### Generate .DO file ###
     print ("Generating Modelsim specific scripts")
-    open("vsim_run.tcl", "w").write("add wave * \nrun -all\n")
+    open("vsim_run.tcl", "w").write("add wave -r /* \nrun -all\n")
 
 # Print instructions
 print_instructions()

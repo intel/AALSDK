@@ -1092,11 +1092,11 @@ void ase_config_parse(char *filename)
     }
 
   // Inactivity
-  if (cfg->ase_timeout != 0)
+  if (cfg->ase_mode == ASE_MODE_DAEMON_SIMKILL)
     printf("        Inactivity kill-switch     ... ENABLED after %d clocks \n", cfg->ase_timeout);
   else
     printf("        Inactivity kill-switch     ... DISABLED \n");
-
+  
   // Reuse seed
   if (cfg->enable_reuse_seed != 0)
     printf("        Reuse simulation seed      ... ENABLED \n");

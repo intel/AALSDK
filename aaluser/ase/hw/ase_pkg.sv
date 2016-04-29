@@ -45,6 +45,13 @@
 
 package ase_pkg;
 
+   // ASE modes
+   parameter ASE_MODE_DAEMON          = 1;
+   parameter ASE_MODE_TIMEOUT_SIMKILL = 2;
+   parameter ASE_MODE_SW_SIMKILL      = 3;
+   parameter ASE_MODE_REGRESSION      = 4;
+   
+   
    // Include platform.vh if not already
  `ifndef _PLATFORM_VH_
   `include "platform.vh"

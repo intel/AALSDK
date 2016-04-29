@@ -2017,59 +2017,68 @@ module ccip_emulator
     * This feature can be disabled, if desired.
     *
     * *******************************************************************/
-   logic 	    first_transaction_seen = 0;
-   logic [31:0]     inactivity_counter;
+   logic 	    first_transaction_seen = 1'b0;
+   int 		    inactivity_counter;
    logic 	    any_valid;
    logic 	    inactivity_found;
-
+   
 
    // Inactivity management - Sense first transaction
-   assign any_valid =    C0RxUMsgValid
-			 || C0RxRdValid
-			 || C0RxMmioWrValid
-			 || C0RxMmioRdValid
-			 || C1RxWrValid
-			 || C0TxRdValid
-			 || C1TxWrValid ;
+   assign any_valid = C0RxMmioRdValid |
+		      C0RxMmioWrValid |
+		      C0RxRspValid |
+		      C1RxRspValid |
+		      C0TxRdValid |
+		      C1TxWrValid |
+		      C2TxMmioRdValid;
+   
 
-   // Check for first transaction
-   always @(posedge clk, any_valid) begin : first_transaction_watcher
-      if(any_valid) begin
-	 first_transaction_seen	<= 1;
+   // First transaction seen
+   always @(posedge clk) begin : first_txn_watcher
+      if ((first_transaction_seen == 1'b0) && any_valid) begin
+	 first_transaction_seen <= 1'b1;	 
       end
-   end
-
-   // Inactivity management - killswitch
-   always @(posedge clk) begin : call_simkill_countdown
-      if((inactivity_found==1) && (cfg.ase_timeout != 0)) begin
-	 $display("SIM-SV: Inactivity timeout reached !!\n");
-	 start_simkill_countdown();
-      end
-   end
+   end   
 
    // Inactivity watchdog counter
    always @(posedge clk) begin : inact_ctr
-      if (first_transaction_seen && any_valid) begin
-	 inactivity_counter <= 0;
+      if (cfg.ase_mode != ASE_MODE_TIMEOUT_SIMKILL) begin
+	 inactivity_counter <= 0;	 
       end
       else begin
-	 inactivity_counter <= inactivity_counter + 1;
+	 if (first_transaction_seen && any_valid) begin
+	    inactivity_counter <= 0;
+	 end
+	 else begin
+	    inactivity_counter <= inactivity_counter + 1;
+	 end
       end
    end
 
    // Inactivity flag
-   always @(posedge clk) begin : inactivity_found_proc
-      if (ase_reset) begin
-	 inactivity_found <= 0;
-      end
-      else if (inactivity_counter > cfg.ase_timeout) begin
-	 inactivity_found <= 1;
-      end
-      else begin
-	 inactivity_found <= 0;
+   // always @(posedge clk) begin : inactivity_found_proc
+   //    if (ase_reset) begin
+   // 	 inactivity_found <= 0;
+   //    end
+   //    else if (inactivity_counter > cfg.ase_timeout) begin
+   // 	 inactivity_found <= 1;
+   //    end
+   //    else begin
+   // 	 inactivity_found <= 0;
+   //    end
+   // end
+
+
+   
+   // Inactivity management - killswitch
+   always @(posedge clk) begin : call_simkill_countdown
+      // ( inactivity_found && (inactivity_counter == cfg.ase_timeout) ) begin
+      if ( (inactivity_counter > cfg.ase_timeout) && (inactivity_counter == cfg.ase_timeout) ) begin
+	 $display("SIM-SV: Inactivity timeout reached !!\n");
+	 start_simkill_countdown();
       end
    end
-
+   
 
    /*
     * Initialization procedure
