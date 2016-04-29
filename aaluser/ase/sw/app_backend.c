@@ -195,7 +195,7 @@ void *mmio_response_watcher()
 	  // Wait until ACK from requesting thread
 	  while (mmio_rsp_pkt_accepted != 1)
 	    {
-	      usleep(100);
+	      usleep(10);
 	    }
 	  mmio_readrsp_cnt++;
 	}
@@ -331,7 +331,7 @@ void session_init()
   printf("  [APP]  session_init => Issuing Soft Reset...\n");
   END_YELLOW_FONTCOLOR;
   ase_portctrl("AFU_RESET 1");
-  usleep(100);
+  usleep(10);
   ase_portctrl("AFU_RESET 0");
 
   // Page table tracker (optional logger)
@@ -420,7 +420,9 @@ void session_init()
     }
   else
     {
+      BEGIN_YELLOW_FONTCOLOR;  
       printf("SUCCESS\n");
+      END_YELLOW_FONTCOLOR;  
     }
   
 
@@ -460,7 +462,9 @@ void session_init()
     }
   else
     {
+      BEGIN_YELLOW_FONTCOLOR;  
       printf("SUCCESS\n");
+      END_YELLOW_FONTCOLOR;  
     }
   while(umas_init_flag != 1);
 #endif
@@ -582,7 +586,7 @@ void session_deinit()
 
       // Session end, set locale
 
-      printf("  [APP]  Session ended (time elapsed => ");
+      printf("  [APP]  Session ended (Simulation Time elapsed => ");
 
       // Set locale, inherit locale, and reset back
       char *oldLocale = setlocale(LC_NUMERIC, NULL);
@@ -786,7 +790,7 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
       // Wait until correct response found
       while (mmio_pkt->tid != mmio_rsp_pkt->tid)
 	{
-	  usleep(100);
+	  usleep(10);
 	}
 
       memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t));
@@ -842,7 +846,7 @@ void mmio_read64(uint32_t offset, uint64_t *data64)
       // Wait for correct response to be back
       while (mmio_pkt->tid != mmio_rsp_pkt->tid)
 	{
-	  usleep(500);
+	  usleep(10);
 	};
 
       memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t));
