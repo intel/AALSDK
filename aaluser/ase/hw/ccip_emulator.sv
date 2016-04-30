@@ -757,7 +757,7 @@ module ccip_emulator
    assign mmioreq_write = cwlp_wrvalid | cwlp_rdvalid;
 
    // Request staging
-   ase_fifo
+   ase_svfifo
      #(
        .DATA_WIDTH     ( MMIOREQ_FIFO_WIDTH ),
        .DEPTH_BASE2    ( 4 ),
@@ -799,7 +799,7 @@ module ccip_emulator
    logic 			   mmioresp_empty;
 
    // Response staging FIFO
-   ase_fifo
+   ase_svfifo
      #(
        .DATA_WIDTH     ( MMIORESP_FIFO_WIDTH ),
        .DEPTH_BASE2    ( 3 ),
@@ -1196,7 +1196,7 @@ module ccip_emulator
    end
 
    // UMSG events queue
-   ase_fifo
+   ase_svfifo
      #(
        .DATA_WIDTH     (UMSG_FIFO_WIDTH),
        .DEPTH_BASE2    (4),
