@@ -776,17 +776,9 @@ module outoforder_wrf_channel
    // Get delay function
    function int get_delay(input TxHdr_t hdr);
       begin
-	 // `ifdef ASE_DEBUG
-	 // if (hdr.reqtype == ASE_WRFENCE) begin
-	 //    $fwrite(log_fd, "ERROR : WrFence must not enter latency scoreboard");
-	 //    $finish;
-	 // end
-	 // `endif
-	 // return $urandom_range(15, 60);
 	 case (hdr.vc)
 	   VC_VL0:
 	     begin
-		// {60, 305}
 		return $urandom_range(20, 118);		
 	     end
 	   VC_VH0:

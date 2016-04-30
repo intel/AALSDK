@@ -769,7 +769,7 @@ module ccip_emulator
       .rst        ( ase_reset ),
       .wr_en      ( mmioreq_write ),
       .data_in    ( mmioreq_din ),
-      .rd_en      ( mmioreq_read & ~mmioreq_empty ),
+      .rd_en      ( mmioreq_read ), // & ~mmioreq_empty ),
       .data_out   ( {mmio_wrvalid, mmio_rdvalid, mmio_hdrvec, mmio_data512} ),
       .data_out_v ( mmioreq_valid ),
       .alm_full   ( mmioreq_full ),
@@ -1696,7 +1696,7 @@ module ccip_emulator
    /*
     * RX0 Read Response staging
     */
-   ase_fifo
+   ase_svfifo
      #(
        .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH ),
        .DEPTH_BASE2    ( 8 ),
@@ -1724,39 +1724,39 @@ module ccip_emulator
    /*
     * RX0 CmpXchg Response staging
     */
-   ase_fifo
-     #(
-       .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH ),
-       .DEPTH_BASE2    ( 8 ),
-       .ALMFULL_THRESH ( 250 )
-       )
-   atomics_fifo
-     (
-      .clk             ( clk ),
-      .rst             ( ase_reset ),
-      .wr_en           ( atomics_write ),
-      .data_in         ( { (CCIP_RX_HDR_WIDTH)'(atomics_hdr_in), atomics_data_in } ),
-      .rd_en           ( ~atomics_empty && atomics_read ),
-      .data_out        ( { atomics_hdr_out_vec, atomics_data_out } ),
-      .data_out_v      ( atomics_valid ),
-      .alm_full        ( atomics_full ),
-      .full            (),
-      .empty           ( atomics_empty ),
-      .count           (),
-      .overflow        (),
-      .underflow       ()
-      );
+   // ase_fifo
+   //   #(
+   //     .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH ),
+   //     .DEPTH_BASE2    ( 8 ),
+   //     .ALMFULL_THRESH ( 250 )
+   //     )
+   // atomics_fifo
+   //   (
+   //    .clk             ( clk ),
+   //    .rst             ( ase_reset ),
+   //    .wr_en           ( atomics_write ),
+   //    .data_in         ( { (CCIP_RX_HDR_WIDTH)'(atomics_hdr_in), atomics_data_in } ),
+   //    .rd_en           ( ~atomics_empty && atomics_read ),
+   //    .data_out        ( { atomics_hdr_out_vec, atomics_data_out } ),
+   //    .data_out_v      ( atomics_valid ),
+   //    .alm_full        ( atomics_full ),
+   //    .full            (),
+   //    .empty           ( atomics_empty ),
+   //    .count           (),
+   //    .overflow        (),
+   //    .underflow       ()
+   //    );
 
-   assign atomics_hdr_out = RxHdr_t'(atomics_hdr_out_vec);
+   // assign atomics_hdr_out = RxHdr_t'(atomics_hdr_out_vec);
 
-   Atomics_t DBG_RxAtomics;
-   assign DBG_RxAtomics = Atomics_t'(C0RxHdr);
+   // Atomics_t DBG_RxAtomics;
+   // assign DBG_RxAtomics = Atomics_t'(C0RxHdr);
 
 
    /*
     * RX1 Write Response staging
     */
-   ase_fifo
+   ase_svfifo
      #(
        .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH ),
        .DEPTH_BASE2    ( 7 ),
@@ -1796,7 +1796,80 @@ module ccip_emulator
     *   is forwarded to CCIP-RX0
     *
     * *******************************************************************/
+   // Read from staging FIFOs
+   always @(posedge clk) begin
+      if (ase_reset) begin
+	 mmioreq_read  <= 0;
+	 rdrsp_read    <= 0;
+	 umsgfifo_read <= 0;	 
+      end
+      else if (~mmioreq_empty) begin
+	 mmioreq_read  <= 1;
+	 rdrsp_read    <= 0;	 	    
+	 umsgfifo_read <= 0;	 
+      end
+      else if (~umsgfifo_empty) begin
+	 mmioreq_read  <= 0;
+	 rdrsp_read    <= 0;	 
+	 umsgfifo_read <= 1;	 
+      end
+      else if (~rdrsp_empty) begin
+	 mmioreq_read  <= 0;
+	 rdrsp_read    <= 1;	 
+	 umsgfifo_read <= 0;	 
+      end
+      else begin
+	 mmioreq_read  <= 0;
+	 rdrsp_read    <= 0;	 
+	 umsgfifo_read <= 0;	 
+      end
+   end
+
    // Output channel
+   always @(posedge clk) begin
+      if (SoftReset) begin
+   	 C0RxMmioWrValid <= 0;
+   	 C0RxMmioRdValid <= 0;
+   	 C0RxRdValid     <= 0;
+   	 C0RxUMsgValid   <= 0;
+   	 C0RxHdr         <= RxHdr_t'({CCIP_RX_HDR_WIDTH{1'b0}});
+   	 C0RxData        <= {CCIP_DATA_WIDTH{1'b0}};
+      end
+      else if (mmioreq_valid) begin
+   	 C0RxMmioWrValid <= mmio_wrvalid;	 
+   	 C0RxMmioRdValid <= mmio_rdvalid;	 
+   	 C0RxRdValid     <= 0;	 
+   	 C0RxUMsgValid   <= 0;	 
+   	 C0RxHdr         <= RxHdr_t'(mmio_hdrvec);
+   	 C0RxData        <= mmio_data512;
+      end
+      else if (umsgfifo_valid) begin
+   	 C0RxMmioWrValid <= 0;	 
+   	 C0RxMmioRdValid <= 0;	 
+   	 C0RxRdValid     <= 0;	 
+   	 C0RxUMsgValid   <= umsgfifo_valid;	 
+   	 C0RxHdr         <= RxHdr_t'(umsgfifo_hdrvec_out);	 
+   	 C0RxData        <= umsgfifo_data_out;
+      end
+      else if (rdrsp_valid) begin
+   	 C0RxMmioWrValid <= 0;	 
+   	 C0RxMmioRdValid <= 0;	 
+   	 C0RxRdValid     <= rdrsp_valid;	 
+   	 C0RxUMsgValid   <= 0;	 
+   	 C0RxHdr         <= rdrsp_hdr_out;
+   	 C0RxData        <= rdrsp_data_out;
+      end
+      else begin
+   	 C0RxMmioWrValid <= 0;
+   	 C0RxMmioRdValid <= 0;
+   	 C0RxRdValid     <= 0;
+   	 C0RxUMsgValid   <= 0;
+   	 C0RxHdr         <= RxHdr_t'({CCIP_RX_HDR_WIDTH{1'b0}});
+   	 C0RxData        <= {CCIP_DATA_WIDTH{1'b0}};
+      end
+   end
+   
+/*
    always @(posedge clk) begin
       if (SoftReset) begin
    	 C0RxMmioWrValid <= 0;
@@ -1937,7 +2010,7 @@ module ccip_emulator
 	 endcase
       end
    end // always @ (posedge clk)
-
+*/
    // C0Rx Valid aggregate
    assign C0RxRspValid = C0RxRdValid | C0RxUMsgValid;
 
@@ -1950,55 +2023,87 @@ module ccip_emulator
     *   is forwarded to CCIP-RX1
     *
     * *******************************************************************/
+   // Read from staging FIFOs
+   always @(posedge clk) begin
+      if (ase_reset) begin
+	 wr1rsp_read  <= 0 ;
+      end
+      else if (~wr1rsp_empty) begin
+	 wr1rsp_read  <= 1 ;
+      end
+      else begin
+	 wr1rsp_read  <= 0 ;
+      end
+   end
+
+   // Output register
    always @(posedge clk) begin
       if (SoftReset) begin
    	 C1RxHdr <= {CCIP_RX_HDR_WIDTH{1'b0}};
    	 C1RxWrValid <= 0;
    	 C1RxIntrValid <= 0;
-   	 wr1rsp_read <= 0;
-   	 rx1_state <= RxIdle;
+      end
+      else if (wr1rsp_valid) begin
+   	 C1RxHdr       <= RxHdr_t'(wr1rsp_hdr_out);	 
+   	 C1RxWrValid   <= wr1rsp_valid;
+   	 C1RxIntrValid <= 0;
       end
       else begin
-   	 case (rx1_state)
-   	   RxIdle:
-   	     begin
-      		C1RxWrValid   <= 0;
-      		C1RxIntrValid <= 0;
-      		wr1rsp_read   <= 0;
-   		if (~wr1rsp_empty) begin
-   		   rx1_state <= RxWriteResp;
-   		end
-   		else begin
-   		   rx1_state <= RxIdle;
-   		end
-   	     end
-
-   	   RxWriteResp:
-   	     begin
-      		C1RxHdr       <= wr1rsp_hdr_out;
-      		C1RxWrValid   <= wr1rsp_valid;
-      		C1RxIntrValid <= 0;
-      		wr1rsp_read   <= ~wr1rsp_empty;
-   		if (~wr1rsp_empty) begin
-   		   rx1_state <= RxWriteResp;
-   		end
-   		else begin
-   		   rx1_state <= RxIdle;
-   		end
-   	     end
-
-   	   default:
-   	     begin
-		C1RxHdr       <= RxHdr_t'(0);
-      		C1RxWrValid   <= 0;
-      		C1RxIntrValid <= 0;
-      		wr1rsp_read   <= 0;
-   		rx1_state     <= RxIdle;
-   	     end
-
-   	 endcase
+   	 C1RxHdr       <= {CCIP_RX_HDR_WIDTH{1'b0}};
+   	 C1RxWrValid   <= 0;
+   	 C1RxIntrValid <= 0;
       end
    end
+   
+   // always @(posedge clk) begin
+   //    if (SoftReset) begin
+   // 	 C1RxHdr <= {CCIP_RX_HDR_WIDTH{1'b0}};
+   // 	 C1RxWrValid <= 0;
+   // 	 C1RxIntrValid <= 0;
+   // 	 wr1rsp_read <= 0;
+   // 	 rx1_state <= RxIdle;
+   //    end
+   //    else begin
+   // 	 case (rx1_state)
+   // 	   RxIdle:
+   // 	     begin
+   //    		C1RxWrValid   <= 0;
+   //    		C1RxIntrValid <= 0;
+   //    		wr1rsp_read   <= 0;
+   // 		if (~wr1rsp_empty) begin
+   // 		   rx1_state <= RxWriteResp;
+   // 		end
+   // 		else begin
+   // 		   rx1_state <= RxIdle;
+   // 		end
+   // 	     end
+
+   // 	   RxWriteResp:
+   // 	     begin
+   //    		C1RxHdr       <= wr1rsp_hdr_out;
+   //    		C1RxWrValid   <= wr1rsp_valid;
+   //    		C1RxIntrValid <= 0;
+   //    		wr1rsp_read   <= ~wr1rsp_empty;
+   // 		if (~wr1rsp_empty) begin
+   // 		   rx1_state <= RxWriteResp;
+   // 		end
+   // 		else begin
+   // 		   rx1_state <= RxIdle;
+   // 		end
+   // 	     end
+
+   // 	   default:
+   // 	     begin
+   // 		C1RxHdr       <= RxHdr_t'(0);
+   //    		C1RxWrValid   <= 0;
+   //    		C1RxIntrValid <= 0;
+   //    		wr1rsp_read   <= 0;
+   // 		rx1_state     <= RxIdle;
+   // 	     end
+
+   // 	 endcase
+   //    end
+   // end
 
 
    // Rx1 aggregate valid

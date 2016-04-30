@@ -198,7 +198,7 @@ ifdef GLS_SIM
 endif
 
 ## VSIM elaboration, and run options
-MENT_VSIM_OPT = -64 -c -l run.log -dpioutoftheblue 1
+MENT_VSIM_OPT = -64 -c -l run.log -dpioutoftheblue 1 -voptargs="+acc"
 MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) -do vsim_run.tcl
 
 #########################################################################
@@ -332,21 +332,21 @@ endif
 ifeq ($(SIMULATOR), VCS)
   ifndef VCS_HOME
 	@echo "**ERROR** : env(VCS_HOME) is not set ! svdpi.h cannot be found !"
-	exit 1
+#	exit 1
   endif
   ifndef SNPS_COMMAND
 	@echo "**ERROR** : Synopsys commands (vlogan, vcs) not found !"
-	exit 1
+#	exit 1
   endif
 else 
   ifeq ($(SIMULATOR), QUESTA)
     ifndef MTI_HOME
 	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
-	exit 1
+#	exit 1
     endif	
     ifndef MENT_COMMAND
 	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
-	exit 1
+#	exit 1
     endif
   else
      @echo "**ERROR**: Unknown RTL simulator tool in use --- this is unsupported !"
@@ -487,7 +487,7 @@ clean: header
 	rm -rf profile* simprofile* scanbuild/ DVEfiles/ csrc/
 	rm -rf .ase_* *.o ase_seed.txt warnings.txt
 	rm -rf transcript *.log .ase_ipc_local ase_seed.txt
-	rm -rf vsim.wlf
+	rm -rf vsim.wlf *_smq
 
 distclean: header clean
 	./distclean.sh
