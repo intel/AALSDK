@@ -167,10 +167,10 @@ module ccip_emulator
    function ASETxHdr_t ccip_tx1_to_ase_tx1(t_ccip_c1_ReqMemHdr inhdr);
       ASETxHdr_t txasehdr;
       logic [41:0]   c1tx_mcl_baseaddr;
-      ccip_reqtype_t c1tx_mcl_basetype;      
+      ccip_reqtype_t c1tx_mcl_basetype;
       ccip_len_t     c1tx_mcl_baselen;
-      logic [15:0]   c1tx_mcl_basemdata;      
-      ccip_vc_t      c1tx_mcl_basevc;      
+      logic [15:0]   c1tx_mcl_basemdata;
+      ccip_vc_t      c1tx_mcl_basevc;
       begin
 	 txasehdr.txhdr = TxHdr_t'(inhdr);
 	 txasehdr.channel_id = 1;
@@ -179,7 +179,7 @@ module ccip_emulator
 	   eREQ_WRLINE_I : txasehdr.txhdr.reqtype = ASE_WRLINE_I;
 	   eREQ_WRLINE_M : txasehdr.txhdr.reqtype = ASE_WRLINE_M;
 	   eREQ_WRFENCE  : txasehdr.txhdr.reqtype = ASE_WRFENCE;
-	   // eREQ_WRPUSH   : txasehdr.txhdr.reqtype = ASE_WRPUSH;	   
+	   // eREQ_WRPUSH   : txasehdr.txhdr.reqtype = ASE_WRPUSH;
 	   // eREQ_ATOMIC   : txasehdr.txhdr.reqtype = ASE_ATOMIC_REQ;
 	   eREQ_INTR     : txasehdr.txhdr.reqtype = ASE_INTR_REQ;
 	 endcase // case (inhdr.req_type)
@@ -193,14 +193,14 @@ module ccip_emulator
 	       c1tx_mcl_basevc    = txasehdr.txhdr.vc;
 	    end
 	    else begin
-	       txasehdr.txhdr.reqtype = c1tx_mcl_basetype;	       
+	       txasehdr.txhdr.reqtype = c1tx_mcl_basetype;
 	       case (c1tx_mcl_baselen)
-		 ASE_2CL: txasehdr.txhdr.addr = {c1tx_mcl_baseaddr[41:1], inhdr.address[0]};		 
+		 ASE_2CL: txasehdr.txhdr.addr = {c1tx_mcl_baseaddr[41:1], inhdr.address[0]};
 		 ASE_4CL: txasehdr.txhdr.addr = {c1tx_mcl_baseaddr[41:2], inhdr.address[1:0]};
 	       endcase // case (c1tx_mcl_baselen)
-	       txasehdr.txhdr.mdata = c1tx_mcl_basemdata;	       
+	       txasehdr.txhdr.mdata = c1tx_mcl_basemdata;
 	       txasehdr.txhdr.vc    = c1tx_mcl_basevc;
-	    end	
+	    end
 	 end
 	 return txasehdr;
       end
@@ -464,7 +464,7 @@ module ccip_emulator
 
    // Reset management
    logic 			  sw_reset_trig = 1;
-   logic 			  app_reset_trig;   
+   logic 			  app_reset_trig;
    int 				  rst_counter;
 
    // Reset states
@@ -570,9 +570,9 @@ module ccip_emulator
    initial begin : uclk_proc
       begin
          `ifdef ASE_DEBUG
-	 `BEGIN_YELLOW_FONTCOLOR;	 
+	 `BEGIN_YELLOW_FONTCOLOR;
 	 $display("  [DEBUG]  User clock frequency = %f", `UCLK_DURATION);
-	 `END_YELLOW_FONTCOLOR;	 
+	 `END_YELLOW_FONTCOLOR;
 	 `endif
 	 usrClk = 0;
 	 forever begin
@@ -635,13 +635,13 @@ module ccip_emulator
    string buffer_msg;
    logic  buffer_msg_en;
    logic  buffer_msg_tstamp_en;
-      
+
    // Inject task
    task buffer_msg_inject (int timestamp_en, string logstr);
       begin
 	 buffer_msg = logstr;
 	 buffer_msg_en = 1;
-	 buffer_msg_tstamp_en = timestamp_en[0];	 
+	 buffer_msg_tstamp_en = timestamp_en[0];
 	 @(posedge clk);
 	 buffer_msg_en = 0;
 	 @(posedge clk);
@@ -856,7 +856,7 @@ module ccip_emulator
       end
    end
 
-   
+
    /* ******************************************************************
     *
     * Unordered Messages Engine
@@ -1415,16 +1415,16 @@ module ccip_emulator
 
    // Declare packets for each channel
    // cci_pkt Tx0_pkt;
-   cci_pkt Tx1_pkt;
+   // cci_pkt Tx1_pkt;
 
    // cci_pkt Tx0_pkt_q;
-   cci_pkt Tx1_pkt_q;
+   // cci_pkt Tx1_pkt_q;
 
    // logic Tx0_pkt_vld;
    // logic Tx0_pkt_vld_q;
 
-   logic Tx1_pkt_vld;
-   logic Tx1_pkt_vld_q;
+   // logic Tx1_pkt_vld;
+   // logic Tx1_pkt_vld_q;
 
    /*
     * FUNCTION: Cast TxHdr_t to cci_pkt
@@ -1556,24 +1556,24 @@ module ccip_emulator
 	 rd_memline_dex(Tx0_pkt);
 	 // Write to rdrsp_fifo
 	 rdrsp_data_in         <= unpack_ccipkt_to_vector(Tx0_pkt);
-	 rdrsp_hdr_in          <= cf2as_latbuf_rx0hdr;	 
+	 rdrsp_hdr_in          <= cf2as_latbuf_rx0hdr;
       end
    endtask
 
    // Glue process
    always @(posedge clk) begin
       if (ase_reset) begin
-	 rdrsp_write <= 0;	 
+	 rdrsp_write <= 0;
       end
       else if (cf2as_latbuf_ch0_valid) begin
 	 cf2as_ch0_to_rdrsp_fifo();
-	 rdrsp_write <= 1;	 
+	 rdrsp_write <= 1;
       end
       else begin
-	 rdrsp_write <= 0;	 
+	 rdrsp_write <= 0;
       end
    end
-   
+
    // Tx0 process
    // always @(posedge clk) begin
    //    if (ase_reset) begin
@@ -1649,7 +1649,10 @@ module ccip_emulator
 
    // Read TX1
    always @(posedge clk) begin
-      if (~cf2as_latbuf_ch1_empty && ~wr1rsp_full) begin
+      if (ase_reset) begin
+	 cf2as_latbuf_ch1_read <= 0;
+      end
+      else if (~cf2as_latbuf_ch1_empty && ~wr1rsp_full) begin
 	 cf2as_latbuf_ch1_read <= 1;
       end
       else begin
@@ -1657,57 +1660,85 @@ module ccip_emulator
       end
    end
 
-   // Register pkt output
-   always @(posedge clk) begin
-      Tx1_pkt_q     <= Tx1_pkt;
-      Tx1_pkt_vld_q <= Tx1_pkt_vld;
-   end
+   // TASK: cf2as_latbuf_to_wrrsp_fifo
+   task cf2as_latbuf_to_wrrsp_fifo();
+      cci_pkt Tx1_pkt;
+      begin
+	 // Cast ccipkt from txhdr
+   	 cast_txhdr_to_ccipkt(Tx1_pkt, cf2as_latbuf_tx1hdr, cf2as_latbuf_tx1data);
+	 // Write memory
+   	 wr_memline_dex(Tx1_pkt);
+	 // *FIXME*: Atomics or partials go here
+	 // Write to wr1rsp_fifo
+	 wr1rsp_hdr_in                <= cf2as_latbuf_rx1hdr;	 
+      end
+   endtask
 
-   // TX1 process
+   // Glue process
    always @(posedge clk) begin
       if (ase_reset) begin
-	 Tx1_pkt_vld             <= 0;
-	 wr_memline_dex_called   <= 0;
+	 wr1rsp_write <= 0;
       end
       else if (cf2as_latbuf_ch1_valid) begin
-   	 cast_txhdr_to_ccipkt(Tx1_pkt,
-			      cf2as_latbuf_tx1hdr,
-			      cf2as_latbuf_tx1data);
-   	 wr_memline_dex(Tx1_pkt);
-   	 Tx1_pkt_vld             <= cf2as_latbuf_ch1_valid;
-	 cf2as_latbuf_rx1hdr_q   <= cf2as_latbuf_rx1hdr;
-	 wr_memline_dex_called   <= 1;
+	 cf2as_latbuf_to_wrrsp_fifo();
+	 wr1rsp_write <= 1;
       end
       else begin
-	 Tx1_pkt_vld             <= 0;
-	 wr_memline_dex_called   <= 0;
+	 wr1rsp_write <= 0;
       end
    end
 
-   // Wr1Rsp_in
-   always @(posedge clk) begin : latbuf1_rsp_marshal
-      if (ase_reset) begin
-   	 wr1rsp_hdr_in                <= {CCIP_RX_HDR_WIDTH{1'b0}};
-   	 wr1rsp_write                 <= 0;
-	 atomics_write                <= 0;
-      end
-      else if ( (Tx1_pkt.mode == CCIPKT_WRITE_MODE) || (Tx1_pkt.mode == CCIPKT_WRFENCE_MODE) ) begin
-	 wr1rsp_hdr_in                <= cf2as_latbuf_rx1hdr;
-	 wr1rsp_write                 <= cf2as_latbuf_ch1_valid;
-	 atomics_write                <= 0;
-      end
-      else if (Tx1_pkt.mode == CCIPKT_ATOMIC_MODE) begin
-	 wr1rsp_write                 <= 0;
-	 atomics_hdr_in               <= Atomics_t'(cf2as_latbuf_rx1hdr_q);
-	 atomics_hdr_in.success       <= Tx1_pkt.success[0];        // Return success bit from atomics
-	 atomics_data_in              <= unpack_ccipkt_to_vector(Tx1_pkt);
-	 atomics_write                <= Tx1_pkt_vld;
-      end
-      else begin
-	 wr1rsp_write                 <= 0;
-	 atomics_write                <= 0;
-      end
-   end
+   // Register pkt output
+   // always @(posedge clk) begin
+   //    Tx1_pkt_q     <= Tx1_pkt;
+   //    Tx1_pkt_vld_q <= Tx1_pkt_vld;
+   // end
+
+   // // TX1 process
+   // always @(posedge clk) begin
+   //    if (ase_reset) begin
+   // 	 Tx1_pkt_vld             <= 0;
+   // 	 wr_memline_dex_called   <= 0;
+   //    end
+   //    else if (cf2as_latbuf_ch1_valid) begin
+   // 	 cast_txhdr_to_ccipkt(Tx1_pkt,
+   // 			      cf2as_latbuf_tx1hdr,
+   // 			      cf2as_latbuf_tx1data);
+   // 	 wr_memline_dex(Tx1_pkt);
+   // 	 Tx1_pkt_vld             <= cf2as_latbuf_ch1_valid;
+   // 	 cf2as_latbuf_rx1hdr_q   <= cf2as_latbuf_rx1hdr;
+   // 	 wr_memline_dex_called   <= 1;
+   //    end
+   //    else begin
+   // 	 Tx1_pkt_vld             <= 0;
+   // 	 wr_memline_dex_called   <= 0;
+   //    end
+   // end
+
+   // // Wr1Rsp_in
+   // always @(posedge clk) begin : latbuf1_rsp_marshal
+   //    if (ase_reset) begin
+   // 	 wr1rsp_hdr_in                <= {CCIP_RX_HDR_WIDTH{1'b0}};
+   // 	 wr1rsp_write                 <= 0;
+   // 	 atomics_write                <= 0;
+   //    end
+   //    else if ( (Tx1_pkt.mode == CCIPKT_WRITE_MODE) || (Tx1_pkt.mode == CCIPKT_WRFENCE_MODE) ) begin
+   // 	 wr1rsp_hdr_in                <= cf2as_latbuf_rx1hdr;
+   // 	 wr1rsp_write                 <= cf2as_latbuf_ch1_valid;
+   // 	 atomics_write                <= 0;
+   //    end
+   //    else if (Tx1_pkt.mode == CCIPKT_ATOMIC_MODE) begin
+   // 	 wr1rsp_write                 <= 0;
+   // 	 atomics_hdr_in               <= Atomics_t'(cf2as_latbuf_rx1hdr_q);
+   // 	 atomics_hdr_in.success       <= Tx1_pkt.success[0];        // Return success bit from atomics
+   // 	 atomics_data_in              <= unpack_ccipkt_to_vector(Tx1_pkt);
+   // 	 atomics_write                <= Tx1_pkt_vld;
+   //    end
+   //    else begin
+   // 	 wr1rsp_write                 <= 0;
+   // 	 atomics_write                <= 0;
+   //    end
+   // end
 
 
    /* *******************************************************************
@@ -1832,27 +1863,27 @@ module ccip_emulator
       if (ase_reset) begin
 	 mmioreq_read  <= 0;
 	 rdrsp_read    <= 0;
-	 umsgfifo_read <= 0;	 
+	 umsgfifo_read <= 0;
       end
       else if (~mmioreq_empty) begin
 	 mmioreq_read  <= 1;
-	 rdrsp_read    <= 0;	 	    
-	 umsgfifo_read <= 0;	 
+	 rdrsp_read    <= 0;
+	 umsgfifo_read <= 0;
       end
       else if (~umsgfifo_empty) begin
 	 mmioreq_read  <= 0;
-	 rdrsp_read    <= 0;	 
-	 umsgfifo_read <= 1;	 
+	 rdrsp_read    <= 0;
+	 umsgfifo_read <= 1;
       end
       else if (~rdrsp_empty) begin
 	 mmioreq_read  <= 0;
-	 rdrsp_read    <= 1;	 
-	 umsgfifo_read <= 0;	 
+	 rdrsp_read    <= 1;
+	 umsgfifo_read <= 0;
       end
       else begin
 	 mmioreq_read  <= 0;
-	 rdrsp_read    <= 0;	 
-	 umsgfifo_read <= 0;	 
+	 rdrsp_read    <= 0;
+	 umsgfifo_read <= 0;
       end
    end
 
@@ -1867,26 +1898,26 @@ module ccip_emulator
    	 C0RxData        <= {CCIP_DATA_WIDTH{1'b0}};
       end
       else if (mmioreq_valid) begin
-   	 C0RxMmioWrValid <= mmio_wrvalid;	 
-   	 C0RxMmioRdValid <= mmio_rdvalid;	 
-   	 C0RxRdValid     <= 0;	 
-   	 C0RxUMsgValid   <= 0;	 
+   	 C0RxMmioWrValid <= mmio_wrvalid;
+   	 C0RxMmioRdValid <= mmio_rdvalid;
+   	 C0RxRdValid     <= 0;
+   	 C0RxUMsgValid   <= 0;
    	 C0RxHdr         <= RxHdr_t'(mmio_hdrvec);
    	 C0RxData        <= mmio_data512;
       end
       else if (umsgfifo_valid) begin
-   	 C0RxMmioWrValid <= 0;	 
-   	 C0RxMmioRdValid <= 0;	 
-   	 C0RxRdValid     <= 0;	 
-   	 C0RxUMsgValid   <= umsgfifo_valid;	 
-   	 C0RxHdr         <= RxHdr_t'(umsgfifo_hdrvec_out);	 
+   	 C0RxMmioWrValid <= 0;
+   	 C0RxMmioRdValid <= 0;
+   	 C0RxRdValid     <= 0;
+   	 C0RxUMsgValid   <= umsgfifo_valid;
+   	 C0RxHdr         <= RxHdr_t'(umsgfifo_hdrvec_out);
    	 C0RxData        <= umsgfifo_data_out;
       end
       else if (rdrsp_valid) begin
-   	 C0RxMmioWrValid <= 0;	 
-   	 C0RxMmioRdValid <= 0;	 
-   	 C0RxRdValid     <= rdrsp_valid;	 
-   	 C0RxUMsgValid   <= 0;	 
+   	 C0RxMmioWrValid <= 0;
+   	 C0RxMmioRdValid <= 0;
+   	 C0RxRdValid     <= rdrsp_valid;
+   	 C0RxUMsgValid   <= 0;
    	 C0RxHdr         <= rdrsp_hdr_out;
    	 C0RxData        <= rdrsp_data_out;
       end
@@ -1899,7 +1930,7 @@ module ccip_emulator
    	 C0RxData        <= {CCIP_DATA_WIDTH{1'b0}};
       end
    end
-   
+
 /*
    always @(posedge clk) begin
       if (SoftReset) begin
@@ -2075,7 +2106,7 @@ module ccip_emulator
    	 C1RxIntrValid <= 0;
       end
       else if (wr1rsp_valid) begin
-   	 C1RxHdr       <= RxHdr_t'(wr1rsp_hdr_out);	 
+   	 C1RxHdr       <= RxHdr_t'(wr1rsp_hdr_out);
    	 C1RxWrValid   <= wr1rsp_valid;
    	 C1RxIntrValid <= 0;
       end
@@ -2085,7 +2116,7 @@ module ccip_emulator
    	 C1RxIntrValid <= 0;
       end
    end
-   
+
    // always @(posedge clk) begin
    //    if (SoftReset) begin
    // 	 C1RxHdr <= {CCIP_RX_HDR_WIDTH{1'b0}};
@@ -2157,7 +2188,7 @@ module ccip_emulator
    int 		    inactivity_counter;
    logic 	    any_valid;
    logic 	    inactivity_found;
-   
+
 
    // Inactivity management - Sense first transaction
    assign any_valid = C0RxMmioRdValid |
@@ -2167,19 +2198,19 @@ module ccip_emulator
 		      C0TxRdValid |
 		      C1TxWrValid |
 		      C2TxMmioRdValid;
-   
+
 
    // First transaction seen
    always @(posedge clk) begin : first_txn_watcher
       if ((first_transaction_seen == 1'b0) && any_valid) begin
-	 first_transaction_seen <= 1'b1;	 
+	 first_transaction_seen <= 1'b1;
       end
-   end   
+   end
 
    // Inactivity watchdog counter
    always @(posedge clk) begin : inact_ctr
       if (cfg.ase_mode != ASE_MODE_TIMEOUT_SIMKILL) begin
-	 inactivity_counter <= 0;	 
+	 inactivity_counter <= 0;
       end
       else begin
 	 if (first_transaction_seen && any_valid) begin
@@ -2205,7 +2236,7 @@ module ccip_emulator
    // end
 
 
-   
+
    // Inactivity management - killswitch
    always @(posedge clk) begin : call_simkill_countdown
       // ( inactivity_found && (inactivity_counter == cfg.ase_timeout) ) begin
@@ -2214,7 +2245,7 @@ module ccip_emulator
 	 start_simkill_countdown();
       end
    end
-   
+
 
    /*
     * Initialization procedure
@@ -2398,7 +2429,7 @@ module ccip_emulator
       // Buffer message injection
       .log_string_en    (buffer_msg_en        ),
       .log_timestamp_en (buffer_msg_tstamp_en ),
-      .log_string       (buffer_msg           ),      
+      .log_string       (buffer_msg           ),
       // CCIP ports
       .clk              (clk             ),
       .SoftReset        (SoftReset       ),
