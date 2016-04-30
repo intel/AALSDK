@@ -1414,14 +1414,14 @@ module ccip_emulator
    logic 		       wr1rsp_valid;
 
    // Declare packets for each channel
-   cci_pkt Tx0_pkt;
+   // cci_pkt Tx0_pkt;
    cci_pkt Tx1_pkt;
 
-   cci_pkt Tx0_pkt_q;
+   // cci_pkt Tx0_pkt_q;
    cci_pkt Tx1_pkt_q;
 
-   logic Tx0_pkt_vld;
-   logic Tx0_pkt_vld_q;
+   // logic Tx0_pkt_vld;
+   // logic Tx0_pkt_vld_q;
 
    logic Tx1_pkt_vld;
    logic Tx1_pkt_vld_q;
@@ -1535,7 +1535,10 @@ module ccip_emulator
 
    // Read TX0
    always @(posedge clk) begin
-      if (~cf2as_latbuf_ch0_empty && ~rdrsp_full) begin
+      if (ase_reset) begin
+	 cf2as_latbuf_ch0_read <= 0;
+      end
+      else if (~cf2as_latbuf_ch0_empty && ~rdrsp_full) begin
 	 cf2as_latbuf_ch0_read <= 1;
       end
       else begin
@@ -1543,46 +1546,74 @@ module ccip_emulator
       end
    end
 
-   // Tx0 process
+   // TASK: cf2as_ch0_to_rdrsp_fifo
+   task cf2as_ch0_to_rdrsp_fifo();
+      cci_pkt Tx0_pkt;
+      begin
+	 // Cast ccipkt from txhdr
+	 cast_txhdr_to_ccipkt( Tx0_pkt, cf2as_latbuf_tx0hdr, {CCIP_DATA_WIDTH{1'b0}} );
+	 // Read line fulfillment
+	 rd_memline_dex(Tx0_pkt);
+	 // Write to rdrsp_fifo
+	 rdrsp_data_in         <= unpack_ccipkt_to_vector(Tx0_pkt);
+	 rdrsp_hdr_in          <= cf2as_latbuf_rx0hdr;	 
+      end
+   endtask
+
+   // Glue process
    always @(posedge clk) begin
       if (ase_reset) begin
-   	 Tx0_pkt_vld <= 0;
-	 rd_memline_dex_called <= 0;
+	 rdrsp_write <= 0;	 
       end
       else if (cf2as_latbuf_ch0_valid) begin
-   	 cast_txhdr_to_ccipkt( Tx0_pkt,
-   			       cf2as_latbuf_tx0hdr,
-   			       {CCIP_DATA_WIDTH{1'b0}} );
-	 rd_memline_dex(Tx0_pkt);
-	 Tx0_pkt_vld <= cf2as_latbuf_ch0_valid;
-	 cf2as_latbuf_rx0hdr_q <= cf2as_latbuf_rx0hdr;
-	 rd_memline_dex_called <= 1;
+	 cf2as_ch0_to_rdrsp_fifo();
+	 rdrsp_write <= 1;	 
       end
       else begin
-   	 Tx0_pkt_vld <= 0;
-	 rd_memline_dex_called <= 0;
+	 rdrsp_write <= 0;	 
       end
    end
+   
+   // Tx0 process
+   // always @(posedge clk) begin
+   //    if (ase_reset) begin
+   // 	 Tx0_pkt_vld <= 0;
+   // 	 rd_memline_dex_called <= 0;
+   //    end
+   //    else if (cf2as_latbuf_ch0_valid) begin
+   // 	 cast_txhdr_to_ccipkt( Tx0_pkt,
+   // 			       cf2as_latbuf_tx0hdr,
+   // 			       {CCIP_DATA_WIDTH{1'b0}} );
+   // 	 rd_memline_dex(Tx0_pkt);
+   // 	 Tx0_pkt_vld <= cf2as_latbuf_ch0_valid;
+   // 	 cf2as_latbuf_rx0hdr_q <= cf2as_latbuf_rx0hdr;
+   // 	 rd_memline_dex_called <= 1;
+   //    end
+   //    else begin
+   // 	 Tx0_pkt_vld <= 0;
+   // 	 rd_memline_dex_called <= 0;
+   //    end
+   // end
 
    // Register Tx0_pkt
-   always @(posedge clk) begin
-      Tx0_pkt_q      <= Tx0_pkt;
-      Tx0_pkt_vld_q  <= Tx0_pkt_vld;
-   end
+   // always @(posedge clk) begin
+   //    Tx0_pkt_q      <= Tx0_pkt;
+   //    Tx0_pkt_vld_q  <= Tx0_pkt_vld;
+   // end
 
    // RdRsp in
-   always @(posedge clk) begin
-      if (ase_reset) begin
-   	 rdrsp_data_in <= {CCIP_DATA_WIDTH{1'b0}};
-   	 rdrsp_hdr_in <= {CCIP_RX_HDR_WIDTH{1'b0}};
-   	 rdrsp_write <= 0;
-      end
-      else begin
-   	 rdrsp_data_in         <= unpack_ccipkt_to_vector(Tx0_pkt_q);
-   	 rdrsp_hdr_in          <= cf2as_latbuf_rx0hdr_q;
-   	 rdrsp_write           <= Tx0_pkt_vld;
-      end
-   end
+   // always @(posedge clk) begin
+   //    if (ase_reset) begin
+   // 	 rdrsp_data_in <= {CCIP_DATA_WIDTH{1'b0}};
+   // 	 rdrsp_hdr_in <= {CCIP_RX_HDR_WIDTH{1'b0}};
+   // 	 rdrsp_write <= 0;
+   //    end
+   //    else begin
+   // 	 rdrsp_data_in         <= unpack_ccipkt_to_vector(Tx0_pkt);
+   // 	 rdrsp_hdr_in          <= cf2as_latbuf_rx0hdr_q;
+   // 	 rdrsp_write           <= Tx0_pkt_vld;
+   //    end
+   // end
 
 
    /*
