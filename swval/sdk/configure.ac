@@ -132,9 +132,9 @@ dnl ############################################################################
 VERIFY_OPTIONS
 
 AC_CONFIG_FILES([tests/atlocal])
-AC_CONFIG_FILES([tests/bat:tests/run/bat.in],         [chmod 755 tests/bat])
-AC_CONFIG_FILES([tests/nightly:tests/run/nightly.in], [chmod 755 tests/nightly])
-AC_CONFIG_FILES([tests/weekly:tests/run/weekly.in],   [chmod 755 tests/weekly])
+AC_CONFIG_FILES([tests/swtest:tests/run/swtest.in],         [chmod 755 tests/swtest])
+dnl AC_CONFIG_FILES([tests/nightly:tests/run/nightly.in], [chmod 755 tests/nightly])
+dnl AC_CONFIG_FILES([tests/weekly:tests/run/weekly.in],   [chmod 755 tests/weekly])
 AC_CONFIG_FILES([tests/OSAL_TestSem:tests/run/OSAL_TestSem.in], [chmod 755 tests/OSAL_TestSem])
 AC_CONFIG_FILES([tests/OSAL_TestThreadGroup:tests/run/OSAL_TestThreadGroup.in], [chmod 755 tests/OSAL_TestThreadGroup])
 

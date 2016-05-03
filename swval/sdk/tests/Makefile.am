@@ -14,14 +14,16 @@ harnessed/gtest/gtest.at \
 local.at \
 testsuite.at
 
+
+# run/nightly.in 
+# run/weekly.in 
+
 EXTRA_DIST=\
 $(TESTSUITE_AT) \
 atlocal.in \
 testsuite \
 package.m4 \
-run/bat.in \
-run/nightly.in \
-run/weekly.in \
+run/swtest.in \
 run/OSAL_TestSem.in \
 run/OSAL_TestThreadGroup.in
 
@@ -55,10 +57,12 @@ $(TESTSUITE): package.m4 $(TESTSUITE_AT)
 atconfig: $(top_builddir)/config.status
 	cd $(top_builddir) && ./config.status tests/$@
 
+
+# nightly 
+# weekly 
+
 check_SCRIPTS=\
-bat \
-nightly \
-weekly \
+swtest \
 OSAL_TestSem \
 OSAL_TestThreadGroup
 

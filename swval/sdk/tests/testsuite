@@ -1,5 +1,5 @@
 #! /bin/sh
-# Generated from /home/tswhison/aalsdk/newKern/swval/sdk/tests/local.at by GNU Autoconf 2.69.
+# Generated from ../../tests/local.at by GNU Autoconf 2.69.
 #
 # Copyright (C) 2009-2012 Free Software Foundation, Inc.
 #
@@ -594,9 +594,7 @@ at_format='?'
 # Description of all the test groups.
 at_help_all="1;OSAL_TestSem.at:5;Sem checkout;;
 2;OSAL_TestThreadGroup.at:5;Thread Group checkout;;
-3;gtest.at:5;BAT;;
-4;gtest.at:14;Nightly;;
-5;gtest.at:23;Weekly;;
+3;gtest.at:5;SWTest;;
 "
 # List of the all the test groups.
 at_groups_all=`$as_echo "$at_help_all" | sed 's/;.*//'`
@@ -610,7 +608,7 @@ at_fn_validate_ranges ()
   for at_grp
   do
     eval at_value=\$$at_grp
-    if test $at_value -lt 1 || test $at_value -gt 5; then
+    if test $at_value -lt 1 || test $at_value -gt 3; then
       $as_echo "invalid test group: $at_value" >&2
       exit 1
     fi
@@ -632,14 +630,8 @@ at_fn_validate_ranges ()
 at_arg_standalone=false
 at_arg_given_standalone=false
 
-at_arg_bat=false
-at_arg_given_bat=false
-
-at_arg_nightly=false
-at_arg_given_nightly=false
-
-at_arg_weekly=false
-at_arg_given_weekly=false
+at_arg_swtest=false
+at_arg_given_swtest=false
 
 at_arg_given_gtest_opt=false
 
@@ -820,37 +812,15 @@ do
 	at_arg_given_standalone=:
 		;;
 
-    --bat )
+    --swtest )
 	at_optarg=:
-	at_arg_bat=:
-	at_arg_given_bat=:
+	at_arg_swtest=:
+	at_arg_given_swtest=:
 		;;
-    --no-bat )
+    --no-swtest )
 	at_optarg=false
-	at_arg_bat=false
-	at_arg_given_bat=:
-		;;
-
-    --nightly )
-	at_optarg=:
-	at_arg_nightly=:
-	at_arg_given_nightly=:
-		;;
-    --no-nightly )
-	at_optarg=false
-	at_arg_nightly=false
-	at_arg_given_nightly=:
-		;;
-
-    --weekly )
-	at_optarg=:
-	at_arg_weekly=:
-	at_arg_given_weekly=:
-		;;
-    --no-weekly )
-	at_optarg=false
-	at_arg_weekly=false
-	at_arg_given_weekly=:
+	at_arg_swtest=false
+	at_arg_given_swtest=:
 		;;
 
     --gtest-opt )
@@ -979,13 +949,7 @@ cat <<_ATEOF || at_write_fail=1
   --standalone            Run standalone tests [default=no]
 _ATEOF
 cat <<_ATEOF || at_write_fail=1
-  --bat                   Run basic acceptance test suite [default=no]
-_ATEOF
-cat <<_ATEOF || at_write_fail=1
-  --nightly               Run nightly test suite [default=no]
-_ATEOF
-cat <<_ATEOF || at_write_fail=1
-  --weekly                Run weekly test suite [default=no]
+  --swtest                Run software-only test suite [default=no]
 _ATEOF
 cat <<_ATEOF || at_write_fail=1
   --gtest-opt             Pass the given argument when invoking gtest
@@ -1068,13 +1032,7 @@ at_banner_text_1="OSAL_TestSem"
 at_banner_text_2="OSAL_TestThreadGroup"
 # Banner 3. gtest.at:3
 # Category starts at test group 3.
-at_banner_text_3="gtest - Basic Acceptance Tests"
-# Banner 4. gtest.at:12
-# Category starts at test group 4.
-at_banner_text_4="gtest - Nightly Test Suite"
-# Banner 5. gtest.at:21
-# Category starts at test group 5.
-at_banner_text_5="gtest - Weekly Test Suite"
+at_banner_text_3="gtest - Software-only Tests"
 
 # Take any -C into account.
 if $at_change_dir ; then
@@ -2157,19 +2115,19 @@ read at_status <"$at_status_file"
 #AT_STOP_2
 #AT_START_3
 at_fn_group_banner 3 'gtest.at:5' \
-  "BAT" "                                            " 3
+  "SWTest" "                                         " 3
 at_xfail=no
 (
   $as_echo "3. $at_setup_line: testing $at_desc ..."
   $at_traceon
 
 $as_echo "gtest.at:6" >"$at_check_line_file"
-(test "x${WITH_GTEST}" != xyes || test "x${at_arg_bat}" != "x:") \
+(test "x${WITH_GTEST}" != xyes || test "x${at_arg_swtest}" != "x:") \
   && at_fn_check_skip 77 "$at_srcdir/gtest.at:6"
 { set +x
-$as_echo "$at_srcdir/gtest.at:7: bat \${GTEST_OPTS}"
+$as_echo "$at_srcdir/gtest.at:7: swtest \${GTEST_OPTS}"
 at_fn_check_prepare_notrace 'a ${...} parameter expansion' "gtest.at:7"
-( $at_check_trace; bat ${GTEST_OPTS}
+( $at_check_trace; swtest ${GTEST_OPTS}
 ) >>"$at_stdout" 2>>"$at_stderr" 5>&-
 at_status=$? at_failed=false
 $at_check_filter
@@ -2184,61 +2142,3 @@ $at_traceon; }
 ) 5>&1 2>&1 7>&- | eval $at_tee_pipe
 read at_status <"$at_status_file"
 #AT_STOP_3
-#AT_START_4
-at_fn_group_banner 4 'gtest.at:14' \
-  "Nightly" "                                        " 4
-at_xfail=no
-(
-  $as_echo "4. $at_setup_line: testing $at_desc ..."
-  $at_traceon
-
-$as_echo "gtest.at:15" >"$at_check_line_file"
-(test "x${WITH_GTEST}" != xyes || test "x${at_arg_nightly}" != "x:") \
-  && at_fn_check_skip 77 "$at_srcdir/gtest.at:15"
-{ set +x
-$as_echo "$at_srcdir/gtest.at:16: nightly \${GTEST_OPTS}"
-at_fn_check_prepare_notrace 'a ${...} parameter expansion' "gtest.at:16"
-( $at_check_trace; nightly ${GTEST_OPTS}
-) >>"$at_stdout" 2>>"$at_stderr" 5>&-
-at_status=$? at_failed=false
-$at_check_filter
-echo stderr:; cat "$at_stderr"
-echo stdout:; cat "$at_stdout"
-at_fn_check_status 0 $at_status "$at_srcdir/gtest.at:16"
-$at_failed && at_fn_log_failure
-$at_traceon; }
-
-  set +x
-  $at_times_p && times >"$at_times_file"
-) 5>&1 2>&1 7>&- | eval $at_tee_pipe
-read at_status <"$at_status_file"
-#AT_STOP_4
-#AT_START_5
-at_fn_group_banner 5 'gtest.at:23' \
-  "Weekly" "                                         " 5
-at_xfail=no
-(
-  $as_echo "5. $at_setup_line: testing $at_desc ..."
-  $at_traceon
-
-$as_echo "gtest.at:24" >"$at_check_line_file"
-(test "x${WITH_GTEST}" != xyes || test "x${at_arg_weekly}" != "x:") \
-  && at_fn_check_skip 77 "$at_srcdir/gtest.at:24"
-{ set +x
-$as_echo "$at_srcdir/gtest.at:25: weekly \${GTEST_OPTS}"
-at_fn_check_prepare_notrace 'a ${...} parameter expansion' "gtest.at:25"
-( $at_check_trace; weekly ${GTEST_OPTS}
-) >>"$at_stdout" 2>>"$at_stderr" 5>&-
-at_status=$? at_failed=false
-$at_check_filter
-echo stderr:; cat "$at_stderr"
-echo stdout:; cat "$at_stdout"
-at_fn_check_status 0 $at_status "$at_srcdir/gtest.at:25"
-$at_failed && at_fn_log_failure
-$at_traceon; }
-
-  set +x
-  $at_times_p && times >"$at_times_file"
-) 5>&1 2>&1 7>&- | eval $at_tee_pipe
-read at_status <"$at_status_file"
-#AT_STOP_5
