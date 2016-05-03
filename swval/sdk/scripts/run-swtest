@@ -3,12 +3,11 @@
 
 shopt -o -s nounset
 
-declare -r SCRIPT_NAME='run-weekly'
+declare -r SCRIPT_NAME='run-swtest'
 
 . ./run-common
 
-declare -ri REPEAT=400
-declare     ARGS="--gtest_print_time=0 --gtest_shuffle --gtest_random_seed=${RANDOM} --gtest_repeat=${REPEAT}"
+declare ARGS="--gtest_print_time=0 --gtest_shuffle --gtest_random_seed=${RANDOM}"
 
 declare WANTLOGFILE=false
 declare WANTDISTCC=false
@@ -17,7 +16,7 @@ while [ $# -gt 0 ]; do
       --log)
          WANTLOGFILE=true
       ;;
-       --distcc)
+      --distcc)
          WANTDISTCC=true
       ;;
       *)
@@ -28,6 +27,6 @@ while [ $# -gt 0 ]; do
 done
 
 setup ${WANTLOGFILE} ${WANTDISTCC}
-run_weekly ${ARGS}
+run_swtest ${ARGS}
 show_test_result $?
 exit $?

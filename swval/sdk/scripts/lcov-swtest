@@ -3,20 +3,17 @@
 
 shopt -o -s nounset
 
-declare -r SCRIPT_NAME='lcov-weekly'
+declare -r SCRIPT_NAME='lcov-swtest'
 
 . ./lcov-common
 
-declare -r D='weekly'
+declare -r D='swtest'
 
-declare    ARGS=''
+declare    ARGS='--gtest_print_time=0'
 declare    WANTDISTCC=false
 
 while [ $# -gt 0 ]; do
    case $1 in
-      --gtest_*)
-         ARGS="${ARGS} --gtest-opt=$1"
-      ;;
       --distcc)
          WANTDISTCC=true
       ;;
@@ -29,14 +26,16 @@ done
 
 setup "$D" ${WANTDISTCC}
 
-declare AUTO_COLOR=''
-[ -t 1 ] && AUTO_COLOR='--gtest-opt=--gtest_color=yes'
-
-WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --weekly --gtest-opt=--vpath=${VPATH} --gtest-opt=--gtest_print_time=0 ${AUTO_COLOR} ${ARGS}"
+WHAT_TO_MEASURE="${VPATH}/tests/swtest --vpath=${VPATH} ${ARGS}"
 
 GCDA_DIRS=(\
 "--directory ${VPATH}/aas/OSAL/.libs" \
 "--directory ${VPATH}/aas/AASLib/.libs" \
+"--directory ${VPATH}/aas/AALRuntime/.libs" \
+"--directory ${VPATH}/aas/AIAService/.libs" \
+"--directory ${VPATH}/aas/RRMBrokerService/.libs" \
+"--directory ${VPATH}/aas/AASResourceManager/.libs" \
+"--directory ${VPATH}/utils/ALIAFU/HWALIAFU/.libs" \
 "--directory ${VPATH}/tests/harnessed/gtest"\
 )
 

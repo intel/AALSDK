@@ -7,6 +7,25 @@ declare -r SCRIPT_NAME='run-everything'
 
 . ./run-common
 
-setup
-run_everything
+declare ARGS="--gtest_print_time=0 --gtest_shuffle --gtest_random_seed=${RANDOM}"
+
+declare WANTLOGFILE=false
+declare WANTDISTCC=false
+while [ $# -gt 0 ]; do
+   case $1 in
+      --log)
+         WANTLOGFILE=true
+      ;;
+      --distcc)
+         WANTDISTCC=true
+      ;;
+      *)
+         ARGS="${ARGS} $1"
+      ;;
+   esac
+   shift
+done
+
+setup ${WANTLOGFILE} ${WANTDISTCC}
+run_everything ${ARGS}
 exit $?

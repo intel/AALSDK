@@ -30,11 +30,9 @@ $(top_builddir)/aas/AALRuntime/libaalrt.la \
 $(top_builddir)/aas/AASResourceManager/libAASResMgr.la
 
 check_PROGRAMS=\
-bat \
-nightly \
-weekly
+swtest
 
-bat_SOURCES=\
+swtest_SOURCES=\
 gtAALEvent.cpp \
 gtAALService.cpp \
 gtAAS.cpp \
@@ -42,6 +40,7 @@ gtAASBase.cpp \
 gtAASResMgr.cpp \
 gtAIAService.cpp \
 gtBarrier.cpp \
+gtCValue.cpp \
 gtCommon.cpp \
 gtCommon.h \
 gtCritSect.cpp \
@@ -50,12 +49,23 @@ gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
 gtHWALIAFU.cpp \
 gtMDS.cpp \
+gtNVS0.cpp \
+gtNVS1.cpp \
+gtNVS2.cpp \
+gtNVS3.cpp \
+gtNVS4.cpp \
+gtNVS5.cpp \
+gtNVSLegacy.cpp \
+gtNVSTester.cpp \
+gtNVSTester.h \
 gtOSAL.cpp \
 gtOSServiceModule.cpp \
 gtRRMBrokerService.cpp \
 gtRuntime.cpp \
 gtRuntime_Int.cpp \
 gtSem.cpp \
+gtSeqRand.cpp \
+gtSeqRand.h \
 gtServiceBroker.cpp \
 gtServiceHost.cpp \
 gtSleep.cpp \
@@ -67,60 +77,102 @@ gtTimer.cpp \
 gtTransactionID.cpp \
 main.cpp
 
-bat_CPPFLAGS=\
+swtest_CPPFLAGS=\
 -DTEST_SUITE_BAT=1 $(COMMON_CPPFLAGS)
 
-bat_LDADD=$(COMMON_LDADD)
+swtest_LDADD=$(COMMON_LDADD)
 
 
-nightly_SOURCES=\
-gtAASResMgr.cpp \
-gtAIAService.cpp \
-gtCommon.cpp \
-gtCommon.h \
-gtCritSect.cpp \
-gtDynLinkLibrary.cpp \
-gtOSServiceModule.cpp \
-gtRRMBrokerService.cpp \
-gtSem.cpp \
-gtThread.cpp \
-gtThreadGroup.cpp \
-gtThreadGroup.h \
-gtThreadGroupSR.cpp \
-main.cpp
+# check_PROGRAMS=
+# bat 
+# nightly 
+# weekly
+
+# bat_SOURCES=
+# gtAALEvent.cpp 
+# gtAALService.cpp 
+# gtAAS.cpp 
+# gtAASBase.cpp 
+# gtAASResMgr.cpp 
+# gtAIAService.cpp 
+# gtBarrier.cpp 
+# gtCommon.cpp 
+# gtCommon.h 
+# gtCritSect.cpp 
+# gtDispatchables.cpp 
+# gtDynLinkLibrary.cpp 
+# gtEnvVar.cpp 
+# gtHWALIAFU.cpp 
+# gtMDS.cpp 
+# gtOSAL.cpp 
+# gtOSServiceModule.cpp 
+# gtRRMBrokerService.cpp 
+# gtRuntime.cpp 
+# gtRuntime_Int.cpp 
+# gtSem.cpp 
+# gtServiceBroker.cpp 
+# gtServiceHost.cpp 
+# gtSleep.cpp 
+# gtThread.cpp 
+# gtThreadGroup.cpp 
+# gtThreadGroup.h 
+# gtThreadGroupSR.cpp 
+# gtTimer.cpp 
+# gtTransactionID.cpp 
+# main.cpp
+
+# bat_CPPFLAGS=
+# -DTEST_SUITE_BAT=1 $(COMMON_CPPFLAGS)
+
+# bat_LDADD=$(COMMON_LDADD)
 
 
+# nightly_SOURCES=
+# gtAASResMgr.cpp 
+# gtAIAService.cpp 
+# gtCommon.cpp 
+# gtCommon.h 
+# gtCritSect.cpp 
+# gtDynLinkLibrary.cpp 
+# gtOSServiceModule.cpp 
+# gtRRMBrokerService.cpp 
+# gtSem.cpp 
+# gtThread.cpp 
+# gtThreadGroup.cpp 
+# gtThreadGroup.h 
+# gtThreadGroupSR.cpp 
+# main.cpp
 
-nightly_CPPFLAGS=\
--DTEST_SUITE_NIGHTLY=1 $(COMMON_CPPFLAGS)
+# nightly_CPPFLAGS=
+# -DTEST_SUITE_NIGHTLY=1 $(COMMON_CPPFLAGS)
 
-nightly_LDADD=$(COMMON_LDADD)
+# nightly_LDADD=$(COMMON_LDADD)
 
 
-weekly_SOURCES=\
-gtAASResMgr.cpp \
-gtAIAService.cpp \
-gtCValue.cpp \
-gtCommon.cpp \
-gtCommon.h \
-gtNVS0.cpp \
-gtNVS1.cpp \
-gtNVS2.cpp \
-gtNVS3.cpp \
-gtNVS4.cpp \
-gtNVS5.cpp \
-gtNVSLegacy.cpp \
-gtNVSTester.cpp \
-gtNVSTester.h \
-gtRRMBrokerService.cpp \
-gtSeqRand.cpp \
-gtSeqRand.h \
-main.cpp
+# weekly_SOURCES=
+# gtAASResMgr.cpp 
+# gtAIAService.cpp 
+# gtCValue.cpp 
+# gtCommon.cpp 
+# gtCommon.h 
+# gtNVS0.cpp 
+# gtNVS1.cpp 
+# gtNVS2.cpp 
+# gtNVS3.cpp 
+# gtNVS4.cpp 
+# gtNVS5.cpp 
+# gtNVSLegacy.cpp 
+# gtNVSTester.cpp 
+# gtNVSTester.h 
+# gtRRMBrokerService.cpp 
+# gtSeqRand.cpp 
+# gtSeqRand.h 
+# main.cpp
 
-weekly_CPPFLAGS=\
--DTEST_SUITE_WEEKLY=1 $(COMMON_CPPFLAGS)
+# weekly_CPPFLAGS=
+# -DTEST_SUITE_WEEKLY=1 $(COMMON_CPPFLAGS)
 
-weekly_LDADD=$(COMMON_LDADD)
+# weekly_LDADD=$(COMMON_LDADD)
 
 CLEANFILES=gtest-all.cc
 
@@ -131,6 +183,7 @@ gtAALEvent.cpp \
 gtAALService.cpp \
 gtAAS.cpp \
 gtAASBase.cpp \
+gtAASResMgr.cpp \
 gtAIAService.cpp \
 gtBarrier.cpp \
 gtCValue.cpp \
