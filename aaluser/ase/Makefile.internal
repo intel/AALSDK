@@ -145,7 +145,7 @@ ifdef GLS_SIM
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
-  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
+#  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
@@ -182,20 +182,23 @@ MENT_VLOG_OPT+= -dpiheader work/dpiheader.h
 MENT_VLOG_OPT+= +incdir+$(ASE_INCDIR)+$(DUT_INCDIR)+$(WORK)
 MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
 MENT_VLOG_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
+ifeq ($(ASE_DEBUG), 1)
+  MENT_VLOG_OPT+= +define+ASE_DEBUG
+endif
 ifdef GLS_SIM
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
-  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
+#  MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
 endif
 
 ## VSIM elaboration, and run options
-MENT_VSIM_OPT = -64 -c -l run.log
+MENT_VSIM_OPT = -64 -c -l run.log -dpioutoftheblue 1 -voptargs="+acc"
 MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) -do vsim_run.tcl
 
 #########################################################################
@@ -329,21 +332,21 @@ endif
 ifeq ($(SIMULATOR), VCS)
   ifndef VCS_HOME
 	@echo "**ERROR** : env(VCS_HOME) is not set ! svdpi.h cannot be found !"
-	exit 1
+#	exit 1
   endif
   ifndef SNPS_COMMAND
 	@echo "**ERROR** : Synopsys commands (vlogan, vcs) not found !"
-	exit 1
+#	exit 1
   endif
 else 
   ifeq ($(SIMULATOR), QUESTA)
     ifndef MTI_HOME
 	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
-	exit 1
+#	exit 1
     endif	
     ifndef MENT_COMMAND
 	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
-	exit 1
+#	exit 1
     endif
   else
      @echo "**ERROR**: Unknown RTL simulator tool in use --- this is unsupported !"
@@ -483,6 +486,8 @@ clean: header
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
 	rm -rf profile* simprofile* scanbuild/ DVEfiles/ csrc/
 	rm -rf .ase_* *.o ase_seed.txt warnings.txt
+	rm -rf transcript *.log .ase_ipc_local ase_seed.txt
+	rm -rf vsim.wlf *_smq
 
 distclean: header clean
 	./distclean.sh
