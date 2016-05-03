@@ -704,7 +704,6 @@ module ccip_emulator
 	    cwlp_rdvalid = 0;
 	    cwlp_header  = 0;
 	    cwlp_data    = 0;
-	    // mmio_tid_counter  = 0;
 	 end
 	 else begin
 	    if (mmio_pkt.write_en == MMIO_WRITE_REQ) begin

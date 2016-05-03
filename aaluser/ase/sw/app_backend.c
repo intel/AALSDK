@@ -184,11 +184,18 @@ void *mmio_response_watcher()
       // Set available/accepted flag to 0
       mmio_rsp_pkt_accepted = 0;
       mmio_rsp_pkt_available = 0;
+      memset((void*)mmio_rsp_pkt, 0xff, sizeof(mmio_t));
 
       // If received, update global message
       ret = mqueue_recv( sim2app_mmiorsp_rx, (char*)mmio_rsp_pkt, sizeof(mmio_t) );
       if (ret == ASE_MSG_PRESENT) 
 	{
+	#ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("  [DEBUG]  mmio_watcher => tid=%03x addr=%x data=%016llx\n", mmio_rsp_pkt->tid, mmio_rsp_pkt->addr, mmio_rsp_pkt->qword[0]);
+	  END_YELLOW_FONTCOLOR;
+        #endif
+
 	  // Mark as available
 	  mmio_rsp_pkt_available = 1;
 	  
@@ -790,8 +797,14 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
       // Wait until correct response found
       while (mmio_pkt->tid != mmio_rsp_pkt->tid)
 	{
-	  usleep(10);
+	  usleep(1);
 	}
+
+    #ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [DEBUG]  mmio_read32 => tid=%03x addr=%x data=%016llx\n", mmio_rsp_pkt->tid, mmio_rsp_pkt->addr, mmio_rsp_pkt->qword[0]);
+      END_YELLOW_FONTCOLOR;
+    #endif
 
       memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t));
       mmio_rsp_pkt_accepted = 1;
@@ -804,6 +817,13 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
 
       printf("  [APP]  MMIO Read Resp : tid = 0x%03x, %08x\n", mmio_pkt->tid, (uint32_t)*data32);
       END_YELLOW_FONTCOLOR;
+
+    #ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [DEBUG]  mmio_read32 => tid=%03x addr=%x data=%016llx\n", mmio_pkt->tid, mmio_pkt->addr, mmio_pkt->qword[0]);
+      END_YELLOW_FONTCOLOR;
+    #endif
+
       free(mmio_pkt);
     }
 
@@ -844,10 +864,17 @@ void mmio_read64(uint32_t offset, uint64_t *data64)
       mmio_request_put(mmio_pkt);
 
       // Wait for correct response to be back
+      // while (mmio_pkt->tid != mmio_rsp_pkt->tid)
       while (mmio_pkt->tid != mmio_rsp_pkt->tid)
 	{
-	  usleep(10);
+	  usleep(1);
 	};
+
+    #ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [DEBUG]  mmio_read64 => tid=%03x addr=%x data=%016llx\n", mmio_rsp_pkt->tid, mmio_rsp_pkt->addr, mmio_rsp_pkt->qword[0]);
+      END_YELLOW_FONTCOLOR;
+    #endif
 
       memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t));
       mmio_rsp_pkt_accepted = 1;
@@ -858,8 +885,15 @@ void mmio_read64(uint32_t offset, uint64_t *data64)
       // Write data
       *data64 = mmio_pkt->qword[0];
 
-      printf("  [APP]  MMIO Read Resp : tid = 0x%03x, data = %llx\n", mmio_pkt->tid, (unsigned long long)*data64);
+      printf("  [APP]  MMIO Read Resp : tid = 0x%03x, addr=%x, data = %llx\n", mmio_pkt->tid, mmio_pkt->addr, (unsigned long long)*data64);
       END_YELLOW_FONTCOLOR;
+
+    #ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [DEBUG]  mmio_read64 => tid=%03x addr=%x data=%016llx\n", mmio_pkt->tid, mmio_pkt->addr, mmio_pkt->qword[0]);
+      END_YELLOW_FONTCOLOR;
+    #endif
+
       free(mmio_pkt);
     }
 
