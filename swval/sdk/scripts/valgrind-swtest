@@ -3,7 +3,7 @@
 
 shopt -o -s nounset
 
-declare -r SCRIPT_NAME='valgrind-nightly'
+declare -r SCRIPT_NAME='valgrind-swtest'
 
 . ./valgrind-common
 
@@ -13,7 +13,7 @@ declare WANTDISTCC=false
 while [ $# -gt 0 ]; do
    case $1 in
       --clean)
-         clean_valgrind_all "tests/harnessed/gtest/.libs/nightly"
+         clean_valgrind_all "tests/harnessed/gtest/.libs/swtest"
          exit 0
       ;;
       --distcc)
@@ -26,5 +26,5 @@ while [ $# -gt 0 ]; do
    shift
 done
 
-run_valgrind_all ${WANTDISTCC} "tests/harnessed/gtest/.libs/nightly" ${ARGS}
+run_valgrind_all ${WANTDISTCC} "tests/harnessed/gtest/.libs/swtest" ${ARGS}
 exit $?

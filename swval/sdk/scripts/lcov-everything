@@ -21,12 +21,16 @@ done
 
 setup "$D" ${WANTDISTCC}
 
-WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --bat --gtest-opt=--vpath=${VPATH} --gtest-opt=--gtest_color=yes --nightly --weekly --standalone"
+WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --swtest --gtest-opt=--vpath=${VPATH} --gtest-opt=--gtest_print_time=0 --standalone"
 
 GCDA_DIRS=(\
 "--directory ${VPATH}/aas/OSAL/.libs" \
 "--directory ${VPATH}/aas/AASLib/.libs" \
 "--directory ${VPATH}/aas/AALRuntime/.libs" \
+"--directory ${VPATH}/aas/AIAService/.libs" \
+"--directory ${VPATH}/aas/RRMBrokerService/.libs" \
+"--directory ${VPATH}/aas/AASResourceManager/.libs" \
+"--directory ${VPATH}/utils/ALIAFU/HWALIAFU/.libs" \
 "--directory ${VPATH}/tests/harnessed/gtest" \
 "--directory ${VPATH}/tests/standalone/OSAL_TestSem" \
 "--directory ${VPATH}/tests/standalone/OSAL_TestThreadGroup"\

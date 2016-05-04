@@ -122,9 +122,11 @@ setup() {
       do_config=true
    fi
 
-   if ! [ -f "${VPATH}/tests/bat"                  ] || \
-      ! [ -f "${VPATH}/tests/nightly"              ] || \
-      ! [ -f "${VPATH}/tests/weekly"               ] || \
+
+#      ! [ -f "${VPATH}/tests/nightly"              ] || 
+#      ! [ -f "${VPATH}/tests/weekly"               ] || 
+
+   if ! [ -f "${VPATH}/tests/swtest"               ] || \
       ! [ -f "${VPATH}/tests/OSAL_TestSem"         ] || \
       ! [ -f "${VPATH}/tests/OSAL_TestThreadGroup" ]; then
       do_config=true
@@ -200,10 +202,10 @@ run_standalone() {
    return ${res}
 }
 
-run_bat() {
+run_swtest() {
    local cmd
 
-   cmd="${VPATH}/tests/bat --vpath=${VPATH} ${1+"$@"}"
+   cmd="${VPATH}/tests/swtest --vpath=${VPATH} ${1+"$@"}"
 
    printf "\n%s\n" "${GIT_COMMIT_HASH}"
    printf "%s\n\n" "${cmd}"
@@ -219,61 +221,54 @@ run_bat() {
    fi
 }
 
-run_nightly() {
-   local cmd
+# run_nightly() {
+#    local cmd
+#
+#    cmd="${VPATH}/tests/nightly --vpath=${VPATH} ${1+"$@"}"
+#
+#    printf "\n%s\n" "${GIT_COMMIT_HASH}"
+#    printf "%s\n\n" "${cmd}"
+#
+#    if ${USELOG} ; then
+#       printf "\n%s\n" "${GIT_COMMIT_HASH}" >>"${LOGFILE}"
+#       printf "%s\n\n" "${cmd}" >>"${LOGFILE}"
+#       exec ${cmd} >>"${LOGFILE}"
+#       return $?
+#    else
+#       ${cmd}
+#       return $?
+#    fi
+# }
 
-   cmd="${VPATH}/tests/nightly --vpath=${VPATH} ${1+"$@"}"
-
-   printf "\n%s\n" "${GIT_COMMIT_HASH}"
-   printf "%s\n\n" "${cmd}"
-
-   if ${USELOG} ; then
-      printf "\n%s\n" "${GIT_COMMIT_HASH}" >>"${LOGFILE}"
-      printf "%s\n\n" "${cmd}" >>"${LOGFILE}"
-      exec ${cmd} >>"${LOGFILE}"
-      return $?
-   else
-      ${cmd}
-      return $?
-   fi
-}
-
-run_weekly() {
-   local cmd
-
-   cmd="${VPATH}/tests/weekly --vpath=${VPATH} ${1+"$@"}"
-
-   printf "\n%s\n" "${GIT_COMMIT_HASH}"
-   printf "%s\n\n" "${cmd}"
-
-   if ${USELOG} ; then
-      printf "\n%s\n" "${GIT_COMMIT_HASH}" >>"${LOGFILE}"
-      printf "%s\n\n" "${cmd}" >>"${LOGFILE}"
-      exec ${cmd} >>"${LOGFILE}"
-      return $?
-   else
-      ${cmd}
-      return $?
-   fi
-}
+# run_weekly() {
+#    local cmd
+#
+#    cmd="${VPATH}/tests/weekly --vpath=${VPATH} ${1+"$@"}"
+#
+#    printf "\n%s\n" "${GIT_COMMIT_HASH}"
+#    printf "%s\n\n" "${cmd}"
+#
+#    if ${USELOG} ; then
+#       printf "\n%s\n" "${GIT_COMMIT_HASH}" >>"${LOGFILE}"
+#       printf "%s\n\n" "${cmd}" >>"${LOGFILE}"
+#       exec ${cmd} >>"${LOGFILE}"
+#       return $?
+#    else
+#       ${cmd}
+#       return $?
+#    fi
+# }
 
 run_everything() {
    local -i res
    local -i ret=0
    local    cmd
 
-   run_standalone
+   if ! run_standalone ; then
+      ret=1
+   fi
 
-   cmd="${VPATH}/tests/bat --vpath=${VPATH} ${1+"$@"}"
-
-   printf "\n%s\n" "${GIT_COMMIT_HASH}"
-   printf "%s\n\n" "${cmd}"
-
-   ${cmd}
-   res=$?
-   [ ${res} -ne 0 ] && ret=${res}
-
-   cmd="${VPATH}/tests/nightly --vpath=${VPATH} ${1+"$@"}"
+   cmd="${VPATH}/tests/swtest --vpath=${VPATH} ${1+"$@"}"
 
    printf "\n%s\n" "${GIT_COMMIT_HASH}"
    printf "%s\n\n" "${cmd}"
@@ -282,14 +277,23 @@ run_everything() {
    res=$?
    [ ${res} -ne 0 ] && ret=${res}
 
-   cmd="${VPATH}/tests/weekly --vpath=${VPATH} ${1+"$@"}"
+#   cmd="${VPATH}/tests/nightly --vpath=${VPATH} ${1+"$@"}"
 
-   printf "\n%s\n" "${GIT_COMMIT_HASH}"
-   printf "%s\n\n" "${cmd}"
+#   printf "\n%s\n" "${GIT_COMMIT_HASH}"
+#   printf "%s\n\n" "${cmd}"
 
-   ${cmd}
-   res=$?
-   [ ${res} -ne 0 ] && ret=${res}
+#   ${cmd}
+#   res=$?
+#   [ ${res} -ne 0 ] && ret=${res}
+
+#   cmd="${VPATH}/tests/weekly --vpath=${VPATH} ${1+"$@"}"
+
+#   printf "\n%s\n" "${GIT_COMMIT_HASH}"
+#   printf "%s\n\n" "${cmd}"
+
+#   ${cmd}
+#   res=$?
+#   [ ${res} -ne 0 ] && ret=${res}
 
    if [ 0 -eq ${ret} ]; then
       PASS

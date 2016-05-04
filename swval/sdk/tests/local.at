@@ -14,14 +14,14 @@ dnl AT_ARG_OPTION_ARG(OPTIONS, HELP-TEXT, [ACTION-IF-GIVEN], [ACTION-IF-NOT-GIVE
 AT_ARG_OPTION([standalone],
               [AS_HELP_STRING([--standalone], [Run standalone tests @<:@default=no@:>@])])
 
-AT_ARG_OPTION([bat],
-              [AS_HELP_STRING([--bat], [Run basic acceptance test suite @<:@default=no@:>@])])
+AT_ARG_OPTION([swtest],
+              [AS_HELP_STRING([--swtest], [Run software-only test suite @<:@default=no@:>@])])
 
-AT_ARG_OPTION([nightly],
-              [AS_HELP_STRING([--nightly], [Run nightly test suite @<:@default=no@:>@])])
+dnl AT_ARG_OPTION([nightly],
+dnl               [AS_HELP_STRING([--nightly], [Run nightly test suite @<:@default=no@:>@])])
 
-AT_ARG_OPTION([weekly],
-              [AS_HELP_STRING([--weekly], [Run weekly test suite @<:@default=no@:>@])])
+dnl AT_ARG_OPTION([weekly],
+dnl               [AS_HELP_STRING([--weekly], [Run weekly test suite @<:@default=no@:>@])])
 
 GTEST_OPTS=
 AT_ARG_OPTION_ARG([gtest-opt],

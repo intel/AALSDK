@@ -7,6 +7,26 @@ declare -r SCRIPT_NAME='run-standalone'
 
 . ./run-common
 
-setup
-run_standalone
+declare ARGS=''
+
+declare WANTLOGFILE=false
+declare WANTDISTCC=false
+while [ $# -gt 0 ]; do
+   case $1 in
+      --log)
+         WANTLOGFILE=true
+      ;;
+      --distcc)
+         WANTDISTCC=true
+      ;;
+      *)
+         ARGS="${ARGS} $1"
+      ;;
+   esac
+   shift
+done
+
+setup ${WANTLOGFILE} ${WANTDISTCC}
+run_standalone ${ARGS}
+show_test_result $?
 exit $?
