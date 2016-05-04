@@ -189,13 +189,12 @@ ase/LICENSE.txt \
 ase/ase_regress.sh \
 ase/hw/outoforder_wrf_channel.sv \
 ase/hw/ccip_if_pkg.sv \
-ase/hw/ase_fifo.sv \
+ase/hw/ase_svfifo.sv \
 ase/hw/latency_pipe.sv \
 ase/hw/ccip_emulator.sv \
 ase/hw/ccip_logger.sv \
 ase/hw/ccip_sniffer.sv \
 ase/hw/ase_top.sv \
-ase/hw/sdp_ram.sv \
 ase/hw/stream_checker.sv \
 ase/hw/ase_pkg.sv \
 ase/hw/platform.vh \
