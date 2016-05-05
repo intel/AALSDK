@@ -128,6 +128,12 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd)
      cfg |= (csr_type)NLB_TEST_MODE_VR;
    }
 
+   //Check if alternate write data pattern has to be enabled.
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_ALT_WR_PRN)){
+     cfg |= (csr_type)NLB_TEST_MODE_ALT_WR_PRN;
+   }
+
+
    // Set Multi CL CSR.
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_MULTICL)){
       if ( 2 == cmd.multicls){

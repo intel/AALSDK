@@ -98,6 +98,8 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
       	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VH1);
    } else if ( 0 == strcmp("--vr", option) ) {
               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VR);
+   } else if ( 0 == strcmp("--alt-wr-pattern", option) || (0 == strcmp("--awp", option))) {
+              flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_ALT_WR_PRN);
    } else if ( 0 == strcmp("--0", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FEATURE0);
    } else if ( 0 == strcmp("--1", option) ) {
@@ -488,7 +490,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    } else if ( 0 == strcasecmp(test.c_str(), "READ") ) {
          fprintf(fp, "   --mode=read <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [VC-SELECT] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "WRITE") ) {
-         fprintf(fp, "   --mode=write <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [VC-SELECT] [<OUTPUT>]");
+         fprintf(fp, "   --mode=write <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [VC-SELECT] [<WR-PATTERN>] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "TRPUT") ) {
          fprintf(fp, "   --mode=trput <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [VC-SELECT] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "SW") ) {
@@ -748,6 +750,12 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       } else {
        fprintf(fp, "Default=%s\n", nlbcl->defaults.vr);
       }
+   }
+
+   if ( 0 == strcasecmp(test.c_str(), "WRITE"))
+   {
+      fprintf(fp, "      <WR-PATTERN>= --alt-wr-pattern  OR --awp,   Alternate Write Pattern,                        ");
+      fprintf(fp, "Default=%s\n", nlbcl->defaults.awp);
    }
 
    if ( 0 == strcasecmp(test.c_str(), "ATOMIC"))

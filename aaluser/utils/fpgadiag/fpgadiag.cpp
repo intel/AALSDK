@@ -163,6 +163,7 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_VH0,
       DEFAULT_VH1,
       DEFAULT_VR,
+      DEFAULT_AWP,
       DEFAULT_ST,
 	   DEFAULT_UT,
       DEFAULT_MINCX,
