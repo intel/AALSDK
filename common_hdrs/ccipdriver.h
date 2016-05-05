@@ -178,6 +178,17 @@ typedef enum
    ccipdrv_activateAFU,
    ccipdrv_deactivateAFU,
    ccipdrv_configureAFU,
+   ccipdrv_getFMEError,
+   ccipdrv_SetFMEErrorMask,
+   ccipdrv_ClearFMEError,
+   ccipdrv_ClearAllFMEErrors,
+   ccipdrv_getPower,
+   ccipdrv_gertThrermal,
+   ccipdrv_getPortError,
+   ccipdrv_SetPortErrorMask,
+   ccipdrv_ClearPortError,
+   ccipdrv_ClearAllPortErrors
+
 } ccipdrv_afuCmdID_e;
 
 struct aalui_CCIdrvMessage
@@ -290,6 +301,11 @@ struct ahm_req
         btTime                   reconfTimeout;   /* IN   */
         btUnsigned64bitInt       reconfAction;    /* IN   */
       } pr_config;
+
+      struct {
+        btUnsigned64bitInt       error;           /* IN   */
+      } error_csr;
+
    } u;
 };
 
@@ -479,6 +495,34 @@ struct ccipdrv_DeviceAttributes
    btWSSize           m_size;             // Size of the attibute block
    btUnsigned32bitInt m_mappableAPI;      // Permits direct CSR mapping To be Deprecated
    btByte             m_devattrib[];      // Attribute block (TBD)
+};
+
+
+//=============================================================================
+// Name: CCIP_ERROR
+// Description: Parameters describing errors
+// Comments: Used in Error interface
+//=============================================================================
+struct  CCIP_ERROR
+{
+   btUnsigned64bitInt error_mask;       // Error  csr
+   btUnsigned64bitInt error;            // Error mask csr
+   btUnsigned64bitInt first_error;      // First error csr
+   btUnsigned64bitInt malreq0;          // Port Malformed request 0
+   btUnsigned64bitInt malreq1;          // Port Malformed request 0
+};
+
+//=============================================================================
+// Name: CCIP_THERMAL_PWR
+// Description: Parameters describing power and thermal values
+// Comments: Used in power and thermal interface
+//=============================================================================
+struct  CCIP_THERMAL_PWR
+{
+   btUnsigned64bitInt tmp_threshold;     // Thermal threshold
+   btUnsigned64bitInt tmp_rdsensor1;    // Sensor1 reading temperature value
+   btUnsigned64bitInt tmp_rdsensor2;    // Sensor2 reading temperature value
+   btUnsigned64bitInt pwr_status;        // Power consumed by fpga
 };
 
 //=============================================================================

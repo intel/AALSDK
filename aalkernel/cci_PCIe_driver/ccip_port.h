@@ -73,7 +73,6 @@
 
 #include <aalsdk/kernel/aaltypes.h>
 #include <aalsdk/kernel/ccip_defs.h>
-
 #include "cci_pcie_driver_internal.h"
 
 
@@ -188,6 +187,13 @@ btBool get_port_feature( struct port_device *,
                              btPhysAddr *,
                              btVirtAddr *);
 
+/// @brief   get port error
+///
+/// @param[in] pport_dev port device pointer.
+/// @param[in] pport_error ccip error structure  pointer
+/// @return    error code
+bt32bitInt get_port_error(struct port_device* pport_dev,
+                          struct CCIP_ERROR*  pport_error);
 
 extern struct aal_ipip cci_Portpip;
 extern struct aal_ipip cci_AFUpip;
