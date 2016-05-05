@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file HelloALINLB.cpp
+/// @file PCIeErrMon.cpp
 /// @brief Basic ALI AFU interaction.
-/// @ingroup HelloALINLB
+/// @ingroup PCIeErrMon
 /// @verbatim
 /// Accelerator Abstraction Layer Sample Application
 ///
@@ -113,18 +113,19 @@ void showhelp(FILE * , struct _aalclp_gcs_compliance_data * );
 
 struct  PCIeErrMonCmdLine
 {
-   btUIntPtr          flags;
-#define PCIERRMON_CMD_FLAG_HELP      0x00000001
-#define PCIERRMON_CMD_FLAG_VERSION   0x00000002
-#define PCIERRMON_CMD_PARSE_ERROR    0x00000003
-#define PCIERRMON_CMD_WRITE_ADDR     0x00000004
-#define PCIERRMON_CMD_READ_ADDR      0x00000005
-#define PCIERRMON_CMD_WRITE_LENGTH   0x00000006
-#define PCIERRMON_CMD_READ_LENGTH    0x00000007
-#define PCIERRMON_CMD_CONFIG_READ    0x00000008
+   btUnsigned64bitInt          flags;
+   #define PCIERRMON_CMD_FLAG_HELP      (btUnsigned64bitInt)0x00000001
+   #define PCIERRMON_CMD_FLAG_VERSION   (btUnsigned64bitInt)0x00000002
+   #define PCIERRMON_CMD_PARSE_ERROR    (btUnsigned64bitInt)0x00000004
+   #define PCIERRMON_CMD_WRITE_ADDR     (btUnsigned64bitInt)0x00000008
+   #define PCIERRMON_CMD_READ_ADDR      (btUnsigned64bitInt)0x00000010
+   #define PCIERRMON_CMD_WRITE_LENGTH   (btUnsigned64bitInt)0x00000040
+   #define PCIERRMON_CMD_READ_LENGTH    (btUnsigned64bitInt)0x00000080
+   #define PCIERRMON_CMD_CONFIG_READ    (btUnsigned64bitInt)0x00000100
+
 
 };
-struct PCIeErrMonCmdLine errMonCmdLine = { 0 };
+struct PCIeErrMonCmdLine errMonCmdLine = { PCIERRMON_CMD_FLAG_HELP };
 
 
 int pciErrMon_on_non_option(AALCLP_USER_DEFINED user, const char *nonoption) {
@@ -172,10 +173,6 @@ int pciErrMon_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *opti
    }else  if((0 == strcmp("--read-length", option)) ||
              (0 == strcmp("--rl", option)))  {
       flag_setf(cl->flags, PCIERRMON_CMD_READ_LENGTH);
-
-   }else  if((0 == strcmp("--write-length", option)) ||
-             (0 == strcmp("--wl", option)))  {
-      flag_setf(cl->flags, PCIERRMON_CMD_WRITE_LENGTH);
 
    }else  if((0 == strcmp("--config-read", option)) ||
              (0 == strcmp("--cr", option)))  {
@@ -264,7 +261,7 @@ void help_msg_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
    fprintf(fp, "                      --read-addr       OR     --ra         MMIO Read with Unaligned address \n");
    fprintf(fp, "                      --write-length    OR     --wl         MMIO Write with Unsupported length \n");
    fprintf(fp, "                      --read-length     OR     --rl         MMIO Read with Unsupported length \n");
-   fprintf(fp, "                      --config-read     OR     --cr         CfgRd to NLBCSR \n");
+   fprintf(fp, "                      --config-read     OR     --cr         Config Read to NLB CSR \n");
    fprintf(fp, "\n");
 
 }
@@ -278,7 +275,7 @@ void showhelp(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
 END_C_DECLS
 
 
-/// @addtogroup HelloALINLB
+/// @addtogroup PCIeErrMon
 /// @{
 
 
@@ -301,7 +298,9 @@ public:
    void serviceAllocateFailed(const IEvent &rEvent);
 
    void serviceReleased(const AAL::TransactionID&);
+
    void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent);
+
    void serviceReleaseFailed(const AAL::IEvent&);
 
    void serviceEvent(const IEvent &rEvent);
@@ -345,9 +344,6 @@ protected:
    btVirtAddr     m_InputVirt;      ///< Input workspace virtual address.
    btPhysAddr     m_InputPhys;      ///< Input workspace physical address.
    btWSSize       m_InputSize;      ///< Input workspace size in bytes.
-   btVirtAddr     m_OutputVirt;     ///< Output workspace virtual address.
-   btPhysAddr     m_OutputPhys;     ///< Output workspace physical address.
-   btWSSize       m_OutputSize;     ///< Output workspace size in bytes.
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -371,10 +367,7 @@ PCIeErrMonApp::PCIeErrMonApp() :
    m_DSMSize(0),
    m_InputVirt(NULL),
    m_InputPhys(0),
-   m_InputSize(0),
-   m_OutputVirt(NULL),
-   m_OutputPhys(0),
-   m_OutputSize(0)
+   m_InputSize(0)
 {
    // Register our Client side interfaces so that the Service can acquire them.
    //   SetInterface() is inherited from CAASBase
@@ -504,22 +497,67 @@ btInt PCIeErrMonApp::run()
    MSG("Running Test");
    if(true == m_bIsOK){
 
-      ::memset( m_OutputVirt, 0, m_OutputSize);    // Output initialized to 0
+      ::memset( m_InputVirt, 0, m_InputSize);    // Input initialized to 0
 
       if ( flag_is_set(errMonCmdLine.flags, PCIERRMON_CMD_WRITE_ADDR)){
          // MMIO Write with Unaligned address
+         cout << "WRITE_ADDR\n";
          m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, m_InputPhys);
       }
       if ( flag_is_set(errMonCmdLine.flags, PCIERRMON_CMD_READ_ADDR)){
          // MMIO Write with Unaligned address
+         cout << "READ_ADDR\n";
          btUnsigned64bitInt     SrcContent;
          m_pALIMMIOService->mmioRead64(CSR_SRC_ADDR, &SrcContent);
       }
+      btByte* src  = (btByte *)(calloc(16, sizeof(btByte)));
+      btByte* src2 = src;
+      btByte* temp = (btByte *)(calloc(16, sizeof(btByte)));
+      btByte* dest = (btByte *)(calloc(16, sizeof(btByte)));
       if ( flag_is_set(errMonCmdLine.flags, PCIERRMON_CMD_WRITE_LENGTH)){
-         // MMIO Write with Unaligned address
-         //mmioWrite32(CSR_SRC_ADDR, m_InputPhys);
-         cout << "MMIO Max size : " << m_pALIMMIOService->mmioGetLength() << endl;
+         // MMIO Write with unsupported length
+         cout << "WRITE_LENGTH\n";
+         btByte  InputData = 0x1;
+
+         for(int i = 0; i < 16; i++, src2++)
+         {
+            *src2 = InputData;
+         }
+
+         src2 = src;
+         memcpy((void *)(m_pALIMMIOService->mmioGetAddress()+CSR_SRC_ADDR), (void *)src, 16);
+
+//         if ( memcmp((void *)src, (void *)((m_pALIMMIOService->mmioGetAddress())+CSR_SRC_ADDR), 16) != 0 ){
+//            cerr << "Data mismatch in src and mmio buffers.\n";
+//         }
+//
+//         memcpy((void *)dest, (void *)(m_pALIMMIOService->mmioGetAddress()+CSR_SRC_ADDR), 16);
+//            if ( memcmp( (void *)((m_pALIMMIOService->mmioGetAddress())+CSR_SRC_ADDR), (void *)dest, 16) != 0 ){
+//               cerr << "Data mismatch in dest and mmio buffers.\n";
+//            }
+//         }
+//
+//         if ( memcmp((void *)src, (void *)dest, 16) != 0 ){
+//            cerr << "Data mismatch in src and dest buffers.\n";
+//         }
       }
+      if ( flag_is_set(errMonCmdLine.flags, PCIERRMON_CMD_READ_LENGTH)){
+         // MMIO Read with unsupported length
+         cout << "READ_LENGTH\n";
+         memcpy((void *)dest, (m_pALIMMIOService->mmioGetAddress()+CSR_SRC_ADDR), 16);
+         if ( memcmp( (void *)((m_pALIMMIOService->mmioGetAddress())+CSR_SRC_ADDR), (void *)dest, 16) != 0 ){
+            cerr << "Data mismatch in dest and mmio buffers.\n";
+         }
+      }
+      if ( flag_is_set(errMonCmdLine.flags, PCIERRMON_CMD_CONFIG_READ)){
+         // Config Read to NLB CSR
+         cout << "CONFIG_READ\n";
+
+         }
+//
+//      if ( memcmp((void *)src, (void *)dest, 16) != 0 ){
+//         cerr << "Data mismatch in src and dest buffers.\n";
+//      }
    }
    MSG("Done Running Test");
 
@@ -690,7 +728,7 @@ void PCIeErrMonApp::serviceAllocateFailed(const IEvent &rEvent)
  }
  // <begin IRuntimeClient interface>
 
-/// @} group HelloALINLB
+/// @} group PCIeErrMon
 
 
 //=============================================================================
@@ -705,12 +743,12 @@ int main(int argc, char *argv[])
 {
 
    if ( argc < 2 ) {
-         showhelp(stdout, &_aalclp_gcs_data);
-         return 1;
-      } else if ( 0!= ParseCmds(&errMonCmdLine, argc, argv) ) {
-         cerr << "Error scanning command line." << endl;
-         return 2;
-      }
+      showhelp(stdout, &_aalclp_gcs_data);
+      return 1;
+   } else if ( 0!= ParseCmds(&errMonCmdLine, argc, argv) ) {
+      cerr << "Error scanning command line." << endl;
+      return 2;
+   }
 
    PCIeErrMonApp theApp;
    if(!theApp.isOK()){
