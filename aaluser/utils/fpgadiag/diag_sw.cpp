@@ -143,6 +143,9 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
     else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1)){
        cfg |= (csr_type)NLB_TEST_MODE_VH1;
     }
+    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VR)){
+      cfg |= (csr_type)NLB_TEST_MODE_VR;
+    }
 
     m_pALIMMIOService->mmioWrite32(CSR_CFG, (csr_type)cfg);
 

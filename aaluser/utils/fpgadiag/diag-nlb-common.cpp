@@ -741,11 +741,6 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       } else {
     	 fprintf(fp, "Default=%s\n", nlbcl->defaults.vh1);
       }
-   }
-
-   if ( 0 == strcasecmp(test.c_str(), "READ")  ||
-        0 == strcasecmp(test.c_str(), "WRITE") ||
-        0 == strcasecmp(test.c_str(), "TRPUT") )   {
 
       fprintf(fp, "                  = --vr,                         Randomly Chosen Channel,                        ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VR) ) {
@@ -753,7 +748,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       } else {
        fprintf(fp, "Default=%s\n", nlbcl->defaults.vr);
       }
-      }
+   }
 
    if ( 0 == strcasecmp(test.c_str(), "ATOMIC"))
    {
