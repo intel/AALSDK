@@ -116,12 +116,13 @@ BEGIN_NAMESPACE(AAL)
 #	define NLB_TEST_MODE_UMSG_DATA  0x8000000
 #	define NLB_TEST_MODE_UMSG_HINT  0xc000000
 #	define NLB_TEST_MODE_VA         0x0000
-#	define NLB_TEST_MODE_VL0		0x1000
-#	define NLB_TEST_MODE_VH0		0x2000
-#	define NLB_TEST_MODE_VH1		0x3000
-#   define NLB_TEST_MODE_MCL2       0x0020
-#   define NLB_TEST_MODE_MCL4       0x0060
-#   define NLB_TEST_MODE_ST         0x10000
+#	define NLB_TEST_MODE_VL0		  0x1000
+#	define NLB_TEST_MODE_VH0		  0x2000
+#	define NLB_TEST_MODE_VH1		  0x3000
+#  define NLB_TEST_MODE_VR         0x4000
+#   define NLB_TEST_MODE_MCL2      0x0020
+#   define NLB_TEST_MODE_MCL4      0x0060
+#   define NLB_TEST_MODE_ST        0x10000
 
 #define TEST_MODE_CSR_HQW		 	0x000E0000
 

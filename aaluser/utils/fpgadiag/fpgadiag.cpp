@@ -162,6 +162,7 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_VL0,
       DEFAULT_VH0,
       DEFAULT_VH1,
+      DEFAULT_VR,
       DEFAULT_ST,
 	   DEFAULT_UT,
       DEFAULT_MINCX,
@@ -949,6 +950,10 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
     {
        cfc_cfg |= (csr_type)NLB_TEST_MODE_VH1;
     }
+    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VR))
+     {
+        cfc_cfg |= (csr_type)NLB_TEST_MODE_VR;
+     }
 
    // Set the test mode
    m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);

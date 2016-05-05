@@ -74,6 +74,7 @@
 #define DEFAULT_VL0				"off"
 #define DEFAULT_VH0		   	"off"
 #define DEFAULT_VH1		   	"off"
+#define DEFAULT_VR            "off"
 #define DEFAULT_ST		   	"off"
 #define DEFAULT_UT		   	"on"
 #define DEFAULT_CX            2

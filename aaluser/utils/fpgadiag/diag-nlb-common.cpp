@@ -96,6 +96,8 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
       	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VH0);
    } else if ( 0 == strcmp("--vh1", option) ) {
       	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VH1);
+   } else if ( 0 == strcmp("--vr", option) ) {
+              flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VR);
    } else if ( 0 == strcmp("--0", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FEATURE0);
    } else if ( 0 == strcmp("--1", option) ) {
@@ -739,6 +741,18 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       } else {
     	 fprintf(fp, "Default=%s\n", nlbcl->defaults.vh1);
       }
+   }
+
+   if ( 0 == strcasecmp(test.c_str(), "READ")  ||
+        0 == strcasecmp(test.c_str(), "WRITE") ||
+        0 == strcasecmp(test.c_str(), "TRPUT") )   {
+
+      fprintf(fp, "                  = --vr,                         Randomly Chosen Channel,                        ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VR) ) {
+       fprintf(fp, "yes\n");
+      } else {
+       fprintf(fp, "Default=%s\n", nlbcl->defaults.vr);
+      }
       }
 
    if ( 0 == strcasecmp(test.c_str(), "ATOMIC"))
@@ -947,15 +961,19 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
 	    return false;
    }
 
-   // --va, --vl0, --vh0, --vh1
+   // --va, --vl0, --vh0, --vh1, --vr
 
     if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_VL0)  ||
     	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_VH0)  ||
     	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_VH1)  ||
     	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VL0|NLB_CMD_FLAG_VH0) ||
     	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VL0|NLB_CMD_FLAG_VH1) ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VH0|NLB_CMD_FLAG_VH1)) {
-    	 os << "--va, --vl0, --vh0 and --vh1 are mutually exclusive." << endl;
+    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VH0|NLB_CMD_FLAG_VH1) ||
+    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_VR) ||
+    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VL0|NLB_CMD_FLAG_VR) ||
+    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VH0|NLB_CMD_FLAG_VR) ||
+    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VH1|NLB_CMD_FLAG_VR) ) {
+    	 os << "--va, --vl0, --vh0, --vh1 and --vr are mutually exclusive." << endl;
     	 return false;
     }
 
