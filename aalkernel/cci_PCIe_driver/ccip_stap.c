@@ -323,8 +323,10 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
       default: {
          // No payload
+         PDEBUG("Unrecognized command %" PRIu64 " or 0x%" PRIx64 " in AFUCommand\n", pmsg->cmd, pmsg->cmd);
          Message->m_respbufSize          = 0;
          Message->m_errcode = uid_errnumInvalidRequest;
+         retval = -EINVAL;
       } break;
    } // switch (pmsg->cmd)
 

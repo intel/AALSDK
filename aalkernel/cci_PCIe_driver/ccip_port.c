@@ -491,19 +491,11 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          } break; // case ccipdrv_SetPortErrorMask
 
    default: {
-      struct ccipdrv_event_afu_response_event *pafuresponse_evt = NULL;
 
       PDEBUG("Unrecognized command %" PRIu64 " or 0x%" PRIx64 " in AFUCommand\n", pmsg->cmd, pmsg->cmd);
-
-      pafuresponse_evt = ccipdrv_event_afu_afuinavlidrequest_create(  pownerSess->m_device,
-                                                                     &Message->m_tranID,
-                                                                      Message->m_context,
-                                                                      request_error);
-
-     ccidrv_sendevent( pownerSess,
-                       AALQIP(pafuresponse_evt));
-
+      Message->m_errcode = request_error;
       retval = -EINVAL;
+
    } break;
    } // switch (pmsg->cmd)
 
