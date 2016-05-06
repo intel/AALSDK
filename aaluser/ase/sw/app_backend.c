@@ -593,12 +593,12 @@ void session_deinit()
 
       // Session end, set locale
 
-      printf("  [APP]  Session ended (Simulation Time elapsed => ");
-
+      printf("  [APP]  Session ended \n");
+      printf("         Took ");
       // Set locale, inherit locale, and reset back
       char *oldLocale = setlocale(LC_NUMERIC, NULL);
       setlocale(LC_NUMERIC, "");
-      printf("%'llu nsec)\n", runtime_nsec);
+      printf("%'llu nsec \n", runtime_nsec);
       setlocale(LC_NUMERIC, oldLocale);
 
       END_YELLOW_FONTCOLOR;
