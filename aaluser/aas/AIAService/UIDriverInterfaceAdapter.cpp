@@ -591,6 +591,7 @@ btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
    if ( -1 == ioctl(m_fdClient, cmd, reqp) ) {
       perror("UIDriverInterfaceAdapter::SendMessage");
       m_bIsOK = false;
+      reqp->errcode = uid_errnumInvalidRequest;
    }
 
    pMessage->setErrno(reqp->errcode);

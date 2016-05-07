@@ -74,6 +74,7 @@
 
 #include <aalsdk/kernel/aaltypes.h>
 #include "cci_pcie_driver_internal.h"
+#include "aalsdk/kernel/ccipdriver.h"
 
 
 BEGIN_NAMESPACE(AAL)
@@ -198,6 +199,31 @@ bt32bitInt get_fme_dev_pr_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_m
 /// @param[in] fme_device fme device pointer .
 /// @return    void
 void ccip_fme_mem_free(struct fme_device *pfme_dev );
+
+/// @brief   get global error
+///
+/// @param[in] pfme_dev fme device pointer.
+/// @param[in] pfme_error ccip error structure  pointer
+/// @return    error code
+bt32bitInt get_fme_error(struct fme_device   *pfme_dev,
+                         struct CCIP_ERROR   *pfme_error);
+
+/// @brief   get fpga power consumed values.
+///
+/// @param[in] pfme_dev fme device pointer.
+/// @param[in] pfme_power ccip power structure  pointer
+/// @return    error code
+bt32bitInt get_fme_power(struct fme_device         *pfme_dev,
+                         struct CCIP_THERMAL_PWR   *pthermal_power);
+
+/// @brief   get fpga thermal values
+///
+/// @param[in] pfme_dev fme device pointer.
+/// @param[in] pPerf ccip thermal structure  pointer
+/// @return    error code
+bt32bitInt get_fme_thermal(struct fme_device        *pfme_dev,
+                           struct CCIP_THERMAL_PWR  *pthermal_power);
+
 
 extern struct aal_ipip cci_FMEpip;
 

@@ -411,21 +411,91 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          }
       } break;
 
+      AFU_COMMAND_CASE(ccipdrv_getPortError) {
+
+          bt32bitInt res               = 0;
+          struct CCIP_ERROR port_error = {0};
+          PVERBOSE("ccipdrv_getPortError \n");
+
+          res= get_port_error(cci_aaldev_pport(pdev) ,&port_error);
+          if(0 != res ) {
+             Message->m_errcode = uid_errnumBadParameter;
+             break;
+          }
+
+         if(respBufSize >= sizeof(struct CCIP_ERROR)){
+             PVERBOSE("ccipdrv_getPortError  Valid Buffer\n");
+            *((struct CCIP_ERROR*)Message->m_response) = port_error;
+            Message->m_respbufSize = sizeof(struct CCIP_ERROR);
+         }
+
+         // Success Event
+         Message->m_errcode = uid_errnumOK;
+
+       } break; // case ccipdrv_getPortError
+
+       AFU_COMMAND_CASE(ccipdrv_ClearAllPortErrors) {
+
+          PVERBOSE("ccipdrv_portClearAllError \n");
+
+          // Clear ALL Port errors
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr = 0x0;
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_first_error.csr = 0x0;
+
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_malformed_req_0.csr = 0x0;
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_malformed_req_1.csr = 0x0;
+
+          Message->m_errcode = uid_errnumOK;
+
+        } break; // case ccipdrv_ClearAllPortErrors
+
+       AFU_COMMAND_CASE(ccipdrv_ClearPortError) {
+
+          struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
+
+          if(NULL == preq) {
+             Message->m_errcode = uid_errnumBadParameter;
+             break;
+          }
+
+          PVERBOSE("ccipdrv_portClearError CSR:%llX \n",ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr);
+          PVERBOSE("ccipdrv_portClearError CSR:%llX \n",preq->ahmreq.u.error_csr.error);
+
+          // Clear port error and First error
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr = preq->ahmreq.u.error_csr.error;
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_first_error.csr =preq->ahmreq.u.error_csr.error;
+
+          // Success Event
+          Message->m_errcode = uid_errnumOK;
+
+        } break; // case ccipdrv_ClearPortError
+
+
+        AFU_COMMAND_CASE(ccipdrv_SetPortErrorMask) {
+
+           struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
+
+           if(NULL == preq) {
+              Message->m_errcode = uid_errnumBadParameter;
+              break;
+           }
+
+           PVERBOSE("ccipdrv_portClearError CSR:%llX \n",cci_aaldev_pport(pdev)->m_pport_err->ccip_port_error_mask.csr);
+           PVERBOSE("ccipdrv_portClearError CSR:%llX \n",preq->ahmreq.u.error_csr.error);
+
+           ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error_mask.csr =preq->ahmreq.u.error_csr.error;
+
+           // Success Event
+           Message->m_errcode = uid_errnumOK;
+
+         } break; // case ccipdrv_SetPortErrorMask
 
    default: {
-      struct ccipdrv_event_afu_response_event *pafuresponse_evt = NULL;
 
       PDEBUG("Unrecognized command %" PRIu64 " or 0x%" PRIx64 " in AFUCommand\n", pmsg->cmd, pmsg->cmd);
-
-      pafuresponse_evt = ccipdrv_event_afu_afuinavlidrequest_create(  pownerSess->m_device,
-                                                                     &Message->m_tranID,
-                                                                      Message->m_context,
-                                                                      request_error);
-
-     ccidrv_sendevent( pownerSess,
-                       AALQIP(pafuresponse_evt));
-
+      Message->m_errcode = request_error;
       retval = -EINVAL;
+
    } break;
    } // switch (pmsg->cmd)
 
@@ -790,6 +860,46 @@ bt32bitInt port_afu_quiesce_and_halt(struct port_device *pport_dev)
 ERR:
    PTRACEOUT_INT(res);
    return  res;
+}
+
+
+///============================================================================
+/// Name:    get_port_error
+/// @brief   get fpga global error
+///
+/// @param[in] pport_dev port device pointer.
+/// @param[in] pport_error ccip error structure  pointer
+/// @return    error code
+///============================================================================
+bt32bitInt get_port_error(struct port_device* pport_dev,
+                          struct CCIP_ERROR*  pport_error)
+{
+   int res = 0;
+
+   PTRACEIN;
+
+   if( (NULL == pport_dev) && (NULL == pport_error))  {
+         PERR("Invalid input pointers \n");
+         res =-EINVAL;
+         goto ERR;
+      }
+
+   memset(pport_error,0,sizeof(struct CCIP_ERROR));
+
+   pport_error->error_mask    = ccip_port_err(pport_dev)->ccip_port_error_mask.csr;
+   pport_error->error         = ccip_port_err(pport_dev)->ccip_port_error.csr;
+   pport_error->first_error   = ccip_port_err(pport_dev)->ccip_port_first_error.csr;
+
+   pport_error->malreq0   = ccip_port_err(pport_dev)->ccip_port_malformed_req_0.csr;
+   pport_error->malreq1   = ccip_port_err(pport_dev)->ccip_port_malformed_req_1.csr;
+
+   PTRACEOUT_INT(res);
+   return res;
+
+ERR:
+   PTRACEOUT_INT(res);
+   return  res;
+
 }
 
 

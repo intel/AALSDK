@@ -124,6 +124,15 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd)
    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1)){
 	  cfg |= (csr_type)NLB_TEST_MODE_VH1;
    }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VR)){
+     cfg |= (csr_type)NLB_TEST_MODE_VR;
+   }
+
+   //Check if alternate write data pattern has to be enabled.
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_ALT_WR_PRN)){
+     cfg |= (csr_type)NLB_TEST_MODE_ALT_WR_PRN;
+   }
+
 
    // Set Multi CL CSR.
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_MULTICL)){
@@ -147,6 +156,9 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd)
       }
       else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1)){
          wfc_cfg |= (csr_type)NLB_TEST_MODE_VH1;
+      }
+      else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VR)){
+         wfc_cfg |= (csr_type)NLB_TEST_MODE_VR;
       }
 
       m_pALIMMIOService->mmioWrite32(CSR_CFG, (csr_type)wfc_cfg);

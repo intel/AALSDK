@@ -97,6 +97,9 @@ struct NLBDefaults
    const char     *vl0;
    const char     *vh0;
    const char     *vh1;
+   const char     *vr;
+
+   const char     *awp;
 
    const char     *st;
    const char     *ut;
@@ -184,18 +187,21 @@ struct NLBCmdLine
 
 #define NLB_CMD_FLAG_COOL_CPU_CACHE 	(u64_type)0x1000000000 		/* --cool-cpu-cache  Cool CPU Cache							           	  */
 
-#define NLB_CMD_FLAG_VA       			(u64_type)0x2000000000 		/* --va			 	 Distribute data among QPI, PCIe0 and PCIe1 channels  */
-#define NLB_CMD_FLAG_VL0		   		(u64_type)0x4000000000 		/* --vl0			 Data transferred on QPI channel					  */
-#define NLB_CMD_FLAG_VH0	   			(u64_type)0x8000000000 		/* --vh0		     Data transferred on PCIe0  channel					  */
-#define NLB_CMD_FLAG_VH1   				(u64_type)0x10000000000		/* --vh1		     Data transferred on PCIe1  channel			   	      */
+#define NLB_CMD_FLAG_VA       			(u64_type)0x2000000000 		/* --va			  Distribute data among QPI, PCIe0 and PCIe1 channels  */
+#define NLB_CMD_FLAG_VL0		   		(u64_type)0x4000000000 		/* --vl0			  Data transferred on QPI channel					       */
+#define NLB_CMD_FLAG_VH0	   			(u64_type)0x8000000000 		/* --vh0		     Data transferred on PCIe0  channel					    */
+#define NLB_CMD_FLAG_VH1   				(u64_type)0x10000000000		/* --vh1		     Data transferred on PCIe1  channel			   	    */
+#define NLB_CMD_FLAG_VR                (u64_type)0x20000000000    /* --vr          Data transferred on ramdomly chosen channel          */
 
-#define NLB_CMD_FLAG_MULTICL            (u64_type)0x20000000000		/* --multi-cl X  	 (number of cache lines)        					  */
+#define NLB_CMD_FLAG_MULTICL           (u64_type)0x40000000000		/* --multi-cl X  	 (number of cache lines)        					  */
 
-#define NLB_CMD_FLAG_ST		            (u64_type)0x40000000000		/*  --shared-token   (Sub-mode for atomic tests) 						  */
-#define NLB_CMD_FLAG_UT		            (u64_type)0x80000000000		/*  --seperate-token (Sub-mode for atomic tests) 						  */
-#define NLB_CMD_FLAG_HQW	            (u64_type)0x100000000000	/* 	--hardware-qw  	 (QWord number on the Hardware thread) 				  */
-#define NLB_CMD_FLAG_SQW	            (u64_type)0x200000000000	/* 	--software-qw    (QWord number on the Software thread)				  */
-#define NLB_CMD_FLAG_CX		            (u64_type)0x400000000000	/* 	--cmp-xchg       (Number of Cmp-Xchg operations)					  */
+#define NLB_CMD_FLAG_ST		            (u64_type)0x80000000000		/*  --shared-token   (Sub-mode for atomic tests) 					  */
+#define NLB_CMD_FLAG_UT		            (u64_type)0x100000000000	/*  --seperate-token (Sub-mode for atomic tests) 					  */
+#define NLB_CMD_FLAG_HQW	            (u64_type)0x200000000000	/*  --hardware-qw  	(QWord number on the Hardware thread) 	     */
+#define NLB_CMD_FLAG_SQW	            (u64_type)0x400000000000	/*  --software-qw    (QWord number on the Software thread)		  */
+#define NLB_CMD_FLAG_CX		            (u64_type)0x800000000000	/*  --cmp-xchg       (Number of Cmp-Xchg operations)				  */
+
+#define NLB_CMD_FLAG_ALT_WR_PRN        (u64_type)0x1000000000000  /* --alt-wr-pattern  (Alternate write patterns)                  */
 
 #define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   		/* --0 */
 #define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  		/* --1 */

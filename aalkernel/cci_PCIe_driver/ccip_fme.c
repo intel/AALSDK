@@ -261,19 +261,137 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
       } break; // case ccipdrv_getPerfMonitor
 
+      AFU_COMMAND_CASE(ccipdrv_getFMEError) {
+
+          bt32bitInt res               = 0;
+          struct CCIP_ERROR fme_error  = {0};
+
+          PVERBOSE("ccipdrv_getFmeError \n");
+
+          res= get_fme_error(cci_aaldev_pfme(pdev) ,&fme_error);
+          if(0 != res ) {
+             Message->m_errcode = uid_errnumBadParameter;
+             break;
+          }
+
+         if(respBufSize >= sizeof(struct CCIP_ERROR)){
+            PVERBOSE("ccipdrv_getFmeErrors  Valid Buffer\n");
+            *((struct CCIP_ERROR*)Message->m_response) = fme_error;
+            Message->m_respbufSize = sizeof(struct CCIP_ERROR);
+         }
+
+          Message->m_errcode = uid_errnumOK;
+
+       } break; // case ccipdrv_getFMEError
+
+       AFU_COMMAND_CASE(ccipdrv_SetFMEErrorMask) {
+
+          struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
+          PVERBOSE("ccipdrv_fmeSetErrorMask \n");
+
+          if(NULL == preq) {
+             Message->m_errcode = uid_errnumBadParameter;
+             break;
+          }
+
+          PVERBOSE("Port Error mask CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error_mask.csr);
+          PVERBOSE("preq->ahmreq.u.error_csr.error:%llx \n",preq->ahmreq.u.error_csr.error);
+
+          ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error_mask.csr = preq->ahmreq.u.error_csr.error;
+
+          //Success Event
+          Message->m_errcode = uid_errnumOK;
+
+        } break; // case ccipdrv_SetFMEErrorMask
+
+
+        AFU_COMMAND_CASE(ccipdrv_ClearFMEError) {
+
+           struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
+           PVERBOSE("ccipdrv_fmeClearError \n");
+
+           if(NULL == preq) {
+              Message->m_errcode = uid_errnumBadParameter;
+              break;
+           }
+
+           PVERBOSE("Port Error CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error.csr);
+           PVERBOSE("Port First Error CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_first_error.csr);
+           PVERBOSE("preq->ahmreq.u.error_csr.error:%llx \n",preq->ahmreq.u.error_csr.error);
+
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error.csr = preq->ahmreq.u.error_csr.error;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_first_error.csr = preq->ahmreq.u.error_csr.error;
+
+           //Success Event
+           Message->m_errcode = uid_errnumOK;
+
+         } break; // case ccipdrv_ClearFMEError
+
+        AFU_COMMAND_CASE(ccipdrv_ClearAllFMEErrors) {
+
+           PVERBOSE("ccipdrv_ClearAllFMEError \n");
+
+           PVERBOSE("Port Error CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error.csr);
+           PVERBOSE("Port First Error CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_first_error.csr);
+
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error.csr = 0x0;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_first_error.csr = 0x0;
+
+           //Success Event
+           Message->m_errcode = uid_errnumOK;
+
+       } break; // case ccipdrv_ClearAllFMEErrors
+
+       AFU_COMMAND_CASE(ccipdrv_getPower) {
+
+          bt32bitInt res                        = 0;
+          struct CCIP_THERMAL_PWR thermal_power = {0};
+          PVERBOSE("ccipdrv_getPower \n");
+
+          res= get_fme_power(cci_aaldev_pfme(pdev) ,&thermal_power);
+          if(0 != res ) {
+              Message->m_errcode = uid_errnumBadParameter;
+              break;
+          }
+
+          if(respBufSize >= sizeof(struct CCIP_THERMAL_PWR)){
+             PVERBOSE("ccipdrv_getPower  Valid Buffer\n");
+             *((struct CCIP_THERMAL_PWR*)Message->m_response) = thermal_power;
+             Message->m_respbufSize = sizeof(struct CCIP_THERMAL_PWR);
+          }
+
+          //Success Event
+          Message->m_errcode = uid_errnumOK;
+
+        } break; // case ccipdrv_getPower
+
+        AFU_COMMAND_CASE(ccipdrv_gertThrermal) {
+
+          bt32bitInt res                        = 0;
+          struct CCIP_THERMAL_PWR thermal_power = {0};
+          PVERBOSE("ccipdrv_gertThrermal \n");
+
+          res= get_fme_thermal(cci_aaldev_pfme(pdev) ,&thermal_power);
+          if(0 != res ) {
+             Message->m_errcode = uid_errnumBadParameter;
+             break;
+          }
+
+          if(respBufSize >= sizeof(struct CCIP_THERMAL_PWR)){
+            PVERBOSE("ccipdrv_gertThrermal  Valid Buffer\n");
+            *((struct CCIP_THERMAL_PWR*)Message->m_response) = thermal_power;
+            Message->m_respbufSize = sizeof(struct CCIP_THERMAL_PWR);
+          }
+
+          //Success Event
+          Message->m_errcode = uid_errnumOK;
+
+         } break; // case ccipdrv_gertThrermal
+
    default: {
-      struct ccipdrv_event_afu_response_event *pafuresponse_evt = NULL;
 
       PDEBUG("Unrecognized command %" PRIu64 " or 0x%" PRIx64 " in AFUCommand\n", pmsg->cmd, pmsg->cmd);
-
-      pafuresponse_evt = ccipdrv_event_afu_afuinavlidrequest_create(pownerSess->m_device,
-                                                                  &Message->m_tranID,
-                                                                  Message->m_context,
-                                                                  request_error);
-
-     ccidrv_sendevent( pownerSess,
-                       AALQIP(pafuresponse_evt));
-
+      Message->m_errcode = request_error;
       retval = -EINVAL;
    } break;
    } // switch (pmsg->cmd)
@@ -528,3 +646,106 @@ bt32bitInt get_fme_dev_featurelist( struct fme_device *pfme_dev,
    return res;
 }
 
+
+///============================================================================
+/// Name:    get_fme_error
+/// @brief   get fpga global error
+///
+/// @param[in] pfme_dev fme device pointer.
+/// @param[in] pfme_error ccip error structure  pointer
+/// @return    error code
+///============================================================================
+bt32bitInt get_fme_error(struct fme_device  *pfme_dev,
+                         struct CCIP_ERROR  *pfme_error)
+{
+   int res = 0;
+
+   PTRACEIN;
+
+   if( (NULL == pfme_dev) && (NULL == pfme_error))  {
+      PERR("Invalid input pointers \n");
+      res =-EINVAL;
+      goto ERR;
+   }
+
+   memset(pfme_error,0,sizeof(struct CCIP_ERROR));
+
+   pfme_error->error_mask    = ccip_fme_gerr(pfme_dev)->ccip_fme_error_mask.csr;
+   pfme_error->error         = ccip_fme_gerr(pfme_dev)->ccip_fme_error.csr;
+   pfme_error->first_error   = ccip_fme_gerr(pfme_dev)->ccip_fme_first_error.csr;
+
+   PTRACEOUT_INT(res);
+   return res;
+
+ERR:
+   PTRACEOUT_INT(res);
+   return  res;
+}
+
+///============================================================================
+/// Name:    get_fme_power
+/// @brief   power consumed values
+///
+/// @param[in] pfme_dev fme device pointer.
+/// @param[in] pfme_power ccip power structure  pointer
+/// @return    error code
+///============================================================================
+bt32bitInt get_fme_power(struct fme_device       *pfme_dev,
+                         struct CCIP_THERMAL_PWR *pthermal_power)
+{
+   int res = 0;
+
+   PTRACEIN;
+
+   if( (NULL == pfme_dev) && (NULL == pthermal_power))  {
+      PERR("Invalid input pointers \n");
+      res =-EINVAL;
+      goto ERR;
+   }
+
+   memset(pthermal_power,0,sizeof(struct CCIP_THERMAL_PWR));
+
+   pthermal_power->pwr_status    = 0;
+
+   PTRACEOUT_INT(res);
+   return res;
+
+ERR:
+   PTRACEOUT_INT(res);
+   return  res;
+}
+
+///============================================================================
+/// Name:    get_fme_thermal
+/// @brief   get  fpga  thermal values
+///
+/// @param[in] pfme_dev fme device pointer.
+/// @param[in] pPerf ccip thermal structure  pointer
+/// @return    error code
+///============================================================================
+bt32bitInt get_fme_thermal(struct fme_device        *pfme_dev,
+                           struct CCIP_THERMAL_PWR  *pthermal_power)
+{
+   int res = 0;
+
+   PTRACEIN;
+
+   if( (NULL == pfme_dev) && (NULL == pthermal_power))  {
+      PERR("Invalid input pointers \n");
+      res =-EINVAL;
+      goto ERR;
+   }
+
+   memset(pthermal_power,0,sizeof(struct CCIP_THERMAL_PWR));
+
+   pthermal_power->tmp_threshold    = ccip_fme_therm(pfme_dev)->ccip_tmp_threshold.csr;
+   pthermal_power->tmp_rdsensor1    = ccip_fme_therm(pfme_dev)->ccip_tmp_rdssensor_fm1.csr;
+   pthermal_power->tmp_rdsensor2    = ccip_fme_therm(pfme_dev)->ccip_tmp_rdssensor_fm2.csr;
+
+   PTRACEOUT_INT(res);
+   return res;
+
+ERR:
+   PTRACEOUT_INT(res);
+   return  res;
+}
