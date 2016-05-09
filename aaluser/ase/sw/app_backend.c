@@ -47,15 +47,15 @@ uint32_t mmio_readreq_cnt = 0;
 uint32_t mmio_readrsp_cnt = 0;
 // uint32_t mmio_rsp_num_outstanding = 0;
 
+// Session setup
+uint32_t session_exist_status = NOT_ESTABLISHED;
+
 // MQ established
-uint32_t mq_exist_status = MQ_NOT_ESTABLISHED;
+uint32_t mq_exist_status = NOT_ESTABLISHED;
 
 // Umsg and MMIO statuses
 uint32_t mmio_exist_status = NOT_ESTABLISHED;
 uint32_t umas_exist_status = NOT_ESTABLISHED;
-
-// Session status
-uint32_t session_exist_status = NOT_ESTABLISHED;
 
 // CSR map storage
 struct buffer_t *mmio_region;
@@ -331,14 +331,14 @@ void session_init()
   sim2app_intr_request_rx = mqueue_open( mq_array[9].name, mq_array[9].perm_flag );
 
   // Message queues have been established
-  mq_exist_status = MQ_ESTABLISHED;
+  mq_exist_status = ESTABLISHED;
 
   // Issue soft reset
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  session_init => Issuing Soft Reset...\n");
   END_YELLOW_FONTCOLOR;
   ase_portctrl("AFU_RESET 1");
-  usleep(10);
+  usleep(1);
   ase_portctrl("AFU_RESET 0");
 
   // Page table tracker (optional logger)
@@ -1009,7 +1009,7 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   mem->next = NULL;
 
   // Message queue must be enabled when using DPI (else debug purposes only)
-  if (mq_exist_status == MQ_NOT_ESTABLISHED)
+  if (mq_exist_status == NOT_ESTABLISHED)
     {
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  Session not started --- STARTING now\n");

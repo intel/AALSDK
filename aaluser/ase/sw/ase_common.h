@@ -161,7 +161,7 @@ char *app_run_cmd;
 #define ASE_MODE_REGRESSION          4
 
 // UMAS establishment status
-#define NOT_ESTABLISHED 0x0
+#define NOT_ESTABLISHED 0xC0C0
 #define ESTABLISHED     0xBEEF
 
 
@@ -433,8 +433,8 @@ extern "C" {
  *
  * ********************************************************************/
 // Message Queue establishment status
-#define MQ_NOT_ESTABLISHED 0x0
-#define MQ_ESTABLISHED     0xCAFE
+// #define MQ_NOT_ESTABLISHED 0x0
+//#define MQ_ESTABLISHED     0xCAFE
 
 // Message queue parameters
 #define ASE_MQ_MAXMSG     8

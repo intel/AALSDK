@@ -524,5 +524,5 @@ cppcheck:
 	cd sw ; cppcheck *.c -DSIM_SIDE=1 -D__x86_64__ --enable=all -v --check-config | tee ../lint.log -I /usr/include/ ; cd -
 
 gdb_sim:
-	cd ./$(WORK)/; gdb --args ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
+	cd ./$(WORK)/; gdb -ex run --args ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 
