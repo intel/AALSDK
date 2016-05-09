@@ -1650,7 +1650,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             ccidrv_sendevent(pownerSess,
                              AALQIP(pafuws_evt));
 
-            retval = -EINVAL;
             goto ERROR;
 
          }
@@ -1674,7 +1673,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                      uid_errnumNoMem);
              ccidrv_sendevent(pownerSess,
                               AALQIP(pafuws_evt));
-             retval = -ENOMEM;
              goto ERROR;
          }
 
@@ -1762,7 +1760,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                              Message->m_context,
                                                              uid_errnumDeActiveTimeout);
 
-            retval = -EINVAL;
             goto ERROR;
 
           } else if(reconfTimeout >0) {
@@ -1798,7 +1795,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                               Message->m_context,
                                                               uid_errnumBadParameter);
 
-             retval = -EINVAL;
              goto ERROR;
 
           } // end of if else
@@ -1821,7 +1817,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             ccidrv_sendevent(pownerSess,
                              AALQIP(pafuws_evt));
 
-            retval = -EINVAL;
             goto ERROR;
          }
 
@@ -1838,7 +1833,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
             ccidrv_sendevent(pownerSess,
                              AALQIP(pafuws_evt));
-            retval = -EINVAL;
             goto ERROR;
          }
 
@@ -1902,7 +1896,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
             ccidrv_sendevent(pownerSess,
                              AALQIP(pafuws_evt));
-            retval = -EINVAL;
             goto ERROR;
          }
 
@@ -1921,7 +1914,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                              uid_errnumNoMem);
             ccidrv_sendevent(pownerSess,
                              AALQIP(pafuws_evt));
-            retval = -ENOMEM;
             goto ERROR;
          }
 
@@ -1944,7 +1936,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                             uid_errnumNoMem);
             ccidrv_sendevent(pownerSess,
                             AALQIP(pafuws_evt));
-            retval = -ENOMEM;
             goto ERROR;
          }
 
@@ -2053,7 +2044,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                      &Message->m_tranID,
                                                      Message->m_context,
                                                      uid_errnumDeActiveTimeout);
-            retval = -EINVAL;
             goto ERROR;
 
          } else if ((paaldev->m_numowners >0) &&
@@ -2091,7 +2081,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                      Message->m_context,
                                                      uid_errnumBadParameter);
 
-            retval = -EINVAL;
             goto ERROR;
          } // end if else loop
        
