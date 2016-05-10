@@ -336,8 +336,9 @@ module ccip_emulator
 
    // MMIO response
    import "DPI-C" function void mmio_response(inout mmio_t mmio_pkt);
-   mmio_t mmio_resp_pkt;
-
+   mmio_t mmio_rdrsp_pkt;
+   mmio_t mmio_wrrsp_pkt;
+      
    // Software controlled process - run clocks
    export "DPI-C" task run_clocks;
 
@@ -725,7 +726,7 @@ module ccip_emulator
 	       @(posedge clk);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 0;
-	       mmio_response ( mmio_pkt );
+	       // mmio_response ( mmio_pkt );
 	       run_clocks(`MMIO_WRITE_LATRANGE);
 	    end
 	    else if (mmio_pkt.write_en == MMIO_READ_REQ) begin
@@ -827,28 +828,28 @@ module ccip_emulator
 
    // MMIO Response mask (act by reference)
    // function automatic void mmio_rsp_mask( ref mmio_t mmio_in );
-   function automatic void mmio_rsp_mask( );
+   function automatic void mmio_rdrsp_mask( );
       begin
 	 // TID
-	 mmio_resp_pkt.tid      = mmioresp_tid;	 
+	 mmio_rdrsp_pkt.tid      = mmioresp_tid;	 
 	 // Write Enable
-	 mmio_resp_pkt.write_en = MMIO_READ_REQ;
+	 mmio_rdrsp_pkt.write_en = MMIO_READ_REQ;
 	 // Data (use only lower int)
-	 mmio_resp_pkt.qword[0]       = mmioresp_dout;
-	 if (mmio_resp_pkt.width == 32) begin
-	    mmio_resp_pkt.qword[0][63:32] = 32'b0;
+	 mmio_rdrsp_pkt.qword[0]       = mmioresp_dout;
+	 if (mmio_rdrsp_pkt.width == 32) begin
+	    mmio_rdrsp_pkt.qword[0][63:32] = 32'b0;
 	 end
-	 mmio_resp_pkt.qword[1] = 0;
-	 mmio_resp_pkt.qword[2] = 0;
-	 mmio_resp_pkt.qword[3] = 0;
-	 mmio_resp_pkt.qword[4] = 0;
-	 mmio_resp_pkt.qword[5] = 0;
-	 mmio_resp_pkt.qword[6] = 0;
-	 mmio_resp_pkt.qword[7] = 0;
+	 mmio_rdrsp_pkt.qword[1] = 0;
+	 mmio_rdrsp_pkt.qword[2] = 0;
+	 mmio_rdrsp_pkt.qword[3] = 0;
+	 mmio_rdrsp_pkt.qword[4] = 0;
+	 mmio_rdrsp_pkt.qword[5] = 0;
+	 mmio_rdrsp_pkt.qword[6] = 0;
+	 mmio_rdrsp_pkt.qword[7] = 0;
 	 // Response flag
-	 mmio_resp_pkt.resp_en  = 1;
+	 mmio_rdrsp_pkt.resp_en  = 1;
 	 // Return
-	 mmio_response ( mmio_resp_pkt );
+	 mmio_response ( mmio_rdrsp_pkt );
       end
    endfunction
 
@@ -860,13 +861,47 @@ module ccip_emulator
    // FIFO writes to memory
    always @(posedge clk) begin : dpi_mmio_response
       if (mmioresp_valid) begin
-	 mmio_rsp_mask ( );
-	 // mmio_rsp_mask ( mmio_resp_pkt );
-   	 // mmio_response ( mmio_resp_pkt );
+	 mmio_rdrsp_mask ( );
       end
    end
 
 
+   /*
+    * MMIO Write response
+    */ 
+   // Function to tie Write Response
+   function automatic void mmio_wrrsp_mask();
+      begin
+	 // TID
+	 mmio_wrrsp_pkt.tid      = DBG_cfgheader.tid;	 
+	 // Write Enable
+	 mmio_wrrsp_pkt.write_en = MMIO_WRITE_REQ;
+	 // Data packing
+	 mmio_wrrsp_pkt.qword[0] = C0RxData[  63:00  ];
+	 mmio_wrrsp_pkt.qword[1] = C0RxData[ 127:64  ];
+	 mmio_wrrsp_pkt.qword[2] = C0RxData[ 191:128 ];
+	 mmio_wrrsp_pkt.qword[3] = C0RxData[ 255:192 ];
+	 mmio_wrrsp_pkt.qword[4] = C0RxData[ 319:256 ];
+	 mmio_wrrsp_pkt.qword[5] = C0RxData[ 383:320 ];
+	 mmio_wrrsp_pkt.qword[6] = C0RxData[ 447:384 ];
+	 mmio_wrrsp_pkt.qword[7] = C0RxData[ 511:448 ];
+	 // Address
+	 mmio_wrrsp_pkt.addr = DBG_cfgheader.index;	 
+	 // Response flag
+	 mmio_wrrsp_pkt.resp_en  = 1;
+	 // Return
+	 mmio_response ( mmio_wrrsp_pkt );	 
+      end
+   endfunction
+
+   // Response to MMIO write (credit control only)
+   always @(posedge clk) begin
+      if (C0RxMmioWrValid) begin
+	 mmio_wrrsp_mask( );	 
+      end
+   end
+   
+   
    /* ******************************************************************
     *
     * Unordered Messages Engine
@@ -2602,7 +2637,7 @@ module ccip_emulator
       // 	 glbl_dealloc_credit <= 0;
       // end
       // else begin
-	 glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit + atomic_credit;
+      glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit + atomic_credit;
       //end
    end
 

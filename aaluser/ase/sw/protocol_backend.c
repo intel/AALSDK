@@ -522,7 +522,7 @@ int ase_listener()
 
       // ------------------------------------------------------------------------------- //
       ase_empty_buffer(&ase_buffer);
-#if 0
+#if 1
       if (glbl_dealloc_allowed) 
 	{
 #endif
@@ -550,7 +550,7 @@ int ase_listener()
 	      END_YELLOW_FONTCOLOR;
             #endif
 	    }
-#if 0
+#if 1
 	}
 #endif
       // ------------------------------------------------------------------------------- //

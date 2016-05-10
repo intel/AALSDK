@@ -146,8 +146,8 @@ pthread_t msix_watch_tid;
 uint32_t generate_mmio_tid()
 {
   // Calculate outstanding
-  mmio_read_outstanding = mmio_readreq_cnt - mmio_readreq_cnt;
-  mmio_write_outstanding = mmio_writereq_cnt - mmio_writereq_cnt;
+  mmio_read_outstanding = mmio_readreq_cnt - mmio_readrsp_cnt;
+  mmio_write_outstanding = mmio_writereq_cnt - mmio_writersp_cnt;
 
   // *FIXME*: TID credit must not overrun, no more than 64 outstanding MMIO Requests
   while ((mmio_read_outstanding + mmio_write_outstanding) >= MMIO_MAX_OUTSTANDING)
