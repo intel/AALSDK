@@ -629,9 +629,11 @@ IALIReset::e_Reset ASEALIAFU::afuEnable( NamedValueSet const &rInputArgs)
 IALIReset::e_Reset ASEALIAFU::afuReset( NamedValueSet const &rInputArgs )
 {
    // Port control
-   ase_portctrl("AFU_RESET 1");
-   usleep(10000);
-   ase_portctrl("AFU_RESET 0");
+   // ase_portctrl("AFU_RESET 1");
+   // usleep(10000);
+   // ase_portctrl("AFU_RESET 0");
+
+  send_swreset();
 
    return e_OK;
 }
