@@ -43,10 +43,10 @@
 pthread_mutex_t mmio_port_lock;
 
 // MMIO Outstanding counts
-uint32_t mmio_writereq_cnt = 0;
-uint32_t mmio_writersp_cnt = 0;
-uint32_t mmio_readreq_cnt = 0;
-uint32_t mmio_readrsp_cnt = 0;
+volatile uint32_t mmio_writereq_cnt = 0;
+volatile uint32_t mmio_writersp_cnt = 0;
+volatile uint32_t mmio_readreq_cnt = 0;
+volatile uint32_t mmio_readrsp_cnt = 0;
 
 uint32_t mmio_read_outstanding = 0;
 uint32_t mmio_write_outstanding = 0;
@@ -264,6 +264,27 @@ void *intr_request_watcher()
 
 
 /*
+ * Send SW Reset
+ */
+void send_swreset()
+{
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [APP]  Issuing Soft Reset... \n");
+  END_YELLOW_FONTCOLOR;
+  while( (mmio_writereq_cnt != mmio_writersp_cnt) && (mmio_readreq_cnt != mmio_readrsp_cnt) )
+    {
+      sleep(1);
+    }
+  
+  // Sending reset trigger
+  ase_portctrl("AFU_RESET 1");
+  usleep(1);
+  ase_portctrl("AFU_RESET 0");
+
+}
+
+
+/*
  * Send SIMKILL
  */
 void send_simkill()
@@ -381,12 +402,13 @@ void session_init()
   mq_exist_status = ESTABLISHED;
 
   // Issue soft reset
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  session_init => Issuing Soft Reset...\n");
-  END_YELLOW_FONTCOLOR;
-  ase_portctrl("AFU_RESET 1");
-  usleep(1);
-  ase_portctrl("AFU_RESET 0");
+  /* BEGIN_YELLOW_FONTCOLOR; */
+  /* printf("  [APP]  session_init => Issuing Soft Reset...\n"); */
+  /* END_YELLOW_FONTCOLOR; */
+  /* ase_portctrl("AFU_RESET 1"); */
+  /* usleep(1); */
+  /* ase_portctrl("AFU_RESET 0"); */
+  send_swreset();
 
   // Page table tracker (optional logger)
 #ifdef ASE_DEBUG
