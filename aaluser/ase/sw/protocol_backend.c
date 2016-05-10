@@ -48,6 +48,9 @@ int glbl_umsgmode;
 // Session status
 int session_empty;
 
+// MMIO Respons lock
+pthread_mutex_t mmio_resp_lock;
+
 /*
  * Generate scope data
  */
@@ -252,7 +255,14 @@ void mmio_response (struct mmio_t *mmio_pkt)
 {
   FUNC_CALL_ENTRY;
 
-  mqueue_send(sim2app_mmiorsp_tx, (char*)mmio_pkt, sizeof(mmio_t)); // ASE_MQ_MSGSIZE);
+  // Lock channel
+  pthread_mutex_lock (&mmio_resp_lock);
+
+  // Send MMIO Response
+  mqueue_send(sim2app_mmiorsp_tx, (char*)mmio_pkt, sizeof(mmio_t));
+
+  // Unlock channel
+  pthread_mutex_unlock (&mmio_resp_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -665,6 +675,15 @@ int ase_init()
   // Get PID
   ase_pid = getpid();
   printf("SIM-C : PID of simulator is %d\n", ase_pid);
+
+  // Lock initializations
+  if ( pthread_mutex_init(&mmio_resp_lock, NULL) != 0 )
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("SIM-C : MMIO Response lock initialization failed, EXIT\n");
+      END_RED_FONTCOLOR;
+      start_simkill_countdown();
+    }
 
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);

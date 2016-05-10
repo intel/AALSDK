@@ -725,7 +725,8 @@ module ccip_emulator
 	       @(posedge clk);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 0;
-	       run_clocks(`MMIO_WRITE_LATRANGE);
+	       mmio_resp_pkt = mmio_pkt;	       
+	       // run_clocks(`MMIO_WRITE_LATRANGE);
 	    end
 	    else if (mmio_pkt.write_en == MMIO_READ_REQ) begin
 	       cwlp_data    = 0;
@@ -740,12 +741,13 @@ module ccip_emulator
 	       hdr.tid      = mmio_pkt.tid[CCIP_CFGHDR_TID_WIDTH-1:0];
 	       cwlp_header  = (CCIP_CFG_HDR_WIDTH)'(hdr);
 	       cwlp_wrvalid = 0;
-	       cwlp_rdvalid = 1;
+	       cwlp_rdvalid = 1;	       
+	       mmio_pkt.resp_en = 1;
 	       @(posedge clk);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 0;
-	       mmio_resp_pkt = mmio_pkt;
-	       run_clocks(`MMIO_READ_LATRANGE);
+   	       mmio_response ( mmio_pkt );
+	       // run_clocks(`MMIO_READ_LATRANGE);
 	    end
 	 end
       end
