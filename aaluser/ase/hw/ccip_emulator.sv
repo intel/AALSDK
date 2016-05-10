@@ -725,8 +725,8 @@ module ccip_emulator
 	       @(posedge clk);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 0;
-	       mmio_resp_pkt = mmio_pkt;	       
-	       // run_clocks(`MMIO_WRITE_LATRANGE);
+	       mmio_response ( mmio_pkt );
+	       run_clocks(`MMIO_WRITE_LATRANGE);
 	    end
 	    else if (mmio_pkt.write_en == MMIO_READ_REQ) begin
 	       cwlp_data    = 0;
@@ -746,8 +746,8 @@ module ccip_emulator
 	       @(posedge clk);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 0;
-   	       mmio_response ( mmio_pkt );
-	       // run_clocks(`MMIO_READ_LATRANGE);
+   	       // mmio_response ( mmio_pkt );
+	       run_clocks(`MMIO_READ_LATRANGE);
 	    end
 	 end
       end
@@ -793,11 +793,13 @@ module ccip_emulator
     */
    parameter int MMIORESP_FIFO_WIDTH = CCIP_MMIO_TID_WIDTH + CCIP_MMIO_RDDATA_WIDTH;
 
-   logic [MMIORESP_FIFO_WIDTH-1:0] mmioresp_dout;
-   logic 			   mmioresp_read;
-   logic 			   mmioresp_valid;
-   logic 			   mmioresp_full;
-   logic 			   mmioresp_empty;
+   logic [CCIP_MMIO_RDDATA_WIDTH-1:0] mmioresp_dout;
+   logic [CCIP_MMIO_TID_WIDTH-1:0]    mmioresp_tid;
+    
+   logic 			      mmioresp_read;
+   logic 			      mmioresp_valid;
+   logic 			      mmioresp_full;
+   logic 			      mmioresp_empty;
 
    // Response staging FIFO
    ase_svfifo
@@ -813,7 +815,7 @@ module ccip_emulator
       .wr_en      ( C2TxMmioRdValid ),
       .data_in    ( {(CCIP_MMIO_TID_WIDTH)'(C2TxHdr), C2TxData} ),
       .rd_en      ( mmioresp_read & ~mmioresp_empty ),
-      .data_out   ( mmioresp_dout ),
+      .data_out   ( {mmioresp_tid, mmioresp_dout} ),
       .data_out_v ( mmioresp_valid ),
       .alm_full   ( mmioresp_full ),
       .full       (  ),
@@ -824,23 +826,29 @@ module ccip_emulator
       );
 
    // MMIO Response mask (act by reference)
-   function automatic void mmio_rsp_mask( ref mmio_t mmio_in );
+   // function automatic void mmio_rsp_mask( ref mmio_t mmio_in );
+   function automatic void mmio_rsp_mask( );
       begin
-	 // Data
-	 mmio_in.qword[0] = mmioresp_dout[CCIP_MMIO_RDDATA_WIDTH-1:0];
-	 if (mmio_in.width == 32) begin
-	    mmio_in.qword[0][63:32] = 32'b0;
+	 // TID
+	 mmio_resp_pkt.tid      = mmioresp_tid;	 
+	 // Write Enable
+	 mmio_resp_pkt.write_en = MMIO_READ_REQ;
+	 // Data (use only lower int)
+	 mmio_resp_pkt.qword[0]       = mmioresp_dout;
+	 if (mmio_resp_pkt.width == 32) begin
+	    mmio_resp_pkt.qword[0][63:32] = 32'b0;
 	 end
-	 mmio_in.qword[1] = 0;
-	 mmio_in.qword[2] = 0;
-	 mmio_in.qword[3] = 0;
-	 mmio_in.qword[4] = 0;
-	 mmio_in.qword[5] = 0;
-	 mmio_in.qword[6] = 0;
-	 mmio_in.qword[7] = 0;
+	 mmio_resp_pkt.qword[1] = 0;
+	 mmio_resp_pkt.qword[2] = 0;
+	 mmio_resp_pkt.qword[3] = 0;
+	 mmio_resp_pkt.qword[4] = 0;
+	 mmio_resp_pkt.qword[5] = 0;
+	 mmio_resp_pkt.qword[6] = 0;
+	 mmio_resp_pkt.qword[7] = 0;
 	 // Response flag
-	 mmio_in.resp_en  = 1;
+	 mmio_resp_pkt.resp_en  = 1;
 	 // Return
+	 mmio_response ( mmio_resp_pkt );
       end
    endfunction
 
@@ -852,8 +860,9 @@ module ccip_emulator
    // FIFO writes to memory
    always @(posedge clk) begin : dpi_mmio_response
       if (mmioresp_valid) begin
-	 mmio_rsp_mask(mmio_resp_pkt);
-   	 mmio_response ( mmio_resp_pkt );
+	 mmio_rsp_mask ( );
+	 // mmio_rsp_mask ( mmio_resp_pkt );
+   	 // mmio_response ( mmio_resp_pkt );
       end
    end
 

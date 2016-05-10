@@ -47,6 +47,10 @@ uint32_t mmio_writereq_cnt = 0;
 uint32_t mmio_writersp_cnt = 0;
 uint32_t mmio_readreq_cnt = 0;
 uint32_t mmio_readrsp_cnt = 0;
+
+uint32_t mmio_read_outstanding = 0;
+uint32_t mmio_write_outstanding = 0;
+
 // uint32_t mmio_rsp_num_outstanding = 0;
 
 // Session setup
@@ -141,8 +145,12 @@ pthread_t msix_watch_tid;
  */
 uint32_t generate_mmio_tid()
 {
+  // Calculate outstanding
+  mmio_read_outstanding = mmio_readreq_cnt - mmio_readreq_cnt;
+  mmio_write_outstanding = mmio_writereq_cnt - mmio_writereq_cnt;
+
   // *FIXME*: TID credit must not overrun, no more than 64 outstanding MMIO Requests
-  while ((mmio_readreq_cnt - mmio_readrsp_cnt) == MMIO_MAX_OUTSTANDING)
+  while ((mmio_read_outstanding + mmio_write_outstanding) >= MMIO_MAX_OUTSTANDING)
     {
       printf("  [APP]  MMIO TIDs have run out --- waiting for some to get released !\n");
       usleep(100000);
@@ -177,6 +185,10 @@ void *mmio_response_watcher()
   mmio_rsp_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
   int ret;
 
+#ifdef ASE_DEBUG
+  char mmio_type[3];
+#endif
+
   // start watching for messages
   while(mmio_exist_status == ESTABLISHED)
     {
@@ -184,25 +196,33 @@ void *mmio_response_watcher()
       mmio_rsp_pkt_accepted = 0;
       mmio_rsp_pkt_available = 0;
       memset((void*)mmio_rsp_pkt, 0xff, sizeof(mmio_t));
-
+      
       // If received, update global message
       ret = mqueue_recv( sim2app_mmiorsp_rx, (char*)mmio_rsp_pkt, sizeof(mmio_t) );
       if (ret == ASE_MSG_PRESENT) 
 	{
+        #ifdef ASE_DEBUG
+	  if (mmio_rsp_pkt->write_en == MMIO_WRITE_REQ)
+	    {
+	      strncpy(mmio_type, "WR\0", 3);
+	    }
+	  else if (mmio_rsp_pkt->write_en == MMIO_READ_REQ)
+	    {
+	      strncpy(mmio_type, "RD\0", 3);
+	    }
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("  [DEBUG]  mmio_watcher => %03x, %s, %d, %x, %016llx\n", 
+		 mmio_rsp_pkt->tid, 
+		 mmio_type, 
+		 mmio_rsp_pkt->width, 
+		 mmio_rsp_pkt->addr, 
+		 mmio_rsp_pkt->qword[0]);
+	  END_YELLOW_FONTCOLOR;
+         #endif
+
 	  // MMIO Read response (for credit count only)
 	  if (mmio_rsp_pkt->write_en == MMIO_READ_REQ) 
 	    {
-            #ifdef ASE_DEBUG
-	      BEGIN_YELLOW_FONTCOLOR;
-	      printf("  [DEBUG]  mmio_watcher => %03x, %x, %x, %x, %016llx\n", 
-		     mmio_rsp_pkt->tid, 
-		     mmio_rsp_pkt->write_en, 
-		     mmio_rsp_pkt->width, 
-		     mmio_rsp_pkt->addr, 
-		     mmio_rsp_pkt->qword[0]);
-	      END_YELLOW_FONTCOLOR;
-            #endif
-	  
 	      // Mark as available
 	      mmio_rsp_pkt_available = 1;
 	      
@@ -211,12 +231,23 @@ void *mmio_response_watcher()
 		{
 		  usleep(10);
 		}
+	      
+	      // MMIO Read response count
 	      mmio_readrsp_cnt++;
 	    }
 	  // MMIO Write response (for credit count only)
 	  else if (mmio_rsp_pkt->write_en == MMIO_WRITE_REQ)
 	    {
+	      // MMIO Write response count
 	      mmio_writersp_cnt++;
+	    }
+	  else 
+	    {
+	    #ifdef ASE_DEBUG
+	      BEGIN_RED_FONTCOLOR;
+	      printf("  [DEBUG]  Illegal MMIO request found -- must not happen !\n");
+	      END_RED_FONTCOLOR;
+            #endif
 	    }
 	}
     }
@@ -805,9 +836,9 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
 
       mmio_pkt->tid      = generate_mmio_tid();
       mmio_pkt->write_en = MMIO_READ_REQ;
-      mmio_pkt->width = MMIO_WIDTH_32;
-      mmio_pkt->addr = offset;
-      mmio_pkt->resp_en = 0;
+      mmio_pkt->width    = MMIO_WIDTH_32;
+      mmio_pkt->addr     = offset;
+      mmio_pkt->resp_en  = 0;
       
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  MMIO Read      : tid = 0x%03x, offset = 0x%x\n", mmio_pkt->tid, mmio_pkt->addr);
