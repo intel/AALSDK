@@ -583,6 +583,7 @@ void ase_config_parse(char*);
 void start_simkill_countdown();
 void run_clocks(int num_clocks);
 void afu_softreset_trig(int init, int value);
+void ase_reset_trig();
 void sw_reset_response();
 
 // Read system memory line

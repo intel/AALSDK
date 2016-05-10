@@ -345,6 +345,9 @@ module ccip_emulator
    // Software controlled process - Run AFU Reset
    export "DPI-C" task afu_softreset_trig;
 
+   // Simulator global reset (issued at simulator start, or session end)
+   export "DPI-C" task ase_reset_trig;   
+   
    // Software controlled reset response
    import "DPI-C" function void sw_reset_response();
 
@@ -362,6 +365,20 @@ module ccip_emulator
    int 	 ase_ready_pid;
 
 
+   /*
+    * ASE Simulator reset 
+    * - Use sparingly, only for initialization and reset between session_init(s)
+    */
+   task ase_reset_trig();
+      begin
+	 ase_reset = 1;
+	 run_clocks(20);
+	 ase_reset = 0;
+	 run_clocks(20);	 
+      end
+   endtask
+
+   
    /*
     * Multi-instance multi-user +CONFIG,+SCRIPT instrumentation
     * RUN =>
@@ -466,8 +483,15 @@ module ccip_emulator
    // Reset management
    logic 			  sw_reset_trig = 1;
    logic 			  app_reset_trig;
+   logic 			  app_reset_trig_q;
+   int 				  rst_timeout_counter;   
    int 				  rst_counter;
 
+   // Register app_reset_trig
+   always @(posedge clk) begin
+      app_reset_trig_q <= app_reset_trig;      
+   end
+   
    // Reset states
    typedef enum {
 		 ResetIdle,
@@ -493,19 +517,21 @@ module ccip_emulator
    // Reset FSM
    always @(posedge clk) begin
       if (ase_reset) begin
-	 rst_state <= ResetIdle;
-	 rst_counter <= 0;
+	 rst_state           <= ResetIdle;
+	 rst_counter         <= 0;
+	 rst_timeout_counter <= 0;		
       end
       else begin
 	 case (rst_state)
 	   ResetIdle:
 	     begin
+		rst_timeout_counter <= 0;		
 		// 0 -> 1
-		if (~SoftReset && app_reset_trig) begin
+		if (~app_reset_trig_q && app_reset_trig) begin
 		   rst_state <= ResetHoldHigh;
 		end
 		// 1 -> 0
-		else if (SoftReset && ~app_reset_trig) begin
+		else if (app_reset_trig_q && ~app_reset_trig) begin
 		   rst_state <= ResetHoldLow;
 		end
 		else begin
@@ -517,7 +543,17 @@ module ccip_emulator
 	   ResetHoldHigh:
 	     begin
 		if (glbl_dealloc_credit != 0) begin
-		   rst_state <= ResetHoldHigh;
+		   if (rst_timeout_counter < `RESET_TIMEOUT_DURATION) begin
+		      rst_timeout_counter <= rst_timeout_counter + 1;		   
+		      rst_state           <= ResetHoldHigh;
+		   end
+		   else begin
+		      `BEGIN_RED_FONTCOLOR;		      
+		      $display("SIM-SV: Reset request timed out... Behavior maybe undefined !");		      
+		      `END_RED_FONTCOLOR;		      
+		      sw_reset_trig <= 1;
+		      rst_state <= ResetWait;
+		   end
 		end
 		else begin
 		   sw_reset_trig <= 1;
@@ -844,7 +880,7 @@ module ccip_emulator
    // FIFO writes to memory
    always @(posedge clk) begin : dpi_mmio_response
       if (mmioresp_valid) begin
-	 mmio_rdrsp_mask ( );
+	 mmio_rdrsp_mask ();
       end
    end
 
@@ -968,7 +1004,7 @@ module ccip_emulator
 
 	 // State machine
 	 always @(posedge clk) begin
-	    if (SoftReset) begin
+	    if (ase_reset) begin
 	       umsg_array[ii].hint_timer <= 0;
 	       umsg_array[ii].data_timer <= 0;
 	       umsg_array[ii].hint_ready <= 0;
@@ -2017,8 +2053,10 @@ module ccip_emulator
 
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
-      run_clocks(20);
-      ase_reset     <= 0;
+      // run_clocks(20);
+      // ase_reset     <= 0;
+      ase_reset_trig();
+      
       sw_reset_trig <= 0;
       run_clocks(20);
 
@@ -2242,46 +2280,55 @@ module ccip_emulator
     * - Dellocate requests will be queued but not executed
     * **************************************************************************/
    always @(posedge clk) begin
-      // ---------------------------------------------------- //
-      // Read credit counter
-      case (  {C0TxRdValid, (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP)) } )
-	2'b10   : rd_credit <= rd_credit + C0TxHdr.len + 1;
-	2'b01   : rd_credit <= rd_credit - 1;
-	2'b11   : rd_credit <= rd_credit + C0TxHdr.len + 1 - 1;
-	default : rd_credit <= rd_credit;
-      endcase // case ( {C0TxRdValid, C0RxRdValid} )
-      // ---------------------------------------------------- //
-      // Write credit counter
-      case ( { (C1TxWrValid && (C1TxHdr.reqtype != ASE_ATOMIC_REQ)), C1RxWrValid} )
-	2'b10   : wr_credit <= wr_credit + 1;
-	2'b01   : wr_credit <= wr_credit - 1;
-	default : wr_credit <= wr_credit;
-      endcase // case ( {C1TxWrValid, C1RxWrValid} )
-      // ---------------------------------------------------- //
-      // MMIO Writevalid counter
-      case ( {cwlp_wrvalid, C0RxMmioWrValid} )
-	2'b10   : mmiowr_credit <= mmiowr_credit + 1;
-	2'b01   : mmiowr_credit <= mmiowr_credit - 1;
-	default : mmiowr_credit <= mmiowr_credit;
-      endcase // case ( {cwlp_wrvalid, C0RxMmioWrValid} )
-      // ---------------------------------------------------- //
-      // MMIO readvalid counter
-      case ( {cwlp_rdvalid, mmioresp_valid} )
-	2'b10   : mmiord_credit <= mmiord_credit + 1;
-	2'b01   : mmiord_credit <= mmiord_credit - 1;
-	default : mmiord_credit <= mmiord_credit;
-      endcase // case ( {cwlp_rdvalid, mmioresp_valid} )
-      // ---------------------------------------------------- //
-      // Umsg valid counter
-      umsg_credit <= $countones(umsg_hint_enable_array) + $countones(umsg_data_enable_array) + umsgfifo_cnt;
-      // ---------------------------------------------------- //
-      // Atomics CmpXchg counter
-      case ( { (C1TxWrValid && (C1TxHdr.reqtype==ASE_ATOMIC_REQ)), (C0RxRdValid && (C0RxHdr.resptype==ASE_ATOMIC_RSP)) } )
-	2'b10   : atomic_credit <= atomic_credit + 1;
-	2'b01   : atomic_credit <= atomic_credit - 1;
-	default : atomic_credit <= atomic_credit;
-      endcase
-      // ---------------------------------------------------- //
+      if (ase_reset) begin
+	 rd_credit     <= 0;
+	 wr_credit     <= 0;
+	 mmiowr_credit <= 0;
+	 mmiord_credit <= 0;
+	 atomic_credit <= 0;	 
+      end
+      else begin
+	 // ---------------------------------------------------- //
+	 // Read credit counter
+	 case (  {C0TxRdValid, (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP)) } )
+	   2'b10   : rd_credit <= rd_credit + C0TxHdr.len + 1;
+	   2'b01   : rd_credit <= rd_credit - 1;
+	   2'b11   : rd_credit <= rd_credit + C0TxHdr.len + 1 - 1;
+	   default : rd_credit <= rd_credit;
+	 endcase // case ( {C0TxRdValid, C0RxRdValid} )
+	 // ---------------------------------------------------- //
+	 // Write credit counter
+	 case ( { (C1TxWrValid && (C1TxHdr.reqtype != ASE_ATOMIC_REQ)), C1RxWrValid} )
+	   2'b10   : wr_credit <= wr_credit + 1;
+	   2'b01   : wr_credit <= wr_credit - 1;
+	   default : wr_credit <= wr_credit;
+	 endcase // case ( {C1TxWrValid, C1RxWrValid} )
+	 // ---------------------------------------------------- //
+	 // MMIO Writevalid counter
+	 case ( {cwlp_wrvalid, C0RxMmioWrValid} )
+	   2'b10   : mmiowr_credit <= mmiowr_credit + 1;
+	   2'b01   : mmiowr_credit <= mmiowr_credit - 1;
+	   default : mmiowr_credit <= mmiowr_credit;
+	 endcase // case ( {cwlp_wrvalid, C0RxMmioWrValid} )
+	 // ---------------------------------------------------- //
+	 // MMIO readvalid counter
+	 case ( {cwlp_rdvalid, mmioresp_valid} )
+	   2'b10   : mmiord_credit <= mmiord_credit + 1;
+	   2'b01   : mmiord_credit <= mmiord_credit - 1;
+	   default : mmiord_credit <= mmiord_credit;
+	 endcase // case ( {cwlp_rdvalid, mmioresp_valid} )
+	 // ---------------------------------------------------- //
+	 // Umsg valid counter
+	 umsg_credit <= $countones(umsg_hint_enable_array) + $countones(umsg_data_enable_array) + umsgfifo_cnt;
+	 // ---------------------------------------------------- //
+	 // Atomics CmpXchg counter
+	 case ( { (C1TxWrValid && (C1TxHdr.reqtype==ASE_ATOMIC_REQ)), (C0RxRdValid && (C0RxHdr.resptype==ASE_ATOMIC_RSP)) } )
+	   2'b10   : atomic_credit <= atomic_credit + 1;
+	   2'b01   : atomic_credit <= atomic_credit - 1;
+	   default : atomic_credit <= atomic_credit;
+	 endcase
+	 // ---------------------------------------------------- //
+      end
    end
 
    // Global dealloc flag enable

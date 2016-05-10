@@ -396,6 +396,7 @@ int ase_listener()
 		  printf("SIM-C : ASE running in daemon mode (see ase.cfg)\n");
 		  printf("        Reseting buffers ... Simulator RUNNING\n");
 		  ase_destroy();
+		  ase_reset_trig();
 		  BEGIN_GREEN_FONTCOLOR;
 		  printf("SIM-C : Ready to run next test\n");	  
 		  END_GREEN_FONTCOLOR;
@@ -413,12 +414,19 @@ int ase_listener()
 		  ase_perror_teardown();
 		  start_simkill_countdown();
 		}
-	      else if ((cfg->ase_mode == ASE_MODE_REGRESSION) && (cfg->ase_num_tests == glbl_test_cmplt_cnt))
+	      else if (cfg->ase_mode == ASE_MODE_REGRESSION) 		
 		{
-		  printf("SIM-C : ASE completed %d tests (see ase.cfg)... Simulator will EXIT\n", cfg->ase_num_tests);
-		  run_clocks (500);
-		  ase_perror_teardown();
-		  start_simkill_countdown();
+		  if (cfg->ase_num_tests == glbl_test_cmplt_cnt)
+		    {
+		      printf("SIM-C : ASE completed %d tests (see ase.cfg)... Simulator will EXIT\n", cfg->ase_num_tests);
+		      run_clocks (500);
+		      ase_perror_teardown();
+		      start_simkill_countdown();
+		    }
+		  else
+		    {
+		      ase_reset_trig();
+		    }
 		}
 	      
 	      // Check for simulator sanity -- if transaction counts dont match
@@ -562,20 +570,13 @@ int ase_listener()
       struct mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(mmio_t) );
 
-      // Cleanse receptacle string
-      // memset(mmio_str, 0, ASE_MQ_MSGSIZE);
-  
       // Receive csr_write packet
       if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_pkt, sizeof(mmio_t) )==ASE_MSG_PRESENT)
 	{
 	  mmio_dispatch (0, mmio_pkt);
-
-	  // *FIXME*: Synchronizer must go here... TEST CODE
-	  // ase_memory_barrier();
 	}
+
       // ------------------------------------------------------------------------------- //
-
-
       /*
        * UMSG engine
        * *FIXME*: Profiling and costliness analysis needed here
