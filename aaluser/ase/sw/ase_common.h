@@ -392,6 +392,8 @@ extern "C" {
   void session_init();
   void session_deinit();
   int ase_read_lock_file(const char*);
+  void send_simkill();
+  void send_swreset();
   // Shared memory alloc/dealloc operations
   void allocate_buffer(struct buffer_t *, uint64_t *);
   void deallocate_buffer(struct buffer_t *);
