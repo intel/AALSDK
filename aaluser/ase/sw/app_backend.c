@@ -257,6 +257,9 @@ void session_init()
 {
   FUNC_CALL_ENTRY;
 
+  if (session_exist_status != ESTABLISHED)
+    {
+
   setvbuf(stdout, NULL, (int)_IONBF, (size_t)0);
 
   ipc_init();
@@ -480,6 +483,13 @@ void session_init()
   session_exist_status = ESTABLISHED;
 
   END_YELLOW_FONTCOLOR;
+    }
+  else
+    {      
+    #ifdef ASE_DEBUG
+      printf("  [DEBUG]  Session already exists\n");
+    #endif
+    }
 
   FUNC_CALL_EXIT;
 }

@@ -239,6 +239,9 @@ module ccip_logger
       forever begin
 	 // Indicate Software controlled reset
 	 if (SoftReset_q != SoftReset) begin
+	    if (cfg.enable_cl_view) begin
+	       $display("%d\tSoftReset toggled from %b to %b\n", $time, SoftReset_q, SoftReset);
+	    end
 	    $fwrite(log_fd, "%d\tSoftReset toggled from %b to %b\n", $time, SoftReset_q, SoftReset);
 	 end
 	 // Buffer messages

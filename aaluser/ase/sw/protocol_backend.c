@@ -512,8 +512,10 @@ int ase_listener()
 
       // ------------------------------------------------------------------------------- //
       ase_empty_buffer(&ase_buffer);
+#if 0
       if (glbl_dealloc_allowed) 
 	{
+#endif
 	  if (mqueue_recv(app2sim_dealloc_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
 	    {
 	      // Format workspace info string
@@ -538,19 +540,20 @@ int ase_listener()
 	      END_YELLOW_FONTCOLOR;
             #endif
 	    }
+#if 0
 	}
-  
+#endif
       // ------------------------------------------------------------------------------- //
       /*
        * MMIO request listener
        */
       // Message string
-      char mmio_str[ASE_MQ_MSGSIZE];
+      // char mmio_str[ASE_MQ_MSGSIZE];
       struct mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(mmio_t) );
 
       // Cleanse receptacle string
-      memset(mmio_str, 0, ASE_MQ_MSGSIZE);
+      // memset(mmio_str, 0, ASE_MQ_MSGSIZE);
   
       // Receive csr_write packet
       if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_pkt, sizeof(mmio_t) )==ASE_MSG_PRESENT)
@@ -558,7 +561,7 @@ int ase_listener()
 	  mmio_dispatch (0, mmio_pkt);
 
 	  // *FIXME*: Synchronizer must go here... TEST CODE
-	  ase_memory_barrier();
+	  // ase_memory_barrier();
 	}
       // ------------------------------------------------------------------------------- //
 
