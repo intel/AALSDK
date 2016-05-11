@@ -1320,17 +1320,17 @@ module ccip_emulator
     * Live count of transactions to be printed at end of simulation
     *
     * ******************************************************************/
-   int ase_rx0_mmiowrreq_cnt ;
-   int ase_rx0_mmiordreq_cnt ;
-   int ase_tx2_mmiordrsp_cnt ;
-   int ase_tx0_rdvalid_cnt   ;
-   int ase_rx0_rdvalid_cnt   ;
-   int ase_tx1_wrvalid_cnt   ;
-   int ase_rx1_wrvalid_cnt   ;
-   int ase_tx1_wrfence_cnt   ;
-   int ase_rx1_wrfence_cnt   ;
-   int ase_rx0_umsghint_cnt  ;
-   int ase_rx0_umsgdata_cnt  ;
+   int ase_rx0_mmiowrreq_cnt = 0 ;
+   int ase_rx0_mmiordreq_cnt = 0 ;
+   int ase_tx2_mmiordrsp_cnt = 0 ;
+   int ase_tx0_rdvalid_cnt = 0 ;
+   int ase_rx0_rdvalid_cnt = 0 ;
+   int ase_tx1_wrvalid_cnt = 0 ;
+   int ase_rx1_wrvalid_cnt = 0 ;
+   int ase_tx1_wrfence_cnt = 0 ;
+   int ase_rx1_wrfence_cnt = 0 ;
+   int ase_rx0_umsghint_cnt = 0 ;
+   int ase_rx0_umsgdata_cnt = 0 ;
 `ifdef DEFEATRUE_ATOMIC
    int ase_tx1_atomic_cnt;
    int ase_rx0_atomic_cnt;
@@ -1342,24 +1342,24 @@ module ccip_emulator
 
    // process
    always @(posedge clk) begin : transact_cnt_proc
-      if (ase_reset) begin
-	 ase_rx0_mmiowrreq_cnt <= 0 ;
-	 ase_rx0_mmiordreq_cnt <= 0 ;
-	 ase_tx2_mmiordrsp_cnt <= 0 ;
-	 ase_tx0_rdvalid_cnt <= 0 ;
-	 ase_rx0_rdvalid_cnt <= 0 ;
-	 ase_tx1_wrvalid_cnt <= 0 ;
-	 ase_rx1_wrvalid_cnt <= 0 ;
-	 ase_tx1_wrfence_cnt <= 0 ;
-	 ase_rx1_wrfence_cnt <= 0 ;
-	 ase_rx0_umsghint_cnt <= 0 ;
-	 ase_rx0_umsgdata_cnt <= 0 ;
-`ifdef DEFEATRUE_ATOMIC
-	 ase_tx1_atomic_cnt <= 0;
-	 ase_rx0_atomic_cnt <= 0;
-`endif
-      end
-      else begin
+//       if (ase_reset) begin
+// 	 ase_rx0_mmiowrreq_cnt <= 0 ;
+// 	 ase_rx0_mmiordreq_cnt <= 0 ;
+// 	 ase_tx2_mmiordrsp_cnt <= 0 ;
+// 	 ase_tx0_rdvalid_cnt <= 0 ;
+// 	 ase_rx0_rdvalid_cnt <= 0 ;
+// 	 ase_tx1_wrvalid_cnt <= 0 ;
+// 	 ase_rx1_wrvalid_cnt <= 0 ;
+// 	 ase_tx1_wrfence_cnt <= 0 ;
+// 	 ase_rx1_wrfence_cnt <= 0 ;
+// 	 ase_rx0_umsghint_cnt <= 0 ;
+// 	 ase_rx0_umsgdata_cnt <= 0 ;
+// `ifdef DEFEATRUE_ATOMIC
+// 	 ase_tx1_atomic_cnt <= 0;
+// 	 ase_rx0_atomic_cnt <= 0;
+// `endif
+//       end
+//       else begin
 	 // MMIO counts
 	 if (C0RxMmioWrValid)
 	   ase_rx0_mmiowrreq_cnt <= ase_rx0_mmiowrreq_cnt + 1;
@@ -1393,7 +1393,7 @@ module ccip_emulator
 	 if (C0RxRdValid && (C0RxHdr.resptype == ASE_ATOMIC_RSP))
 	   ase_rx0_atomic_cnt <= ase_rx0_atomic_cnt + 1;
 `endif
-      end
+      // end
    end
 
 
