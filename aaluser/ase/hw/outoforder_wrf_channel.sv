@@ -349,7 +349,8 @@ module outoforder_wrf_channel
    TxHdr_t                       infifo_hdr_out;
    logic 			 infifo_vld;
 
-   ccip_vc_t 		  vc_arb;
+   ccip_vc_t 		  vc_rd_arb;
+   ccip_vc_t 		  vc_wr_arb;
 
    ccip_vc_t sel_vc_array[4] = {VC_VL0, VC_VH0, VC_VL0, VC_VH1};
    logic [1:0] 			 curr_vc_index = 2'b0;
@@ -361,7 +362,7 @@ module outoforder_wrf_channel
    function automatic void select_vc_read(int init, ref TxHdr_t hdr);
       begin
    	 if (init) begin
-   	    vc_arb = ccip_vc_t'(VC_VL0);
+   	    vc_rd_arb = ccip_vc_t'(VC_VL0);
    	 end
    	 else begin
    	    if (hdr.vc == VC_VA) begin
@@ -378,7 +379,7 @@ module outoforder_wrf_channel
    	       	 3'b101: hdr.vc = VC_VH0;
    	       	 3'b110: hdr.vc = VC_VH1;
    	       endcase
-   	       vc_arb = ccip_vc_t'(hdr.vc);
+   	       vc_rd_arb = ccip_vc_t'(hdr.vc);
    	    end
 	 end
       end
@@ -390,7 +391,7 @@ module outoforder_wrf_channel
    function automatic void select_vc_write(int init, ref TxHdr_t hdr);
       begin
    	 if (init) begin
-   	    vc_arb = ccip_vc_t'(VC_VL0);
+   	    vc_wr_arb = ccip_vc_t'(VC_VL0);
    	 end
    	 else if (hdr.sop && (hdr.vc == VC_VA)) begin
    	    case ({vl0_array_full, vh0_array_full, vh1_array_full})
@@ -406,11 +407,11 @@ module outoforder_wrf_channel
    	      3'b101: hdr.vc = VC_VH0;
    	      3'b110: hdr.vc = VC_VH1;
    	    endcase
-   	    vc_arb = ccip_vc_t'(hdr.vc);
+   	    vc_wr_arb = ccip_vc_t'(hdr.vc);
 	 end // if (hdr.sop)
-	 else begin
-	    hdr.vc = vc_arb;		  
-	 end
+	 // else begin
+	 //    hdr.vc = vc_wr_arb;		  
+	 // end
       end
    endfunction
    
