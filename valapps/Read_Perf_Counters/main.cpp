@@ -262,6 +262,153 @@ void DoesNLBLpbk1::FreeBuffers()
    m_pALIBufferIfc = NULL;
 }
 
+class PerfCounters
+{
+public:
+   enum Index
+   {
+      VERSION = 0,
+      READ_HIT,
+      WRITE_HIT,
+      READ_MISS,
+      WRITE_MISS,
+      EVICTIONS,
+      PCIE0_READ,
+      PCIE0_WRITE,
+      PCIE1_READ,
+      PCIE1_WRITE,
+      UPI_READ,
+      UPI_WRITE
+   };
+
+   PerfCounters(const NamedValueSet &nvs)
+   {
+      if ( nvs.Has(AALPERF_VERSION) ) {
+         m_Values[VERSION].Valid = true;
+         nvs.Get(AALPERF_VERSION, &m_Values[VERSION].Value);
+      } else {
+         m_Values[VERSION].Valid = false;
+      }
+
+      if ( nvs.Has(AALPERF_READ_HIT) ) {
+         m_Values[READ_HIT].Valid = true;
+         nvs.Get(AALPERF_READ_HIT, &m_Values[READ_HIT].Value);
+      } else {
+         m_Values[READ_HIT].Valid = false;
+      }
+
+      if ( nvs.Has(AALPERF_WRITE_HIT) ) {
+         m_Values[WRITE_HIT].Valid = true;
+         nvs.Get(AALPERF_WRITE_HIT, &m_Values[WRITE_HIT].Value);
+      } else {
+         m_Values[WRITE_HIT].Valid = false;
+      }
+
+      if ( nvs.Has(AALPERF_READ_MISS) ) {
+         m_Values[READ_MISS].Valid = true;
+         nvs.Get(AALPERF_READ_MISS, &m_Values[READ_MISS].Value);
+      } else {
+         m_Values[READ_MISS].Valid = false;
+      }
+
+      if ( nvs.Has(AALPERF_WRITE_MISS) ) {
+         m_Values[WRITE_MISS].Valid = true;
+         nvs.Get(AALPERF_WRITE_MISS, &m_Values[WRITE_MISS].Value);
+      } else {
+         m_Values[WRITE_MISS].Valid = false;
+      }
+
+      if ( nvs.Has(AALPERF_EVICTIONS) ) {
+         m_Values[EVICTIONS].Valid = true;
+         nvs.Get(AALPERF_EVICTIONS, &m_Values[EVICTIONS].Value);
+      } else {
+         m_Values[EVICTIONS].Valid = false;
+      }
+
+      if ( nvs.Has(AALPERF_PCIE0_READ) ) {
+         m_Values[PCIE0_READ].Valid = true;
+         nvs.Get(AALPERF_PCIE0_READ, &m_Values[PCIE0_READ].Value);
+      } else {
+         m_Values[PCIE0_READ].Valid = false;
+      }
+
+      if ( nvs.Has(AALPERF_PCIE0_WRITE) ) {
+         m_Values[PCIE0_WRITE].Valid = true;
+         nvs.Get(AALPERF_PCIE0_WRITE, &m_Values[PCIE0_WRITE].Value);
+      } else {
+         m_Values[PCIE0_WRITE].Valid = false;
+      }
+
+      if ( nvs.Has(AALPERF_PCIE1_READ) ) {
+         m_Values[PCIE1_READ].Valid = true;
+         nvs.Get(AALPERF_PCIE1_READ, &m_Values[PCIE1_READ].Value);
+      } else {
+         m_Values[PCIE1_READ].Valid = false;
+      }
+
+      if ( nvs.Has(AALPERF_PCIE1_WRITE) ) {
+         m_Values[PCIE1_WRITE].Valid = true;
+         nvs.Get(AALPERF_PCIE1_WRITE, &m_Values[PCIE1_WRITE].Value);
+      } else {
+         m_Values[PCIE1_WRITE].Valid = false;
+      }
+
+      if ( nvs.Has(AALPERF_UPI_READ) ) {
+         m_Values[UPI_READ].Valid = true;
+         nvs.Get(AALPERF_UPI_READ, &m_Values[UPI_READ].Value);
+      } else {
+         m_Values[UPI_READ].Valid = false;
+      }
+
+      if ( nvs.Has(AALPERF_UPI_WRITE) ) {
+         m_Values[UPI_WRITE].Valid = true;
+         nvs.Get(AALPERF_UPI_WRITE, &m_Values[UPI_WRITE].Value);
+      } else {
+         m_Values[UPI_WRITE].Valid = false;
+      }
+   }
+
+   btBool             Valid(PerfCounters::Index i) const { return m_Values[i].Valid; }
+   btUnsigned64bitInt Value(PerfCounters::Index i) const { return m_Values[i].Value; }
+
+   btBool operator == (const PerfCounters &rhs) const;
+   btBool operator != (const PerfCounters &rhs) const { return ! this->PerfCounters::operator == (rhs); }
+
+protected:
+   struct
+   {
+      btBool             Valid;
+      btUnsigned64bitInt Value;
+   } m_Values[12];
+};
+
+btBool PerfCounters::operator == (const PerfCounters &rhs) const
+{
+   btInt               i;
+   PerfCounters::Index idx;
+
+   for ( i = (btInt)PerfCounters::VERSION ;
+            i <= (btInt)PerfCounters::UPI_WRITE ;
+               ++i ) {
+
+      idx = (PerfCounters::Index) i;
+
+      if ( (  Valid(idx) && !rhs.Valid(idx) ) ||
+           ( !Valid(idx) &&  rhs.Valid(idx) ) ) {
+         return false;
+      }
+
+      if ( Valid(idx) ) {
+         if ( Value(idx) != rhs.Value(idx) ) {
+            return false;
+         }
+      }
+
+   }
+
+   return true;
+}
+
 
 
 class Read_Perf_CountersApp : public CAASBase,
@@ -301,6 +448,10 @@ public:
 protected:
    IBase * AllocateService();
    void    FreeService();
+
+   void sw_perfc_01();
+   void sw_perfc_02();
+
 
    Runtime     m_Runtime;       ///< AAL Runtime
    IBase      *m_pAALService;   ///< The generic AAL Service interface for the AFU.
@@ -531,13 +682,12 @@ btInt Read_Perf_CountersApp::Run()
    // Get a pointer to our NLB AAL Service.
    IBase *pAALService = AllocateService();
 
-   DoesNLBLpbk1 lpbk1(pAALService);
-
    if ( NULL == pAALService ) {
       goto _STOP;
    }
 
-   m_Errors += lpbk1.NLBLpbk1();
+   sw_perfc_01();
+   sw_perfc_02();
 
    FreeService();
 
@@ -546,6 +696,63 @@ _STOP:
    m_Sem.Wait();
 
    return m_Errors;
+}
+
+void Read_Perf_CountersApp::sw_perfc_01()
+{
+   // Null test: Get performance counters. Do nothing. Get them again. They should not change.
+
+   // Get the IALIPerf associated with the AAL Service.
+   IALIPerf *pALIPerfIfc = dynamic_ptr<IALIPerf>(iidALI_PERF_Service, m_pAALService);
+
+   ASSERT(NULL != pALIPerfIfc);
+   if ( NULL == pALIPerfIfc ) {
+      ++m_Errors;
+      return;
+   }
+
+   NamedValueSet NVS1;
+   btBool        res;
+
+   res = pALIPerfIfc->performanceCountersGet(&NVS1);
+   if ( !res ) {
+      ++m_Errors;
+      ERR("1st performanceCountersGet() failed");
+      return;
+   }
+
+   PerfCounters Counters1(NVS1);
+
+   NamedValueSet NVS2;
+   NamedValueSet OptArgs;
+
+   res = pALIPerfIfc->performanceCountersGet(&NVS2, OptArgs);
+   if ( !res ) {
+      ++m_Errors;
+      ERR("2nd performanceCountersGet() failed");
+      return;
+   }
+
+   PerfCounters Counters2(NVS2);
+
+   if ( Counters1 != Counters2 ) {
+      ++m_Errors;
+      ERR("SW-PERFC-01 FAIL");
+   } else {
+      MSG("SW-PERFC-01 PASS");
+   }
+}
+
+void Read_Perf_CountersApp::sw_perfc_02()
+{
+   // Active test: Get performance counters. Run any NLB test. Get the performance counters again.
+   // If they changed, then the SW is accessing the HW. Test Passes.
+
+   // Perhaps add some sanity checking on returned value (!= 0xFFFF, value_before < value_after, ...)
+
+   //   DoesNLBLpbk1 lpbk1(pAALService);
+   //   m_Errors += lpbk1.NLBLpbk1();
+
 }
 
 
