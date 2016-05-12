@@ -218,6 +218,12 @@ module ccip_emulator
 	   ASE_ATOMIC_RSP : rxasehdr.resp_type = eRSP_ATOMIC;
 `endif
 	 endcase
+	 case (inhdr.rxhdr.vc_used)
+	   VC_VA           : rxasehdr.vc_used = eVC_VA;
+	   VC_VL0          : rxasehdr.vc_used = eVC_VL0;
+	   VC_VH0          : rxasehdr.vc_used = eVC_VH0;
+	   VC_VH1          : rxasehdr.vc_used = eVC_VH1;	   
+	 endcase
 	 return rxasehdr;
       end
    endfunction
@@ -231,6 +237,12 @@ module ccip_emulator
 	   ASE_WR_RSP      : rxasehdr.resp_type = eRSP_WRLINE;
 	   ASE_WRFENCE_RSP : rxasehdr.resp_type = eRSP_WRFENCE;
 	   ASE_INTR_RSP    : rxasehdr.resp_type = eRSP_INTR;
+	 endcase // case (inhdr.rxhdr.resptype)
+	 case (inhdr.rxhdr.vc_used)
+	   VC_VA           : rxasehdr.vc_used = eVC_VA;
+	   VC_VL0          : rxasehdr.vc_used = eVC_VL0;
+	   VC_VH0          : rxasehdr.vc_used = eVC_VH0;
+	   VC_VH1          : rxasehdr.vc_used = eVC_VH1;	   
 	 endcase
 	 return rxasehdr;
       end
@@ -1684,7 +1696,34 @@ module ccip_emulator
       end
    endtask
 
-   // Glue process
+   /*
+    * WrResp Coalescer
+    * --------------------------------------------
+    * - If cf2as_latbuf_ch1_valid is HIGH
+    *   - If cf2as_latbuf_rx1hdr.fmt is HIGH
+    *     - *FIXME*: Fulfill unrolled requests, and pack them
+    *   - If cf2as_latbuf_rx1hdr.fmt is LOW  
+    *     - Fullfill request and passthru
+    */ 
+   // always @(posedge clk) begin
+   //    if (ase_reset) begin
+   // 	 wr1rsp_write <= 0;	 
+   //    end
+   //    // Pass through data if no PACK directive is set
+   //    else if (cf2as_latbuf_ch1_valid && ~cf2as_latbuf_rx1hdr.format) begin
+   // 	 cf2as_latbuf_to_wrrsp_fifo();
+   // 	 wr1rsp_write <= 1;	 
+   //    end
+   //    else if (cf2as_latbuf_ch1_valid && cf2as_latbuf_rx1hdr.format) begin
+   //    end
+   //    else begin
+   // 	 wr1rsp_write <= 0;	 
+   //    end
+   // end
+   
+
+
+   // Glue process (roll it into coalescer block)
    always @(posedge clk) begin
       if (ase_reset) begin
 	 wr1rsp_write <= 0;
@@ -2169,26 +2208,28 @@ module ccip_emulator
       // CCIP ports
       .clk              (clk             ),
       .SoftReset        (SoftReset       ),
-      .C0TxHdr          (C0TxHdr         ),
-      .C0TxRdValid      (C0TxRdValid     ),
-      .C1TxHdr          (C1TxHdr         ),
-      .C1TxData         (C1TxData        ),
-      .C1TxWrValid      (C1TxWrValid     ),
-      .C1TxIntrValid    (1'b0   ),
-      .C2TxHdr          (C2TxHdr         ),
-      .C2TxMmioRdValid  (C2TxMmioRdValid ),
-      .C2TxData         (C2TxData        ),
-      .C0RxMmioWrValid  (C0RxMmioWrValid ),
-      .C0RxMmioRdValid  (C0RxMmioRdValid ),
-      .C0RxData         (C0RxData        ),
-      .C0RxHdr          (C0RxHdr         ),
-      .C0RxRdValid      (C0RxRdValid     ),
-      .C0RxUMsgValid    (C0RxUMsgValid   ),
-      .C1RxHdr          (C1RxHdr         ),
-      .C1RxWrValid      (C1RxWrValid     ),
-      .C1RxIntrValid    (C1RxIntrValid   ),
-      .C0TxAlmFull      (C0TxAlmFull     ),
-      .C1TxAlmFull      (C1TxAlmFull     )
+      .ccip_rx          (pck_cp2af_sRx   ),
+      .ccip_tx          (pck_af2cp_sTx   )
+      // .C0TxHdr          (C0TxHdr         ),
+      // .C0TxRdValid      (C0TxRdValid     ),
+      // .C1TxHdr          (C1TxHdr         ),
+      // .C1TxData         (C1TxData        ),
+      // .C1TxWrValid      (C1TxWrValid     ),
+      // .C1TxIntrValid    (1'b0   ),
+      // .C2TxHdr          (C2TxHdr         ),
+      // .C2TxMmioRdValid  (C2TxMmioRdValid ),
+      // .C2TxData         (C2TxData        ),
+      // .C0RxMmioWrValid  (C0RxMmioWrValid ),
+      // .C0RxMmioRdValid  (C0RxMmioRdValid ),
+      // .C0RxData         (C0RxData        ),
+      // .C0RxHdr          (C0RxHdr         ),
+      // .C0RxRdValid      (C0RxRdValid     ),
+      // .C0RxUMsgValid    (C0RxUMsgValid   ),
+      // .C1RxHdr          (C1RxHdr         ),
+      // .C1RxWrValid      (C1RxWrValid     ),
+      // .C1RxIntrValid    (C1RxIntrValid   ),
+      // .C0TxAlmFull      (C0TxAlmFull     ),
+      // .C1TxAlmFull      (C1TxAlmFull     )
       );
 `endif //  `ifndef ASE_DISABLE_LOGGER
 
