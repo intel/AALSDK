@@ -937,7 +937,7 @@ module outoforder_wrf_channel
 	 unroll_active         = 0;
 	 outfifo_write_en        = 0;
 	 if (ptr != LATBUF_SLOT_INVALID) begin
-	    unroll_active        = 1;
+	    unroll_active           = 1;
 	    // TxHdr
 	    txhdr                   = records[ptr].hdr;
 	    base_addr               = txhdr.addr;
@@ -945,8 +945,20 @@ module outoforder_wrf_channel
 	    rxhdr.vc_used           = txhdr.vc;
 	    rxhdr.rsvd25            = 0;
 	    rxhdr.hitmiss           = 0; // *FIXME*
-	    rxhdr.format            = 0;
-	    rxhdr.rsvd22            = 0 ;
+	    // If VC=VH{0,1}, and request is some kind of write, issue a packing directive
+	    // if (WRITE_CHANNEL == 1) begin
+	    //    if ((rxhdr.vc_used == VC_VH0)||(rxhdr.vc_used == VC_VH1)) begin
+	    // 	  rxhdr.format      = 1;	       
+	    //    end
+	    //    else begin
+	    // 	  rxhdr.format      = 0;	       
+	    //    end
+	    // end
+	    // else begin
+	    //    rxhdr.format         = 0;
+	    // end 	    
+	    rxhdr.format         = 0;
+	    rxhdr.rsvd22            = 0;
 	    // rxhdr.clnum will be updated by unroll
 	    if ( (txhdr.reqtype == ASE_RDLINE_S) || (txhdr.reqtype == ASE_RDLINE_I) ) begin
 	       rxhdr.resptype        = ASE_RD_RSP;
