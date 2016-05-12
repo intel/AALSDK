@@ -27,19 +27,46 @@
 ##  Accelerator Abstraction Layer Library Software Developer Kit (SDK)
 ##
 ##  Content:
-##     utils/Makefile.am
+##     utils/ALIAFU/ALI/Makefile.am
 ##  Author:
-##     Tim Whisonant, Intel Corporation
+##      Intel Corporation
 ##  History:
-##     06/16/2015    TSW   Initial version
+##     05/02/2016    TSW   Initial version
 ##******************************************************************************
-SUBDIRS=\
-aalscan \
-fpgadiag \
-data_model \
-ALIAFU/ASEALIAFU \
-ALIAFU/HWALIAFU \
-ALIAFU/SWSimALIAFU \
-ALIAFU/ALI \
-scripts
+lib_LTLIBRARIES=libALI.la
 
+libALI_la_SOURCES=\
+ALIAIATransactions.cpp \
+ALIAIATransactions.h \
+ALI.cpp \
+ALI.h  \
+HWALIFME.h \
+HWALIFME.cpp \
+HWALIPORT.h \
+HWALIPORT.cpp \
+HWALIAFU.h \
+HWALIAFU.cpp \
+HWALIBase.cpp \
+HWALIBase.h  \
+ALIBase.h \
+HWALIReconf.h \
+HWALIReconf.cpp \
+HWALISigTap.h  \
+HWALISigTap.cpp \
+ASEALIAFU.cpp \
+ASEALIAFU.h
+
+libALI_la_CPPFLAGS=\
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
+
+libALI_la_LDFLAGS=\
+-module \
+-version-info $(ALI_VERSION_CURRENT):$(ALI_VERSION_REVISION):$(ALI_VERSION_AGE)
+
+libALI_la_LIBADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la \
+$(top_builddir)/aas/AALRuntime/libaalrt.la \
+$(top_builddir)/aas/AIAService/libaia.la \
+$(top_builddir)/ase/sw/libASE.la

@@ -183,7 +183,7 @@ typedef enum
    ccipdrv_ClearFMEError,
    ccipdrv_ClearAllFMEErrors,
    ccipdrv_getPower,
-   ccipdrv_gertThrermal,
+   ccipdrv_gertThermal,
    ccipdrv_getPortError,
    ccipdrv_SetPortErrorMask,
    ccipdrv_ClearPortError,

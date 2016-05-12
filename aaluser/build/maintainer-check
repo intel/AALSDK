@@ -1152,6 +1152,7 @@ declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
 'HWALIAFUService.h.in' \
 'ASEALIAFUService.h.in' \
 'SWSimALIAFUService.h.in'\
+'ALIService.h.in'\
 )
 declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'aalclp.c' \
@@ -1166,6 +1167,7 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'HWALIAFUService.h' \
 'ASEALIAFUService.h' \
 'SWSimALIAFUService.h' \
+'ALIService.h' \
 'Readme.MultiPackage.txt' \
 'aalbus_Defs.h' \
 'aalbus-device.h' \
