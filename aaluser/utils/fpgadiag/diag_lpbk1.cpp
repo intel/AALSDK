@@ -234,7 +234,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
        }
 
        // Verify the buffers
-       if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, NumCacheLines) != 0 ){
+       if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, (NumCacheLines * CL(1))) != 0 ){
           cerr << "Data mismatch in Input and Output buffers.\n";
            ++res;
            break;

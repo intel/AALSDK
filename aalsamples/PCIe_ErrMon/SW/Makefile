@@ -39,7 +39,7 @@ CXX      ?= g++
 LDFLAGS  ?=
 
 ifeq (,$(CFLAGS))
-CFLAGS = -g -O2
+CFLAGS = -g -O2 -march=native -mfpmath=sse
 endif
 
 ifneq (,$(ndebug))
