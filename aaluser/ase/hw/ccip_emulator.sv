@@ -1576,6 +1576,8 @@ module ccip_emulator
        .DEBUG_LOGNAME       ("latbuf_ch0.log"),
        .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
        .COUNT_WIDTH         (LATBUF_COUNT_WIDTH),
+       .VISIBLE_DEPTH_BASE2 (8),
+       .VISIBLE_FULL_THRESH (220),
        .WRITE_CHANNEL       (0)
        )
    cf2as_latbuf_ch0
@@ -1648,6 +1650,8 @@ module ccip_emulator
        .DEBUG_LOGNAME       ("latbuf_ch1.log"),
        .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
        .COUNT_WIDTH         (LATBUF_COUNT_WIDTH),
+       .VISIBLE_DEPTH_BASE2 (8),
+       .VISIBLE_FULL_THRESH (220),
        .WRITE_CHANNEL       (1)
        )
    cf2as_latbuf_ch1
@@ -2196,41 +2200,25 @@ module ccip_emulator
     * CCI Logger module
     */
 `ifndef ASE_DISABLE_LOGGER
-   ccip_logger ccip_logger
+   ccip_logger
+     #(
+       .LOGNAME         ("ccip_transactions.tsv")
+       )
+   ccip_logger
      (
       // Logger control
-      .enable_logger    (cfg.enable_cl_view),
-      .finish_logger    (finish_logger     ),
+      .enable_logger    ( cfg.enable_cl_view   ),
+      .finish_logger    ( finish_logger        ),
       // Buffer message injection
-      .log_string_en    (buffer_msg_en        ),
-      .log_timestamp_en (buffer_msg_tstamp_en ),
-      .log_string       (buffer_msg           ),
+      .log_string_en    ( buffer_msg_en        ),
+      .log_timestamp_en ( buffer_msg_tstamp_en ),
+      .log_string       ( buffer_msg           ),
       // CCIP ports
-      .clk              (clk             ),
-      .SoftReset        (SoftReset       ),
-      .ccip_rx          (pck_cp2af_sRx   ),
-      .ccip_tx          (pck_af2cp_sTx   )
-      // .C0TxHdr          (C0TxHdr         ),
-      // .C0TxRdValid      (C0TxRdValid     ),
-      // .C1TxHdr          (C1TxHdr         ),
-      // .C1TxData         (C1TxData        ),
-      // .C1TxWrValid      (C1TxWrValid     ),
-      // .C1TxIntrValid    (1'b0   ),
-      // .C2TxHdr          (C2TxHdr         ),
-      // .C2TxMmioRdValid  (C2TxMmioRdValid ),
-      // .C2TxData         (C2TxData        ),
-      // .C0RxMmioWrValid  (C0RxMmioWrValid ),
-      // .C0RxMmioRdValid  (C0RxMmioRdValid ),
-      // .C0RxData         (C0RxData        ),
-      // .C0RxHdr          (C0RxHdr         ),
-      // .C0RxRdValid      (C0RxRdValid     ),
-      // .C0RxUMsgValid    (C0RxUMsgValid   ),
-      // .C1RxHdr          (C1RxHdr         ),
-      // .C1RxWrValid      (C1RxWrValid     ),
-      // .C1RxIntrValid    (C1RxIntrValid   ),
-      // .C0TxAlmFull      (C0TxAlmFull     ),
-      // .C1TxAlmFull      (C1TxAlmFull     )
-      );
+      .clk              ( clk                  ),
+      .SoftReset        ( SoftReset            ),
+      .ccip_rx          ( pck_cp2af_sRx        ),
+      .ccip_tx          ( pck_af2cp_sTx        )
+      );   
 `endif //  `ifndef ASE_DISABLE_LOGGER
 
 
@@ -2285,10 +2273,6 @@ module ccip_emulator
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
-	 // $display("cf2as_latbuf_ch0 dropped =>");
-	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.checkunit.check_array);
-	 // $display("cf2as_latbuf_ch1 dropped =>");
-	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.checkunit.check_array);
 	 $display("Read Response checker =>");
 	 $display(read_check_array);
 	 $display("Write Response checker =>");
