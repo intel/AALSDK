@@ -161,7 +161,7 @@ char *app_run_cmd;
 #define ASE_MODE_REGRESSION          4
 
 // UMAS establishment status
-#define NOT_ESTABLISHED 0x0
+#define NOT_ESTABLISHED 0xC0C0
 #define ESTABLISHED     0xBEEF
 
 
@@ -392,6 +392,8 @@ extern "C" {
   void session_init();
   void session_deinit();
   int ase_read_lock_file(const char*);
+  void send_simkill();
+  void send_swreset();
   // Shared memory alloc/dealloc operations
   void allocate_buffer(struct buffer_t *, uint64_t *);
   void deallocate_buffer(struct buffer_t *);
@@ -433,8 +435,8 @@ extern "C" {
  *
  * ********************************************************************/
 // Message Queue establishment status
-#define MQ_NOT_ESTABLISHED 0x0
-#define MQ_ESTABLISHED     0xCAFE
+// #define MQ_NOT_ESTABLISHED 0x0
+//#define MQ_ESTABLISHED     0xCAFE
 
 // Message queue parameters
 #define ASE_MQ_MAXMSG     8
@@ -583,6 +585,7 @@ void ase_config_parse(char*);
 void start_simkill_countdown();
 void run_clocks(int num_clocks);
 void afu_softreset_trig(int init, int value);
+void ase_reset_trig();
 void sw_reset_response();
 
 // Read system memory line

@@ -31,6 +31,7 @@
  *              rahul.r.sharma@intel.com
  *              Intel Corporation
  */
+
 #define _GNU_SOURCE
 
 #include "ase_common.h"
@@ -42,20 +43,25 @@
 pthread_mutex_t mmio_port_lock;
 
 // MMIO Outstanding counts
-uint32_t mmio_write_cnt = 0;
-uint32_t mmio_readreq_cnt = 0;
-uint32_t mmio_readrsp_cnt = 0;
+volatile uint32_t mmio_writereq_cnt = 0;
+volatile uint32_t mmio_writersp_cnt = 0;
+volatile uint32_t mmio_readreq_cnt = 0;
+volatile uint32_t mmio_readrsp_cnt = 0;
+
+uint32_t mmio_read_outstanding = 0;
+uint32_t mmio_write_outstanding = 0;
+
 // uint32_t mmio_rsp_num_outstanding = 0;
 
+// Session setup
+uint32_t session_exist_status = NOT_ESTABLISHED;
+
 // MQ established
-uint32_t mq_exist_status = MQ_NOT_ESTABLISHED;
+uint32_t mq_exist_status = NOT_ESTABLISHED;
 
 // Umsg and MMIO statuses
 uint32_t mmio_exist_status = NOT_ESTABLISHED;
 uint32_t umas_exist_status = NOT_ESTABLISHED;
-
-// Session status
-uint32_t session_exist_status = NOT_ESTABLISHED;
 
 // CSR map storage
 struct buffer_t *mmio_region;
@@ -121,10 +127,7 @@ char* umsg_addr_array[NUM_UMSG_PER_AFU];
 // UMAS initialized flag
 volatile int umas_init_flag;
 
-// Time elapsed
-/* clock_t start_clk, end_clk; */
-/* double wall_clk_duration; */
-
+// Time taken calc
 struct timespec time_snapshot;
 unsigned long long runtime_nsec;
 
@@ -142,8 +145,12 @@ pthread_t msix_watch_tid;
  */
 uint32_t generate_mmio_tid()
 {
+  // Calculate outstanding
+  mmio_read_outstanding = mmio_readreq_cnt - mmio_readrsp_cnt;
+  mmio_write_outstanding = mmio_writereq_cnt - mmio_writersp_cnt;
+
   // *FIXME*: TID credit must not overrun, no more than 64 outstanding MMIO Requests
-  while ((mmio_readreq_cnt - mmio_readrsp_cnt) == MMIO_MAX_OUTSTANDING)
+  while ((mmio_read_outstanding + mmio_write_outstanding) >= MMIO_MAX_OUTSTANDING)
     {
       printf("  [APP]  MMIO TIDs have run out --- waiting for some to get released !\n");
       usleep(100000);
@@ -178,6 +185,10 @@ void *mmio_response_watcher()
   mmio_rsp_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
   int ret;
 
+#ifdef ASE_DEBUG
+  char mmio_type[3];
+#endif
+
   // start watching for messages
   while(mmio_exist_status == ESTABLISHED)
     {
@@ -185,26 +196,59 @@ void *mmio_response_watcher()
       mmio_rsp_pkt_accepted = 0;
       mmio_rsp_pkt_available = 0;
       memset((void*)mmio_rsp_pkt, 0xff, sizeof(mmio_t));
-
+      
       // If received, update global message
       ret = mqueue_recv( sim2app_mmiorsp_rx, (char*)mmio_rsp_pkt, sizeof(mmio_t) );
       if (ret == ASE_MSG_PRESENT) 
 	{
-	#ifdef ASE_DEBUG
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("  [DEBUG]  mmio_watcher => tid=%03x addr=%x data=%016llx\n", mmio_rsp_pkt->tid, mmio_rsp_pkt->addr, mmio_rsp_pkt->qword[0]);
-	  END_YELLOW_FONTCOLOR;
-        #endif
-
-	  // Mark as available
-	  mmio_rsp_pkt_available = 1;
-	  
-	  // Wait until ACK from requesting thread
-	  while (mmio_rsp_pkt_accepted != 1)
+        #ifdef ASE_DEBUG
+	  if (mmio_rsp_pkt->write_en == MMIO_WRITE_REQ)
 	    {
-	      usleep(10);
+	      strncpy(mmio_type, "WR\0", 3);
 	    }
-	  mmio_readrsp_cnt++;
+	  else if (mmio_rsp_pkt->write_en == MMIO_READ_REQ)
+	    {
+	      strncpy(mmio_type, "RD\0", 3);
+	    }
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("  [DEBUG]  mmio_watcher => %03x, %s, %d, %x, %016llx\n", 
+		 mmio_rsp_pkt->tid, 
+		 mmio_type, 
+		 mmio_rsp_pkt->width, 
+		 mmio_rsp_pkt->addr, 
+		 mmio_rsp_pkt->qword[0]);
+	  END_YELLOW_FONTCOLOR;
+         #endif
+
+	  // MMIO Read response (for credit count only)
+	  if (mmio_rsp_pkt->write_en == MMIO_READ_REQ) 
+	    {
+	      // Mark as available
+	      mmio_rsp_pkt_available = 1;
+	      
+	      // Wait until ACK from requesting thread
+	      while (mmio_rsp_pkt_accepted != 1)
+		{
+		  usleep(10);
+		}
+	      
+	      // MMIO Read response count
+	      mmio_readrsp_cnt++;
+	    }
+	  // MMIO Write response (for credit count only)
+	  else if (mmio_rsp_pkt->write_en == MMIO_WRITE_REQ)
+	    {
+	      // MMIO Write response count
+	      mmio_writersp_cnt++;
+	    }
+	  else 
+	    {
+	    #ifdef ASE_DEBUG
+	      BEGIN_RED_FONTCOLOR;
+	      printf("  [DEBUG]  Illegal MMIO request found -- must not happen !\n");
+	      END_RED_FONTCOLOR;
+            #endif
+	    }
 	}
     }
 }
@@ -216,6 +260,27 @@ void *mmio_response_watcher()
 void *intr_request_watcher()
 {
   
+}
+
+
+/*
+ * Send SW Reset
+ */
+void send_swreset()
+{
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [APP]  Issuing Soft Reset... \n");
+  END_YELLOW_FONTCOLOR;
+  while( (mmio_writereq_cnt != mmio_writersp_cnt) && (mmio_readreq_cnt != mmio_readrsp_cnt) )
+    {
+      sleep(1);
+    }
+  
+  // Sending reset trigger
+  ase_portctrl("AFU_RESET 1");
+  usleep(1);
+  ase_portctrl("AFU_RESET 0");
+
 }
 
 
@@ -256,6 +321,9 @@ void send_simkill()
 void session_init()
 {
   FUNC_CALL_ENTRY;
+
+  if (session_exist_status != ESTABLISHED)
+    {
 
   setvbuf(stdout, NULL, (int)_IONBF, (size_t)0);
 
@@ -331,15 +399,16 @@ void session_init()
   sim2app_intr_request_rx = mqueue_open( mq_array[9].name, mq_array[9].perm_flag );
 
   // Message queues have been established
-  mq_exist_status = MQ_ESTABLISHED;
+  mq_exist_status = ESTABLISHED;
 
   // Issue soft reset
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  session_init => Issuing Soft Reset...\n");
-  END_YELLOW_FONTCOLOR;
-  ase_portctrl("AFU_RESET 1");
-  usleep(10);
-  ase_portctrl("AFU_RESET 0");
+  /* BEGIN_YELLOW_FONTCOLOR; */
+  /* printf("  [APP]  session_init => Issuing Soft Reset...\n"); */
+  /* END_YELLOW_FONTCOLOR; */
+  /* ase_portctrl("AFU_RESET 1"); */
+  /* usleep(1); */
+  /* ase_portctrl("AFU_RESET 0"); */
+  send_swreset();
 
   // Page table tracker (optional logger)
 #ifdef ASE_DEBUG
@@ -480,6 +549,13 @@ void session_init()
   session_exist_status = ESTABLISHED;
 
   END_YELLOW_FONTCOLOR;
+    }
+  else
+    {      
+    #ifdef ASE_DEBUG
+      printf("  [DEBUG]  Session already exists\n");
+    #endif
+    }
 
   FUNC_CALL_EXIT;
 }
@@ -593,12 +669,12 @@ void session_deinit()
 
       // Session end, set locale
 
-      printf("  [APP]  Session ended (Simulation Time elapsed => ");
-
+      printf("  [APP]  Session ended \n");
+      printf("         Took ");
       // Set locale, inherit locale, and reset back
       char *oldLocale = setlocale(LC_NUMERIC, NULL);
       setlocale(LC_NUMERIC, "");
-      printf("%'llu nsec)\n", runtime_nsec);
+      printf("%'llu nsec \n", runtime_nsec);
       setlocale(LC_NUMERIC, oldLocale);
 
       END_YELLOW_FONTCOLOR;
@@ -637,7 +713,7 @@ void mmio_request_put(struct mmio_t *pkt)
   // Update global count
   if (pkt->write_en == MMIO_WRITE_REQ) 
     {
-      mmio_write_cnt++;
+      mmio_writereq_cnt++;
     }
   else if (pkt->write_en == MMIO_READ_REQ) 
     {
@@ -688,7 +764,6 @@ void mmio_write32 (uint32_t offset, uint32_t data)
       memcpy(mmio_vaddr, (char*)&data, sizeof(uint32_t));
 
       // Display
-      // mmio_write_cnt++;
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  MMIO Write     : tid = 0x%03x, offset = 0x%x, data = 0x%08x\n", mmio_pkt->tid, mmio_pkt->addr, data);
       END_YELLOW_FONTCOLOR;
@@ -735,7 +810,6 @@ void mmio_write64 (uint32_t offset, uint64_t data)
       mmio_request_put(mmio_pkt);
       *mmio_vaddr = data;
 
-      // mmio_write_cnt++;
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  MMIO Write     : tid = 0x%03x, offset = 0x%x, data = 0x%llx\n", mmio_pkt->tid, mmio_pkt->addr, (unsigned long long)data);
       END_YELLOW_FONTCOLOR;
@@ -784,9 +858,9 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
 
       mmio_pkt->tid      = generate_mmio_tid();
       mmio_pkt->write_en = MMIO_READ_REQ;
-      mmio_pkt->width = MMIO_WIDTH_32;
-      mmio_pkt->addr = offset;
-      mmio_pkt->resp_en = 0;
+      mmio_pkt->width    = MMIO_WIDTH_32;
+      mmio_pkt->addr     = offset;
+      mmio_pkt->resp_en  = 0;
       
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  MMIO Read      : tid = 0x%03x, offset = 0x%x\n", mmio_pkt->tid, mmio_pkt->addr);
@@ -800,11 +874,11 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
 	  usleep(1);
 	}
 
-    #ifdef ASE_DEBUG
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("  [DEBUG]  mmio_read32 => tid=%03x addr=%x data=%016llx\n", mmio_rsp_pkt->tid, mmio_rsp_pkt->addr, mmio_rsp_pkt->qword[0]);
-      END_YELLOW_FONTCOLOR;
-    #endif
+    /* #ifdef ASE_DEBUG */
+    /*   BEGIN_YELLOW_FONTCOLOR; */
+    /*   printf("  [DEBUG]  mmio_read32 => tid=%03x addr=%x data=%016llx\n", mmio_rsp_pkt->tid, mmio_rsp_pkt->addr, mmio_rsp_pkt->qword[0]); */
+    /*   END_YELLOW_FONTCOLOR; */
+    /* #endif */
 
       memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t));
       mmio_rsp_pkt_accepted = 1;
@@ -818,11 +892,11 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
       printf("  [APP]  MMIO Read Resp : tid = 0x%03x, %08x\n", mmio_pkt->tid, (uint32_t)*data32);
       END_YELLOW_FONTCOLOR;
 
-    #ifdef ASE_DEBUG
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("  [DEBUG]  mmio_read32 => tid=%03x addr=%x data=%016llx\n", mmio_pkt->tid, mmio_pkt->addr, mmio_pkt->qword[0]);
-      END_YELLOW_FONTCOLOR;
-    #endif
+    /* #ifdef ASE_DEBUG */
+    /*   BEGIN_YELLOW_FONTCOLOR; */
+    /*   printf("  [DEBUG]  mmio_read32 => tid=%03x addr=%x data=%016llx\n", mmio_pkt->tid, mmio_pkt->addr, mmio_pkt->qword[0]); */
+    /*   END_YELLOW_FONTCOLOR; */
+    /* #endif */
 
       free(mmio_pkt);
     }
@@ -870,11 +944,11 @@ void mmio_read64(uint32_t offset, uint64_t *data64)
 	  usleep(1);
 	};
 
-    #ifdef ASE_DEBUG
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("  [DEBUG]  mmio_read64 => tid=%03x addr=%x data=%016llx\n", mmio_rsp_pkt->tid, mmio_rsp_pkt->addr, mmio_rsp_pkt->qword[0]);
-      END_YELLOW_FONTCOLOR;
-    #endif
+    /* #ifdef ASE_DEBUG */
+    /*   BEGIN_YELLOW_FONTCOLOR; */
+    /*   printf("  [DEBUG]  mmio_read64 => tid=%03x addr=%x data=%016llx\n", mmio_rsp_pkt->tid, mmio_rsp_pkt->addr, mmio_rsp_pkt->qword[0]); */
+    /*   END_YELLOW_FONTCOLOR; */
+    /* #endif */
 
       memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t));
       mmio_rsp_pkt_accepted = 1;
@@ -888,11 +962,11 @@ void mmio_read64(uint32_t offset, uint64_t *data64)
       printf("  [APP]  MMIO Read Resp : tid = 0x%03x, addr=%x, data = %llx\n", mmio_pkt->tid, mmio_pkt->addr, (unsigned long long)*data64);
       END_YELLOW_FONTCOLOR;
 
-    #ifdef ASE_DEBUG
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("  [DEBUG]  mmio_read64 => tid=%03x addr=%x data=%016llx\n", mmio_pkt->tid, mmio_pkt->addr, mmio_pkt->qword[0]);
-      END_YELLOW_FONTCOLOR;
-    #endif
+    /* #ifdef ASE_DEBUG */
+    /*   BEGIN_YELLOW_FONTCOLOR; */
+    /*   printf("  [DEBUG]  mmio_read64 => tid=%03x addr=%x data=%016llx\n", mmio_pkt->tid, mmio_pkt->addr, mmio_pkt->qword[0]); */
+    /*   END_YELLOW_FONTCOLOR; */
+    /* #endif */
 
       free(mmio_pkt);
     }
@@ -1009,7 +1083,7 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   mem->next = NULL;
 
   // Message queue must be enabled when using DPI (else debug purposes only)
-  if (mq_exist_status == MQ_NOT_ESTABLISHED)
+  if (mq_exist_status == NOT_ESTABLISHED)
     {
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  Session not started --- STARTING now\n");

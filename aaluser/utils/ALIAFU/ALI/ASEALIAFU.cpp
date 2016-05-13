@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file ASEALIAFU.cpp
-/// @brief Implementation of ASE ALI AFU Service.
-/// @ingroup ASEALIAFU
+/// @file HWALBase.cpp
+/// @brief Definitions for ALI Hardware AFU Service.
+/// @ingroup HWALIAFU
 /// @verbatim
 /// Accelerator Abstraction Layer Sample Application
 ///
@@ -34,61 +34,76 @@
 ///    It is not intended to represent a model for developing commercially-deployable applications.
 ///    It is designed to show working examples of the AAL programming model and APIs.
 ///
-/// AUTHORS: Henry Mitchel, Intel Corporation
-///          Joseph Grecco, Intel Corporation
-///          Enno Luebbers, Intel Corporation
 ///
-///
-/// This sample demonstrates how to create an AFU Service that uses a host-based AFU engine.
-///  This design also applies to AFU Services that use hardware via a
-///  Physical Interface Protocol (PIP) module.
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 07/20/2015     HM       Initial version.
-/// 12/16/2015     RRS      Integration with ASE App-backend.@endverbatim
+/// 05/11/2016     HM       Initial version.@endverbatim
 //****************************************************************************
+
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-#include <aalsdk/kernel/ccipdriver.h>
 
-#include <aalsdk/AAL.h>
+#include <aalsdk/utils/ResMgrUtilities.h>
 #include <aalsdk/AALLoggerExtern.h>
-#include <aalsdk/aas/AALInProcServiceFactory.h>
+#include <aalsdk/service/IALIAFU.h>
+#include <aalsdk/aas/AALService.h>
 #include <aalsdk/ase/ase_common.h>
+#include <aalsdk/uaia/IAFUProxy.h>
 #include "ASEALIAFU.h"
+
 
 BEGIN_NAMESPACE(AAL)
 
-
-
-/// @addtogroup ASEALIAFU
+/// @addtogroup ALI
 /// @{
 
-CriticalSection ASEALIAFU::sm_ASEMtx;
-
-btBool ASEALIAFU::init(IBase               *pclientBase,
-                       NamedValueSet const &optArgs,
-                       TransactionID const &TranID)
-{
-// NOTE: caller must publish IServiceClient, and depending on its needs some others,
-//       but not CCIClient. This needs to check for the correct Client.
 //
-//   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
-//   ASSERT( NULL != pClient );
-//   if ( NULL == pClient ) {
-//      /// ObjectCreatedExceptionEvent Constructor.
-//      initFailed( new CExceptionTransactionEvent( this,
-//                                                  TranID,
-//                                                  errBadParameter,
-//                                                  reasMissingInterface,
-//                                                  "Client did not publish ICCIClient Interface") );
-//      return false;
-//   }
+// ctor, HWALIA Base constructor.
+//
+CASEALIAFU::CASEALIAFU( IBase *pSvcClient,
+                        IServiceBase *pServiceBase,
+                        TransactionID transID):
+                        CALIBase(pSvcClient,pServiceBase,transID),
+                        m_mapWkSpc(),
+                        m_MMIORmap(NULL),
+                        m_MMIORsize(0),
+                        m_Last3c4(0xffffffff),
+                        m_Last3cc(0xffffffff)
+{
 
+}
+
+//
+// ASERelease. Release ASE session.
+//
+btBool CASEALIAFU::ASERelease()
+{
+   session_deinit();
+   return true;
+}
+
+//
+// ASEInit. InitializesASE session and Sets interfaces.
+//
+btBool CASEALIAFU::ASEInit()
+{
    session_init();
+
+   if( EObjOK != SetInterface(iidALI_UMSG_Service, dynamic_cast<IALIUMsg *>(this)) ){
+      m_bIsOK = false;
+   }
+
+   if( EObjOK != SetInterface(iidALI_BUFF_Service, dynamic_cast<IALIBuffer *>(this)) ){
+      m_bIsOK = false;
+   }
+
+   if( EObjOK != SetInterface(iidALI_RSET_Service, dynamic_cast<IALIReset *>(this)) ){
+      m_bIsOK = false;
+   }
 
    // update member variables that cache parameters
    m_MMIORmap = mmioGetAddress();
@@ -97,11 +112,11 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
    // If we have a valid MMIO region, expose IALIMMIO interface
    if (m_MMIORmap != NULL && m_MMIORsize > 0) {
       if ( EObjOK !=  SetInterface(iidALI_MMIO_Service, dynamic_cast<IALIMMIO *>(this)) ) {
-         initFailed(new CExceptionTransactionEvent( NULL,
-                                                    TranID,
-                                                    errCreationFailure,
-                                                    reasUnknown,
-                                                    "Error: Could not register interface."));
+         m_pServiceBase->initFailed(new CExceptionTransactionEvent( NULL,
+                                                                    m_tidSaved,
+                                                                    errCreationFailure,
+                                                                    reasUnknown,
+                                                                    "Error: Could not register interface."));
          return true;
       }
    }
@@ -109,23 +124,21 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
    // Populate internal data structures for feature discovery
    if (! _discoverFeatures() ) {
       // FIXME: use correct error classes
-      initFailed(new CExceptionTransactionEvent( NULL,
-                                                 TranID,
-                                                 errBadParameter,
-                                                 reasMissingInterface,
-                                                 "Failed to discover features."));
+      m_pServiceBase->initFailed(new CExceptionTransactionEvent( NULL,
+                                                                 m_tidSaved,
+                                                                 errBadParameter,
+                                                                 reasMissingInterface,
+                                                                 "Failed to discover features."));
       return true;
    }
 
    // Print warnings for malformed device feature lists
    _validateDFL();
 
-   initComplete(TranID);
    return true;
 }
 
-
-btBool ASEALIAFU::_discoverFeatures() {
+btBool CASEALIAFU::_discoverFeatures() {
 
    btBool retVal;
 
@@ -181,7 +194,7 @@ btBool ASEALIAFU::_discoverFeatures() {
 }
 
 // This currently only prints warnings.
-btBool ASEALIAFU::_validateDFL()
+btBool CASEALIAFU::_validateDFL()
 {
    // check for ambiguous featureID/GUID
    AAL_DEBUG(LM_AFU, "Checking detected features for ambiguous IDs..." <<
@@ -238,7 +251,7 @@ btBool ASEALIAFU::_validateDFL()
 
 
 
-void ASEALIAFU::_printDFH( const struct CCIP_DFH &dfh )
+void CASEALIAFU::_printDFH( const struct CCIP_DFH &dfh )
 {
    AAL_DEBUG(LM_AFU, "Type: " << std::hex << std::setw(2)
          << std::setfill('0') << dfh.Type <<
@@ -249,21 +262,13 @@ void ASEALIAFU::_printDFH( const struct CCIP_DFH &dfh )
 }
 
 
-
-btBool ASEALIAFU::Release(TransactionID const &TranID, btTime timeout)
-{
-  session_deinit();
-  return ServiceBase::Release(TranID, timeout);
-}
-
-
 // ---------------------------------------------------------
 // MMIO actions
 // ---------------------------------------------------------
 //
 // mmioGetAddress. Return address of MMIO space.
 //
-btVirtAddr ASEALIAFU::mmioGetAddress( void )
+btVirtAddr CASEALIAFU::mmioGetAddress( void )
 {
   m_MMIORmap =  (btVirtAddr)mmio_afu_vbase;
   return m_MMIORmap;
@@ -272,16 +277,16 @@ btVirtAddr ASEALIAFU::mmioGetAddress( void )
 //
 // mmioGetLength. Return length of MMIO space.
 //
-btCSROffset ASEALIAFU::mmioGetLength( void )
+btCSROffset CASEALIAFU::mmioGetLength( void )
 {
   m_MMIORsize = (MMIO_LENGTH - MMIO_AFU_OFFSET);
-  return m_MMIORsize;		
+  return m_MMIORsize;
 }
 
 //
 // mmioRead32. Read 32bit CSR. Offset given in bytes.
 //
-btBool ASEALIAFU::mmioRead32(const btCSROffset Offset, btUnsigned32bitInt * const pValue)
+btBool CASEALIAFU::mmioRead32(const btCSROffset Offset, btUnsigned32bitInt * const pValue)
 {
    if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
       return false;
@@ -294,7 +299,7 @@ btBool ASEALIAFU::mmioRead32(const btCSROffset Offset, btUnsigned32bitInt * cons
 //
 // mmioWrite32. Write 32bit CSR. Offset given in bytes.
 //
-btBool ASEALIAFU::mmioWrite32(const btCSROffset Offset, const btUnsigned32bitInt Value)
+btBool CASEALIAFU::mmioWrite32(const btCSROffset Offset, const btUnsigned32bitInt Value)
 {
    if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
       return false;
@@ -307,7 +312,7 @@ btBool ASEALIAFU::mmioWrite32(const btCSROffset Offset, const btUnsigned32bitInt
 //
 // mmioRead64. Read 64bit CSR. Offset given in bytes.
 //
-btBool ASEALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * const pValue)
+btBool CASEALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * const pValue)
 {
    if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
       return false;
@@ -320,7 +325,7 @@ btBool ASEALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * cons
 //
 // mmioWrite64. Write 64bit CSR. Offset given in bytes.
 //
-btBool ASEALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt Value)
+btBool CASEALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt Value)
 {
    if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
       return false;
@@ -333,7 +338,7 @@ btBool ASEALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt
 //
 // mmioGetFeature. Get pointer to feature's DFH, if found.
 //
-btBool  ASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+btBool  CASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
                                           NamedValueSet const &rInputArgs,
                                           NamedValueSet       &rOutputArgs )
 {
@@ -440,14 +445,14 @@ btBool  ASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
    return false;
 }
 
-btBool ASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+btBool CASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
                                          NamedValueSet const &rInputArgs )
 {
    NamedValueSet temp;
    return mmioGetFeatureAddress(pFeatureAddress, rInputArgs, temp);
 }
 
-btBool ASEALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
+btBool CASEALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
                                         NamedValueSet const &rInputArgs,
                                         NamedValueSet       &rOutputArgs )
 {
@@ -460,7 +465,7 @@ btBool ASEALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
 }
 
 // overloaded version without rOutputArgs
-btBool  ASEALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
+btBool  CASEALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
                                          NamedValueSet const &rInputArgs )
 {
    NamedValueSet temp;
@@ -472,7 +477,7 @@ btBool  ASEALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
 // -----------------------------------------------------
 // Buffer allocation API
 // -----------------------------------------------------
-AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize             Length,
+AAL::ali_errnum_e CASEALIAFU::bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr,
                                              NamedValueSet const &rInputArgs,
                                              NamedValueSet       &rOutputArgs )
@@ -533,7 +538,7 @@ AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize             Length,
 }
 
 
-AAL::ali_errnum_e ASEALIAFU::bufferFree( btVirtAddr Address)
+AAL::ali_errnum_e CASEALIAFU::bufferFree( btVirtAddr Address)
 {
   // Find in map and remove
    mapWkSpc_t::iterator i = m_mapWkSpc.find(Address);
@@ -547,13 +552,13 @@ AAL::ali_errnum_e ASEALIAFU::bufferFree( btVirtAddr Address)
 
   // Call ase_common:deallocate_buffer_by_index
   deallocate_buffer_by_index((int)wsParms.wsid);
-  
+
   return ali_errnumOK;
 }
 
 
 // Exactly the same as HWALIAFU::bufferGetIOVA
-btPhysAddr ASEALIAFU::bufferGetIOVA( btVirtAddr Address)
+btPhysAddr CASEALIAFU::bufferGetIOVA( btVirtAddr Address)
 {
    mapWkSpc_t::iterator i = m_mapWkSpc.find(Address);
    if (i != m_mapWkSpc.end()) {
@@ -579,7 +584,7 @@ btPhysAddr ASEALIAFU::bufferGetIOVA( btVirtAddr Address)
 //
 // umsgGetNumber. Return number of UMSGs.
 //
-btUnsignedInt ASEALIAFU::umsgGetNumber( void )
+btUnsignedInt CASEALIAFU::umsgGetNumber( void )
 {
   return true;
 }
@@ -587,14 +592,14 @@ btUnsignedInt ASEALIAFU::umsgGetNumber( void )
 //
 // umsgGetAddress. Get address of specific UMSG.
 //
-btVirtAddr ASEALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
+btVirtAddr CASEALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
 {
   return 0;
 }
 
 
-void ASEALIAFU::umsgTrigger64( const btVirtAddr pUMsg,
-			       const btUnsigned64bitInt Value )
+void CASEALIAFU::umsgTrigger64( const btVirtAddr pUMsg,
+                const btUnsigned64bitInt Value )
 {
 
 }  // umsgTrigger64
@@ -605,20 +610,20 @@ void ASEALIAFU::umsgTrigger64( const btVirtAddr pUMsg,
 //
 // TODO: not implemented
 //
-bool ASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
+bool CASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 {
    return true;
 }
 
 
-IALIReset::e_Reset ASEALIAFU::afuQuiesceAndHalt( NamedValueSet const &rInputArgs )
+IALIReset::e_Reset CASEALIAFU::afuQuiesceAndHalt( NamedValueSet const &rInputArgs )
 {
    // NOT IMPLEMENTED
 
    return e_OK;
 }
 
-IALIReset::e_Reset ASEALIAFU::afuEnable( NamedValueSet const &rInputArgs)
+IALIReset::e_Reset CASEALIAFU::afuEnable( NamedValueSet const &rInputArgs)
 {
    // DOES NOTHING
 
@@ -626,58 +631,16 @@ IALIReset::e_Reset ASEALIAFU::afuEnable( NamedValueSet const &rInputArgs)
 
 }
 
-IALIReset::e_Reset ASEALIAFU::afuReset( NamedValueSet const &rInputArgs )
+IALIReset::e_Reset CASEALIAFU::afuReset( NamedValueSet const &rInputArgs )
 {
    // Port control
-   // ase_portctrl("AFU_RESET 1");
-   // usleep(10000);
-   // ase_portctrl("AFU_RESET 0");
-
-  send_swreset();
+   ase_portctrl("AFU_RESET 1");
+   usleep(10000);
+   ase_portctrl("AFU_RESET 0");
 
    return e_OK;
 }
 
-
-/// @}
+/// @} group ALI
 
 END_NAMESPACE(AAL)
-
-
-#if defined( __AAL_WINDOWS__ )
-
-BOOL APIENTRY DllMain(HANDLE hModule,
-                      DWORD  ul_reason_for_call,
-                      LPVOID lpReserved)
-{
-  switch ( ul_reason_for_call ) {
-  case DLL_PROCESS_ATTACH :
-    break;
-  case DLL_THREAD_ATTACH  :
-    break;
-  case DLL_THREAD_DETACH  :
-    break;
-  case DLL_PROCESS_DETACH :
-    break;
-  }
-  return TRUE;
-}
-
-#endif // __AAL_WINDOWS__
-
-
-#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::ASEALIAFU >
-
-#if defined ( __AAL_WINDOWS__ )
-# pragma warning(push)
-# pragma warning(disable : 4996) // destination of copy is unsafe
-#endif // __AAL_WINDOWS__
-
-ASEALIAFU_BEGIN_SVC_MOD(SERVICE_FACTORY)
-/* No commands other than default, at the moment. */
-ASEALIAFU_END_SVC_MOD()
-
-#if defined ( __AAL_WINDOWS__ )
-# pragma warning(pop)
-#endif // __AAL_WINDOWS__
-

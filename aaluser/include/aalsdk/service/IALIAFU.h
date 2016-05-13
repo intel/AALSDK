@@ -188,6 +188,17 @@ typedef enum
 #define iidALI_STAP_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0009)
 #define CCIP_STAP_AFUID             "022F85B1-2CC2-4C9D-B6B0-3A385883AB8D"
 
+#define iidALI_PORTERR_Service      __INTC_IID(INTC_sysAFULinkInterface,0x0010)
+#define iidALI_FMEERR_Service       __INTC_IID(INTC_sysAFULinkInterface,0x0011)
+#define iidALI_POWER_Service        __INTC_IID(INTC_sysAFULinkInterface,0x0012)
+#define iidALI_TEMP_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0013)
+
+
+// FME GUID
+#define CCIP_FME_AFUID              "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764"
+// PORT GUID
+#define CCIP_PORT_AFUID             "3AB49893-138D-42EB-9642-B06C6B355B87"
+
 /// Key for selecting an AFU delegate.
 // TODO: consolidate naming scheme for NVS keys and datatypes
 #define ALIAFU_NVS_KEY_TARGET "ALIAFUTarget"
@@ -197,6 +208,18 @@ typedef enum
 # define ALIAFU_NVS_VAL_TARGET_FPGA  "ALIAFUTarget_FPGA"
 /// Value - selects SWSimCCIAFU
 # define ALIAFU_NVS_VAL_TARGET_SWSIM "ALIAFUTarget_SWSim"
+
+
+//-----------------------------------------------------------------------------
+// AFU Target type.
+//-----------------------------------------------------------------------------
+typedef enum
+{
+   ali_afu_hwfpaga  = 0,      //Target Type Hardware FPGA
+   ali_afu_ase,               //Target Type ASE
+   ali_afu_swswim             //Target Type Software simulation
+
+} ali_afu_target_e;
 
 
 //-----------------------------------------------------------------------------
@@ -746,6 +769,278 @@ public:
 }; // class IALISignalTap
 
 
+//-----------------------------------------------------------------------------
+// IALIError interface.
+//-----------------------------------------------------------------------------
+/// @brief  Obtains  error values set by fpga (synchronous)
+///
+/// @note   This service interface for errors
+/// @code
+///
+/// @endcode
+///
+class IALIError
+{
+public:
+   virtual ~IALIError() {}
+
+   /// @brief       Obtains errors.
+   /// @note        Synchronous
+   /// @param[out]  rResult  Returns errors set by fpga
+   ///                       NULL if a problem.
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool errorGet( INamedValueSet &rResult ) = 0;
+
+   /// @brief       Obtains errors.
+   /// @note        Synchronous
+   /// @param[out]  rResult  Returns errors set by fpga
+   ///                       0 if a problem.
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool errorGet( btUnsigned64bitInt &error ) = 0;
+
+   /// @brief       Obtains first errors.
+   /// @note        Synchronous
+   /// @param[out]  rResult  Returns first errors set by fpga
+   ///                       NULL if a problem.
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool errorGetFirst( INamedValueSet &rResult ) = 0;
+
+   /// @brief       Obtains first errors.
+   /// @note        Synchronous
+   /// @param[out]  rResult  Returns first errors set by fpga
+   ///                       0 if a problem.
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool errorGetFirst( btUnsigned64bitInt &firstError ) = 0;
+
+   /// @brief       Obtains error mask.
+   /// @note        Synchronous
+   /// @param[out]  rResult  Returns  errors masks
+   ///                       NULL if a problem.
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool errorGetMask( INamedValueSet &rResult ) = 0;
+
+   /// @brief       Obtains error mask.
+   /// @note        Synchronous
+   /// @param[out]  rResult  Returns  errors masks
+   ///                       0 if a problem.
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool errorGetMask( btUnsigned64bitInt &errorMask ) = 0;
+
+   /// @brief       sets error mask.
+   /// @note        Synchronous
+   /// @param[in]   rInputArgs  Sets error mask
+   ///                       NULL if a problem.
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool errorSetMask(const INamedValueSet &rInputArgs) = 0;
+
+
+   /// @brief       sets error mask.
+   /// @note        Synchronous
+   /// @param[in]   rInputArgs  Sets error mask
+   ///                       0 if a problem.
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool errorSetMask(const btUnsigned64bitInt errorMask) = 0;
+
+   /// @brief       clears errors.
+   /// @note        Synchronous
+   /// @param[in]   rInputArgs  Clears errors
+   ///                       NULL if a problem.
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool errorClear( const INamedValueSet &rInputArgs) = 0;
+
+   /// @brief       clears errors.
+   /// @note        Synchronous
+   /// @param[in]   rInputArgs  Clears errors
+   ///                       0 if a problem.
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool errorClear( const btUnsigned64bitInt error) = 0;
+
+   /// @brief       Clears all errors.
+   /// @note        Synchronous
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool errorClearAll() = 0;
+
+}; // class IALIError
+
+//-----------------------------------------------------------------------------
+// IALIFMEError interface.
+//-----------------------------------------------------------------------------
+/// @brief  Obtains fme error values   (synchronous)
+///
+/// @note   This service interface is obtained from an IBase via iidALI_FMEERR_Service
+/// @code
+///         m_pALIFMEErrService = dynamic_ptr<IALIFMEError>(iidALI_FMEERR_Service, pServiceBase);
+///
+class IALIFMEError: public IALIError
+{
+public:
+   virtual ~IALIFMEError() {}
+
+}; // class IALIFMEError
+
+
+//-----------------------------------------------------------------------------
+// IALIPortError interface.
+//-----------------------------------------------------------------------------
+/// @brief  Obtains Port errors values (synchronous)
+///
+/// @note   This service interface is obtained from an IBase via iidALI_PORTERR_Service
+/// @code
+///         m_pALIPortErrService = dynamic_ptr<IALIPower>(iidALI_PORTERR_Service, pServiceBase);
+///
+class IALIPortError : public IALIError
+{
+public:
+
+   // Port Error definitions
+   #define AAL_ERR_PORT_TX_CH0_OVERFLOW           "Tx Channel0: Overflow"
+   #define AAL_ERR_PORT_TX_CH0_INVALIDREQ         "Tx Channel0: Invalid request encoding"
+   #define AAL_ERR_PORT_TX_CH0_REQ_CL_LEN3        "Tx Channel0: Request with cl_len3"
+   #define AAL_ERR_PORT_TX_CH0_REQ_CL_LEN2        "Tx Channel0: Request with cl_len2"
+   #define AAL_ERR_PORT_TX_CH0_REQ_CL_LEN4        "Tx Channel0: Request with cl_len4"
+
+   #define AAL_ERR_PORT_TX_CH1_OVERFLOW           "Tx Channel1: Overflow"
+   #define AAL_ERR_PORT_TX_CH1_INVALIDREQ         "Tx Channel1: Invalid request encoding"
+   #define AAL_ERR_PORT_TX_CH1_REQ_CL_LEN3        "Tx Channel1: Request with cl_len3"
+   #define AAL_ERR_PORT_TX_CH1_REQ_CL_LEN2        "Tx Channel1: Request with cl_len2"
+   #define AAL_ERR_PORT_TX_CH1_REQ_CL_LEN4        "Tx Channel1: Request with cl_len4"
+   #define AAL_ERR_PORT_TX_CH1_INSUFF_DATAPYL     "Tx Channel1: Insufficient data payload"
+   #define AAL_ERR_PORT_TX_CH1_DATAPYL_OVERRUN    "Tx Channel1: Data payload overrun"
+   #define AAL_ERR_PORT_TX_CH1_INCORR_ADDR        "Tx Channel1: Incorrect address"
+   #define AAL_ERR_PORT_TX_CH1_SOP_DETECTED       "Tx Channel1: NON-Zero SOP Detected"
+   #define AAL_ERR_PORT_TX_CH1_ATOMIC_REQ         "Tx Channel1: Illegal VC_SEL, atomic request VLO"
+
+   #define AAL_ERR_PORT_MMIOREAD_TIMEOUT          "MMIO Read Timeout in AFU"
+   #define AAL_ERR_PORT_TX_CH2_FIFO_OVERFLOW      "Tx Channel2: FIFO overflow"
+   #define AAL_ERR_PORT_NUM_PENDREQ_OVERFLOW      "Number of pending Requests: counter overflow"
+   #define AAL_ERR_PORT_MALFORMED_REQ_0           "Port malformed request0"
+   #define AAL_ERR_PORT_MALFORMED_REQ_1           "Port malformed request1"
+
+
+   enum e_Port_Error {
+      e_port_OK,                                    ///< No Port Errors
+      e_tx_ch0_overflow = 0x1,                      ///< Tx Channel0: Overflow
+      e_tx_ch0_invalidReq = 0x2,                    ///< Tx Channel0: Invalid request encoding
+      e_tx_ch0_Req_cl_len3 = 0x4,                   ///< Tx Channel0: Request with cl_len3
+      e_tx_ch0_Req_cl_len2 = 0x8,                   ///< Tx Channel0: Request with cl_len2
+      e_tx_ch0_Req_cl_len4 = 0x16,                  ///< Tx Channel0: Request with cl_len4
+
+      e_tx_ch1_overflow = 0x800,                    ///< Tx Channel1: Overflow
+      e_tx_ch1_invalidReq = 0x1000,                 ///< Tx Channel1: Invalid request encoding
+      e_tx_ch1_Req_cl_len3 =  0x2000,               ///< Tx Channel1: Request with cl_len3
+      e_tx_ch1_Req_cl_len2 = 0x4000,                ///< Tx Channel1: Request with cl_len2
+      e_tx_ch1_Req_cl_len4 = 0x8000,                ///< Tx Channel1: Request with cl_len4
+
+      e_tx_ch1_insuff_datapayload = 0x10000,        ///< Tx Channel1: Insufficient data payload
+      e_tx_ch1_dataype_overrun = 0x20000,           ///< Tx Channel1: Data payload overrun
+      e_tx_ch1_incorrect_address = 0x40000,         ///< Tx Channel1: Incorrect address
+      e_tx_ch1_sop_detected = 0x80000,              ///< Tx Channel1: NON-Zero SOP Detected
+      e_tx_ch1_atomic_req = 0x100000,               ///< "Tx Channel1: Illegal VC_SEL, atomic request VLO
+
+      e_mmioread_timeout = 0x100000000,             ///< MMIO Read Timeout in AFU
+      e_tx_ch2_fifo_overflow = 0x200000000,         ///< Tx Channel2: FIFO overflow
+      e_num_pending_overflow = 0x10000000000        ///< Number of pending Requests: counter overflow
+
+   };
+
+   virtual ~IALIPortError() {}
+
+   /// @brief       Obtains port malformed request value.
+   /// @note        Synchronous
+   /// @param[out]  rResult  Returns port malformed request value
+   ///                       NULL if a problem.
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool errorGetPortMalformedReq( INamedValueSet &rResult ) = 0;
+
+}; // class IALIPortError
+
+
+//-----------------------------------------------------------------------------
+// IALITemperature interface.
+//-----------------------------------------------------------------------------
+/// @brief  Obtains Temperature and threshold values  (not AFU-specific) (synchronous)
+///
+/// @note   This service interface is obtained from an IBase via iidALI_TEMP_Service
+/// @code
+///         m_pALITempService = dynamic_ptr<IALIPower>(iidALI_TEMP_Service, pServiceBase);
+/// @endcode
+///
+class IALITemperature
+{
+public:
+   virtual ~IALITemperature() {}
+
+   #define AALTEMP_DATATYPE                 btUnsigned64bitInt
+   #define AALTEMP_FPGA_TEMP_SENSOR1        "Sensor1 Temperature  Celsius"
+   #define AALTEMP_FPGA_TEMP_SENSOR2        "Sensor2 Temperature  Celsius"
+   #define AALTEMP_READING_SEQNUM           "Temp_Reading_SeqNum"
+   #define AALTEMP_READING_VALID            "Temp_Reading_Valid"
+
+   #define AALTEMP_THRESHOLD1               "Temperature Threshold1"
+   #define AALTEMP_THRESHOLD2               "Temperature Threshold2"
+
+   #define AALTEMP_THERM_TRIP               "Thermal Trip Threshold"
+
+
+   #define AALTEMP_THSHLD_STATUS1_AP1       "Threshold AP1 Policy set"
+   #define AALTEMP_THSHLD_STATUS1_AP2       "Threshold AP1 Policy set"
+   #define AALTEMP_THSHLD_STATUS1_AP6       "Threshold AP6 Policy set"
+
+   #define AALTEMP_THSHLD_POLICY1            "AP1_STATE"
+   #define AALTEMP_THSHLD_POLICY2            "AP2_STATE"
+   #define AALTEMP_THSHLD_POLICY6            "AP6_STATE"
+
+   /// @brief       Obtains threshold status and Trip value.
+   /// @note        Synchronous
+   /// @param[out]  rResult  Returns threshold status and Trip value
+   ///                       NULL if a problem.
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool thermalGetValues(INamedValueSet &rResult ) = 0;
+
+}; // class IALITemperature
+
+
+//-----------------------------------------------------------------------------
+// IALIPower interface.
+//-----------------------------------------------------------------------------
+/// @brief  Obtains fpga power   (not AFU-specific) (synchronous)
+///
+/// @note   This service interface is obtained from an IBase via iidALI_POWER_Service
+/// @code
+///         m_pALIPowerService = dynamic_ptr<IALIPower>(iidALI_POWER_Service, pServiceBase);
+/// @endcode
+///
+class IALIPower
+{
+public:
+   virtual ~IALIPower() {}
+
+
+   #define AALPOWER_DATATYPE            btUnsigned64bitInt
+   #define AALPOWER_CONSUMPTION        "Power Consumption Value"
+
+   /// @brief       Obtains Power consumption of fpga.
+   /// @note        Synchronous
+   /// @param[out]  rResult  Returns the power consumption Value .
+   ///                       NULL if a problem.
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool powerGetValues(INamedValueSet &rResult ) = 0;
+
+}; // class IALIPower
 
 /// @}
 

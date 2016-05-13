@@ -51,6 +51,7 @@
  `define UMSG_DELAY_TIMER_LOG2         8
 
  `define SOFT_RESET_DURATION           256
+ `define RESET_TIMEOUT_DURATION        1024
 
 /* OME5 */
  `ifdef BDX_FPGA
