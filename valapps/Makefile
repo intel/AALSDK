@@ -1,6 +1,7 @@
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
 
 SUBDIRS=\
+vallib \
 MMIO_Mapping \
 UMsg_Allocation \
 DMA_Buffer \
