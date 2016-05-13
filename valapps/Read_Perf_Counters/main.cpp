@@ -25,6 +25,236 @@ using namespace AAL;
 #define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
 
 
+class AllocatesAALService : public AAL::CAASBase,
+                            public AAL::IServiceClient
+{
+public:
+   AllocatesAALService();
+   virtual ~AllocatesAALService() {}
+
+   virtual void                   Allocate(AAL::IRuntime * ) = 0;
+   virtual const char * ServiceDescription() const           = 0;
+
+   void            Wait()       { m_Sem.Wait();         }
+   AAL::IBase * Service() const { return m_pAALService; }
+   AAL::btInt    Errors() const { return m_Errors;      }
+
+   void Free();
+
+   // <IServiceClient>
+   void      serviceAllocated(AAL::IBase               *pServiceBase,
+                              AAL::TransactionID const &rTranID);
+   void serviceAllocateFailed(const AAL::IEvent        &rEvent);
+   void       serviceReleased(const AAL::TransactionID &rTranID);
+   void serviceReleaseRequest(AAL::IBase               *pServiceBase,
+                              const AAL::IEvent        &rEvent);
+   void  serviceReleaseFailed(const AAL::IEvent        &rEvent);
+   void          serviceEvent(const AAL::IEvent        &rEvent);
+   // </IServiceClient>
+
+protected:
+   AAL::IBase      *m_pAALService;
+   AAL::btInt       m_Errors;
+   AAL::CSemaphore  m_Sem;
+};
+
+AllocatesAALService::AllocatesAALService() :
+   m_pAALService(NULL),
+   m_Errors(0)
+{
+   m_Sem.Create(0, 1);
+   SetInterface(iidServiceClient, dynamic_cast<AAL::IServiceClient *>(this));
+}
+
+void AllocatesAALService::Free()
+{
+   if ( NULL != m_pAALService ) {
+      MSG("Freeing " << ServiceDescription() << " Service");
+
+      AAL::IAALService *pIAALService = dynamic_ptr<AAL::IAALService>(iidService, m_pAALService);
+
+      ASSERT(NULL != pIAALService);
+      pIAALService->Release(AAL::TransactionID());
+   } else {
+      m_Sem.Post(1);
+   }
+}
+
+void AllocatesAALService::serviceAllocated(AAL::IBase               *pServiceBase,
+                                           AAL::TransactionID const &rTranID)
+{
+   // Save the IBase for the Service. Through it we can get any other
+   //  interface implemented by the Service
+   m_pAALService = pServiceBase;
+   ASSERT(NULL != m_pAALService);
+   if ( NULL == m_pAALService ) {
+      ++m_Errors;
+      ERR("returned " << ServiceDescription() << " service was NULL");
+      m_Sem.Post(1);
+      return;
+   }
+
+   MSG(ServiceDescription() << " Service Allocated");
+   m_Sem.Post(1);
+}
+
+void AllocatesAALService::serviceAllocateFailed(const AAL::IEvent &rEvent)
+{
+   ++m_Errors;
+   ERR("Failed to allocate " << ServiceDescription() << " Service");
+   m_Sem.Post(1);
+}
+
+void AllocatesAALService::serviceReleased(AAL::TransactionID const &rTranID)
+{
+   MSG(ServiceDescription() << " Service Released");
+   if ( rTranID.Context() != (AAL::btApplicationContext)1 ) {
+      // Don't post the semaphore if this happened because of serviceReleaseRequest().
+      m_Sem.Post(1);
+   }
+   m_pAALService = NULL;
+}
+
+void AllocatesAALService::serviceReleaseRequest(AAL::IBase        *pServiceBase,
+                                                const AAL::IEvent &rEvent)
+{
+   ++m_Errors;
+   ERR(ServiceDescription() << " didn't expect serviceReleaseRequest()");
+   if ( NULL != m_pAALService ) {
+      AAL::IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService);
+      ASSERT(NULL != pIAALService);
+
+      // Breadcrumb that this Release resulted from serviceReleaseRequest().
+      AAL::TransactionID tid((AAL::btApplicationContext)1);
+
+      pIAALService->Release(tid);
+   }
+}
+
+void AllocatesAALService::serviceReleaseFailed(const AAL::IEvent &rEvent)
+{
+   ++m_Errors;
+   ERR(ServiceDescription() << " didn't expect serviceReleaseFailed()");
+   m_Sem.Post(1);
+}
+
+void AllocatesAALService::serviceEvent(const AAL::IEvent &rEvent)
+{
+   ++m_Errors;
+   ERR(ServiceDescription() << " serviceEvent(): received unexpected event 0x" << std::hex << rEvent.SubClassID() << std::dec);
+}
+
+
+class AllocatesNLBLpbk1AFU : public AllocatesAALService
+{
+public:
+   AllocatesNLBLpbk1AFU() {}
+   virtual void                   Allocate(AAL::IRuntime * );
+   virtual const char * ServiceDescription() const { return "NLB Lpbk1"; }
+};
+
+void AllocatesNLBLpbk1AFU::Allocate(AAL::IRuntime *pRuntime)
+{
+   // NOTE: This example is bypassing the Resource Manager's configuration record lookup
+   //  mechanism.  Since the Resource Manager Implementation is a sample, it is subject to change.
+   //  This example does illustrate the utility of having different implementations of a service all
+   //  readily available and bound at run-time.
+   AAL::NamedValueSet Manifest;
+   AAL::NamedValueSet ConfigRecord;
+
+#if defined( HWAFU )                /* Use FPGA hardware */
+
+   // Service Library to use
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+
+   // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
+   ConfigRecord.Add(keyRegAFU_ID, "C000C966-0D82-4272-9AEF-FE5F84570612");
+
+   // indicate that this service needs to allocate an AIAService, too to talk to the HW
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
+
+#elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
+
+   Manifest.Add(keyRegHandle, 20);
+
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASEALIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+
+#else
+# error Must define HWAFU or ASEAFU.
+#endif // HWAFU
+
+   // Add the Config Record to the Manifest describing what we want to allocate
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+
+   Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "NLBLpbk1");
+
+   MSG("Allocating NLB Lpbk1 Service");
+
+   // Allocate the Service and wait for it to complete by sitting on the
+   //   semaphore. The serviceAllocated() callback will be called if successful.
+   //   If allocation fails the serviceAllocateFailed() should set m_Errors appropriately.
+
+   // We are the service client.
+   pRuntime->allocService(dynamic_cast<IBase *>(this), Manifest);
+}
+
+
+class AllocatesFME : public AllocatesAALService
+{
+public:
+   AllocatesFME() {}
+   virtual void                   Allocate(AAL::IRuntime * );
+   virtual const char * ServiceDescription() const { return "FME"; }
+};
+
+void AllocatesFME::Allocate(AAL::IRuntime *pRuntime)
+{
+   // NOTE: This example is bypassing the Resource Manager's configuration record lookup
+   //  mechanism.  Since the Resource Manager Implementation is a sample, it is subject to change.
+   //  This example does illustrate the utility of having different implementations of a service all
+   //  readily available and bound at run-time.
+   AAL::NamedValueSet Manifest;
+   AAL::NamedValueSet ConfigRecord;
+
+#if defined( HWAFU )                /* Use FPGA hardware */
+
+   // Service Library to use
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+
+   // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
+   ConfigRecord.Add(keyRegAFU_ID, "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764");
+
+   // indicate that this service needs to allocate an AIAService, too to talk to the HW
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
+
+#elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
+
+   Manifest.Add(keyRegHandle, 20);
+
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASEALIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+
+#else
+# error Must define HWAFU or ASEAFU.
+#endif // HWAFU
+
+   // Add the Config Record to the Manifest describing what we want to allocate
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+
+   Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "FME");
+
+   MSG("Allocating FME Service");
+
+   // Allocate the Service and wait for it to complete by sitting on the
+   //   semaphore. The serviceAllocated() callback will be called if successful.
+   //   If allocation fails the serviceAllocateFailed() should set m_Errors appropriately.
+
+   // We are the service client.
+   pRuntime->allocService(dynamic_cast<IBase *>(this), Manifest);
+}
+
+
 // NLB_DSM_SIZE
 // Buffer Size : CL(1)
 
@@ -412,8 +642,7 @@ btBool PerfCounters::operator == (const PerfCounters &rhs) const
 
 
 class Read_Perf_CountersApp : public CAASBase,
-                              public IRuntimeClient,
-                              public IServiceClient
+                              public IRuntimeClient
 {
 public:
    Read_Perf_CountersApp();
@@ -434,45 +663,23 @@ public:
    void                    runtimeEvent(const IEvent        &rEvent);
    // </IRuntimeClient>
 
-   // <IServiceClient>
-   void      serviceAllocated(IBase               *pServiceBase,
-                              TransactionID const &rTranID);
-   void serviceAllocateFailed(const IEvent        &rEvent);
-   void       serviceReleased(const TransactionID &rTranID);
-   void serviceReleaseRequest(IBase               *pServiceBase,
-                              const IEvent        &rEvent);
-   void  serviceReleaseFailed(const IEvent        &rEvent);
-   void          serviceEvent(const IEvent        &rEvent);
-   // </IServiceClient>
-
 protected:
-   IBase * AllocateService();
-   void    FreeService();
+   void sw_perfc_01(IBase *pAFUService, IBase *pFMEService);
+   void sw_perfc_02(IBase *pAFUService, IBase *pFMEService);
 
-   void sw_perfc_01();
-   void sw_perfc_02();
-
-
-   Runtime     m_Runtime;       ///< AAL Runtime
-   IBase      *m_pAALService;   ///< The generic AAL Service interface for the AFU.
-   IALIBuffer *m_pALIBufferIfc; ///< Pointer to Buffer Service
-   IALIMMIO   *m_pALIMMIOIfc;   ///< Pointer to MMIO Service
-   IALIReset  *m_pALIResetIfc;  ///< Pointer to AFU Reset Service
-   btInt       m_Errors;        ///< Returned result value; 0 if success
-   CSemaphore  m_Sem;           ///< For synchronizing with the AAL runtime.
+   Runtime              m_Runtime;       ///< AAL Runtime
+   btInt                m_Errors;        ///< Returned result value; 0 if success
+   CSemaphore           m_Sem;           ///< For synchronizing with the AAL runtime.
+   AllocatesNLBLpbk1AFU m_Lpbk1Allocator;
+   AllocatesFME         m_FMEAllocator;
 };
 
 Read_Perf_CountersApp::Read_Perf_CountersApp() :
    m_Runtime(this),
-   m_pAALService(NULL),
-   m_pALIBufferIfc(NULL),
-   m_pALIMMIOIfc(NULL),
-   m_pALIResetIfc(NULL),
    m_Errors(0)
 {
    // Register our Client side interfaces so that the Service can acquire them.
    //   SetInterface() is inherited from CAASBase
-   SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
    SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
    // Initialize our internal semaphore
@@ -556,154 +763,51 @@ void Read_Perf_CountersApp::runtimeEvent(const IEvent &rEvent)
    ERR("runtimeEvent(): received unexpected event 0x" << std::hex << rEvent.SubClassID() << std::dec);
 }
 
-IBase * Read_Perf_CountersApp::AllocateService()
-{
-   // NOTE: This example is bypassing the Resource Manager's configuration record lookup
-   //  mechanism.  Since the Resource Manager Implementation is a sample, it is subject to change.
-   //  This example does illustrate the utility of having different implementations of a service all
-   //  readily available and bound at run-time.
-   NamedValueSet Manifest;
-   NamedValueSet ConfigRecord;
-
-#if defined( HWAFU )                /* Use FPGA hardware */
-
-   // Service Library to use
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
-
-   // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
-   ConfigRecord.Add(keyRegAFU_ID, "C000C966-0D82-4272-9AEF-FE5F84570612");
-
-
-   // indicate that this service needs to allocate an AIAService, too to talk to the HW
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
-
-#elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
-
-   Manifest.Add(keyRegHandle, 20);
-
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASEALIAFU");
-   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
-
-#else
-# error Must define HWAFU or ASEAFU.
-#endif // HWAFU
-
-   // Add the Config Record to the Manifest describing what we want to allocate
-   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
-
-   // in future, everything could be figured out by just giving the service name
-   Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello ALI NLB");
-
-   MSG("Allocating Service");
-
-   // Allocate the Service and wait for it to complete by sitting on the
-   //   semaphore. The serviceAllocated() callback will be called if successful.
-   //   If allocation fails the serviceAllocateFailed() should set m_Errors appropriately.
-
-   // We are the service client.
-   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest);
-
-   m_Sem.Wait();
-
-   return m_pAALService;
-}
-
-void Read_Perf_CountersApp::FreeService()
-{
-   MSG("Freeing Service");
-
-   ASSERT(NULL != m_pAALService);
-   IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService);
-
-   ASSERT(NULL != pIAALService);
-   pIAALService->Release(TransactionID());
-
-   m_Sem.Wait();
-}
-
-void Read_Perf_CountersApp::serviceAllocated(IBase               *pServiceBase,
-                                             TransactionID const &rTranID)
-{
-   // Save the IBase for the Service. Through it we can get any other
-   //  interface implemented by the Service
-   m_pAALService = pServiceBase;
-   ASSERT(NULL != m_pAALService);
-   if ( NULL == m_pAALService ) {
-      ++m_Errors;
-      ERR("returned service was NULL");
-      m_Sem.Post(1);
-      return;
-   }
-
-   MSG("Service Allocated");
-   m_Sem.Post(1);
-}
-
-void Read_Perf_CountersApp::serviceAllocateFailed(const IEvent &rEvent)
-{
-   ++m_Errors;
-   ERR("Failed to allocate Service");
-   m_Sem.Post(1);
-}
-
-void Read_Perf_CountersApp::serviceReleased(TransactionID const &rTranID)
-{
-   MSG("Service Released");
-   m_Sem.Post(1);
-}
-
-void Read_Perf_CountersApp::serviceReleaseRequest(IBase        *pServiceBase,
-                                                  const IEvent &rEvent)
-{
-   ++m_Errors;
-   ERR("didn't expect serviceReleaseRequest()");
-   if ( NULL != m_pAALService ) {
-      IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService);
-      ASSERT(NULL != pIAALService);
-      pIAALService->Release(TransactionID());
-   }
-}
-
-void Read_Perf_CountersApp::serviceReleaseFailed(const IEvent &rEvent)
-{
-   ++m_Errors;
-   ERR("didn't expect serviceReleaseFailed()");
-   m_Sem.Post(1);
-}
-
-void Read_Perf_CountersApp::serviceEvent(const IEvent &rEvent)
-{
-   ++m_Errors;
-   ERR("serviceEvent(): received unexpected event 0x" << std::hex << rEvent.SubClassID() << std::dec);
-}
-
 btInt Read_Perf_CountersApp::Run()
 {
    // Get a pointer to our NLB AAL Service.
-   IBase *pAALService = AllocateService();
+   m_Lpbk1Allocator.Allocate(&m_Runtime);
+   m_Lpbk1Allocator.Wait();
 
-   if ( NULL == pAALService ) {
+   IBase *pAFUService = m_Lpbk1Allocator.Service();
+   IBase *pFMEService;
+
+   if ( NULL == pAFUService ) {
       goto _STOP;
    }
 
-   sw_perfc_01();
-   sw_perfc_02();
+   m_FMEAllocator.Allocate(&m_Runtime);
+   m_FMEAllocator.Wait();
 
-   FreeService();
+   pFMEService = m_FMEAllocator.Service();
+
+   if ( NULL == pFMEService ) {
+      goto _LPBK1;
+   }
+
+   sw_perfc_01(pAFUService, pFMEService);
+   sw_perfc_02(pAFUService, pFMEService);
+
+   m_FMEAllocator.Free();
+   m_FMEAllocator.Wait();
+
+_LPBK1:
+   m_Lpbk1Allocator.Free();
+   m_Lpbk1Allocator.Wait();
 
 _STOP:
    m_Runtime.stop();
    m_Sem.Wait();
 
-   return m_Errors;
+   return m_Errors + m_Lpbk1Allocator.Errors() + m_FMEAllocator.Errors();
 }
 
-void Read_Perf_CountersApp::sw_perfc_01()
+void Read_Perf_CountersApp::sw_perfc_01(IBase *pAFUService, IBase *pFMEService)
 {
    // Null test: Get performance counters. Do nothing. Get them again. They should not change.
 
    // Get the IALIPerf associated with the AAL Service.
-   IALIPerf *pALIPerfIfc = dynamic_ptr<IALIPerf>(iidALI_PERF_Service, m_pAALService);
+   IALIPerf *pALIPerfIfc = dynamic_ptr<IALIPerf>(iidALI_PERF_Service, pFMEService);
 
    ASSERT(NULL != pALIPerfIfc);
    if ( NULL == pALIPerfIfc ) {
@@ -743,7 +847,7 @@ void Read_Perf_CountersApp::sw_perfc_01()
    }
 }
 
-void Read_Perf_CountersApp::sw_perfc_02()
+void Read_Perf_CountersApp::sw_perfc_02(IBase *pAFUService, IBase *pFMEService)
 {
    // Active test: Get performance counters. Run any NLB test. Get the performance counters again.
    // If they changed, then the SW is accessing the HW. Test Passes.
