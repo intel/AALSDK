@@ -93,7 +93,7 @@ import ase_pkg::*;
 module outoforder_wrf_channel
   #(
     parameter string DEBUG_LOGNAME       = "channel.log",
-    parameter int    NUM_WAIT_STATIONS   = 4,
+    parameter int    NUM_WAIT_STATIONS   = 16,
     parameter int    COUNT_WIDTH         = 8,
     parameter int    VISIBLE_DEPTH_BASE2 = 8,
     parameter int    VISIBLE_FULL_THRESH = 220,
@@ -142,7 +142,7 @@ module outoforder_wrf_channel
    localparam INTERNAL_FIFO_ALMFULL_THRESH = INTERNAL_FIFO_DEPTH - 4;
 
    // Internal signals
-   logic [TID_WIDTH-1:0] 	  tid_in;
+   logic [TID_WIDTH-1:0] 	  tid_in = 0;
    logic [TID_WIDTH-1:0] 	  tid_out;
 
    // Infifo
@@ -152,6 +152,19 @@ module outoforder_wrf_channel
    logic [FIFO_WIDTH-1:0] 	  vl0_array[$:INTERNAL_FIFO_DEPTH-1];
    logic [FIFO_WIDTH-1:0] 	  vh0_array[$:INTERNAL_FIFO_DEPTH-1];
    logic [FIFO_WIDTH-1:0] 	  vh1_array[$:INTERNAL_FIFO_DEPTH-1];
+
+   // Function check if PCIE channel selected
+   function automatic logic isVHxChannel ( TxHdr_t hdr );
+      begin
+	 if ((hdr.vc == VC_VH0)||(hdr.vc == VC_VH1)) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
 
    /*
     * Wrfence response mechanism
@@ -216,9 +229,9 @@ module outoforder_wrf_channel
    // Tracking ID generator
    always @(posedge clk) begin : tid_proc
       if (rst)
-	tid_in	<= {TID_WIDTH{1'b0}};
+   	tid_in	<= {TID_WIDTH{1'b0}};
       else if (write_en)
-	tid_in	<= tid_in + 1;
+   	tid_in	<= tid_in + 1;
    end
 
    // Counts/fill level
@@ -284,12 +297,12 @@ module outoforder_wrf_channel
    // Overflow check
    always @(posedge clk) begin
       if (rst) begin
-	 overflow_error <= 0;	 
+	 overflow_error <= 0;
       end
       else if ((infifo_cnt == VISIBLE_DEPTH-1) && write_en) begin
 	 overflow_error <= 1;
    `ifdef ASE_DEBUG
-	 $fwrite(log_fd, "%d | ** Overflow Error detected **\n", $time);	 
+	 $fwrite(log_fd, "%d | ** Overflow Error detected **\n", $time);
    `endif
       end
    end
@@ -299,23 +312,25 @@ module outoforder_wrf_channel
    //////////////////////////////////////////////////////////////
    // Enumerate states
    typedef enum {LatSc_Disabled,
+		 LatSc_RecordPushInProgress,
 		 LatSc_Countdown,
 		 LatSc_DoneReady,
-		 LatSc_RecordPopped} latsc_fsmState;
+		 LatSc_RecordPopInProgress} latsc_fsmState;
 
    // Transaction storage
-   typedef struct packed
-		  {
-		     TxHdr_t                     hdr;           // in
-		     logic [CCIP_DATA_WIDTH-1:0] data;          // in
-		     logic [TID_WIDTH-1:0] 	 tid;           // in
-		     logic [COUNT_WIDTH-1:0] 	 ctr_out;       // out
-		     logic 			 record_valid;  // out
-		     logic 			 record_ready;  // out
-		     logic 			 record_push;   // in
-		     logic 			 record_pop;    // in
-		     latsc_fsmState              state;         // out
-		  } transact_t;
+   typedef struct
+		 {
+		    TxHdr_t                     hdr   [0:LATBUF_MCL_MAXLEN-1];
+		    logic [CCIP_DATA_WIDTH-1:0] data  [0:LATBUF_MCL_MAXLEN-1];
+		    logic [TID_WIDTH-1:0] 	tid   [0:LATBUF_MCL_MAXLEN-1];
+		    logic [COUNT_WIDTH-1:0] 	ctr_out;
+		    logic 			record_push;
+		    logic 			record_valid;
+		    logic 			record_ready;
+		    logic 			record_pop;
+		    ccip_len_t                  record_mcl_len;
+		    latsc_fsmState              state;
+		 } transact_t;
 
    // Array of stored transactions
    transact_t records[NUM_WAIT_STATIONS] ;
@@ -327,6 +342,8 @@ module outoforder_wrf_channel
    logic [0:NUM_WAIT_STATIONS-1] 		 record_pop_arr;
    logic [0:NUM_WAIT_STATIONS-1] 		 record_push_arr;
 
+   logic 					 record_push_in_progress;
+   logic 					 record_pop_in_progress;
 
    // Infifo, request staging
    always @(posedge clk) begin : infifo_push
@@ -358,7 +375,7 @@ module outoforder_wrf_channel
 
    /*
     * Read MCL select VC
-    */ 
+    */
    function automatic void select_vc_read(int init, ref TxHdr_t hdr);
       begin
    	 if (init) begin
@@ -387,7 +404,7 @@ module outoforder_wrf_channel
 
    /*
     * Write MCL select VC
-    */  
+    */
    function automatic void select_vc_write(int init, ref TxHdr_t hdr);
       begin
    	 if (init) begin
@@ -408,14 +425,11 @@ module outoforder_wrf_channel
    	      3'b110: hdr.vc = VC_VH1;
    	    endcase
    	    vc_wr_arb = ccip_vc_t'(hdr.vc);
-	 end // if (hdr.sop)
-	 // else begin
-	 //    hdr.vc = vc_wr_arb;		  
-	 // end
+	 end
       end
    endfunction
-   
-   
+
+
    // Write fence response generator
    function automatic logic [CCIP_RX_HDR_WIDTH-1:0] prepare_wrfence_response(TxHdr_t wrfence);
       RxHdr_t wrfence_rsp;
@@ -433,6 +447,7 @@ module outoforder_wrf_channel
       end
    endfunction
 
+
    /*
     * INFIFO->VC_sel
     * -----------------------------------------
@@ -448,6 +463,7 @@ module outoforder_wrf_channel
       begin
 	 {infifo_tid_out, infifo_data_out, infifo_hdr_out_vec} = infifo.pop_front();
 	 infifo_hdr_out = TxHdr_t'(infifo_hdr_out_vec);
+	 // ----------------------------------------------------------------------- //
 	 // If Write fence is observed
 	 // ----------------------------------------------------------------------- //
 	 if (infifo_hdr_out.reqtype == ASE_WRFENCE) begin
@@ -499,6 +515,7 @@ module outoforder_wrf_channel
 	 end // if (infifo_hdr_out.reqtype == ASE_WRFENCE)
 	 // ----------------------------------------------------------------------- //
 	 // Any other transaction
+	 // ----------------------------------------------------------------------- //
 	 else begin
 	    // VC Select based on type
 	    if (WRITE_CHANNEL == 0) begin
@@ -545,7 +562,7 @@ module outoforder_wrf_channel
 
    // Virtual channel select and push
    always @(posedge clk) begin : vc_selector_proc
-      if (rst) begin	
+      if (rst) begin
 	 vc_push <= 3'b000;
 	 if (WRITE_CHANNEL == 0) begin
 	    select_vc_read (1, infifo_hdr_out);
@@ -553,18 +570,18 @@ module outoforder_wrf_channel
 	 else if (WRITE_CHANNEL == 1) begin
 	    select_vc_write (1, infifo_hdr_out);
 	 end
-	 infifo_tid_out <= {TID_WIDTH{1'b0}};	 
-	 infifo_data_out <= {CCIP_DATA_WIDTH{1'b0}};	 
-	 infifo_hdr_out <= TxHdr_t'({CCIP_TX_HDR_WIDTH{1'b0}});	 
+	 infifo_tid_out <= {TID_WIDTH{1'b0}};
+	 infifo_data_out <= {CCIP_DATA_WIDTH{1'b0}};
+	 infifo_hdr_out <= TxHdr_t'({CCIP_TX_HDR_WIDTH{1'b0}});
       end
       else if (~some_lane_full && (infifo.size() != 0)) begin
 	 infifo_to_vc_push();
       end
       else begin
 	 vc_push <= 3'b000;
-	 infifo_tid_out <= {TID_WIDTH{1'b0}};	 
-	 infifo_data_out <= {CCIP_DATA_WIDTH{1'b0}};	 
-	 infifo_hdr_out <= TxHdr_t'({CCIP_TX_HDR_WIDTH{1'b0}});	 
+	 infifo_tid_out <= {TID_WIDTH{1'b0}};
+	 infifo_data_out <= {CCIP_DATA_WIDTH{1'b0}};
+	 infifo_hdr_out <= TxHdr_t'({CCIP_TX_HDR_WIDTH{1'b0}});
       end
    end
 
@@ -581,7 +598,7 @@ module outoforder_wrf_channel
    logic [TID_WIDTH-1:0] vh1_wrfence_tid;
 
    int 	 latbuf_push_ptr;
-   int 	 latbuf_push_ptr_reg;
+   // int 	 latbuf_push_ptr_reg;
 
    int 	 latbuf_pop_ptr;
    int 	 latbuf_pop_ptr_reg;
@@ -621,51 +638,133 @@ module outoforder_wrf_channel
 	latbuf_full <= 0;
    end
 
-   assign latbuf_almfull = (latbuf_cnt >= (NUM_WAIT_STATIONS-3)) ? 1 : 0;
+   assign latbuf_almfull = (latbuf_cnt >= (NUM_WAIT_STATIONS-5)) ? 1 : 0;
 
    // push_ptr selector
    function automatic integer find_next_push_slot();
       int 				     find_iter;
       int 				     ret_free_slot;
       begin
-   	 for(find_iter = latbuf_push_ptr;
-	     find_iter < latbuf_push_ptr + NUM_WAIT_STATIONS;
-	     find_iter = find_iter + 1) begin
-	    ret_free_slot = find_iter % NUM_WAIT_STATIONS;
-   	    if ( (records[ret_free_slot].state == LatSc_Disabled) &&
-	    	 ~records[ret_free_slot].record_valid ) begin
-   	       return ret_free_slot;
+	 if (record_push_in_progress) begin
+	    return latbuf_push_ptr;
+	 end
+	 else begin
+   	    for(find_iter = latbuf_push_ptr;
+		find_iter < latbuf_push_ptr + NUM_WAIT_STATIONS;
+		find_iter = find_iter + 1) begin
+	       ret_free_slot = find_iter % NUM_WAIT_STATIONS;
+   	       if ( (records[ret_free_slot].state == LatSc_Disabled) && ~records[ret_free_slot].record_valid ) begin
+   		  return ret_free_slot;
+   	       end
    	    end
-   	 end
+	 end
 	 return LATBUF_SLOT_INVALID;
       end
    endfunction
 
    // Latbuf_push_ptr register process
-   always @(posedge clk) begin : latbuf_push_ptr_regproc
-      latbuf_push_ptr_reg <= latbuf_push_ptr;
-   end
+   // always @(posedge clk) begin : latbuf_push_ptr_regproc
+   //    latbuf_push_ptr_reg <= latbuf_push_ptr;
+   // end
 
 
    //////////////////////////////////////////////////////////////////////
    // Latbuf assignment process
    //////////////////////////////////////////////////////////////////////
    // Read and update record in latency scoreboard
-   function automatic void read_vc_latbuf_push (ref logic [FIFO_WIDTH-1:0] array[$:INTERNAL_FIFO_DEPTH-1],
-						ref logic 		  wrfence_flag,
-						ref logic [TID_WIDTH-1:0] wrfence_tid
-						);
-      logic [CCIP_TX_HDR_WIDTH-1:0] 					  array_hdr;
-      logic [CCIP_DATA_WIDTH-1:0] 					  array_data;
-      logic [TID_WIDTH-1:0] 						  array_tid;
-      TxHdr_t                                                             hdr;
-      int 								  ptr;
+   function automatic void read_vc_and_latbuf_push (ref logic [FIFO_WIDTH-1:0] array[$:INTERNAL_FIFO_DEPTH-1],
+						    ref logic 		      wrfence_flag,
+						    ref logic [TID_WIDTH-1:0] wrfence_tid
+						    );
+      logic [CCIP_TX_HDR_WIDTH-1:0] 					      array_hdr;
+      logic [CCIP_DATA_WIDTH-1:0] 					      array_data;
+      logic [TID_WIDTH-1:0] 						      array_tid;
+      TxHdr_t                                                                 hdr;
+      int 								      ptr;
+      logic [PHYSCLADDR_WIDTH-1:0] 					      baseaddr;
+      int 								      ii;
       begin
+	 // -------------------------------------------- //
+	 // If Write channel
+	 // -------------------------------------------- //
+	 if (WRITE_CHANNEL == 1) begin
+	 end
+	 // -------------------------------------------- //
+	 // If Read channel
+	 // -------------------------------------------- //
+	 else begin
+	    ptr = find_next_push_slot();
+	    latbuf_push_ptr = ptr;
+	    wrfence_flag = 0;
+	    wrfence_tid  = {TID_WIDTH{1'b0}};
+	    if (ptr != LATBUF_SLOT_INVALID) begin
+	       {array_tid, array_data, array_hdr} = array.pop_front();
+	       hdr = TxHdr_t'(array_hdr);
+	       // ----------------------------------------------------------------- //
+	       // If VHx channel is selected, breakout entire request within record
+	       // ----------------------------------------------------------------- //
+	       if (isVHxChannel(hdr)) begin
+	 `ifdef ASE_DEBUG
+		  $fwrite(log_fd, "%d | read_vc_and_latbuf_push : Selected slot %02d \n", $time, ptr );		  
+	 `endif
+		  baseaddr = hdr.addr;
+		  records[ptr].record_push = 1;
+		  records[ptr].record_valid = 1;
+		  records[ptr].record_mcl_len = hdr.len;
+		  // Unroll each address
+		  for(int ii  = 0; ii <= hdr.len ; ii = ii + 1) begin
+		     records[ptr].hdr[ii]      = hdr;
+		     records[ptr].data[ii]     = {CCIP_DATA_WIDTH{1'b0}};
+		     records[ptr].tid[ii]      = array_tid;
+		     records[ptr].hdr[ii].addr = baseaddr + ii;		     
+	 `ifdef ASE_DEBUG
+		     $fwrite(log_fd, "%d | read_vc_and_latbuf_push : tid=%x of addr=%x pushed to records[%02d] \n", $time, array_tid, records[ptr].hdr[ii].addr, ptr );		  
+	 `endif
+		  end
+	       end
+	       // ----------------------------------------------------------------- //
+	       // If VL channel is selected, brekout entire request across records
+	       // ----------------------------------------------------------------- //
+	       else begin
+		  baseaddr = hdr.addr;
+		  records[ptr].record_push    = 1;
+		  records[ptr].record_valid   = 1;
+		  records[ptr].record_mcl_len = ASE_1CL;
+		  records[ptr].hdr[0]         = array_hdr;
+		  records[ptr].data[0]        = array_data;
+		  records[ptr].tid[0]         = array_tid;
+	 `ifdef ASE_DEBUG
+		  $fwrite(log_fd, "%d | read_vc_and_latbuf_push : Selected slot %02d \n", $time, ptr );		  
+		  $fwrite(log_fd, "%d | read_vc_and_latbuf_push : tid=%x of addr=%x pushed to records[%02d] \n", $time, array_tid, records[ptr].hdr[ii].addr, ptr );		  
+	 `endif
+		  for (int ii = 1; ii <= hdr.len ; ii = ii + 1) begin
+		     ptr = find_next_push_slot();
+		     latbuf_push_ptr = ptr;
+		     records[ptr].record_push    = 1;
+		     records[ptr].record_valid   = 1;
+		     records[ptr].record_mcl_len = ASE_1CL;
+		     records[ptr].hdr[0]         = array_hdr;
+		     records[ptr].data[0]        = array_data;
+		     records[ptr].tid[0]         = array_tid;
+		     records[ptr].hdr[0].addr    = baseaddr + ii;		     
+	 `ifdef ASE_DEBUG
+		     $fwrite(log_fd, "%d | read_vc_and_latbuf_push : Selected slot %02d \n", $time, ptr );		  
+		     $fwrite(log_fd, "%d | read_vc_and_latbuf_push : tid=%x of addr=%x pushed to records[%02d] \n", $time, array_tid, records[ptr].hdr[0].addr, ptr );		  
+	 `endif
+		  end
+	       end
+	    end
+	 end
+/*
 	 ptr = find_next_push_slot();
 	 latbuf_push_ptr = ptr;
-	 if (~latbuf_almfull && ~outfifo_almfull) begin
+	 if (~latbuf_almfull && ~outfifo_almfull ) begin
+	    // Pop a traffic channel content
 	    {array_tid, array_data, array_hdr} = array.pop_front();
 	    hdr = TxHdr_t'(array_hdr);
+	    // ---------------------------------------------- //
+	    // If Popped header is a fence
+	    // ---------------------------------------------- //
 	    if (hdr.reqtype == ASE_WRFENCE) begin
 	       wrfence_flag = 1;
 	       wrfence_tid  = array_tid;
@@ -673,21 +772,55 @@ module outoforder_wrf_channel
 	       $fwrite(log_fd, "%d | latbuf_push : saw Wrfence on tid=%x on channel %d\n", $time, array_tid, hdr.vc);
 	 `endif
 	    end
+	    // ---------------------------------------------- //
+	    // If not a fence
+	    // ---------------------------------------------- //
 	    else begin
 	       if (ptr != LATBUF_SLOT_INVALID) begin
-		  records[ptr].hdr          = hdr;
-		  records[ptr].data         = array_data;
-		  records[ptr].tid          = array_tid;
-		  records[ptr].record_push  = 1;
-		  records[ptr].record_valid = 1;
-	 `ifdef ASE_DEBUG
-		  $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
-	 `endif
-	       end // if (ptr != LATBUF_SLOT_INVALID)
+		  // ---------------------------------------------- //
+		  // If Write channel
+		  // ---------------------------------------------- //
+		  if (WRITE_CHANNEL == 1) begin
+		     if (hdr.sop) begin
+			records[ptr].record_mcl_len = hdr.clnum;
+		     end
+		  end
+		  // ---------------------------------------------- //
+		  // If Read channel
+		  // ---------------------------------------------- //
+		  else begin
+		     records[ptr].record_push  = 1;
+		     records[ptr].record_valid = 1;
+		     records[ptr].record_mcl_len = hdr.clnum;
+		     baseaddr = hdr.addr;
+		     for (int ii=0; ii < hdr.clnum; ii++) begin
+			records[ptr].hdr[ii]     = hdr;
+			records[ptr].data[ii]    = array_data;
+			records[ptr].tid[ii]     = array_tid;
+			// Address increment
+			records[ptr].hdr[ii].addr = baseaddr + ii;
+		     end
+		  end
+	       end
+	       // ##############################################
+	       // *FIXME*: This must be replaced
+	       //       if (ptr != LATBUF_SLOT_INVALID) begin
+	       // 	  records[ptr].hdr          = hdr;
+	       // 	  records[ptr].data         = array_data;
+	       // 	  records[ptr].tid          = array_tid;
+	       // 	  records[ptr].record_push  = 1;
+	       // 	  records[ptr].record_valid = 1;
+	       // `ifdef ASE_DEBUG
+	       // 	  $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
+	       // `endif
+	       // end // if (ptr != LATBUF_SLOT_INVALID)
+	       // ##############################################
 	    end // else: !if(hdr.reqtype == ASE_WRFENCE)
 	 end
-      end
+ */
+     end
    endfunction
+
 
    // //////////////////////////////////////////////////////////////////////////////
    // States
@@ -706,12 +839,14 @@ module outoforder_wrf_channel
 	 end
       end
       else begin
-	 // If input arrays are available
+	 // ---------------------------------------------------- //
+	 // Choose a VC to pop
+	 // ---------------------------------------------------- //
    	 case (vc_pop)
    	   Select_VL0:
    	     begin
 		if (~vl0_wrfence_flag && ~vl0_array_empty && ~latbuf_almfull) begin
-		   read_vc_latbuf_push(vl0_array, vl0_wrfence_flag, vl0_wrfence_tid );
+		   read_vc_and_latbuf_push(vl0_array, vl0_wrfence_flag, vl0_wrfence_tid );
 		end
    		vc_pop <= Select_VH0;
    	     end
@@ -719,7 +854,7 @@ module outoforder_wrf_channel
    	   Select_VH0:
    	     begin
 		if (~vh0_wrfence_flag && ~vh0_array_empty && ~latbuf_almfull) begin
-		   read_vc_latbuf_push(vh0_array, vh0_wrfence_flag, vh0_wrfence_tid );
+		   read_vc_and_latbuf_push(vh0_array, vh0_wrfence_flag, vh0_wrfence_tid );
 		end
    		vc_pop <= Select_VH1;
    	     end
@@ -727,7 +862,7 @@ module outoforder_wrf_channel
    	   Select_VH1:
    	     begin
 		if (~vh1_wrfence_flag && ~vh1_array_empty && ~latbuf_almfull) begin
-		   read_vc_latbuf_push(vh1_array, vh1_wrfence_flag, vh1_wrfence_tid );
+		   read_vc_and_latbuf_push(vh1_array, vh1_wrfence_flag, vh1_wrfence_tid );
 		end
    		vc_pop <= Select_VL0;
    	     end
@@ -737,7 +872,10 @@ module outoforder_wrf_channel
    		vc_pop <= Select_VL0;
    	     end
 
-   	 endcase
+   	 endcase // case (vc_pop)
+	 // ------------------------------------------------------------------------- //
+	 // If a fence is ready to be popped
+	 // ------------------------------------------------------------------------- //
 	 // If a VL0 fence is set, wait till downstream gets cleared
 	 if (vl0_wrfence_flag && (vl0_records_cnt == 0) && vl0_wrfence_deassert) begin
 	    vl0_wrfence_flag <= 0;
@@ -759,6 +897,9 @@ module outoforder_wrf_channel
 	    $fwrite(log_fd, "%d | VH1 write fence popped\n", $time);
 	 `endif
 	 end
+	 // ------------------------------------------------------------------------- //
+	 // Deassert status bits
+	 // ------------------------------------------------------------------------- //
 	 // Release latbuf_used & record_push
 	 for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
 	    if (records[ii].state == LatSc_Countdown) begin
@@ -780,21 +921,21 @@ module outoforder_wrf_channel
 	 case (hdr.vc)
 	   VC_VL0:
 	     begin
-		return $urandom_range(20, 118);		
+		return $urandom_range(20, 118);
 	     end
 	   VC_VH0:
 	     begin
-		return $urandom_range(240, 270);		
+		return $urandom_range(240, 270);
 	     end
 	   VC_VH1:
 	     begin
-		return $urandom_range(240, 270);		
+		return $urandom_range(240, 270);
 	     end
 	   VC_VA:
 	     begin
-		return 100;		
+		return 100;
 	 `ifdef ASE_DEBUG
-		$fwrite(log_fd, "%d | *ERROR* => get_delay() must not get VC_VA", $time);		
+		$fwrite(log_fd, "%d | *ERROR* => get_delay() must not get VC_VA", $time);
 	 `endif
 	     end
 	 endcase
@@ -822,15 +963,15 @@ module outoforder_wrf_channel
 		   begin
 		      records[ii].record_ready  <= 0;
 		      if (records[ii].record_push) begin
-			 records[ii].ctr_out      <= get_delay(records[ii].hdr);
+			 records[ii].ctr_out      <= get_delay(records[ii].hdr[0]);
 			 records[ii].state        <= LatSc_Countdown;
-			 if (records[ii].hdr.vc == VC_VL0) begin
+			 if (records[ii].hdr[0].vc == VC_VL0) begin
 	 		    record_vl0_flag_arr[ii] <= 1;
 			 end
-			 else if (records[ii].hdr.vc == VC_VH0) begin
+			 else if (records[ii].hdr[0].vc == VC_VH0) begin
 	 		    record_vh0_flag_arr[ii] <= 1;
 			 end
-			 else if (records[ii].hdr.vc == VC_VH1) begin
+			 else if (records[ii].hdr[0].vc == VC_VH1) begin
 	 		    record_vh1_flag_arr[ii] <= 1;
 			 end
 		      end
@@ -838,6 +979,10 @@ module outoforder_wrf_channel
 			 records[ii].ctr_out      <= 0;
 			 records[ii].state        <= LatSc_Disabled;
 		      end
+		   end
+
+		 LatSc_RecordPushInProgress:
+		   begin
 		   end
 
 		 LatSc_Countdown:
@@ -858,7 +1003,7 @@ module outoforder_wrf_channel
 		      records[ii].ctr_out      <= 0;
 		      if (records[ii].record_pop) begin
 			 records[ii].record_ready <= 0;
-			 records[ii].state        <= LatSc_RecordPopped;
+			 records[ii].state        <= LatSc_RecordPopInProgress;
 		      end
 		      else begin
 			 records[ii].record_ready <= 1;
@@ -866,7 +1011,7 @@ module outoforder_wrf_channel
 		      end
 		   end
 
-		 LatSc_RecordPopped:
+		 LatSc_RecordPopInProgress:
 		   begin
 	 	      record_vl0_flag_arr[ii] <= 0;
 	 	      record_vh0_flag_arr[ii] <= 0;
@@ -877,7 +1022,7 @@ module outoforder_wrf_channel
 			 records[ii].state        <= LatSc_Disabled;
 		      end
 		      else begin
-			 records[ii].state        <= LatSc_RecordPopped;
+			 records[ii].state        <= LatSc_RecordPopInProgress;
 		      end
 		   end
 
@@ -893,21 +1038,41 @@ module outoforder_wrf_channel
 
       end
    endgenerate
+/*
+   // MCL Slot pop in progress
+   logic mcl_find_pop_slot_in_progress;
 
 
-   // Find a transaction to release to output stage
+   // --------------------------------------------------- //
+   // Find a transaction to release to output stage       //
+   // --------------------------------------------------- //
    function integer find_next_pop_slot();
       int ret_pop_slot;
       int pop_iter;
       int sel_slot;
       begin
-	 for(pop_iter = latbuf_pop_ptr; pop_iter < latbuf_pop_ptr + NUM_WAIT_STATIONS ; pop_iter = pop_iter + 1) begin
-	    sel_slot = pop_iter % NUM_WAIT_STATIONS;
-	    if (records[sel_slot].record_ready) begin
-	       return sel_slot;
+	 // ------------------------------------------------------- //
+	 // Implement a Read channel
+	 // ------------------------------------------------------- //
+	 if (WRITE_CHANNEL == 0) begin
+	    for(pop_iter = latbuf_pop_ptr; pop_iter < latbuf_pop_ptr + NUM_WAIT_STATIONS ; pop_iter = pop_iter + 1) begin
+	       sel_slot = pop_iter % NUM_WAIT_STATIONS;
+	       if (records[sel_slot].record_ready) begin
+		  return sel_slot;
+	       end
 	    end
+	    return LATBUF_SLOT_INVALID;
 	 end
-	 return LATBUF_SLOT_INVALID;
+	 // ------------------------------------------------------- //
+	 // Implement a Write channel
+	 // ------------------------------------------------------- //
+	 else begin
+	    mcl_write_in_progress = 0;
+	    for(pop_iter = latbuf_pop_ptr; pop_iter < latbuf_pop_ptr + NUM_WAIT_STATIONS ; pop_iter = pop_iter + 1) begin
+	       sel_slot = pop_iter % NUM_WAIT_STATIONS;
+	    end
+	    return LATBUF_SLOT_INVALID;
+	 end
       end
    endfunction
 
@@ -946,19 +1111,24 @@ module outoforder_wrf_channel
 	    rxhdr.vc_used           = txhdr.vc;
 	    rxhdr.rsvd25            = 0;
 	    rxhdr.hitmiss           = 0; // *FIXME*
+	    // ------------------------------------------------------ //
+	 `ifdef ENABLE_WRRESP_PACKING
 	    // If VC=VH{0,1}, and request is some kind of write, issue a packing directive
-	    // if (WRITE_CHANNEL == 1) begin
-	    //    if ((rxhdr.vc_used == VC_VH0)||(rxhdr.vc_used == VC_VH1)) begin
-	    // 	  rxhdr.format      = 1;	       
-	    //    end
-	    //    else begin
-	    // 	  rxhdr.format      = 0;	       
-	    //    end
-	    // end
-	    // else begin
-	    //    rxhdr.format         = 0;
-	    // end 	    
+	    if (WRITE_CHANNEL == 1) begin
+	       if ((rxhdr.vc_used == VC_VH0)||(rxhdr.vc_used == VC_VH1)) begin
+	    	  rxhdr.format      = 1;
+	       end
+	       else begin
+	    	  rxhdr.format      = 0;
+	       end
+	    end
+	    else begin
+	       rxhdr.format         = 0;
+	    end
+	 `else // !`ifdef ENABLE_WRRESP_PACKING
 	    rxhdr.format         = 0;
+	 `endif
+	    // ------------------------------------------------------ //
 	    rxhdr.rsvd22            = 0;
 	    // rxhdr.clnum will be updated by unroll
 	    if ( (txhdr.reqtype == ASE_RDLINE_S) || (txhdr.reqtype == ASE_RDLINE_I) ) begin
@@ -1237,18 +1407,18 @@ module outoforder_wrf_channel
    // Read guard *FIXME*
    always @(posedge clk) begin : read_out_proc
       if (rst) begin
-	 valid_out <= 0;	 
+	 valid_out <= 0;
       end
       else if (read_en && (outfifo.size() != 0)) begin
 	 { tid_out, data_out, rxhdr_out_vec, txhdr_out_vec } <= outfifo.pop_front();
-	 valid_out <= 1;	 
+	 valid_out <= 1;
       end
       else begin
-	 valid_out <= 0;	 
+	 valid_out <= 0;
       end
    end
-  
-   
+
+
    // Log output pop
 `ifdef ASE_DEBUG
    always @(posedge clk) begin
@@ -1258,14 +1428,5 @@ module outoforder_wrf_channel
    end
 `endif
 
-
-   /*
-    * Transaction IN-OUT checker
-    * Sniffs dropped transactions
-    */
-// `ifdef ASE_DEBUG
-//    stream_checker #(CCIP_TX_HDR_WIDTH, TID_WIDTH)
-//    checkunit (clk, write_en, hdr_in, tid_in, valid_out, txhdr_out, rxhdr_out,tid_out);
-// `endif
-
+*/
 endmodule // outoforder_wrf_channel

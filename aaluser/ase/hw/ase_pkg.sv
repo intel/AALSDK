@@ -249,7 +249,9 @@ package ase_pkg;
    parameter LATBUF_FULL_THRESHOLD   = LATBUF_NUM_TRANSACTIONS - 5;
    // Radix of ASE_fifo (subcomponent in latency scoreboard)
    parameter LATBUF_DEPTH_BASE2      = $clog2(LATBUF_NUM_TRANSACTIONS);
-
+   // Maximum transactions per MCL request
+   parameter LATBUF_MCL_MAXLEN       = 4;
+   
 
    /*
     * CCI Transaction packet
