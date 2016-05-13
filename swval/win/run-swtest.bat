@@ -15,7 +15,7 @@ goto err
 
 :runtests
 cd winbuild\Debug\x64\bin
-.\swtest.exe --gtest_print_time=0 --gtest_shuffle %*
+.\swtest.exe --gtest_print_time=0 --gtest_shuffle
 
 :err
 exit /b %errorlevel%
