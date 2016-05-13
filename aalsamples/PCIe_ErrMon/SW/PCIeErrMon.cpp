@@ -53,6 +53,8 @@
 #include <aalsdk/aalclp/aalclp.h>
 #include <string.h>
 
+#include <xmmintrin.h>
+#include <emmintrin.h>
 //****************************************************************************
 // UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
 //    DEFAULT is to use Software Simulation.
@@ -344,6 +346,9 @@ protected:
    btVirtAddr     m_InputVirt;      ///< Input workspace virtual address.
    btPhysAddr     m_InputPhys;      ///< Input workspace physical address.
    btWSSize       m_InputSize;      ///< Input workspace size in bytes.
+   btVirtAddr     m_OutputVirt;     ///< Output workspace virtual address.
+   btPhysAddr     m_OutputPhys;     ///< Output workspace physical address.
+   btWSSize       m_OutputSize;     ///< Output workspace size in bytes.
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -367,7 +372,10 @@ PCIeErrMonApp::PCIeErrMonApp() :
    m_DSMSize(0),
    m_InputVirt(NULL),
    m_InputPhys(0),
-   m_InputSize(0)
+   m_InputSize(0),
+   m_OutputVirt(NULL),
+   m_OutputPhys(0),
+   m_OutputSize(0)
 {
    // Register our Client side interfaces so that the Service can acquire them.
    //   SetInterface() is inherited from CAASBase
@@ -490,6 +498,21 @@ btInt PCIeErrMonApp::run()
       goto done_2;
    }
 
+   if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_OutputVirt)){
+      m_bIsOK = false;
+      m_Sem.Post(1);
+      m_Result = -1;
+      goto done_2;
+   }
+
+   m_OutputSize = LPBK1_BUFFER_SIZE;
+   m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
+   if(0 == m_OutputPhys){
+      m_bIsOK = false;
+      m_Result = -1;
+      goto done_3;
+   }
+
    //=============================
    // Now we have the NLB Service
    //   now we can use it
@@ -498,6 +521,16 @@ btInt PCIeErrMonApp::run()
    if(true == m_bIsOK){
 
       ::memset( m_InputVirt, 0, m_InputSize);    // Input initialized to 0
+      ::memset( m_OutputVirt, 0, m_OutputSize);    // Output initialized to 0
+
+      struct CacheLine {                           // Operate on cache lines
+         btUnsigned32bitInt uint[16];
+      };
+      struct CacheLine *pCL = reinterpret_cast<struct CacheLine *>(m_InputVirt);
+      for ( btUnsigned32bitInt i = 0; i < m_InputSize / CL(1) ; ++i ) {
+         pCL[i].uint[15] = i;
+      };                         // Cache-Line[n] is zero except last uint = n
+
 
       if ( flag_is_set(errMonCmdLine.flags, PCIERRMON_CMD_WRITE_ADDR)){
          // MMIO Write with Unaligned address
@@ -510,58 +543,45 @@ btInt PCIeErrMonApp::run()
          btUnsigned64bitInt     SrcContent;
          m_pALIMMIOService->mmioRead64(CSR_SRC_ADDR, &SrcContent);
       }
-      btByte* src  = (btByte *)(calloc(16, sizeof(btByte)));
-      btByte* src2 = src;
-      btByte* temp = (btByte *)(calloc(16, sizeof(btByte)));
-      btByte* dest = (btByte *)(calloc(16, sizeof(btByte)));
       if ( flag_is_set(errMonCmdLine.flags, PCIERRMON_CMD_WRITE_LENGTH)){
          // MMIO Write with unsupported length
          cout << "WRITE_LENGTH\n";
-         btByte  InputData = 0x1;
 
-         for(int i = 0; i < 16; i++, src2++)
-         {
-            *src2 = InputData;
-         }
-
-         src2 = src;
-         memcpy((void *)(m_pALIMMIOService->mmioGetAddress()+CSR_SRC_ADDR), (void *)src, 16);
-
-//         if ( memcmp((void *)src, (void *)((m_pALIMMIOService->mmioGetAddress())+CSR_SRC_ADDR), 16) != 0 ){
-//            cerr << "Data mismatch in src and mmio buffers.\n";
-//         }
-//
-//         memcpy((void *)dest, (void *)(m_pALIMMIOService->mmioGetAddress()+CSR_SRC_ADDR), 16);
-//            if ( memcmp( (void *)((m_pALIMMIOService->mmioGetAddress())+CSR_SRC_ADDR), (void *)dest, 16) != 0 ){
-//               cerr << "Data mismatch in dest and mmio buffers.\n";
-//            }
-//         }
-//
-//         if ( memcmp((void *)src, (void *)dest, 16) != 0 ){
-//            cerr << "Data mismatch in src and dest buffers.\n";
-//         }
       }
       if ( flag_is_set(errMonCmdLine.flags, PCIERRMON_CMD_READ_LENGTH)){
          // MMIO Read with unsupported length
          cout << "READ_LENGTH\n";
-         memcpy((void *)dest, (m_pALIMMIOService->mmioGetAddress()+CSR_SRC_ADDR), 16);
-         if ( memcmp( (void *)((m_pALIMMIOService->mmioGetAddress())+CSR_SRC_ADDR), (void *)dest, 16) != 0 ){
-            cerr << "Data mismatch in dest and mmio buffers.\n";
+
+         __m128i *pSrc_128  = NULL;
+         __m128i *pDest_128 = NULL;
+
+         pSrc_128  = (__m128i *)(m_pALIMMIOService->mmioGetAddress()+CSR_SRC_ADDR);
+         pDest_128 = (__m128i *)(m_pALIMMIOService->mmioGetAddress()+CSR_DST_ADDR);
+
+         ASSERT((NULL != pSrc_128) && (NULL != pDest_128));
+
+         __m128i xmm0 = _mm_setzero_si128();
+
+         xmm0 = _mm_load_si128(pSrc_128);
+        _mm_stream_si128(pDest_128, xmm0);
+
+         if ( memcmp((void *)pSrc_128, (void *)pDest_128, 16) != 0 ){
+            cerr << "Data mismatch in src and dest buffers.\n";
          }
+
       }
       if ( flag_is_set(errMonCmdLine.flags, PCIERRMON_CMD_CONFIG_READ)){
          // Config Read to NLB CSR
          cout << "CONFIG_READ\n";
 
-         }
-//
-//      if ( memcmp((void *)src, (void *)dest, 16) != 0 ){
-//         cerr << "Data mismatch in src and dest buffers.\n";
-//      }
+      }
    }
    MSG("Done Running Test");
 
    // Clean-up and return
+
+done_3:
+   m_pALIBufferService->bufferFree(m_OutputVirt);
 
 done_2:
    m_pALIBufferService->bufferFree(m_InputVirt);
