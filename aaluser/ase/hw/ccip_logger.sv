@@ -42,7 +42,7 @@ import ccip_if_pkg::*;
 
 module ccip_logger
   #(
-    parameter LOGNAME   = "ccip_transactions.tsv"
+    parameter LOGNAME   = "CHANGE_MY_NAME.log"
     )
    (
     // Configure enable
