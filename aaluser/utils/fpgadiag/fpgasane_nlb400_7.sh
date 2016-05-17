@@ -23,46 +23,8 @@
 ## CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
-##****************************************************************************
-##  Accelerator Abstraction Layer Library Software Developer Kit (SDK)
-##
-##  Content:
-##     aalutils/fpgadiag/Makefile
-##  Author:
-##     Tim Whisonant, Intel Corporation
-##  History:
-##     07/21/2015    TSW   Initial version
-##******************************************************************************
-bin_PROGRAMS=fpgadiag
 
-fpgadiag_SOURCES=\
-fpgadiag.cpp \
-diag_lpbk1.cpp \
-diag_read.cpp \
-diag_sw.cpp \
-diag_trput.cpp \
-diag_write.cpp \
-diag_atomic.cpp \
-diag_defaults.h \
-diag-common.h \
-diag-nlb-common.cpp \
-diag-nlb-common.h \
-fpgadiagDefs.h \
-nlb-specific.h \
-utils.h
+#Sanity check for nlb400_7 bitstream
+#SW test
 
-fpgadiag_CPPFLAGS=\
--I$(top_srcdir)/include \
--I$(top_builddir)/include
-
-fpgadiag_LDADD=\
-$(top_builddir)/aas/OSAL/libOSAL.la \
-$(top_builddir)/aas/AASLib/libAAS.la \
-$(top_builddir)/aas/AALRuntime/libaalrt.la \
-$(top_builddir)/aas/AIAService/libaia.la \
-$(top_builddir)/clp/libaalclp.la
-
-bin_SCRIPTS=\
-fpgasane_nlb400_0.sh \
-fpgasane_nlb400_3.sh \
-fpgasane_nlb400_7.sh
+./fpgadiag --target=fpga --mode=sw --begin=65530 --umsg-data
