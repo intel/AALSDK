@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file HelloALINLB.cpp
-/// @brief Basic ALI AFU interaction.
-/// @ingroup HelloALINLB
+/// @file main.cpp
+/// @brief Basic MMlink verification.
+/// @ingroup MMlinkTestApp
 /// @verbatim
 /// Accelerator Abstraction Layer Sample Application
 ///
@@ -35,15 +35,13 @@
 ///       deployable applications.
 ///    It is designed to show working examples of the AAL programming model and APIs.
 ///
-/// AUTHORS: Joseph Grecco, Intel Corporation.
+/// AUTHORS: Sadruta Chandrashekar, Intel Corporation.
 ///
-/// This Sample demonstrates how to use the basic ALI APIs.
-///
-/// This sample is designed to be used with the xyzALIAFU Service.
+/// Sample verifies signature CSR built into the Signal Tap hardware.
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 12/15/2015     JG       Initial version started based on older sample code.@endverbatim
+/// 12/15/2015     SC       Initial version started based on older sample code.@endverbatim
 //****************************************************************************
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/Runtime.h>
@@ -76,17 +74,6 @@ using namespace AAL;
 #else
 # define EVENT_CASE(x) case x :
 #endif
-
-#ifndef CL
-# define CL(x)                     ((x) * 64)
-#endif // CL
-#ifndef LOG2_CL
-# define LOG2_CL                   6
-#endif // LOG2_CL
-#ifndef MB
-# define MB(x)                     ((x) * 1024 * 1024)
-#endif // MB
-#define LPBK1_BUFFER_SIZE        CL(1)
 
 
 /// @addtogroup MMlinkTestApp
