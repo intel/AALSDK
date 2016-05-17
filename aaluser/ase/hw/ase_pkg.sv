@@ -242,15 +242,17 @@ package ase_pkg;
     * Latency Scoreboard generics
     */
    // Number of transactions in latency scoreboard
-   parameter LATBUF_NUM_TRANSACTIONS = 32;
+   parameter LATBUF_NUM_TRANSACTIONS = 8;
    // Radix of latency scoreboard radix
    parameter LATBUF_COUNT_WIDTH      = $clog2(LATBUF_NUM_TRANSACTIONS) + 1;
    // ASE_fifo full threshold inside latency scoreboard
-   parameter LATBUF_FULL_THRESHOLD   = LATBUF_NUM_TRANSACTIONS - 5;
+   parameter LATBUF_FULL_THRESHOLD   = 5;
    // Radix of ASE_fifo (subcomponent in latency scoreboard)
    parameter LATBUF_DEPTH_BASE2      = $clog2(LATBUF_NUM_TRANSACTIONS);
    // Maximum transactions per MCL request
    parameter LATBUF_MCL_MAXLEN       = 4;
+   // Wait station timer width
+   parameter TIMER_WIDTH             = 9;
    
 
    /*
@@ -396,4 +398,57 @@ package ase_pkg;
       end
    endfunction
 
+
+   /*
+    * Easy check functions
+    */ 
+   // isReadReq
+   function automatic logic isReadRequest(TxHdr_t hdr);
+      begin
+	 if ((hdr.reqtype == ASE_RDLINE_I)||(hdr.reqtype == ASE_RDLINE_S)) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;	    
+	 end	      
+      end
+   endfunction
+
+   // isWriteReq
+   function automatic logic isWriteRequest(TxHdr_t hdr);
+      begin
+	 if ((hdr.reqtype == ASE_WRLINE_I)||(hdr.reqtype == ASE_WRLINE_M)) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;	    
+	 end	      
+      end
+   endfunction
+
+   // isVL0Req
+   function automatic logic isVL0Request(TxHdr_t hdr);
+      begin
+	 if (hdr.vc == VC_VL0) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;	    
+	 end	      
+      end
+   endfunction
+
+   // isVHxReq
+   function automatic logic isVHxRequest(TxHdr_t hdr);
+      begin
+	 if ((hdr.vc == VC_VH0)||(hdr.vc == VC_VH1)) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;	    
+	 end	      
+      end
+   endfunction
+
+   
 endpackage
