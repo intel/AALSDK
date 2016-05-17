@@ -450,5 +450,17 @@ package ase_pkg;
       end
    endfunction
 
+   // isVAReq
+   function automatic logic isVARequest(TxHdr_t hdr);
+      begin
+	 if (hdr.vc == VC_VA) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;	    
+	 end	      
+      end
+   endfunction
+   
    
 endpackage

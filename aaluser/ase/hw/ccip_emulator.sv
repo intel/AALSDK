@@ -222,7 +222,7 @@ module ccip_emulator
 	   VC_VA           : rxasehdr.vc_used = eVC_VA;
 	   VC_VL0          : rxasehdr.vc_used = eVC_VL0;
 	   VC_VH0          : rxasehdr.vc_used = eVC_VH0;
-	   VC_VH1          : rxasehdr.vc_used = eVC_VH1;	   
+	   VC_VH1          : rxasehdr.vc_used = eVC_VH1;
 	 endcase
 	 return rxasehdr;
       end
@@ -242,7 +242,7 @@ module ccip_emulator
 	   VC_VA           : rxasehdr.vc_used = eVC_VA;
 	   VC_VL0          : rxasehdr.vc_used = eVC_VL0;
 	   VC_VH0          : rxasehdr.vc_used = eVC_VH0;
-	   VC_VH1          : rxasehdr.vc_used = eVC_VH1;	   
+	   VC_VH1          : rxasehdr.vc_used = eVC_VH1;
 	 endcase
 	 return rxasehdr;
       end
@@ -350,7 +350,7 @@ module ccip_emulator
    import "DPI-C" function void mmio_response(inout mmio_t mmio_pkt);
    mmio_t mmio_rdrsp_pkt;
    mmio_t mmio_wrrsp_pkt;
-      
+
    // Software controlled process - run clocks
    export "DPI-C" task run_clocks;
 
@@ -358,8 +358,8 @@ module ccip_emulator
    export "DPI-C" task afu_softreset_trig;
 
    // Simulator global reset (issued at simulator start, or session end)
-   export "DPI-C" task ase_reset_trig;   
-   
+   export "DPI-C" task ase_reset_trig;
+
    // Software controlled reset response
    import "DPI-C" function void sw_reset_response();
 
@@ -378,7 +378,7 @@ module ccip_emulator
 
 
    /*
-    * ASE Simulator reset 
+    * ASE Simulator reset
     * - Use sparingly, only for initialization and reset between session_init(s)
     */
    task ase_reset_trig();
@@ -386,11 +386,11 @@ module ccip_emulator
 	 ase_reset = 1;
 	 run_clocks(20);
 	 ase_reset = 0;
-	 run_clocks(20);	 
+	 run_clocks(20);
       end
    endtask
 
-   
+
    /*
     * Multi-instance multi-user +CONFIG,+SCRIPT instrumentation
     * RUN =>
@@ -496,14 +496,14 @@ module ccip_emulator
    logic 			  sw_reset_trig = 1;
    logic 			  app_reset_trig;
    logic 			  app_reset_trig_q;
-   int 				  rst_timeout_counter;   
+   int 				  rst_timeout_counter;
    int 				  rst_counter;
 
    // Register app_reset_trig
    always @(posedge clk) begin
-      app_reset_trig_q <= app_reset_trig;      
+      app_reset_trig_q <= app_reset_trig;
    end
-   
+
    // Reset states
    typedef enum {
 		 ResetIdle,
@@ -531,13 +531,13 @@ module ccip_emulator
       if (ase_reset) begin
 	 rst_state           <= ResetIdle;
 	 rst_counter         <= 0;
-	 rst_timeout_counter <= 0;		
+	 rst_timeout_counter <= 0;
       end
       else begin
 	 case (rst_state)
 	   ResetIdle:
 	     begin
-		rst_timeout_counter <= 0;		
+		rst_timeout_counter <= 0;
 		// 0 -> 1
 		if (~app_reset_trig_q && app_reset_trig) begin
 		   rst_state <= ResetHoldHigh;
@@ -556,13 +556,13 @@ module ccip_emulator
 	     begin
 		if (glbl_dealloc_credit != 0) begin
 		   if (rst_timeout_counter < `RESET_TIMEOUT_DURATION) begin
-		      rst_timeout_counter <= rst_timeout_counter + 1;		   
+		      rst_timeout_counter <= rst_timeout_counter + 1;
 		      rst_state           <= ResetHoldHigh;
 		   end
 		   else begin
-		      `BEGIN_RED_FONTCOLOR;		      
-		      $display("SIM-SV: Reset request timed out... Behavior maybe undefined !");		      
-		      `END_RED_FONTCOLOR;		      
+		      `BEGIN_RED_FONTCOLOR;
+		      $display("SIM-SV: Reset request timed out... Behavior maybe undefined !");
+		      `END_RED_FONTCOLOR;
 		      sw_reset_trig <= 1;
 		      rst_state <= ResetWait;
 		   end
@@ -775,7 +775,7 @@ module ccip_emulator
 	       hdr.tid      = mmio_pkt.tid[CCIP_CFGHDR_TID_WIDTH-1:0];
 	       cwlp_header  = (CCIP_CFG_HDR_WIDTH)'(hdr);
 	       cwlp_wrvalid = 0;
-	       cwlp_rdvalid = 1;	       
+	       cwlp_rdvalid = 1;
 	       mmio_pkt.resp_en = 1;
 	       @(posedge clk);
 	       cwlp_wrvalid = 0;
@@ -828,7 +828,7 @@ module ccip_emulator
 
    logic [CCIP_MMIO_RDDATA_WIDTH-1:0] mmioresp_dout;
    logic [CCIP_MMIO_TID_WIDTH-1:0]    mmioresp_tid;
-    
+
    logic 			      mmioresp_read;
    logic 			      mmioresp_valid;
    logic 			      mmioresp_full;
@@ -862,7 +862,7 @@ module ccip_emulator
    function automatic void mmio_rdrsp_mask( );
       begin
 	 // TID
-	 mmio_rdrsp_pkt.tid      = mmioresp_tid;	 
+	 mmio_rdrsp_pkt.tid      = mmioresp_tid;
 	 // Write Enable
 	 mmio_rdrsp_pkt.write_en = MMIO_READ_REQ;
 	 // Data (use only lower int)
@@ -899,12 +899,12 @@ module ccip_emulator
 
    /*
     * MMIO Write response
-    */ 
+    */
    // Function to tie Write Response
    function automatic void mmio_wrrsp_mask();
       begin
 	 // TID
-	 mmio_wrrsp_pkt.tid      = DBG_cfgheader.tid;	 
+	 mmio_wrrsp_pkt.tid      = DBG_cfgheader.tid;
 	 // Write Enable
 	 mmio_wrrsp_pkt.write_en = MMIO_WRITE_REQ;
 	 // Data packing
@@ -917,22 +917,22 @@ module ccip_emulator
 	 mmio_wrrsp_pkt.qword[6] = C0RxData[ 447:384 ];
 	 mmio_wrrsp_pkt.qword[7] = C0RxData[ 511:448 ];
 	 // Address
-	 mmio_wrrsp_pkt.addr = DBG_cfgheader.index;	 
+	 mmio_wrrsp_pkt.addr = DBG_cfgheader.index;
 	 // Response flag
 	 mmio_wrrsp_pkt.resp_en  = 1;
 	 // Return
-	 mmio_response ( mmio_wrrsp_pkt );	 
+	 mmio_response ( mmio_wrrsp_pkt );
       end
    endfunction
 
    // Response to MMIO write (credit control only)
    always @(posedge clk) begin
       if (C0RxMmioWrValid) begin
-	 mmio_wrrsp_mask( );	 
+	 mmio_wrrsp_mask( );
       end
    end
-   
-   
+
+
    /* ******************************************************************
     *
     * Unordered Messages Engine
@@ -1463,31 +1463,43 @@ module ccip_emulator
     *
     * *******************************************************************/
    // Read response staging signals
-   logic [CCIP_DATA_WIDTH-1:0] rdrsp_data_in, rdrsp_data_out;
-   RxHdr_t                     rdrsp_hdr_in, rdrsp_hdr_out;
-   logic 		       rdrsp_write;
-   logic 		       rdrsp_read;
-   logic 		       rdrsp_full;
-   logic 		       rdrsp_empty;
-   logic 		       rdrsp_valid;
-
+   logic [CCIP_RX_HDR_WIDTH-1:0] rdrsp_hdr_out_vec;
+   logic [CCIP_DATA_WIDTH-1:0] 	 rdrsp_data_in, rdrsp_data_out;
+   RxHdr_t                       rdrsp_hdr_in, rdrsp_hdr_out;
+   logic 			 rdrsp_write;
+   logic 			 rdrsp_read;
+   logic 			 rdrsp_full;
+   logic 			 rdrsp_empty;
+   logic 			 rdrsp_valid;
+   
    // Atomics response staging signals
-   logic [CCIP_DATA_WIDTH-1:0] atomics_data_in, atomics_data_out;
-   Atomics_t                   atomics_hdr_in, atomics_hdr_out;
-   logic 		       atomics_write;
-   logic 		       atomics_read;
-   logic 		       atomics_full;
-   logic 		       atomics_empty;
-   logic 		       atomics_valid;
+   logic [CCIP_RX_HDR_WIDTH-1:0] atomics_hdr_out_vec;
+   logic [CCIP_DATA_WIDTH-1:0] 	 atomics_data_in, atomics_data_out;
+   Atomics_t                     atomics_hdr_in, atomics_hdr_out;
+   logic 			 atomics_write;
+   logic 			 atomics_read;
+   logic 			 atomics_full;
+   logic 			 atomics_empty;
+   logic 			 atomics_valid;
 
+   // Pre-packed signals
+   logic [CCIP_RX_HDR_WIDTH-1:0] wrrsp_hdr_out_vec;
+   RxHdr_t                       wrrsp_hdr_in, wrrsp_hdr_out;
+   logic 			 wrrsp_write;
+   logic 			 wrrsp_read;
+   logic 			 wrrsp_full;
+   logic 			 wrrsp_empty;
+   logic 			 wrrsp_valid;
+  
    // Write response 1 staging signals
-   RxHdr_t                     wr1rsp_hdr_in, wr1rsp_hdr_out;
-   logic 		       wr1rsp_write;
-   logic 		       wr1rsp_read;
-   logic 		       wr1rsp_full;
-   logic 		       wr1rsp_empty;
-   logic 		       wr1rsp_valid;
-
+   logic [CCIP_RX_HDR_WIDTH-1:0] pp_wrrsp_hdr_out_vec;
+   RxHdr_t                       pp_wrrsp_hdr_in, pp_wrrsp_hdr_out;
+   logic 			 pp_wrrsp_write;
+   logic 			 pp_wrrsp_read;
+   logic 			 pp_wrrsp_full;
+   logic 			 pp_wrrsp_empty;
+   logic 			 pp_wrrsp_valid;
+   
 
    /*
     * FUNCTION: Cast TxHdr_t to cci_pkt
@@ -1678,7 +1690,7 @@ module ccip_emulator
       if (ase_reset) begin
 	 cf2as_latbuf_ch1_read <= 0;
       end
-      else if (~cf2as_latbuf_ch1_empty && ~wr1rsp_full) begin
+      else if (~cf2as_latbuf_ch1_empty && ~wrrsp_full) begin
 	 cf2as_latbuf_ch1_read <= 1;
       end
       else begin
@@ -1695,8 +1707,8 @@ module ccip_emulator
 	 // Write memory
    	 wr_memline_dex(Tx1_pkt);
 	 // *FIXME*: Atomics or partials go here
-	 // Write to wr1rsp_fifo
-	 wr1rsp_hdr_in                <= cf2as_latbuf_rx1hdr;	 
+	 // Write to wrrsp_fifo
+	 pp_wrrsp_hdr_in           = cf2as_latbuf_rx1hdr;
       end
    endtask
 
@@ -1706,38 +1718,77 @@ module ccip_emulator
     * - If cf2as_latbuf_ch1_valid is HIGH
     *   - If cf2as_latbuf_rx1hdr.fmt is HIGH
     *     - *FIXME*: Fulfill unrolled requests, and pack them
-    *   - If cf2as_latbuf_rx1hdr.fmt is LOW  
+    *   - If cf2as_latbuf_rx1hdr.fmt is LOW
     *     - Fullfill request and passthru
-    */ 
-   // always @(posedge clk) begin
-   //    if (ase_reset) begin
-   // 	 wr1rsp_write <= 0;	 
-   //    end
-   //    // Pass through data if no PACK directive is set
-   //    else if (cf2as_latbuf_ch1_valid && ~cf2as_latbuf_rx1hdr.format) begin
-   // 	 cf2as_latbuf_to_wrrsp_fifo();
-   // 	 wr1rsp_write <= 1;	 
-   //    end
-   //    else if (cf2as_latbuf_ch1_valid && cf2as_latbuf_rx1hdr.format) begin
-   //    end
-   //    else begin
-   // 	 wr1rsp_write <= 0;	 
-   //    end
-   // end
-   
+    */
+   // latbuf_ch1 -> pp_wrrsp_fifo glue logic
+   always @(posedge clk) begin
+      if (ase_reset) begin
+	 pp_wrrsp_write <= 0;
+      end
+      else if (cf2as_latbuf_ch1_valid) begin
+	 cf2as_latbuf_to_wrrsp_fifo();
+	 pp_wrrsp_write <= 1;
+      end
+      else begin
+	 pp_wrrsp_write <= 0;
+      end
+   end
+
+   // Prepack staging fifo
+   ase_svfifo
+     #(
+       .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH ),
+       .DEPTH_BASE2    ( 5 ),
+       .ALMFULL_THRESH ( 24 )
+       )
+   pp_wrrsp_fifo
+     (
+      .clk             ( clk ),
+      .rst             ( ase_reset ),
+      .wr_en           ( pp_wrrsp_write ),
+      .data_in         ( (CCIP_RX_HDR_WIDTH)'(pp_wrrsp_hdr_in) ),
+      .rd_en           ( ~pp_wrrsp_empty && pp_wrrsp_read ),
+      .data_out        ( pp_wrrsp_hdr_out_vec ),
+      .data_out_v      ( pp_wrrsp_valid ),
+      .alm_full        ( pp_wrrsp_full ),
+      .full            (),
+      .empty           ( pp_wrrsp_empty ),
+      .count           (),
+      .overflow        (),
+      .underflow       ()
+      );
+
+   assign pp_wrrsp_hdr_out = RxHdr_t'(pp_wrrsp_hdr_out_vec);
+
+   // Pop continuously from pp_wrrsp_fifo
+   always @(posedge clk) begin
+      if (ase_reset) begin
+   	 pp_wrrsp_read <= 0;
+      end
+      else if (~pp_wrrsp_empty && ~wrrsp_full) begin
+   	 pp_wrrsp_read <= 1;
+      end
+      else begin
+   	 pp_wrrsp_read <= 0;
+      end
+   end
 
 
    // Glue process (roll it into coalescer block)
    always @(posedge clk) begin
       if (ase_reset) begin
-	 wr1rsp_write <= 0;
+	 wrrsp_hdr_in <= RxHdr_t'(0);
+	 wrrsp_write <= 0;
       end
-      else if (cf2as_latbuf_ch1_valid) begin
-	 cf2as_latbuf_to_wrrsp_fifo();
-	 wr1rsp_write <= 1;
+      // else if (cf2as_latbuf_ch1_valid) begin
+      else if (pp_wrrsp_valid) begin
+	 wrrsp_hdr_in <= pp_wrrsp_hdr_out;
+	 // cf2as_latbuf_to_wrrsp_fifo();
+	 wrrsp_write <= pp_wrrsp_valid;
       end
       else begin
-	 wr1rsp_write <= 0;
+	 wrrsp_write <= 0;
       end
    end
 
@@ -1750,12 +1801,6 @@ module ccip_emulator
     * as2cf_umsg_fifo      | Unordered message staging *FIXME*
     *
     * *******************************************************************/
-
-   logic [CCIP_RX_HDR_WIDTH-1:0] rdrsp_hdr_out_vec;
-   logic [CCIP_RX_HDR_WIDTH-1:0] wr1rsp_hdr_out_vec;
-   logic [CCIP_RX_HDR_WIDTH-1:0] atomics_hdr_out_vec;
-
-
    /*
     * RX0 Read Response staging
     */
@@ -1825,24 +1870,24 @@ module ccip_emulator
        .DEPTH_BASE2    ( 7 ),
        .ALMFULL_THRESH ( 120 )
        )
-   wr1rsp_fifo
+   wrrsp_fifo
      (
       .clk             ( clk ),
       .rst             ( ase_reset ),
-      .wr_en           ( wr1rsp_write ),
-      .data_in         ( (CCIP_RX_HDR_WIDTH)'(wr1rsp_hdr_in) ),
-      .rd_en           ( ~wr1rsp_empty && wr1rsp_read ),
-      .data_out        ( wr1rsp_hdr_out_vec ),
-      .data_out_v      ( wr1rsp_valid ),
-      .alm_full        ( wr1rsp_full ),
+      .wr_en           ( wrrsp_write ),
+      .data_in         ( (CCIP_RX_HDR_WIDTH)'(wrrsp_hdr_in) ),
+      .rd_en           ( ~wrrsp_empty && wrrsp_read ),
+      .data_out        ( wrrsp_hdr_out_vec ),
+      .data_out_v      ( wrrsp_valid ),
+      .alm_full        ( wrrsp_full ),
       .full            (),
-      .empty           ( wr1rsp_empty ),
+      .empty           ( wrrsp_empty ),
       .count           (),
       .overflow        (),
       .underflow       ()
       );
 
-   assign wr1rsp_hdr_out = RxHdr_t'(wr1rsp_hdr_out_vec);
+   assign wrrsp_hdr_out = RxHdr_t'(wrrsp_hdr_out_vec);
 
 
    /* *******************************************************************
@@ -1947,13 +1992,13 @@ module ccip_emulator
    // Read from staging FIFOs
    always @(posedge clk) begin
       if (ase_reset) begin
-	 wr1rsp_read  <= 0 ;
+	 wrrsp_read  <= 0 ;
       end
-      else if (~wr1rsp_empty) begin
-	 wr1rsp_read  <= 1 ;
+      else if (~wrrsp_empty) begin
+	 wrrsp_read  <= 1 ;
       end
       else begin
-	 wr1rsp_read  <= 0 ;
+	 wrrsp_read  <= 0 ;
       end
    end
 
@@ -1964,9 +2009,9 @@ module ccip_emulator
    	 C1RxWrValid <= 0;
    	 C1RxIntrValid <= 0;
       end
-      else if (wr1rsp_valid) begin
-   	 C1RxHdr       <= RxHdr_t'(wr1rsp_hdr_out);
-   	 C1RxWrValid   <= wr1rsp_valid;
+      else if (wrrsp_valid) begin
+   	 C1RxHdr       <= RxHdr_t'(wrrsp_hdr_out);
+   	 C1RxWrValid   <= wrrsp_valid;
    	 C1RxIntrValid <= 0;
       end
       else begin
@@ -2099,7 +2144,7 @@ module ccip_emulator
       // run_clocks(20);
       // ase_reset     <= 0;
       ase_reset_trig();
-      
+
       sw_reset_trig <= 0;
       run_clocks(20);
 
@@ -2218,7 +2263,7 @@ module ccip_emulator
       .SoftReset        ( SoftReset            ),
       .ccip_rx          ( pck_cp2af_sRx        ),
       .ccip_tx          ( pck_af2cp_sTx        )
-      );   
+      );
 `endif //  `ifndef ASE_DISABLE_LOGGER
 
 
@@ -2310,7 +2355,7 @@ module ccip_emulator
 	 wr_credit     <= 0;
 	 mmiowr_credit <= 0;
 	 mmiord_credit <= 0;
-	 atomic_credit <= 0;	 
+	 atomic_credit <= 0;
       end
       else begin
 	 // ---------------------------------------------------- //

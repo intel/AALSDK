@@ -197,8 +197,6 @@ module outoforder_wrf_channel
    logic 			  vh0_array_empty;
    logic 			  vh1_array_empty;
 
-   // logic 			  infifo_empty;
-
    logic 			  outfifo_empty;
    logic 			  outfifo_almempty;
    logic 			  outfifo_almfull;
@@ -509,7 +507,7 @@ module outoforder_wrf_channel
 	    if (WRITE_CHANNEL == 0) begin
 	       select_vc_read (0, infifo_hdr_out);
 	    end
-	    else if (WRITE_CHANNEL == 1) begin
+	    else if ((WRITE_CHANNEL == 1) && (isVARequest(infifo_hdr_out)==1)) begin
 	       select_vc_write (0, infifo_hdr_out);
 	    end
 	    // No fence
