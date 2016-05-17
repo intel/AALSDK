@@ -409,9 +409,9 @@ module outoforder_wrf_channel
    	    endcase
    	    vc_wr_arb = ccip_vc_t'(hdr.vc);
 	 end // if (hdr.sop)
-	 // else begin
-	 //    hdr.vc = vc_wr_arb;
-	 // end
+	 else begin
+	    hdr.vc = vc_wr_arb;
+	 end
       end
    endfunction
 
@@ -524,7 +524,7 @@ module outoforder_wrf_channel
 			    c0tx_vl0_addr_base = infifo_hdr_out.addr;
 			 end
 			 vl0_hdr.addr = infifo_hdr_out.addr + ii;
-			 vl0_hdr.len = ii;
+			 vl0_hdr.len = ccip_len_t'(ii);
 			 vl0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(vl0_hdr)});
 	 `ifdef ASE_DEBUG
 			 $fwrite(log_fd, "%d | infifo_to_vc(VL0) : tid=%x, addr=%x, len=%02x sent to VL0\n", $time, infifo_tid_out, vl0_hdr.addr, vl0_hdr.len);
