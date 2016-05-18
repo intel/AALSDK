@@ -551,7 +551,7 @@ void TestStatus::OnKeepaliveTimeout()
 
 // Retrieve the current test and test case name from gtest.
 // Must be called within the context of a test case/fixture.
-void TestCaseName(std::string &TestCase, std::string &Test)
+GTCOMMON_API void TestCaseName(std::string &TestCase, std::string &Test)
 {
    const ::testing::TestInfo * const pInfo =
       ::testing::UnitTest::GetInstance()->current_test_info();
@@ -1395,7 +1395,7 @@ void MethodCallLog::ClearLog()
    m_LogList.clear();
 }
 
-std::ostream & operator << (std::ostream &os, const MethodCallLog &l)
+GTCOMMON_API std::ostream & operator << (std::ostream &os, const MethodCallLog &l)
 {
 #define TYPE_CASE(x) case x##_t : os << #x << " "; break
 
@@ -2262,9 +2262,9 @@ btBool CallTrackingServiceModule::ServiceInitFailed(IBase        *pService,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void AllocSwvalMod(AAL::IRuntime            *pRuntime,
-                   AAL::IBase               *pClientBase,
-                   const AAL::TransactionID &tid)
+GTCOMMON_API void AllocSwvalMod(AAL::IRuntime            *pRuntime,
+                                AAL::IBase               *pClientBase,
+                                const AAL::TransactionID &tid)
 {
    NamedValueSet configrec;
 
@@ -2279,9 +2279,9 @@ void AllocSwvalMod(AAL::IRuntime            *pRuntime,
    pRuntime->allocService(pClientBase, manifest, tid);
 }
 
-void AllocSwvalSvcMod(AAL::IRuntime            *pRuntime,
-                      AAL::IBase               *pClientBase,
-                      const AAL::TransactionID &tid)
+GTCOMMON_API void AllocSwvalSvcMod(AAL::IRuntime            *pRuntime,
+                                   AAL::IBase               *pClientBase,
+                                   const AAL::TransactionID &tid)
 {
    NamedValueSet configrec;
 

@@ -42,6 +42,11 @@ const INamedValueSet * CNVSRandomizer::Value()
    }
 }
 
+#ifdef __AAL_WINDOWS__
+// Complaint about "p" being used before it is initialized. Clearly "p" is assigned before being de-referenced.
+#pragma warning(push)
+#pragma warning(disable:4703)
+#endif // __AAL_WINDOWS__
 const INamedValueSet * CNVSRandomizer::ValueOtherThan(const INamedValueSet *nvs)
 {
    const INamedValueSet *p;
@@ -51,6 +56,9 @@ const INamedValueSet * CNVSRandomizer::ValueOtherThan(const INamedValueSet *nvs)
    }while ( p->operator == (*nvs) );
    return p;
 }
+#ifdef __AAL_WINDOWS__
+#pragma warning(pop)
+#endif // __AAL_WINDOWS__
 
 INamedValueSet * CNVSRandomizer::Alloc()
 {

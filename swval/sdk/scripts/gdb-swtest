@@ -7,6 +7,6 @@ declare -r SCRIPT_NAME='gdb-swtest'
 
 . ./gdb-common
 
-run_gdbtui "${VPATH}/tests/harnessed/gtest/.libs/swtest" ${1+"$@"} --no-timeout
+run_gdbtui "${VPATH}/tests/harnessed/gtest/swtest/.libs/swtest" ${1+"$@"} --no-timeout
 
 exit $?

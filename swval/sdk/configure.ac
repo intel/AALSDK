@@ -42,8 +42,8 @@ AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    	[1],[1],[1])
 AALSDK_LTLIB_VERSION([SWSIMALIAFU],  [libSWSimALIAFU],  	[1],[1],[1])
 AALSDK_LTLIB_VERSION([ALI],          [libALI],          	[1],[1],[1])
 
-AALSDK_LTLIB_VERSION([SWVALMOD],     [libswvalmod],         [3],[2],[1])
-AALSDK_LTLIB_VERSION([SWVALSVCMOD],  [libswvalsvcmod],  	[6],[5],[4])
+AALSDK_LTLIB_VERSION([SWVALMOD],     [libswvalmod],      [3],[2],[1])
+AALSDK_LTLIB_VERSION([SWVALSVCMOD],  [libswvalsvcmod],   [6],[5],[4])
 
 dnl ############################################################################
 dnl ## Optional Packages #######################################################
@@ -179,6 +179,8 @@ AC_CONFIG_FILES([ase/sw/Makefile
 AC_CONFIG_FILES([tests/Makefile
                  tests/harnessed/Makefile
                  tests/harnessed/gtest/Makefile
+                 tests/harnessed/gtest/gtcommon/Makefile
+                 tests/harnessed/gtest/swtest/Makefile
                  tests/standalone/Makefile
                  tests/standalone/OSAL_TestSem/Makefile
                  tests/standalone/OSAL_TestThreadGroup/Makefile

@@ -13,7 +13,7 @@ declare WANTDISTCC=false
 while [ $# -gt 0 ]; do
    case $1 in
       --clean)
-         clean_valgrind_all "tests/harnessed/gtest/.libs/swtest"
+         clean_valgrind_all "tests/harnessed/gtest/swtest/.libs/swtest"
          exit 0
       ;;
       --distcc)
@@ -26,5 +26,5 @@ while [ $# -gt 0 ]; do
    shift
 done
 
-run_valgrind_all ${WANTDISTCC} "tests/harnessed/gtest/.libs/swtest" ${ARGS}
+run_valgrind_all ${WANTDISTCC} "tests/harnessed/gtest/swtest/.libs/swtest" ${ARGS}
 exit $?

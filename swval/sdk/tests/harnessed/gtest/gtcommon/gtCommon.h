@@ -22,10 +22,16 @@ using namespace AAL;
 #define HOURS_IN_TERMS_OF_MILLIS(__x)   ( ((AAL::btTime)__x) * ((AAL::btTime)60000) * ((AAL::btTime)60) )
 
 #if   defined( __AAL_WINDOWS__ )
+# ifdef GTCOMMON_EXPORTS
+#    define GTCOMMON_API __declspec(dllexport)
+# else
+#    define GTCOMMON_API __declspec(dllimport)
+# endif // GTCOMMON_EXPORTS
 # define cpu_yield()       ::Sleep(0)
 # define sleep_millis(__x) ::Sleep(__x)
 # define sleep_sec(__x)    ::Sleep(1000 * (__x))
 #elif defined( __AAL_LINUX__ )
+# define GTCOMMON_API __declspec(0)
 # define cpu_yield()       ::usleep(0)
 # define sleep_millis(__x) ::usleep((__x) * 1000)
 # define sleep_sec(__x)    ::sleep(__x)
@@ -38,7 +44,7 @@ OSAL_API void DbgOSLThreadDelThr(AAL::btTID );
    END_NAMESPACE(Testing)
 END_NAMESPACE(AAL)
 
-class GlobalTestConfig
+class GTCOMMON_API GlobalTestConfig
 {
 public:
    static GlobalTestConfig & GetInstance();
@@ -225,7 +231,7 @@ protected:
 #endif // 0
 
 // This implementation cheats by creating a fixed sequence of random numbers.
-class RepeatableRandomInt
+class GTCOMMON_API RepeatableRandomInt
 {
 public:
    RepeatableRandomInt(unsigned Seed);
@@ -331,7 +337,7 @@ protected:
    S m_IOStream;
 };
 
-class FILEMixin
+class GTCOMMON_API FILEMixin
 {
 public:
    FILEMixin() {}
@@ -371,7 +377,7 @@ X PassReturnByValue(X x) { return x; }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ConsoleColorizer
+class GTCOMMON_API ConsoleColorizer
 {
 public:
    enum Stream
@@ -407,7 +413,7 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class TestStatus
+class GTCOMMON_API TestStatus
 {
 public:
    enum Status
@@ -456,7 +462,7 @@ std::ostream & LD_LIBRARY_PATH(std::ostream &os);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ThreadRegistry : public CriticalSection
+class GTCOMMON_API ThreadRegistry : public CriticalSection
 {
 public:
    ThreadRegistry();
@@ -479,7 +485,7 @@ protected:
 # include <signal.h>
 #endif // OS
 
-class SignalHelper : public ThreadRegistry
+class GTCOMMON_API SignalHelper : public ThreadRegistry
 {
 public:
    enum SigIndex
@@ -568,9 +574,9 @@ protected:
 
 // Retrieve the current test case and test name from gtest.
 // Must be called within the context of a test case/fixture.
-void TestCaseName(std::string &TestCase, std::string &Test);
+GTCOMMON_API void TestCaseName(std::string &TestCase, std::string &Test);
 
-class KeepAliveTimerEnv : public ::testing::Environment
+class GTCOMMON_API KeepAliveTimerEnv : public ::testing::Environment
 {
 public:
    static KeepAliveTimerEnv * GetInstance();
@@ -616,7 +622,7 @@ protected:
    static KeepAliveTimerEnv *sm_pInstance;
 };
 
-class KeepAliveTestListener : public ::testing::EmptyTestEventListener
+class GTCOMMON_API KeepAliveTestListener : public ::testing::EmptyTestEventListener
 {
 public:
    virtual void OnTestEnd(const ::testing::TestInfo & /*test_info*/)
@@ -627,7 +633,7 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class MethodCallLogEntry
+class GTCOMMON_API MethodCallLogEntry
 {
 public:
    MethodCallLogEntry(btcString method, Timer timestamp=Timer());
@@ -679,7 +685,7 @@ protected:
    std::list<TracksParamOrder> m_Order;
 };
 
-class MethodCallLog : public CriticalSection
+class GTCOMMON_API MethodCallLog : public CriticalSection
 {
 public:
    MethodCallLog() {}
@@ -697,7 +703,7 @@ protected:
    mutable LogList m_LogList;
 };
 
-std::ostream & operator << (std::ostream & , const MethodCallLog & );
+GTCOMMON_API std::ostream & operator << (std::ostream & , const MethodCallLog & );
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -712,7 +718,7 @@ void __cls::__membfn##ReturnsThisValue(__rettype x) { __membvar = x;    }
 ////////////////////////////////////////////////////////////////////////////////
 // IAALTransport
 
-class EmptyIAALTransport : public AAL::IAALTransport
+class GTCOMMON_API EmptyIAALTransport : public AAL::IAALTransport
 {
 public:
    EmptyIAALTransport();
@@ -740,7 +746,7 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////
 // IAALMarshaller
 
-class EmptyIAALMarshaller : public AAL::IAALMarshaller
+class GTCOMMON_API EmptyIAALMarshaller : public AAL::IAALMarshaller
 {
 public:
    EmptyIAALMarshaller();
@@ -820,7 +826,7 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////
 // IAALUnMarshaller
 
-class EmptyIAALUnMarshaller : public AAL::IAALUnMarshaller
+class GTCOMMON_API EmptyIAALUnMarshaller : public AAL::IAALUnMarshaller
 {
 public:
    EmptyIAALUnMarshaller();
@@ -879,8 +885,8 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////
 // IServiceClient
 
-class EmptyIServiceClient : public AAL::IServiceClient,
-                            public AAL::CAASBase
+class GTCOMMON_API EmptyIServiceClient : public AAL::IServiceClient,
+                                         public AAL::CAASBase
 {
 public:
    EmptyIServiceClient();
@@ -893,8 +899,8 @@ public:
    virtual void          serviceEvent(const IEvent & )           {}
 };
 
-class CallTrackingIServiceClient : public EmptyIServiceClient,
-                                   public MethodCallLog
+class GTCOMMON_API CallTrackingIServiceClient : public EmptyIServiceClient,
+                                                public MethodCallLog
 {
 public:
    CallTrackingIServiceClient();
@@ -906,7 +912,7 @@ public:
    virtual void          serviceEvent(const IEvent & );
 };
 
-class SynchronizingIServiceClient : public CallTrackingIServiceClient
+class GTCOMMON_API SynchronizingIServiceClient : public CallTrackingIServiceClient
 {
 public:
    SynchronizingIServiceClient();
@@ -928,8 +934,8 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////
 // IRuntimeClient
 
-class EmptyIRuntimeClient : public AAL::IRuntimeClient,
-                            public AAL::CAASBase
+class GTCOMMON_API EmptyIRuntimeClient : public AAL::IRuntimeClient,
+                                         public AAL::CAASBase
 {
 public:
    EmptyIRuntimeClient();
@@ -945,8 +951,8 @@ public:
    virtual void                    runtimeEvent(const IEvent & )        {}
 };
 
-class CallTrackingIRuntimeClient : public EmptyIRuntimeClient,
-                                   public MethodCallLog
+class GTCOMMON_API CallTrackingIRuntimeClient : public EmptyIRuntimeClient,
+                                                public MethodCallLog
 {
 public:
    CallTrackingIRuntimeClient();
@@ -962,7 +968,7 @@ public:
    virtual void                    runtimeEvent(const IEvent & );
 };
 
-class SynchronizingIRuntimeClient : public CallTrackingIRuntimeClient
+class GTCOMMON_API SynchronizingIRuntimeClient : public CallTrackingIRuntimeClient
 {
 public:
    SynchronizingIRuntimeClient();
@@ -988,7 +994,7 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////
 // ISvcsFact
 
-class EmptyISvcsFact : public AAL::ISvcsFact
+class GTCOMMON_API EmptyISvcsFact : public AAL::ISvcsFact
 {
 public:
    EmptyISvcsFact();
@@ -1007,8 +1013,8 @@ protected:
    btBool  m_InitializeService_returns;
 };
 
-class CallTrackingISvcsFact : public EmptyISvcsFact,
-                              public MethodCallLog
+class GTCOMMON_API CallTrackingISvcsFact : public EmptyISvcsFact,
+                                           public MethodCallLog
 {
 public:
    CallTrackingISvcsFact() {}
@@ -1024,8 +1030,8 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 // IRuntime
 
-class EmptyIRuntime : public AAL::IRuntime,
-                      public AAL::CAASBase
+class GTCOMMON_API EmptyIRuntime : public AAL::IRuntime,
+                                   public AAL::CAASBase
 {
 public:
    EmptyIRuntime();
@@ -1057,8 +1063,8 @@ protected:
    btBool          m_IsOK_returns;
 };
 
-class CallTrackingIRuntime : public EmptyIRuntime,
-                             public MethodCallLog
+class GTCOMMON_API CallTrackingIRuntime : public EmptyIRuntime,
+                                          public MethodCallLog
 {
 public:
    CallTrackingIRuntime();
@@ -1077,8 +1083,8 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 // IServiceBase
 
-class EmptyIServiceBase : public AAL::IServiceBase,
-                          public AAL::CAASBase
+class GTCOMMON_API EmptyIServiceBase : public AAL::IServiceBase,
+                                       public AAL::CAASBase
 {
 public:
    EmptyIServiceBase();
@@ -1115,8 +1121,8 @@ protected:
    NamedValueSet     m_OptArgs_returns;
 };
 
-class CallTrackingIServiceBase : public EmptyIServiceBase,
-                                 public MethodCallLog
+class GTCOMMON_API CallTrackingIServiceBase : public EmptyIServiceBase,
+                                              public MethodCallLog
 {
 public:
    CallTrackingIServiceBase();
@@ -1135,7 +1141,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 // ServiceBase
 
-class EmptyServiceBase : public AAL::ServiceBase
+class GTCOMMON_API EmptyServiceBase : public AAL::ServiceBase
 {
 public:
    EmptyServiceBase(AALServiceModule *container,
@@ -1158,8 +1164,8 @@ protected:
    btBool m_init_returns;
 };
 
-class CallTrackingServiceBase : public EmptyServiceBase,
-                                public MethodCallLog
+class GTCOMMON_API CallTrackingServiceBase : public EmptyServiceBase,
+                                             public MethodCallLog
 {
 public:
    CallTrackingServiceBase(AALServiceModule *container,
@@ -1196,8 +1202,8 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 // IServiceModule / IServiceModuleCallback
 
-class EmptyServiceModule : public AAL::IServiceModule,
-                           public AAL::IServiceModuleCallback
+class GTCOMMON_API EmptyServiceModule : public AAL::IServiceModule,
+                                        public AAL::IServiceModuleCallback
 {
 public:
    EmptyServiceModule();
@@ -1228,8 +1234,8 @@ protected:
    btBool m_ServiceInitFailed_returns;
 };
 
-class CallTrackingServiceModule : public EmptyServiceModule,
-                                  public MethodCallLog
+class GTCOMMON_API CallTrackingServiceModule : public EmptyServiceModule,
+                                               public MethodCallLog
 {
 public:
    CallTrackingServiceModule();
@@ -1254,32 +1260,32 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 // sw validation module / service module
 
-void    AllocSwvalMod(AAL::IRuntime * ,
-                      AAL::IBase    * ,
-                      const AAL::TransactionID & );
+GTCOMMON_API void    AllocSwvalMod(AAL::IRuntime * ,
+                                   AAL::IBase    * ,
+                                   const AAL::TransactionID & );
 
-void AllocSwvalSvcMod(AAL::IRuntime * ,
-                      AAL::IBase    * ,
-                      const AAL::TransactionID & );
+GTCOMMON_API void AllocSwvalSvcMod(AAL::IRuntime * ,
+                                   AAL::IBase    * ,
+                                   const AAL::TransactionID & );
 
-class EmptySwvalSvcClient : public ISwvalSvcClient,
-                            public EmptyIServiceClient
+class GTCOMMON_API EmptySwvalSvcClient : public ISwvalSvcClient,
+                                         public EmptyIServiceClient
 {
 public:
    EmptySwvalSvcClient();
    virtual void DidSomething(const AAL::TransactionID & , int );
 };
 
-class CallTrackingSwvalSvcClient : public ISwvalSvcClient,
-                                   public CallTrackingIServiceClient
+class GTCOMMON_API CallTrackingSwvalSvcClient : public ISwvalSvcClient,
+                                                public CallTrackingIServiceClient
 {
 public:
    CallTrackingSwvalSvcClient();
    virtual void DidSomething(const AAL::TransactionID & , int );
 };
 
-class SynchronizingSwvalSvcClient : public ISwvalSvcClient,
-                                    public SynchronizingIServiceClient
+class GTCOMMON_API SynchronizingSwvalSvcClient : public ISwvalSvcClient,
+                                                 public SynchronizingIServiceClient
 {
 public:
    SynchronizingSwvalSvcClient();
