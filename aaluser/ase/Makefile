@@ -138,6 +138,7 @@ ifeq ($(ASE_DEBUG), 1)
    SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
   endif
   SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +warn
+  SNPS_VLOGAN_OPT+= +define+ASE_DEBUG_DEEP
 endif
 ifdef GLS_SIM
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v

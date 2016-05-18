@@ -170,12 +170,24 @@ module outoforder_wrf_channel
 	 endcase
       end
    endfunction
+
+   // Print clnum
+   function string ase_print_clnum (ccip_len_t num);
+      begin
+	 case (num)
+	   ASE_1CL: return "#1CL";	   
+	   ASE_2CL: return "#2CL";	   
+	   ASE_3CL: return "#3CL";	   
+	   ASE_4CL: return "#4CL";	   
+	 endcase
+      end
+   endfunction
    
    // TxHdr print
    function automatic string return_txhdr(TxHdr_t hdr);
       string 			  str;      
       begin
-	 $sformat(str, "{%02x,%s,%x,%04x}", hdr.len, ase_channel_type(hdr.vc), hdr.addr, hdr.mdata);
+	 $sformat(str, "{%s,%s,%x,%04x}", ase_print_clnum(hdr.len), ase_channel_type(hdr.vc), hdr.addr, hdr.mdata);
 	 return str;	 
       end
    endfunction 
@@ -184,7 +196,7 @@ module outoforder_wrf_channel
    function automatic string return_rxhdr(RxHdr_t hdr);
       string str;      
       begin
-	 $sformat(str, "{%02x,%s,%04x}", hdr.clnum, ase_channel_type(hdr.vc_used), hdr.mdata);
+	 $sformat(str, "{%s,%s,%04x}", ase_print_clnum(hdr.clnum), ase_channel_type(hdr.vc_used), hdr.mdata);
 	 return str;	 
       end
    endfunction
