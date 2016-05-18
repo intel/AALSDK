@@ -1471,7 +1471,7 @@ module ccip_emulator
    logic 			 rdrsp_full;
    logic 			 rdrsp_empty;
    logic 			 rdrsp_valid;
-   
+
    // Atomics response staging signals
    logic [CCIP_RX_HDR_WIDTH-1:0] atomics_hdr_out_vec;
    logic [CCIP_DATA_WIDTH-1:0] 	 atomics_data_in, atomics_data_out;
@@ -1490,7 +1490,7 @@ module ccip_emulator
    logic 			 wrrsp_full;
    logic 			 wrrsp_empty;
    logic 			 wrrsp_valid;
-  
+
    // Write response 1 staging signals
    logic [CCIP_RX_HDR_WIDTH-1:0] pp_wrrsp_hdr_out_vec;
    RxHdr_t                       pp_wrrsp_hdr_in, pp_wrrsp_hdr_out;
@@ -1499,7 +1499,7 @@ module ccip_emulator
    logic 			 pp_wrrsp_full;
    logic 			 pp_wrrsp_empty;
    logic 			 pp_wrrsp_valid;
-   
+
 
    /*
     * FUNCTION: Cast TxHdr_t to cci_pkt
@@ -2215,27 +2215,52 @@ module ccip_emulator
 
    // Stream-checker for ASE
 `ifdef ASE_DEBUG
+   // Generate checker index
+   function automatic int generate_checkarray_index(logic [15:0] mdata, int clnum);
+      int ret;      
+      begin
+	 ret =  int'( {mdata[15:0],2'b00,clnum[1:0]} );
+	 return ret;	 
+      end
+   endfunction
+   
    // Read response checking
    longint unsigned read_check_array[*];
    always @(posedge clk) begin : read_array_checkproc
-      if (C0TxRdValid) begin
-	 read_check_array[C0TxHdr.mdata] = C0TxHdr.addr;
+      if ( C0TxValid && isReadRequest(C0RxHdr) ) begin
+	 for(int ii = 0; ii <= C0TxHdr.len ; ii = ii + 1) begin
+	    read_check_array[ generate_checkarray_index(C0TxHdr.mdata, ii) ] = C0TxHdr.addr + ii;
+	 end
       end
-      if (C0RxRdValid) begin
-	 if (read_check_array.exists(C0RxHdr.mdata))
-	   read_check_array.delete(C0RxHdr.mdata);
+      if (C0RxRspValid && (C0RxHdr.resptype == ASE_RD_RSP)) begin
+	 if (read_check_array.exists( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum)))
+	   read_check_array.delete( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
       end
    end
 
    // Write response checking
    longint unsigned write_check_array[*];
    always @(posedge clk) begin : write_array_checkproc
-      if (C1TxWrValid && (C1TxHdr.mdata != ASE_WRFENCE)) begin
-	 write_check_array[C1TxHdr.mdata] = C1TxHdr.addr;
+      if (C1TxValid && isWriteRequest(C1TxHdr) ) begin
+	 write_check_array[ generate_checkarray_index(C1TxHdr.mdata,C1TxHdr.len) ] = C1TxHdr.addr;
       end
-      if (C1RxWrValid) begin
-	 if (write_check_array.exists(C1RxHdr.mdata))
-	   write_check_array.delete(C1RxHdr.mdata);
+      if (C1RxRspValid && (C1RxHdr.resptype == ASE_WR_RSP)) begin
+	 if (isVHxResponse(C1RxHdr)) begin
+	    if (C0RxHdr.format) begin	       
+	       for(int ii = 0; ii <= C1RxHdr.clnum ; ii = ii + 1) begin
+		  if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,ii)))
+		    write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,ii) );
+	       end
+	    end
+	    else begin
+	       if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum)))
+		 write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+	    end
+	 end
+	 else if (isVL0Response(C1RxHdr)) begin
+	    if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum)))
+	      write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+	 end
       end
    end
 `endif

@@ -92,12 +92,12 @@ module ccip_logger
    // Print Channel function
    function string print_channel (t_ccip_vc vc_sel);
       begin
-	 case (vc_sel)
-	   eVC_VA  : return "VA ";
-	   eVC_VL0 : return "VL0";
-	   eVC_VH0 : return "VH0";
-	   eVC_VH1 : return "VH1";
-	 endcase
+   	 case (vc_sel)
+   	   eVC_VA  : return "VA ";
+   	   eVC_VL0 : return "VL0";
+   	   eVC_VH0 : return "VH0";
+   	   eVC_VH1 : return "VH1";
+   	 endcase
       end
    endfunction
 

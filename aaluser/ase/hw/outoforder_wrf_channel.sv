@@ -119,6 +119,7 @@ module outoforder_wrf_channel
     output logic 		       overflow_error
     );
 
+   
 `ifdef ASE_DEBUG
    int 				       log_fd;
    initial begin
@@ -153,6 +154,42 @@ module outoforder_wrf_channel
    logic [FIFO_WIDTH-1:0] 	  vh0_array[$:INTERNAL_FIFO_DEPTH-1];
    logic [FIFO_WIDTH-1:0] 	  vh1_array[$:INTERNAL_FIFO_DEPTH-1];
 
+   /*
+    * Convenience functions
+    */
+`ifdef ASE_DEBUG
+   // Print channel 
+   function string ase_channel_type (ccip_vc_t vc_sel);
+      begin
+	 case (vc_sel)
+	   VC_VA  : return "VA ";
+	   VC_VL0 : return "VL0";
+	   VC_VH0 : return "VH0";
+	   VC_VH1 : return "VH1";
+	 endcase
+      end
+   endfunction
+   
+   // TxHdr print
+   function automatic string return_txhdr(TxHdr_t hdr);
+      string 			  str;      
+      begin
+	 $sformat(str, "{%02x,%s,%x,%04x}", hdr.len, ase_channel_type(hdr.vc), hdr.addr, hdr.mdata);
+	 return str;	 
+      end
+   endfunction 
+
+   // RxHdr print
+   function automatic string return_rxhdr(RxHdr_t hdr);
+      string str;      
+      begin
+	 $sformat(str, "{%02x,%s,%04x}", hdr.clnum, ase_channel_type(hdr.vc_used), hdr.mdata);
+	 return str;	 
+      end
+   endfunction
+`endif	    
+
+   
    /*
     * Wrfence response mechanism
     * --------------------------
@@ -330,7 +367,7 @@ module outoforder_wrf_channel
    always @(posedge clk) begin : infifo_push
       if (write_en) begin
 	 `ifdef ASE_DEBUG
-	 $fwrite(log_fd, "%d | WRITE : hdr=%x assigned tid=%x\n", $time, hdr_in, tid_in);
+	 $fwrite(log_fd, "%d | ENTER : %s assigned tid=%x\n", $time, return_txhdr(hdr_in), tid_in);
 	 if (hdr_in.reqtype == ASE_WRFENCE) begin
 	    $fwrite (log_fd, "%d | WrFence inserted in channel\n", $time);
 	 end
@@ -525,14 +562,14 @@ module outoforder_wrf_channel
 			 vl0_hdr.len = ccip_len_t'(ii);
 			 vl0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(vl0_hdr)});
 	 `ifdef ASE_DEBUG
-			 $fwrite(log_fd, "%d | infifo_to_vc(VL0) : tid=%x, addr=%x, len=%02x sent to VL0\n", $time, infifo_tid_out, vl0_hdr.addr, vl0_hdr.len);
+			 $fwrite(log_fd, "%d | infifo_to_vc(VL0) : tid=%x TX=%s sent to VL0\n", $time, infifo_tid_out, return_txhdr(vl0_hdr) );
 	 `endif
 		      end // for (int ii = 0; ii <= infifo_hdr_out.len; ii = ii + 1)
 		   end // if (WRITE_CHANNEL == 0)
 		   else begin
 		      vl0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
 	 `ifdef ASE_DEBUG
-		      $fwrite(log_fd, "%d | infifo_to_vc(VL0) : tid=%x sent to VL0\n", $time, infifo_tid_out);
+		      $fwrite(log_fd, "%d | infifo_to_vc(VL0) : tid=%x TX=%s sent to VL0\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out) );
 	 `endif
 		   end
 		end
@@ -542,7 +579,7 @@ module outoforder_wrf_channel
 		   vc_push = 3'b010;
 		   vh0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
 	 `ifdef ASE_DEBUG
-		   $fwrite(log_fd, "%d | infifo_to_vc(VH0) : tid=%x sent to VH0\n", $time, infifo_tid_out);
+		   $fwrite(log_fd, "%d | infifo_to_vc(VH0) : tid=%x TX=%s sent to VH0\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out));
 	 `endif
 		end
 
@@ -551,7 +588,7 @@ module outoforder_wrf_channel
 		   vc_push = 3'b001;
 		   vh1_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
 	 `ifdef ASE_DEBUG
-		   $fwrite(log_fd, "%d | infifo_to_vc(VH1) : tid=%x sent to VH1\n", $time, infifo_tid_out);
+		   $fwrite(log_fd, "%d | infifo_to_vc(VH1) : tid=%x TX=%s sent to VH1\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out));
 	 `endif
 		end
 	    endcase
@@ -986,11 +1023,11 @@ module outoforder_wrf_channel
 	    else if ( (txhdr.reqtype == ASE_WRLINE_I) || (txhdr.reqtype == ASE_WRLINE_M) ) begin
 	       rxhdr.resptype        = ASE_WR_RSP;
 	    end
-	 `ifndef DEFEATURE_ATOMICS
-	    else if (txhdr.reqtype == ASE_ATOMIC_REQ) begin
-	       rxhdr.resptype        = ASE_ATOMIC_RSP;
-	    end
-	 `endif
+	 // `ifndef DEFEATURE_ATOMICS
+	 //    else if (txhdr.reqtype == ASE_ATOMIC_REQ) begin
+	 //       rxhdr.resptype        = ASE_ATOMIC_RSP;
+	 //    end
+	 // `endif
          `ifdef ASE_DEBUG
 	    else begin
 	       `BEGIN_RED_FONTCOLOR;
@@ -1009,6 +1046,26 @@ module outoforder_wrf_channel
 
 	    if (WRITE_CHANNEL == 0) begin // If classified as a read channel, unrolling must happen
 	       if ((txhdr.vc == VC_VH0)||(txhdr.vc == VC_VH1)) begin
+		  // ----------------------------------------------------------- //
+		  /*
+		  for (int ii = 0; ii <= txhdr.len; ii = ii + 1) begin
+		     outfifo_write_en = 1;		     
+		     txhdr.addr       = base_addr + ii;
+		     rxhdr.clnum      = ccip_len_t'(ii);
+		     rxhdr.mdata      = txhdr.mdata;
+		     rxhdr.vc_used    = txhdr.vc;
+		     array.push_back({ records[ptr].tid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
+         `ifdef ASE_DEBUG
+	    	     $fwrite(log_fd, "%d | record[%02d] with tid=%x, iter=%02x multiline unroll %x\n", $time, ptr, records[ptr].tid, ii, txhdr.addr);
+         `endif
+	       	     if (ii == txhdr.len) begin
+			records[ptr].record_pop = 1;
+			outfifo_write_en        = 0;
+		     end		     
+		  end
+		   */
+		  // ----------------------------------------------------------- //
+		  
 		  case (txhdr.len)
 		    // Single cache line
 		    ASE_1CL:
@@ -1096,6 +1153,7 @@ module outoforder_wrf_channel
 			 outfifo_write_en        = 0;
 		      end
 		  endcase // case (txhdr.len)
+		  
 	       end // if ((txhdr.vc == VC_VH0)||(txhdr.vc == VC_VH1))
 	       else begin
 		  outfifo_write_en = 1;
@@ -1286,7 +1344,7 @@ module outoforder_wrf_channel
 `ifdef ASE_DEBUG
    always @(posedge clk) begin
       if (valid_out) begin
-	 $fwrite(log_fd, "%d | tid=%x with txhdr=%x ejected from channel\n", $time, tid_out, txhdr_out);
+	 $fwrite(log_fd, "%d | EXIT => tid=%x with TX=%s RX=%s \n", $time, tid_out, return_txhdr(txhdr_out), return_rxhdr(rxhdr_out) );
       end
    end
 `endif
@@ -1294,11 +1352,7 @@ module outoforder_wrf_channel
 
    /*
     * Transaction IN-OUT checker
-    * Sniffs dropped transactions
+    * Sniffs dropped transactions, unexpected mdata, vc or mcl responses
     */
-// `ifdef ASE_DEBUG
-//    stream_checker #(CCIP_TX_HDR_WIDTH, TID_WIDTH)
-//    checkunit (clk, write_en, hdr_in, tid_in, valid_out, txhdr_out, rxhdr_out,tid_out);
-// `endif
-
+   
 endmodule // outoforder_wrf_channel

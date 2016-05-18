@@ -402,7 +402,7 @@ package ase_pkg;
    /*
     * Easy check functions
     */ 
-   // isReadReq
+   // isReadRequest
    function automatic logic isReadRequest(TxHdr_t hdr);
       begin
 	 if ((hdr.reqtype == ASE_RDLINE_I)||(hdr.reqtype == ASE_RDLINE_S)) begin
@@ -414,7 +414,7 @@ package ase_pkg;
       end
    endfunction
 
-   // isWriteReq
+   // isWriteRequest
    function automatic logic isWriteRequest(TxHdr_t hdr);
       begin
 	 if ((hdr.reqtype == ASE_WRLINE_I)||(hdr.reqtype == ASE_WRLINE_M)) begin
@@ -426,7 +426,7 @@ package ase_pkg;
       end
    endfunction
 
-   // isVL0Req
+   // isVL0Request
    function automatic logic isVL0Request(TxHdr_t hdr);
       begin
 	 if (hdr.vc == VC_VL0) begin
@@ -438,7 +438,7 @@ package ase_pkg;
       end
    endfunction
 
-   // isVHxReq
+   // isVHxRequest
    function automatic logic isVHxRequest(TxHdr_t hdr);
       begin
 	 if ((hdr.vc == VC_VH0)||(hdr.vc == VC_VH1)) begin
@@ -450,7 +450,7 @@ package ase_pkg;
       end
    endfunction
 
-   // isVAReq
+   // isVARequest
    function automatic logic isVARequest(TxHdr_t hdr);
       begin
 	 if (hdr.vc == VC_VA) begin
@@ -462,5 +462,29 @@ package ase_pkg;
       end
    endfunction
    
+   // isVL0Response
+   function automatic logic isVL0Response(RxHdr_t hdr);
+      begin
+	 if (hdr.vc_used == VC_VL0) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;	    
+	 end	      
+      end
+   endfunction
+
+   // isVHxResponse
+   function automatic logic isVHxResponse(RxHdr_t hdr);
+      begin
+	 if ((hdr.vc_used == VC_VH0)||(hdr.vc_used == VC_VH1)) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;	    
+	 end	      
+      end
+   endfunction
+
    
 endpackage
