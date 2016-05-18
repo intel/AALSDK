@@ -723,7 +723,7 @@ module outoforder_wrf_channel
    // Latbuf assignment process
    //////////////////////////////////////////////////////////////////////
    // Read and update record in latency scoreboard
-   function automatic void read_vc_latbuf_push (ref logic [FIFO_WIDTH-1:0] array[$:INTERNAL_FIFO_DEPTH-1],
+   function automatic void get_vc_put_latbuf (ref logic [FIFO_WIDTH-1:0] array[$:INTERNAL_FIFO_DEPTH-1],
 						ref logic 		  wrfence_flag,
 						ref logic [TID_WIDTH-1:0] wrfence_tid
 						);
@@ -758,14 +758,32 @@ module outoforder_wrf_channel
 	    // If Transaction is a not a WrFence
 	    // ------------------------------------------------------ //
 	    else begin
-	       records[ptr].hdr[0]       = hdr;
-	       records[ptr].data         = array_data;
-	       records[ptr].tid          = array_tid;
-	       records[ptr].record_push  = 1;
-	       records[ptr].record_valid = 1;
+	       // ------------------------------------------------------ //
+	       // If Transaction is a READ
+	       // ------------------------------------------------------ //
+	       if (isReadRequest(hdr)) begin
+		  records[ptr].hdr[0]       = hdr;
+		  records[ptr].data         = array_data;
+		  records[ptr].tid          = array_tid;
+		  records[ptr].record_push  = 1;
+		  records[ptr].record_valid = 1;
 	 `ifdef ASE_DEBUG
-	       $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
+		  $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
 	 `endif
+	       end
+	       // ------------------------------------------------------ //
+	       // If Transaction is a WRITE
+	       // ------------------------------------------------------ //
+	       else if (isWriteRequest(hdr)) begin		  
+		  records[ptr].hdr[0]       = hdr;
+		  records[ptr].data         = array_data;
+		  records[ptr].tid          = array_tid;
+		  records[ptr].record_push  = 1;
+		  records[ptr].record_valid = 1;
+	 `ifdef ASE_DEBUG
+		  $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
+	 `endif
+	       end
 	    end
 	 end
       end
@@ -794,25 +812,31 @@ module outoforder_wrf_channel
    	   Select_VL0:
    	     begin
 		if (~vl0_wrfence_flag && ~vl0_array_empty && ~latbuf_almfull) begin
-		   read_vc_latbuf_push(vl0_array, vl0_wrfence_flag, vl0_wrfence_tid );
+		   get_vc_put_latbuf(vl0_array, vl0_wrfence_flag, vl0_wrfence_tid );
 		end
-   		vc_pop <= Select_VH0;
+		if (~mcl_write_in_progress) begin
+   		   vc_pop <= Select_VH0;
+		end
    	     end
 
    	   Select_VH0:
    	     begin
 		if (~vh0_wrfence_flag && ~vh0_array_empty && ~latbuf_almfull) begin
-		   read_vc_latbuf_push(vh0_array, vh0_wrfence_flag, vh0_wrfence_tid );
+		   get_vc_put_latbuf(vh0_array, vh0_wrfence_flag, vh0_wrfence_tid );
 		end
-   		vc_pop <= Select_VH1;
+		if (~mcl_write_in_progress) begin
+   		   vc_pop <= Select_VH1;
+		end
    	     end
 
    	   Select_VH1:
    	     begin
 		if (~vh1_wrfence_flag && ~vh1_array_empty && ~latbuf_almfull) begin
-		   read_vc_latbuf_push(vh1_array, vh1_wrfence_flag, vh1_wrfence_tid );
+		   get_vc_put_latbuf(vh1_array, vh1_wrfence_flag, vh1_wrfence_tid );
 		end
-   		vc_pop <= Select_VL0;
+		if (~mcl_write_in_progress) begin
+   		   vc_pop <= Select_VL0;
+		end
    	     end
 
    	   default:
