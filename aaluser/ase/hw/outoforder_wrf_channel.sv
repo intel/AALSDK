@@ -354,10 +354,11 @@ module outoforder_wrf_channel
    // Transaction storage
    typedef struct packed
 		  {
-		     TxHdr_t                     hdr;           // in
+		     TxHdr_t [0:LATBUF_MCL_MAXLEN-1]  hdr;           // in
 		     logic [CCIP_DATA_WIDTH-1:0] data;          // in
 		     logic [TID_WIDTH-1:0] 	 tid;           // in
 		     logic [COUNT_WIDTH-1:0] 	 ctr_out;       // out
+		     ccip_len_t                  num_items;     // in
 		     logic 			 record_valid;  // out
 		     logic 			 record_ready;  // out
 		     logic 			 record_push;   // in
@@ -715,7 +716,9 @@ module outoforder_wrf_channel
       latbuf_push_ptr_reg <= latbuf_push_ptr;
    end
 
-
+   // MCL Write in progress
+   logic mcl_write_in_progress;
+      
    //////////////////////////////////////////////////////////////////////
    // Latbuf assignment process
    //////////////////////////////////////////////////////////////////////
@@ -730,11 +733,20 @@ module outoforder_wrf_channel
       TxHdr_t                                                             hdr;
       int 								  ptr;
       begin
-	 ptr = find_next_push_slot();
-	 latbuf_push_ptr = ptr;
-	 if (~latbuf_almfull && ~outfifo_almfull) begin
+	 // Find a pointer to use 
+	 if (~mcl_write_in_progress) begin
+	    ptr = find_next_push_slot();
+	    latbuf_push_ptr = ptr;
+	 end
+	 // ------------------------------------------------------ //
+	 // If slot is legal only then proceed
+	 // ------------------------------------------------------ //
+	 if (ptr != LATBUF_SLOT_INVALID) begin
 	    {array_tid, array_data, array_hdr} = array.pop_front();
 	    hdr = TxHdr_t'(array_hdr);
+	    // ------------------------------------------------------ //
+	    // If Transaction is a Wrfence
+	    // ------------------------------------------------------ //
 	    if (hdr.reqtype == ASE_WRFENCE) begin
 	       wrfence_flag = 1;
 	       wrfence_tid  = array_tid;
@@ -742,18 +754,19 @@ module outoforder_wrf_channel
 	       $fwrite(log_fd, "%d | latbuf_push : saw Wrfence on tid=%x on channel %d\n", $time, array_tid, hdr.vc);
 	 `endif
 	    end
+	    // ------------------------------------------------------ //
+	    // If Transaction is a not a WrFence
+	    // ------------------------------------------------------ //
 	    else begin
-	       if (ptr != LATBUF_SLOT_INVALID) begin
-		  records[ptr].hdr          = hdr;
-		  records[ptr].data         = array_data;
-		  records[ptr].tid          = array_tid;
-		  records[ptr].record_push  = 1;
-		  records[ptr].record_valid = 1;
+	       records[ptr].hdr[0]       = hdr;
+	       records[ptr].data         = array_data;
+	       records[ptr].tid          = array_tid;
+	       records[ptr].record_push  = 1;
+	       records[ptr].record_valid = 1;
 	 `ifdef ASE_DEBUG
-		  $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
+	       $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
 	 `endif
-	       end // if (ptr != LATBUF_SLOT_INVALID)
-	    end // else: !if(hdr.reqtype == ASE_WRFENCE)
+	    end
 	 end
       end
    endfunction
@@ -769,6 +782,7 @@ module outoforder_wrf_channel
 	 vl0_wrfence_flag <= 0;
 	 vh0_wrfence_flag <= 0;
 	 vh1_wrfence_flag <= 0;
+	 mcl_write_in_progress <= 0;	 
 	 for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
 	    records[ii].record_push <= 0;
 	    records[ii].record_valid <= 0;
@@ -891,15 +905,15 @@ module outoforder_wrf_channel
 		   begin
 		      records[ii].record_ready  <= 0;
 		      if (records[ii].record_push) begin
-			 records[ii].ctr_out      <= get_delay(records[ii].hdr);
+			 records[ii].ctr_out      <= get_delay(records[ii].hdr[0]);
 			 records[ii].state        <= LatSc_Countdown;
-			 if (records[ii].hdr.vc == VC_VL0) begin
+			 if (records[ii].hdr[0].vc == VC_VL0) begin
 	 		    record_vl0_flag_arr[ii] <= 1;
 			 end
-			 else if (records[ii].hdr.vc == VC_VH0) begin
+			 else if (records[ii].hdr[0].vc == VC_VH0) begin
 	 		    record_vh0_flag_arr[ii] <= 1;
 			 end
-			 else if (records[ii].hdr.vc == VC_VH1) begin
+			 else if (records[ii].hdr[0].vc == VC_VH1) begin
 	 		    record_vh1_flag_arr[ii] <= 1;
 			 end
 		      end
@@ -1009,7 +1023,7 @@ module outoforder_wrf_channel
 	 if (ptr != LATBUF_SLOT_INVALID) begin
 	    unroll_active           = 1;
 	    // TxHdr
-	    txhdr                   = records[ptr].hdr;
+	    txhdr                   = records[ptr].hdr[0];
 	    base_addr               = txhdr.addr;
 	    // RxHdr
 	    rxhdr.vc_used           = txhdr.vc;
@@ -1028,7 +1042,7 @@ module outoforder_wrf_channel
 	    //    rxhdr.format         = 0;
 	    // end
 	    rxhdr.format         = 0;
-	    rxhdr.rsvd22            = 0;
+	    rxhdr.rsvd22         = 0;
 	    // rxhdr.clnum will be updated by unroll
 	    if ( (txhdr.reqtype == ASE_RDLINE_S) || (txhdr.reqtype == ASE_RDLINE_I) ) begin
 	       rxhdr.resptype        = ASE_RD_RSP;
