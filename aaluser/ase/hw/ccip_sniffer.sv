@@ -61,7 +61,7 @@ module ccip_sniffer
     )
    (
     // Configure enable
-    input int 				     finish_logger,
+    input logic 			     finish_logger,
     // Buffer message injection
     // input logic 			     log_string_en,
     // ref string 				     log_string,

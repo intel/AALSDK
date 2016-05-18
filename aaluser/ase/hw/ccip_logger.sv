@@ -46,8 +46,7 @@ module ccip_logger
     )
    (
     // Configure enable
-    input int 	enable_logger,
-    input int 	finish_logger,
+    input logic finish_logger,
     // Buffer message injection
     input logic log_timestamp_en,
     input logic log_string_en,
