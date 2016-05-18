@@ -58,7 +58,7 @@
 #include <aalsdk/osal/OSServiceModule.h>
 
 #include <aalsdk/service/IALIAFU.h>
-#include "cci_mpf_csrs.h"
+#include <aalsdk/utils/cci_mpf_csrs.h>
 
 BEGIN_NAMESPACE(AAL)
 

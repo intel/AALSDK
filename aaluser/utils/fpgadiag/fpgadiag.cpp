@@ -815,6 +815,14 @@ int main(int argc, char *argv[])
       return 5;
    }
 
+   INFO("Trying VTP\n");
+   myapp.StartVTP();
+   if ( true == myapp.VTPActive()){
+	   INFO("VTP Active.");
+   }else{
+	   INFO("VTP not Active.");
+   }
+
    if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_LPBK1)))
       {
    		// Run NLB test, which performs sw data verification.
