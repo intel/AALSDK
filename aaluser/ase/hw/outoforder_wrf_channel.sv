@@ -1355,5 +1355,28 @@ module outoforder_wrf_channel
     * Transaction IN-OUT checker
     * Sniffs dropped transactions, unexpected mdata, vc or mcl responses
     */
+`ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG_DEEP
+
+   // ASE tracker struct
+   typedef struct {
+      logic [TID_WIDTH-1:0] in_tid;
+      TxHdr_t               in_txhdr;
+      RxHdr_t               out_rxhdr[0:LATBUF_MCL_MAXLEN-1];
+      } txn_tracker_t;
+
+   // Check array
+   int 			    txn_fd;   
+   txn_tracker_t txn_array;
+
+   // Initial
+   //initial begin
+      
+   //end
+   
+   
+ `endif
+`endif
+
    
 endmodule // outoforder_wrf_channel

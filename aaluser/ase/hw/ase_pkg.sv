@@ -414,10 +414,58 @@ package ase_pkg;
       end
    endfunction
 
+   // isReadResponse
+   function automatic logic isReadResponse(RxHdr_t hdr);
+      begin
+	 if (hdr.resptype == ASE_RD_RSP ) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;	    
+	 end	      
+      end
+   endfunction
+
    // isWriteRequest
    function automatic logic isWriteRequest(TxHdr_t hdr);
       begin
 	 if ((hdr.reqtype == ASE_WRLINE_I)||(hdr.reqtype == ASE_WRLINE_M)) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;	    
+	 end	      
+      end
+   endfunction
+
+   // isWriteResponse
+   function automatic logic isWriteResponse(RxHdr_t hdr);
+      begin
+	 if (hdr.resptype == ASE_WR_RSP ) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;	    
+	 end	      
+      end
+   endfunction
+   
+   // isWrFenceRequest
+   function automatic logic isWrFenceRequest(TxHdr_t hdr);
+      begin
+	 if (hdr.reqtype == ASE_WRFENCE) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;	    
+	 end	      
+      end
+   endfunction
+
+   // isWrFenceResponse
+   function automatic logic isWrFenceResponse(RxHdr_t hdr);
+      begin
+	 if (hdr.resptype == ASE_WRFENCE_RSP) begin
 	    return 1;
 	 end
 	 else begin

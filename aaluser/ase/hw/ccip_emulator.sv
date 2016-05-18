@@ -251,6 +251,8 @@ module ccip_emulator
 
    // ASE's internal reset signal
    logic 			      ase_reset = 1;
+   logic 			      init_reset = 1;
+
 
    /*
     * Remapping ASE CCIP to cvl_pkg struct
@@ -1332,21 +1334,17 @@ module ccip_emulator
     * Live count of transactions to be printed at end of simulation
     *
     * ******************************************************************/
-   int ase_rx0_mmiowrreq_cnt = 0 ;
-   int ase_rx0_mmiordreq_cnt = 0 ;
-   int ase_tx2_mmiordrsp_cnt = 0 ;
-   int ase_tx0_rdvalid_cnt = 0 ;
-   int ase_rx0_rdvalid_cnt = 0 ;
-   int ase_tx1_wrvalid_cnt = 0 ;
-   int ase_rx1_wrvalid_cnt = 0 ;
-   int ase_tx1_wrfence_cnt = 0 ;
-   int ase_rx1_wrfence_cnt = 0 ;
-   int ase_rx0_umsghint_cnt = 0 ;
-   int ase_rx0_umsgdata_cnt = 0 ;
-`ifdef DEFEATRUE_ATOMIC
-   int ase_tx1_atomic_cnt;
-   int ase_rx0_atomic_cnt;
-`endif
+   int ase_rx0_mmiowrreq_cnt ;
+   int ase_rx0_mmiordreq_cnt ;
+   int ase_tx2_mmiordrsp_cnt ;
+   int ase_tx0_rdvalid_cnt   ;
+   int ase_rx0_rdvalid_cnt   ;
+   int ase_tx1_wrvalid_cnt   ;
+   int ase_rx1_wrvalid_cnt   ;
+   int ase_tx1_wrfence_cnt   ;
+   int ase_rx1_wrfence_cnt   ;
+   int ase_rx0_umsghint_cnt  ;
+   int ase_rx0_umsgdata_cnt  ;
 
    // Remap UmsgHdr for count purposes
    UMsgHdr_t ase_umsghdr_map;
@@ -1354,24 +1352,20 @@ module ccip_emulator
 
    // process
    always @(posedge clk) begin : transact_cnt_proc
-//       if (ase_reset) begin
-// 	 ase_rx0_mmiowrreq_cnt <= 0 ;
-// 	 ase_rx0_mmiordreq_cnt <= 0 ;
-// 	 ase_tx2_mmiordrsp_cnt <= 0 ;
-// 	 ase_tx0_rdvalid_cnt <= 0 ;
-// 	 ase_rx0_rdvalid_cnt <= 0 ;
-// 	 ase_tx1_wrvalid_cnt <= 0 ;
-// 	 ase_rx1_wrvalid_cnt <= 0 ;
-// 	 ase_tx1_wrfence_cnt <= 0 ;
-// 	 ase_rx1_wrfence_cnt <= 0 ;
-// 	 ase_rx0_umsghint_cnt <= 0 ;
-// 	 ase_rx0_umsgdata_cnt <= 0 ;
-// `ifdef DEFEATRUE_ATOMIC
-// 	 ase_tx1_atomic_cnt <= 0;
-// 	 ase_rx0_atomic_cnt <= 0;
-// `endif
-//       end
-//       else begin
+      if (init_reset) begin
+	 ase_rx0_mmiowrreq_cnt <= 0 ;
+	 ase_rx0_mmiordreq_cnt <= 0 ;
+	 ase_tx2_mmiordrsp_cnt <= 0 ;
+	 ase_tx0_rdvalid_cnt <= 0 ;
+	 ase_rx0_rdvalid_cnt <= 0 ;
+	 ase_tx1_wrvalid_cnt <= 0 ;
+	 ase_rx1_wrvalid_cnt <= 0 ;
+	 ase_tx1_wrfence_cnt <= 0 ;
+	 ase_rx1_wrfence_cnt <= 0 ;
+	 ase_rx0_umsghint_cnt <= 0 ;
+	 ase_rx0_umsgdata_cnt <= 0 ;
+      end
+      else begin
 	 // MMIO counts
 	 if (C0RxMmioWrValid)
 	   ase_rx0_mmiowrreq_cnt <= ase_rx0_mmiowrreq_cnt + 1;
@@ -1380,32 +1374,25 @@ module ccip_emulator
 	 if (C2TxMmioRdValid)
 	   ase_tx2_mmiordrsp_cnt <= ase_tx2_mmiordrsp_cnt + 1;
 	 // Read counts
-	 if (C0TxRdValid)
+	 if (C0TxValid && isReadRequest(C0TxHdr))
 	   ase_tx0_rdvalid_cnt <= ase_tx0_rdvalid_cnt + (C0TxHdr.len + 1);
-	 if (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP))
+	 if (C0RxRspValid && isReadResponse(C0RxHdr))
 	   ase_rx0_rdvalid_cnt <= ase_rx0_rdvalid_cnt + 1;
 	 // Write counts
-	 if (C1TxWrValid && (C1TxHdr.reqtype != ASE_WRFENCE) && (C1TxHdr.reqtype != ASE_ATOMIC_REQ))
+	 if (C1TxValid && isWriteRequest(C1TxHdr))
 	   ase_tx1_wrvalid_cnt <= ase_tx1_wrvalid_cnt + 1;
-	 if (C1RxWrValid && (C1RxHdr.resptype == ASE_WR_RSP) )
+	 if (C1RxRspValid && isWriteResponse(C1RxHdr))
 	   ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + 1;
-	 if (C1TxWrValid && (C1TxHdr.reqtype == ASE_WRFENCE))
+	 if (C1TxValid && isWrFenceRequest(C1TxHdr))
 	   ase_tx1_wrfence_cnt <= ase_tx1_wrfence_cnt + 1;
-	 if (C1RxWrValid && (C1RxHdr.resptype == ASE_WRFENCE_RSP))
+	 if (C1RxRspValid && isWrFenceResponse(C1RxHdr))
 	   ase_rx1_wrfence_cnt <= ase_rx1_wrfence_cnt + 1;
 	 // UMsg counts
 	 if (C0RxUMsgValid && ase_umsghdr_map.umsg_type )
 	   ase_rx0_umsghint_cnt <= ase_rx0_umsghint_cnt + 1;
 	 if (C0RxUMsgValid && ~ase_umsghdr_map.umsg_type )
 	   ase_rx0_umsgdata_cnt <= ase_rx0_umsgdata_cnt + 1;
-`ifdef DEFEATRUE_ATOMIC
-	 // Atomics' counts
-	 if (C1TxWrValid && (C1TxHdr.reqtype == ASE_ATOMIC_REQ))
-	   ase_tx1_atomic_cnt <= ase_tx1_atomic_cnt + 1;
-	 if (C0RxRdValid && (C0RxHdr.resptype == ASE_ATOMIC_RSP))
-	   ase_rx0_atomic_cnt <= ase_rx0_atomic_cnt + 1;
-`endif
-      // end
+      end
    end
 
 
@@ -1414,7 +1401,7 @@ module ccip_emulator
     */
    int count_error_flag;
    always @(posedge clk) begin
-      if (ase_reset) begin
+      if (init_reset) begin
 	 count_error_flag <= 0;
       end
       else begin
@@ -1829,38 +1816,7 @@ module ccip_emulator
 
    assign rdrsp_hdr_out = RxHdr_t'(rdrsp_hdr_out_vec);
 
-   /*
-    * RX0 CmpXchg Response staging
-    */
-   // ase_fifo
-   //   #(
-   //     .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH ),
-   //     .DEPTH_BASE2    ( 8 ),
-   //     .ALMFULL_THRESH ( 250 )
-   //     )
-   // atomics_fifo
-   //   (
-   //    .clk             ( clk ),
-   //    .rst             ( ase_reset ),
-   //    .wr_en           ( atomics_write ),
-   //    .data_in         ( { (CCIP_RX_HDR_WIDTH)'(atomics_hdr_in), atomics_data_in } ),
-   //    .rd_en           ( ~atomics_empty && atomics_read ),
-   //    .data_out        ( { atomics_hdr_out_vec, atomics_data_out } ),
-   //    .data_out_v      ( atomics_valid ),
-   //    .alm_full        ( atomics_full ),
-   //    .full            (),
-   //    .empty           ( atomics_empty ),
-   //    .count           (),
-   //    .overflow        (),
-   //    .underflow       ()
-   //    );
-
-   // assign atomics_hdr_out = RxHdr_t'(atomics_hdr_out_vec);
-
-   // Atomics_t DBG_RxAtomics;
-   // assign DBG_RxAtomics = Atomics_t'(C0RxHdr);
-
-
+   
    /*
     * RX1 Write Response staging
     */
@@ -2105,6 +2061,7 @@ module ccip_emulator
     *
     */
    initial begin : ase_entry_point
+      init_reset = 1;
       $display("SIM-SV: Simulator started...");
 
       // Check if simulator is already running in this directory:
@@ -2122,6 +2079,7 @@ module ccip_emulator
       end
 
       // AFU reset
+      init_reset = 0;
       afu_softreset_trig(1, 0 );
 
       // Initialize data-structures
@@ -2180,7 +2138,7 @@ module ccip_emulator
      (
       // Logger control
       // .enable_logger    (cfg.enable_cl_view),
-      .finish_logger    (finish_logger     ),
+      .finish_logger      (finish_logger     ),
       // Buffer message injection
       // .log_string_en    (buffer_msg_en     ),
       // .log_string       (buffer_msg        ),
@@ -2219,7 +2177,7 @@ module ccip_emulator
    function automatic int generate_checkarray_index(logic [15:0] mdata, int clnum);
       int ret;
       begin
-	 ret =  int'( {mdata[15:0],2'b00,clnum[1:0]} );
+	 ret =  int'( {2'b00,clnum[1:0],mdata[15:0]} );
 	 return ret;
       end
    endfunction
@@ -2227,18 +2185,18 @@ module ccip_emulator
    // Read response checking
    longint unsigned read_check_array[*];
    always @(posedge clk) begin : read_array_checkproc
-      if ( C0TxValid && isReadRequest(C0RxHdr) ) begin
+      if ( C0TxValid && isReadRequest(C0RxHdr)) begin
 	 for(int ii = 0; ii <= C0TxHdr.len ; ii = ii + 1) begin
 	    read_check_array[ generate_checkarray_index(C0TxHdr.mdata, ii) ] = C0TxHdr.addr + ii;
 	 end
       end
-      if (C0RxRspValid && (C0RxHdr.resptype == ASE_RD_RSP)) begin
+      if (C0RxRspValid && isReadResponse(C0RxHdr)) begin
 	 if (read_check_array.exists( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum))) begin
 	    read_check_array.delete( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
 	 end
 	 else begin
 	    `BEGIN_RED_FONTCOLOR;
-	    $display("** ERROR ** => %d | RdResp %x does not match check array", $time, generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
+	    $display("** ERROR ** => %d | RdResp %05x does not match check array", $time, generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
 	    `END_RED_FONTCOLOR;
 	 end
       end
@@ -2259,7 +2217,7 @@ module ccip_emulator
 		  end
 		  else begin
 		     `BEGIN_RED_FONTCOLOR;
-		     $display("** ERROR ** => %d | WrResp %x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,ii));
+		     $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,ii));
 		     `END_RED_FONTCOLOR;
 		  end
 	       end
@@ -2270,7 +2228,7 @@ module ccip_emulator
 	       end
 	       else begin
 		  `BEGIN_RED_FONTCOLOR;
-		  $display("** ERROR ** => %d | WrResp %x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+		  $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
 		  `END_RED_FONTCOLOR;
 	       end
 	    end
@@ -2281,7 +2239,7 @@ module ccip_emulator
 	    end
 	    else begin
 	       `BEGIN_RED_FONTCOLOR;
-	       $display("** ERROR ** => %d | WrResp %x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );	       
+	       $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
 	       `END_RED_FONTCOLOR;
 	    end
 	 end
@@ -2346,10 +2304,10 @@ module ccip_emulator
 	 $display("\tWrFenceRsp = %d", ase_rx1_wrfence_cnt   );
 	 $display("\tUMsgHint   = %d", ase_rx0_umsghint_cnt  );
 	 $display("\tUMsgData   = %d", ase_rx0_umsgdata_cnt  );
-`ifdef DEFEATRUE_ATOMIC
-	 $display("\tAtomicReq  = %d", ase_tx1_atomic_cnt    );
-	 $display("\tAtomicRsp  = %d", ase_rx0_atomic_cnt    );
-`endif
+// `ifdef DEFEATRUE_ATOMIC
+// 	 $display("\tAtomicReq  = %d", ase_tx1_atomic_cnt    );
+// 	 $display("\tAtomicRsp  = %d", ase_rx0_atomic_cnt    );
+// `endif
 	 `END_YELLOW_FONTCOLOR;
 
 	 // Valid Count
