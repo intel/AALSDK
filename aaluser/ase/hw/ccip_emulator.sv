@@ -2217,13 +2217,13 @@ module ccip_emulator
 `ifdef ASE_DEBUG
    // Generate checker index
    function automatic int generate_checkarray_index(logic [15:0] mdata, int clnum);
-      int ret;      
+      int ret;
       begin
 	 ret =  int'( {mdata[15:0],2'b00,clnum[1:0]} );
-	 return ret;	 
+	 return ret;
       end
    endfunction
-   
+
    // Read response checking
    longint unsigned read_check_array[*];
    always @(posedge clk) begin : read_array_checkproc
@@ -2233,8 +2233,14 @@ module ccip_emulator
 	 end
       end
       if (C0RxRspValid && (C0RxHdr.resptype == ASE_RD_RSP)) begin
-	 if (read_check_array.exists( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum)))
-	   read_check_array.delete( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
+	 if (read_check_array.exists( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum))) begin
+	    read_check_array.delete( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
+	 end
+	 else begin
+	    `BEGIN_RED_FONTCOLOR;
+	    $display("** ERROR ** => %d | RdResp %x does not match check array", $time, generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
+	    `END_RED_FONTCOLOR;
+	 end
       end
    end
 
@@ -2246,20 +2252,38 @@ module ccip_emulator
       end
       if (C1RxRspValid && (C1RxHdr.resptype == ASE_WR_RSP)) begin
 	 if (isVHxResponse(C1RxHdr)) begin
-	    if (C0RxHdr.format) begin	       
+	    if (C0RxHdr.format) begin
 	       for(int ii = 0; ii <= C1RxHdr.clnum ; ii = ii + 1) begin
-		  if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,ii)))
-		    write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,ii) );
+		  if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,ii))) begin
+		     write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,ii) );
+		  end
+		  else begin
+		     `BEGIN_RED_FONTCOLOR;
+		     $display("** ERROR ** => %d | WrResp %x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,ii));
+		     `END_RED_FONTCOLOR;
+		  end
 	       end
 	    end
 	    else begin
-	       if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum)))
-		 write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+	       if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum))) begin
+		  write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+	       end
+	       else begin
+		  `BEGIN_RED_FONTCOLOR;
+		  $display("** ERROR ** => %d | WrResp %x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+		  `END_RED_FONTCOLOR;
+	       end
 	    end
 	 end
 	 else if (isVL0Response(C1RxHdr)) begin
-	    if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum)))
-	      write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+	    if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum))) begin
+	       write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+	    end
+	    else begin
+	       `BEGIN_RED_FONTCOLOR;
+	       $display("** ERROR ** => %d | WrResp %x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );	       
+	       `END_RED_FONTCOLOR;
+	    end
 	 end
       end
    end

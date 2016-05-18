@@ -102,6 +102,7 @@ module outoforder_wrf_channel
    (
     input logic 		       clk,
     input logic 		       rst,
+    input logic 		       finish_trigger,
     // Transaction in
     input 			       TxHdr_t hdr_in,
     input logic [CCIP_DATA_WIDTH-1:0]  data_in,
@@ -1046,8 +1047,7 @@ module outoforder_wrf_channel
 
 	    if (WRITE_CHANNEL == 0) begin // If classified as a read channel, unrolling must happen
 	       if ((txhdr.vc == VC_VH0)||(txhdr.vc == VC_VH1)) begin
-		  // ----------------------------------------------------------- //
-		  /*
+		  // ----------------------------------------------------------- //		  
 		  for (int ii = 0; ii <= txhdr.len; ii = ii + 1) begin
 		     outfifo_write_en = 1;		     
 		     txhdr.addr       = base_addr + ii;
@@ -1061,11 +1061,12 @@ module outoforder_wrf_channel
 	       	     if (ii == txhdr.len) begin
 			records[ptr].record_pop = 1;
 			outfifo_write_en        = 0;
-		     end		     
-		  end
-		   */
+		     end
+		     @(posedge clk);
+		     
+		  end		   
 		  // ----------------------------------------------------------- //
-		  
+/*		  
 		  case (txhdr.len)
 		    // Single cache line
 		    ASE_1CL:
@@ -1153,7 +1154,7 @@ module outoforder_wrf_channel
 			 outfifo_write_en        = 0;
 		      end
 		  endcase // case (txhdr.len)
-		  
+		  */
 	       end // if ((txhdr.vc == VC_VH0)||(txhdr.vc == VC_VH1))
 	       else begin
 		  outfifo_write_en = 1;
