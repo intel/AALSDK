@@ -763,7 +763,7 @@ module outoforder_wrf_channel
 	       wrfence_flag = 1;
 	       wrfence_tid  = array_tid;
 	 `ifdef ASE_DEBUG
-	       $fwrite(log_fd, "%d | latbuf_push : saw Wrfence on tid=%x on channel %s\n", $time, array_tid, ase_channel_type(hdr));
+	       $fwrite(log_fd, "%d | latbuf_push : saw Wrfence on tid=%x on channel %s\n", $time, array_tid, ase_channel_type(hdr.vc));
 	 `endif
 	    end
 	    // ------------------------------------------------------ //
@@ -793,7 +793,6 @@ module outoforder_wrf_channel
 		  // If a VHx transaction
 		  // ------------------------------------------------------ //
 		  if (isVHxRequest(hdr)) begin
-		     $display("** DEBUG **: ptr = %d", ptr);
 		     records[ptr].hdr[mcl_txn_iter]  = hdr;
 		     records[ptr].data[mcl_txn_iter] = array_data;
 		     records[ptr].tid[mcl_txn_iter]  = array_tid;
@@ -1173,10 +1172,11 @@ module outoforder_wrf_channel
 		  tid              = records[ptr].tid[rec_i];
 		  data             = records[ptr].data[rec_i];
 		  // --------------- RxHdr ------------------ //
-		  rxhdr            = RxHdr_t'(0);		  
+		  rxhdr            = RxHdr_t'(0);
 		  rxhdr.clnum      = base_len;
 		  rxhdr.mdata      = base_mdata;
 		  rxhdr.vc_used    = base_vc;
+		  rxhdr.format     = 1;
 		  rxhdr.resptype   = ASE_WR_RSP;
 		  array.push_back({ tid, data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
          `ifdef ASE_DEBUG
@@ -1363,26 +1363,66 @@ module outoforder_wrf_channel
     * Sniffs dropped transactions, unexpected mdata, vc or mcl responses
     */
 `ifdef ASE_DEBUG
- `ifdef ASE_DEBUG_DEEP
 
-   // ASE tracker struct
-   typedef struct {
-      logic [TID_WIDTH-1:0] in_tid;
-      TxHdr_t               in_txhdr;
-      RxHdr_t               out_rxhdr[0:LATBUF_MCL_MAXLEN-1];
-      } txn_tracker_t;
+   // Checker array store as {hash_key, address}
+   longint check_array[*];
 
-   // Check array
-   int 			    txn_fd;
-   txn_tracker_t txn_array;
+   // Generate checker hash key
+   function automatic longint gen_checker_hash_index(logic [1:0] len, logic [TID_WIDTH-1:0] tid);
+      longint ret;
+      begin
+	 ret = longint'({len, tid});
+	 return ret;
+      end
+   endfunction
 
-   // Initial
-   //initial begin
+   // Craft an index
+   always @(posedge clk) begin
+      // When an item enters (things could be MCL)
+      if (write_en) begin
+	 // If read channel (tid is same across MCL)
+	 if (WRITE_CHANNEL == 0) begin
+	    for (int ii = 0; ii <= int'(hdr_in.len) ; ii = ii + 1) begin
+	       check_array[ gen_checker_hash_index(ii, tid_in) ] = hdr_in.addr + ii;
+	       // $fwrite(log_fd, "Check array snapshot =>\n");	       
+	       // $fwrite(log_fd, check_array);	       
+	    end
+	 end
+	 // If Write channel (tid is different across MCL)
+	 else begin
+	    check_array[ gen_checker_hash_index(hdr_in.len, tid_in) ] = hdr_in.addr;
+	    // $fwrite(log_fd, "Check array snapshot =>\n");	       
+	    // $fwrite(log_fd, check_array);	       
+	 end
+      end
+      // When item exits (everythng is unrolled, and fed to page table)
+      if (valid_out) begin
+	 if ( check_array.exists(gen_checker_hash_index(txhdr_out.len, tid_out))) begin
+	    check_array.delete(gen_checker_hash_index(txhdr_out.len, tid_out));
+	    // $fwrite(log_fd, "Check array snapshot =>\n");	       
+	    // $fwrite(log_fd, check_array);	       
+	 end
+	 else begin
+	    `BEGIN_RED_FONTCOLOR;
+	    $display("** HASH ERROR **  => Item not found in checker array %09x", gen_checker_hash_index(txhdr_out.len, tid_out));
+	    `END_RED_FONTCOLOR;
+	    // $fwrite(log_fd, "Check array snapshot =>\n");	       
+	    // $fwrite(log_fd, check_array);	       
+	 end
+      end
+   end
 
-   //end
+   // Log dump signal
+   always @(posedge clk) begin
+      if (finish_trigger) begin
+	 $fwrite(log_fd, "check_array contents =>\n");
+	 $fwrite(log_fd, check_array);
+	 $display("%m check_array contents =>");
+	 $display(check_array);
+      end
+   end
 
 
- `endif
 `endif
 
 

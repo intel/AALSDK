@@ -1381,8 +1381,14 @@ module ccip_emulator
 	 // Write counts
 	 if (C1TxValid && isWriteRequest(C1TxHdr))
 	   ase_tx1_wrvalid_cnt <= ase_tx1_wrvalid_cnt + 1;
-	 if (C1RxRspValid && isWriteResponse(C1RxHdr))
-	   ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + 1;
+	 if (C1RxRspValid && isWriteResponse(C1RxHdr)) begin
+	    if (isVL0Response(C1RxHdr)) begin
+	       ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + 1;
+	    end
+	    else if (isVHxResponse(C1RxHdr) && C1RxHdr.format) begin
+	       ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + (C1RxHdr.clnum + 1);
+	    end
+	 end
 	 if (C1TxValid && isWrFenceRequest(C1TxHdr))
 	   ase_tx1_wrfence_cnt <= ase_tx1_wrfence_cnt + 1;
 	 if (C1RxRspValid && isWrFenceResponse(C1RxHdr))
@@ -1480,7 +1486,7 @@ module ccip_emulator
 
    // Write response 1 staging signals
    // logic [CCIP_RX_HDR_WIDTH-1:0] pp_wrrsp_hdr_out_vec;
-   RxHdr_t                       pp_wrrsp_hdr;   
+   RxHdr_t                       pp_wrrsp_hdr;
    logic 			 pp_wrrsp_write;
 
    // logic 			 pp_wrrsp_read;
@@ -1488,7 +1494,7 @@ module ccip_emulator
    // logic 			 pp_wrrsp_empty;
    // logic 			 pp_wrrsp_valid;
 
-      
+
    /*
     * FUNCTION: Cast TxHdr_t to cci_pkt
     */
@@ -1623,7 +1629,7 @@ module ccip_emulator
 	 // Write to rdrsp_fifo
 	 rdrsp_data_in         <= unpack_ccipkt_to_vector(Tx0_pkt);
 	 rdrsp_hdr_in          <= cf2as_latbuf_rx0hdr;
-	 $display(" ** DEBUG **: %d => cf2as_latbuf_rx0hdr.mdata = %x", $time, cf2as_latbuf_rx0hdr);
+	 // $display(" ** DEBUG **: %d => cf2as_latbuf_rx0hdr.mdata = %x", $time, cf2as_latbuf_rx0hdr);
       end
    endtask
 
@@ -1700,7 +1706,7 @@ module ccip_emulator
 	 // *FIXME*: Atomics or partials go here
 	 // Write to wrrsp_fifo
 	 pp_wrrsp_hdr           = cf2as_latbuf_rx1hdr;
-	 $display(" ** DEBUG **: %d => cf2as_latbuf_rx1hdr.mdata = %x", $time, cf2as_latbuf_rx1hdr);
+	 // $display(" ** DEBUG **: %d => cf2as_latbuf_rx1hdr.mdata = %x", $time, cf2as_latbuf_rx1hdr);
       end
    endtask
 
@@ -1728,10 +1734,10 @@ module ccip_emulator
 
    RxHdr_t      pack_hdr;
    logic 	pack_hdr_valid;
-   
-   
-   assign pack_hdr       = pp_wrrsp_hdr;   
-   assign pack_hdr_valid = pp_wrrsp_write;   
+
+
+   assign pack_hdr       = pp_wrrsp_hdr;
+   assign pack_hdr_valid = pp_wrrsp_write;
 
    // Packing state machine
    always @(posedge clk) begin
@@ -1879,8 +1885,8 @@ module ccip_emulator
 	   default:
 	     begin
 		wrrsp_hdr_in <= pack_hdr;
-		wrrsp_write  <= 0;		
-		pack_state   <= PassThru_Pack1CL;		
+		wrrsp_write  <= 0;
+		pack_state   <= PassThru_Pack1CL;
 	     end
 	 endcase
       end
@@ -2349,80 +2355,80 @@ module ccip_emulator
 
 
    // Stream-checker for ASE
-`ifdef ASE_DEBUG
-   // Generate checker index
-   function automatic int generate_checkarray_index(logic [15:0] mdata, int clnum);
-      int ret;
-      begin
-	 ret =  int'( {2'b00,clnum[1:0],mdata[15:0]} );
-	 return ret;
-      end
-   endfunction
+// `ifdef ASE_DEBUG
+//    // Generate checker index
+//    function automatic int generate_checkarray_index(logic [15:0] mdata, int clnum);
+//       int ret;
+//       begin
+// 	 ret =  int'( {2'b00,clnum[1:0],mdata[15:0]} );
+// 	 return ret;
+//       end
+//    endfunction
 
-   // Read response checking
-   longint unsigned read_check_array[*];
-   always @(posedge clk) begin : read_array_checkproc
-      if ( C0TxValid && isReadRequest(C0RxHdr)) begin
-	 for(int ii = 0; ii <= C0TxHdr.len ; ii = ii + 1) begin
-	    read_check_array[ generate_checkarray_index(C0TxHdr.mdata, ii) ] = C0TxHdr.addr + ii;
-	 end
-      end
-      if (C0RxRspValid && isReadResponse(C0RxHdr)) begin
-	 if (read_check_array.exists( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum))) begin
-	    read_check_array.delete( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
-	 end
-	 // else begin
-	 //    `BEGIN_RED_FONTCOLOR;
-	 //    $display("** ERROR ** => %d | RdResp %05x does not match check array", $time, generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
-	 //    `END_RED_FONTCOLOR;
-	 // end
-      end
-   end
+//    // Read response checking
+//    longint unsigned read_check_array[*];
+//    always @(posedge clk) begin : read_array_checkproc
+//       if ( C0TxValid && isReadRequest(C0RxHdr)) begin
+// 	 for(int ii = 0; ii <= C0TxHdr.len ; ii = ii + 1) begin
+// 	    read_check_array[ generate_checkarray_index(C0TxHdr.mdata, ii) ] = C0TxHdr.addr + ii;
+// 	 end
+//       end
+//       if (C0RxRspValid && isReadResponse(C0RxHdr)) begin
+// 	 if (read_check_array.exists( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum))) begin
+// 	    read_check_array.delete( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
+// 	 end
+// 	 // else begin
+// 	 //    `BEGIN_RED_FONTCOLOR;
+// 	 //    $display("** ERROR ** => %d | RdResp %05x does not match check array", $time, generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
+// 	 //    `END_RED_FONTCOLOR;
+// 	 // end
+//       end
+//    end
 
-   // Write response checking
-   longint unsigned write_check_array[*];
-   always @(posedge clk) begin : write_array_checkproc
-      if (C1TxValid && isWriteRequest(C1TxHdr) ) begin
-	 write_check_array[ generate_checkarray_index(C1TxHdr.mdata,C1TxHdr.len) ] = C1TxHdr.addr;
-      end
-      if (C1RxRspValid && (C1RxHdr.resptype == ASE_WR_RSP)) begin
-	 if (isVHxResponse(C1RxHdr)) begin
-	    if (C0RxHdr.format) begin
-	       for(int ii = 0; ii <= C1RxHdr.clnum ; ii = ii + 1) begin
-		  if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,ii))) begin
-		     write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,ii) );
-		  end
-		  // else begin
-		  //    `BEGIN_RED_FONTCOLOR;
-		  //    $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,ii));
-		  //    `END_RED_FONTCOLOR;
-		  // end
-	       end
-	    end
-	    else begin
-	       if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum))) begin
-		  write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
-	       end
-	       // else begin
-	       // 	  `BEGIN_RED_FONTCOLOR;
-	       // 	  $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
-	       // 	  `END_RED_FONTCOLOR;
-	       // end
-	    end
-	 end
-	 else if (isVL0Response(C1RxHdr)) begin
-	    if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum))) begin
-	       write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
-	    end
-	    // else begin
-	    //    `BEGIN_RED_FONTCOLOR;
-	    //    $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
-	    //    `END_RED_FONTCOLOR;
-	    // end
-	 end
-      end
-   end
-`endif
+//    // Write response checking
+//    longint unsigned write_check_array[*];
+//    always @(posedge clk) begin : write_array_checkproc
+//       if (C1TxValid && isWriteRequest(C1TxHdr) ) begin
+// 	 write_check_array[ generate_checkarray_index(C1TxHdr.mdata,C1TxHdr.len) ] = C1TxHdr.addr;
+//       end
+//       if (C1RxRspValid && (C1RxHdr.resptype == ASE_WR_RSP)) begin
+// 	 if (isVHxResponse(C1RxHdr)) begin
+// 	    if (C0RxHdr.format) begin
+// 	       for(int ii = 0; ii <= C1RxHdr.clnum ; ii = ii + 1) begin
+// 		  if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,ii))) begin
+// 		     write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,ii) );
+// 		  end
+// 		  // else begin
+// 		  //    `BEGIN_RED_FONTCOLOR;
+// 		  //    $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,ii));
+// 		  //    `END_RED_FONTCOLOR;
+// 		  // end
+// 	       end
+// 	    end // if (C0RxHdr.format)	    
+// 	    else begin
+// 	       if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum))) begin
+// 		  write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+// 	       end
+// 	       // else begin
+// 	       // 	  `BEGIN_RED_FONTCOLOR;
+// 	       // 	  $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+// 	       // 	  `END_RED_FONTCOLOR;
+// 	       // end
+// 	    end
+// 	 end
+// 	 else if (isVL0Response(C1RxHdr)) begin
+// 	    if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum))) begin
+// 	       write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+// 	    end
+// 	    // else begin
+// 	    //    `BEGIN_RED_FONTCOLOR;
+// 	    //    $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+// 	    //    `END_RED_FONTCOLOR;
+// 	    // end
+// 	 end
+//       end
+//    end
+// `endif
 
 
    /*
@@ -2496,16 +2502,17 @@ module ccip_emulator
 	   $display("\tWrFence : Response counts dont match request count !!");
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
-	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display("Read Response checker =>");
-	 $display(read_check_array);
-	 $display("Write Response checker =>");
-	 $display(write_check_array);
-	 `END_YELLOW_FONTCOLOR;
+	 // `BEGIN_YELLOW_FONTCOLOR;
+	 // $display("Read Response checker =>");
+	 // $display(read_check_array);
+	 // $display("Write Response checker =>");
+	 // $display(write_check_array);
+	 // `END_YELLOW_FONTCOLOR;
 `endif
 	 // $fclose(log_fd);
 	 finish_logger = 1;
-
+	 @(posedge clk);	 
+	 
 	 // Command to close logfd
 	 $finish;
       end
@@ -2539,19 +2546,21 @@ module ccip_emulator
       else begin
 	 // ---------------------------------------------------- //
 	 // Read credit counter
-	 case (  {C0TxRdValid, (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP)) } )
-	   2'b10   : rd_credit <= rd_credit + C0TxHdr.len + 1;
-	   2'b01   : rd_credit <= rd_credit - 1;
-	   2'b11   : rd_credit <= rd_credit + C0TxHdr.len + 1 - 1;
-	   default : rd_credit <= rd_credit;
-	 endcase // case ( {C0TxRdValid, C0RxRdValid} )
+	 rd_credit <= ase_tx0_rdvalid_cnt - ase_rx0_rdvalid_cnt;	 
+	 // case (  {C0TxRdValid, (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP)) } )
+	 //   2'b10   : rd_credit <= rd_credit + C0TxHdr.len + 1;
+	 //   2'b01   : rd_credit <= rd_credit - 1;
+	 //   2'b11   : rd_credit <= rd_credit + C0TxHdr.len + 1 - 1;
+	 //   default : rd_credit <= rd_credit;
+	 // endcase // case ( {C0TxRdValid, C0RxRdValid} )
 	 // ---------------------------------------------------- //
 	 // Write credit counter
-	 case ( { (C1TxWrValid && (C1TxHdr.reqtype != ASE_ATOMIC_REQ)), C1RxWrValid} )
-	   2'b10   : wr_credit <= wr_credit + 1;
-	   2'b01   : wr_credit <= wr_credit - 1;
-	   default : wr_credit <= wr_credit;
-	 endcase // case ( {C1TxWrValid, C1RxWrValid} )
+	 wr_credit <= ase_tx1_wrvalid_cnt - ase_rx1_wrvalid_cnt;	 
+	 // case ( { (C1TxWrValid && isWriteRequest(C1TxHdr)), C1RxWrValid} )
+	 //   2'b10   : wr_credit <= wr_credit + 1;
+	 //   2'b01   : wr_credit <= wr_credit - 1;
+	 //   default : wr_credit <= wr_credit;
+	 // endcase // case ( {C1TxWrValid, C1RxWrValid} )
 	 // ---------------------------------------------------- //
 	 // MMIO Writevalid counter
 	 case ( {cwlp_wrvalid, C0RxMmioWrValid} )
@@ -2582,12 +2591,7 @@ module ccip_emulator
 
    // Global dealloc flag enable
    always @(posedge clk) begin
-      // if (SoftReset) begin
-      // 	 glbl_dealloc_credit <= 0;
-      // end
-      // else begin
       glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit + atomic_credit;
-      //end
    end
 
    // Register for changes
