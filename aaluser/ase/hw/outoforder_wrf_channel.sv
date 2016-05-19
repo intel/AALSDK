@@ -718,6 +718,10 @@ module outoforder_wrf_channel
 
    // MCL Write in progress
    logic mcl_write_in_progress;
+   // int 	 txn_index;      
+   int 	 mcl_txn_iter;
+   int 	 record_len;
+   
       
    //////////////////////////////////////////////////////////////////////
    // Latbuf assignment process
@@ -738,12 +742,30 @@ module outoforder_wrf_channel
 	    ptr = find_next_push_slot();
 	    latbuf_push_ptr = ptr;
 	 end
+	 else begin
+	    ptr = latbuf_push_ptr;	    
+	 end
 	 // ------------------------------------------------------ //
 	 // If slot is legal only then proceed
 	 // ------------------------------------------------------ //
 	 if (ptr != LATBUF_SLOT_INVALID) begin
 	    {array_tid, array_data, array_hdr} = array.pop_front();
 	    hdr = TxHdr_t'(array_hdr);
+	    // Record base length
+	    if (hdr.sop) begin
+	       mcl_txn_iter = 0;	       
+	       record_len = int'(hdr.len);	       
+	    end
+	    // Calculate Transaction index
+	    // if (hdr.len == ASE_4CL) begin
+	    //    txn_index = hdr.addr[1:0];	       
+	    // end
+	    // else if (hdr.len == ASE_2CL) begin
+	    //    txn_index = hdr.addr[0];	       
+	    // end
+	    // else if (hdr.len == ASE_1CL) begin
+	    //    txn_index = 0;	       
+	    // end
 	    // ------------------------------------------------------ //
 	    // If Transaction is a Wrfence
 	    // ------------------------------------------------------ //
@@ -767,32 +789,61 @@ module outoforder_wrf_channel
 		  records[ptr].tid[0]          = array_tid;
 		  records[ptr].record_push  = 1;
 		  records[ptr].record_valid = 1;
-		  records[ptr].num_items    = int'(hdr.len);		  
+		  records[ptr].num_items    = int'(ASE_1CL);		  
+		  mcl_write_in_progress     = 0;		  
 	 `ifdef ASE_DEBUG
-		  $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
+		  $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d][0]\n", $time, array_tid, ptr);
 	 `endif
 	       end
 	       // ------------------------------------------------------ //
 	       // If Transaction is a WRITE
 	       // ------------------------------------------------------ //
-	       else if (isWriteRequest(hdr)) begin		  
-		  records[ptr].hdr[0]       = hdr;
-		  records[ptr].data[0]         = array_data;
-		  records[ptr].tid[0]          = array_tid;
-		  records[ptr].record_push  = 1;
-		  records[ptr].record_valid = 1;
-		  records[ptr].num_items    = int'(hdr.len);		  
+	       else if (isWriteRequest(hdr)) begin
+		  // ------------------------------------------------------ //
+		  // If a VHx transaction
+		  // ------------------------------------------------------ //
+		  if (isVHxRequest(hdr)) begin
+		     $display("** DEBUG **: ptr = %d", ptr);		     
+		     records[ptr].hdr[mcl_txn_iter]  = hdr;
+		     records[ptr].data[mcl_txn_iter] = array_data;
+		     records[ptr].tid[mcl_txn_iter]  = array_tid;
+		     records[ptr].record_push     = 1;
+		     records[ptr].record_valid    = 1;
+		     records[ptr].num_items       = record_len;
+		     if (mcl_txn_iter != record_len) 
+		       mcl_write_in_progress      = 1;
+		     else
+		       mcl_write_in_progress      = 0;		     
 	 `ifdef ASE_DEBUG
-		  $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
+		     $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d][%02d]\n", $time, array_tid, ptr, mcl_txn_iter);
 	 `endif
+		     mcl_txn_iter = mcl_txn_iter + 1;		     
+		  end // if (isVHxRequest(hdr))
+		  // ------------------------------------------------------ //
+		  // If a VL0 transaction
+		  // ------------------------------------------------------ //
+		  else begin
+		     records[ptr].hdr[0]       = hdr;
+		     records[ptr].data[0]      = array_data;
+		     records[ptr].tid[0]       = array_tid;
+		     records[ptr].record_push  = 1;
+		     records[ptr].record_valid = 1;
+		     records[ptr].num_items    = int'(ASE_1CL);
+		     mcl_write_in_progress     = 0;		     
+	 `ifdef ASE_DEBUG
+		     $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d][0]\n", $time, array_tid, ptr);
+	 `endif
+		  end
 	       end
 	    end
 	 end
       end
    endfunction
 
-   // //////////////////////////////////////////////////////////////////////////////
+   
+   // --------------------------------------------------------- //
    // States
+   // --------------------------------------------------------- //
    typedef enum {Select_VL0, Select_VH0, Select_VH1} lssel_state;
    lssel_state vc_pop;
 
