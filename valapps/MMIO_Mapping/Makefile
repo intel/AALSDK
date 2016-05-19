@@ -35,7 +35,7 @@ all: MMIO_Mapping
 MMIO_Mapping: main.o
 	$(CXX) -g -O2 -o MMIO_Mapping main.o $(LDFLAGS) -lOSAL -lAAS -laalrt
 
-main.o: main.cpp Makefile
+main.o: MMIOmapping.h main.cpp Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -g -O2 -c -o main.o main.cpp
 
 clean:
