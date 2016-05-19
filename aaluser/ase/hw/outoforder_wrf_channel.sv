@@ -261,7 +261,9 @@ module outoforder_wrf_channel
       some_lane_full <= vl0_array_full | vh0_array_full | vh1_array_full;
    end
 
-   // Tracking ID generator
+   /*
+    * Tracking ID generator
+    */
    always @(posedge clk) begin : tid_proc
       if (rst)
 	tid_in	<= {TID_WIDTH{1'b0}};
@@ -1350,6 +1352,7 @@ module outoforder_wrf_channel
 
    // Log output pop
 `ifdef ASE_DEBUG
+
    always @(posedge clk) begin
       if (valid_out) begin
 	 $fwrite(log_fd, "%d | EXIT => tid=%x with TX=%s RX=%s \n", $time, tid_out, return_txhdr(txhdr_out), return_rxhdr(rxhdr_out) );
@@ -1368,46 +1371,50 @@ module outoforder_wrf_channel
    longint check_array[*];
 
    // Generate checker hash key
-   function automatic longint gen_checker_hash_index(logic [1:0] len, logic [TID_WIDTH-1:0] tid);
-      longint ret;
+   function automatic longint gen_checker_hash_index(logic [1:0] index,
+						     logic [TID_WIDTH-1:0] tid);
       begin
-	 ret = longint'({len, tid});
-	 return ret;
+	 return longint'({ index, tid});
       end
    endfunction
 
-   // Craft an index
-   always @(posedge clk) begin
-      // When an item enters (things could be MCL)
-      if (write_en) begin
-	 // If read channel (tid is same across MCL)
-	 if (WRITE_CHANNEL == 0) begin
-	    for (int ii = 0; ii <= int'(hdr_in.len) ; ii = ii + 1) begin
-	       check_array[ gen_checker_hash_index(ii, tid_in) ] = hdr_in.addr + ii;
-	       // $fwrite(log_fd, "Check array snapshot =>\n");	       
-	       // $fwrite(log_fd, check_array);	       
-	    end
-	 end
-	 // If Write channel (tid is different across MCL)
-	 else begin
-	    check_array[ gen_checker_hash_index(hdr_in.len, tid_in) ] = hdr_in.addr;
-	    // $fwrite(log_fd, "Check array snapshot =>\n");	       
-	    // $fwrite(log_fd, check_array);	       
-	 end
-      end
-      // When item exits (everythng is unrolled, and fed to page table)
-      if (valid_out) begin
-	 if ( check_array.exists(gen_checker_hash_index(txhdr_out.len, tid_out))) begin
-	    check_array.delete(gen_checker_hash_index(txhdr_out.len, tid_out));
-	    // $fwrite(log_fd, "Check array snapshot =>\n");	       
-	    // $fwrite(log_fd, check_array);	       
+   // Check and delete from array
+   function automatic void check_delete_from_array(longint key);
+      begin
+	 if (check_array.exists(key)) begin
+	    check_array.delete(key);
 	 end
 	 else begin
 	    `BEGIN_RED_FONTCOLOR;
-	    $display("** HASH ERROR **  => Item not found in checker array %09x", gen_checker_hash_index(txhdr_out.len, tid_out));
+	    $display(" ** HASH ERROR ** %09x key was not found ", key);
+	    $fwrite(log_fd, " ** HASH ERROR ** %09x key was not found ", key);
 	    `END_RED_FONTCOLOR;
-	    // $fwrite(log_fd, "Check array snapshot =>\n");	       
-	    // $fwrite(log_fd, check_array);	       
+	 end
+      end
+   endfunction
+
+
+   // Craft an index
+   always @(posedge clk) begin
+      if (WRITE_CHANNEL == 0) begin
+	 if (write_en) begin
+   	    for (int ii = 0; ii <= int'(hdr_in.len) ; ii = ii + 1) begin
+   	       check_array[ {ii[1:0], tid_in} ] = hdr_in.addr + ii;
+   	       $fwrite(log_fd, "Check array snapshot =>\n");
+   	       $fwrite(log_fd, check_array);
+   	       $fwrite(log_fd, "\n");
+   	    end
+	 end
+	 else if (valid_out) begin
+	    check_delete_from_array( gen_checker_hash_index( rxhdr_out.clnum, tid_out ) );
+	 end
+      end
+      else if (WRITE_CHANNEL == 1) begin
+	 if (write_en) begin
+	    check_array[ {hdr_in.len, tid_in} ] = hdr_in.addr;	    
+	 end
+	 else if (valid_out) begin
+	    check_delete_from_array({txhdr_out.len, tid_out});	    
 	 end
       end
    end
@@ -1421,7 +1428,6 @@ module outoforder_wrf_channel
 	 $display(check_array);
       end
    end
-
 
 `endif
 

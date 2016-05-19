@@ -2502,16 +2502,16 @@ module ccip_emulator
 	   $display("\tWrFence : Response counts dont match request count !!");
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
-	 // `BEGIN_YELLOW_FONTCOLOR;
-	 // $display("Read Response checker =>");
-	 // $display(read_check_array);
-	 // $display("Write Response checker =>");
-	 // $display(write_check_array);
-	 // `END_YELLOW_FONTCOLOR;
+	 `BEGIN_YELLOW_FONTCOLOR;
+	 $display("Read Response checker =>");
+	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.check_array);
+	 $display("Write Response checker =>");
+	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.check_array);
+	 `END_YELLOW_FONTCOLOR;
 `endif
 	 // $fclose(log_fd);
 	 finish_logger = 1;
-	 @(posedge clk);	 
+	 // @(posedge clk);	 
 	 
 	 // Command to close logfd
 	 $finish;
