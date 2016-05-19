@@ -178,5 +178,7 @@ protected:
    } m_Values[12];
 };
 
+std::ostream & operator << (std::ostream & , const PerfCounters & );
+
 #endif // __VALLIB_H__
 

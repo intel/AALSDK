@@ -1,0 +1,10 @@
+#!/bin/bash
+
+LD_LIBRARY_PATH="/home/tswhison/aalsdk/aalsdk/aaluser/mybuild/myinst/usr/local/lib:/home/tswhison/aalsdk/aalsdk/valapps/vallib" \
+      /usr/bin/gdbtui \
+      -quiet \
+      -tty=${TTY:-'/dev/null'} \
+      -d "/home/tswhison/aalsdk/aalsdk/valapps" \
+      -x "${PWD}/gdbinit" \
+      --args "./Read_Perf_Counters" ${1+"$@"}
+
