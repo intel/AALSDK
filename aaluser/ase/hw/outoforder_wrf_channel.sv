@@ -248,11 +248,8 @@ module outoforder_wrf_channel
    logic 			  vh1_array_empty;
 
    logic 			  outfifo_empty;
-   logic 			  outfifo_almempty;
    logic 			  outfifo_almfull;
 
-   logic 			  outfifo_write_en;
-   logic 			  outfifo_read_en;
    logic [2:0] 			  vc_push;
 
    logic 			  some_lane_full;
@@ -499,7 +496,6 @@ module outoforder_wrf_channel
    // Read CHANNEL infifo_to_vc_put
    // ================================================================== //
    task automatic READ_infifo_to_vc_push ();
-   // function automatic void READ_infifo_to_vc_push ();
       logic [PHYSCLADDR_WIDTH-1:0] c0tx_vl0_addr_base;
       TxHdr_t                      vl0_hdr;
       begin
@@ -550,19 +546,16 @@ module outoforder_wrf_channel
 	 `endif
 	     end
 	 endcase
-	 // end // else: !if(infifo_hdr_out.reqtype == ASE_WRFENCE)
 	 // ----------------------------------------------------------------------- //
 	 @(posedge clk);	 
 	 vc_push = 3'b000;
       end
-      // endfunction
    endtask
 
    
    // ================================================================== //
    // Write CHANNEL infifo_to_vc_put
    // ================================================================== //
-   // function automatic void WRITE_infifo_to_vc_push ();
    task automatic WRITE_infifo_to_vc_push ();
       logic [PHYSCLADDR_WIDTH-1:0] c0tx_vl0_addr_base;
       TxHdr_t                      vl0_hdr;
@@ -675,7 +668,6 @@ module outoforder_wrf_channel
 	 vc_push = 3'b000;
       end
    endtask
-   // endfunction
 
     
    /*
@@ -1017,10 +1009,10 @@ module outoforder_wrf_channel
    end
 
 
-   ///////////////////////////////////////////////////////////////////
-   // Latency scoreboard
-   // Fixme: Cache simulator output goes here
-   ///////////////////////////////////////////////////////////////////
+   /*
+    * Latency scoreboard
+    * Fixme: Cache simulator output goes here
+    */ 
    // Get delay function
    function int get_delay(input TxHdr_t hdr);
       begin
@@ -1217,12 +1209,7 @@ module outoforder_wrf_channel
 	       rxhdr.hitmiss = 0; // *FIXME*
 	       rxhdr.mdata   = base_mdata;
 	       rxhdr.clnum   = txhdr.len;
-	       if (isVHxRequest(txhdr) && (WRITE_CHANNEL == 1)) begin
-		  rxhdr.format = 0; // *FIXME*: this is 1
-	       end
-	       else begin
-		  rxhdr.format = 0;
-	       end
+	       rxhdr.format  = 0;
 	       if (isReadRequest(txhdr)) begin
 		  rxhdr.resptype = ASE_RD_RSP;
 	       end
@@ -1305,104 +1292,151 @@ module outoforder_wrf_channel
 
    logic [2:0] latbuf_pop_proc_status;
 
-   // Latbuf pop_ptr
-   always @(posedge clk) begin : latbuf_pop_proc
-      if (rst) begin
-	 vl0_wrfence_deassert <= 0;
-	 vh0_wrfence_deassert <= 0;
-	 vh1_wrfence_deassert <= 0;
-	 latbuf_pop_proc_status	<= 3'b000;
-	 glbl_wrfence_pop_status <= 0;
-	 unroll_active        <= 0;	 
-      end
-      // empty outfifo on normal transactions
-      else if (~outfifo_almfull && ~latbuf_empty ) begin
-	 get_latbuf_unroll_put_outfifo(outfifo);
-	 vl0_wrfence_deassert <= 0;
-	 vh0_wrfence_deassert <= 0;
-	 vh1_wrfence_deassert <= 0;
-	 latbuf_pop_proc_status	<= 3'b110;
-	 glbl_wrfence_pop_status <= 0;
-      end
-      // Pop write fence
-      else if (wrfence_rspvalid && (vl0_wrfence_flag|vh0_wrfence_flag|vh1_wrfence_flag) && ~glbl_wrfence_pop_status) begin
-	 case (wrfence_rsphdr.vc_used)
-	   VC_VA :
-	     begin
-		if ( (wrfence_rsptid == vl0_wrfence_tid) &&
-		     (wrfence_rsptid == vh0_wrfence_tid) &&
-		     (wrfence_rsptid == vh1_wrfence_tid) &&
-		     vl0_wrfence_flag &&
-		     vh0_wrfence_flag &&
-		     vh1_wrfence_flag ) begin
-		   vl0_wrfence_deassert <= 1;
-		   vh0_wrfence_deassert <= 1;
-		   vh1_wrfence_deassert <= 1;
-		   latbuf_pop_proc_status	<= 3'b100;
-		   glbl_wrfence_pop_status <= 1;
-		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
-		end
-	     end
-
-	   VC_VL0:
-	     begin
-		if ((wrfence_rsptid == vl0_wrfence_tid) && vl0_wrfence_flag) begin
-		   vl0_wrfence_deassert <= 1;
-		   vh0_wrfence_deassert <= 0;
-		   vh1_wrfence_deassert <= 0;
-		   latbuf_pop_proc_status	<= 3'b101;
-		   glbl_wrfence_pop_status <= 1;
-		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
-		end
-	     end
-
-	   VC_VH0:
-	     begin
-		if ((wrfence_rsptid == vh0_wrfence_tid) && vh0_wrfence_flag ) begin
-		   vl0_wrfence_deassert <= 0;
-		   vh0_wrfence_deassert <= 1;
-		   vh1_wrfence_deassert <= 0;
-		   latbuf_pop_proc_status	<= 3'b110;
-		   glbl_wrfence_pop_status <= 1;
-		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
-		end
-	     end
-
-	   VC_VH1:
-	     begin
-		if ((wrfence_rsptid == vh1_wrfence_tid) && vh1_wrfence_flag ) begin
-		   vl0_wrfence_deassert <= 0;
-		   vh0_wrfence_deassert <= 0;
-		   vh1_wrfence_deassert <= 1;
-		   latbuf_pop_proc_status	<= 3'b111;
-		   glbl_wrfence_pop_status <= 1;
-		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
-		end
-	     end
-	 endcase
-      end
-      else begin
-	 vl0_wrfence_deassert <= 0;
-	 vh0_wrfence_deassert <= 0;
-	 vh1_wrfence_deassert <= 0;
-	 latbuf_pop_proc_status	<= 3'b000;
-	 glbl_wrfence_pop_status <= 0;
-	 unroll_active           <= 0;	 
-      end
-      // ------------------------------------------------------------------- //-
-      // Book keeping
-      // -------------------------------------------------------------------- //
-      for(int ready_i = 0; ready_i < NUM_WAIT_STATIONS ; ready_i = ready_i + 1) begin
-	 if (rst) begin
-	    records[ready_i].record_pop <= 0;
-	 end
-	 else if ( (records[ready_i].state == LatSc_RecordPopped) ||
-		   (records[ready_i].state == LatSc_Disabled) ) begin
-	    records[ready_i].record_pop <= 0;
+   /*
+    * Latbuf -> outfifo process
+    */ 
+   generate
+      // ====================================================================== //
+      // READ CHANNEL
+      // ====================================================================== //
+      if (WRITE_CHANNEL == 0) begin
+	 always @(posedge clk) begin : latbuf_pop_proc_READ
+	    if (rst) begin
+	       vl0_wrfence_deassert <= 0;
+	       vh0_wrfence_deassert <= 0;
+	       vh1_wrfence_deassert <= 0;
+	       latbuf_pop_proc_status	<= 3'b000;
+	       glbl_wrfence_pop_status <= 0;
+	       unroll_active        <= 0;	 
+	    end
+	    // empty outfifo on normal transactions
+	    else if (~outfifo_almfull && ~latbuf_empty ) begin
+	       get_latbuf_unroll_put_outfifo(outfifo);
+	       latbuf_pop_proc_status	<= 3'b110;
+	    end
+	    // Else
+	    else begin
+	       latbuf_pop_proc_status	<= 3'b000;
+	       unroll_active           <= 0;	 
+	    end
+	    // ------------------------------------------------------------------- //-
+	    // Book keeping
+	    // -------------------------------------------------------------------- //
+	    for(int ready_i = 0; ready_i < NUM_WAIT_STATIONS ; ready_i = ready_i + 1) begin
+	       if (rst) begin
+		  records[ready_i].record_pop <= 0;
+	       end
+	       else if ( (records[ready_i].state == LatSc_RecordPopped) ||
+			 (records[ready_i].state == LatSc_Disabled) ) begin
+		  records[ready_i].record_pop <= 0;
+	       end
+	    end
 	 end
       end
-   end
+      // ====================================================================== //
+      // Write CHANNEL
+      // ====================================================================== //
+      else if (WRITE_CHANNEL == 1) begin
+	 always @(posedge clk) begin : latbuf_pop_proc_WRITE
+	    if (rst) begin
+	       vl0_wrfence_deassert <= 0;
+	       vh0_wrfence_deassert <= 0;
+	       vh1_wrfence_deassert <= 0;
+	       latbuf_pop_proc_status	<= 3'b000;
+	       glbl_wrfence_pop_status <= 0;
+	       unroll_active        <= 0;	 
+	    end
+	    // empty outfifo on normal transactions
+	    else if (~outfifo_almfull && ~latbuf_empty ) begin
+	       get_latbuf_unroll_put_outfifo(outfifo);
+	       vl0_wrfence_deassert <= 0;
+	       vh0_wrfence_deassert <= 0;
+	       vh1_wrfence_deassert <= 0;
+	       latbuf_pop_proc_status	<= 3'b110;
+	       glbl_wrfence_pop_status <= 0;
+	    end
+	    // Pop write fence
+	    else if (wrfence_rspvalid && (vl0_wrfence_flag|vh0_wrfence_flag|vh1_wrfence_flag) && ~glbl_wrfence_pop_status) begin
+	       case (wrfence_rsphdr.vc_used)
+		 VC_VA :
+		   begin
+		      if ( (wrfence_rsptid == vl0_wrfence_tid) &&
+			   (wrfence_rsptid == vh0_wrfence_tid) &&
+			   (wrfence_rsptid == vh1_wrfence_tid) &&
+			   vl0_wrfence_flag &&
+			   vh0_wrfence_flag &&
+			   vh1_wrfence_flag ) begin
+			 vl0_wrfence_deassert <= 1;
+			 vh0_wrfence_deassert <= 1;
+			 vh1_wrfence_deassert <= 1;
+			 latbuf_pop_proc_status	<= 3'b100;
+			 glbl_wrfence_pop_status <= 1;
+			 outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
+		      end
+		   end
 
+		 VC_VL0:
+		   begin
+		      if ((wrfence_rsptid == vl0_wrfence_tid) && vl0_wrfence_flag) begin
+			 vl0_wrfence_deassert <= 1;
+			 vh0_wrfence_deassert <= 0;
+			 vh1_wrfence_deassert <= 0;
+			 latbuf_pop_proc_status	<= 3'b101;
+			 glbl_wrfence_pop_status <= 1;
+			 outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
+		      end
+		   end
+
+		 VC_VH0:
+		   begin
+		      if ((wrfence_rsptid == vh0_wrfence_tid) && vh0_wrfence_flag ) begin
+			 vl0_wrfence_deassert <= 0;
+			 vh0_wrfence_deassert <= 1;
+			 vh1_wrfence_deassert <= 0;
+			 latbuf_pop_proc_status	<= 3'b110;
+			 glbl_wrfence_pop_status <= 1;
+			 outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
+		      end
+		   end
+
+		 VC_VH1:
+		   begin
+		      if ((wrfence_rsptid == vh1_wrfence_tid) && vh1_wrfence_flag ) begin
+			 vl0_wrfence_deassert <= 0;
+			 vh0_wrfence_deassert <= 0;
+			 vh1_wrfence_deassert <= 1;
+			 latbuf_pop_proc_status	<= 3'b111;
+			 glbl_wrfence_pop_status <= 1;
+			 outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
+		      end
+		   end
+	       endcase
+	    end
+	    else begin
+	       vl0_wrfence_deassert <= 0;
+	       vh0_wrfence_deassert <= 0;
+	       vh1_wrfence_deassert <= 0;
+	       latbuf_pop_proc_status	<= 3'b000;
+	       glbl_wrfence_pop_status <= 0;
+	       unroll_active           <= 0;	 
+	    end
+	    // ------------------------------------------------------------------- //-
+	    // Book keeping
+	    // -------------------------------------------------------------------- //
+	    for(int ready_i = 0; ready_i < NUM_WAIT_STATIONS ; ready_i = ready_i + 1) begin
+	       if (rst) begin
+		  records[ready_i].record_pop <= 0;
+	       end
+	       else if ( (records[ready_i].state == LatSc_RecordPopped) ||
+			 (records[ready_i].state == LatSc_Disabled) ) begin
+		  records[ready_i].record_pop <= 0;
+	       end
+	    end
+	 end // block: latbuf_pop_proc
+	 // ====================================================================== //
+      end	
+   endgenerate
+   
    // Outfifo Full/Empty
    assign outfifo_almfull  = (outfifo_cnt > VISIBLE_FULL_THRESH) ? 1 : 0;
 
@@ -1412,15 +1446,6 @@ module outoforder_wrf_channel
       else
 	outfifo_empty <= 0;
    end
-
-   always @(*) begin
-      if (outfifo_cnt <= 2)
-	outfifo_almempty <= 1;
-      else
-	outfifo_almempty <= 0;
-   end
-
-   assign outfifo_read_en = read_en;
 
    assign empty = outfifo_empty;
 
