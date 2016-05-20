@@ -78,6 +78,12 @@ BEGIN_NAMESPACE(AAL)
 /// VTP BBB GUID, used to identify HW VTP component
 #define MPF_VTP_BBB_GUID "C8A2982F-FF96-42BF-A705-45727F501901"
 
+// Read responses ordering feature
+#define MPF_RSP_ORDER_BBB_GUID "4C9C96F4-65BA-4DD8-B383-C70ACE57BFE4"
+
+// Write ordering feature
+#define MPF_WRO_BBB_GUID "56B06B48-9DD7-4004-A47E-0681B4207A6D"
+
 /// MPF Service IID
 #ifndef iidMPFVTPService
 #define iidMPFVTPService __INTC_IID(INTC_sysSampleAFU, 0x0010)
@@ -91,22 +97,40 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// @note Since AFU reset will reset all user logic including BBBs like VTP,
 ///       users need to make sure to reinitialize VTP after an AFU reset
-///       using vtpEnable().
+///       using vtpReset().
 ///
 /// @see IALIBuffer
+
+// VTP statistics
+typedef struct
+{
+   // Hits and misses in the TLB. The VTP pipeline has local caches
+   // within the pipeline itself that filter requests to the TLB.
+   // The counts here increment only for requests to the TLB service
+   // that are not satisfied in the VTP pipeline caches.
+   btUnsigned64bitInt numTLBHits4KB;
+   btUnsigned64bitInt numTLBMisses4KB;
+   btUnsigned64bitInt numTLBHits2MB;
+   btUnsigned64bitInt numTLBMisses2MB;
+
+   // Number of cycles spent with the page table walker active.  Since
+   // the walker manages only one request at a time the latency of the
+   // page table walker can be computed as:
+   //   numPTWalkBusyCycles / (numTLBMisses4KB + numTLBMisses2MB)
+   btUnsigned64bitInt numPTWalkBusyCycles;
+}
+t_cci_mpf_vtp_stats;
 
 class IMPFVTP : public IALIBuffer
 {
 public:
    virtual ~IMPFVTP() {}
 
-   /// Reinitialize VTP after AFU Reset
-   virtual btBool vtpEnable( void ) = 0;
-
-   /// DEPRECATED.
-   /// @note This interface is likely to change or disappear in beta
+   /// Reset VTP (invalidate TLB)
    virtual btBool vtpReset( void ) = 0;
 
+   // Return all statistics counters
+   virtual btBool vtpGetStats( t_cci_mpf_vtp_stats *stats ) = 0;
 };
 
 /// @}

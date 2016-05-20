@@ -27,20 +27,33 @@
 ##  Accelerator Abstraction Layer Library Software Developer Kit (SDK)
 ##
 ##  Content:
-##     utils/Makefile.am
+##     utils/ALIAFU/VTP/Makefile.am
 ##  Author:
-##     Tim Whisonant, Intel Corporation
+##     Sadruta Chandrashekar, Intel Corporation
 ##  History:
-##     06/16/2015    TSW   Initial version
+##     05/19/2016    SC   Initial version
 ##******************************************************************************
-SUBDIRS=\
-aalscan \
-fpgadiag \
-data_model \
-ALIAFU/ASEALIAFU \
-ALIAFU/HWALIAFU \
-ALIAFU/SWSimALIAFU \
-ALIAFU/ALI \
-ALIAFU/VTP \
-scripts
+lib_LTLIBRARIES=libMPF.la
+
+libMPF_la_SOURCES=\
+cci_mpf_service.cpp \
+cci_mpf_service.h \
+cci_mpf_shim_vtp.cpp \
+cci_mpf_shim_vtp.h \
+cci_mpf_shim_vtp_pt.cpp \
+cci_mpf_shim_vtp_pt.h
+
+libMPF_la_CPPFLAGS=\
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
+
+libMPF_la_LDFLAGS=\
+-module \
+-version-info $(MPF_VERSION_CURRENT):$(MPF_VERSION_REVISION):$(MPF_VERSION_AGE)
+
+libMPF_la_LIBADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la \
+$(top_builddir)/aas/AALRuntime/libaalrt.la \
+$(top_builddir)/aas/AIAService/libaia.la
 
