@@ -52,7 +52,7 @@ ASE_DEBUG ?= 1
 ASE_DISABLE_LOGGER = 0
 
 # Coverage settings (lcov in SW and VCS-CM in HW)
-ASE_COVERAGE ?= 0
+ASE_COVERAGE ?= 1
 ifeq ($(ASE_COVERAGE),1)
 ASE_PROFILE_ENABLE ?= 1
 ASE_LCOV_ENABLE ?= 1
@@ -509,6 +509,7 @@ coverage:
 #	urg -dir $(WORK)/coverage.vdb ; cd -
 #	firefox $(WORK)/urgReport/dashboard.html &
 	firefox ./$(WORK)/lcov_coverage/index.html &
+	firefox ./$(WORK)/profileReport.html &
 
 # Valgrind run
 valgrind_run:
