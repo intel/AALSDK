@@ -636,7 +636,7 @@ module ccip_emulator
    end
 
    // Div2 output
-   always @(posedge usrClk) begin
+   always @(posedge usrClk) begin : usrclk_proc
       usrClkDiv2 = ~usrClkDiv2;
    end
 
