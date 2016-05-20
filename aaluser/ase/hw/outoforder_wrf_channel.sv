@@ -93,7 +93,7 @@ import ase_pkg::*;
 module outoforder_wrf_channel
   #(
     parameter string DEBUG_LOGNAME       = "channel.log",
-    parameter int    NUM_WAIT_STATIONS   = 4,
+    parameter int    NUM_WAIT_STATIONS   = 8,
     parameter int    COUNT_WIDTH         = 8,
     parameter int    VISIBLE_DEPTH_BASE2 = 8,
     parameter int    VISIBLE_FULL_THRESH = 220,
@@ -281,7 +281,31 @@ module outoforder_wrf_channel
       wrfence_rsp_cnt <= wrfence_rsp_array.size();
    end
 
-
+   // always @(posedge clk) begin : vc_full_proc
+   //    // VL0 full
+   //    if (vl0_array.size() > INTERNAL_FIFO_ALMFULL_THRESH) begin
+   // 	 vl0_array_full <= 1;	 
+   //    end
+   //    else begin
+   // 	 vl0_array_full <= 0;	 
+   //    end
+   //    // VH0 full
+   //    if (vh0_array.size() > INTERNAL_FIFO_ALMFULL_THRESH) begin
+   // 	 vh0_array_full <= 1;	 
+   //    end
+   //    else begin
+   // 	 vh0_array_full <= 0;	 
+   //    end
+   //    // VH1 full
+   //    if (vh1_array.size() > INTERNAL_FIFO_ALMFULL_THRESH) begin
+   // 	 vh1_array_full <= 1;	 
+   //    end
+   //    else begin
+   // 	 vh1_array_full <= 0;	 
+   //    end
+   // end
+   
+   
    assign vl0_array_full  = (vl0_array_cnt > INTERNAL_FIFO_ALMFULL_THRESH) ? 1 : 0;
    assign vh0_array_full  = (vh0_array_cnt > INTERNAL_FIFO_ALMFULL_THRESH) ? 1 : 0;
    assign vh1_array_full  = (vh1_array_cnt > INTERNAL_FIFO_ALMFULL_THRESH) ? 1 : 0;
@@ -496,7 +520,8 @@ module outoforder_wrf_channel
     *   = Select VC
     *   = Stage into response array
     */
-   function automatic void infifo_to_vc_push ();
+   // function automatic void infifo_to_vc_push ();
+   task automatic infifo_to_vc_push ();
       logic [PHYSCLADDR_WIDTH-1:0] c0tx_vl0_addr_base;
       TxHdr_t                      vl0_hdr;
       begin
@@ -610,9 +635,10 @@ module outoforder_wrf_channel
 	    endcase
 	 end // else: !if(infifo_hdr_out.reqtype == ASE_WRFENCE)
 	 // ----------------------------------------------------------------------- //
+	 @(posedge clk);	 
 	 vc_push = 3'b000;
       end
-   endfunction
+   endtask
 
 
    // Virtual channel select and push
@@ -693,8 +719,16 @@ module outoforder_wrf_channel
 	latbuf_full <= 0;
    end
 
-   assign latbuf_almfull = (latbuf_cnt >= (NUM_WAIT_STATIONS-3)) ? 1 : 0;
+   assign latbuf_almfull = (latbuf_cnt >= (NUM_WAIT_STATIONS-5)) ? 1 : 0;
 
+   // Initial assertion 
+   initial begin
+      if (NUM_WAIT_STATIONS-5 <= 0 ) begin	 
+	 $display("** ERROR ** => (NUM_WAIT_STATIONS-5) must not be less than 0... operation cannot continue -- EXIT !");
+	 start_simkill_countdown();	 
+      end
+   end
+   
    // push_ptr selector
    function automatic integer find_next_push_slot();
       int 				     find_iter;
@@ -1366,7 +1400,7 @@ module outoforder_wrf_channel
     * Sniffs dropped transactions, unexpected mdata, vc or mcl responses
     */
 `ifdef ASE_DEBUG
-
+/*
    // Checker array store as {hash_key, address}
    longint check_array[*];
 
@@ -1428,7 +1462,7 @@ module outoforder_wrf_channel
 	 $display(check_array);
       end
    end
-
+*/
 `endif
 
 

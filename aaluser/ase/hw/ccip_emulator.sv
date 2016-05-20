@@ -2404,7 +2404,7 @@ module ccip_emulator
 // 		  //    `END_RED_FONTCOLOR;
 // 		  // end
 // 	       end
-// 	    end // if (C0RxHdr.format)	    
+// 	    end // if (C0RxHdr.format)
 // 	    else begin
 // 	       if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum))) begin
 // 		  write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
@@ -2455,6 +2455,109 @@ module ccip_emulator
       );
 `endif //  `ifndef ASE_DISABLE_LOGGER
 
+   /*
+    * Transaction drop checker
+    */
+`ifdef ASE_DEBUG
+   longint rdtxn_array[*];
+   longint wrtxn_array[*];
+   longint wrf_array[*];
+
+   logic [1:0] c1tx_mcl;
+
+   // Check and delete by key
+   function automatic void ccip_txn_check_delete(longint key, ref longint assoc_array [*] );
+      begin
+	 if (assoc_array.exists( key )) begin
+	    assoc_array.delete( key);
+	 end
+	 else begin
+	    `BEGIN_RED_FONTCOLOR;
+	    $display(" ** ERROR ** ccip_emulator checker couldnt find key=%x", key);
+	    `END_RED_FONTCOLOR;
+	 end
+      end
+   endfunction
+
+   // Iterate-print
+   function void print_assoc_array(ref longint assoc_array[*]);
+      longint temp;      
+      begin
+	 if (assoc_array.first(temp))
+	   do
+	     $display("( %05x : %12x) ", temp, assoc_array[temp] );	 
+	 while (assoc_array.next(temp));	 
+      end
+   endfunction
+
+   // c1tx_mcl
+   always @(*) begin
+      if (C1TxHdr.sop) begin
+	 c1tx_mcl = C1TxHdr.len;	 
+      end
+   end
+   
+   
+   // Checker array
+   // always @(posedge clk) begin
+   //    // ------------------------------------- //
+   //    // Read check
+   //    // ------------------------------------- //
+   //    if (C0TxValid && isReadRequest(C0TxHdr)) begin
+   // 	 for(int ii=0; ii <= C0TxHdr.len ; ii = ii + 1) begin
+   // 	    rdtxn_array[{ii[1:0], C0TxHdr.mdata}] = C0TxHdr.addr;
+   // 	 end
+   //    end
+   //    if (C0RxRspValid && isReadResponse(C0RxHdr)) begin
+   // 	 ccip_txn_check_delete( {C0RxHdr.clnum, C0RxHdr.mdata}, rdtxn_array);
+   //    end
+   //    // ------------------------------------- //
+   //    // Write check
+   //    // ------------------------------------- //
+   //    if (C1TxValid && isWriteRequest(C1TxHdr)) begin
+   // 	 // if (C1TxHdr.sop) begin
+   // 	 //    c1tx_mcl = C1TxHdr.len;
+   // 	 // end
+   // 	 case (c1tx_mcl)
+   // 	   ASE_1CL:
+   // 	     begin
+   // 		wrtxn_array[ {2'b00, C1TxHdr.mdata} ] = C1TxHdr.addr;
+   // 	     end
+
+   // 	   ASE_2CL:
+   // 	     begin
+   // 		wrtxn_array[ {1'b0, C1TxHdr.addr[0], C1TxHdr.mdata} ] = C1TxHdr.addr;
+   // 	     end
+
+   // 	   ASE_4CL:
+   // 	     begin
+   // 		wrtxn_array[ {C1TxHdr.addr[1:0], C1TxHdr.mdata} ] = C1TxHdr.addr;
+   // 	     end
+   // 	 endcase
+   //    end
+   //    if (C1RxRspValid && isWriteResponse(C1TxHdr)) begin
+   // 	 if (C1RxHdr.format) begin
+   // 	    for(int ii=0; ii <= C1RxHdr.clnum; ii = ii + 1) begin
+   // 	       ccip_txn_check_delete({ii[1:0], C1RxHdr.mdata}, wrtxn_array);
+   // 	    end
+   // 	 end
+   // 	 else begin
+   // 	    ccip_txn_check_delete({C1RxHdr.clnum, C1RxHdr.mdata}, wrf_array);
+   // 	 end
+   //    end
+   //    // ------------------------------------- //
+   //    // Write fence check
+   //    // ------------------------------------- //
+   //    if (C1TxValid && isWrFenceRequest(C1TxHdr)) begin
+   // 	 wrf_array[C1TxHdr.mdata] = C1TxHdr.mdata;
+   //    end
+   //    if (C1RxRspValid && isWrFenceResponse(C1RxHdr)) begin
+   // 	 ccip_txn_check_delete(C1RxHdr.mdata, wrf_array);
+   //    end
+   // end
+
+`endif
+
 
    /* ******************************************************************
     *
@@ -2503,16 +2606,25 @@ module ccip_emulator
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display("Read Response checker =>");
-	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.check_array);
-	 $display("Write Response checker =>");
-	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.check_array);
+	 // $display("-------------------------------------------------");
+	 // $display("Read Transaction checker =>");
+	 // print_assoc_array(rdtxn_array);	 
+	 // $display("Write Transaction checker =>");
+	 // print_assoc_array(wrtxn_array);	 
+	 // $display("WrFence Transaction checker =>");
+	 // $display(wrf_array);
+	 // $display("-------------------------------------------------");
+	 // $display("cf2as_latbuf_ch0 contents =>");
+	 // print_assoc_array(ase_top.ccip_emulator.cf2as_latbuf_ch0.check_array);
+	 // $display("cf2as_latbuf_ch1 contents =>");
+	 // print_assoc_array(ase_top.ccip_emulator.cf2as_latbuf_ch1.check_array);
+	 // $display("-------------------------------------------------");
 	 `END_YELLOW_FONTCOLOR;
 `endif
 	 // $fclose(log_fd);
 	 finish_logger = 1;
-	 // @(posedge clk);	 
-	 
+	 // @(posedge clk);
+
 	 // Command to close logfd
 	 $finish;
       end
@@ -2546,21 +2658,10 @@ module ccip_emulator
       else begin
 	 // ---------------------------------------------------- //
 	 // Read credit counter
-	 rd_credit <= ase_tx0_rdvalid_cnt - ase_rx0_rdvalid_cnt;	 
-	 // case (  {C0TxRdValid, (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP)) } )
-	 //   2'b10   : rd_credit <= rd_credit + C0TxHdr.len + 1;
-	 //   2'b01   : rd_credit <= rd_credit - 1;
-	 //   2'b11   : rd_credit <= rd_credit + C0TxHdr.len + 1 - 1;
-	 //   default : rd_credit <= rd_credit;
-	 // endcase // case ( {C0TxRdValid, C0RxRdValid} )
+	 rd_credit <= ase_tx0_rdvalid_cnt - ase_rx0_rdvalid_cnt;
 	 // ---------------------------------------------------- //
 	 // Write credit counter
-	 wr_credit <= ase_tx1_wrvalid_cnt - ase_rx1_wrvalid_cnt;	 
-	 // case ( { (C1TxWrValid && isWriteRequest(C1TxHdr)), C1RxWrValid} )
-	 //   2'b10   : wr_credit <= wr_credit + 1;
-	 //   2'b01   : wr_credit <= wr_credit - 1;
-	 //   default : wr_credit <= wr_credit;
-	 // endcase // case ( {C1TxWrValid, C1RxWrValid} )
+	 wr_credit <= ase_tx1_wrvalid_cnt - ase_rx1_wrvalid_cnt;
 	 // ---------------------------------------------------- //
 	 // MMIO Writevalid counter
 	 case ( {cwlp_wrvalid, C0RxMmioWrValid} )
@@ -2614,6 +2715,7 @@ module ccip_emulator
       	 update_glbl_dealloc(0);
       end
    end
+
 
 
 endmodule // cci_emulator
