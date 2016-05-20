@@ -487,7 +487,7 @@ public:
    /// @param[in]   pOptArgs  Pointer to Optional Arguments if needed. Defaults to NULL.
    ///
    #define AALPERF_DATATYPE         btUnsigned64bitInt
-   #define AALPERF_VERSION          "Version"           // Start with Version 0
+   #define AALPERF_VERSION          "version"           // Start with Version 0
    #define AALPERF_READ_HIT         "Read_Hit"
    #define AALPERF_WRITE_HIT        "Write_Hit"
    #define AALPERF_READ_MISS        "Read_Miss"
