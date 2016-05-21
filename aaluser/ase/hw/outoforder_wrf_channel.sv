@@ -94,10 +94,11 @@ module outoforder_wrf_channel
   #(
     parameter string DEBUG_LOGNAME = "channel.log",
     parameter int    NUM_WAIT_STATIONS = 8,
+    parameter int    NUM_STATIONS_FULL_THRESH = 3,
     parameter int    COUNT_WIDTH = 8,
     parameter int    VISIBLE_DEPTH_BASE2 = 8,
     parameter int    VISIBLE_FULL_THRESH = 220,
-    parameter int    LATBUF_MAX_TXN = 4,   
+    parameter int    LATBUF_MAX_TXN = 4, 
     parameter int    WRITE_CHANNEL = 0
     )
    (
@@ -772,7 +773,7 @@ module outoforder_wrf_channel
 	latbuf_full <= 0;
    end
 
-   assign latbuf_almfull = (latbuf_cnt >= (NUM_WAIT_STATIONS-5)) ? 1 : 0;
+   assign latbuf_almfull = (latbuf_cnt > NUM_STATIONS_FULL_THRESH) ? 1 : 0;
 
    // Initial assertion 
    initial begin

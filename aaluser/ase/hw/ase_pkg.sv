@@ -242,15 +242,13 @@ package ase_pkg;
     * Latency Scoreboard generics
     */
    // Number of transactions in latency scoreboard
-   parameter LATBUF_NUM_TRANSACTIONS = 8;
+   parameter LATBUF_NUM_TRANSACTIONS = 32;
    // Radix of latency scoreboard radix
    parameter LATBUF_COUNT_WIDTH      = $clog2(LATBUF_NUM_TRANSACTIONS) + 1;
    // ASE_fifo full threshold inside latency scoreboard
-   parameter LATBUF_FULL_THRESHOLD   = 5;
+   parameter LATBUF_FULL_THRESHOLD   = LATBUF_NUM_TRANSACTIONS - 5;
    // Radix of ASE_fifo (subcomponent in latency scoreboard)
    parameter LATBUF_DEPTH_BASE2      = $clog2(LATBUF_NUM_TRANSACTIONS);
-   // Maximum transactions per MCL request
-   // parameter LATBUF_MCL_MAXLEN       = 4;
    // Wait station timer width
    parameter TIMER_WIDTH             = 9;
    
