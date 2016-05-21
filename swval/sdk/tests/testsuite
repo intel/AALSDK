@@ -595,6 +595,7 @@ at_format='?'
 at_help_all="1;OSAL_TestSem.at:5;Sem checkout;;
 2;OSAL_TestThreadGroup.at:5;Thread Group checkout;;
 3;swtest.at:5;SWTest;;
+4;nlb0test.at:5;NLB0Test;;
 "
 # List of the all the test groups.
 at_groups_all=`$as_echo "$at_help_all" | sed 's/;.*//'`
@@ -608,7 +609,7 @@ at_fn_validate_ranges ()
   for at_grp
   do
     eval at_value=\$$at_grp
-    if test $at_value -lt 1 || test $at_value -gt 3; then
+    if test $at_value -lt 1 || test $at_value -gt 4; then
       $as_echo "invalid test group: $at_value" >&2
       exit 1
     fi
@@ -632,6 +633,9 @@ at_arg_given_standalone=false
 
 at_arg_swtest=false
 at_arg_given_swtest=false
+
+at_arg_nlb0test=false
+at_arg_given_nlb0test=false
 
 at_arg_given_gtest_opt=false
 
@@ -823,6 +827,17 @@ do
 	at_arg_given_swtest=:
 		;;
 
+    --nlb0test )
+	at_optarg=:
+	at_arg_nlb0test=:
+	at_arg_given_nlb0test=:
+		;;
+    --no-nlb0test )
+	at_optarg=false
+	at_arg_nlb0test=false
+	at_arg_given_nlb0test=:
+		;;
+
     --gtest-opt )
 	at_prev=--gtest_opt
 	;;
@@ -952,6 +967,9 @@ cat <<_ATEOF || at_write_fail=1
   --swtest                Run software-only test suite [default=no]
 _ATEOF
 cat <<_ATEOF || at_write_fail=1
+  --nlb0test              Run test suite requiring NLB Lpbk1 [default=no]
+_ATEOF
+cat <<_ATEOF || at_write_fail=1
   --gtest-opt             Pass the given argument when invoking gtest
 _ATEOF
 cat <<_ATEOF || at_write_fail=1
@@ -1033,6 +1051,9 @@ at_banner_text_2="OSAL_TestThreadGroup"
 # Banner 3. swtest.at:3
 # Category starts at test group 3.
 at_banner_text_3="gtest - Software-only Tests"
+# Banner 4. nlb0test.at:3
+# Category starts at test group 4.
+at_banner_text_4="gtest - NLB Lpbk1 mode0 Tests"
 
 # Take any -C into account.
 if $at_change_dir ; then
@@ -2142,3 +2163,32 @@ $at_traceon; }
 ) 5>&1 2>&1 7>&- | eval $at_tee_pipe
 read at_status <"$at_status_file"
 #AT_STOP_3
+#AT_START_4
+at_fn_group_banner 4 'nlb0test.at:5' \
+  "NLB0Test" "                                       " 4
+at_xfail=no
+(
+  $as_echo "4. $at_setup_line: testing $at_desc ..."
+  $at_traceon
+
+$as_echo "nlb0test.at:6" >"$at_check_line_file"
+(test "x${WITH_GTEST}" != xyes || test "x${at_arg_nlb0test}" != "x:") \
+  && at_fn_check_skip 77 "$at_srcdir/nlb0test.at:6"
+{ set +x
+$as_echo "$at_srcdir/nlb0test.at:7: nlb0test \${GTEST_OPTS}"
+at_fn_check_prepare_notrace 'a ${...} parameter expansion' "nlb0test.at:7"
+( $at_check_trace; nlb0test ${GTEST_OPTS}
+) >>"$at_stdout" 2>>"$at_stderr" 5>&-
+at_status=$? at_failed=false
+$at_check_filter
+echo stderr:; cat "$at_stderr"
+echo stdout:; cat "$at_stdout"
+at_fn_check_status 0 $at_status "$at_srcdir/nlb0test.at:7"
+$at_failed && at_fn_log_failure
+$at_traceon; }
+
+  set +x
+  $at_times_p && times >"$at_times_file"
+) 5>&1 2>&1 7>&- | eval $at_tee_pipe
+read at_status <"$at_status_file"
+#AT_STOP_4

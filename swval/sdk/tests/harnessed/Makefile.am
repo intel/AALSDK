@@ -2,4 +2,5 @@
 SUBDIRS=\
 gtest \
 gtest/gtcommon \
-gtest/swtest
+gtest/swtest \
+gtest/nlb0test

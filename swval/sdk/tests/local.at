@@ -17,11 +17,9 @@ AT_ARG_OPTION([standalone],
 AT_ARG_OPTION([swtest],
               [AS_HELP_STRING([--swtest], [Run software-only test suite @<:@default=no@:>@])])
 
-dnl AT_ARG_OPTION([nightly],
-dnl               [AS_HELP_STRING([--nightly], [Run nightly test suite @<:@default=no@:>@])])
+AT_ARG_OPTION([nlb0test],
+              [AS_HELP_STRING([--nlb0test], [Run test suite requiring NLB Lpbk1 @<:@default=no@:>@])])
 
-dnl AT_ARG_OPTION([weekly],
-dnl               [AS_HELP_STRING([--weekly], [Run weekly test suite @<:@default=no@:>@])])
 
 GTEST_OPTS=
 AT_ARG_OPTION_ARG([gtest-opt],
