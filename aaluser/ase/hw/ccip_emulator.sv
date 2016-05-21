@@ -1584,6 +1584,7 @@ module ccip_emulator
        .COUNT_WIDTH         (LATBUF_COUNT_WIDTH),
        .VISIBLE_DEPTH_BASE2 (8),
        .VISIBLE_FULL_THRESH (220),
+       .LATBUF_MAX_TXN      (1),
        .WRITE_CHANNEL       (0)
        )
    cf2as_latbuf_ch0
@@ -1660,6 +1661,7 @@ module ccip_emulator
        .COUNT_WIDTH         (LATBUF_COUNT_WIDTH),
        .VISIBLE_DEPTH_BASE2 (8),
        .VISIBLE_FULL_THRESH (220),
+       .LATBUF_MAX_TXN      (4),
        .WRITE_CHANNEL       (1)
        )
    cf2as_latbuf_ch1

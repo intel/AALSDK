@@ -92,12 +92,13 @@ import ase_pkg::*;
 
 module outoforder_wrf_channel
   #(
-    parameter string DEBUG_LOGNAME       = "channel.log",
-    parameter int    NUM_WAIT_STATIONS   = 8,
-    parameter int    COUNT_WIDTH         = 8,
+    parameter string DEBUG_LOGNAME = "channel.log",
+    parameter int    NUM_WAIT_STATIONS = 8,
+    parameter int    COUNT_WIDTH = 8,
     parameter int    VISIBLE_DEPTH_BASE2 = 8,
     parameter int    VISIBLE_FULL_THRESH = 220,
-    parameter int    WRITE_CHANNEL       = 0
+    parameter int    LATBUF_MAX_TXN = 4,   
+    parameter int    WRITE_CHANNEL = 0
     )
    (
     input logic 		       clk,
@@ -352,9 +353,9 @@ module outoforder_wrf_channel
    // Transaction storage
    typedef struct
 		  {
-		     TxHdr_t                     hdr  [0:LATBUF_MCL_MAXLEN-1]; // in
-		     logic [CCIP_DATA_WIDTH-1:0] data [0:LATBUF_MCL_MAXLEN-1]; // in
-		     logic [TID_WIDTH-1:0] 	 tid  [0:LATBUF_MCL_MAXLEN-1]; // in
+		     TxHdr_t                     hdr  [0:LATBUF_MAX_TXN-1]; // in
+		     logic [CCIP_DATA_WIDTH-1:0] data [0:LATBUF_MAX_TXN-1]; // in
+		     logic [TID_WIDTH-1:0] 	 tid  [0:LATBUF_MAX_TXN-1]; // in
 		     logic [TIMER_WIDTH-1:0] 	 ctr_out;       // out
 		     int 			 num_items;     // in
 		     logic 			 record_valid;  // out
