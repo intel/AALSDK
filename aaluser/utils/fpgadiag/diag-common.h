@@ -257,6 +257,7 @@ protected:
       m_pALIBufferService((IALIBuffer *) *pMyApp),
       m_pALIResetService((IALIReset *) *pMyApp),
       m_pALIuMSGService((IALIUMsg *) *pMyApp),
+      m_pVTPService((IMPFVTP *) *pMyApp),
       m_pALIPerf((IALIPerf *) *pMyApp)
    {
       ASSERT(NULL != m_pMyApp);
@@ -291,6 +292,7 @@ protected:
    IALIReset  		  *m_pALIResetService;  ///< Pointer to AFU Reset Service
    IALIUMsg   		  *m_pALIuMSGService;   ///< Pointer to uMSg Service
    IALIPerf   		  *m_pALIPerf;          ///< ALI Performance Monitor
+   IMPFVTP            *m_pVTPService;       ///< Pointer to VTP buffer service
    btUnsigned64bitInt  m_PerfMonitors[NUM_PERF_MONITORS];
    btUnsigned64bitInt  m_SavedPerfMonitors[NUM_PERF_MONITORS];
    std::string 		   m_RdBw;

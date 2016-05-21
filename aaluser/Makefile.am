@@ -252,6 +252,7 @@ include/aalsdk/utils/AALEventUtilities.h \
 include/aalsdk/utils/AALWorkSpaceUtilities.h \
 include/aalsdk/utils/CSyncClient.h \
 include/aalsdk/utils/NLBVAFU.h \
+include/aalsdk/utils/cci_mpf_csrs.h \
 include/aalsdk/utils/ResMgrUtilities.h \
 include/aalsdk/utils/SingleAFUApp.h \
 include/aalsdk/utils/Utilities.h

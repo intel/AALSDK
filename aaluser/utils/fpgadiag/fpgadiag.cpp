@@ -694,7 +694,6 @@ void CMyApp::StartVTP()
 {
 
    INFO("Searching for VTP Service");
-
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
 
@@ -815,12 +814,12 @@ int main(int argc, char *argv[])
       return 5;
    }
 
-   INFO("Trying VTP\n");
+   cout << "Trying VTP\n";
    myapp.StartVTP();
    if ( true == myapp.VTPActive()){
-	   INFO("VTP Active.");
+	   cout << "VTP Active.\n";
    }else{
-	   INFO("VTP not Active.");
+	   cout << "VTP not Active.\n";
    }
 
    if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_LPBK1)))
