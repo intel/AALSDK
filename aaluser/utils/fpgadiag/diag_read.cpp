@@ -54,7 +54,10 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
    btWSSize  sz = CL(cmd.begincls);
    uint_type  mcl = cmd.multicls;
 
-   const btInt StopTimeoutMillis = 250;
+   btInt StopTimeoutMillis = 250;
+   if ( cmd.AFUTarget == ALIAFU_NVS_VAL_TARGET_ASE){
+	   StopTimeoutMillis = StopTimeoutMillis * 100000;
+   }
    btInt MaxPoll = StopTimeoutMillis;
 
    const btUnsigned32bitInt ReadBufData = 0xc0cac01a;

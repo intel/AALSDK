@@ -295,13 +295,6 @@ void CMyApp::Stop()
 		 m_pFMEService = NULL;
    }
 
-   if( NULL != m_pALIBufferService ) {
-      // Release the Workspaces
-      m_pALIBufferService->bufferFree(m_InputVirt);
-      m_pALIBufferService->bufferFree(m_OutputVirt);
-      m_pALIBufferService->bufferFree(m_DSMVirt);
-   }
-
    if ( NULL != m_pNLBService ) {
 		 (dynamic_ptr<IAALService>(iidService, m_pNLBService))->Release(TransactionID());
 		 Wait(); // For service freed notification.
@@ -570,9 +563,21 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 	  m_VTPActive = true;
    }
 
-   if( m_pFMEService && m_pNLBService){ //TODO Check for m_pVTPService
-	  INFO("Service Allocated");
-	  allocateWorkspaces();
+   if(true == m_VTPActive){
+	   if( m_pFMEService &&
+		   m_pNLBService &&
+		   m_pVTPService ){
+	        INFO("Service Allocated");
+	        allocateWorkspaces();
+	     }
+   }
+   else{
+	   if( m_pFMEService && m_pNLBService){
+	   	  INFO("Service Allocated");
+	   	  allocateWorkspaces();
+	   }
+   }
+   if( m_pFMEService && m_pNLBService){
 	  Post();
    }
 }
@@ -689,6 +694,17 @@ void CMyApp::serviceReleaseFailed(const IEvent &e)
    Post();
 }
 
+void CMyApp::serviceFreed(TransactionID const &tid)
+{
+	if( NULL != m_pALIBufferService ) {
+	  // Release the Workspaces
+	  m_pALIBufferService->bufferFree(m_InputVirt);
+	  m_pALIBufferService->bufferFree(m_OutputVirt);
+	  m_pALIBufferService->bufferFree(m_DSMVirt);
+	}
+    INFO("Service Freed");
+    Post();
+}
 
 void CMyApp::StartVTP()
 {

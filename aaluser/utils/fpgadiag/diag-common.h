@@ -126,6 +126,7 @@ public:
    virtual void       serviceReleased(TransactionID const &rTranID = TransactionID());
    virtual void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent){};  // Ignored TODO better implementation
    virtual void  serviceReleaseFailed(const IEvent &rEvent);
+   virtual void          serviceFreed(TransactionID const & = TransactionID());
    // </IServiceClient>
 
    btVirtAddr DSMVirt()    const { return m_DSMVirt;    } ///< Accessor for the DSM workspace.

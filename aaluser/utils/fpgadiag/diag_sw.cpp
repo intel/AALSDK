@@ -157,7 +157,10 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
    Timer     timeout = Timer() + Timer(&ts);
 #endif // OS
 
-   const btInt StopTimeoutMillis = 250;
+   btInt StopTimeoutMillis = 250;
+   if ( cmd.AFUTarget == ALIAFU_NVS_VAL_TARGET_ASE){
+	StopTimeoutMillis = StopTimeoutMillis * 100000;
+   }
    btInt MaxPoll = StopTimeoutMillis;
 
    ReadPerfMonitors();

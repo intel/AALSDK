@@ -54,7 +54,10 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd)
    btWSSize  sz = CL(cmd.begincls);
    uint_type  mcl = cmd.multicls;
 
-   const btInt StopTimeoutMillis = 250;
+   btInt StopTimeoutMillis = 250;
+   if ( cmd.AFUTarget == ALIAFU_NVS_VAL_TARGET_ASE){
+	   StopTimeoutMillis = StopTimeoutMillis * 100000;
+   }
    btInt MaxPoll = StopTimeoutMillis;
 
    volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
@@ -85,6 +88,10 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd)
    if ( 0 != m_pALIResetService->afuReset()){
       ERR("AFU reset failed. Exiting test.");
       return 1;
+   }
+
+   if(NULL != m_pVTPService){
+	   m_pVTPService->vtpReset();
    }
 
    //Set DSM base, high then low
