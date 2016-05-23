@@ -339,18 +339,18 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
 		  0 == strcmp(TestMode().c_str(), "TestMode_write") ||
 		  0 == strcmp(TestMode().c_str(), "TestMode_trput")){
 
-  		   ConfigRecord.Add(keyRegAFU_ID,"751E795F-7DA4-4CC6-8309-935132BCA9B6");
-  		   Manifest.Add(keyRegAFU_ID,"751E795F-7DA4-4CC6-8309-935132BCA9B6");
+  		   ConfigRecord.Add(keyRegAFU_ID,"F7DF405C-BD7A-CF72-22F1-44B0B93ACD18");
+  		   Manifest.Add(keyRegAFU_ID,"F7DF405C-BD7A-CF72-22F1-44B0B93ACD18");
 
   	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_lpbk1")){
 
-  		   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
-  		   Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+  		   ConfigRecord.Add(keyRegAFU_ID,"D8424DC4-A4A3-C413-F89E-433683F9040B");
+  		   Manifest.Add(keyRegAFU_ID,"D8424DC4-A4A3-C413-F89E-433683F9040B");
 
   	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_sw")){
 
- 		   ConfigRecord.Add(keyRegAFU_ID,"A944F6E7-15D3-4D95-9452-15DBD47C76BD");
- 		   Manifest.Add(keyRegAFU_ID,"A944F6E7-15D3-4D95-9452-15DBD47C76BD");
+ 		   ConfigRecord.Add(keyRegAFU_ID,"7BAF4DEA-A57C-E91E-168A-455D9BDA88A3");
+ 		   Manifest.Add(keyRegAFU_ID,"7BAF4DEA-A57C-E91E-168A-455D9BDA88A3");
 
   	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_atomic")){
 
