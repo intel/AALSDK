@@ -98,7 +98,7 @@ module outoforder_wrf_channel
     parameter int    COUNT_WIDTH = 8,
     parameter int    VISIBLE_DEPTH_BASE2 = 8,
     parameter int    VISIBLE_FULL_THRESH = 220,
-    parameter int    LATBUF_MAX_TXN = 4, 
+    parameter int    LATBUF_MAX_TXN = 4,
     parameter int    WRITE_CHANNEL = 0
     )
    (
@@ -279,7 +279,7 @@ module outoforder_wrf_channel
       outfifo_cnt     <= outfifo.size();
       wrfence_rsp_cnt <= wrfence_rsp_array.size();
    end
-   
+
    assign vl0_array_full  = (vl0_array_cnt > INTERNAL_FIFO_ALMFULL_THRESH) ? 1 : 0;
    assign vh0_array_full  = (vh0_array_cnt > INTERNAL_FIFO_ALMFULL_THRESH) ? 1 : 0;
    assign vh1_array_full  = (vh1_array_cnt > INTERNAL_FIFO_ALMFULL_THRESH) ? 1 : 0;
@@ -549,12 +549,12 @@ module outoforder_wrf_channel
 	     end
 	 endcase
 	 // ----------------------------------------------------------------------- //
-	 @(posedge clk);	 
+	 @(posedge clk);
 	 vc_push = 3'b000;
       end
    endtask
 
-   
+
    // ================================================================== //
    // Write CHANNEL infifo_to_vc_put
    // ================================================================== //
@@ -666,15 +666,15 @@ module outoforder_wrf_channel
 	    endcase
 	 end // else: !if(infifo_hdr_out.reqtype == ASE_WRFENCE)
 	 // ----------------------------------------------------------------------- //
-	 @(posedge clk);	 
+	 @(posedge clk);
 	 vc_push = 3'b000;
       end
    endtask
 
-    
+
    /*
     * Virtual channel select and push
-    */ 
+    */
    generate
       // ================================================================== //
       // Read CHANNEL infifo_to_vc_put
@@ -724,7 +724,7 @@ module outoforder_wrf_channel
       end
    endgenerate
 
-   
+
    // Lane pop and latency scoreboard push
    logic vl0_wrfence_flag;
    logic vh0_wrfence_flag;
@@ -775,14 +775,14 @@ module outoforder_wrf_channel
 
    assign latbuf_almfull = (latbuf_cnt > NUM_STATIONS_FULL_THRESH) ? 1 : 0;
 
-   // Initial assertion 
+   // Initial assertion
    initial begin
-      if (NUM_WAIT_STATIONS-5 <= 0 ) begin	 
+      if (NUM_WAIT_STATIONS-5 <= 0 ) begin
 	 $display("** ERROR ** => (NUM_WAIT_STATIONS-5) must not be less than 0... operation cannot continue -- EXIT !");
-	 start_simkill_countdown();	 
+	 start_simkill_countdown();
       end
    end
-   
+
    // push_ptr selector
    function automatic integer find_next_push_slot();
       int 				     find_iter;
@@ -806,7 +806,7 @@ module outoforder_wrf_channel
    int 	 mcl_txn_iter;
    int 	 record_len;
 
-   
+
    /*
     * Latbuf assignment process
     * - Read and update record in latency scoreboard
@@ -974,7 +974,7 @@ module outoforder_wrf_channel
    	 endcase // case (vc_pop)
 	 // ------------------------------------------------------------- //
 	 // WrFence assertion logic (assertions in WRITE mode only)
-	 // ------------------------------------------------------------- //	 
+	 // ------------------------------------------------------------- //
 	 if (WRITE_CHANNEL == 1) begin
 	    // If a VL0 fence is set, wait till downstream gets cleared
 	    if (vl0_wrfence_flag && (vl0_records_cnt == 0) && vl0_wrfence_deassert) begin
@@ -998,7 +998,7 @@ module outoforder_wrf_channel
 	 `endif
 	    end
 	 end // if (WRITE_CHANNEL == 1)
-	 // -------------------------------------------------- // 
+	 // -------------------------------------------------- //
 	 // Release latbuf_used & record_push
 	 // -------------------------------------------------- //
 	 for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
@@ -1014,7 +1014,7 @@ module outoforder_wrf_channel
    /*
     * Latency scoreboard
     * Fixme: Cache simulator output goes here
-    */ 
+    */
    // Get delay function
    function int get_delay(input TxHdr_t hdr);
       begin
@@ -1152,7 +1152,7 @@ module outoforder_wrf_channel
       end
    endfunction
 
-   
+
    // Status of unroll (readouts)
    logic [CCIP_RX_HDR_WIDTH-1:0] rxhdr_out_vec;
    logic [CCIP_TX_HDR_WIDTH-1:0] txhdr_out_vec;
@@ -1173,6 +1173,175 @@ module outoforder_wrf_channel
     *       VHx              Write            0        iterate, outfifo
     *       VHx              Write            1        iterate, outfifo
     */
+
+   // Read channel latbuf -> outfifo
+   task automatic READ_get_latbuf_unroll_put_outfifo(ref logic [OUTFIFO_WIDTH-1:0] array[$:VISIBLE_DEPTH-1] );
+      TxHdr_t                     base_hdr;
+      logic [CCIP_DATA_WIDTH-1:0] data;
+      int 			  ptr;
+      TxHdr_t                     txhdr;
+      RxHdr_t                     rxhdr;
+      logic [TID_WIDTH-1:0] 	  tid;
+      int 			  line_i;
+      logic [41:0] 		  base_addr;
+      logic [15:0] 		  base_mdata;
+      ccip_vc_t                   base_vc;
+      ccip_len_t                  base_len;
+      int 			  loop_max;
+      begin
+	 unroll_active  = 0;
+	 ptr            = find_next_pop_slot();
+	 latbuf_pop_ptr = ptr;
+	 if (ptr != LATBUF_SLOT_INVALID) begin
+	    unroll_active = 1;
+	    base_hdr      = records[ptr].hdr[0];
+	    base_addr     = records[ptr].hdr[0].addr;
+	    base_mdata    = records[ptr].hdr[0].mdata;
+	    base_vc       = records[ptr].hdr[0].vc;
+	    base_len      = records[ptr].hdr[0].len;
+	    loop_max      = records[ptr].num_items + 1;
+	    // --------------------------------------------------------- //
+	    // VL0 request (broken out by infifo_to_vc)
+	    // --------------------------------------------------------- //
+	    if (isVL0Request(base_hdr)) begin
+	       txhdr         = records[ptr].hdr[0];
+	       tid           = records[ptr].tid[0];
+	       data          = records[ptr].data[0];
+	       // --------------- RxHdr ------------------ //
+	       rxhdr         = RxHdr_t'(0);
+	       rxhdr.vc_used = txhdr.vc;
+	       rxhdr.hitmiss = 0; // *FIXME*
+	       rxhdr.mdata   = base_mdata;
+	       rxhdr.clnum   = txhdr.len;
+	       rxhdr.format  = 0;
+	       // if (isReadRequest(txhdr)) begin
+	       rxhdr.resptype = ASE_RD_RSP;
+	       // end
+	       // else if (isWriteRequest(txhdr)) begin
+	       // 	  rxhdr.resptype = ASE_WR_RSP;
+	       // end
+	       array.push_back({ tid, data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
+         `ifdef ASE_DEBUG
+	       $fwrite(log_fd, "%d | record[%02d][0] size %1d with tid=%x unrolled TX=%s RX=%s \n", $time, ptr, loop_max, tid, return_txhdr(txhdr), return_rxhdr(rxhdr) );
+         `endif
+	    end
+	    // ---------------------------------------------- //
+	    // VHx MCL Read Request, unroll the request
+	    // ---------------------------------------------- //
+	    else if (isVHxRequest(base_hdr)) begin // && isReadRequest(base_hdr)) begin
+	       txhdr            = base_hdr;
+	       tid              = records[ptr].tid[0];
+	       data             = (CCIP_DATA_WIDTH)'(1'b0);
+	       for(int jj = 0; jj <= txhdr.len; jj = jj + 1) begin
+		  txhdr.addr       = base_addr + jj;
+		  // --------------- RxHdr ------------------ //
+		  rxhdr            = RxHdr_t'(0);
+		  rxhdr.hitmiss    = 0; // *FIXME*
+		  rxhdr.mdata      = base_mdata;
+		  rxhdr.clnum      = ccip_len_t'(jj);
+		  rxhdr.vc_used    = base_vc;
+		  rxhdr.resptype   = ASE_RD_RSP;
+		  array.push_back({ tid, data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
+         `ifdef ASE_DEBUG
+	    	  $fwrite(log_fd, "%d | record[%02d][%02d] size %1d with tid=%x unrolled TX=%s RX=%s \n", $time, ptr, jj, loop_max, tid, return_txhdr(txhdr), return_rxhdr(rxhdr) );
+         `endif
+	       end // for (int jj = 0; jj <= txhdr.len; jj = jj + 1)
+	    end
+	    // ----------------------------------------------------- //
+	    // Pop record and deactivate unroll
+	    // ----------------------------------------------------- //
+	    unroll_active = 0;
+	    records[ptr].record_pop = 1;
+	    @(posedge clk);
+	 end // if (ptr != LATBUF_SLOT_INVALID)
+      end
+   endtask
+
+   
+   // Write channel latbuf -> outfifo
+   task automatic WRITE_get_latbuf_unroll_put_outfifo(ref logic [OUTFIFO_WIDTH-1:0] array[$:VISIBLE_DEPTH-1] );
+      TxHdr_t                     base_hdr;
+      logic [CCIP_DATA_WIDTH-1:0] data;
+      int 			  ptr;
+      TxHdr_t                     txhdr;
+      RxHdr_t                     rxhdr;
+      logic [TID_WIDTH-1:0] 	  tid;
+      int 			  line_i;
+      logic [41:0] 		  base_addr;
+      logic [15:0] 		  base_mdata;
+      ccip_vc_t                   base_vc;
+      ccip_len_t                  base_len;
+      int 			  loop_max;
+      begin
+	 unroll_active  = 0;
+	 ptr            = find_next_pop_slot();
+	 latbuf_pop_ptr = ptr;
+	 if (ptr != LATBUF_SLOT_INVALID) begin
+	    unroll_active = 1;
+	    base_hdr      = records[ptr].hdr[0];
+	    base_addr     = records[ptr].hdr[0].addr;
+	    base_mdata    = records[ptr].hdr[0].mdata;
+	    base_vc       = records[ptr].hdr[0].vc;
+	    base_len      = records[ptr].hdr[0].len;
+	    loop_max      = records[ptr].num_items + 1;
+	    // --------------------------------------------------------- //
+	    // VL0 request (broken out by infifo_to_vc)
+	    // --------------------------------------------------------- //
+	    if (isVL0Request(base_hdr)) begin
+	       txhdr         = records[ptr].hdr[0];
+	       tid           = records[ptr].tid[0];
+	       data          = records[ptr].data[0];
+	       // --------------- RxHdr ------------------ //
+	       rxhdr         = RxHdr_t'(0);
+	       rxhdr.vc_used = txhdr.vc;
+	       rxhdr.hitmiss = 0; // *FIXME*
+	       rxhdr.mdata   = base_mdata;
+	       rxhdr.clnum   = txhdr.len;
+	       rxhdr.format  = 0;
+	       // if (isReadRequest(txhdr)) begin
+	       // 	  rxhdr.resptype = ASE_RD_RSP;
+	       // end
+	       // else if (isWriteRequest(txhdr)) begin
+	       rxhdr.resptype = ASE_WR_RSP;
+	       // end
+	       array.push_back({ tid, data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
+         `ifdef ASE_DEBUG
+	       $fwrite(log_fd, "%d | record[%02d][0] size %1d with tid=%x unrolled TX=%s RX=%s \n", $time, ptr, loop_max, tid, return_txhdr(txhdr), return_rxhdr(rxhdr) );
+         `endif
+	    end
+	    // ---------------------------------------------- //
+	    // VHx Write request
+	    // ---------------------------------------------- //
+	    else if (isVHxRequest(base_hdr)) begin // isWriteRequest(base_hdr)) begin
+	       for (int rec_i = 0; rec_i < loop_max ; rec_i = rec_i + 1) begin
+		  txhdr            = records[ptr].hdr[rec_i];
+		  tid              = records[ptr].tid[rec_i];
+		  data             = records[ptr].data[rec_i];
+		  // --------------- RxHdr ------------------ //
+		  rxhdr            = RxHdr_t'(0);
+		  rxhdr.clnum      = base_len;
+		  rxhdr.mdata      = base_mdata;
+		  rxhdr.vc_used    = base_vc;
+		  rxhdr.format     = 1;
+		  rxhdr.resptype   = ASE_WR_RSP;
+		  array.push_back({ tid, data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
+         `ifdef ASE_DEBUG
+	    	  $fwrite(log_fd, "%d | record[%02d][0] size %1d with tid=%x unrolled TX=%s RX=%s \n", $time, ptr, loop_max, tid, return_txhdr(txhdr), return_rxhdr(rxhdr) );
+         `endif
+	       end
+	    end
+	    // ----------------------------------------------------- //
+	    // Pop record and deactivate unroll
+	    // ----------------------------------------------------- //
+	    unroll_active = 0;
+	    records[ptr].record_pop = 1;
+	    @(posedge clk);
+	 end // if (ptr != LATBUF_SLOT_INVALID)
+      end
+   endtask
+
+   
+/*
    task automatic get_latbuf_unroll_put_outfifo(ref logic [OUTFIFO_WIDTH-1:0] array[$:VISIBLE_DEPTH-1] );
       TxHdr_t                     base_hdr;
       logic [CCIP_DATA_WIDTH-1:0] data;
@@ -1275,7 +1444,7 @@ module outoforder_wrf_channel
 	 end // if (ptr != LATBUF_SLOT_INVALID)
       end
    endtask
-
+*/
 
    // Wrfence response monitor
    always @(posedge clk) begin
@@ -1296,7 +1465,7 @@ module outoforder_wrf_channel
 
    /*
     * Latbuf -> outfifo process
-    */ 
+    */
    generate
       // ====================================================================== //
       // READ CHANNEL
@@ -1309,17 +1478,17 @@ module outoforder_wrf_channel
 	       vh1_wrfence_deassert <= 0;
 	       latbuf_pop_proc_status	<= 3'b000;
 	       glbl_wrfence_pop_status <= 0;
-	       unroll_active        <= 0;	 
+	       unroll_active        <= 0;
 	    end
 	    // empty outfifo on normal transactions
 	    else if (~outfifo_almfull && ~latbuf_empty ) begin
-	       get_latbuf_unroll_put_outfifo(outfifo);
+	       READ_get_latbuf_unroll_put_outfifo(outfifo);
 	       latbuf_pop_proc_status	<= 3'b110;
 	    end
 	    // Else
 	    else begin
-	       latbuf_pop_proc_status	<= 3'b000;
-	       unroll_active           <= 0;	 
+	       latbuf_pop_proc_status  <= 3'b000;
+	       unroll_active           <= 0;
 	    end
 	    // ------------------------------------------------------------------- //-
 	    // Book keeping
@@ -1346,11 +1515,11 @@ module outoforder_wrf_channel
 	       vh1_wrfence_deassert <= 0;
 	       latbuf_pop_proc_status	<= 3'b000;
 	       glbl_wrfence_pop_status <= 0;
-	       unroll_active        <= 0;	 
+	       unroll_active        <= 0;
 	    end
 	    // empty outfifo on normal transactions
 	    else if (~outfifo_almfull && ~latbuf_empty ) begin
-	       get_latbuf_unroll_put_outfifo(outfifo);
+	       WRITE_get_latbuf_unroll_put_outfifo(outfifo);
 	       vl0_wrfence_deassert <= 0;
 	       vh0_wrfence_deassert <= 0;
 	       vh1_wrfence_deassert <= 0;
@@ -1420,7 +1589,7 @@ module outoforder_wrf_channel
 	       vh1_wrfence_deassert <= 0;
 	       latbuf_pop_proc_status	<= 3'b000;
 	       glbl_wrfence_pop_status <= 0;
-	       unroll_active           <= 0;	 
+	       unroll_active           <= 0;
 	    end
 	    // ------------------------------------------------------------------- //-
 	    // Book keeping
@@ -1436,9 +1605,9 @@ module outoforder_wrf_channel
 	    end
 	 end // block: latbuf_pop_proc
 	 // ====================================================================== //
-      end	
+      end
    endgenerate
-   
+
    // Outfifo Full/Empty
    assign outfifo_almfull  = (outfifo_cnt > VISIBLE_FULL_THRESH) ? 1 : 0;
 
@@ -1532,10 +1701,10 @@ module outoforder_wrf_channel
       end
       else if (WRITE_CHANNEL == 1) begin
 	 if (write_en) begin
-	    check_array[ {hdr_in.len, tid_in} ] = hdr_in.addr;	    
+	    check_array[ {hdr_in.len, tid_in} ] = hdr_in.addr;
 	 end
 	 else if (valid_out) begin
-	    check_delete_from_array({txhdr_out.len, tid_out});	    
+	    check_delete_from_array({txhdr_out.len, tid_out});
 	 end
       end
    end
