@@ -133,10 +133,10 @@ SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 # SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
 SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+MPF_PLATFORM_BDX  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
 SNPS_VLOGAN_OPT+= +lint=all,noVCDE,noNS,NCEID,CAWM,TFIPC,IPDP,PCWM
+ifeq ($(ASE_DISABLE_LOGGER), 1)
+  SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
+endif
 ifeq ($(ASE_DEBUG), 1)
-  ifeq ($(ASE_DISABLE_LOGGER), 1)
-   SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
-  endif
   SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +warn
   SNPS_VLOGAN_OPT+= +define+ASE_DEBUG_DEEP
 endif
@@ -168,7 +168,8 @@ ifeq ($(ASE_DEBUG), 1)
 endif
 
 ## Simulation options
-VCS_SIM_OPT = -l run.log -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
+VCS_SIM_OPT = -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
+VCS_SIM_OPT+= -l run.log
 
 
 #########################################################################
