@@ -250,7 +250,7 @@ package ase_pkg;
    // Radix of ASE_fifo (subcomponent in latency scoreboard)
    parameter LATBUF_DEPTH_BASE2      = $clog2(LATBUF_NUM_TRANSACTIONS);
    // Wait station timer width
-   parameter TIMER_WIDTH             = 9;
+   parameter LATBUF_TIMER_WIDTH             = 9;
    
 
    /*

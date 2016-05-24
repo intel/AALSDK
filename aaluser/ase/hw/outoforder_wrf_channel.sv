@@ -357,7 +357,7 @@ module outoforder_wrf_channel
 		     TxHdr_t                     hdr  [0:LATBUF_MAX_TXN-1]; // in
 		     logic [CCIP_DATA_WIDTH-1:0] data [0:LATBUF_MAX_TXN-1]; // in
 		     logic [TID_WIDTH-1:0] 	 tid  [0:LATBUF_MAX_TXN-1]; // in
-		     logic [TIMER_WIDTH-1:0] 	 ctr_out;       // out
+		     logic [LATBUF_TIMER_WIDTH-1:0] 	 ctr_out;       // out
 		     int 			 num_items;     // in
 		     logic 			 record_valid;  // out
 		     logic 			 record_ready;  // out

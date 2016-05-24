@@ -2484,7 +2484,7 @@ module ccip_emulator
    endfunction
 
    // Iterate-print
-   function void print_assoc_array(ref longint assoc_array[*]);
+   function automatic void print_assoc_array(ref longint assoc_array[*]);
       longint temp;      
       begin
 	 if (assoc_array.first(temp))
