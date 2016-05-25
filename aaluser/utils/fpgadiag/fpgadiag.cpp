@@ -708,21 +708,29 @@ void CMyApp::serviceFreed(TransactionID const &tid)
 
 void CMyApp::StartVTP()
 {
+	// Ask ALI for a BBB with MPF's feature ID and the expected VTP GUID
+	NamedValueSet filter;
+	filter.Add( ALI_GETFEATURE_TYPE_KEY, static_cast<ALI_GETFEATURE_TYPE_DATATYPE>(ALI_DFH_TYPE_BBB) );
+	filter.Add( ALI_GETFEATURE_ID_KEY, static_cast<ALI_GETFEATURE_ID_DATATYPE>(MPF_FEATURE_ID) );
+	filter.Add( ALI_GETFEATURE_GUID_KEY, (ALI_GETFEATURE_GUID_DATATYPE)MPF_VTP_BBB_GUID );
+
+	// FIXME: This is here only because of a caching bug in
+	// ASEALIAFU::mmioGetFeatureAddress() in SR-5.0.2-Beta. Once fixed
+	// this call can be removed.
+
+	m_pALIMMIOService->mmioGetAddress();
+
+	if ( false == m_pALIMMIOService->mmioGetFeatureOffset( &m_VTPDFHOffset, filter ) ) {
+	 // No VTP found - this could mean that VTP is not enabled in MPF
+	  m_VTPActive = false;
+	  return;
+	}
+
+   m_VTPActive = true;
 
    INFO("Searching for VTP Service");
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
-
-   // Ask the ALI service for the VTP device feature header (DFH)
-   // featureFilter.Add(ALI_GETFEATURE_ID_KEY, static_cast<ALI_GETFEATURE_ID_DATATYPE>(25));
-   // featureFilter.Add(ALI_GETFEATURE_TYPE_KEY, static_cast<ALI_GETFEATURE_TYPE_DATATYPE>(2));
-   // featureFilter.Add(ALI_GETFEATURE_GUID_KEY, static_cast<ALI_GETFEATURE_GUID_DATATYPE>(sGUID));
-   // if (true != m_pALIMMIOService->mmioGetFeatureOffset(&m_VTPDFHOffset, featureFilter)) {
-   //    ERR("No VTP feature\n");
-   //    m_bIsOK = false;
-   //    m_Result = -1;
-   //    goto done_1;
-   // }
 
    // Allocate VTP service
    // Service Library to use
