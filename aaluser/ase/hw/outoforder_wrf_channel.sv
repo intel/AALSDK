@@ -342,9 +342,9 @@ module outoforder_wrf_channel
       end
    end
 
-   //////////////////////////////////////////////////////////////
-   // Scoreboard logic
-   //////////////////////////////////////////////////////////////
+   /*
+    * Scoreboard logic
+    */ 
    // Enumerate states
    typedef enum {LatSc_Disabled,
 		 LatSc_Countdown,
@@ -434,6 +434,7 @@ module outoforder_wrf_channel
       end
    endfunction
 
+   
    /*
     * Write MCL select VC
     */

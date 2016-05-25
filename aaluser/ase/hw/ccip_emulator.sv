@@ -266,7 +266,7 @@ module ccip_emulator
    assign pck_cp2af_softReset = SoftReset;
 
    // Rx/Tx mapping from ccip_if_pkg to ASE's internal format
-   always @(*) begin
+   always @(*) begin : ccip2ase_remap
       // Rx OUT (CH0)
       // If MMIO RDWR request, cast directly to interface format
       if (C0RxMmioRdValid|C0RxMmioWrValid) begin

@@ -138,7 +138,6 @@ ifeq ($(ASE_DISABLE_LOGGER), 1)
 endif
 ifeq ($(ASE_DEBUG), 1)
   SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +warn
-  SNPS_VLOGAN_OPT+= +define+ASE_DEBUG_DEEP
 endif
 ifdef GLS_SIM
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
@@ -159,14 +158,14 @@ SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) +lint=TFIPC-L
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
   SNPS_VCS_OPT+=  -race
-  ifeq ($(ASE_PROFILE_ENABLE), 1)
-    SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
-    SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
-    SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
-    SNPS_VCS_OPT+= -simprofile +prof
-  endif
-# SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 endif
+ifeq ($(ASE_PROFILE_ENABLE), 1)
+  SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
+  SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
+  SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
+  SNPS_VCS_OPT+= -simprofile +prof
+endif
+# SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 
 ## Simulation options
 VCS_SIM_OPT = -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
