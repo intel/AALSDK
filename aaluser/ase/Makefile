@@ -162,7 +162,7 @@ endif
 ifeq ($(ASE_PROFILE_ENABLE), 1)
   SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
   SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
-  SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
+  SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir coverage
   SNPS_VCS_OPT+= -simprofile +prof
 endif
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
@@ -170,6 +170,9 @@ endif
 ## Simulation options
 VCS_SIM_OPT = -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
 VCS_SIM_OPT+= -l run.log
+ifeq ($(ASE_PROFILE_ENABLE), 1)
+  VCS_SIM_OPT+= -cm line+cond+fsm+tgl+assert+path
+endif
 
 
 #########################################################################
@@ -507,8 +510,8 @@ scan-build:
 # Coverage
 coverage:
 	cd $(WORK) ; lcov --base-directory . --directory . --capture --output-file ase_libs.info ; genhtml -o lcov_coverage/ ase_libs.info ; cd -
-#	urg -dir $(WORK)/coverage.vdb ; cd -
-#	firefox $(WORK)/urgReport/dashboard.html &
+	cd $(WORK) ; urg -dir coverage.vdb ; cd -
+	firefox ./$(WORK)/urgReport/dashboard.html &
 	firefox ./$(WORK)/lcov_coverage/index.html &
 	firefox ./$(WORK)/profileReport.html &
 
