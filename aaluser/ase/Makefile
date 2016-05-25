@@ -83,16 +83,16 @@ MENT_COMMAND = $(shell command -v vsim)
 CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1
 CC_OPT+= -Wall 
 ifeq ($(ASE_DEBUG), 1)
-CC_OPT+= -D ASE_DEBUG=1
+  CC_OPT+= -D ASE_DEBUG=1
 endif
 ifeq ($(SIMULATOR), VCS)
-CC_OPT+= -I $(VCS_HOME)/include/
+  CC_OPT+= -I $(VCS_HOME)/include/
 endif
 ifeq ($(SIMULATOR), QUESTA)
-CC_OPT+= -I $(MTI_HOME)/include/
+  CC_OPT+= -I $(MTI_HOME)/include/
 endif
 ifeq ($(ASE_LCOV_ENABLE), 1)
-CC_OPT+= -fprofile-arcs -ftest-coverage
+  CC_OPT+= -fprofile-arcs -ftest-coverage
 endif
 
 
@@ -115,7 +115,7 @@ WORK = work
 # -message queues and pthreads
 ASE_LD_SWITCHES = -lrt -lpthread -lstdc++
 ifeq ($(ASE_LCOV_ENABLE), 1)
-ASE_LD_SWITCHES+= -lgcov
+  ASE_LD_SWITCHES+= -lgcov
 endif
 
 
@@ -161,8 +161,9 @@ ifeq ($(ASE_DEBUG), 1)
 endif
 ifeq ($(ASE_PROFILE_ENABLE), 1)
   SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
-  SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
-  SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir coverage
+  SNPS_VCS_OPT+= -cm line -cm cond -cm fsm -cm tgl -cm branch
+#  SNPS_VCS_OPT+= -cm_cond basic+allops
+#  SNPS_VCS_OPT+= -cm_dir coverage
   SNPS_VCS_OPT+= -simprofile +prof
 endif
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
@@ -171,7 +172,7 @@ endif
 VCS_SIM_OPT = -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
 VCS_SIM_OPT+= -l run.log
 ifeq ($(ASE_PROFILE_ENABLE), 1)
-  VCS_SIM_OPT+= -cm line+cond+fsm+tgl+assert+path
+  VCS_SIM_OPT+=  -cm line -cm cond -cm fsm -cm tgl -cm branch
 endif
 
 
@@ -328,8 +329,8 @@ ifdef GLS_SIM
     endif
   else
     ifeq ($(wildcard $(GLS_SAMPLE_LIB)),)
-	@echo "**ERROR** : env(QUARTUS_HOME) not set up correctly."
-	@echo "**ERROR** : Cannot find Quartus library files in known locations"
+	@echo "** ERROR **: env(QUARTUS_HOME) not set up correctly."
+	@echo "** ERROR **: Cannot find Quartus library files in known locations"
     endif
   endif
 endif
@@ -337,21 +338,17 @@ endif
 ifeq ($(SIMULATOR), VCS)
   ifndef VCS_HOME
 	@echo "**ERROR** : env(VCS_HOME) is not set ! svdpi.h cannot be found !"
-#	exit 1
   endif
   ifndef SNPS_COMMAND
 	@echo "**ERROR** : Synopsys commands (vlogan, vcs) not found !"
-#	exit 1
   endif
 else 
   ifeq ($(SIMULATOR), QUESTA)
     ifndef MTI_HOME
 	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
-#	exit 1
     endif	
     ifndef MENT_COMMAND
 	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
-#	exit 1
     endif
   else
      @echo "**ERROR**: Unknown RTL simulator tool in use --- this is unsupported !"
@@ -510,7 +507,7 @@ scan-build:
 # Coverage
 coverage:
 	cd $(WORK) ; lcov --base-directory . --directory . --capture --output-file ase_libs.info ; genhtml -o lcov_coverage/ ase_libs.info ; cd -
-	cd $(WORK) ; urg -dir coverage.vdb ; cd -
+	cd $(WORK) ; urg -full64 -dir ase_simv.vdb ; cd -
 	firefox ./$(WORK)/urgReport/dashboard.html &
 	firefox ./$(WORK)/lcov_coverage/index.html &
 	firefox ./$(WORK)/profileReport.html &
