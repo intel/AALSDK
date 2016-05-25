@@ -811,15 +811,119 @@ module outoforder_wrf_channel
     * Latbuf assignment process
     * - Read and update record in latency scoreboard
     */
-   function automatic void get_vc_put_latbuf (ref logic [FIFO_WIDTH-1:0] array[$:INTERNAL_FIFO_DEPTH-1],
-						ref logic 		  wrfence_flag,
-						ref logic [TID_WIDTH-1:0] wrfence_tid
-						);
-      logic [CCIP_TX_HDR_WIDTH-1:0] 					  array_hdr;
-      logic [CCIP_DATA_WIDTH-1:0] 					  array_data;
-      logic [TID_WIDTH-1:0] 						  array_tid;
+   // Read channel VC->LATBUF glue
+   function automatic void READ_get_vc_put_latbuf (ref logic [FIFO_WIDTH-1:0] array[$:INTERNAL_FIFO_DEPTH-1]);      
+      // ref logic 		     wrfence_flag,
+      // ref logic [TID_WIDTH-1:0] wrfence_tid
+      // );
+      logic [CCIP_TX_HDR_WIDTH-1:0] 					     array_hdr;
+      logic [CCIP_DATA_WIDTH-1:0] 					     array_data;
+      logic [TID_WIDTH-1:0] 						     array_tid;
       TxHdr_t                                                             hdr;
-      int 								  ptr;
+      int 								     ptr;
+      begin
+	 // Find a pointer to use
+	 // if (~mcl_write_in_progress) begin
+	 ptr = find_next_push_slot();
+	 latbuf_push_ptr = ptr;
+	 // end
+	 // else begin
+	 //    ptr = latbuf_push_ptr;
+	 // end
+	 // ------------------------------------------------------ //
+	 // If slot is legal only then proceed
+	 // ------------------------------------------------------ //
+	 if (ptr != LATBUF_SLOT_INVALID) begin
+	    {array_tid, array_data, array_hdr} = array.pop_front();
+	    hdr = TxHdr_t'(array_hdr);
+	    // Record base length
+	    // if (hdr.sop) begin
+	    // mcl_txn_iter = 0;
+	    record_len = int'(hdr.len);
+	    // end
+	    // ------------------------------------------------------ //
+	    // If Transaction is a Wrfence
+	    // ------------------------------------------------------ //
+	    //    if (hdr.reqtype == ASE_WRFENCE) begin
+	    //       wrfence_flag = 1;
+	    //       wrfence_tid  = array_tid;
+	    // `ifdef ASE_DEBUG
+	    //       $fwrite(log_fd, "%d | latbuf_push : saw Wrfence on tid=%x on channel %s\n", $time, array_tid, ase_channel_type(hdr.vc));
+	    // `endif
+	    //    end
+	    // ------------------------------------------------------ //
+	    // If Transaction is a not a WrFence
+	    // ------------------------------------------------------ //
+	    // else begin
+	    // ------------------------------------------------------ //
+	    // If Transaction is a READ
+	    // ------------------------------------------------------ //
+	    // if (isReadRequest(hdr)) begin
+	    records[ptr].hdr[0]       = hdr;
+	    records[ptr].data[0]         = array_data;
+	    records[ptr].tid[0]          = array_tid;
+	    records[ptr].record_push  = 1;
+	    records[ptr].record_valid = 1;
+	    records[ptr].num_items    = int'(ASE_1CL);
+	    mcl_write_in_progress     = 0;
+	 `ifdef ASE_DEBUG
+	    $fwrite(log_fd, "%d | latbuf_push : tid=%x TX=%s sent to record[%02d][0]\n", $time, array_tid, return_txhdr(hdr), ptr);
+	 `endif
+	    // end
+	    // ------------------------------------------------------ //
+	    // If Transaction is a WRITE
+	    // ------------------------------------------------------ //
+	    //       else if (isWriteRequest(hdr)) begin
+	    // 	  // ------------------------------------------------------ //
+	    // 	  // If a VHx transaction
+	    // 	  // ------------------------------------------------------ //
+	    // 	  if (isVHxRequest(hdr)) begin
+	    // 	     records[ptr].hdr[mcl_txn_iter]  = hdr;
+	    // 	     records[ptr].data[mcl_txn_iter] = array_data;
+	    // 	     records[ptr].tid[mcl_txn_iter]  = array_tid;
+	    // 	     records[ptr].record_push     = 1;
+	    // 	     records[ptr].record_valid    = 1;
+	    // 	     records[ptr].num_items       = record_len;
+	    // 	     if (mcl_txn_iter != record_len)
+	    // 	       mcl_write_in_progress      = 1;
+	    // 	     else
+	    // 	       mcl_write_in_progress      = 0;
+	    // `ifdef ASE_DEBUG
+	    // 	     $fwrite(log_fd, "%d | latbuf_push : tid=%x TX=%s sent to record[%02d][%02d]\n", $time, array_tid, return_txhdr(hdr), ptr, mcl_txn_iter);
+	    // `endif
+	    // 	     mcl_txn_iter = mcl_txn_iter + 1;
+	    // 	  end // if (isVHxRequest(hdr))
+	    // 	  // ------------------------------------------------------ //
+	    // 	  // If a VL0 transaction
+	    // 	  // ------------------------------------------------------ //
+	    // 	  else begin
+	    // 	     records[ptr].hdr[0]       = hdr;
+	    // 	     records[ptr].data[0]      = array_data;
+	    // 	     records[ptr].tid[0]       = array_tid;
+	    // 	     records[ptr].record_push  = 1;
+	    // 	     records[ptr].record_valid = 1;
+	    // 	     records[ptr].num_items    = int'(ASE_1CL);
+	    // 	     mcl_write_in_progress     = 0;
+	    // `ifdef ASE_DEBUG
+	    // 	     $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d][0]\n", $time, array_tid, ptr);
+	    // `endif
+	    // 	  end // else: !if(isVHxRequest(hdr))		  
+	    //       end // if (isWriteRequest(hdr))	       
+	 end // if (ptr != LATBUF_SLOT_INVALID)	 
+      end
+   endfunction
+
+   
+   // Write channel VC->LATBUF glue
+   function automatic void WRITE_get_vc_put_latbuf (ref logic [FIFO_WIDTH-1:0] array[$:INTERNAL_FIFO_DEPTH-1],
+						    ref logic 		      wrfence_flag,
+						    ref logic [TID_WIDTH-1:0] wrfence_tid
+						    );
+      logic [CCIP_TX_HDR_WIDTH-1:0] 					      array_hdr;
+      logic [CCIP_DATA_WIDTH-1:0] 					      array_data;
+      logic [TID_WIDTH-1:0] 						      array_tid;
+      TxHdr_t                                                                 hdr;
+      int 								      ptr;
       begin
 	 // Find a pointer to use
 	 if (~mcl_write_in_progress) begin
@@ -920,95 +1024,160 @@ module outoforder_wrf_channel
    typedef enum {Select_VL0, Select_VH0, Select_VH1} lssel_state;
    lssel_state vc_pop;
 
-   // Latbuf push process
-   always @(posedge clk) begin : latbuf_push_proc
-      if (rst) begin
-   	 vc_pop <= Select_VL0;
-	 vl0_wrfence_flag <= 0;
-	 vh0_wrfence_flag <= 0;
-	 vh1_wrfence_flag <= 0;
-	 mcl_write_in_progress <= 0;
-	 for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
-	    records[ii].record_push <= 0;
-	    records[ii].record_valid <= 0;
-	 end
-      end
-      else begin
-	 // If input arrays are available
-   	 case (vc_pop)
-   	   Select_VL0:
-   	     begin
-		if (~vl0_wrfence_flag && ~vl0_array_empty && ~latbuf_almfull) begin
-		   get_vc_put_latbuf(vl0_array, vl0_wrfence_flag, vl0_wrfence_tid );
-		end
-		if (~mcl_write_in_progress) begin
-   		   vc_pop <= Select_VH0;
-		end
-   	     end
-
-   	   Select_VH0:
-   	     begin
-		if (~vh0_wrfence_flag && ~vh0_array_empty && ~latbuf_almfull) begin
-		   get_vc_put_latbuf(vh0_array, vh0_wrfence_flag, vh0_wrfence_tid );
-		end
-		if (~mcl_write_in_progress) begin
-   		   vc_pop <= Select_VH1;
-		end
-   	     end
-
-   	   Select_VH1:
-   	     begin
-		if (~vh1_wrfence_flag && ~vh1_array_empty && ~latbuf_almfull) begin
-		   get_vc_put_latbuf(vh1_array, vh1_wrfence_flag, vh1_wrfence_tid );
-		end
-		if (~mcl_write_in_progress) begin
-   		   vc_pop <= Select_VL0;
-		end
-   	     end
-
-   	   default:
-   	     begin
-   		vc_pop <= Select_VL0;
-   	     end
-
-   	 endcase // case (vc_pop)
-	 // ------------------------------------------------------------- //
-	 // WrFence assertion logic (assertions in WRITE mode only)
-	 // ------------------------------------------------------------- //
-	 if (WRITE_CHANNEL == 1) begin
-	    // If a VL0 fence is set, wait till downstream gets cleared
-	    if (vl0_wrfence_flag && (vl0_records_cnt == 0) && vl0_wrfence_deassert) begin
+   generate
+      // ====================================================================== //
+      // READ CHANNEL
+      // ====================================================================== //
+      if (WRITE_CHANNEL == 0) begin
+	 always @(posedge clk) begin : latbuf_push_proc
+	    if (rst) begin
+   	       vc_pop <= Select_VL0;
 	       vl0_wrfence_flag <= 0;
-	 `ifdef ASE_DEBUG
-	       $fwrite(log_fd, "%d | VL0 write fence popped\n", $time);
-	 `endif
-	    end
-	    // If a VH0 fence is set, wait till downstream gets cleared
-	    if (vh0_wrfence_flag && (vh0_records_cnt == 0) && vh0_wrfence_deassert) begin
 	       vh0_wrfence_flag <= 0;
-	 `ifdef ASE_DEBUG
-	       $fwrite(log_fd, "%d | VH0 write fence popped\n", $time);
-	 `endif
-	    end
-	    // If a VH0 fence is set, wait till downstream gets cleared
-	    if (vh1_wrfence_flag && (vh1_records_cnt == 0) && vh1_wrfence_deassert) begin
 	       vh1_wrfence_flag <= 0;
-	 `ifdef ASE_DEBUG
-	       $fwrite(log_fd, "%d | VH1 write fence popped\n", $time);
-	 `endif
+	       mcl_write_in_progress <= 0;
+	       for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
+		  records[ii].record_push <= 0;
+		  records[ii].record_valid <= 0;
+	       end
 	    end
-	 end // if (WRITE_CHANNEL == 1)
-	 // -------------------------------------------------- //
-	 // Release latbuf_used & record_push
-	 // -------------------------------------------------- //
-	 for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
-	    if (records[ii].state == LatSc_Countdown) begin
-	       records[ii].record_push <= 0;
-	       records[ii].record_valid <= 0;
+	    else begin
+	       // If input arrays are available
+   	       case (vc_pop)
+   		 Select_VL0:
+   		   begin
+		      if (~vl0_wrfence_flag && ~vl0_array_empty && ~latbuf_almfull) begin
+			 READ_get_vc_put_latbuf(vl0_array);
+		      end
+   		      vc_pop <= Select_VH0;
+   		   end
+
+   		 Select_VH0:
+   		   begin
+		      if (~vh0_wrfence_flag && ~vh0_array_empty && ~latbuf_almfull) begin
+			 READ_get_vc_put_latbuf(vh0_array);
+		      end
+   		      vc_pop <= Select_VH1;
+   		   end
+
+   		 Select_VH1:
+   		   begin
+		      if (~vh1_wrfence_flag && ~vh1_array_empty && ~latbuf_almfull) begin
+			 READ_get_vc_put_latbuf(vh1_array);
+		      end
+   		      vc_pop <= Select_VL0;
+   		   end
+
+   		 default:
+   		   begin
+   		      vc_pop <= Select_VL0;
+   		   end
+
+   	       endcase // case (vc_pop)
+	       // -------------------------------------------------- //
+	       // Release latbuf_used & record_push
+	       // -------------------------------------------------- //
+	       for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
+		  if (records[ii].state == LatSc_Countdown) begin
+		     records[ii].record_push <= 0;
+		     records[ii].record_valid <= 0;
+		  end
+	       end
 	    end
 	 end
       end
-   end
+      // ====================================================================== //
+      // WRITE CHANNEL
+      // ====================================================================== //
+      else if (WRITE_CHANNEL == 1) begin
+	 always @(posedge clk) begin : latbuf_push_proc
+	    if (rst) begin
+   	       vc_pop <= Select_VL0;
+	       vl0_wrfence_flag <= 0;
+	       vh0_wrfence_flag <= 0;
+	       vh1_wrfence_flag <= 0;
+	       mcl_write_in_progress <= 0;
+	       for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
+		  records[ii].record_push <= 0;
+		  records[ii].record_valid <= 0;
+	       end
+	    end
+	    else begin
+	       // If input arrays are available
+   	       case (vc_pop)
+   		 Select_VL0:
+   		   begin
+		      if (~vl0_wrfence_flag && ~vl0_array_empty && ~latbuf_almfull) begin
+			 WRITE_get_vc_put_latbuf(vl0_array, vl0_wrfence_flag, vl0_wrfence_tid );
+		      end
+		      if (~mcl_write_in_progress) begin
+   			 vc_pop <= Select_VH0;
+		      end
+   		   end
+
+   		 Select_VH0:
+   		   begin
+		      if (~vh0_wrfence_flag && ~vh0_array_empty && ~latbuf_almfull) begin
+			 WRITE_get_vc_put_latbuf(vh0_array, vh0_wrfence_flag, vh0_wrfence_tid );
+		      end
+		      if (~mcl_write_in_progress) begin
+   			 vc_pop <= Select_VH1;
+		      end
+   		   end
+
+   		 Select_VH1:
+   		   begin
+		      if (~vh1_wrfence_flag && ~vh1_array_empty && ~latbuf_almfull) begin
+			 WRITE_get_vc_put_latbuf(vh1_array, vh1_wrfence_flag, vh1_wrfence_tid );
+		      end
+		      if (~mcl_write_in_progress) begin
+   			 vc_pop <= Select_VL0;
+		      end
+   		   end
+
+   		 default:
+   		   begin
+   		      vc_pop <= Select_VL0;
+   		   end
+
+   	       endcase // case (vc_pop)
+	       // ------------------------------------------------------------- //
+	       // WrFence assertion logic (assertions in WRITE mode only)
+	       // ------------------------------------------------------------- //
+	       // If a VL0 fence is set, wait till downstream gets cleared
+	       if (vl0_wrfence_flag && (vl0_records_cnt == 0) && vl0_wrfence_deassert) begin
+		  vl0_wrfence_flag <= 0;
+	 `ifdef ASE_DEBUG
+		  $fwrite(log_fd, "%d | VL0 write fence popped\n", $time);
+	 `endif
+	       end
+	       // If a VH0 fence is set, wait till downstream gets cleared
+	       if (vh0_wrfence_flag && (vh0_records_cnt == 0) && vh0_wrfence_deassert) begin
+		  vh0_wrfence_flag <= 0;
+	 `ifdef ASE_DEBUG
+		  $fwrite(log_fd, "%d | VH0 write fence popped\n", $time);
+	 `endif
+	       end
+	       // If a VH0 fence is set, wait till downstream gets cleared
+	       if (vh1_wrfence_flag && (vh1_records_cnt == 0) && vh1_wrfence_deassert) begin
+		  vh1_wrfence_flag <= 0;
+	 `ifdef ASE_DEBUG
+		  $fwrite(log_fd, "%d | VH1 write fence popped\n", $time);
+	 `endif
+	       end
+	       // -------------------------------------------------- //
+	       // Release latbuf_used & record_push
+	       // -------------------------------------------------- //
+	       for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
+		  if (records[ii].state == LatSc_Countdown) begin
+		     records[ii].record_push <= 0;
+		     records[ii].record_valid <= 0;
+		  end
+	       end	       
+	    end // else: !if(rst)	    
+	 end // block: latbuf_push_proc	 
+      end
+   endgenerate
 
 
    /*
