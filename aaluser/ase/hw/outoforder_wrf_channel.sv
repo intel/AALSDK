@@ -813,9 +813,6 @@ module outoforder_wrf_channel
     */
    // Read channel VC->LATBUF glue
    function automatic void READ_get_vc_put_latbuf (ref logic [FIFO_WIDTH-1:0] array[$:INTERNAL_FIFO_DEPTH-1]);      
-      // ref logic 		     wrfence_flag,
-      // ref logic [TID_WIDTH-1:0] wrfence_tid
-      // );
       logic [CCIP_TX_HDR_WIDTH-1:0] 					     array_hdr;
       logic [CCIP_DATA_WIDTH-1:0] 					     array_data;
       logic [TID_WIDTH-1:0] 						     array_tid;
@@ -823,42 +820,15 @@ module outoforder_wrf_channel
       int 								     ptr;
       begin
 	 // Find a pointer to use
-	 // if (~mcl_write_in_progress) begin
 	 ptr = find_next_push_slot();
 	 latbuf_push_ptr = ptr;
-	 // end
-	 // else begin
-	 //    ptr = latbuf_push_ptr;
-	 // end
 	 // ------------------------------------------------------ //
 	 // If slot is legal only then proceed
 	 // ------------------------------------------------------ //
 	 if (ptr != LATBUF_SLOT_INVALID) begin
 	    {array_tid, array_data, array_hdr} = array.pop_front();
 	    hdr = TxHdr_t'(array_hdr);
-	    // Record base length
-	    // if (hdr.sop) begin
-	    // mcl_txn_iter = 0;
 	    record_len = int'(hdr.len);
-	    // end
-	    // ------------------------------------------------------ //
-	    // If Transaction is a Wrfence
-	    // ------------------------------------------------------ //
-	    //    if (hdr.reqtype == ASE_WRFENCE) begin
-	    //       wrfence_flag = 1;
-	    //       wrfence_tid  = array_tid;
-	    // `ifdef ASE_DEBUG
-	    //       $fwrite(log_fd, "%d | latbuf_push : saw Wrfence on tid=%x on channel %s\n", $time, array_tid, ase_channel_type(hdr.vc));
-	    // `endif
-	    //    end
-	    // ------------------------------------------------------ //
-	    // If Transaction is a not a WrFence
-	    // ------------------------------------------------------ //
-	    // else begin
-	    // ------------------------------------------------------ //
-	    // If Transaction is a READ
-	    // ------------------------------------------------------ //
-	    // if (isReadRequest(hdr)) begin
 	    records[ptr].hdr[0]       = hdr;
 	    records[ptr].data[0]         = array_data;
 	    records[ptr].tid[0]          = array_tid;
@@ -869,46 +839,6 @@ module outoforder_wrf_channel
 	 `ifdef ASE_DEBUG
 	    $fwrite(log_fd, "%d | latbuf_push : tid=%x TX=%s sent to record[%02d][0]\n", $time, array_tid, return_txhdr(hdr), ptr);
 	 `endif
-	    // end
-	    // ------------------------------------------------------ //
-	    // If Transaction is a WRITE
-	    // ------------------------------------------------------ //
-	    //       else if (isWriteRequest(hdr)) begin
-	    // 	  // ------------------------------------------------------ //
-	    // 	  // If a VHx transaction
-	    // 	  // ------------------------------------------------------ //
-	    // 	  if (isVHxRequest(hdr)) begin
-	    // 	     records[ptr].hdr[mcl_txn_iter]  = hdr;
-	    // 	     records[ptr].data[mcl_txn_iter] = array_data;
-	    // 	     records[ptr].tid[mcl_txn_iter]  = array_tid;
-	    // 	     records[ptr].record_push     = 1;
-	    // 	     records[ptr].record_valid    = 1;
-	    // 	     records[ptr].num_items       = record_len;
-	    // 	     if (mcl_txn_iter != record_len)
-	    // 	       mcl_write_in_progress      = 1;
-	    // 	     else
-	    // 	       mcl_write_in_progress      = 0;
-	    // `ifdef ASE_DEBUG
-	    // 	     $fwrite(log_fd, "%d | latbuf_push : tid=%x TX=%s sent to record[%02d][%02d]\n", $time, array_tid, return_txhdr(hdr), ptr, mcl_txn_iter);
-	    // `endif
-	    // 	     mcl_txn_iter = mcl_txn_iter + 1;
-	    // 	  end // if (isVHxRequest(hdr))
-	    // 	  // ------------------------------------------------------ //
-	    // 	  // If a VL0 transaction
-	    // 	  // ------------------------------------------------------ //
-	    // 	  else begin
-	    // 	     records[ptr].hdr[0]       = hdr;
-	    // 	     records[ptr].data[0]      = array_data;
-	    // 	     records[ptr].tid[0]       = array_tid;
-	    // 	     records[ptr].record_push  = 1;
-	    // 	     records[ptr].record_valid = 1;
-	    // 	     records[ptr].num_items    = int'(ASE_1CL);
-	    // 	     mcl_write_in_progress     = 0;
-	    // `ifdef ASE_DEBUG
-	    // 	     $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d][0]\n", $time, array_tid, ptr);
-	    // `endif
-	    // 	  end // else: !if(isVHxRequest(hdr))		  
-	    //       end // if (isWriteRequest(hdr))	       
 	 end // if (ptr != LATBUF_SLOT_INVALID)	 
       end
    endfunction
@@ -955,65 +885,45 @@ module outoforder_wrf_channel
 	 `endif
 	    end
 	    // ------------------------------------------------------ //
-	    // If Transaction is a not a WrFence
+	    // If Transaction is a WRITE
 	    // ------------------------------------------------------ //
-	    else begin
+	    else if (isWriteRequest(hdr)) begin
 	       // ------------------------------------------------------ //
-	       // If Transaction is a READ
+	       // If a VHx transaction
 	       // ------------------------------------------------------ //
-	       if (isReadRequest(hdr)) begin
+	       if (isVHxRequest(hdr)) begin
+		  records[ptr].hdr[mcl_txn_iter]  = hdr;
+		  records[ptr].data[mcl_txn_iter] = array_data;
+		  records[ptr].tid[mcl_txn_iter]  = array_tid;
+		  records[ptr].record_push     = 1;
+		  records[ptr].record_valid    = 1;
+		  records[ptr].num_items       = record_len;
+		  if (mcl_txn_iter != record_len)
+		    mcl_write_in_progress      = 1;
+		  else
+		    mcl_write_in_progress      = 0;
+	 `ifdef ASE_DEBUG
+		  $fwrite(log_fd, "%d | latbuf_push : tid=%x TX=%s sent to record[%02d][%02d]\n", $time, array_tid, return_txhdr(hdr), ptr, mcl_txn_iter);
+	 `endif
+		  mcl_txn_iter = mcl_txn_iter + 1;
+	       end // if (isVHxRequest(hdr))
+	       // ------------------------------------------------------ //
+	       // If a VL0 transaction
+	       // ------------------------------------------------------ //
+	       else begin
 		  records[ptr].hdr[0]       = hdr;
-		  records[ptr].data[0]         = array_data;
-		  records[ptr].tid[0]          = array_tid;
+		  records[ptr].data[0]      = array_data;
+		  records[ptr].tid[0]       = array_tid;
 		  records[ptr].record_push  = 1;
 		  records[ptr].record_valid = 1;
 		  records[ptr].num_items    = int'(ASE_1CL);
 		  mcl_write_in_progress     = 0;
 	 `ifdef ASE_DEBUG
-		  $fwrite(log_fd, "%d | latbuf_push : tid=%x TX=%s sent to record[%02d][0]\n", $time, array_tid, return_txhdr(hdr), ptr);
+		  $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d][0]\n", $time, array_tid, ptr);
 	 `endif
-	       end
-	       // ------------------------------------------------------ //
-	       // If Transaction is a WRITE
-	       // ------------------------------------------------------ //
-	       else if (isWriteRequest(hdr)) begin
-		  // ------------------------------------------------------ //
-		  // If a VHx transaction
-		  // ------------------------------------------------------ //
-		  if (isVHxRequest(hdr)) begin
-		     records[ptr].hdr[mcl_txn_iter]  = hdr;
-		     records[ptr].data[mcl_txn_iter] = array_data;
-		     records[ptr].tid[mcl_txn_iter]  = array_tid;
-		     records[ptr].record_push     = 1;
-		     records[ptr].record_valid    = 1;
-		     records[ptr].num_items       = record_len;
-		     if (mcl_txn_iter != record_len)
-		       mcl_write_in_progress      = 1;
-		     else
-		       mcl_write_in_progress      = 0;
-	 `ifdef ASE_DEBUG
-		     $fwrite(log_fd, "%d | latbuf_push : tid=%x TX=%s sent to record[%02d][%02d]\n", $time, array_tid, return_txhdr(hdr), ptr, mcl_txn_iter);
-	 `endif
-		     mcl_txn_iter = mcl_txn_iter + 1;
-		  end // if (isVHxRequest(hdr))
-		  // ------------------------------------------------------ //
-		  // If a VL0 transaction
-		  // ------------------------------------------------------ //
-		  else begin
-		     records[ptr].hdr[0]       = hdr;
-		     records[ptr].data[0]      = array_data;
-		     records[ptr].tid[0]       = array_tid;
-		     records[ptr].record_push  = 1;
-		     records[ptr].record_valid = 1;
-		     records[ptr].num_items    = int'(ASE_1CL);
-		     mcl_write_in_progress     = 0;
-	 `ifdef ASE_DEBUG
-		     $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d][0]\n", $time, array_tid, ptr);
-	 `endif
-		  end
-	       end
-	    end
-	 end
+	       end // else: !if(isVHxRequest(hdr))		  
+	    end // if (isWriteRequest(hdr))       
+	 end // if (ptr != LATBUF_SLOT_INVALID)	 
       end
    endfunction
 
@@ -1046,7 +956,7 @@ module outoforder_wrf_channel
    	       case (vc_pop)
    		 Select_VL0:
    		   begin
-		      if (~vl0_wrfence_flag && ~vl0_array_empty && ~latbuf_almfull) begin
+		      if (~vl0_array_empty && ~latbuf_almfull) begin
 			 READ_get_vc_put_latbuf(vl0_array);
 		      end
    		      vc_pop <= Select_VH0;
@@ -1054,7 +964,7 @@ module outoforder_wrf_channel
 
    		 Select_VH0:
    		   begin
-		      if (~vh0_wrfence_flag && ~vh0_array_empty && ~latbuf_almfull) begin
+		      if (~vh0_array_empty && ~latbuf_almfull) begin
 			 READ_get_vc_put_latbuf(vh0_array);
 		      end
    		      vc_pop <= Select_VH1;
@@ -1062,7 +972,7 @@ module outoforder_wrf_channel
 
    		 Select_VH1:
    		   begin
-		      if (~vh1_wrfence_flag && ~vh1_array_empty && ~latbuf_almfull) begin
+		      if (~vh1_array_empty && ~latbuf_almfull) begin
 			 READ_get_vc_put_latbuf(vh1_array);
 		      end
    		      vc_pop <= Select_VL0;
@@ -1410,7 +1320,7 @@ module outoforder_wrf_channel
 	    	  $fwrite(log_fd, "%d | record[%02d][%02d] size %1d with tid=%x unrolled TX=%s RX=%s \n", $time, ptr, jj, loop_max, tid, return_txhdr(txhdr), return_rxhdr(rxhdr) );
          `endif
 	       end // for (int jj = 0; jj <= txhdr.len; jj = jj + 1)
-	    end
+	    end // if (isVHxRequest(base_hdr))	    
 	    // ----------------------------------------------------- //
 	    // Pop record and deactivate unroll
 	    // ----------------------------------------------------- //
@@ -1471,7 +1381,7 @@ module outoforder_wrf_channel
 	    // ---------------------------------------------- //
 	    // VHx Write request
 	    // ---------------------------------------------- //
-	    else if (isVHxRequest(base_hdr)) begin // isWriteRequest(base_hdr)) begin
+	    else if (isVHxRequest(base_hdr)) begin
 	       for (int rec_i = 0; rec_i < loop_max ; rec_i = rec_i + 1) begin
 		  txhdr            = records[ptr].hdr[rec_i];
 		  tid              = records[ptr].tid[rec_i];
@@ -1541,7 +1451,6 @@ module outoforder_wrf_channel
 	    // Else
 	    else begin
 	       latbuf_pop_proc_status  <= 3'b000;
-	       unroll_active           <= 0;
 	    end
 	    // ------------------------------------------------------------------- //-
 	    // Book keeping
