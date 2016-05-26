@@ -75,7 +75,6 @@ AALSDK_LTLIB_VERSION([ASE],          [libASE],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     [0],[0],[0])
 AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    [0],[0],[0])
 AALSDK_LTLIB_VERSION([SWSIMALIAFU],  [libSWSimALIAFU],  [0],[0],[0])
-AALSDK_LTLIB_VERSION([MPF],  		 [libMPF],  		[0],[0],[0])
 AALSDK_LTLIB_VERSION([ALI], 	     [libALI],		    [0],[0],[0])
 
 
@@ -196,7 +195,6 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/ALIAFU/ASEALIAFU/Makefile
                  utils/ALIAFU/SWSimALIAFU/Makefile
                  utils/ALIAFU/ALI/Makefile
-                 utils/ALIAFU/VTP/Makefile
                  utils/scripts/Makefile])
 
 
