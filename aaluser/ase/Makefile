@@ -161,9 +161,8 @@ ifeq ($(ASE_DEBUG), 1)
 endif
 ifeq ($(ASE_PROFILE_ENABLE), 1)
   SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
-  SNPS_VCS_OPT+= -cm line -cm cond -cm fsm -cm tgl -cm branch
-#  SNPS_VCS_OPT+= -cm_cond basic+allops
-#  SNPS_VCS_OPT+= -cm_dir coverage
+  SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
+  SNPS_VCS_OPT+= -cm_hier $(ASEVAL_GIT)/ase_coverage.cfg
   SNPS_VCS_OPT+= -simprofile +prof
 endif
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
@@ -172,7 +171,7 @@ endif
 VCS_SIM_OPT = -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
 VCS_SIM_OPT+= -l run.log
 ifeq ($(ASE_PROFILE_ENABLE), 1)
-  VCS_SIM_OPT+=  -cm line -cm cond -cm fsm -cm tgl -cm branch
+  VCS_SIM_OPT+= -cm line+cond+fsm+tgl+branch+assert
 endif
 
 
@@ -511,6 +510,7 @@ coverage:
 	firefox ./$(WORK)/urgReport/dashboard.html &
 	firefox ./$(WORK)/lcov_coverage/index.html &
 	firefox ./$(WORK)/profileReport.html &
+	dve -dir work/ase_simv.vdb/ -full64 &
 
 # Valgrind run
 valgrind_run:
