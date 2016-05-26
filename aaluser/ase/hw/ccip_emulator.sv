@@ -1355,7 +1355,7 @@ module ccip_emulator
    UMsgHdr_t ase_umsghdr_map;
    assign ase_umsghdr_map = UMsgHdr_t'(C0RxHdr);
 
-  
+
    /*
     * Transaction counts
     */
@@ -1363,11 +1363,11 @@ module ccip_emulator
    txn_vc_counts   rdreq_vc_cnt  , rdrsp_vc_cnt;
    txn_vc_counts   wrreq_vc_cnt  , wrrsp_vc_cnt;
    txn_vc_counts   wrfreq_vc_cnt , wrfrsp_vc_cnt;
-   
+
    txn_mcl_counts   rdreq_mcl_cnt  , rdrsp_mcl_cnt;
    txn_mcl_counts   wrreq_mcl_cnt  , wrrsp_mcl_cnt;
    txn_mcl_counts   wrfreq_mcl_cnt , wrfrsp_mcl_cnt;
-   
+
    // Transaction count process
    always @(posedge clk) begin : transact_cnt_proc
       // ===================================================== //
@@ -1386,32 +1386,32 @@ module ccip_emulator
 	 ase_rx0_umsghint_cnt <= 0 ;
 	 ase_rx0_umsgdata_cnt <= 0 ;
 	 // ------------------------------------ //
-	 // Read transactions 
+	 // Read transactions
 	 // ------------------------------------ //
-	 rdreq_vc_cnt  <= '{0, 0, 0, 0};	 
-	 rdrsp_vc_cnt  <= '{0, 0, 0, 0};	 
-	 rdreq_mcl_cnt <= '{0, 0, 0};	 
-	 rdrsp_mcl_cnt <= '{0, 0, 0};	 
+	 rdreq_vc_cnt  <= '{0, 0, 0, 0};
+	 rdrsp_vc_cnt  <= '{0, 0, 0, 0};
+	 rdreq_mcl_cnt <= '{0, 0, 0};
+	 rdrsp_mcl_cnt <= '{0, 0, 0};
 	 // Total read counts
 	 ase_tx0_rdvalid_cnt <= 0 ;
 	 ase_rx0_rdvalid_cnt <= 0 ;
 	 // ------------------------------------ //
-	 // Write transactions 
+	 // Write transactions
 	 // ------------------------------------ //
-	 wrreq_vc_cnt  <= '{0, 0, 0, 0};	 
-	 wrrsp_vc_cnt  <= '{0, 0, 0, 0};	 
-	 wrreq_mcl_cnt <= '{0, 0, 0};	 
-	 wrrsp_mcl_cnt <= '{0, 0, 0};	 
+	 wrreq_vc_cnt  <= '{0, 0, 0, 0};
+	 wrrsp_vc_cnt  <= '{0, 0, 0, 0};
+	 wrreq_mcl_cnt <= '{0, 0, 0};
+	 wrrsp_mcl_cnt <= '{0, 0, 0};
 	 // Total write counts
 	 ase_tx1_wrvalid_cnt <= 0 ;
 	 ase_rx1_wrvalid_cnt <= 0 ;
 	 // ------------------------------------ //
-	 // WriteFence transactions 
+	 // WriteFence transactions
 	 // ------------------------------------ //
-	 wrfreq_vc_cnt  <= '{0, 0, 0, 0};	 
-	 wrfrsp_vc_cnt  <= '{0, 0, 0, 0};	 
-	 wrfreq_mcl_cnt <= '{0, 0, 0};	 
-	 wrfrsp_mcl_cnt <= '{0, 0, 0};	 
+	 wrfreq_vc_cnt  <= '{0, 0, 0, 0};
+	 wrfrsp_vc_cnt  <= '{0, 0, 0, 0};
+	 wrfreq_mcl_cnt <= '{0, 0, 0};
+	 wrfrsp_mcl_cnt <= '{0, 0, 0};
 	 // WriteFence Counts
 	 ase_tx1_wrfence_cnt <= 0 ;
 	 ase_rx1_wrfence_cnt <= 0 ;
@@ -1419,29 +1419,37 @@ module ccip_emulator
       // ===================================================== //
       // Active counts
       // ===================================================== //
-      else begin	 
+      else begin
 	 // ------------------------------------ //
 	 // MMIO counts
 	 // ------------------------------------ //
 	 `incr_cnt (C0RxMmioWrValid, ase_rx0_mmiowrreq_cnt);
 	 `incr_cnt (C0RxMmioRdValid, ase_rx0_mmiordreq_cnt);
-	 `incr_cnt (C2TxMmioRdValid, ase_tx2_mmiordrsp_cnt);	 
+	 `incr_cnt (C2TxMmioRdValid, ase_tx2_mmiordrsp_cnt);
 	 // ------------------------------------ //
 	 // UMsg counts
 	 // ------------------------------------ //
 	 `incr_cnt ( (C0RxUMsgValid && ase_umsghdr_map.umsg_type) , ase_rx0_umsghint_cnt);
-	 `incr_cnt ( (C0RxUMsgValid && ~ase_umsghdr_map.umsg_type), ase_rx0_umsgdata_cnt);	 
+	 `incr_cnt ( (C0RxUMsgValid && ~ase_umsghdr_map.umsg_type), ase_rx0_umsgdata_cnt);
 	 // ------------------------------------ //
 	 // Read counts
 	 // ------------------------------------ //
 	 // Total counts
 	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr))    , ase_tx0_rdvalid_cnt);
 	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr)), ase_rx0_rdvalid_cnt);
-	 // Channel specific counts	 
+	 // C0Tx granular counts
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && isVARequest(C0TxHdr) ), rdreq_vc_cnt.va);
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && isVL0Request(C0TxHdr)), rdreq_vc_cnt.vl0);
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && isVH0Request(C0TxHdr)), rdreq_vc_cnt.vh0);
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && isVH1Request(C0TxHdr)), rdreq_vc_cnt.vh1);
+	 // C0Rx granular counts
+	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr) && isVL0Response(C0RxHdr)), rdrsp_vc_cnt.vl0);
+	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr) && isVH0Response(C0RxHdr)), rdrsp_vc_cnt.vh0);
+	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr) && isVH1Response(C0RxHdr)), rdrsp_vc_cnt.vh1);
 	 // ------------------------------------ //
 	 // Write counts
 	 // ------------------------------------ //
-	 `incr_cnt ( (C1TxValid && isWriteRequest(C1TxHdr))   , ase_tx1_wrvalid_cnt);	 	 
+	 `incr_cnt ( (C1TxValid && isWriteRequest(C1TxHdr))   , ase_tx1_wrvalid_cnt);
 	 if (C1RxRspValid && isWriteResponse(C1RxHdr)) begin
 	    `incr_cnt ( isVL0Response(C1RxHdr)                    , ase_rx1_wrvalid_cnt);
 	    `incr_cnt ( (isVHxResponse(C1RxHdr) && C1RxHdr.format), ase_rx1_wrvalid_cnt);
@@ -1451,7 +1459,7 @@ module ccip_emulator
 	 // WriteFence counts
 	 // ------------------------------------ //
 	 `incr_cnt ( (C1TxValid && isWrFenceRequest(C1TxHdr))    , ase_tx1_wrfence_cnt);
-	 `incr_cnt ( (C1RxRspValid && isWrFenceResponse(C1RxHdr)), ase_rx1_wrfence_cnt);	 
+	 `incr_cnt ( (C1RxRspValid && isWrFenceResponse(C1RxHdr)), ase_rx1_wrfence_cnt);
 	 // Channel specific counts
       end
    end
@@ -2540,23 +2548,23 @@ module ccip_emulator
 
    // Iterate-print
    function automatic void print_assoc_array(ref longint assoc_array[*]);
-      longint temp;      
+      longint temp;
       begin
 	 if (assoc_array.first(temp))
 	   do
-	     $display("( %05x : %12x) ", temp, assoc_array[temp] );	 
-	 while (assoc_array.next(temp));	 
+	     $display("( %05x : %12x) ", temp, assoc_array[temp] );
+	 while (assoc_array.next(temp));
       end
    endfunction
 
    // c1tx_mcl
    always @(*) begin
       if (C1TxHdr.sop) begin
-	 c1tx_mcl = C1TxHdr.len;	 
+	 c1tx_mcl = C1TxHdr.len;
       end
    end
-   
-   
+
+
    // Checker array
    // always @(posedge clk) begin
    //    // ------------------------------------- //
@@ -2667,9 +2675,9 @@ module ccip_emulator
 	 `BEGIN_YELLOW_FONTCOLOR;
 	 // $display("-------------------------------------------------");
 	 // $display("Read Transaction checker =>");
-	 // print_assoc_array(rdtxn_array);	 
+	 // print_assoc_array(rdtxn_array);
 	 // $display("Write Transaction checker =>");
-	 // print_assoc_array(wrtxn_array);	 
+	 // print_assoc_array(wrtxn_array);
 	 // $display("WrFence Transaction checker =>");
 	 // $display(wrf_array);
 	 // $display("-------------------------------------------------");
