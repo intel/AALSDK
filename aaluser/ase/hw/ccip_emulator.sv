@@ -1334,15 +1334,20 @@ module ccip_emulator
     * Live count of transactions to be printed at end of simulation
     *
     * ******************************************************************/
+   // MMIO Activity counts
    int ase_rx0_mmiowrreq_cnt ;
    int ase_rx0_mmiordreq_cnt ;
    int ase_tx2_mmiordrsp_cnt ;
+   // Read counts
    int ase_tx0_rdvalid_cnt   ;
    int ase_rx0_rdvalid_cnt   ;
+   // Write counts
    int ase_tx1_wrvalid_cnt   ;
    int ase_rx1_wrvalid_cnt   ;
+   // Write Fence counts
    int ase_tx1_wrfence_cnt   ;
    int ase_rx1_wrfence_cnt   ;
+   // Umsg counts
    int ase_rx0_umsghint_cnt  ;
    int ase_rx0_umsgdata_cnt  ;
 
@@ -1350,54 +1355,104 @@ module ccip_emulator
    UMsgHdr_t ase_umsghdr_map;
    assign ase_umsghdr_map = UMsgHdr_t'(C0RxHdr);
 
-   // process
+  
+   /*
+    * Transaction counts
+    */
+   // Channel count structures
+   txn_vc_counts   rdreq_vc_cnt  , rdrsp_vc_cnt;
+   txn_vc_counts   wrreq_vc_cnt  , wrrsp_vc_cnt;
+   txn_vc_counts   wrfreq_vc_cnt , wrfrsp_vc_cnt;
+   
+   txn_mcl_counts   rdreq_mcl_cnt  , rdrsp_mcl_cnt;
+   txn_mcl_counts   wrreq_mcl_cnt  , wrrsp_mcl_cnt;
+   txn_mcl_counts   wrfreq_mcl_cnt , wrfrsp_mcl_cnt;
+   
+   // Transaction count process
    always @(posedge clk) begin : transact_cnt_proc
+      // ===================================================== //
+      // Intiialization
+      // ===================================================== //
       if (init_reset) begin
+	 // ------------------------------------ //
+	 // MMIO
+	 // ------------------------------------ //
 	 ase_rx0_mmiowrreq_cnt <= 0 ;
 	 ase_rx0_mmiordreq_cnt <= 0 ;
 	 ase_tx2_mmiordrsp_cnt <= 0 ;
-	 ase_tx0_rdvalid_cnt <= 0 ;
-	 ase_rx0_rdvalid_cnt <= 0 ;
-	 ase_tx1_wrvalid_cnt <= 0 ;
-	 ase_rx1_wrvalid_cnt <= 0 ;
-	 ase_tx1_wrfence_cnt <= 0 ;
-	 ase_rx1_wrfence_cnt <= 0 ;
+	 // ------------------------------------ //
+	 // Umsg counts
+	 // ------------------------------------ //
 	 ase_rx0_umsghint_cnt <= 0 ;
 	 ase_rx0_umsgdata_cnt <= 0 ;
-      end
-      else begin
+	 // ------------------------------------ //
+	 // Read transactions 
+	 // ------------------------------------ //
+	 rdreq_vc_cnt  <= '{0, 0, 0, 0};	 
+	 rdrsp_vc_cnt  <= '{0, 0, 0, 0};	 
+	 rdreq_mcl_cnt <= '{0, 0, 0};	 
+	 rdrsp_mcl_cnt <= '{0, 0, 0};	 
+	 // Total read counts
+	 ase_tx0_rdvalid_cnt <= 0 ;
+	 ase_rx0_rdvalid_cnt <= 0 ;
+	 // ------------------------------------ //
+	 // Write transactions 
+	 // ------------------------------------ //
+	 wrreq_vc_cnt  <= '{0, 0, 0, 0};	 
+	 wrrsp_vc_cnt  <= '{0, 0, 0, 0};	 
+	 wrreq_mcl_cnt <= '{0, 0, 0};	 
+	 wrrsp_mcl_cnt <= '{0, 0, 0};	 
+	 // Total write counts
+	 ase_tx1_wrvalid_cnt <= 0 ;
+	 ase_rx1_wrvalid_cnt <= 0 ;
+	 // ------------------------------------ //
+	 // WriteFence transactions 
+	 // ------------------------------------ //
+	 wrfreq_vc_cnt  <= '{0, 0, 0, 0};	 
+	 wrfrsp_vc_cnt  <= '{0, 0, 0, 0};	 
+	 wrfreq_mcl_cnt <= '{0, 0, 0};	 
+	 wrfrsp_mcl_cnt <= '{0, 0, 0};	 
+	 // WriteFence Counts
+	 ase_tx1_wrfence_cnt <= 0 ;
+	 ase_rx1_wrfence_cnt <= 0 ;
+      end // if (init_reset)
+      // ===================================================== //
+      // Active counts
+      // ===================================================== //
+      else begin	 
+	 // ------------------------------------ //
 	 // MMIO counts
-	 if (C0RxMmioWrValid)
-	   ase_rx0_mmiowrreq_cnt <= ase_rx0_mmiowrreq_cnt + 1;
-	 if (C0RxMmioRdValid)
-	   ase_rx0_mmiordreq_cnt <= ase_rx0_mmiordreq_cnt + 1;
-	 if (C2TxMmioRdValid)
-	   ase_tx2_mmiordrsp_cnt <= ase_tx2_mmiordrsp_cnt + 1;
-	 // Read counts
-	 if (C0TxValid && isReadRequest(C0TxHdr))
-	   ase_tx0_rdvalid_cnt <= ase_tx0_rdvalid_cnt + (C0TxHdr.len + 1);
-	 if (C0RxRspValid && isReadResponse(C0RxHdr))
-	   ase_rx0_rdvalid_cnt <= ase_rx0_rdvalid_cnt + 1;
-	 // Write counts
-	 if (C1TxValid && isWriteRequest(C1TxHdr))
-	   ase_tx1_wrvalid_cnt <= ase_tx1_wrvalid_cnt + 1;
-	 if (C1RxRspValid && isWriteResponse(C1RxHdr)) begin
-	    if (isVL0Response(C1RxHdr)) begin
-	       ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + 1;
-	    end
-	    else if (isVHxResponse(C1RxHdr) && C1RxHdr.format) begin
-	       ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + (C1RxHdr.clnum + 1);
-	    end
-	 end
-	 if (C1TxValid && isWrFenceRequest(C1TxHdr))
-	   ase_tx1_wrfence_cnt <= ase_tx1_wrfence_cnt + 1;
-	 if (C1RxRspValid && isWrFenceResponse(C1RxHdr))
-	   ase_rx1_wrfence_cnt <= ase_rx1_wrfence_cnt + 1;
+	 // ------------------------------------ //
+	 `incr_cnt (C0RxMmioWrValid, ase_rx0_mmiowrreq_cnt);
+	 `incr_cnt (C0RxMmioRdValid, ase_rx0_mmiordreq_cnt);
+	 `incr_cnt (C2TxMmioRdValid, ase_tx2_mmiordrsp_cnt);	 
+	 // ------------------------------------ //
 	 // UMsg counts
-	 if (C0RxUMsgValid && ase_umsghdr_map.umsg_type )
-	   ase_rx0_umsghint_cnt <= ase_rx0_umsghint_cnt + 1;
-	 if (C0RxUMsgValid && ~ase_umsghdr_map.umsg_type )
-	   ase_rx0_umsgdata_cnt <= ase_rx0_umsgdata_cnt + 1;
+	 // ------------------------------------ //
+	 `incr_cnt ( (C0RxUMsgValid && ase_umsghdr_map.umsg_type) , ase_rx0_umsghint_cnt);
+	 `incr_cnt ( (C0RxUMsgValid && ~ase_umsghdr_map.umsg_type), ase_rx0_umsgdata_cnt);	 
+	 // ------------------------------------ //
+	 // Read counts
+	 // ------------------------------------ //
+	 // Total counts
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr))    , ase_tx0_rdvalid_cnt);
+	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr)), ase_rx0_rdvalid_cnt);
+	 // Channel specific counts	 
+	 // ------------------------------------ //
+	 // Write counts
+	 // ------------------------------------ //
+	 `incr_cnt ( (C1TxValid && isWriteRequest(C1TxHdr))   , ase_tx1_wrvalid_cnt);	 	 
+	 if (C1RxRspValid && isWriteResponse(C1RxHdr)) begin
+	    `incr_cnt ( isVL0Response(C1RxHdr)                    , ase_rx1_wrvalid_cnt);
+	    `incr_cnt ( (isVHxResponse(C1RxHdr) && C1RxHdr.format), ase_rx1_wrvalid_cnt);
+	 end
+	 // Channel specific counts
+	 // ------------------------------------ //
+	 // WriteFence counts
+	 // ------------------------------------ //
+	 `incr_cnt ( (C1TxValid && isWrFenceRequest(C1TxHdr))    , ase_tx1_wrfence_cnt);
+	 `incr_cnt ( (C1RxRspValid && isWrFenceResponse(C1RxHdr)), ase_rx1_wrfence_cnt);	 
+	 // Channel specific counts
       end
    end
 
