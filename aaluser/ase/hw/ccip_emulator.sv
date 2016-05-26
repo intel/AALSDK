@@ -138,7 +138,7 @@ module ccip_emulator
 	C0TxRdValid <= 0;
       // --------------------------------------------------------- //
       // Write Request
-      if (C1TxValid && ( (C1TxHdr.reqtype == ASE_WRFENCE)||(C1TxHdr.reqtype == ASE_WRLINE_I)||(C1TxHdr.reqtype == ASE_WRLINE_M)||(C1TxHdr.reqtype == ASE_ATOMIC_REQ)) )
+      if (C1TxValid && ( (C1TxHdr.reqtype == ASE_WRFENCE)||(C1TxHdr.reqtype == ASE_WRLINE_I)||(C1TxHdr.reqtype == ASE_WRLINE_M)) )
 	C1TxWrValid <= 1;
       else
 	C1TxWrValid <= 0;
@@ -180,7 +180,6 @@ module ccip_emulator
 	   eREQ_WRLINE_M : txasehdr.txhdr.reqtype = ASE_WRLINE_M;
 	   eREQ_WRFENCE  : txasehdr.txhdr.reqtype = ASE_WRFENCE;
 	   // eREQ_WRPUSH   : txasehdr.txhdr.reqtype = ASE_WRPUSH;
-	   // eREQ_ATOMIC   : txasehdr.txhdr.reqtype = ASE_ATOMIC_REQ;
 	   eREQ_INTR     : txasehdr.txhdr.reqtype = ASE_INTR_REQ;
 	 endcase // case (inhdr.req_type)
 	 // Accomodating MCL addr[41:2]=X when SOP=0
@@ -214,9 +213,6 @@ module ccip_emulator
 	 case (inhdr.rxhdr.resptype)
 	   ASE_RD_RSP     : rxasehdr.resp_type = eRSP_RDLINE;
 	   ASE_UMSG       : rxasehdr.resp_type = eRSP_UMSG;
-`ifdef DEFEATRUE_ATOMIC
-	   ASE_ATOMIC_RSP : rxasehdr.resp_type = eRSP_ATOMIC;
-`endif
 	 endcase
 	 case (inhdr.rxhdr.vc_used)
 	   VC_VA           : rxasehdr.vc_used = eVC_VA;
@@ -440,7 +436,7 @@ module ccip_emulator
    int mmiowr_credit;
    int mmiord_credit;
    int umsg_credit;
-   int atomic_credit;
+   // int atomic_credit;
 
 
    /*
@@ -454,16 +450,16 @@ module ccip_emulator
    /*
     * State indicators
     */
-   typedef enum 		  {
-				   RxIdle,
-				   RxMMIOForward,
-				   RxUMsgForward,
-				   RxReadResp,
-				   RxAtomicsResp,
-				   RxWriteResp
-				   } RxOutState;
-   RxOutState rx0_state;
-   RxOutState rx1_state;
+   // typedef enum 		  {
+   // 				   RxIdle,
+   // 				   RxMMIOForward,
+   // 				   RxUMsgForward,
+   // 				   RxReadResp,
+   // 				   RxAtomicsResp,
+   // 				   RxWriteResp
+   // 				   } RxOutState;
+   // RxOutState rx0_state;
+   // RxOutState rx1_state;
 
    /*
     * Fabric Clock, pClk{*}
@@ -1364,9 +1360,8 @@ module ccip_emulator
    txn_vc_counts   wrreq_vc_cnt  , wrrsp_vc_cnt;
    txn_vc_counts   wrfreq_vc_cnt , wrfrsp_vc_cnt;
 
-   txn_mcl_counts   rdreq_mcl_cnt  , rdrsp_mcl_cnt;
+   txn_mcl_counts   rdreq_mcl_cnt  ;
    txn_mcl_counts   wrreq_mcl_cnt  , wrrsp_mcl_cnt;
-   txn_mcl_counts   wrfreq_mcl_cnt , wrfrsp_mcl_cnt;
 
    // Transaction count process
    always @(posedge clk) begin : transact_cnt_proc
@@ -1391,7 +1386,6 @@ module ccip_emulator
 	 rdreq_vc_cnt  <= '{0, 0, 0, 0};
 	 rdrsp_vc_cnt  <= '{0, 0, 0, 0};
 	 rdreq_mcl_cnt <= '{0, 0, 0};
-	 rdrsp_mcl_cnt <= '{0, 0, 0};
 	 // Total read counts
 	 ase_tx0_rdvalid_cnt <= 0 ;
 	 ase_rx0_rdvalid_cnt <= 0 ;
@@ -1410,8 +1404,6 @@ module ccip_emulator
 	 // ------------------------------------ //
 	 wrfreq_vc_cnt  <= '{0, 0, 0, 0};
 	 wrfrsp_vc_cnt  <= '{0, 0, 0, 0};
-	 wrfreq_mcl_cnt <= '{0, 0, 0};
-	 wrfrsp_mcl_cnt <= '{0, 0, 0};
 	 // WriteFence Counts
 	 ase_tx1_wrfence_cnt <= 0 ;
 	 ase_rx1_wrfence_cnt <= 0 ;
@@ -1436,37 +1428,67 @@ module ccip_emulator
 	 // ------------------------------------ //
 	 // Total counts
 	  if (C0TxValid && isReadRequest(C0TxHdr))
-	    ase_tx0_rdvalid_cnt <= ase_tx0_rdvalid_cnt + (C0TxHdr.len + 1); 
+	    ase_tx0_rdvalid_cnt <= ase_tx0_rdvalid_cnt + (C0TxHdr.len + 1);
 	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr)), ase_rx0_rdvalid_cnt);
 	 // C0Tx granular counts
-	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && isVARequest(C0TxHdr) ), rdreq_vc_cnt.va);
-	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && isVL0Request(C0TxHdr)), rdreq_vc_cnt.vl0);
-	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && isVH0Request(C0TxHdr)), rdreq_vc_cnt.vh0);
-	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && isVH1Request(C0TxHdr)), rdreq_vc_cnt.vh1);
-	 // C0Rx granular counts
-	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr) && isVL0Response(C0RxHdr)), rdrsp_vc_cnt.vl0);
-	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr) && isVH0Response(C0RxHdr)), rdrsp_vc_cnt.vh0);
-	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr) && isVH1Response(C0RxHdr)), rdrsp_vc_cnt.vh1);
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.vc == VC_VA )), rdreq_vc_cnt.va);
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.vc == VC_VL0)), rdreq_vc_cnt.vl0);
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.vc == VC_VH0)), rdreq_vc_cnt.vh0);
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.vc == VC_VH1)), rdreq_vc_cnt.vh1);
+	 // C0Tx MCL granular counts
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.len == ASE_1CL)), rdreq_mcl_cnt.mcl0);
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.len == ASE_2CL)), rdreq_mcl_cnt.mcl1);
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.len == ASE_4CL)), rdreq_mcl_cnt.mcl3);
+	 // C0Rx VC granular counts
+	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr) && (C0RxHdr.vc_used == VC_VA)), rdrsp_vc_cnt.va);
+	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr) && (C0RxHdr.vc_used == VC_VL0)), rdrsp_vc_cnt.vl0);
+	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr) && (C0RxHdr.vc_used == VC_VH0)), rdrsp_vc_cnt.vh0);
+	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr) && (C0RxHdr.vc_used == VC_VH1)), rdrsp_vc_cnt.vh1);
 	 // ------------------------------------ //
 	 // Write counts
 	 // ------------------------------------ //
 	 `incr_cnt ( (C1TxValid && isWriteRequest(C1TxHdr))   , ase_tx1_wrvalid_cnt);
 	 if (C1RxRspValid && isWriteResponse(C1RxHdr)) begin
 	    if (isVL0Response(C1RxHdr)) begin
-	       ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + 1;	       
+	       ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + 1;
 	    end
 	    else if (isVHxResponse(C1RxHdr) && C1RxHdr.format) begin
-	       ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + (C1RxHdr.clnum + 1);	       
+	       ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + (C1RxHdr.clnum + 1);
 	    end
 	 end
-	 // Channel specific counts
-
+	 // C1Tx VC granular counts
+	 `incr_cnt ( (C1TxValid && isWriteRequest(C1TxHdr) && (C1TxHdr.vc == VC_VA) ), wrreq_vc_cnt.va);
+	 `incr_cnt ( (C1TxValid && isWriteRequest(C1TxHdr) && (C1TxHdr.vc == VC_VL0)), wrreq_vc_cnt.vl0);
+	 `incr_cnt ( (C1TxValid && isWriteRequest(C1TxHdr) && (C1TxHdr.vc == VC_VH0)), wrreq_vc_cnt.vh0);
+	 `incr_cnt ( (C1TxValid && isWriteRequest(C1TxHdr) && (C1TxHdr.vc == VC_VH1)), wrreq_vc_cnt.vh1);
+	 // C1Tx MCL granular counts
+	 `incr_cnt ( (C1TxValid && C1TxHdr.sop && isWriteRequest(C1TxHdr) && (C1TxHdr.len == ASE_1CL)), wrreq_mcl_cnt.mcl0);
+	 `incr_cnt ( (C1TxValid && C1TxHdr.sop && isWriteRequest(C1TxHdr) && (C1TxHdr.len == ASE_2CL)), wrreq_mcl_cnt.mcl1);
+	 `incr_cnt ( (C1TxValid && C1TxHdr.sop && isWriteRequest(C1TxHdr) && (C1TxHdr.len == ASE_4CL)), wrreq_mcl_cnt.mcl3);
+	 // C1Rx VC granular counts
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VA)), wrrsp_vc_cnt.va);
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VL0)), wrrsp_vc_cnt.vl0);
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VH0)), wrrsp_vc_cnt.vh0);
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VH1)), wrrsp_vc_cnt.vh1);
+	 // C1Tx MCL granular counts
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && ~C1RxHdr.format ), wrrsp_mcl_cnt.mcl0);
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.clnum == ASE_2CL) && C1RxHdr.format), wrrsp_mcl_cnt.mcl1);
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.clnum == ASE_4CL) && C1RxHdr.format), wrrsp_mcl_cnt.mcl3);
 	 // ------------------------------------ //
 	 // WriteFence counts
 	 // ------------------------------------ //
 	 `incr_cnt ( (C1TxValid && isWrFenceRequest(C1TxHdr))    , ase_tx1_wrfence_cnt);
 	 `incr_cnt ( (C1RxRspValid && isWrFenceResponse(C1RxHdr)), ase_rx1_wrfence_cnt);
-	 // Channel specific counts
+	 // C1Tx WrF VC granular counts
+	 `incr_cnt ( (C1TxValid && isWrFenceRequest(C1TxHdr) && (C1TxHdr.vc == VC_VA) ), wrfreq_vc_cnt.va );
+	 `incr_cnt ( (C1TxValid && isWrFenceRequest(C1TxHdr) && (C1TxHdr.vc == VC_VL0)), wrfreq_vc_cnt.vl0);
+	 `incr_cnt ( (C1TxValid && isWrFenceRequest(C1TxHdr) && (C1TxHdr.vc == VC_VH0)), wrfreq_vc_cnt.vh0);
+	 `incr_cnt ( (C1TxValid && isWrFenceRequest(C1TxHdr) && (C1TxHdr.vc == VC_VH1)), wrfreq_vc_cnt.vh1);
+	 // C1Rx WrF VC granular counts
+	 `incr_cnt ( (C1RxRspValid && isWrFenceResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VA) ), wrfrsp_vc_cnt.va );
+	 `incr_cnt ( (C1RxRspValid && isWrFenceResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VL0)), wrfrsp_vc_cnt.vl0 );
+	 `incr_cnt ( (C1RxRspValid && isWrFenceResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VH0)), wrfrsp_vc_cnt.vh0 );
+	 `incr_cnt ( (C1RxRspValid && isWrFenceResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VH1)), wrfrsp_vc_cnt.vh1 );
       end
    end
 
@@ -1557,11 +1579,6 @@ module ccip_emulator
    // logic [CCIP_RX_HDR_WIDTH-1:0] pp_wrrsp_hdr_out_vec;
    RxHdr_t                       pp_wrrsp_hdr;
    logic 			 pp_wrrsp_write;
-
-   // logic 			 pp_wrrsp_read;
-   // logic 			 pp_wrrsp_full;
-   // logic 			 pp_wrrsp_empty;
-   // logic 			 pp_wrrsp_valid;
 
 
    /*
@@ -1979,62 +1996,6 @@ module ccip_emulator
    	 pp_wrrsp_write <= 0;
       end
    end
-
-   // Prepack staging fifo
-   // ase_svfifo
-   //   #(
-   //     .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH ),
-   //     .DEPTH_BASE2    ( 5 ),
-   //     .ALMFULL_THRESH ( 24 )
-   //     )
-   // pp_wrrsp_fifo
-   //   (
-   //    .clk             ( clk ),
-   //    .rst             ( ase_reset ),
-   //    .wr_en           ( pp_wrrsp_write ),
-   //    .data_in         ( (CCIP_RX_HDR_WIDTH)'(pp_wrrsp_hdr_in) ),
-   //    .rd_en           ( ~pp_wrrsp_empty && pp_wrrsp_read ),
-   //    .data_out        ( pp_wrrsp_hdr_out_vec ),
-   //    .data_out_v      ( pp_wrrsp_valid ),
-   //    .alm_full        ( pp_wrrsp_full ),
-   //    .full            (),
-   //    .empty           ( pp_wrrsp_empty ),
-   //    .count           (),
-   //    .overflow        (),
-   //    .underflow       ()
-   //    );
-
-   // assign pp_wrrsp_hdr_out = RxHdr_t'(pp_wrrsp_hdr_out_vec);
-
-   // Pop continuously from pp_wrrsp_fifo
-   // always @(posedge clk) begin
-   //    if (ase_reset) begin
-   // 	 pp_wrrsp_read <= 0;
-   //    end
-   //    else if (~pp_wrrsp_empty && ~wrrsp_full) begin
-   // 	 pp_wrrsp_read <= 1;
-   //    end
-   //    else begin
-   // 	 pp_wrrsp_read <= 0;
-   //    end
-   // end
-
-
-   // Glue process (roll it into coalescer block)
-   // always @(posedge clk) begin
-   //    if (ase_reset) begin
-   // 	 wrrsp_hdr_in <= RxHdr_t'(0);
-   // 	 wrrsp_write <= 0;
-   //    end
-   //    else if (pp_wrrsp_valid) begin
-   // 	 wrrsp_hdr_in <= pp_wrrsp_hdr_out;
-   // 	 // cf2as_latbuf_to_wrrsp_fifo();
-   // 	 wrrsp_write <= pp_wrrsp_valid;
-   //    end
-   //    else begin
-   // 	 wrrsp_write <= 0;
-   //    end
-   // end
 
 
    /* *******************************************************************
@@ -2644,24 +2605,27 @@ module ccip_emulator
 
    // Simkill progress
    task simkill();
-   // function void simkill();
+      string print_str;      
       begin
 	 simkill_started = 1;
 	 $display("SIM-SV: Simulation kill command received...");
 	 // Print transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display("Transaction counts => ");
-	 $display("\tMMIO WrReq = %d", ase_rx0_mmiowrreq_cnt );
-	 $display("\tMMIO RdReq = %d", ase_rx0_mmiordreq_cnt );
-	 $display("\tMMIO RdRsp = %d", ase_tx2_mmiordrsp_cnt );
-	 $display("\tRdReq      = %d", ase_tx0_rdvalid_cnt   );
-	 $display("\tRdResp     = %d", ase_rx0_rdvalid_cnt   );
-	 $display("\tWrReq      = %d", ase_tx1_wrvalid_cnt   );
-	 $display("\tWrResp     = %d", ase_rx1_wrvalid_cnt   );
-	 $display("\tWrFence    = %d", ase_tx1_wrfence_cnt   );
-	 $display("\tWrFenceRsp = %d", ase_rx1_wrfence_cnt   );
-	 $display("\tUMsgHint   = %d", ase_rx0_umsghint_cnt  );
-	 $display("\tUMsgData   = %d", ase_rx0_umsgdata_cnt  );
+	 $display("  Transaction count \t|\tVA\t VL0\t VH0\t VH1 | \tMCL-0 \tMCL-1 \tMCL-3");
+	 $display("  ========================================================================================");
+	 $display("  MMIOWrReq %d | ", ase_rx0_mmiowrreq_cnt );
+	 $display("  MMIORdReq %d | ", ase_rx0_mmiordreq_cnt );
+	 $display("  MMIORdRsp %d | ", ase_tx2_mmiordrsp_cnt );
+	 $display("  UMsgHint  %d | ", ase_rx0_umsghint_cnt  );
+	 $display("  UMsgData  %d | ", ase_rx0_umsgdata_cnt  );
+	 // $sformat(print_str, "%d%d%d%d | %d %d %d", rdreq_vc_cnt.va, rdreq_vc_cnt.vl0, rdreq_vc_cnt.vh0, rdreq_vc_cnt.vh1, rdreq_mcl_cnt.mcl0, rdreq_mcl_cnt.mcl1, rdreq_mcl_cnt.mcl3);
+	 $display("  RdReq     %d | %08d %08d %08d %08d | %08d %08d %08d", ase_tx0_rdvalid_cnt, rdreq_vc_cnt.va, rdreq_vc_cnt.vl0, rdreq_vc_cnt.vh0, rdreq_vc_cnt.vh1, rdreq_mcl_cnt.mcl0, rdreq_mcl_cnt.mcl1, rdreq_mcl_cnt.mcl3);
+	 // $display("  RdReq     %d | %s", ase_tx0_rdvalid_cnt, print_str);	 
+	 $display("  RdResp    %d | %08d %08d %08d %08d | ",               ase_rx0_rdvalid_cnt, rdrsp_vc_cnt.va, rdrsp_vc_cnt.vl0, rdrsp_vc_cnt.vh0, rdrsp_vc_cnt.vh1);
+	 $display("  WrReq     %d | %08d %08d %08d %08d | %08d %08d %08d", ase_tx1_wrvalid_cnt, wrreq_vc_cnt.va, wrreq_vc_cnt.vl0, wrreq_vc_cnt.vh0, wrreq_vc_cnt.vh1, wrreq_mcl_cnt.mcl0, wrreq_mcl_cnt.mcl1, wrreq_mcl_cnt.mcl3);
+	 $display("  WrResp    %d | %08d %08d %08d %08d | %08d %08d %08d", ase_rx1_wrvalid_cnt, wrrsp_vc_cnt.va, wrrsp_vc_cnt.vl0, wrrsp_vc_cnt.vh0, wrrsp_vc_cnt.vh1, wrrsp_mcl_cnt.mcl0, wrrsp_mcl_cnt.mcl1, wrrsp_mcl_cnt.mcl3);
+	 $display("  WrFence   %d | %08d %08d %08d %08d | ",               ase_tx1_wrfence_cnt, wrfreq_vc_cnt.va, wrfreq_vc_cnt.vl0, wrfreq_vc_cnt.vh0, wrfreq_vc_cnt.vh1);
+	 $display("  WrFenRsp  %d | %08d %08d %08d %08d | ",               ase_rx1_wrfence_cnt, wrfrsp_vc_cnt.va, wrfrsp_vc_cnt.vl0, wrfrsp_vc_cnt.vh0, wrfrsp_vc_cnt.vh1);
 	 `END_YELLOW_FONTCOLOR;
 
 	 // Valid Count
@@ -2726,7 +2690,7 @@ module ccip_emulator
 	 wr_credit     <= 0;
 	 mmiowr_credit <= 0;
 	 mmiord_credit <= 0;
-	 atomic_credit <= 0;
+	 // atomic_credit <= 0;
       end
       else begin
 	 // ---------------------------------------------------- //
@@ -2754,18 +2718,18 @@ module ccip_emulator
 	 umsg_credit <= $countones(umsg_hint_enable_array) + $countones(umsg_data_enable_array) + umsgfifo_cnt;
 	 // ---------------------------------------------------- //
 	 // Atomics CmpXchg counter
-	 case ( { (C1TxWrValid && (C1TxHdr.reqtype==ASE_ATOMIC_REQ)), (C0RxRdValid && (C0RxHdr.resptype==ASE_ATOMIC_RSP)) } )
-	   2'b10   : atomic_credit <= atomic_credit + 1;
-	   2'b01   : atomic_credit <= atomic_credit - 1;
-	   default : atomic_credit <= atomic_credit;
-	 endcase
+	 // case ( { (C1TxWrValid && (C1TxHdr.reqtype==ASE_ATOMIC_REQ)), (C0RxRdValid && (C0RxHdr.resptype==ASE_ATOMIC_RSP)) } )
+	 //   2'b10   : atomic_credit <= atomic_credit + 1;
+	 //   2'b01   : atomic_credit <= atomic_credit - 1;
+	 //   default : atomic_credit <= atomic_credit;
+	 // endcase
 	 // ---------------------------------------------------- //
       end
    end
 
    // Global dealloc flag enable
    always @(posedge clk) begin
-      glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit + atomic_credit;
+      glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit;
    end
 
    // Register for changes
