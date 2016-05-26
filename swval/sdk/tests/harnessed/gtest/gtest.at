@@ -1,27 +1,5 @@
-# Google Tests -*- Autotest -*-
+# Google Tests. -*- Autotest -*-
 
-AT_BANNER([[gtest - Software-only Tests]])
-
-AT_SETUP([SWTest])
-AT_SKIP_IF([test "x${WITH_GTEST}" != xyes || test "x${at_arg_swtest}" != "x:"])
-AT_CHECK([swtest ${GTEST_OPTS}], [0], [ignore], [ignore])
-AT_CLEANUP
-
-# ################################################################################
-
-dnl AT_BANNER([[gtest - Nightly Test Suite]])
-
-dnl AT_SETUP([Nightly])
-dnl AT_SKIP_IF([test "x${WITH_GTEST}" != xyes || test "x${at_arg_nightly}" != "x:"])
-dnl AT_CHECK([nightly ${GTEST_OPTS}], [0], [ignore], [ignore])
-dnl AT_CLEANUP
-
-# ################################################################################
-
-dnl AT_BANNER([[gtest - Weekly Test Suite]])
-
-dnl AT_SETUP([Weekly])
-dnl AT_SKIP_IF([test "x${WITH_GTEST}" != xyes || test "x${at_arg_weekly}" != "x:"])
-dnl AT_CHECK([weekly ${GTEST_OPTS}], [0], [ignore], [ignore])
-dnl AT_CLEANUP
+# Google Tests for "Software" Services and Support.
+m4_include([harnessed/gtest/swtest/swtest.at])
 

@@ -11,6 +11,7 @@ standalone/OSAL_TestSem/OSAL_TestSem.at \
 standalone/OSAL_TestThreadGroup/OSAL_TestThreadGroup.at \
 harnessed/harnessed.at \
 harnessed/gtest/gtest.at \
+harnessed/gtest/swtest/swtest.at \
 local.at \
 testsuite.at
 

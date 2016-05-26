@@ -57,17 +57,17 @@
 /// @brief  Public definitions for CCI-P compliant devices.
 /// @ingroup aalkernel_ccip
 /// @verbatim
-//        FILE: ccip_defs.h
-//     CREATED: Oct 28, 2015
-//      AUTHOR: Ananda Ravuri, Intel <ananda.ravuri@intel.com>
-//              Joseph Grecco, Intel <joe.grecco@intel.com>
-//
-// PURPOSE:   This file contains the definitions for the CCI-P compliant FPGA
-//            devices.
-// HISTORY:
-// COMMENTS:
-// WHEN:          WHO:     WHAT:
-// 10/28/15       JG       Created from prototype written by AR
+///        FILE: ccip_defs.h
+///     CREATED: Oct 28, 2015
+///      AUTHOR: Ananda Ravuri, Intel <ananda.ravuri@intel.com>
+///              Joseph Grecco, Intel <joe.grecco@intel.com>
+///
+/// PURPOSE:   This file contains the definitions for the CCI-P compliant FPGA
+///            devices.
+/// HISTORY:
+/// COMMENTS:
+/// WHEN:          WHO:     WHAT:
+/// 10/28/15       JG       Created from prototype written by AR@endverbatim
 //****************************************************************************
 #ifndef __AALKERNEL_CCIP_DEFS_H_
 #define __AALKERNEL_CCIP_DEFS_H_

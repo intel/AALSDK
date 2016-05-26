@@ -19,49 +19,47 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtAALEvent.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtAALService.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtAAS.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtAASBase.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtAIAService.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtBarrier.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtCommon.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtCritSect.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtCValue.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtDispatchables.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtDynLinkLibrary.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtEnvVar.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtHWALIAFU.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtMDS.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtNVS0.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtNVS1.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtNVS2.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtNVS3.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtNVS4.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtNVS5.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtNVSLegacy.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtNVSTester.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtOSAL.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtOSServiceModule.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtRuntime.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtRuntime_Int.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtSem.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtSeqRand.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtServiceBroker.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtServiceHost.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtSleep.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtThread.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtThreadGroup.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtThreadGroupSR.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtTimer.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtTransactionID.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\main.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtAALEvent.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtAALService.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtAAS.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtAASBase.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtAIAService.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtBarrier.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtCritSect.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtCValue.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtDispatchables.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtDynLinkLibrary.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtEnvVar.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtHWALIAFU.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtMDS.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtNVS0.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtNVS1.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtNVS2.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtNVS3.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtNVS4.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtNVS5.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtNVSLegacy.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtNVSTester.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtOSAL.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtOSServiceModule.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtRuntime.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtRuntime_Int.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtSem.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtSeqRand.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtServiceBroker.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtServiceHost.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtSleep.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtThread.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtThreadGroup.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtThreadGroupSR.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtTimer.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtTransactionID.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtCommon.h" />
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtNVSTester.h" />
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtSeqRand.h" />
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtThreadGroup.h" />
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\swtest\gtNVSTester.h" />
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\swtest\gtSeqRand.h" />
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\swtest\gtThreadGroup.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{976B93C9-9D4A-4F5D-9D8C-72110BD753C7}</ProjectGuid>
@@ -153,14 +151,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_CONFIG_H;GTEST_LINKED_AS_SHARED_LIBRARY=1;TEST_SUITE_BAT=1;DBG_CSEMAPHORE=1;DBG_BARRIER=1;DBG_THREADGROUP=1;__AAL_USER__=1;ENABLE_DEBUG=1;ENABLE_ASSERT=1;_CRT_SECURE_NO_WARNINGS;NOMINMAX;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;$(SolutionDir)..\..\aaluser\include;$(SolutionDir)..\..\aaluser\aas\OSAL;$(SolutionDir)..\..\aaluser\aas\AALRuntime;$(SolutionDir)..\sdk\tests\swvalmod;$(SolutionDir)..\gtest\gtest-1.7.0\include;$(SolutionDir)..\gtest\gtest-1.7.0</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;$(SolutionDir)..\..\aaluser\include;$(SolutionDir)..\..\aaluser\aas\OSAL;$(SolutionDir)..\..\aaluser\aas\AALRuntime;$(SolutionDir)..\sdk\tests\swvalmod;$(SolutionDir)..\sdk\tests\harnessed\gtest\gtcommon;$(SolutionDir)..\gtest\gtest-1.7.0\include;$(SolutionDir)..\gtest\gtest-1.7.0</AdditionalIncludeDirectories>
       <BrowseInformation>true</BrowseInformation>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libaalrt.lib;$(OutDir)libgtest.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libaalrt.lib;$(OutDir)libgtcommon.lib;$(OutDir)libgtest.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
@@ -196,14 +194,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_CONFIG_H;GTEST_LINKED_AS_SHARED_LIBRARY=1;TEST_SUITE_BAT=1;DBG_CSEMAPHORE=1;DBG_BARRIER=1;DBG_THREADGROUP=1;__AAL_USER__=1;ENABLE_DEBUG=0;ENABLE_ASSERT=1;_NO_BUILD_MESSAGES_;_CRT_SECURE_NO_WARNINGS;NOMINMAX;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;$(SolutionDir)..\..\aaluser\include;$(SolutionDir)..\..\aaluser\aas\OSAL;$(SolutionDir)..\..\aaluser\aas\AALRuntime;$(SolutionDir)..\sdk\tests\swvalmod;$(SolutionDir)..\gtest\gtest-1.7.0\include;$(SolutionDir)..\gtest\gtest-1.7.0</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;$(SolutionDir)..\..\aaluser\include;$(SolutionDir)..\..\aaluser\aas\OSAL;$(SolutionDir)..\..\aaluser\aas\AALRuntime;$(SolutionDir)..\sdk\tests\swvalmod;$(SolutionDir)..\sdk\tests\harnessed\gtest\gtcommon;$(SolutionDir)..\gtest\gtest-1.7.0\include;$(SolutionDir)..\gtest\gtest-1.7.0</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libaalrt.lib;$(OutDir)libgtest.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libaalrt.lib;$(OutDir)libgtcommon.lib;$(OutDir)libgtest.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>

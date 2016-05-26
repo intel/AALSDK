@@ -594,7 +594,7 @@ at_format='?'
 # Description of all the test groups.
 at_help_all="1;OSAL_TestSem.at:5;Sem checkout;;
 2;OSAL_TestThreadGroup.at:5;Thread Group checkout;;
-3;gtest.at:5;SWTest;;
+3;swtest.at:5;SWTest;;
 "
 # List of the all the test groups.
 at_groups_all=`$as_echo "$at_help_all" | sed 's/;.*//'`
@@ -1030,7 +1030,7 @@ at_banner_text_1="OSAL_TestSem"
 # Banner 2. OSAL_TestThreadGroup.at:3
 # Category starts at test group 2.
 at_banner_text_2="OSAL_TestThreadGroup"
-# Banner 3. gtest.at:3
+# Banner 3. swtest.at:3
 # Category starts at test group 3.
 at_banner_text_3="gtest - Software-only Tests"
 
@@ -2114,26 +2114,26 @@ $at_traceon; }
 read at_status <"$at_status_file"
 #AT_STOP_2
 #AT_START_3
-at_fn_group_banner 3 'gtest.at:5' \
+at_fn_group_banner 3 'swtest.at:5' \
   "SWTest" "                                         " 3
 at_xfail=no
 (
   $as_echo "3. $at_setup_line: testing $at_desc ..."
   $at_traceon
 
-$as_echo "gtest.at:6" >"$at_check_line_file"
+$as_echo "swtest.at:6" >"$at_check_line_file"
 (test "x${WITH_GTEST}" != xyes || test "x${at_arg_swtest}" != "x:") \
-  && at_fn_check_skip 77 "$at_srcdir/gtest.at:6"
+  && at_fn_check_skip 77 "$at_srcdir/swtest.at:6"
 { set +x
-$as_echo "$at_srcdir/gtest.at:7: swtest \${GTEST_OPTS}"
-at_fn_check_prepare_notrace 'a ${...} parameter expansion' "gtest.at:7"
+$as_echo "$at_srcdir/swtest.at:7: swtest \${GTEST_OPTS}"
+at_fn_check_prepare_notrace 'a ${...} parameter expansion' "swtest.at:7"
 ( $at_check_trace; swtest ${GTEST_OPTS}
 ) >>"$at_stdout" 2>>"$at_stderr" 5>&-
 at_status=$? at_failed=false
 $at_check_filter
 echo stderr:; cat "$at_stderr"
 echo stdout:; cat "$at_stdout"
-at_fn_check_status 0 $at_status "$at_srcdir/gtest.at:7"
+at_fn_check_status 0 $at_status "$at_srcdir/swtest.at:7"
 $at_failed && at_fn_log_failure
 $at_traceon; }
 

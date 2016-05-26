@@ -447,6 +447,13 @@ void TNVSTester<V, Verifier, GivesValues, GivesNumKeys, GivesStringKeys>::TearDo
    ClearEOF();
 }
 
+#ifdef __AAL_WINDOWS__
+// Complaint about
+//   V value;
+// being used before it is initialized. Clearly value is assigned before being passed.
+#pragma warning(push)
+#pragma warning(disable:4703)
+#endif // __AAL_WINDOWS__
 template <typename V,
           typename Verifier,
           typename GivesValues,
@@ -482,7 +489,17 @@ void TNVSTester<V, Verifier, GivesValues, GivesNumKeys, GivesStringKeys>::AddGet
       TTalksToNVS< V, Verifier >::Verify(nvs, i, name, value);
    }
 }
+#ifdef __AAL_WINDOWS__
+#pragma warning(pop)
+#endif // __AAL_WINDOWS__
 
+#ifdef __AAL_WINDOWS__
+// Complaint about
+//   V value;
+// being used before it is initialized. Clearly value is assigned before being passed.
+#pragma warning(push)
+#pragma warning(disable:4703)
+#endif // __AAL_WINDOWS__
 template <typename V,
           typename Verifier,
           typename GivesValues,
@@ -518,6 +535,9 @@ void TNVSTester<V, Verifier, GivesValues, GivesNumKeys, GivesStringKeys>::AddGet
       TTalksToNVS< V, Verifier >::Verify(nvs, i, name, value);
    }
 }
+#ifdef __AAL_WINDOWS__
+#pragma warning(pop)
+#endif // __AAL_WINDOWS__
 
 template <typename V,
           typename Verifier,

@@ -206,14 +206,85 @@ void Read_Perf_CountersApp::sw_perfc_01(IBase *pAFUService, IBase *pFMEService)
    }
 
    PerfCounters Counters2(NVS2);
+   btInt errors = 0;
 
+   ////////////////////////////////////////////////////////////
+   // We didn't do anything we expect to change the counters - they should be the same.
    if ( Counters1 != Counters2 ) {
       ERR("SW-PERFC-01: Performance Counters mismatch:\n" << Counters1 << "\n\nversus\n\n" << Counters2);
-      ++m_Errors;
+      ++errors;
+   }
+
+   ////////////////////////////////////////////////////////////
+   // Make sure we are actually getting the counters we expect.
+   if ( !Counters1.Valid(PerfCounters::VERSION) ) {
+      ERR("SW-PERFC-01: AALPERF_VERSION not found in NVS.");
+      ++errors;
+   }
+
+   if ( !Counters1.Valid(PerfCounters::READ_HIT) ) {
+      ERR("SW-PERFC-01: AALPERF_READ_HIT not found in NVS.");
+      ++errors;
+   }
+
+   if ( !Counters1.Valid(PerfCounters::WRITE_HIT) ) {
+      ERR("SW-PERFC-01: AALPERF_WRITE_HIT not found in NVS.");
+      ++errors;
+   }
+
+   if ( !Counters1.Valid(PerfCounters::READ_MISS) ) {
+      ERR("SW-PERFC-01: AALPERF_READ_MISS not found in NVS.");
+      ++errors;
+   }
+
+   if ( !Counters1.Valid(PerfCounters::WRITE_MISS) ) {
+      ERR("SW-PERFC-01: AALPERF_WRITE_MISS not found in NVS.");
+      ++errors;
+   }
+
+   if ( !Counters1.Valid(PerfCounters::EVICTIONS) ) {
+      ERR("SW-PERFC-01: AALPERF_EVICTIONS not found in NVS.");
+      ++errors;
+   }
+
+   if ( !Counters1.Valid(PerfCounters::PCIE0_READ) ) {
+      ERR("SW-PERFC-01: AALPERF_PCIE0_READ not found in NVS.");
+      ++errors;
+   }
+
+   if ( !Counters1.Valid(PerfCounters::PCIE0_WRITE) ) {
+      ERR("SW-PERFC-01: AALPERF_PCIE0_WRITE not found in NVS.");
+      ++errors;
+   }
+
+   if ( !Counters1.Valid(PerfCounters::PCIE1_READ) ) {
+      ERR("SW-PERFC-01: AALPERF_PCIE1_READ not found in NVS.");
+      ++errors;
+   }
+
+   if ( !Counters1.Valid(PerfCounters::PCIE1_WRITE) ) {
+      ERR("SW-PERFC-01: AALPERF_PCIE1_WRITE not found in NVS.");
+      ++errors;
+   }
+
+   if ( !Counters1.Valid(PerfCounters::UPI_READ) ) {
+      ERR("SW-PERFC-01: AALPERF_UPI_READ not found in NVS.");
+      ++errors;
+   }
+
+   if ( !Counters1.Valid(PerfCounters::UPI_WRITE) ) {
+      ERR("SW-PERFC-01: AALPERF_UPI_WRITE not found in NVS.");
+      ++errors;
+   }
+
+   if ( errors > 0 ) {
+      ERR("SW-PERFC-01 NVS is " << NVS1);
       ERR("SW-PERFC-01 FAIL");
    } else {
       MSG("SW-PERFC-01 PASS");
    }
+
+   m_Errors += errors;
 }
 
 void Read_Perf_CountersApp::sw_perfc_02(IBase *pAFUService, IBase *pFMEService)
@@ -247,7 +318,10 @@ void Read_Perf_CountersApp::sw_perfc_02(IBase *pAFUService, IBase *pFMEService)
 
    PerfCounters Counters1(NVS1);
 
-   DoesNLBLpbk1 lpbk1(pAFUService);
+   ////////////////////////////////////////////////////////////
+   // Run an NLB transfer. We expect this to change some, though not necessarily all,
+   // perf counter values.
+   DoesNLBLpbk1 lpbk1(pAFUService, MB(2));
    btInt NLBErrors = lpbk1.NLBLpbk1();
 
    if ( NLBErrors > 0 ) {
@@ -266,14 +340,135 @@ void Read_Perf_CountersApp::sw_perfc_02(IBase *pAFUService, IBase *pFMEService)
    }
 
    PerfCounters Counters2(NVS2);
+   btInt errors = 0;
 
+   ////////////////////////////////////////////////////////////
+   // We expect some counter value to be changed by running NLB Lpbk1.
+   // If all counter values are the same before and after, then something is wrong.
    if ( Counters1 == Counters2 ) {
       ERR("SW-PERFC-02: Performance Counters should have changed:\n" << Counters1 << "\n\nversus\n\n" << Counters2);
-      ++m_Errors;
+      ++errors;
+   }
+
+   ////////////////////////////////////////////////////////////
+   // Make sure that we're not getting junk values.
+   if ( Counters1.Valid(PerfCounters::READ_HIT) ) {
+      if ( (AAL::btUnsigned64bitInt)-1 == Counters1.Value(PerfCounters::READ_HIT) ) {
+         ERR("SW-PERFC-02: AALPERF_READ_HIT is all 1's.");
+         ++errors;
+      }
+   } else {
+      ERR("SW-PERFC-02: AALPERF_READ_HIT not found in NVS.");
+      ++errors;
+   }
+
+   if ( Counters1.Valid(PerfCounters::WRITE_HIT) ) {
+      if ( (AAL::btUnsigned64bitInt)-1 == Counters1.Value(PerfCounters::WRITE_HIT) ) {
+         ERR("SW-PERFC-02: AALPERF_WRITE_HIT is all 1's.");
+         ++errors;
+      }
+   } else {
+      ERR("SW-PERFC-02: AALPERF_WRITE_HIT not found in NVS.");
+      ++errors;
+   }
+
+   if ( Counters1.Valid(PerfCounters::READ_MISS) ) {
+      if ( (AAL::btUnsigned64bitInt)-1 == Counters1.Value(PerfCounters::READ_MISS) ) {
+         ERR("SW-PERFC-02: AALPERF_READ_MISS is all 1's.");
+         ++errors;
+      }
+   } else {
+      ERR("SW-PERFC-02: AALPERF_READ_MISS not found in NVS.");
+      ++errors;
+   }
+
+   if ( Counters1.Valid(PerfCounters::WRITE_MISS) ) {
+      if ( (AAL::btUnsigned64bitInt)-1 == Counters1.Value(PerfCounters::WRITE_MISS) ) {
+         ERR("SW-PERFC-02: AALPERF_WRITE_MISS is all 1's.");
+         ++errors;
+      }
+   } else {
+      ERR("SW-PERFC-02: AALPERF_WRITE_MISS not found in NVS.");
+      ++errors;
+   }
+
+   if ( Counters1.Valid(PerfCounters::EVICTIONS) ) {
+      if ( (AAL::btUnsigned64bitInt)-1 == Counters1.Value(PerfCounters::EVICTIONS) ) {
+         ERR("SW-PERFC-02: AALPERF_EVICTIONS is all 1's.");
+         ++errors;
+      }
+   } else {
+      ERR("SW-PERFC-02: AALPERF_EVICTIONS not found in NVS.");
+      ++errors;
+   }
+
+   if ( Counters1.Valid(PerfCounters::PCIE0_READ) ) {
+      if ( (AAL::btUnsigned64bitInt)-1 == Counters1.Value(PerfCounters::PCIE0_READ) ) {
+         ERR("SW-PERFC-02: AALPERF_PCIE0_READ is all 1's.");
+         ++errors;
+      }
+   } else {
+      ERR("SW-PERFC-02: AALPERF_PCIE0_READ not found in NVS.");
+      ++errors;
+   }
+
+   if ( Counters1.Valid(PerfCounters::PCIE0_WRITE) ) {
+      if ( (AAL::btUnsigned64bitInt)-1 == Counters1.Value(PerfCounters::PCIE0_WRITE) ) {
+         ERR("SW-PERFC-02: AALPERF_PCIE0_WRITE is all 1's.");
+         ++errors;
+      }
+   } else {
+      ERR("SW-PERFC-02: AALPERF_PCIE0_WRITE not found in NVS.");
+      ++errors;
+   }
+
+   if ( Counters1.Valid(PerfCounters::PCIE1_READ) ) {
+      if ( (AAL::btUnsigned64bitInt)-1 == Counters1.Value(PerfCounters::PCIE1_READ) ) {
+         ERR("SW-PERFC-02: AALPERF_PCIE1_READ is all 1's.");
+         ++errors;
+      }
+   } else {
+      ERR("SW-PERFC-02: AALPERF_PCIE1_READ not found in NVS.");
+      ++errors;
+   }
+
+   if ( Counters1.Valid(PerfCounters::PCIE1_WRITE) ) {
+      if ( (AAL::btUnsigned64bitInt)-1 == Counters1.Value(PerfCounters::PCIE1_WRITE) ) {
+         ERR("SW-PERFC-02: AALPERF_PCIE1_WRITE is all 1's.");
+         ++errors;
+      }
+   } else {
+      ERR("SW-PERFC-02: AALPERF_PCIE1_WRITE not found in NVS.");
+      ++errors;
+   }
+
+   if ( Counters1.Valid(PerfCounters::UPI_READ) ) {
+      if ( (AAL::btUnsigned64bitInt)-1 == Counters1.Value(PerfCounters::UPI_READ) ) {
+         ERR("SW-PERFC-02: AALPERF_UPI_READ is all 1's.");
+         ++errors;
+      }
+   } else {
+      ERR("SW-PERFC-02: AALPERF_UPI_READ not found in NVS.");
+      ++errors;
+   }
+
+   if ( Counters1.Valid(PerfCounters::UPI_WRITE) ) {
+      if ( (AAL::btUnsigned64bitInt)-1 == Counters1.Value(PerfCounters::UPI_WRITE) ) {
+         ERR("SW-PERFC-02: AALPERF_UPI_WRITE is all 1's.");
+         ++errors;
+      }
+   } else {
+      ERR("SW-PERFC-02: AALPERF_UPI_WRITE not found in NVS.");
+      ++errors;
+   }
+
+   if ( errors > 0 ) {
       ERR("SW-PERFC-02 FAIL");
    } else {
       MSG("SW-PERFC-02 PASS");
    }
+
+   m_Errors += errors;
 }
 
 void Read_Perf_CountersApp::sw_perfc_03(IBase *pAFUService, IBase *pFMEService)
