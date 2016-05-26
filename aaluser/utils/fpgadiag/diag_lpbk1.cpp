@@ -79,9 +79,6 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 
    volatile btVirtAddr pOutputUsrVirt = m_pMyApp->OutputVirt();
 
-   // zero the output buffer
-   ::memset((void *)pOutputUsrVirt, 0, m_pMyApp->OutputSize());
-
    volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 
    // Clear the DSM status fields
@@ -167,6 +164,9 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 
    while ( sz <= CL(cmd.endcls) )
    {
+       // zero the output buffer
+       ::memset((void *)pOutputUsrVirt, 0, m_pMyApp->OutputSize());
+
 	    // Assert Device Reset
 	    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 

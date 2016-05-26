@@ -3,3 +3,6 @@
 # Google Tests for "Software" Services and Support.
 m4_include([harnessed/gtest/swtest/swtest.at])
 
+# Google Tests requiring an NLB Lpbk1 bit stream.
+m4_include([harnessed/gtest/nlb0test/nlb0test.at])
+

@@ -19,51 +19,32 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Config.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Console.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_GTest.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Mocks.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_RNG.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Signals.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Status.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Stream.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon.h" />
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Config.h" />
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Console.h" />
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_GTest.h" />
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Mocks.h" />
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_RNG.h" />
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Signals.h" />
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Status.h" />
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Stream.h" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\nlb0test\main.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{D253BEDB-18B8-412A-A6D9-962C54209B52}</ProjectGuid>
-    <Keyword>DynamicLibrary</Keyword>
-    <RootNamespace>libgtcommon</RootNamespace>
+    <ProjectGuid>{6AAFB8D0-80E0-47F1-BCC0-AA30473B9FFF}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>nlb0test</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -86,21 +67,18 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\</OutDir>
-    <IntDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\obj\$(ProjectName)\</IntDir>
-    <ExtensionsToDeleteOnClean>$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\</OutDir>
     <IntDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\obj\$(ProjectName)\</IntDir>
-    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\bin\</OutDir>
-    <IntDir>$(SolutionDir)winbuild\$(Configuration)\$(Platform)\obj\$(ProjectName)\</IntDir>
-    <ExtensionsToDeleteOnClean>$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -113,17 +91,16 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_ASSERT=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;__NO_BUILD_MESSAGES_;_CRT_RAND_S=1;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)aaluser\include;$(SolutionDir)aaluser\win</AdditionalIncludeDirectories>
-      <MinimalRebuild>true</MinimalRebuild>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PreprocessorDefinitions>__AAL_USER__=1;ENABLE_DEBUG=1;ENABLE_ASSERT=1;_NO_BUILD_MESSAGES_;HAVE_CONFIG_H;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include;$(SolutionDir)..\aalkernel\include</AdditionalIncludeDirectories>
       <BrowseInformation>true</BrowseInformation>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -133,24 +110,18 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;GTCOMMON_EXPORTS;GTEST_LINKED_AS_SHARED_LIBRARY=1;DBG_CSEMAPHORE=1;DBG_BARRIER=1;DBG_THREADGROUP=1;__AAL_USER__=1;ENABLE_DEBUG=1;ENABLE_ASSERT=1;_CRT_SECURE_NO_WARNINGS;NOMINMAX;WIN32;_DEBUG;DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\..\aaluser\include;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;$(SolutionDir)..\sdk\tests\swvalmod;$(SolutionDir)..\gtest\gtest-1.7.0\include;$(SolutionDir)..\gtest\gtest-1.7.0</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;GTEST_LINKED_AS_SHARED_LIBRARY=1;TEST_SUITE_BAT=1;DBG_CSEMAPHORE=1;DBG_BARRIER=1;DBG_THREADGROUP=1;__AAL_USER__=1;ENABLE_DEBUG=1;ENABLE_ASSERT=1;_CRT_SECURE_NO_WARNINGS;NOMINMAX;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;$(SolutionDir)..\..\aaluser\include;$(SolutionDir)..\..\aaluser\aas\OSAL;$(SolutionDir)..\..\aaluser\aas\AALRuntime;$(SolutionDir)..\sdk\tests\swvalmod;$(SolutionDir)..\sdk\tests\harnessed\gtest\gtcommon;$(SolutionDir)..\gtest\gtest-1.7.0\include;$(SolutionDir)..\gtest\gtest-1.7.0</AdditionalIncludeDirectories>
+      <BrowseInformation>true</BrowseInformation>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX64</TargetMachine>
+      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libaalrt.lib;$(OutDir)libgtcommon.lib;$(OutDir)libgtest.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libaalrt.lib;$(OutDir)libgtest.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <PreBuildEvent>
-      <Command>
-      </Command>
-    </PreBuildEvent>
-    <PreBuildEvent>
-      <Message>
-      </Message>
-    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -160,53 +131,41 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_ASSERT=1;ENABLE_DEBUG=0;DEBUG_BEYOND_LOGGER=1;_NO_BUILD_MESSAGES_;_CRT_RAND_S=1;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>__AAL_USER__=1;ENABLE_DEBUG=0;ENABLE_ASSERT=1;_NO_BUILD_MESSAGES_;HAVE_CONFIG_H;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include;$(SolutionDir)..\aalkernel\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
-    <PreBuildEvent>
-      <Command>cd $(SolutionDir)..\gtest
-.\unzip_gtest.bat</Command>
-    </PreBuildEvent>
-    <PreBuildEvent>
-      <Message>Decompress gtest tarball</Message>
-    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;GTCOMMON_EXPORTS;GTEST_LINKED_AS_SHARED_LIBRARY=1;DBG_CSEMAPHORE=1;DBG_BARRIER=1;DBG_THREADGROUP=1;__AAL_USER__=1;ENABLE_DEBUG=0;ENABLE_ASSERT=1;_CRT_SECURE_NO_WARNINGS;NOMINMAX;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\..\aaluser\include;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;$(SolutionDir)..\sdk\tests\swvalmod;$(SolutionDir)..\gtest\gtest-1.7.0\include;$(SolutionDir)..\gtest\gtest-1.7.0</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;GTEST_LINKED_AS_SHARED_LIBRARY=1;TEST_SUITE_BAT=1;DBG_CSEMAPHORE=1;DBG_BARRIER=1;DBG_THREADGROUP=1;__AAL_USER__=1;ENABLE_DEBUG=0;ENABLE_ASSERT=1;_NO_BUILD_MESSAGES_;_CRT_SECURE_NO_WARNINGS;NOMINMAX;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;$(SolutionDir)..\..\aaluser\include;$(SolutionDir)..\..\aaluser\aas\OSAL;$(SolutionDir)..\..\aaluser\aas\AALRuntime;$(SolutionDir)..\sdk\tests\swvalmod;$(SolutionDir)..\sdk\tests\harnessed\gtest\gtcommon;$(SolutionDir)..\gtest\gtest-1.7.0\include;$(SolutionDir)..\gtest\gtest-1.7.0</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
+      <TargetMachine>MachineX64</TargetMachine>
+      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libaalrt.lib;$(OutDir)libgtcommon.lib;$(OutDir)libgtest.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libaalrt.lib;$(OutDir)libgtest.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <PreBuildEvent>
-      <Command>
-      </Command>
-    </PreBuildEvent>
-    <PreBuildEvent>
-      <Message>
-      </Message>
-    </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
