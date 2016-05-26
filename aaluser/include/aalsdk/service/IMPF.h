@@ -84,9 +84,6 @@ BEGIN_NAMESPACE(AAL)
 // Write ordering feature
 #define MPF_WRO_BBB_GUID "56B06B48-9DD7-4004-A47E-0681B4207A6D"
 
-// For discovering if MPF Feature is enabled.
-#define MPF_FEATURE_ID 25
-
 /// MPF Service IID
 #ifndef iidMPFVTPService
 #define iidMPFVTPService __INTC_IID(INTC_sysSampleAFU, 0x0010)

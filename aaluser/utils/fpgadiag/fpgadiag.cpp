@@ -288,7 +288,8 @@ CMyApp::~CMyApp()
 
 void CMyApp::Stop()
 {
-	   // Freed all three so now Release() the Service through the Services IAALService::Release() method
+
+   // Freed all three so now Release() the Service through the Services IAALService::Release() method
    if ( NULL != m_pFMEService ) {
 		 (dynamic_ptr<IAALService>(iidService, m_pFMEService))->Release(TransactionID());
 		 Wait(); // For service freed notification.
@@ -299,6 +300,12 @@ void CMyApp::Stop()
 		 (dynamic_ptr<IAALService>(iidService, m_pNLBService))->Release(TransactionID());
 		 Wait(); // For service freed notification.
 		 m_pNLBService = NULL;
+   }
+
+   if (NULL != m_pVTP_AALService){
+	   (dynamic_ptr<IAALService>(iidService, m_pVTP_AALService))->Release(TransactionID());
+		Wait(); // For service freed notification.
+		m_pVTP_AALService = NULL;
    }
 
    if ( NULL != m_pRuntime ) {
@@ -711,7 +718,6 @@ void CMyApp::StartVTP()
 	// Ask ALI for a BBB with MPF's feature ID and the expected VTP GUID
 	NamedValueSet filter;
 	filter.Add( ALI_GETFEATURE_TYPE_KEY, static_cast<ALI_GETFEATURE_TYPE_DATATYPE>(ALI_DFH_TYPE_BBB) );
-	filter.Add( ALI_GETFEATURE_ID_KEY, static_cast<ALI_GETFEATURE_ID_DATATYPE>(MPF_FEATURE_ID) );
 	filter.Add( ALI_GETFEATURE_GUID_KEY, (ALI_GETFEATURE_GUID_DATATYPE)MPF_VTP_BBB_GUID );
 
 	// FIXME: This is here only because of a caching bug in
