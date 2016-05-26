@@ -93,6 +93,10 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
       return 1;
    }
 
+   if(NULL != m_pVTPService){
+	   m_pVTPService->vtpReset();
+   }
+
    //Set DSM base, high then low
    m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
 

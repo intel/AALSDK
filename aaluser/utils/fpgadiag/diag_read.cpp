@@ -100,8 +100,7 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
       return 1;
    }
 
-   if(NULL != m_pVTPService)
-   {
+   if(NULL != m_pVTPService){
 	   m_pVTPService->vtpReset();
    }
 
