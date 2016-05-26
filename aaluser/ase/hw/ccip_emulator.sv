@@ -1435,7 +1435,8 @@ module ccip_emulator
 	 // Read counts
 	 // ------------------------------------ //
 	 // Total counts
-	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr))    , ase_tx0_rdvalid_cnt);
+	  if (C0TxValid && isReadRequest(C0TxHdr))
+	    ase_tx0_rdvalid_cnt <= ase_tx0_rdvalid_cnt + (C0TxHdr.len + 1); 
 	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr)), ase_rx0_rdvalid_cnt);
 	 // C0Tx granular counts
 	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && isVARequest(C0TxHdr) ), rdreq_vc_cnt.va);
@@ -1451,10 +1452,15 @@ module ccip_emulator
 	 // ------------------------------------ //
 	 `incr_cnt ( (C1TxValid && isWriteRequest(C1TxHdr))   , ase_tx1_wrvalid_cnt);
 	 if (C1RxRspValid && isWriteResponse(C1RxHdr)) begin
-	    `incr_cnt ( isVL0Response(C1RxHdr)                    , ase_rx1_wrvalid_cnt);
-	    `incr_cnt ( (isVHxResponse(C1RxHdr) && C1RxHdr.format), ase_rx1_wrvalid_cnt);
+	    if (isVL0Response(C1RxHdr)) begin
+	       ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + 1;	       
+	    end
+	    else if (isVHxResponse(C1RxHdr) && C1RxHdr.format) begin
+	       ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + (C1RxHdr.clnum + 1);	       
+	    end
 	 end
 	 // Channel specific counts
+
 	 // ------------------------------------ //
 	 // WriteFence counts
 	 // ------------------------------------ //
