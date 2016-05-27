@@ -55,7 +55,10 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
    uint_type mcl = cmd.multicls;
    uint_type NumCacheLines = cmd.begincls;
 
-   const btInt StopTimeoutMillis = 250;
+   btInt StopTimeoutMillis = 250;
+   if ( cmd.AFUTarget == ALIAFU_NVS_VAL_TARGET_ASE){
+   	   StopTimeoutMillis = StopTimeoutMillis * 100000;
+   }
    btInt MaxPoll = StopTimeoutMillis;
 
    // We need to initialize the input and output buffers, so we need addresses suitable
@@ -85,6 +88,10 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
    if (0 != m_pALIResetService->afuReset()){
       ERR("AFU reset failed. Exiting test.");
       return 1;
+   }
+
+   if(NULL != m_pVTPService){
+	   m_pVTPService->vtpReset();
    }
 
    //Set DSM base, high then low
