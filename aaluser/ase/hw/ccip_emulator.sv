@@ -2611,16 +2611,14 @@ module ccip_emulator
 	 $display("SIM-SV: Simulation kill command received...");
 	 // Print transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display("  Transaction count \t|\tVA\t VL0\t VH0\t VH1 | \tMCL-0 \tMCL-1 \tMCL-3");
+	 $display("  Transaction count \t|\tVA \tVL0 \tVH0 \tVH1   |  MCL-0 \t MCL-1 \t MCL-3");
 	 $display("  ========================================================================================");
 	 $display("  MMIOWrReq %d | ", ase_rx0_mmiowrreq_cnt );
 	 $display("  MMIORdReq %d | ", ase_rx0_mmiordreq_cnt );
 	 $display("  MMIORdRsp %d | ", ase_tx2_mmiordrsp_cnt );
 	 $display("  UMsgHint  %d | ", ase_rx0_umsghint_cnt  );
 	 $display("  UMsgData  %d | ", ase_rx0_umsgdata_cnt  );
-	 // $sformat(print_str, "%d%d%d%d | %d %d %d", rdreq_vc_cnt.va, rdreq_vc_cnt.vl0, rdreq_vc_cnt.vh0, rdreq_vc_cnt.vh1, rdreq_mcl_cnt.mcl0, rdreq_mcl_cnt.mcl1, rdreq_mcl_cnt.mcl3);
 	 $display("  RdReq     %d | %08d %08d %08d %08d | %08d %08d %08d", ase_tx0_rdvalid_cnt, rdreq_vc_cnt.va, rdreq_vc_cnt.vl0, rdreq_vc_cnt.vh0, rdreq_vc_cnt.vh1, rdreq_mcl_cnt.mcl0, rdreq_mcl_cnt.mcl1, rdreq_mcl_cnt.mcl3);
-	 // $display("  RdReq     %d | %s", ase_tx0_rdvalid_cnt, print_str);	 
 	 $display("  RdResp    %d | %08d %08d %08d %08d | ",               ase_rx0_rdvalid_cnt, rdrsp_vc_cnt.va, rdrsp_vc_cnt.vl0, rdrsp_vc_cnt.vh0, rdrsp_vc_cnt.vh1);
 	 $display("  WrReq     %d | %08d %08d %08d %08d | %08d %08d %08d", ase_tx1_wrvalid_cnt, wrreq_vc_cnt.va, wrreq_vc_cnt.vl0, wrreq_vc_cnt.vh0, wrreq_vc_cnt.vh1, wrreq_mcl_cnt.mcl0, wrreq_mcl_cnt.mcl1, wrreq_mcl_cnt.mcl3);
 	 $display("  WrResp    %d | %08d %08d %08d %08d | %08d %08d %08d", ase_rx1_wrvalid_cnt, wrrsp_vc_cnt.va, wrrsp_vc_cnt.vl0, wrrsp_vc_cnt.vh0, wrrsp_vc_cnt.vh1, wrrsp_mcl_cnt.mcl0, wrrsp_mcl_cnt.mcl1, wrrsp_mcl_cnt.mcl3);
