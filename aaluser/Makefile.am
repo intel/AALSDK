@@ -236,7 +236,6 @@ include/aalsdk/rm/InstanceRecord.h
 servicehdrs_HEADERS=\
 include/aalsdk/service/IALIAFU.h \
 include/aalsdk/service/IMPF.h \
-include/aalsdk/service/MPFService.h \
 include/aalsdk/service/ALIService.h \
 include/aalsdk/service/HWALIAFUService.h \
 include/aalsdk/service/ASEALIAFUService.h \
@@ -315,7 +314,6 @@ SERVICE_EXTRA=\
 include/aalsdk/service/HWALIAFUService.h.in \
 include/aalsdk/service/ASEALIAFUService.h.in \
 include/aalsdk/service/SWSimALIAFUService.h.in \
-include/aalsdk/service/MPFService.h.in \
 include/aalsdk/service/ALIService.h.in
 
 UAIA_EXTRA=\

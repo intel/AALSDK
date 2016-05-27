@@ -172,8 +172,7 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/service/HWALIAFUService.h
                  include/aalsdk/service/ASEALIAFUService.h
                  include/aalsdk/service/SWSimALIAFUService.h
-                 include/aalsdk/service/ALIService.h
-                 include/aalsdk/service/MPFService.h])
+                 include/aalsdk/service/ALIService.h])
 
 AC_CONFIG_LINKS([include/aalsdk/ase/ase_common.h:ase/sw/ase_common.h])
 
