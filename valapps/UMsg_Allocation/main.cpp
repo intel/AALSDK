@@ -37,13 +37,15 @@ public:
    UMsg_Client();
    ~UMsg_Client();
 
-   btInt run();           ///< Return 0 if success
+   btInt run();                 ///< Return 0 if success
 
-   btInt setUmsgHint();   ///< Return 0 if success
+   btInt setUmsgHint();         ///< Return 0 if success
 
-   btInt unsetUmsgHint(); ///< Return 0 if success
+   btInt unsetUmsgHint();       ///< Return 0 if success
 
-   btInt countUmsgs();    ///< Return 0 if success
+   btInt countUmsgs();          ///< Return 0 if success
+
+   btInt VerifyUmsgWrites();    ///< Return 0 if success
 
    // <begin IServiceClient interface>
    void serviceAllocated(IBase *pServiceBase,
@@ -358,6 +360,10 @@ btInt UMsg_Client::run()
       {
          MSG("Number of Umsgs is the number supported by hardware");
       }
+      if ( 0 == VerifyUmsgWrites())
+      {
+         MSG("UMsg Writes outside of the defined CL but within the 4KiB block doesn't SegFault");
+      }
    }
 
    cout << endl;
@@ -452,6 +458,30 @@ btInt UMsg_Client :: countUmsgs()
 
    return 0;
 }
+
+btInt UMsg_Client :: VerifyUmsgWrites()
+{
+   //   Verify that writing UMsgs outside of defined CL but within the 4KiB block
+   //   does nothing (no segfault, no HW interaction except a write to allocated
+   //   memory).
+
+   btUnsignedInt numUmsgs = m_pALIuMSGService->umsgGetNumber();
+
+   m_UMsgVirt = m_pALIuMSGService->umsgGetAddress(0);
+   if(NULL == m_UMsgVirt){
+     ERR("No uMSG support");
+     return 1;
+   }
+
+   btUnsignedInt numCLs = (numUmsgs * KB(4))/CL(1);
+   btUnsignedInt i;
+   for (i = 0; i < numCLs; i++ ){
+      *(btUnsigned32bitInt *)(m_UMsgVirt + CL(i)) = HIGH;
+   }
+
+   return 0;
+}
+
 
 int main(int argc, char *argv[])
 {
