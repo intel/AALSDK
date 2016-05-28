@@ -47,6 +47,8 @@ public:
 
    btInt VerifyUmsgWrites();    ///< Return 0 if success
 
+   void  VerifyUmsgAddress();
+
    // <begin IServiceClient interface>
    void serviceAllocated(IBase *pServiceBase,
                          TransactionID const &rTranID);
@@ -364,6 +366,8 @@ btInt UMsg_Client::run()
       {
          MSG("UMsg Writes outside of the defined CL but within the 4KiB block doesn't SegFault");
       }
+
+      VerifyUmsgAddress();
    }
 
    cout << endl;
@@ -482,6 +486,22 @@ btInt UMsg_Client :: VerifyUmsgWrites()
    return 0;
 }
 
+void UMsg_Client :: VerifyUmsgAddress()
+{
+   //   Verify that the address available for UMsg writing correspond to the
+   //   correct hardware-defined addresses,
+
+   m_UMsgVirt = m_pALIuMSGService->umsgGetAddress(0);
+   if(NULL == m_UMsgVirt){
+     ERR("No uMSG support");
+     return;
+   }
+   m_UMsgPhys = m_pALIBufferService->bufferGetIOVA(m_UMsgVirt);
+
+   cout << "Virtual address of the UMsg Workspace: 0x" << std::hex << m_UMsgVirt << std::dec << endl;
+   cout << "Physical address of the UMsg Workspace: 0x" << std::hex << m_UMsgPhys << std::dec << endl;
+
+}
 
 int main(int argc, char *argv[])
 {
