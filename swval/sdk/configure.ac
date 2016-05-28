@@ -40,9 +40,10 @@ AALSDK_LTLIB_VERSION([ASE],          [libASE],          	[1],[1],[1])
 AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     	[1],[1],[1])
 AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    	[1],[1],[1])
 AALSDK_LTLIB_VERSION([SWSIMALIAFU],  [libSWSimALIAFU],  	[1],[1],[1])
+AALSDK_LTLIB_VERSION([ALI],          [libALI],          	[1],[1],[1])
 
-AALSDK_LTLIB_VERSION([SWVALMOD],     [libswvalmod],         [3],[2],[1])
-AALSDK_LTLIB_VERSION([SWVALSVCMOD],  [libswvalsvcmod],  	[6],[5],[4])
+AALSDK_LTLIB_VERSION([SWVALMOD],     [libswvalmod],      [3],[2],[1])
+AALSDK_LTLIB_VERSION([SWVALSVCMOD],  [libswvalsvcmod],   [6],[5],[4])
 
 dnl ############################################################################
 dnl ## Optional Packages #######################################################
@@ -132,9 +133,8 @@ dnl ############################################################################
 VERIFY_OPTIONS
 
 AC_CONFIG_FILES([tests/atlocal])
-AC_CONFIG_FILES([tests/swtest:tests/run/swtest.in],         [chmod 755 tests/swtest])
-dnl AC_CONFIG_FILES([tests/nightly:tests/run/nightly.in], [chmod 755 tests/nightly])
-dnl AC_CONFIG_FILES([tests/weekly:tests/run/weekly.in],   [chmod 755 tests/weekly])
+AC_CONFIG_FILES([tests/swtest:tests/run/swtest.in],     [chmod 755 tests/swtest])
+AC_CONFIG_FILES([tests/nlb0test:tests/run/nlb0test.in], [chmod 755 tests/nlb0test])
 AC_CONFIG_FILES([tests/OSAL_TestSem:tests/run/OSAL_TestSem.in], [chmod 755 tests/OSAL_TestSem])
 AC_CONFIG_FILES([tests/OSAL_TestThreadGroup:tests/run/OSAL_TestThreadGroup.in], [chmod 755 tests/OSAL_TestThreadGroup])
 
@@ -149,7 +149,8 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/aalclp/aalclp.h
                  include/aalsdk/service/HWALIAFUService.h
                  include/aalsdk/service/ASEALIAFUService.h
-                 include/aalsdk/service/SWSimALIAFUService.h])
+                 include/aalsdk/service/SWSimALIAFUService.h
+                 include/aalsdk/service/ALIService.h])
 
 AC_CONFIG_LINKS([include/aalsdk/ase/ase_common.h:ase/sw/ase_common.h])
 
@@ -170,12 +171,16 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/ALIAFU/HWALIAFU/Makefile
                  utils/ALIAFU/ASEALIAFU/Makefile
                  utils/ALIAFU/SWSimALIAFU/Makefile
+                 utils/ALIAFU/ALI/Makefile
                  utils/scripts/Makefile])
 
                  
 AC_CONFIG_FILES([tests/Makefile
                  tests/harnessed/Makefile
                  tests/harnessed/gtest/Makefile
+                 tests/harnessed/gtest/gtcommon/Makefile
+                 tests/harnessed/gtest/swtest/Makefile
+                 tests/harnessed/gtest/nlb0test/Makefile
                  tests/standalone/Makefile
                  tests/standalone/OSAL_TestSem/Makefile
                  tests/standalone/OSAL_TestThreadGroup/Makefile

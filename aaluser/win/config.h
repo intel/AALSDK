@@ -104,5 +104,10 @@
 #define SWSIMALIAFU_VERSION_REVISION  0
 #define SWSIMALIAFU_VERSION_AGE       0
 
+#define MPF_VERSION 				  "0.0.0"
+#define MPF_VERSION_CURRENT 		  0
+#define MPF_VERSION_REVISION 		  0
+#define MPF_VERSION_AGE 			  0
+
 #define STDC_HEADERS  1
 #define HAVE_STDINT_H 1

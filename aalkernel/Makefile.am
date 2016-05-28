@@ -86,6 +86,7 @@ kernelhdrsdir=$(aalsdkhdrsdir)/kernel
 encoderhdrsdir=$(kernelhdrsdir)/encoder_sample_kbae
 
 kernelhdrs_HEADERS=\
+include/aalsdk/kernel/aalbus_Defs.h \
 include/aalsdk/kernel/aalbus-device.h \
 include/aalsdk/kernel/aalbus.h \
 include/aalsdk/kernel/aalbus_iconfigmonitor.h \
@@ -93,7 +94,6 @@ include/aalsdk/kernel/aalbus-ipip.h \
 include/aalsdk/kernel/aalbus_iupdate_config.h \
 include/aalsdk/kernel/aaldefs.h \
 include/aalsdk/kernel/aaldevice.h \
-include/aalsdk/kernel/iaaldevice.h \
 include/aalsdk/kernel/aalids.h \
 include/aalsdk/kernel/aalinterface.h \
 include/aalsdk/kernel/aalmafu-events.h \
@@ -107,17 +107,19 @@ include/aalsdk/kernel/aalrm-services.h \
 include/aalsdk/kernel/AALTransactionID_s.h \
 include/aalsdk/kernel/aaltypes.h \
 include/aalsdk/kernel/aalui-events.h \
+include/aalsdk/kernel/aalui.h \
 include/aalsdk/kernel/AALWorkspace.h \
 include/aalsdk/kernel/aalwsservice.h \
-include/aalsdk/kernel/ahmpip.h \
 include/aalsdk/kernel/ahmpipdefs.h \
+include/aalsdk/kernel/ahmpip.h \
 include/aalsdk/kernel/ccidefs.h \
-include/aalsdk/kernel/fappip.h \
-include/aalsdk/kernel/spl2defs.h \
-include/aalsdk/kernel/ccipdriver.h \
 include/aalsdk/kernel/ccip_defs.h \
+include/aalsdk/kernel/ccipdriver.h \
+include/aalsdk/kernel/fappip.h \
+include/aalsdk/kernel/iaaldevice.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \
+include/aalsdk/kernel/spl2defs.h \
 include/aalsdk/kernel/vafu2defs.h
 
 if COND_AAL_MODPROBE_CONFIG

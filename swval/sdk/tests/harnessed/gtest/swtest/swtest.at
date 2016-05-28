@@ -1,0 +1,9 @@
+# Software-only Google Tests -*- Autotest -*-
+
+AT_BANNER([[gtest - Software-only Tests]])
+
+AT_SETUP([SWTest])
+AT_SKIP_IF([test "x${WITH_GTEST}" != xyes || test "x${at_arg_swtest}" != "x:"])
+AT_CHECK([swtest ${GTEST_OPTS}], [0], [ignore], [ignore])
+AT_CLEANUP
+

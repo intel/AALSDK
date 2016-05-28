@@ -365,11 +365,11 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
         } break; // case ccipdrv_getPower
 
-        AFU_COMMAND_CASE(ccipdrv_gertThrermal) {
+        AFU_COMMAND_CASE(ccipdrv_gertThermal) {
 
           bt32bitInt res                        = 0;
           struct CCIP_THERMAL_PWR thermal_power = {0};
-          PVERBOSE("ccipdrv_gertThrermal \n");
+          PVERBOSE("ccipdrv_gertThermal \n");
 
           res= get_fme_thermal(cci_aaldev_pfme(pdev) ,&thermal_power);
           if(0 != res ) {

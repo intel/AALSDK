@@ -1136,46 +1136,40 @@ declare -ra COPYRIGHT_USER_CHECKED_SUFFIXES=(\
 )
 declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
 'aalclp.l' \
-'aalclp.h.in' \
 'aalsdk.m4' \
 'doxygen.m4' \
-'AASService.h.in' \
-'AASEDSService.h.in' \
 'configure.ac' \
 'COPYING' \
 'Doxyfile.in' \
 'Makefile.am' \
 'OSALService.h.in' \
+'AASService.h.in' \
 'AALRuntimeModule.h.in' \
-'ASEALIAFUService.h.in' \
-'HWALIAFUService.h.in' \
-'SWSimALIAFUService.h.in' \
-'VTPService.h.in' \
+'ResMgrService.h.in' \
 'RRMService.h.in' \
-'ResMgrService.h.in'\
+'AIAService.h.in' \
+'aalclp.h.in' \
+'HWALIAFUService.h.in' \
+'ASEALIAFUService.h.in' \
+'SWSimALIAFUService.h.in'\
+'ALIService.h.in'\
 )
 declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
-'aalclp.h' \
 'aalclp.c' \
-'AASService.h' \
-'AASEDSService.h' \
-'AASRegistrarService.h' \
 'ltmain.sh' \
-'MAFUTransService.h' \
-'nlb-lpbk1.cpp' \
-'nlb-read.cpp' \
-'nlb-write.cpp' \
-'nlb-trput.cpp' \
 'OSALService.h' \
-'Readme.MultiPackage.txt' \
-'uAIAService.h' \
+'AASService.h' \
 'AALRuntimeModule.h' \
-'ASEALIAFUService.h' \
-'HWALIAFUService.h' \
-'SWSimALIAFUService.h' \
-'VTPService.h' \
-'RRMService.h' \
 'ResMgrService.h' \
+'RRMService.h' \
+'AIAService.h' \
+'aalclp.h' \
+'HWALIAFUService.h' \
+'ASEALIAFUService.h' \
+'SWSimALIAFUService.h' \
+'ALIService.h' \
+'Readme.MultiPackage.txt' \
+'aalbus_Defs.h' \
 'aalbus-device.h' \
 'aalbus.h' \
 'aalbus_iconfigmonitor.h' \
@@ -1193,22 +1187,21 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'aalrm_server.h' \
 'aalrm_server-services.h' \
 'aalrm-services.h' \
-'aalsession.h' \
 'AALTransactionID_s.h' \
 'aaltypes.h' \
 'aalui-events.h' \
+'aalui.h' \
 'AALWorkspace.h' \
 'aalwsservice.h' \
 'ahmpipdefs.h' \
 'ahmpip.h' \
 'ccidefs.h' \
-'kosal.h' \
-'README.REPO' \
-'iaaldevice.h' \
+'ccip_defs.h' \
 'ccipdriver.h' \
-'ccipdrv-events.h' \
-'spl2defs.h' \
 'fappip.h' \
+'iaaldevice.h' \
+'kosal.h' \
+'spl2defs.h' \
 'vafu2defs.h' \
 'mm_debug_link_interface.h' \
 'mm_debug_link_linux.cpp' \

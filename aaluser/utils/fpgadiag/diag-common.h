@@ -44,6 +44,7 @@
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aalclp/aalclp.h>
 #include <aalsdk/service/IALIAFU.h>
+#include <aalsdk/service/IMPF.h>
 #include <aalsdk/AAL.h>
 #include <aalsdk/Runtime.h>
 #include <aalsdk/utils/NLBVAFU.h>
@@ -125,6 +126,7 @@ public:
    virtual void       serviceReleased(TransactionID const &rTranID = TransactionID());
    virtual void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent){};  // Ignored TODO better implementation
    virtual void  serviceReleaseFailed(const IEvent &rEvent);
+   virtual void          serviceFreed(TransactionID const & = TransactionID());
    // </IServiceClient>
 
    btVirtAddr DSMVirt()    const { return m_DSMVirt;    } ///< Accessor for the DSM workspace.
@@ -151,6 +153,11 @@ public:
    /// @brief Routine to allocate input, output, DSM and Umsg workspaces.
    void allocateWorkspaces();
 
+   // @brief Allocate a buffer using either VTP or the base allocator
+   ali_errnum_e bufferAllocate( btWSSize             Length,
+							    btVirtAddr          *pBufferptr );
+
+
    /// @brief Mutator for setting the NVS value that selects the AFU Delegate.
    void AFUTarget(const std::string &target) { m_AFUTarget = target; }
    /// @brief Accessor for the NVS value that selects the AFU Delegate.
@@ -172,11 +179,15 @@ public:
    operator IALIReset * ()  { return m_pALIResetService; }
    operator IALIUMsg * ()   { return m_pALIuMSGService; }
    operator IALIPerf * ()   { return m_pALIPerf; }
+   operator IMPFVTP * ()    { return m_pVTPService; }
 
+   void StartVTP();                  ///< Start the VTP service
+   btInt VTPActive() const             { return m_VTPActive;   }
 protected:
    enum {
       AFU,
-      FME
+      FME,
+      VTP
    };
 
    std::string  m_AFUTarget; 		 ///< The NVS value used to select the AFU Delegate (FPGA, ASE, or SWSim).
@@ -185,12 +196,16 @@ protected:
    IRuntime    *m_pRuntime;
    IBase       *m_pNLBService;       ///< The generic AAL Service interface for the AFU.
    IBase       *m_pFMEService;       ///< The generic AAL Service interface for the AFU.
+   IBase       *m_pVTP_AALService;	 ///< The generic AAL Service interface for the VTP
    CSemaphore   m_Sem;
    IALIBuffer  *m_pALIBufferService; ///< Pointer to Buffer Service
    IALIMMIO    *m_pALIMMIOService;   ///< Pointer to MMIO Service
    IALIReset   *m_pALIResetService;  ///< Pointer to AFU Reset Service
    IALIUMsg    *m_pALIuMSGService;   ///< Pointer to uMSg Service
    IALIPerf    *m_pALIPerf;          ///< ALI Performance Monitor
+   IMPFVTP     *m_pVTPService;    	 ///< Pointer to VTP buffer service
+   btCSROffset  m_VTPDFHOffset;   	 ///< VTP DFH offset
+   btBool       m_VTPActive;      	 ///< Is the VTP service available?
    btBool       m_isOK;
 
    // Workspace info
@@ -243,6 +258,7 @@ protected:
       m_pALIBufferService((IALIBuffer *) *pMyApp),
       m_pALIResetService((IALIReset *) *pMyApp),
       m_pALIuMSGService((IALIUMsg *) *pMyApp),
+      m_pVTPService((IMPFVTP *) *pMyApp),
       m_pALIPerf((IALIPerf *) *pMyApp)
    {
       ASSERT(NULL != m_pMyApp);
@@ -277,6 +293,7 @@ protected:
    IALIReset  		  *m_pALIResetService;  ///< Pointer to AFU Reset Service
    IALIUMsg   		  *m_pALIuMSGService;   ///< Pointer to uMSg Service
    IALIPerf   		  *m_pALIPerf;          ///< ALI Performance Monitor
+   IMPFVTP            *m_pVTPService;       ///< Pointer to VTP buffer service
    btUnsigned64bitInt  m_PerfMonitors[NUM_PERF_MONITORS];
    btUnsigned64bitInt  m_SavedPerfMonitors[NUM_PERF_MONITORS];
    std::string 		   m_RdBw;

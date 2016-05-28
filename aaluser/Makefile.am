@@ -176,6 +176,7 @@ edshdrs_HEADERS=\
 include/aalsdk/eds/AASEventDeliveryService.h 
 
 kernelhdrs_HEADERS=\
+include/aalsdk/kernel/aalbus_Defs.h \
 include/aalsdk/kernel/aalbus-device.h \
 include/aalsdk/kernel/aalbus.h \
 include/aalsdk/kernel/aalbus_iconfigmonitor.h \
@@ -183,7 +184,6 @@ include/aalsdk/kernel/aalbus-ipip.h \
 include/aalsdk/kernel/aalbus_iupdate_config.h \
 include/aalsdk/kernel/aaldefs.h \
 include/aalsdk/kernel/aaldevice.h \
-include/aalsdk/kernel/iaaldevice.h \
 include/aalsdk/kernel/aalids.h \
 include/aalsdk/kernel/aalinterface.h \
 include/aalsdk/kernel/aalmafu-events.h \
@@ -197,18 +197,20 @@ include/aalsdk/kernel/aalrm-services.h \
 include/aalsdk/kernel/AALTransactionID_s.h \
 include/aalsdk/kernel/aaltypes.h \
 include/aalsdk/kernel/aalui-events.h \
+include/aalsdk/kernel/aalui.h \
 include/aalsdk/kernel/AALWorkspace.h \
 include/aalsdk/kernel/aalwsservice.h \
-include/aalsdk/kernel/ahmpip.h \
 include/aalsdk/kernel/ahmpipdefs.h \
+include/aalsdk/kernel/ahmpip.h \
 include/aalsdk/kernel/ccidefs.h \
-include/aalsdk/kernel/fappip.h \
-include/aalsdk/kernel/spl2defs.h \
+include/aalsdk/kernel/ccip_defs.h \
 include/aalsdk/kernel/ccipdriver.h \
+include/aalsdk/kernel/fappip.h \
+include/aalsdk/kernel/iaaldevice.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \
+include/aalsdk/kernel/spl2defs.h \
 include/aalsdk/kernel/vafu2defs.h
-
 
 osalhdrs_HEADERS=\
 include/aalsdk/osal/CriticalSection.h \
@@ -233,9 +235,12 @@ include/aalsdk/rm/InstanceRecord.h
 
 servicehdrs_HEADERS=\
 include/aalsdk/service/IALIAFU.h \
+include/aalsdk/service/IMPF.h \
+include/aalsdk/service/ALIService.h \
 include/aalsdk/service/HWALIAFUService.h \
 include/aalsdk/service/ASEALIAFUService.h \
-include/aalsdk/service/SWSimALIAFUService.h
+include/aalsdk/service/SWSimALIAFUService.h 
+
 
 uaiahdrs_HEADERS=\
 include/aalsdk/uaia/AIA.h \
@@ -246,6 +251,7 @@ include/aalsdk/utils/AALEventUtilities.h \
 include/aalsdk/utils/AALWorkSpaceUtilities.h \
 include/aalsdk/utils/CSyncClient.h \
 include/aalsdk/utils/NLBVAFU.h \
+include/aalsdk/utils/cci_mpf_csrs.h \
 include/aalsdk/utils/ResMgrUtilities.h \
 include/aalsdk/utils/SingleAFUApp.h \
 include/aalsdk/utils/Utilities.h
@@ -307,7 +313,8 @@ include/aalsdk/rm/RRMService.h.in
 SERVICE_EXTRA=\
 include/aalsdk/service/HWALIAFUService.h.in \
 include/aalsdk/service/ASEALIAFUService.h.in \
-include/aalsdk/service/SWSimALIAFUService.h.in
+include/aalsdk/service/SWSimALIAFUService.h.in \
+include/aalsdk/service/ALIService.h.in
 
 UAIA_EXTRA=\
 include/aalsdk/uaia/AIAService.h.in 
@@ -315,6 +322,7 @@ include/aalsdk/uaia/AIAService.h.in
 UTILS_EXTRA=\
 utils/fpgadiag/fpgasane_nlb400_0.sh \
 utils/fpgadiag/fpgasane_nlb400_3.sh \
+utils/fpgadiag/fpgasane_nlb400_7.sh \
 utils/scripts/setcpupwr \
 utils/scripts/setfpgapwr \
 utils/scripts/getcpupwr \

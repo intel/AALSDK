@@ -1,633 +1,12 @@
 // INTEL CONFIDENTIAL - For Intel Internal Use Only
-#ifndef __GTCOMMON_H__
-#define __GTCOMMON_H__
-#include <cstdio>
-#include <string>
-#include <limits>
-#include <fstream>
-#include <sstream>
-#include <list>
-#include <map>
-
-#include <aalsdk/AAL.h>
-#include <aalsdk/Runtime.h>
-using namespace AAL;
-
-#include "swvalmod.h"
-#include "swvalsvcmod.h"
-
-#include "gtest/gtest.h"
-
-#define MINUTES_IN_TERMS_OF_MILLIS(__x) ( ((AAL::btTime)__x) * ((AAL::btTime)60000) )
-#define HOURS_IN_TERMS_OF_MILLIS(__x)   ( ((AAL::btTime)__x) * ((AAL::btTime)60000) * ((AAL::btTime)60) )
-
-#if   defined( __AAL_WINDOWS__ )
-# define cpu_yield()       ::Sleep(0)
-# define sleep_millis(__x) ::Sleep(__x)
-# define sleep_sec(__x)    ::Sleep(1000 * (__x))
-#elif defined( __AAL_LINUX__ )
-# define cpu_yield()       ::usleep(0)
-# define sleep_millis(__x) ::usleep((__x) * 1000)
-# define sleep_sec(__x)    ::sleep(__x)
-#endif // OS
-
-BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(Testing)
-OSAL_API AAL::btUIntPtr DbgOSLThreadCount();
-OSAL_API void DbgOSLThreadDelThr(AAL::btTID );
-   END_NAMESPACE(Testing)
-END_NAMESPACE(AAL)
-
-class GlobalTestConfig
-{
-public:
-   static GlobalTestConfig & GetInstance();
-
-   // Certain thread tests require entering a tight loop, yielding the cpu in order
-   // to allow other threads to reach some state. Defines the max number of polls
-   // for such loops.
-   AAL::btUIntPtr MaxCPUYieldPolls() const { return 100; }
-
-   AAL::btUIntPtr CurrentThreads() const
-   {
-      return AAL::Testing::DbgOSLThreadCount();
-   }
-
-   AAL::btUnsigned32bitInt RandSeed() const
-   {
-      return (AAL::btUnsigned32bitInt) ::testing::UnitTest::GetInstance()->random_seed();
-   }
-
-   void        Vpath(const std::string &s) { m_Vpath = s;    }
-   std::string Vpath() const               { return m_Vpath; }
-
-protected:
-   GlobalTestConfig();
-   virtual ~GlobalTestConfig();
-
-   std::string m_Vpath; // Root dir of the configure'd build tree.
-
-   static GlobalTestConfig sm_Instance;
-};
-
-// Enter a tight loop, yielding the cpu so long as __predicate evaluates to true.
-#define YIELD_WHILE(__predicate) \
-do                               \
-{                                \
-   while ( __predicate ) {       \
-      cpu_yield();               \
-   }                             \
-}while(0)
-
-// Yield the cpu the given number of times.
-#define YIELD_X(__x)                                 \
-do                                                   \
-{                                                    \
-   AAL::btUIntPtr       __i;                         \
-   const AAL::btUIntPtr __N = (AAL::btUIntPtr)(__x); \
-   for ( __i = 0 ; __i < __N ; ++__i ) {             \
-      cpu_yield();                                   \
-   }                                                 \
-}while(0)
-
-// Yield the cpu a fixed number of times.
-#define YIELD_N()                                                                 \
-do                                                                                \
-{                                                                                 \
-   AAL::btUIntPtr       __i;                                                      \
-   const AAL::btUIntPtr __N = GlobalTestConfig::GetInstance().MaxCPUYieldPolls(); \
-   for ( __i = 0 ; __i < __N ; ++__i ) {                                          \
-      cpu_yield();                                                                \
-   }                                                                              \
-}while(0)
-
-// Yield the cpu Config.MaxCPUYieldPolls() times, executing __expr after each yield.
-#define YIELD_N_FOREACH(__expr)                                                   \
-do                                                                                \
-{                                                                                 \
-   AAL::btUIntPtr       __i;                                                      \
-   const AAL::btUIntPtr __N = GlobalTestConfig::GetInstance().MaxCPUYieldPolls(); \
-   for ( __i = 0 ; __i < __N ; ++__i ) {                                          \
-      cpu_yield();                                                                \
-      __expr ;                                                                    \
-   }                                                                              \
-}while(0)
-
-////////////////////////////////////////////////////////////////////////////////
-
-template <typename X>
-void MySort(X *p, btUnsignedInt n)
-{
-   // Selection Sort
-   btUnsignedInt i;
-   btUnsignedInt j;
-   btUnsignedInt k;
-
-   for ( i = 0 ; i < n ; ++i ) {
-      k = i;
-      for ( j = i + 1 ; j < n ; ++j ) {
-         if ( *(p + j) < *(p + k) ) {
-            k = j;
-         }
-      }
-      std::swap(*(p + i), *(p + k));
-   }
-}
-
-template <typename X>
-X UniqueIntRand(X *p, btUnsignedInt n, X mod, btUnsigned32bitInt *R)
-{
-   X             res;
-   btBool        unique;
-   btUnsignedInt i;
-
-   do
-   {
-      res = (X) GetRand(R);
-      if ( mod > 0 ) {
-         res %= mod;
-      }
-
-      unique = true;
-      for ( i = 0 ; i < n ; ++i ) {
-         if ( res == *(p + i) ) {
-            unique = false;
-            break;
-         }
-      }
-
-   }while( !unique );
-
-   return res;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-/*
-
-In Linux, the thread-safe Random Number Generator int rand_r(unsigned int *seedp) uses
-the data value stored at the input parameter as an input seed for generating the next
-number. With this implementation of rand_r(), the sequence of random numbers is
-repeatable.
-
-  eg.
-   unsigned s;
-   int      r;
-
-   s = 3;
-   r = rand_r(&s); // say that r == 5
-   r = rand_r(&s); // say that r == 1
-   r = rand_r(&s); // say that r == 2
-   ...
-   s = 3;
-   r = rand_r(&s); // we expect r == 5
-   r = rand_r(&s); // we expect r == 1
-   r = rand_r(&s); // we expect r == 2
-
-This behavior enables snapshot and replay, which is essential for test cases that
-rely on random numbers.
-
-In Windows, the thread-safe RNG errno_t rand_s(unsigned int *randomValue) does not
-consider the data value stored at the input parameter and does not produce a repeatable
-sequence.
-
-Because of this lack of repeatability in the RNG sequence as create by rand_s(), we
-fall back to wrapping synchronization around srand() and rand() to enable repeatable
-RNG sequences in both Linux and Windows.
-
-*/
-
-#if 0
-// This implementation uses srand() and rand(), but there was a segfault in
-// Windows when calling srand(). Needs further debugging.
-
-class RepeatableRandomInt
-{
-public:
-   RepeatableRandomInt(unsigned Seed);
-
-   void Snapshot();
-   void Replay();
-
-   int rng();
-
-protected:
-   unsigned m_Seed;
-   unsigned m_CallCount;
-   unsigned m_SaveCallCount;
-
-#if   defined( __AAL_WINDOWS__ )
-   static CRITICAL_SECTION sm_Lock;
-#elif defined( __AAL_LINUX__ )
-   static pthread_mutex_t  sm_Lock;
-#endif // OS
-};
-#endif // 0
-
-// This implementation cheats by creating a fixed sequence of random numbers.
-class RepeatableRandomInt
-{
-public:
-   RepeatableRandomInt(unsigned Seed);
-
-   void Snapshot();
-   void Replay();
-
-   int rng();
-
-protected:
-   unsigned m_Index;
-   unsigned m_SaveIndex;
-
-   static int sm_RandomInts[100];
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-template <typename S>
-class IOStreamMixin
-{
-public:
-   IOStreamMixin() :
-      m_IOStream(std::ios_base::in|std::ios_base::out|std::ios_base::binary)
-   {}
-
-   std::ostream & os() { return dynamic_cast<std::ostream &>(m_IOStream); }
-   std::istream & is() { return dynamic_cast<std::istream &>(m_IOStream); }
-
-   const std::ostream & os() const { return dynamic_cast<const std::ostream &>(m_IOStream); }
-   const std::istream & is() const { return dynamic_cast<const std::istream &>(m_IOStream); }
-
-   void CheckO(std::ios_base::iostate check) const
-   {
-      const std::ios_base::iostate common = os().rdstate() & check;
-      if ( 0 != common ) {
-         std::string flags;
-         if ( common & std::ios_base::eofbit ) {
-            flags += "eofbit ";
-         }
-         if ( common & std::ios_base::failbit ) {
-            flags += "failbit ";
-         }
-         if ( common & std::ios_base::badbit ) {
-            flags += "badbit ";
-         }
-         FAIL() << "ostream state: " << flags;
-      }
-   }
-
-   void CheckI(std::ios_base::iostate check) const
-   {
-      const std::ios_base::iostate common = is().rdstate() & check;
-      if ( 0 != common ) {
-         std::string flags;
-         if ( common & std::ios_base::eofbit ) {
-            flags += "eofbit ";
-         }
-         if ( common & std::ios_base::failbit ) {
-            flags += "failbit ";
-         }
-         if ( common & std::ios_base::badbit ) {
-            flags += "badbit ";
-         }
-         FAIL() << "istream state: " << flags;
-      }
-   }
-
-   bool  eof() const { return is().eof(); }
-   bool fail() const { return os().fail() || is().fail(); }
-   bool  bad() const { return os().bad()  || is().bad();  }
-
-   void ClearEOF()
-   {
-      os().clear( os().rdstate() & ~std::ios_base::eofbit );
-      is().clear( is().rdstate() & ~std::ios_base::eofbit );
-   }
-   void ClearFail()
-   {
-      os().clear( os().rdstate() & ~std::ios_base::failbit );
-      is().clear( is().rdstate() & ~std::ios_base::failbit );
-   }
-   void ClearBad()
-   {
-      os().clear( os().rdstate() & ~std::ios_base::badbit );
-      is().clear( is().rdstate() & ~std::ios_base::badbit );
-   }
-
-   std::ios_base::streampos InputBytesRemaining()
-   {
-      const std::ios_base::streampos curpos = is().tellg();
-
-      is().seekg(0, std::ios_base::end);
-
-      const std::ios_base::streampos endpos = is().tellg();
-
-      is().seekg(curpos, std::ios_base::beg);
-
-      return endpos - curpos;
-   }
-
-protected:
-   S m_IOStream;
-};
-
-class FILEMixin
-{
-public:
-   FILEMixin() {}
-   virtual ~FILEMixin();
-
-   FILE * fopen_tmp();
-   btBool    fclose(FILE * );
-
-   void rewind(FILE * ) const;
-   int    feof(FILE * ) const;
-   int  ferror(FILE * ) const;
-
-   long InputBytesRemaining(FILE * ) const;
-
-protected:
-   struct FILEInfo
-   {
-      FILEInfo(std::string fname, int fd) :
-         m_fname(fname),
-         m_fd(fd)
-      {}
-      std::string m_fname;
-      int         m_fd;
-   };
-
-   typedef std::map< FILE * , FILEInfo > map_type;
-   typedef map_type::iterator            iterator;
-   typedef map_type::const_iterator      const_iterator;
-
-   map_type m_FileMap;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-template <typename X>
-X PassReturnByValue(X x) { return x; }
-
-////////////////////////////////////////////////////////////////////////////////
-
-class ConsoleColorizer
-{
-public:
-   enum Stream
-   {
-      STD_COUT = 1,
-      STD_CERR
-   };
-
-   static ConsoleColorizer & GetInstance();
-
-   bool HasColors(Stream );
-
-   void   Red(Stream );
-   void Green(Stream );
-   void  Blue(Stream );
-   void Reset(Stream );
-
-protected:
-   ConsoleColorizer();
-
-   static ConsoleColorizer sm_Instance;
-
-#if   defined( __AAL_LINUX__ )
-   static const char sm_Red[];
-   static const char sm_Green[];
-   static const char sm_Blue[];
-   static const char sm_Reset[];
-#elif defined( __AAL_WINDOWS__ )
-   WORD m_OldStdoutAttrs;
-   WORD m_OldStderrAttrs;
-#endif // OS
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-class TestStatus
-{
-public:
-   enum Status
-   {
-      STATUS_PASS,
-      STATUS_FAIL,
-      STATUS_SEGFAULT,
-      STATUS_TERMINATED,
-      STATUS_KEEPALIVE_TIMEOUT
-   };
-
-   static void Report(Status st);
-
-   static void HaltOnSegFault(bool );
-   static void HaltOnKeepaliveTimeout(bool );
-
-protected:
-   static void OnPass();
-   static void OnFail();
-   static void OnSegFault();
-   static void OnTerminated();
-   static void OnKeepaliveTimeout();
-
-   static bool sm_HaltOnSegFault;
-   static bool sm_HaltOnKeepaliveTimeout;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-#if defined( __AAL_LINUX__ )
-
-// Make sure that the given path appears in LD_LIBRARY_PATH, preventing duplication.
-// Return non-zero on error.
-int RequireLD_LIBRARY_PATH(const char *path);
-
-// Remove the given path from LD_LIBRARY_PATH.
-// Return non-zero on error.
-int UnRequireLD_LIBRARY_PATH(const char *path);
-
-// Print streamer for LD_LIBRARY_PATH.
-// Ex.
-//   cout << LD_LIBRARY_PATH << endl;
-std::ostream & LD_LIBRARY_PATH(std::ostream &os);
-
-#endif // __AAL_LINUX__
-
-////////////////////////////////////////////////////////////////////////////////
-
-class ThreadRegistry : public CriticalSection
-{
-public:
-   ThreadRegistry();
-
-   btUnsignedInt ThreadRegister(btTID );
-   btUnsignedInt ThreadLookup(btTID );
-   void          RegistryReset();
-
-protected:
-   btUnsignedInt m_NextThread;
-   btTID         m_RegisteredThreads[50];
-};
-
-#if   defined( __AAL_WINDOWS__ )
-# include <signal.h>
-#elif defined( __AAL_LINUX__ )
-# include <errno.h>
-# include <unistd.h>
-# include <sys/types.h>
-# include <signal.h>
-#endif // OS
-
-class SignalHelper : public ThreadRegistry
-{
-public:
-   enum SigIndex
-   {
-#if   defined( __AAL_WINDOWS__ )
-      IDX_SIGINT = 0,
-      IDX_FIRST = IDX_SIGINT,
-      IDX_SIGSEGV,
-      IDX_SIGUSR1,
-      IDX_SIGUSR2,
-#elif defined( __AAL_LINUX__ )
-      IDX_SIGINT = 0,
-      IDX_FIRST = IDX_SIGINT,
-      IDX_SIGSEGV,
-      IDX_SIGIO,
-      IDX_SIGUSR1,
-      IDX_SIGUSR2,
-#endif // OS
-
-      IDX_COUNT
-   };
-
-   static SignalHelper & GetInstance();
-
-   // Does not allow hooking the same signum multiple times.
-   // non-zero on error.
-   int        Install(SigIndex i);
-
-   // non-zero on error.
-   int      Uninstall(SigIndex i);
-
-   btUIntPtr GetCount(SigIndex i, btUnsignedInt thr);
-
-   // non-zero on error.
-   int          Raise(SigIndex i, btTID tid);
-
-protected:
-   SignalHelper();
-   virtual ~SignalHelper();
-
-   void PutCount(SigIndex i, btUnsignedInt thr);
-
-#if   defined( __AAL_WINDOWS__ )
-   typedef void(*handler)(int );
-#elif defined( __AAL_LINUX__ )
-   typedef void(*handler)(int, siginfo_t *, void *);
-#endif // OS
-
-   struct SigTracker
-   {
-      int              signum;
-      handler          h;
-      btBool           installed;
-#if   defined( __AAL_WINDOWS__ )
-      handler          orig;
-#elif defined ( __AAL_LINUX__ )
-      struct sigaction orig;
-#endif // OS
-      btUIntPtr        Counts[50]; // support the max number of threads.
-   };
-
-   SigTracker m_Tracker[IDX_COUNT];
-
-   static SignalHelper sm_Instance;
-
-#if   defined( __AAL_WINDOWS__ )
-   static void  SIGINTHandler(int );
-   static void SIGSEGVHandler(int );
-   static void SIGUSR1Handler(int );
-   static void SIGUSR2Handler(int );
-#elif defined( __AAL_LINUX__ )
-   static void  SIGINTHandler(int, siginfo_t *, void *);
-   static void SIGSEGVHandler(int, siginfo_t *, void *);
-   static void   SIGIOHandler(int, siginfo_t *, void *);
-   static void SIGUSR1Handler(int, siginfo_t *, void *);
-   static void SIGUSR2Handler(int, siginfo_t *, void *);
-#endif // OS
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-#define ASSERT_NONNULL(x) ASSERT_NE((void *)NULL, x)
-#define ASSERT_NULL(x)    ASSERT_EQ((void *)NULL, x)
-#define EXPECT_NONNULL(x) EXPECT_NE((void *)NULL, x)
-#define EXPECT_NULL(x)    EXPECT_EQ((void *)NULL, x)
-
-// Retrieve the current test case and test name from gtest.
-// Must be called within the context of a test case/fixture.
-void TestCaseName(std::string &TestCase, std::string &Test);
-
-class KeepAliveTimerEnv : public ::testing::Environment
-{
-public:
-   static KeepAliveTimerEnv * GetInstance();
-   virtual ~KeepAliveTimerEnv() {}
-
-   void KeepAlive()
-   {
-      ++m_KeepAliveCounter;
-   }
-
-   void StopThread();
-
-   virtual void SetUp();
-   virtual void TearDown();
-
-protected:
-   KeepAliveTimerEnv();
-
-   void KeepAliveExpired();
-
-   btBool             m_KeepAliveRunning;
-   btUnsigned64bitInt m_KeepAliveCounter;
-   btUnsignedInt      m_KeepAliveTimeouts;
-#if   defined( __AAL_LINUX__ )
-   pthread_t          m_thread;
-   pthread_mutex_t    m_mutex;
-   pthread_cond_t     m_condition;
-#elif defined ( __AAL_WINDOWS__ )
-   HANDLE             m_hThread;
-   HANDLE             m_hEvent;
-#endif // OS
-
-   static       btTime        sm_KeepAliveFreqMillis;
-   static const btUnsignedInt sm_MaxKeepAliveTimeouts;
-
-#if   defined( __AAL_LINUX__ )
-//   static void  KeepAliveCleanup(void * );
-   static void * KeepAliveThread(void * );
-#elif defined ( __AAL_WINDOWS__ )
-   static DWORD WINAPI KeepAliveThread(LPVOID );
-#endif // OS
-
-   static KeepAliveTimerEnv *sm_pInstance;
-};
-
-class KeepAliveTestListener : public ::testing::EmptyTestEventListener
-{
-public:
-   virtual void OnTestEnd(const ::testing::TestInfo & /*test_info*/)
-   {
-      KeepAliveTimerEnv::GetInstance()->KeepAlive();
-   }
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-class MethodCallLogEntry
+#ifndef __GTCOMMON_MOCKS_H__
+#define __GTCOMMON_MOCKS_H__
+
+// Means for tracking that a member function (or method) on an object instance has been called.
+// Saves the method name along with zero or more parameters and their types.
+// Preserves the order in which parameters were added to the entry via AddParam(), making the order
+// available via ParamName(unsigned ) and ParamType(unsigned ).
+class GTCOMMON_API MethodCallLogEntry
 {
 public:
    MethodCallLogEntry(btcString method, Timer timestamp=Timer());
@@ -679,7 +58,9 @@ protected:
    std::list<TracksParamOrder> m_Order;
 };
 
-class MethodCallLog : public CriticalSection
+// Tracks a sequence of member function (method) calls on an interface in the order they were
+// received. Allows for querying and printing the logged sequence.
+class GTCOMMON_API MethodCallLog : public CriticalSection
 {
 public:
    MethodCallLog() {}
@@ -697,22 +78,70 @@ protected:
    mutable LogList m_LogList;
 };
 
-std::ostream & operator << (std::ostream & , const MethodCallLog & );
+GTCOMMON_API std::ostream & operator << (std::ostream & , const MethodCallLog & );
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// For the mock classes below, it's valuable to control what value an interface function
+// returns. For a given mock class, this macro defines two new member functions that enable
+// us to set and get the return value for an interface method.
+// ex).
+//
+//   class MyMockClass : public ISomeInterface
+//   {
+//   public:
+//
+//   // Method from ISomeInterface. We would like to be able to control the value returned
+//   // by MyMethod() when it is called. Some test cases might require true, while others false.
+//   virtual btBool MyMethod(NamedValueSet const & );
+//
+//   DECLARE_RETVAL_ACCESSORS(MyMethod, btBool)
+//
+//   // The result is these two function signatures: an accessor and a mutator.
+//   // btBool MyMethodReturnsThisValue() const;
+//   // void MyMethodReturnsThisValue(btBool );
+//
+//   protected:
+//   // One then obviously needs to also provide a member variable to back the accessor and mutator:
+//      btBool m_MyMethod_returns;
+//   };
 #define DECLARE_RETVAL_ACCESSORS(__membfn, __rettype) \
 __rettype __membfn##ReturnsThisValue() const;         \
 void __membfn##ReturnsThisValue(__rettype );
 
+// In the implementation file, this macro is used to declare the accessor and mutator
+// implementations.
+// ex).
+//
+//   IMPLEMENT_RETVAL_ACCESSORS(MyMockClass, MyMethod, btBool, m_MyMethod_returns)
+//
+//   // The result is these two function implementations:
+//   // btBool MyMockClass::MyMethodReturnsThisValue() const { return m_MyMethod_returns; }
+//   // void MyMockClass::MyMethodReturnsThisValue(btBool x) { m_MyMethod_returns = x;    }
+//
 #define IMPLEMENT_RETVAL_ACCESSORS(__cls, __membfn, __rettype, __membvar) \
 __rettype __cls::__membfn##ReturnsThisValue() const { return __membvar; } \
 void __cls::__membfn##ReturnsThisValue(__rettype x) { __membvar = x;    }
 
+
+// Naming Convention for mock classes:
+//
+//  EmptyIfc -         interface Ifc is implemented, but its virtual routines do nothing.
+//                     They are empty.
+//
+//  CallTrackingIfc -  inherits EmptyIfc, but additionally implements MethodCallLog. Each of
+//                     the virtual methods of Ifc make call log entries via
+//                     MethodCallLog::AddToLog().
+//
+//  SynchronizingIfc - inherits CallTrackingIfc. Calls the CallTrackingIfc implementation of
+//                     the virtual method, then calls Post(). Waiters may call Wait() to
+//                     synchronize.
+//
+
 ////////////////////////////////////////////////////////////////////////////////
 // IAALTransport
 
-class EmptyIAALTransport : public AAL::IAALTransport
+class GTCOMMON_API EmptyIAALTransport : public AAL::IAALTransport
 {
 public:
    EmptyIAALTransport();
@@ -740,7 +169,7 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////
 // IAALMarshaller
 
-class EmptyIAALMarshaller : public AAL::IAALMarshaller
+class GTCOMMON_API EmptyIAALMarshaller : public AAL::IAALMarshaller
 {
 public:
    EmptyIAALMarshaller();
@@ -820,7 +249,7 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////
 // IAALUnMarshaller
 
-class EmptyIAALUnMarshaller : public AAL::IAALUnMarshaller
+class GTCOMMON_API EmptyIAALUnMarshaller : public AAL::IAALUnMarshaller
 {
 public:
    EmptyIAALUnMarshaller();
@@ -879,8 +308,8 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////
 // IServiceClient
 
-class EmptyIServiceClient : public AAL::IServiceClient,
-                            public AAL::CAASBase
+class GTCOMMON_API EmptyIServiceClient : public AAL::IServiceClient,
+                                         public AAL::CAASBase
 {
 public:
    EmptyIServiceClient();
@@ -888,13 +317,13 @@ public:
                                       TransactionID const & )    {}
    virtual void serviceAllocateFailed(const IEvent & )           {}
    virtual void       serviceReleased(TransactionID const & )    {}
-   virtual void serviceReleaseRequest(IBase *, const IEvent & )  {} 
+   virtual void serviceReleaseRequest(IBase *, const IEvent & )  {}
    virtual void  serviceReleaseFailed(const IEvent & )           {}
    virtual void          serviceEvent(const IEvent & )           {}
 };
 
-class CallTrackingIServiceClient : public EmptyIServiceClient,
-                                   public MethodCallLog
+class GTCOMMON_API CallTrackingIServiceClient : public EmptyIServiceClient,
+                                                public MethodCallLog
 {
 public:
    CallTrackingIServiceClient();
@@ -906,7 +335,7 @@ public:
    virtual void          serviceEvent(const IEvent & );
 };
 
-class SynchronizingIServiceClient : public CallTrackingIServiceClient
+class GTCOMMON_API SynchronizingIServiceClient : public CallTrackingIServiceClient
 {
 public:
    SynchronizingIServiceClient();
@@ -928,8 +357,8 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////
 // IRuntimeClient
 
-class EmptyIRuntimeClient : public AAL::IRuntimeClient,
-                            public AAL::CAASBase
+class GTCOMMON_API EmptyIRuntimeClient : public AAL::IRuntimeClient,
+                                         public AAL::CAASBase
 {
 public:
    EmptyIRuntimeClient();
@@ -945,8 +374,8 @@ public:
    virtual void                    runtimeEvent(const IEvent & )        {}
 };
 
-class CallTrackingIRuntimeClient : public EmptyIRuntimeClient,
-                                   public MethodCallLog
+class GTCOMMON_API CallTrackingIRuntimeClient : public EmptyIRuntimeClient,
+                                                public MethodCallLog
 {
 public:
    CallTrackingIRuntimeClient();
@@ -962,7 +391,7 @@ public:
    virtual void                    runtimeEvent(const IEvent & );
 };
 
-class SynchronizingIRuntimeClient : public CallTrackingIRuntimeClient
+class GTCOMMON_API SynchronizingIRuntimeClient : public CallTrackingIRuntimeClient
 {
 public:
    SynchronizingIRuntimeClient();
@@ -988,7 +417,7 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////
 // ISvcsFact
 
-class EmptyISvcsFact : public AAL::ISvcsFact
+class GTCOMMON_API EmptyISvcsFact : public AAL::ISvcsFact
 {
 public:
    EmptyISvcsFact();
@@ -1007,8 +436,8 @@ protected:
    btBool  m_InitializeService_returns;
 };
 
-class CallTrackingISvcsFact : public EmptyISvcsFact,
-                              public MethodCallLog
+class GTCOMMON_API CallTrackingISvcsFact : public EmptyISvcsFact,
+                                           public MethodCallLog
 {
 public:
    CallTrackingISvcsFact() {}
@@ -1024,8 +453,8 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 // IRuntime
 
-class EmptyIRuntime : public AAL::IRuntime,
-                      public AAL::CAASBase
+class GTCOMMON_API EmptyIRuntime : public AAL::IRuntime,
+                                   public AAL::CAASBase
 {
 public:
    EmptyIRuntime();
@@ -1057,8 +486,8 @@ protected:
    btBool          m_IsOK_returns;
 };
 
-class CallTrackingIRuntime : public EmptyIRuntime,
-                             public MethodCallLog
+class GTCOMMON_API CallTrackingIRuntime : public EmptyIRuntime,
+                                          public MethodCallLog
 {
 public:
    CallTrackingIRuntime();
@@ -1077,8 +506,8 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 // IServiceBase
 
-class EmptyIServiceBase : public AAL::IServiceBase,
-                          public AAL::CAASBase
+class GTCOMMON_API EmptyIServiceBase : public AAL::IServiceBase,
+                                       public AAL::CAASBase
 {
 public:
    EmptyIServiceBase();
@@ -1115,8 +544,8 @@ protected:
    NamedValueSet     m_OptArgs_returns;
 };
 
-class CallTrackingIServiceBase : public EmptyIServiceBase,
-                                 public MethodCallLog
+class GTCOMMON_API CallTrackingIServiceBase : public EmptyIServiceBase,
+                                              public MethodCallLog
 {
 public:
    CallTrackingIServiceBase();
@@ -1135,7 +564,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 // ServiceBase
 
-class EmptyServiceBase : public AAL::ServiceBase
+class GTCOMMON_API EmptyServiceBase : public AAL::ServiceBase
 {
 public:
    EmptyServiceBase(AALServiceModule *container,
@@ -1158,8 +587,8 @@ protected:
    btBool m_init_returns;
 };
 
-class CallTrackingServiceBase : public EmptyServiceBase,
-                                public MethodCallLog
+class GTCOMMON_API CallTrackingServiceBase : public EmptyServiceBase,
+                                             public MethodCallLog
 {
 public:
    CallTrackingServiceBase(AALServiceModule *container,
@@ -1196,8 +625,8 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 // IServiceModule / IServiceModuleCallback
 
-class EmptyServiceModule : public AAL::IServiceModule,
-                           public AAL::IServiceModuleCallback
+class GTCOMMON_API EmptyServiceModule : public AAL::IServiceModule,
+                                        public AAL::IServiceModuleCallback
 {
 public:
    EmptyServiceModule();
@@ -1228,8 +657,8 @@ protected:
    btBool m_ServiceInitFailed_returns;
 };
 
-class CallTrackingServiceModule : public EmptyServiceModule,
-                                  public MethodCallLog
+class GTCOMMON_API CallTrackingServiceModule : public EmptyServiceModule,
+                                               public MethodCallLog
 {
 public:
    CallTrackingServiceModule();
@@ -1254,37 +683,37 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 // sw validation module / service module
 
-void    AllocSwvalMod(AAL::IRuntime * ,
-                      AAL::IBase    * ,
-                      const AAL::TransactionID & );
+GTCOMMON_API void    AllocSwvalMod(AAL::IRuntime * ,
+                                   AAL::IBase    * ,
+                                   const AAL::TransactionID & );
 
-void AllocSwvalSvcMod(AAL::IRuntime * ,
-                      AAL::IBase    * ,
-                      const AAL::TransactionID & );
+GTCOMMON_API void AllocSwvalSvcMod(AAL::IRuntime * ,
+                                   AAL::IBase    * ,
+                                   const AAL::TransactionID & );
 
-class EmptySwvalSvcClient : public ISwvalSvcClient,
-                            public EmptyIServiceClient
+class GTCOMMON_API EmptySwvalSvcClient : public ISwvalSvcClient,
+                                         public EmptyIServiceClient
 {
 public:
    EmptySwvalSvcClient();
    virtual void DidSomething(const AAL::TransactionID & , int );
 };
 
-class CallTrackingSwvalSvcClient : public ISwvalSvcClient,
-                                   public CallTrackingIServiceClient
+class GTCOMMON_API CallTrackingSwvalSvcClient : public ISwvalSvcClient,
+                                                public CallTrackingIServiceClient
 {
 public:
    CallTrackingSwvalSvcClient();
    virtual void DidSomething(const AAL::TransactionID & , int );
 };
 
-class SynchronizingSwvalSvcClient : public ISwvalSvcClient,
-                                    public SynchronizingIServiceClient
+class GTCOMMON_API SynchronizingSwvalSvcClient : public ISwvalSvcClient,
+                                                 public SynchronizingIServiceClient
 {
 public:
    SynchronizingSwvalSvcClient();
    virtual void DidSomething(const AAL::TransactionID & , int );
 };
 
-#endif // __GTCOMMON_H__
+#endif // __GTCOMMON_MOCKS_H__
 

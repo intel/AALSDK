@@ -1,0 +1,9 @@
+# NLB Lpbk1 Google Tests -*- Autotest -*-
+
+AT_BANNER([[gtest - NLB Lpbk1 mode0 Tests]])
+
+AT_SETUP([NLB0Test])
+AT_SKIP_IF([test "x${WITH_GTEST}" != xyes || test "x${at_arg_nlb0test}" != "x:"])
+AT_CHECK([nlb0test ${GTEST_OPTS}], [0], [ignore], [ignore])
+AT_CLEANUP
+

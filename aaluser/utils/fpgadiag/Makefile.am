@@ -64,4 +64,5 @@ $(top_builddir)/clp/libaalclp.la
 
 bin_SCRIPTS=\
 fpgasane_nlb400_0.sh \
-fpgasane_nlb400_3.sh
+fpgasane_nlb400_3.sh \
+fpgasane_nlb400_7.sh

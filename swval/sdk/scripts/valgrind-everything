@@ -13,9 +13,9 @@ declare WANTDISTCC=false
 while [ $# -gt 0 ]; do
    case $1 in
       --clean)
-         clean_valgrind_all "tests/harnessed/gtest/.libs/bat"
-         clean_valgrind_all "tests/harnessed/gtest/.libs/nightly"
-         clean_valgrind_all "tests/harnessed/gtest/.libs/weekly"
+         clean_valgrind_all "tests/harnessed/gtest/swtest/.libs/swtest"
+#         clean_valgrind_all "tests/harnessed/gtest/.libs/nightly"
+#         clean_valgrind_all "tests/harnessed/gtest/.libs/weekly"
          clean_valgrind_all "tests/standalone/OSAL_TestSem/.libs/OSAL_TestSem"
          clean_valgrind_all "tests/standalone/OSAL_TestThreadGroup/.libs/OSAL_TestThreadGroup"
          exit 0
@@ -30,9 +30,9 @@ while [ $# -gt 0 ]; do
    shift
 done
 
-run_valgrind_all ${WANTDISTCC} "tests/harnessed/gtest/.libs/bat" ${ARGS}
-run_valgrind_all ${WANTDISTCC} "tests/harnessed/gtest/.libs/nightly" ${ARGS}
-run_valgrind_all ${WANTDISTCC} "tests/harnessed/gtest/.libs/weekly" ${ARGS}
+run_valgrind_all ${WANTDISTCC} "tests/harnessed/gtest/swtest/.libs/swtest" ${ARGS}
+#run_valgrind_all ${WANTDISTCC} "tests/harnessed/gtest/.libs/nightly" ${ARGS}
+#run_valgrind_all ${WANTDISTCC} "tests/harnessed/gtest/.libs/weekly" ${ARGS}
 run_valgrind_all ${WANTDISTCC} "tests/standalone/OSAL_TestSem/.libs/OSAL_TestSem"
 run_valgrind_all ${WANTDISTCC} "tests/standalone/OSAL_TestThreadGroup/.libs/OSAL_TestThreadGroup"
 exit $?

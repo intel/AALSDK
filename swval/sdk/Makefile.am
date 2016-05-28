@@ -148,6 +148,7 @@ include/aalsdk/rm/InstanceRecord.h
 
 servicehdrs_HEADERS=\
 include/aalsdk/service/IALIAFU.h \
+include/aalsdk/service/ALIService.h \
 include/aalsdk/service/HWALIAFUService.h \
 include/aalsdk/service/ASEALIAFUService.h \
 include/aalsdk/service/SWSimALIAFUService.h
@@ -217,7 +218,8 @@ include/aalsdk/rm/RRMService.h.in
 SERVICE_EXTRA=\
 include/aalsdk/service/HWALIAFUService.h.in \
 include/aalsdk/service/ASEALIAFUService.h.in \
-include/aalsdk/service/SWSimALIAFUService.h.in
+include/aalsdk/service/SWSimALIAFUService.h.in \
+include/aalsdk/service/ALIService.h.in
 
 UAIA_EXTRA=\
 include/aalsdk/uaia/AIAService.h.in 
@@ -225,6 +227,7 @@ include/aalsdk/uaia/AIAService.h.in
 UTILS_EXTRA=\
 utils/fpgadiag/fpgasane_nlb400_0.sh \
 utils/fpgadiag/fpgasane_nlb400_3.sh \
+utils/fpgadiag/fpgasane_nlb400_7.sh \
 utils/scripts/setcpupwr \
 utils/scripts/setfpgapwr \
 utils/scripts/getcpupwr \

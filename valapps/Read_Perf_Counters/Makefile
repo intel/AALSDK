@@ -4,7 +4,7 @@
 
 CPPFLAGS ?=
 CXX      ?= g++
-LDFLAGS  ?=
+LDFLAGS  ?= -L../vallib
 
 ifneq (,$(ndebug))
 else
@@ -33,10 +33,10 @@ endif
 all: Read_Perf_Counters
 
 Read_Perf_Counters: main.o
-	$(CXX) -g -O2 -o Read_Perf_Counters main.o $(LDFLAGS) -lOSAL -lAAS -laalrt
+	$(CXX) -g -O2 -o Read_Perf_Counters main.o $(LDFLAGS) -lOSAL -lAAS -laalrt -lvallib
 
-main.o: main.cpp Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -g -O2 -c -o main.o main.cpp
+main.o: main.cpp ../vallib/vallib.h Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -I../vallib -g -O2 -c -o main.o main.cpp
 
 clean:
 	$(RM) Read_Perf_Counters main.o

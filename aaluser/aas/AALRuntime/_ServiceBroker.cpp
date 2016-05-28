@@ -304,6 +304,7 @@ void _ServiceBroker::ShutdownThread(OSLThread *pThread,
 
    // Destroy the thread and parms
    delete pparms;
+   delete pThread;
 }
 
 struct shutdown_handler_thread_parms
@@ -406,7 +407,7 @@ btBool _ServiceBroker::DoShutdown(TransactionID const &rTranID,
 }  // _ServiceBroker::DoShutdown
 
 void _ServiceBroker::ShutdownHandlerThread(OSLThread *pThread,
-                                             void      *pContext)
+                                           void      *pContext)
 {
    //Get a pointer to this objects context
    struct shutdown_handler_thread_parms *pparms =
@@ -417,6 +418,7 @@ void _ServiceBroker::ShutdownHandlerThread(OSLThread *pThread,
 
    // Destroy the thread and parms
    delete pparms;
+   delete pThread;
 }
 
 //=============================================================================

@@ -11,12 +11,10 @@ standalone/OSAL_TestSem/OSAL_TestSem.at \
 standalone/OSAL_TestThreadGroup/OSAL_TestThreadGroup.at \
 harnessed/harnessed.at \
 harnessed/gtest/gtest.at \
+harnessed/gtest/swtest/swtest.at \
+harnessed/gtest/nlb0test/nlb0test.at \
 local.at \
 testsuite.at
-
-
-# run/nightly.in 
-# run/weekly.in 
 
 EXTRA_DIST=\
 $(TESTSUITE_AT) \
@@ -24,6 +22,7 @@ atlocal.in \
 testsuite \
 package.m4 \
 run/swtest.in \
+run/nlb0test.in \
 run/OSAL_TestSem.in \
 run/OSAL_TestThreadGroup.in
 
@@ -58,11 +57,9 @@ atconfig: $(top_builddir)/config.status
 	cd $(top_builddir) && ./config.status tests/$@
 
 
-# nightly 
-# weekly 
-
 check_SCRIPTS=\
 swtest \
+nlb0test \
 OSAL_TestSem \
 OSAL_TestThreadGroup
 
