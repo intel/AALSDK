@@ -63,7 +63,7 @@ GLS_SIM = 1
 GLS_SAMPLE_LIB = $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
 
 # Timescale
-TIMESCALE = 10ps/10ps
+TIMESCALE = 1ps/1ps
 
 # ASE Source directory
 ASE_SRCDIR = $(shell pwd)

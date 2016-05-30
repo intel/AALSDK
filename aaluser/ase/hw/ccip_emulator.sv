@@ -436,7 +436,6 @@ module ccip_emulator
    int mmiowr_credit;
    int mmiord_credit;
    int umsg_credit;
-   // int atomic_credit;
 
 
    /*
@@ -446,20 +445,6 @@ module ccip_emulator
    logic 			  tx1_underflow;
    logic 			  tx0_overflow;
    logic 			  tx1_overflow;
-
-   /*
-    * State indicators
-    */
-   // typedef enum 		  {
-   // 				   RxIdle,
-   // 				   RxMMIOForward,
-   // 				   RxUMsgForward,
-   // 				   RxReadResp,
-   // 				   RxAtomicsResp,
-   // 				   RxWriteResp
-   // 				   } RxOutState;
-   // RxOutState rx0_state;
-   // RxOutState rx1_state;
 
    /*
     * Fabric Clock, pClk{*}
@@ -607,32 +592,34 @@ module ccip_emulator
     * *FIXME*: Must track for Beta
     * Currently generates a 300 Mhz clock
     */
-`define UCLK_HZ         real'(300_000_000);
-`define UCLK_DURATION   3.333ns
+// `define UCLK_HZ         real'(300_000_000);
+// `define UCLK_DURATION   3.333ns
 
    logic 	  usrClk;
    logic 	  usrClkDiv2 = 0;
-
-   // User clock generator
-   initial begin : uclk_proc
+   int 		  usrClk_delay = 3333;
+      
+   // Function: Update usrclk_delay 
+   function void update_usrclk_delay(int delay);
       begin
-         `ifdef ASE_DEBUG
-	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display("  [DEBUG]  User clock frequency = %f", `UCLK_DURATION);
-	 `END_YELLOW_FONTCOLOR;
-	 `endif
-	 usrClk = 0;
-	 forever begin
-	    #`UCLK_DURATION;
-	    usrClk = 0;
-	    #`UCLK_DURATION;
-	    usrClk = 1;
-	 end
+	 usrClk_delay = delay;
+      end
+   endfunction
+   
+   // User clock process
+   initial begin : usrclk_proc
+      begin
+   	 usrClk = 0;
+   	 forever begin
+   	    #(usrClk_delay);
+   	    usrClk = ~usrClk;
+   	 end
       end
    end
 
+   
    // Div2 output
-   always @(posedge usrClk) begin : usrclk_proc
+   always @(posedge usrClk) begin : usrclkdiv2_proc
       usrClkDiv2 = ~usrClkDiv2;
    end
 
@@ -1315,12 +1302,16 @@ module ccip_emulator
     * *****************************************************************/
    task ase_config_dex(ase_cfg_t cfg_in);
       begin
-	 cfg.ase_mode                 = cfg_in.ase_mode         ;
-	 cfg.ase_timeout              = cfg_in.ase_timeout      ;
-	 cfg.ase_num_tests            = cfg_in.ase_num_tests    ;
-	 cfg.enable_reuse_seed        = cfg_in.enable_reuse_seed;
-	 cfg.enable_cl_view           = cfg_in.enable_cl_view   ;
-	 cfg.phys_memory_available_gb = cfg_in.phys_memory_available_gb;
+	 // Cfg transfer
+	 cfg.ase_mode                 = cfg_in.ase_mode                 ;
+	 cfg.ase_timeout              = cfg_in.ase_timeout              ;
+	 cfg.ase_num_tests            = cfg_in.ase_num_tests            ;
+	 cfg.enable_reuse_seed        = cfg_in.enable_reuse_seed        ;
+	 cfg.enable_cl_view           = cfg_in.enable_cl_view           ;
+	 cfg.usr_tps                  = cfg_in.usr_tps                  ;	 
+	 cfg.phys_memory_available_gb = cfg_in.phys_memory_available_gb ;
+	 // Set UsrClk
+	 update_usrclk_delay( cfg.usr_tps );	 
       end
    endtask
 
@@ -2317,8 +2308,6 @@ module ccip_emulator
 
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
-      // run_clocks(20);
-      // ase_reset     <= 0;
       ase_reset_trig();
 
       sw_reset_trig <= 0;
@@ -2618,12 +2607,18 @@ module ccip_emulator
 	 $display("  MMIORdRsp %d | ", ase_tx2_mmiordrsp_cnt );
 	 $display("  UMsgHint  %d | ", ase_rx0_umsghint_cnt  );
 	 $display("  UMsgData  %d | ", ase_rx0_umsgdata_cnt  );
-	 $display("  RdReq     %d | %08d %08d %08d %08d | %08d %08d %08d", ase_tx0_rdvalid_cnt, rdreq_vc_cnt.va, rdreq_vc_cnt.vl0, rdreq_vc_cnt.vh0, rdreq_vc_cnt.vh1, rdreq_mcl_cnt.mcl0, rdreq_mcl_cnt.mcl1, rdreq_mcl_cnt.mcl3);
-	 $display("  RdResp    %d | %08d %08d %08d %08d | ",               ase_rx0_rdvalid_cnt, rdrsp_vc_cnt.va, rdrsp_vc_cnt.vl0, rdrsp_vc_cnt.vh0, rdrsp_vc_cnt.vh1);
-	 $display("  WrReq     %d | %08d %08d %08d %08d | %08d %08d %08d", ase_tx1_wrvalid_cnt, wrreq_vc_cnt.va, wrreq_vc_cnt.vl0, wrreq_vc_cnt.vh0, wrreq_vc_cnt.vh1, wrreq_mcl_cnt.mcl0, wrreq_mcl_cnt.mcl1, wrreq_mcl_cnt.mcl3);
-	 $display("  WrResp    %d | %08d %08d %08d %08d | %08d %08d %08d", ase_rx1_wrvalid_cnt, wrrsp_vc_cnt.va, wrrsp_vc_cnt.vl0, wrrsp_vc_cnt.vh0, wrrsp_vc_cnt.vh1, wrrsp_mcl_cnt.mcl0, wrrsp_mcl_cnt.mcl1, wrrsp_mcl_cnt.mcl3);
-	 $display("  WrFence   %d | %08d %08d %08d %08d | ",               ase_tx1_wrfence_cnt, wrfreq_vc_cnt.va, wrfreq_vc_cnt.vl0, wrfreq_vc_cnt.vh0, wrfreq_vc_cnt.vh1);
-	 $display("  WrFenRsp  %d | %08d %08d %08d %08d | ",               ase_rx1_wrfence_cnt, wrfrsp_vc_cnt.va, wrfrsp_vc_cnt.vl0, wrfrsp_vc_cnt.vh0, wrfrsp_vc_cnt.vh1);
+	 $display("  RdReq     %d | %8d %8d %8d %8d | %8d %8d %8d", 
+		  ase_tx0_rdvalid_cnt, rdreq_vc_cnt.va, rdreq_vc_cnt.vl0, rdreq_vc_cnt.vh0, rdreq_vc_cnt.vh1, rdreq_mcl_cnt.mcl0, rdreq_mcl_cnt.mcl1, rdreq_mcl_cnt.mcl3);
+	 $display("  RdResp    %d | %8d %8d %8d %8d | ",               
+		  ase_rx0_rdvalid_cnt, rdrsp_vc_cnt.va, rdrsp_vc_cnt.vl0, rdrsp_vc_cnt.vh0, rdrsp_vc_cnt.vh1);
+	 $display("  WrReq     %d | %8d %8d %8d %8d | %8d %8d %8d", 
+		  ase_tx1_wrvalid_cnt, wrreq_vc_cnt.va, wrreq_vc_cnt.vl0, wrreq_vc_cnt.vh0, wrreq_vc_cnt.vh1, wrreq_mcl_cnt.mcl0, wrreq_mcl_cnt.mcl1, wrreq_mcl_cnt.mcl3);
+	 $display("  WrResp    %d | %8d %8d %8d %8d | %8d %8d %8d", 
+		  ase_rx1_wrvalid_cnt, wrrsp_vc_cnt.va, wrrsp_vc_cnt.vl0, wrrsp_vc_cnt.vh0, wrrsp_vc_cnt.vh1, wrrsp_mcl_cnt.mcl0, wrrsp_mcl_cnt.mcl1, wrrsp_mcl_cnt.mcl3);
+	 $display("  WrFence   %d | %8d %8d %8d %8d | ",               
+		  ase_tx1_wrfence_cnt, wrfreq_vc_cnt.va, wrfreq_vc_cnt.vl0, wrfreq_vc_cnt.vh0, wrfreq_vc_cnt.vh1);
+	 $display("  WrFenRsp  %d | %8d %8d %8d %8d | ",               
+		  ase_rx1_wrfence_cnt, wrfrsp_vc_cnt.va, wrfrsp_vc_cnt.vl0, wrfrsp_vc_cnt.vh0, wrfrsp_vc_cnt.vh1);
 	 `END_YELLOW_FONTCOLOR;
 
 	 // Valid Count

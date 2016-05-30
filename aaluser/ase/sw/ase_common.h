@@ -215,8 +215,6 @@ char *app_run_cmd;
 // Buffer information structure
 struct buffer_t                   //  Descriptiion                    Computed by
 {                                 // --------------------------------------------
-  /* int fd_app;                     // File descriptor                 |   APP */
-  /* int fd_ase;                     // File descriptor                 |   SIM */
   int index;                      // Tracking id                     | INTERNAL
   int valid;                      // Valid buffer indicator          | INTERNAL
   int metadata;                   // MQ marshalling command          | INTERNAL
@@ -535,7 +533,7 @@ struct ase_cfg_t
   int ase_num_tests;
   int enable_reuse_seed;
   int enable_cl_view;
-  float usr_clk_mhz;
+  int usr_tps;
   int phys_memory_available_gb;
 };
 struct ase_cfg_t *cfg;
@@ -620,12 +618,6 @@ void update_glbl_dealloc(int);
 FILE *fp_ase_ready;
 // Ready filepath
 char *ase_ready_filepath;
-
-
-// ASE lock file
-/* FILE *fp_ase_lock; */
-/* #define ASE_LOCK_FILENAME ".ase_lock" */
-/* char *ase_lock_filepath; */
 
 // ASE seed 
 uint64_t ase_addr_seed;

@@ -282,7 +282,7 @@ package ase_pkg;
       int 	  ase_num_tests;
       int 	  enable_reuse_seed;
       int 	  enable_cl_view;
-      shortreal   usr_clk_mhz;
+      int 	  usr_tps;
       int 	  phys_memory_available_gb;
    } ase_cfg_t;
    ase_cfg_t cfg;

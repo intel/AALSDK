@@ -51,6 +51,9 @@ int session_empty;
 // MMIO Respons lock
 pthread_mutex_t mmio_resp_lock;
 
+// User clock frequency
+float f_usrclk;
+
 /*
  * Generate scope data
  */
@@ -62,8 +65,8 @@ void scope_function()
 
 
 /*
- * ASE instance already running 
- * - If instance is found, return its process ID, else return 0 
+ * ASE instance already running
+ * - If instance is found, return its process ID, else return 0
  */
 int ase_instance_running()
 {
@@ -174,19 +177,19 @@ void wr_memline_dex(cci_pkt *pkt)
   long long new_qword;  // Data to be writen if compare passes
 #endif
 
-  if (pkt->mode == CCIPKT_WRITE_MODE) 
+  if (pkt->mode == CCIPKT_WRITE_MODE)
     {
-      /* 
+      /*
        * Normal write operation
        * Takes Write request and performs verbatim
        */
       // Get cl_addr, deduce wr_target_vaddr
       phys_addr = (uint64_t)pkt->cl_addr << 6;
-      wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr); 
-      
+      wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr);
+
       // Write to memory
       memcpy(wr_target_vaddr, (char*)pkt->qword, CL_BYTE_WIDTH);
-      
+
       // Success
       pkt->success = 1;
     }
@@ -194,26 +197,26 @@ void wr_memline_dex(cci_pkt *pkt)
   else if (pkt->mode == CCIPKT_ATOMIC_MODE)
     {
       /*
-       * This is a special mode in which read response goes back 
+       * This is a special mode in which read response goes back
        * WRITE request is responded with a READ response
        */
       // Specifics of the requested compare operation
       cmp_qword = pkt->qword[0];
       new_qword = pkt->qword[4];
-      
+
       // Get cl_addr, deduce rd_target_vaddr
       phys_addr = (uint64_t)pkt->cl_addr << 6;
-      rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr); 
-      
+      rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr);
+
       // Perform read first and set response packet accordingly
-      memcpy((char*)pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);      
+      memcpy((char*)pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);
 
       // Get cl_addr, deduct wr_target, use qw_start to determine exact qword
       wr_target_vaddr = (uint64_t*)( (uint64_t)rd_target_vaddr + pkt->qw_start*8 );
-      
+
       // CmpXchg output
       pkt->success = (int)__sync_bool_compare_and_swap (wr_target_vaddr, cmp_qword, new_qword);
-      
+
       // Debug output
 #ifdef ASE_DEBUG
       BEGIN_YELLOW_FONTCOLOR;
@@ -221,11 +224,11 @@ void wr_memline_dex(cci_pkt *pkt)
       END_YELLOW_FONTCOLOR;
 #endif
     }
-#endif  
+#endif
 
   FUNC_CALL_EXIT;
 }
-      
+
 
 /*
  * DPI: ReadLine Data exchange
@@ -274,10 +277,10 @@ void mmio_response (struct mmio_t *mmio_pkt)
 void sw_reset_response ()
 {
   FUNC_CALL_ENTRY;
-  
+
   // Send portctrl_rsp message
   mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
-  
+
   FUNC_CALL_EXIT;
 }
 
@@ -293,7 +296,7 @@ void count_error_flag_pong(int flag)
 
 
 /*
- * Update global disable/enable 
+ * Update global disable/enable
  */
 int glbl_dealloc_allowed;
 void update_glbl_dealloc(int flag)
@@ -324,14 +327,14 @@ int ase_listener()
    * Format: <cmd> <value>
    * -----------------------------------------------------------------
    * Supported commands       |
-   * ASE_INIT   <APP_PID>     | Session control - sends PID to 
+   * ASE_INIT   <APP_PID>     | Session control - sends PID to
    *                          |
    * AFU_RESET  <0,1>         | AFU reset handle
    * UMSG_MODE  <8-bit mask>  | UMSG mode control
    *
    * ASE responds with "COMPLETED" as a string, there is no
    * expectation of a string check
-   * 
+   *
    */
   char portctrl_msgstr[ASE_MQ_MSGSIZE];
   char portctrl_cmd[ASE_MQ_MSGSIZE];
@@ -349,11 +352,11 @@ int ase_listener()
 	    {
 	      // AFU Reset control
 	      portctrl_value = (portctrl_value != 0) ? 1 : 0 ;
-	      
+
 	      // Wait until transactions clear
 	      // AFU Reset trigger function will wait until channels clear up
 	      afu_softreset_trig (0, portctrl_value );
-	      
+
 	      // Reset response is returned from simulator once queues are cleared
 	      // Simulator cannot be held up here.
 	    }
@@ -374,8 +377,8 @@ int ase_listener()
 	      tstamp_filepath = ase_malloc(ASE_FILEPATH_LEN);
 	      sprintf(tstamp_filepath, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 	      // Print timestamp
-	      printf("SIM-C : Session ID => %s\n", get_timestamp(0) );	  
-	      
+	      printf("SIM-C : Session ID => %s\n", get_timestamp(0) );
+
 	      session_empty = 0;
 	      // Send portctrl_rsp message
 	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
@@ -398,7 +401,7 @@ int ase_listener()
 		  ase_destroy();
 		  ase_reset_trig();
 		  BEGIN_GREEN_FONTCOLOR;
-		  printf("SIM-C : Ready to run next test\n");	  
+		  printf("SIM-C : Ready to run next test\n");
 		  END_GREEN_FONTCOLOR;
 		  session_empty = 1;
 		  buffer_msg_inject(0, TEST_SEPARATOR);
@@ -414,7 +417,7 @@ int ase_listener()
 		  ase_perror_teardown();
 		  start_simkill_countdown();
 		}
-	      else if (cfg->ase_mode == ASE_MODE_REGRESSION) 		
+	      else if (cfg->ase_mode == ASE_MODE_REGRESSION)
 		{
 		  if (cfg->ase_num_tests == glbl_test_cmplt_cnt)
 		    {
@@ -428,7 +431,7 @@ int ase_listener()
 		      ase_reset_trig();
 		    }
 		}
-	      
+
 	      // Check for simulator sanity -- if transaction counts dont match
 	      // Kill the simulation ASAP -- DEBUG feature only
             #ifdef ASE_DEBUG
@@ -439,10 +442,10 @@ int ase_listener()
 		  END_RED_FONTCOLOR;
 		  run_clocks (500);
 		  ase_perror_teardown();
-		  start_simkill_countdown();	  
-		}				
+		  start_simkill_countdown();
+		}
             #endif
-	      
+
 	      // Send portctrl_rsp message
 	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
 	    }
@@ -483,7 +486,7 @@ int ase_listener()
 
 	      // Format workspace info string
 	      memset (logger_str, 0, ASE_LOGGER_LEN);
-	      if (ase_buffer.is_mmiomap) 
+	      if (ase_buffer.is_mmiomap)
 		{
 		  sprintf(logger_str + strlen(logger_str), "MMIO map Allocated ");
 		}
@@ -531,7 +534,7 @@ int ase_listener()
       // ------------------------------------------------------------------------------- //
       ase_empty_buffer(&ase_buffer);
 #if 0
-      if (glbl_dealloc_allowed) 
+      if (glbl_dealloc_allowed)
 	{
 #endif
 	  if (mqueue_recv(app2sim_dealloc_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
@@ -540,13 +543,13 @@ int ase_listener()
 	      memset (logger_str, 0, ASE_LOGGER_LEN);
 	      sprintf(logger_str + strlen(logger_str), "\nBuffer %d Deallocated =>\n", ase_buffer.index);
 	      sprintf(logger_str + strlen(logger_str), "\n");
-	  
+
 	      // Deallocate action
 	      ase_dealloc_action(&ase_buffer);
-	  
+
 	      // Inject buffer message
 	      buffer_msg_inject (1, logger_str );
-	  
+
 	      // Standard oneline message ---> Hides internal info
 	      ase_buffer.valid = ASE_BUFFER_INVALID;
 	      ase_buffer_oneline(&ase_buffer);
@@ -606,7 +609,7 @@ int ase_listener()
 	}
       // ------------------------------------------------------------------------------- //
     }
-  else 
+  else
     {
     #ifdef ASE_DEBUG
       BEGIN_RED_FONTCOLOR;
@@ -615,7 +618,7 @@ int ase_listener()
       END_RED_FONTCOLOR;
     #endif
     }
-  
+
 
   //  FUNC_CALL_EXIT;
   return 0;
@@ -641,8 +644,8 @@ void calc_phys_memory_ranges()
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("        System memory range  => 0x%016lx-0x%016lx | %ld~%ld GB \n",
-	 sysmem_phys_lo, sysmem_phys_hi, 
-	 sysmem_phys_lo/(uint64_t)pow(1024, 3), 
+	 sysmem_phys_lo, sysmem_phys_hi,
+	 sysmem_phys_lo/(uint64_t)pow(1024, 3),
 	 (uint64_t)(sysmem_phys_hi+1)/(uint64_t)pow(1024, 3) );
   END_YELLOW_FONTCOLOR;
 }
@@ -716,7 +719,7 @@ int ase_init()
 
   // Page table tracker
   fp_pagetable_log = fopen("ase_pagetable.log", "w");
-  if (fp_pagetable_log == NULL) 
+  if (fp_pagetable_log == NULL)
     {
       BEGIN_RED_FONTCOLOR;
       printf("SIM-C : ASE pagetable logger initialization failed !\n");
@@ -728,7 +731,7 @@ int ase_init()
       printf("SIM-C : ASE pagetable logger initialized\n");
       END_YELLOW_FONTCOLOR;
     }
-  
+
 #endif
 
   // Set up message queues
@@ -817,7 +820,7 @@ int ase_ready()
 
   // Write lock file
   ase_write_lock_file();
-  
+
   // Display "Ready for simulation"
   BEGIN_GREEN_FONTCOLOR;
   printf("SIM-C : ** ATTENTION : BEFORE running the software application **\n");
@@ -877,14 +880,14 @@ void start_simkill_countdown()
   printf("SIM-C : Closing message queue and unlinking...\n");
   //ase_mqueue_teardown();
   // Close message queues
-  mqueue_close(app2sim_alloc_rx);       
-  mqueue_close(sim2app_alloc_tx);       
+  mqueue_close(app2sim_alloc_rx);
+  mqueue_close(sim2app_alloc_tx);
   mqueue_close(app2sim_mmioreq_rx);
   mqueue_close(sim2app_mmiorsp_tx);
   mqueue_close(app2sim_umsg_rx);
   mqueue_close(app2sim_portctrl_req_rx);
-  mqueue_close(app2sim_dealloc_rx);       
-  mqueue_close(sim2app_dealloc_tx);       
+  mqueue_close(app2sim_dealloc_rx);
+  mqueue_close(sim2app_dealloc_tx);
   mqueue_close(sim2app_portctrl_rsp_tx);
 
   int ipc_iter;
@@ -913,11 +916,11 @@ void start_simkill_countdown()
     }
 
 #ifdef ASE_DEBUG
-  if (fp_memaccess_log != NULL) 
+  if (fp_memaccess_log != NULL)
     {
       fclose(fp_memaccess_log);
     }
-  if (fp_pagetable_log != NULL) 
+  if (fp_pagetable_log != NULL)
     {
       fclose(fp_pagetable_log);
     }
@@ -944,7 +947,7 @@ void start_simkill_countdown()
   // Send a simulation kill command
   printf("SIM-C : Sending kill command...\n");
   usleep(1000);
-  
+
   // Set scope
   svSetScope(scope);
 
@@ -972,9 +975,9 @@ void ase_config_parse(char *filename)
 
   char *ase_cfg_filepath;
   ase_cfg_filepath = ase_malloc(256);
-  
+
   if ( access(sv2c_script_filepath, F_OK) != -1 )
-    {   
+    {
       if ( (strlen(sv2c_config_filepath) != 0) && (sv2c_config_filepath!=(char*)NULL))
 	{
 	  sprintf(ase_cfg_filepath, "%s", sv2c_config_filepath);
@@ -996,15 +999,16 @@ void ase_config_parse(char *filename)
       start_simkill_countdown();
     }
   line = ase_malloc(sizeof(char) * 80);
-  
+
   // Default values
   cfg->ase_mode = ASE_MODE_DAEMON_NO_SIMKILL;
   cfg->ase_timeout = 500;
   cfg->ase_num_tests = 1;
   cfg->enable_reuse_seed = 0;
   cfg->enable_cl_view = 1;
+  cfg->usr_tps = 3333;
   cfg->phys_memory_available_gb = 256;
-  
+
   // Find ase.cfg OR not
   // if ( access (ASE_CONFIG_FILE, F_OK) != -1 )
   if ( access (ase_cfg_filepath, F_OK) != -1 )
@@ -1025,19 +1029,45 @@ void ase_config_parse(char *filename)
 	  if ( (line[0] != '#') && (line[0] != '\0') )
 	    {
 	      parameter = strtok(line, "=\n");
-	      value = atoi(strtok(NULL, ""));
 	      if (strcmp (parameter,"ASE_MODE") == 0)
-	      	cfg->ase_mode = value;
+	      	cfg->ase_mode = atoi(strtok(NULL, ""));
 	      else if (strcmp (parameter,"ASE_TIMEOUT") == 0)
-	      	cfg->ase_timeout = value;
+	      	cfg->ase_timeout = atoi(strtok(NULL, ""));
 	      else if (strcmp (parameter,"ASE_NUM_TESTS") == 0)
-	      	cfg->ase_num_tests = value;
+	      	cfg->ase_num_tests =  atoi(strtok(NULL, ""));
 	      else if (strcmp (parameter, "ENABLE_REUSE_SEED") == 0)
-		cfg->enable_reuse_seed = value;
+		cfg->enable_reuse_seed =  atoi(strtok(NULL, ""));
 	      else if (strcmp (parameter,"ENABLE_CL_VIEW") == 0)
-		cfg->enable_cl_view = value;
+		cfg->enable_cl_view =  atoi(strtok(NULL, ""));
+	      else if (strcmp (parameter, "USR_CLK_MHZ") == 0)
+		{
+		  f_usrclk = atof(strtok(NULL, ""));
+		  if (f_usrclk == 0.000000) 
+		    {
+		      BEGIN_RED_FONTCOLOR;
+		      printf("SIM-C : User Clock Frequency cannot be 0.000 MHz\n");
+		      printf("        Reverting to 300.000 MHz\n");
+		      f_usrclk = 300.000;
+		      cfg->usr_tps = 3333;
+		      END_RED_FONTCOLOR;
+		    }
+		  else if (f_usrclk == 300.000000) 
+		    {
+		      cfg->usr_tps = 3333;
+		    }
+		  else 
+		    {
+		      cfg->usr_tps = (int)( 1E+12/(f_usrclk*pow(1000,2)) );
+#ifdef ASE_DEBUG
+		      BEGIN_YELLOW_FONTCOLOR;
+		      printf("  [DEBUG]  usr_tps = %d\n", cfg->usr_tps); 
+		      END_YELLOW_FONTCOLOR;
+#endif
+		    }
+		}
 	      else if (strcmp(parameter,"PHYS_MEMORY_AVAILABLE_GB") == 0)
 		{
+		  value = atoi(strtok(NULL, ""));
 		  if (value < 0)
 		    {
 		      BEGIN_RED_FONTCOLOR;
@@ -1056,6 +1086,7 @@ void ase_config_parse(char *filename)
 	}
 
       // ASE mode control
+      BEGIN_YELLOW_FONTCOLOR;
       switch (cfg->ase_mode)
 	{
 	  // Classic Server client mode
@@ -1100,11 +1131,10 @@ void ase_config_parse(char *filename)
       // FILE does not exist
       printf("SIM-C : %s not found, using default values\n", ASE_CONFIG_FILE);
     }
-
-  // Print configurations
-  BEGIN_YELLOW_FONTCOLOR;
+  END_YELLOW_FONTCOLOR;
 
   // ASE mode
+  BEGIN_YELLOW_FONTCOLOR;
   printf("        ASE mode                   ... ");
   switch (cfg->ase_mode)
     {
@@ -1113,29 +1143,49 @@ void ase_config_parse(char *filename)
     case ASE_MODE_DAEMON_SW_SIMKILL : printf("Server-Client mode with SW SIMKILL (long runs)\n") ; break ;
     case ASE_MODE_REGRESSION        : printf("ASE Regression mode\n") ; break ;
     }
+  END_YELLOW_FONTCOLOR;
 
   // Inactivity
+  BEGIN_YELLOW_FONTCOLOR;
   if (cfg->ase_mode == ASE_MODE_DAEMON_SIMKILL)
     printf("        Inactivity kill-switch     ... ENABLED after %d clocks \n", cfg->ase_timeout);
   else
     printf("        Inactivity kill-switch     ... DISABLED \n");
-  
+  END_YELLOW_FONTCOLOR;
+
   // Reuse seed
+  BEGIN_YELLOW_FONTCOLOR;
   if (cfg->enable_reuse_seed != 0)
     printf("        Reuse simulation seed      ... ENABLED \n");
   else
     printf("        Reuse simulation seed      ... DISABLED \n");
+  END_YELLOW_FONTCOLOR;
 
   // CL view
+  BEGIN_YELLOW_FONTCOLOR;
   if (cfg->enable_cl_view != 0)
     printf("        ASE Transaction view       ... ENABLED\n");
   else
     printf("        ASE Transaction view       ... DISABLED\n");
+  END_YELLOW_FONTCOLOR;
+
+  // User clock frequency
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("        User Clock Frequency       ... %.6f MHz, T_uclk = %d ps \n", f_usrclk, cfg->usr_tps);
+  END_YELLOW_FONTCOLOR;
+  if (f_usrclk != 300.000)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("        ** NOTE **: User Clock Frequency is not controllable in In-System Mode\n");
+      printf("        ** NOTE **: User Clock configurability is available in ASE Simulation only ! \n");
+      END_RED_FONTCOLOR;
+    }
 
   // GBs of physical memory available
+  BEGIN_YELLOW_FONTCOLOR;
   printf("        Amount of physical memory  ... %d GB\n", cfg->phys_memory_available_gb);
-
   END_YELLOW_FONTCOLOR;
+
 
   // Transfer data to hardware (for simulation only)
 #ifdef SIM_SIDE
@@ -1144,4 +1194,3 @@ void ase_config_parse(char *filename)
 
   FUNC_CALL_EXIT;
 }
-
