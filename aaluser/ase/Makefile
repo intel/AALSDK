@@ -47,6 +47,9 @@ include ase_sources.mk
 # ASE Version
 ASE_VERSION = 5.0.2-Beta-d1480fe
 
+# Base directory
+ASE_BASEDIR = $(PWD)
+
 # ASE switches (these tend to increase log sizes)
 ASE_DEBUG ?= 1
 ASE_DISABLE_LOGGER = 0
@@ -204,7 +207,7 @@ endif
 
 ## VSIM elaboration, and run options
 MENT_VSIM_OPT = -64 -c -l run.log -dpioutoftheblue 1 -voptargs="+acc"
-MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) -do vsim_run.tcl
+MENT_VSIM_OPT+= -sv_lib $(ASE_SHOBJ_NAME) -do ../vsim_run.tcl
 
 #########################################################################
 #                         Valgrind options                              #
@@ -424,15 +427,14 @@ questa_build:
 	@echo "#              QuestaSim-GCC build initiated               #"
 	@echo "#                                                          #"
 	@echo "############################################################"
-	vlib $(WORK)
-	vmap work $(WORK)
 	make sw_build
-	vlog $(MENT_VLOG_OPT) $(ASEHW_FILE_LIST)
+	cd $(WORK) ; vlib $(WORK) ; vmap work $(WORK) ; cd -
+	cd $(WORK) ; vlog $(MENT_VLOG_OPT) $(ASEHW_FILE_LIST) ; cd -
 ifdef DUT_VHD_SRC_LIST
-	vcom $(MENT_VCOM_OPT) -f $(DUT_VHD_SRC_LIST)
+	cd $(WORK) ; vcom $(MENT_VCOM_OPT) -f ../$(DUT_VHD_SRC_LIST) ; cd -
 endif
 ifdef DUT_VLOG_SRC_LIST
-	vlog $(MENT_VLOG_OPT) -f $(DUT_VLOG_SRC_LIST)
+	cd $(WORK) ; vlog $(MENT_VLOG_OPT) -f ../$(DUT_VLOG_SRC_LIST) ; cd -
 endif
 
 
@@ -456,7 +458,7 @@ ifeq ($(SIMULATOR), VCS)
 	cd ./$(WORK)/; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 else
   ifeq ($(SIMULATOR), QUESTA)
-	vsim $(MENT_VSIM_OPT) $(ASE_TOP)
+	cd $(WORK) ; vsim $(MENT_VSIM_OPT) $(ASE_TOP) ; cd -
   else
 	@echo "############################################################"
 	@echo "#         SIMULATOR=$(SIMULATOR) not supported             #"
