@@ -45,7 +45,7 @@
 include ase_sources.mk
 
 # ASE Version
-ASE_VERSION = 5.0.2-Beta
+ASE_VERSION = 5.0.2-Beta-d1480fe
 
 # ASE switches (these tend to increase log sizes)
 ASE_DEBUG ?= 1
