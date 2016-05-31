@@ -2600,7 +2600,7 @@ module ccip_emulator
 	 $display("SIM-SV: Simulation kill command received...");
 	 // Print transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display("  Transaction count \t|\tVA \tVL0 \tVH0 \tVH1   |  MCL-0 \t MCL-1 \t MCL-3");
+	 $display("  Transaction count \t| %8s %8s %8s %8s | %8s %8s %8s", "VA", "VL0", "VH0", "VH1", "MCL-0", "MCL-1", "MCL-3");
 	 $display("  ========================================================================================");
 	 $display("  MMIOWrReq %d | ", ase_rx0_mmiowrreq_cnt );
 	 $display("  MMIORdReq %d | ", ase_rx0_mmiordreq_cnt );

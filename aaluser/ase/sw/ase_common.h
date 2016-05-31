@@ -380,6 +380,11 @@ void final_ipc_cleanup();
 void add_to_ipc_list(char *, char *);
 void create_ipc_listfile();
 
+// BBS DFH specifics
+void initialize_fme_dfh (struct buffer_t *);
+void update_fme_dfh();
+
+
 /*
  * These functions are called by C++ AALSDK Applications
  */

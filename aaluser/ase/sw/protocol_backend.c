@@ -84,19 +84,6 @@ int ase_instance_running()
   else
     {
       ase_simv_pid = ase_read_lock_file( getenv("PWD") );
-      /* // Read contents of file and send to  */
-      /* fp_ready_check = fopen(ASE_READY_FILENAME, "r"); */
-      /* // If success */
-      /* if (fp_ready_check != NULL) */
-      /* 	{ */
-      /* 	  fscanf(fp_ready_check, "%d", &ase_simv_pid); */
-      /* 	  fclose(fp_ready_check); */
-      /* 	} */
-      /* // If failed */
-      /* else */
-      /* 	{ */
-      /* 	  ase_simv_pid = -1; */
-      /* 	} */
     }
 
   FUNC_CALL_EXIT;
@@ -305,6 +292,68 @@ void update_glbl_dealloc(int flag)
 }
 
 
+/*
+ * Populating required DFH in BBS
+ */
+// Specific constants
+uint64_t *port_vbase;
+
+// Capability CSRs
+uint64_t *csr_port_capability;
+uint64_t *csr_port_umsg;
+
+// UMSG CSRs
+uint64_t *csr_umsg_capability;
+uint64_t *csr_umsg_base_address;
+uint64_t *csr_umsg_mode;
+
+/*
+ * Initialize: Populate FME DFH block
+ * When initialized, this is called
+ * update*function is called when UMSG is to be set up
+ */
+void initialize_fme_dfh (struct buffer_t *buf)
+{
+  FUNC_CALL_ENTRY;
+
+  port_vbase = (uint64_t*) buf->pbase;
+
+  /*
+   * PORT CSRs
+   */
+  // PORT_CAPABILITY
+  csr_port_capability = (uint64_t*)((uint64_t)port_vbase + 0x0030);
+  *csr_port_capability = (0x100 << 23) + (0x0 << 0);
+
+  // PORT_UMSG DFH
+  csr_port_umsg = (uint64_t*)((uint64_t)port_vbase + 0x2000);
+  *csr_port_umsg = (0x3 << 60) + (0x1000 << 39) + (0x11 << 0);
+
+  /*
+   * UMSG settings
+   */
+  // UMSG_CAPABILITY
+  csr_umsg_capability = (uint64_t*)((uint64_t)port_vbase + 0x2008);
+  *csr_umsg_capability = (0x0 << 9) + (0x0 << 8) + (0x8 << 0);
+
+  // UMSG_BASE_ADDRESS (only initalize address, update function will update CSR)
+  csr_umsg_base_address =(uint64_t*)((uint64_t)port_vbase + 0x2010);
+
+  // UMSG_MODE
+  csr_umsg_mode =(uint64_t*)((uint64_t)port_vbase + 0x2018);
+  *csr_umsg_mode = 0x0;
+
+  FUNC_CALL_EXIT;
+}
+
+// Update FME DFH after UMAS becomes known
+void update_fme_dfh(struct buffer_t *umas)
+{
+  // Write UMAS address
+  *csr_umsg_base_address = (uint64_t)umas->pbase;
+}
+
+
 /* ********************************************************************
  * ASE Listener thread
  * --------------------------------------------------------------------
@@ -480,19 +529,25 @@ int ase_listener()
 	      ase_alloc_action(&ase_buffer);
 	      ase_buffer.is_privmem = 0;
 	      if (ase_buffer.index == 0)
-		ase_buffer.is_mmiomap = 1;
+		{
+		  ase_buffer.is_mmiomap = 1;
+		}
 	      else
-		ase_buffer.is_mmiomap = 0;
+		{
+		  ase_buffer.is_mmiomap = 0;
+		}
 
 	      // Format workspace info string
 	      memset (logger_str, 0, ASE_LOGGER_LEN);
 	      if (ase_buffer.is_mmiomap)
 		{
 		  sprintf(logger_str + strlen(logger_str), "MMIO map Allocated ");
+		  initialize_fme_dfh(&ase_buffer);
 		}
 	      else if (ase_buffer.is_umas)
 		{
 		  sprintf(logger_str + strlen(logger_str), "UMAS Allocated ");
+		  update_fme_dfh(&ase_buffer);
 		}
 	      else
 		{
