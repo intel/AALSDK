@@ -130,7 +130,7 @@ SNPS_VHDLAN_OPT = -nc -verbose -full64
 SNPS_VHDLAN_OPT+= -work $(WORK)
 
 ## Verilog compile
-SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
+SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog 
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 # SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
@@ -408,12 +408,12 @@ vcs_build:
 	@echo "#                                                          #"
 	@echo "############################################################"
 	make sw_build
-	vlogan $(SNPS_VLOGAN_OPT) $(ASEHW_FILE_LIST)
+	vlogan $(SNPS_VLOGAN_OPT) $(ASEHW_FILE_LIST) -l vlogan-ase.log
 ifdef DUT_VHD_SRC_LIST
 	vhdlan $(SNPS_VHDLAN_OPT) -f $(DUT_VHD_SRC_LIST)
 endif
 ifdef DUT_VLOG_SRC_LIST
-	vlogan $(SNPS_VLOGAN_OPT) -f $(DUT_VLOG_SRC_LIST)
+	vlogan $(SNPS_VLOGAN_OPT) -f $(DUT_VLOG_SRC_LIST) -l vlogan-afu.log
 endif
 ifeq ($(CC), gcc)
 	vcs $(SNPS_VCS_OPT) $(ASE_TOP) $(WORK)/$(ASE_SHOBJ_SO) $(ASE_LD_SWITCHES)
