@@ -1,0 +1,147 @@
+#!/bin/bash
+echo $"*********** PR SPRIPT START **********************************"
+
+BitStreamFile="/home/aravuri/kernelpr/pr_script/bitstream/10.rbf"
+
+
+Hello_ali_app_loop=nlb_app/ALInlb
+PR_APP_SleepTime=5;
+HELLO_APP_SleepTime=0;
+
+
+hello_nlb_app_close () {
+   echo "Hello NLB APP  CLOSE"
+
+  	pid=$(pgrep -f "NLB APP")
+ 	echo $pid
+ 	kill $pid 
+ 	
+
+}
+
+
+hello_nlb_app_start () {
+     echo "Hello NLB APP OPEN"
+     echo $1 
+     input_perm="$1"
+     echo $input
+     xterm -hold -T "NLB APP" -e sh ali_nlb "$input_perm" 2>&1 >ali_nlb.log &
+   
+}
+
+## ************************************************
+##  Set AAL lib path
+## ************************************************
+echo $"*********** Set ALL lib path  **********************************"
+cd ../../../../aalsdk/myinst/usr/local/lib/
+export LD_LIBRARY_PATH=$PWD
+cd ../../../../valapps/Partial_Reconfig/PR_TwoApp/
+
+
+## ************************************************
+##  Test case SW_PR_01b: run PR app with bitstream
+## ************************************************
+
+ 
+echo "\\n *********** Test case SW_PR_01b START *********** \\n"
+
+pr_app/aliconfafu --bitstream=$BitStreamFile --reconfInterface=C
+sleep $PR_APP_SleepTime
+
+
+hello_nlb_app_start 
+sleep 10
+hello_nlb_app_close
+
+echo "\\n *********** Test case SW_PR_01b END *********** \\n"
+
+
+## ************************************************
+##  Test case SW_PR_04b: run PR app with bitstream
+## ************************************************
+sleep 10
+
+echo "\\n *********** Test case SW_PR_04b START *********** \\n"
+
+hello_nlb_app_start "--loop"
+sleep 10
+
+ 
+pr_app/aliconfafu --bitstream=$BitStreamFile --reconftimeout=5  --reconfaction=ACTION_HONOR_OWNER --reconfInterface=D
+sleep $PR_APP_SleepTime
+
+
+hello_nlb_app_close
+
+echo "\\n *********** Test case SSW_PR_04b END *********** \\n"
+
+
+
+## ************************************************
+##  Test case SW_PR_05b: run PR app with bitstream
+## ************************************************
+sleep 10
+pr_app/aliconfafu --bitstream=$BitStreamFile --reconftimeout=5  --reconfaction=ACTION_HONOR_OWNER --reconfInterface=A
+sleep $PR_APP_SleepTime
+
+echo "\\n *********** Test case SW_PR_05b START *********** \\n"
+
+hello_nlb_app_start "--loop --NoRelease"
+sleep 10
+
+ 
+pr_app/aliconfafu --bitstream=$BitStreamFile --reconftimeout=5  --reconfaction=ACTION_HONOR_OWNER --reconfInterface=D
+sleep $PR_APP_SleepTime
+
+sleep 10
+hello_nlb_app_close
+
+echo "\\n *********** Test case SW_PR_05b END *********** \\n"
+
+
+
+## ************************************************
+##  Test case SW_PR_06b: run PR app with bitstream
+## ************************************************
+sleep 10
+pr_app/aliconfafu --bitstream=$BitStreamFile --reconftimeout=5  --reconfaction=ACTION_HONOR_REQUEST --reconfInterface=A
+sleep $PR_APP_SleepTime
+
+echo "\\n *********** Test case SW_PR_06b START *********** \\n"
+
+hello_nlb_app_start "--loop"
+sleep 10
+
+ 
+pr_app/aliconfafu --bitstream=$BitStreamFile --reconftimeout=5  --reconfaction=ACTION_HONOR_REQUEST --reconfInterface=D
+sleep $PR_APP_SleepTime
+
+sleep 10
+hello_nlb_app_close
+
+echo "\\n *********** Test case SW_PR_06b END *********** \\n"
+
+
+
+## ************************************************
+##  Test case SW_PR_07b: run PR app with bitstream
+## ************************************************
+sleep 10
+pr_app/aliconfafu --bitstream=$BitStreamFile --reconftimeout=5  --reconfaction=ACTION_HONOR_REQUEST --reconfInterface=A
+sleep $PR_APP_SleepTime
+
+echo "\\n *********** Test case SW_PR_07b START *********** \\n"
+
+hello_nlb_app_start "--loop --NoRelease"
+sleep 10
+
+ 
+pr_app/aliconfafu --bitstream=$BitStreamFile --reconftimeout=5  --reconfaction=ACTION_HONOR_REQUEST --reconfInterface=D
+sleep $PR_APP_SleepTime
+
+sleep 10
+hello_nlb_app_close
+
+echo "\\n *********** Test case SW_PR_07b END *********** \\n"
+
+rm ali_nlb.log
