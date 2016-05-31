@@ -599,8 +599,4 @@ package ase_pkg;
       int 	  mcl3;
       } txn_mcl_counts;
       
-   // Count increment macro
- `define incr_cnt(condition, counter_val)\
-   if (condition == 1) counter_val <= counter_val + 1
-   
 endpackage

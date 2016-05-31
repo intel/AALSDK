@@ -1342,7 +1342,11 @@ module ccip_emulator
    UMsgHdr_t ase_umsghdr_map;
    assign ase_umsghdr_map = UMsgHdr_t'(C0RxHdr);
 
+   // Count increment macro
+`define incr_cnt(condition, counter_val)\
+   if (condition == 1) counter_val <= counter_val + 1
 
+				      
    /*
     * Transaction counts
     */
