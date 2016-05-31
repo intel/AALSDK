@@ -138,7 +138,7 @@ module ccip_emulator
 	C0TxRdValid <= 0;
       // --------------------------------------------------------- //
       // Write Request
-      if (C1TxValid && ( (C1TxHdr.reqtype == ASE_WRFENCE)||(C1TxHdr.reqtype == ASE_WRLINE_I)||(C1TxHdr.reqtype == ASE_WRLINE_M)||(C1TxHdr.reqtype == ASE_ATOMIC_REQ)) )
+      if (C1TxValid && ( (C1TxHdr.reqtype == ASE_WRFENCE)||(C1TxHdr.reqtype == ASE_WRLINE_I)||(C1TxHdr.reqtype == ASE_WRLINE_M)) )
 	C1TxWrValid <= 1;
       else
 	C1TxWrValid <= 0;
@@ -180,7 +180,6 @@ module ccip_emulator
 	   eREQ_WRLINE_M : txasehdr.txhdr.reqtype = ASE_WRLINE_M;
 	   eREQ_WRFENCE  : txasehdr.txhdr.reqtype = ASE_WRFENCE;
 	   // eREQ_WRPUSH   : txasehdr.txhdr.reqtype = ASE_WRPUSH;
-	   // eREQ_ATOMIC   : txasehdr.txhdr.reqtype = ASE_ATOMIC_REQ;
 	   eREQ_INTR     : txasehdr.txhdr.reqtype = ASE_INTR_REQ;
 	 endcase // case (inhdr.req_type)
 	 // Accomodating MCL addr[41:2]=X when SOP=0
@@ -214,9 +213,12 @@ module ccip_emulator
 	 case (inhdr.rxhdr.resptype)
 	   ASE_RD_RSP     : rxasehdr.resp_type = eRSP_RDLINE;
 	   ASE_UMSG       : rxasehdr.resp_type = eRSP_UMSG;
-`ifdef DEFEATRUE_ATOMIC
-	   ASE_ATOMIC_RSP : rxasehdr.resp_type = eRSP_ATOMIC;
-`endif
+	 endcase
+	 case (inhdr.rxhdr.vc_used)
+	   VC_VA           : rxasehdr.vc_used = eVC_VA;
+	   VC_VL0          : rxasehdr.vc_used = eVC_VL0;
+	   VC_VH0          : rxasehdr.vc_used = eVC_VH0;
+	   VC_VH1          : rxasehdr.vc_used = eVC_VH1;
 	 endcase
 	 return rxasehdr;
       end
@@ -231,6 +233,12 @@ module ccip_emulator
 	   ASE_WR_RSP      : rxasehdr.resp_type = eRSP_WRLINE;
 	   ASE_WRFENCE_RSP : rxasehdr.resp_type = eRSP_WRFENCE;
 	   ASE_INTR_RSP    : rxasehdr.resp_type = eRSP_INTR;
+	 endcase // case (inhdr.rxhdr.resptype)
+	 case (inhdr.rxhdr.vc_used)
+	   VC_VA           : rxasehdr.vc_used = eVC_VA;
+	   VC_VL0          : rxasehdr.vc_used = eVC_VL0;
+	   VC_VH0          : rxasehdr.vc_used = eVC_VH0;
+	   VC_VH1          : rxasehdr.vc_used = eVC_VH1;
 	 endcase
 	 return rxasehdr;
       end
@@ -239,6 +247,8 @@ module ccip_emulator
 
    // ASE's internal reset signal
    logic 			      ase_reset = 1;
+   logic 			      init_reset = 1;
+
 
    /*
     * Remapping ASE CCIP to cvl_pkg struct
@@ -252,7 +262,7 @@ module ccip_emulator
    assign pck_cp2af_softReset = SoftReset;
 
    // Rx/Tx mapping from ccip_if_pkg to ASE's internal format
-   always @(*) begin
+   always @(*) begin : ccip2ase_remap
       // Rx OUT (CH0)
       // If MMIO RDWR request, cast directly to interface format
       if (C0RxMmioRdValid|C0RxMmioWrValid) begin
@@ -338,7 +348,7 @@ module ccip_emulator
    import "DPI-C" function void mmio_response(inout mmio_t mmio_pkt);
    mmio_t mmio_rdrsp_pkt;
    mmio_t mmio_wrrsp_pkt;
-      
+
    // Software controlled process - run clocks
    export "DPI-C" task run_clocks;
 
@@ -346,8 +356,8 @@ module ccip_emulator
    export "DPI-C" task afu_softreset_trig;
 
    // Simulator global reset (issued at simulator start, or session end)
-   export "DPI-C" task ase_reset_trig;   
-   
+   export "DPI-C" task ase_reset_trig;
+
    // Software controlled reset response
    import "DPI-C" function void sw_reset_response();
 
@@ -366,7 +376,7 @@ module ccip_emulator
 
 
    /*
-    * ASE Simulator reset 
+    * ASE Simulator reset
     * - Use sparingly, only for initialization and reset between session_init(s)
     */
    task ase_reset_trig();
@@ -374,11 +384,11 @@ module ccip_emulator
 	 ase_reset = 1;
 	 run_clocks(20);
 	 ase_reset = 0;
-	 run_clocks(20);	 
+	 run_clocks(20);
       end
    endtask
 
-   
+
    /*
     * Multi-instance multi-user +CONFIG,+SCRIPT instrumentation
     * RUN =>
@@ -411,7 +421,7 @@ module ccip_emulator
 
 
    // Finish logger command
-   int finish_logger = 0;
+   logic finish_logger = 0;
 
 
    /*
@@ -426,7 +436,7 @@ module ccip_emulator
    int mmiowr_credit;
    int mmiord_credit;
    int umsg_credit;
-   int atomic_credit;
+   // int atomic_credit;
 
 
    /*
@@ -440,16 +450,16 @@ module ccip_emulator
    /*
     * State indicators
     */
-   typedef enum 		  {
-				   RxIdle,
-				   RxMMIOForward,
-				   RxUMsgForward,
-				   RxReadResp,
-				   RxAtomicsResp,
-				   RxWriteResp
-				   } RxOutState;
-   RxOutState rx0_state;
-   RxOutState rx1_state;
+   // typedef enum 		  {
+   // 				   RxIdle,
+   // 				   RxMMIOForward,
+   // 				   RxUMsgForward,
+   // 				   RxReadResp,
+   // 				   RxAtomicsResp,
+   // 				   RxWriteResp
+   // 				   } RxOutState;
+   // RxOutState rx0_state;
+   // RxOutState rx1_state;
 
    /*
     * Fabric Clock, pClk{*}
@@ -484,14 +494,14 @@ module ccip_emulator
    logic 			  sw_reset_trig = 1;
    logic 			  app_reset_trig;
    logic 			  app_reset_trig_q;
-   int 				  rst_timeout_counter;   
+   int 				  rst_timeout_counter;
    int 				  rst_counter;
 
    // Register app_reset_trig
    always @(posedge clk) begin
-      app_reset_trig_q <= app_reset_trig;      
+      app_reset_trig_q <= app_reset_trig;
    end
-   
+
    // Reset states
    typedef enum {
 		 ResetIdle,
@@ -519,13 +529,13 @@ module ccip_emulator
       if (ase_reset) begin
 	 rst_state           <= ResetIdle;
 	 rst_counter         <= 0;
-	 rst_timeout_counter <= 0;		
+	 rst_timeout_counter <= 0;
       end
       else begin
 	 case (rst_state)
 	   ResetIdle:
 	     begin
-		rst_timeout_counter <= 0;		
+		rst_timeout_counter <= 0;
 		// 0 -> 1
 		if (~app_reset_trig_q && app_reset_trig) begin
 		   rst_state <= ResetHoldHigh;
@@ -544,13 +554,13 @@ module ccip_emulator
 	     begin
 		if (glbl_dealloc_credit != 0) begin
 		   if (rst_timeout_counter < `RESET_TIMEOUT_DURATION) begin
-		      rst_timeout_counter <= rst_timeout_counter + 1;		   
+		      rst_timeout_counter <= rst_timeout_counter + 1;
 		      rst_state           <= ResetHoldHigh;
 		   end
 		   else begin
-		      `BEGIN_RED_FONTCOLOR;		      
-		      $display("SIM-SV: Reset request timed out... Behavior maybe undefined !");		      
-		      `END_RED_FONTCOLOR;		      
+		      `BEGIN_RED_FONTCOLOR;
+		      $display("SIM-SV: Reset request timed out... Behavior maybe undefined !");
+		      `END_RED_FONTCOLOR;
 		      sw_reset_trig <= 1;
 		      rst_state <= ResetWait;
 		   end
@@ -622,7 +632,7 @@ module ccip_emulator
    end
 
    // Div2 output
-   always @(posedge usrClk) begin
+   always @(posedge usrClk) begin : usrclk_proc
       usrClkDiv2 = ~usrClkDiv2;
    end
 
@@ -763,7 +773,7 @@ module ccip_emulator
 	       hdr.tid      = mmio_pkt.tid[CCIP_CFGHDR_TID_WIDTH-1:0];
 	       cwlp_header  = (CCIP_CFG_HDR_WIDTH)'(hdr);
 	       cwlp_wrvalid = 0;
-	       cwlp_rdvalid = 1;	       
+	       cwlp_rdvalid = 1;
 	       mmio_pkt.resp_en = 1;
 	       @(posedge clk);
 	       cwlp_wrvalid = 0;
@@ -816,7 +826,7 @@ module ccip_emulator
 
    logic [CCIP_MMIO_RDDATA_WIDTH-1:0] mmioresp_dout;
    logic [CCIP_MMIO_TID_WIDTH-1:0]    mmioresp_tid;
-    
+
    logic 			      mmioresp_read;
    logic 			      mmioresp_valid;
    logic 			      mmioresp_full;
@@ -850,7 +860,7 @@ module ccip_emulator
    function automatic void mmio_rdrsp_mask( );
       begin
 	 // TID
-	 mmio_rdrsp_pkt.tid      = mmioresp_tid;	 
+	 mmio_rdrsp_pkt.tid      = mmioresp_tid;
 	 // Write Enable
 	 mmio_rdrsp_pkt.write_en = MMIO_READ_REQ;
 	 // Data (use only lower int)
@@ -887,12 +897,12 @@ module ccip_emulator
 
    /*
     * MMIO Write response
-    */ 
+    */
    // Function to tie Write Response
    function automatic void mmio_wrrsp_mask();
       begin
 	 // TID
-	 mmio_wrrsp_pkt.tid      = DBG_cfgheader.tid;	 
+	 mmio_wrrsp_pkt.tid      = DBG_cfgheader.tid;
 	 // Write Enable
 	 mmio_wrrsp_pkt.write_en = MMIO_WRITE_REQ;
 	 // Data packing
@@ -905,22 +915,22 @@ module ccip_emulator
 	 mmio_wrrsp_pkt.qword[6] = C0RxData[ 447:384 ];
 	 mmio_wrrsp_pkt.qword[7] = C0RxData[ 511:448 ];
 	 // Address
-	 mmio_wrrsp_pkt.addr = DBG_cfgheader.index;	 
+	 mmio_wrrsp_pkt.addr = DBG_cfgheader.index;
 	 // Response flag
 	 mmio_wrrsp_pkt.resp_en  = 1;
 	 // Return
-	 mmio_response ( mmio_wrrsp_pkt );	 
+	 mmio_response ( mmio_wrrsp_pkt );
       end
    endfunction
 
    // Response to MMIO write (credit control only)
    always @(posedge clk) begin
       if (C0RxMmioWrValid) begin
-	 mmio_wrrsp_mask( );	 
+	 mmio_wrrsp_mask( );
       end
    end
-   
-   
+
+
    /* ******************************************************************
     *
     * Unordered Messages Engine
@@ -1320,79 +1330,165 @@ module ccip_emulator
     * Live count of transactions to be printed at end of simulation
     *
     * ******************************************************************/
+   // MMIO Activity counts
    int ase_rx0_mmiowrreq_cnt ;
    int ase_rx0_mmiordreq_cnt ;
    int ase_tx2_mmiordrsp_cnt ;
+   // Read counts
    int ase_tx0_rdvalid_cnt   ;
    int ase_rx0_rdvalid_cnt   ;
+   // Write counts
    int ase_tx1_wrvalid_cnt   ;
    int ase_rx1_wrvalid_cnt   ;
+   // Write Fence counts
    int ase_tx1_wrfence_cnt   ;
    int ase_rx1_wrfence_cnt   ;
+   // Umsg counts
    int ase_rx0_umsghint_cnt  ;
    int ase_rx0_umsgdata_cnt  ;
-`ifdef DEFEATRUE_ATOMIC
-   int ase_tx1_atomic_cnt;
-   int ase_rx0_atomic_cnt;
-`endif
 
    // Remap UmsgHdr for count purposes
    UMsgHdr_t ase_umsghdr_map;
    assign ase_umsghdr_map = UMsgHdr_t'(C0RxHdr);
 
-   // process
+
+   /*
+    * Transaction counts
+    */
+   // Channel count structures
+   txn_vc_counts   rdreq_vc_cnt  , rdrsp_vc_cnt;
+   txn_vc_counts   wrreq_vc_cnt  , wrrsp_vc_cnt;
+   txn_vc_counts   wrfreq_vc_cnt , wrfrsp_vc_cnt;
+
+   txn_mcl_counts   rdreq_mcl_cnt  ;
+   txn_mcl_counts   wrreq_mcl_cnt  , wrrsp_mcl_cnt;
+
+   // Transaction count process
    always @(posedge clk) begin : transact_cnt_proc
-      if (ase_reset) begin
+      // ===================================================== //
+      // Intiialization
+      // ===================================================== //
+      if (init_reset) begin
+	 // ------------------------------------ //
+	 // MMIO
+	 // ------------------------------------ //
 	 ase_rx0_mmiowrreq_cnt <= 0 ;
 	 ase_rx0_mmiordreq_cnt <= 0 ;
 	 ase_tx2_mmiordrsp_cnt <= 0 ;
-	 ase_tx0_rdvalid_cnt <= 0 ;
-	 ase_rx0_rdvalid_cnt <= 0 ;
-	 ase_tx1_wrvalid_cnt <= 0 ;
-	 ase_rx1_wrvalid_cnt <= 0 ;
-	 ase_tx1_wrfence_cnt <= 0 ;
-	 ase_rx1_wrfence_cnt <= 0 ;
+	 // ------------------------------------ //
+	 // Umsg counts
+	 // ------------------------------------ //
 	 ase_rx0_umsghint_cnt <= 0 ;
 	 ase_rx0_umsgdata_cnt <= 0 ;
-`ifdef DEFEATRUE_ATOMIC
-	 ase_tx1_atomic_cnt <= 0;
-	 ase_rx0_atomic_cnt <= 0;
-`endif
-      end
+	 // ------------------------------------ //
+	 // Read transactions
+	 // ------------------------------------ //
+	 rdreq_vc_cnt  <= '{0, 0, 0, 0};
+	 rdrsp_vc_cnt  <= '{0, 0, 0, 0};
+	 rdreq_mcl_cnt <= '{0, 0, 0};
+	 // Total read counts
+	 ase_tx0_rdvalid_cnt <= 0 ;
+	 ase_rx0_rdvalid_cnt <= 0 ;
+	 // ------------------------------------ //
+	 // Write transactions
+	 // ------------------------------------ //
+	 wrreq_vc_cnt  <= '{0, 0, 0, 0};
+	 wrrsp_vc_cnt  <= '{0, 0, 0, 0};
+	 wrreq_mcl_cnt <= '{0, 0, 0};
+	 wrrsp_mcl_cnt <= '{0, 0, 0};
+	 // Total write counts
+	 ase_tx1_wrvalid_cnt <= 0 ;
+	 ase_rx1_wrvalid_cnt <= 0 ;
+	 // ------------------------------------ //
+	 // WriteFence transactions
+	 // ------------------------------------ //
+	 wrfreq_vc_cnt  <= '{0, 0, 0, 0};
+	 wrfrsp_vc_cnt  <= '{0, 0, 0, 0};
+	 // WriteFence Counts
+	 ase_tx1_wrfence_cnt <= 0 ;
+	 ase_rx1_wrfence_cnt <= 0 ;
+      end // if (init_reset)
+      // ===================================================== //
+      // Active counts
+      // ===================================================== //
       else begin
+	 // ------------------------------------ //
 	 // MMIO counts
-	 if (C0RxMmioWrValid)
-	   ase_rx0_mmiowrreq_cnt <= ase_rx0_mmiowrreq_cnt + 1;
-	 if (C0RxMmioRdValid)
-	   ase_rx0_mmiordreq_cnt <= ase_rx0_mmiordreq_cnt + 1;
-	 if (C2TxMmioRdValid)
-	   ase_tx2_mmiordrsp_cnt <= ase_tx2_mmiordrsp_cnt + 1;
-	 // Read counts
-	 if (C0TxRdValid)
-	   ase_tx0_rdvalid_cnt <= ase_tx0_rdvalid_cnt + (C0TxHdr.len + 1);
-	 if (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP))
-	   ase_rx0_rdvalid_cnt <= ase_rx0_rdvalid_cnt + 1;
-	 // Write counts
-	 if (C1TxWrValid && (C1TxHdr.reqtype != ASE_WRFENCE) && (C1TxHdr.reqtype != ASE_ATOMIC_REQ))
-	   ase_tx1_wrvalid_cnt <= ase_tx1_wrvalid_cnt + 1;
-	 if (C1RxWrValid && (C1RxHdr.resptype == ASE_WR_RSP) )
-	   ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + 1;
-	 if (C1TxWrValid && (C1TxHdr.reqtype == ASE_WRFENCE))
-	   ase_tx1_wrfence_cnt <= ase_tx1_wrfence_cnt + 1;
-	 if (C1RxWrValid && (C1RxHdr.resptype == ASE_WRFENCE_RSP))
-	   ase_rx1_wrfence_cnt <= ase_rx1_wrfence_cnt + 1;
+	 // ------------------------------------ //
+	 `incr_cnt (C0RxMmioWrValid, ase_rx0_mmiowrreq_cnt);
+	 `incr_cnt (C0RxMmioRdValid, ase_rx0_mmiordreq_cnt);
+	 `incr_cnt (C2TxMmioRdValid, ase_tx2_mmiordrsp_cnt);
+	 // ------------------------------------ //
 	 // UMsg counts
-	 if (C0RxUMsgValid && ase_umsghdr_map.umsg_type )
-	   ase_rx0_umsghint_cnt <= ase_rx0_umsghint_cnt + 1;
-	 if (C0RxUMsgValid && ~ase_umsghdr_map.umsg_type )
-	   ase_rx0_umsgdata_cnt <= ase_rx0_umsgdata_cnt + 1;
-`ifdef DEFEATRUE_ATOMIC
-	 // Atomics' counts
-	 if (C1TxWrValid && (C1TxHdr.reqtype == ASE_ATOMIC_REQ))
-	   ase_tx1_atomic_cnt <= ase_tx1_atomic_cnt + 1;
-	 if (C0RxRdValid && (C0RxHdr.resptype == ASE_ATOMIC_RSP))
-	   ase_rx0_atomic_cnt <= ase_rx0_atomic_cnt + 1;
-`endif
+	 // ------------------------------------ //
+	 `incr_cnt ( (C0RxUMsgValid && ase_umsghdr_map.umsg_type) , ase_rx0_umsghint_cnt);
+	 `incr_cnt ( (C0RxUMsgValid && ~ase_umsghdr_map.umsg_type), ase_rx0_umsgdata_cnt);
+	 // ------------------------------------ //
+	 // Read counts
+	 // ------------------------------------ //
+	 // Total counts
+	  if (C0TxValid && isReadRequest(C0TxHdr))
+	    ase_tx0_rdvalid_cnt <= ase_tx0_rdvalid_cnt + (C0TxHdr.len + 1);
+	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr)), ase_rx0_rdvalid_cnt);
+	 // C0Tx granular counts
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.vc == VC_VA )), rdreq_vc_cnt.va);
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.vc == VC_VL0)), rdreq_vc_cnt.vl0);
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.vc == VC_VH0)), rdreq_vc_cnt.vh0);
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.vc == VC_VH1)), rdreq_vc_cnt.vh1);
+	 // C0Tx MCL granular counts
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.len == ASE_1CL)), rdreq_mcl_cnt.mcl0);
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.len == ASE_2CL)), rdreq_mcl_cnt.mcl1);
+	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.len == ASE_4CL)), rdreq_mcl_cnt.mcl3);
+	 // C0Rx VC granular counts
+	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr) && (C0RxHdr.vc_used == VC_VA)), rdrsp_vc_cnt.va);
+	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr) && (C0RxHdr.vc_used == VC_VL0)), rdrsp_vc_cnt.vl0);
+	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr) && (C0RxHdr.vc_used == VC_VH0)), rdrsp_vc_cnt.vh0);
+	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr) && (C0RxHdr.vc_used == VC_VH1)), rdrsp_vc_cnt.vh1);
+	 // ------------------------------------ //
+	 // Write counts
+	 // ------------------------------------ //
+	 `incr_cnt ( (C1TxValid && isWriteRequest(C1TxHdr))   , ase_tx1_wrvalid_cnt);
+	 if (C1RxRspValid && isWriteResponse(C1RxHdr)) begin
+	    if (isVL0Response(C1RxHdr)) begin
+	       ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + 1;
+	    end
+	    else if (isVHxResponse(C1RxHdr) && C1RxHdr.format) begin
+	       ase_rx1_wrvalid_cnt <= ase_rx1_wrvalid_cnt + (C1RxHdr.clnum + 1);
+	    end
+	 end
+	 // C1Tx VC granular counts
+	 `incr_cnt ( (C1TxValid && isWriteRequest(C1TxHdr) && (C1TxHdr.vc == VC_VA) ), wrreq_vc_cnt.va);
+	 `incr_cnt ( (C1TxValid && isWriteRequest(C1TxHdr) && (C1TxHdr.vc == VC_VL0)), wrreq_vc_cnt.vl0);
+	 `incr_cnt ( (C1TxValid && isWriteRequest(C1TxHdr) && (C1TxHdr.vc == VC_VH0)), wrreq_vc_cnt.vh0);
+	 `incr_cnt ( (C1TxValid && isWriteRequest(C1TxHdr) && (C1TxHdr.vc == VC_VH1)), wrreq_vc_cnt.vh1);
+	 // C1Tx MCL granular counts
+	 `incr_cnt ( (C1TxValid && C1TxHdr.sop && isWriteRequest(C1TxHdr) && (C1TxHdr.len == ASE_1CL)), wrreq_mcl_cnt.mcl0);
+	 `incr_cnt ( (C1TxValid && C1TxHdr.sop && isWriteRequest(C1TxHdr) && (C1TxHdr.len == ASE_2CL)), wrreq_mcl_cnt.mcl1);
+	 `incr_cnt ( (C1TxValid && C1TxHdr.sop && isWriteRequest(C1TxHdr) && (C1TxHdr.len == ASE_4CL)), wrreq_mcl_cnt.mcl3);
+	 // C1Rx VC granular counts
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VA)), wrrsp_vc_cnt.va);
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VL0)), wrrsp_vc_cnt.vl0);
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VH0)), wrrsp_vc_cnt.vh0);
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VH1)), wrrsp_vc_cnt.vh1);
+	 // C1Tx MCL granular counts
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && ~C1RxHdr.format ), wrrsp_mcl_cnt.mcl0);
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.clnum == ASE_2CL) && C1RxHdr.format), wrrsp_mcl_cnt.mcl1);
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.clnum == ASE_4CL) && C1RxHdr.format), wrrsp_mcl_cnt.mcl3);
+	 // ------------------------------------ //
+	 // WriteFence counts
+	 // ------------------------------------ //
+	 `incr_cnt ( (C1TxValid && isWrFenceRequest(C1TxHdr))    , ase_tx1_wrfence_cnt);
+	 `incr_cnt ( (C1RxRspValid && isWrFenceResponse(C1RxHdr)), ase_rx1_wrfence_cnt);
+	 // C1Tx WrF VC granular counts
+	 `incr_cnt ( (C1TxValid && isWrFenceRequest(C1TxHdr) && (C1TxHdr.vc == VC_VA) ), wrfreq_vc_cnt.va );
+	 `incr_cnt ( (C1TxValid && isWrFenceRequest(C1TxHdr) && (C1TxHdr.vc == VC_VL0)), wrfreq_vc_cnt.vl0);
+	 `incr_cnt ( (C1TxValid && isWrFenceRequest(C1TxHdr) && (C1TxHdr.vc == VC_VH0)), wrfreq_vc_cnt.vh0);
+	 `incr_cnt ( (C1TxValid && isWrFenceRequest(C1TxHdr) && (C1TxHdr.vc == VC_VH1)), wrfreq_vc_cnt.vh1);
+	 // C1Rx WrF VC granular counts
+	 `incr_cnt ( (C1RxRspValid && isWrFenceResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VA) ), wrfrsp_vc_cnt.va );
+	 `incr_cnt ( (C1RxRspValid && isWrFenceResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VL0)), wrfrsp_vc_cnt.vl0 );
+	 `incr_cnt ( (C1RxRspValid && isWrFenceResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VH0)), wrfrsp_vc_cnt.vh0 );
+	 `incr_cnt ( (C1RxRspValid && isWrFenceResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VH1)), wrfrsp_vc_cnt.vh1 );
       end
    end
 
@@ -1402,7 +1498,7 @@ module ccip_emulator
     */
    int count_error_flag;
    always @(posedge clk) begin
-      if (ase_reset) begin
+      if (init_reset) begin
 	 count_error_flag <= 0;
       end
       else begin
@@ -1451,30 +1547,38 @@ module ccip_emulator
     *
     * *******************************************************************/
    // Read response staging signals
-   logic [CCIP_DATA_WIDTH-1:0] rdrsp_data_in, rdrsp_data_out;
-   RxHdr_t                     rdrsp_hdr_in, rdrsp_hdr_out;
-   logic 		       rdrsp_write;
-   logic 		       rdrsp_read;
-   logic 		       rdrsp_full;
-   logic 		       rdrsp_empty;
-   logic 		       rdrsp_valid;
+   logic [CCIP_RX_HDR_WIDTH-1:0] rdrsp_hdr_out_vec;
+   logic [CCIP_DATA_WIDTH-1:0] 	 rdrsp_data_in, rdrsp_data_out;
+   RxHdr_t                       rdrsp_hdr_in, rdrsp_hdr_out;
+   logic 			 rdrsp_write;
+   logic 			 rdrsp_read;
+   logic 			 rdrsp_full;
+   logic 			 rdrsp_empty;
+   logic 			 rdrsp_valid;
 
    // Atomics response staging signals
-   logic [CCIP_DATA_WIDTH-1:0] atomics_data_in, atomics_data_out;
-   Atomics_t                   atomics_hdr_in, atomics_hdr_out;
-   logic 		       atomics_write;
-   logic 		       atomics_read;
-   logic 		       atomics_full;
-   logic 		       atomics_empty;
-   logic 		       atomics_valid;
+   logic [CCIP_RX_HDR_WIDTH-1:0] atomics_hdr_out_vec;
+   logic [CCIP_DATA_WIDTH-1:0] 	 atomics_data_in, atomics_data_out;
+   Atomics_t                     atomics_hdr_in, atomics_hdr_out;
+   logic 			 atomics_write;
+   logic 			 atomics_read;
+   logic 			 atomics_full;
+   logic 			 atomics_empty;
+   logic 			 atomics_valid;
+
+   // Pre-packed signals
+   logic [CCIP_RX_HDR_WIDTH-1:0] wrrsp_hdr_out_vec;
+   RxHdr_t                       wrrsp_hdr_in, wrrsp_hdr_out;
+   logic 			 wrrsp_write;
+   logic 			 wrrsp_read;
+   logic 			 wrrsp_full;
+   logic 			 wrrsp_empty;
+   logic 			 wrrsp_valid;
 
    // Write response 1 staging signals
-   RxHdr_t                     wr1rsp_hdr_in, wr1rsp_hdr_out;
-   logic 		       wr1rsp_write;
-   logic 		       wr1rsp_read;
-   logic 		       wr1rsp_full;
-   logic 		       wr1rsp_empty;
-   logic 		       wr1rsp_valid;
+   // logic [CCIP_RX_HDR_WIDTH-1:0] pp_wrrsp_hdr_out_vec;
+   RxHdr_t                       pp_wrrsp_hdr;
+   logic 			 pp_wrrsp_write;
 
 
    /*
@@ -1534,7 +1638,7 @@ module ccip_emulator
    endfunction
 
    // cf2as_latbuf_ch0 signals
-   logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx0hdr_vec;
+   // logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx0hdr_vec;
    TxHdr_t                       cf2as_latbuf_tx0hdr;
    RxHdr_t                       cf2as_latbuf_rx0hdr;
    logic                         cf2as_latbuf_ch0_empty;
@@ -1542,7 +1646,7 @@ module ccip_emulator
    int 				 cf2as_latbuf_ch0_count;
 
    // cf2as_latbuf_ch1 signals
-   logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx1hdr_vec;
+   // logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx1hdr_vec;
    logic [CCIP_DATA_WIDTH-1:0]   cf2as_latbuf_tx1data;
    TxHdr_t                       cf2as_latbuf_tx1hdr;
    RxHdr_t                       cf2as_latbuf_rx1hdr;
@@ -1551,8 +1655,8 @@ module ccip_emulator
    int 				 cf2as_latbuf_ch1_count;
    logic 			 cf2as_latbuf_ch1_valid;
 
-   RxHdr_t                       cf2as_latbuf_rx0hdr_q;
-   RxHdr_t                       cf2as_latbuf_rx1hdr_q;
+   // RxHdr_t                       cf2as_latbuf_rx0hdr_q;
+   // RxHdr_t                       cf2as_latbuf_rx1hdr_q;
 
    /*
     * CAFU->ASE CH0 (TX0)
@@ -1563,13 +1667,18 @@ module ccip_emulator
      #(
        .DEBUG_LOGNAME       ("latbuf_ch0.log"),
        .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
+       .NUM_STATIONS_FULL_THRESH (LATBUF_FULL_THRESHOLD),
        .COUNT_WIDTH         (LATBUF_COUNT_WIDTH),
+       .VISIBLE_DEPTH_BASE2 (8),
+       .VISIBLE_FULL_THRESH (220),
+       .LATBUF_MAX_TXN      (1),
        .WRITE_CHANNEL       (0)
        )
    cf2as_latbuf_ch0
      (
       .clk		( clk ),
       .rst		( ase_reset ),
+      .finish_trigger   ( finish_logger ),
       .hdr_in		( C0TxHdr ),
       .data_in		( {CCIP_DATA_WIDTH{1'b0}} ),
       .write_en		( C0TxRdValid ),
@@ -1608,6 +1717,7 @@ module ccip_emulator
 	 // Write to rdrsp_fifo
 	 rdrsp_data_in         <= unpack_ccipkt_to_vector(Tx0_pkt);
 	 rdrsp_hdr_in          <= cf2as_latbuf_rx0hdr;
+	 // $display(" ** DEBUG **: %d => cf2as_latbuf_rx0hdr.mdata = %x", $time, cf2as_latbuf_rx0hdr);
       end
    endtask
 
@@ -1635,13 +1745,18 @@ module ccip_emulator
      #(
        .DEBUG_LOGNAME       ("latbuf_ch1.log"),
        .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
+       .NUM_STATIONS_FULL_THRESH (LATBUF_FULL_THRESHOLD),
        .COUNT_WIDTH         (LATBUF_COUNT_WIDTH),
+       .VISIBLE_DEPTH_BASE2 (8),
+       .VISIBLE_FULL_THRESH (220),
+       .LATBUF_MAX_TXN      (4),
        .WRITE_CHANNEL       (1)
        )
    cf2as_latbuf_ch1
      (
       .clk		( clk ),
       .rst		( ase_reset ),
+      .finish_trigger   ( finish_logger ),
       .hdr_in		( C1TxHdr ),
       .data_in		( C1TxData ),
       .write_en		( C1TxWrValid ),
@@ -1662,7 +1777,7 @@ module ccip_emulator
       if (ase_reset) begin
 	 cf2as_latbuf_ch1_read <= 0;
       end
-      else if (~cf2as_latbuf_ch1_empty && ~wr1rsp_full) begin
+      else if (~cf2as_latbuf_ch1_empty && ~wrrsp_full) begin
 	 cf2as_latbuf_ch1_read <= 1;
       end
       else begin
@@ -1679,22 +1794,206 @@ module ccip_emulator
 	 // Write memory
    	 wr_memline_dex(Tx1_pkt);
 	 // *FIXME*: Atomics or partials go here
-	 // Write to wr1rsp_fifo
-	 wr1rsp_hdr_in                <= cf2as_latbuf_rx1hdr;	 
+	 // Write to wrrsp_fifo
+	 pp_wrrsp_hdr           = cf2as_latbuf_rx1hdr;
+	 // $display(" ** DEBUG **: %d => cf2as_latbuf_rx1hdr.mdata = %x", $time, cf2as_latbuf_rx1hdr);
       end
    endtask
 
-   // Glue process
+
+   /*
+    * WrResp Coalescer
+    * --------------------------------------------
+    * - If cf2as_latbuf_ch1_valid is HIGH
+    *   - If cf2as_latbuf_rx1hdr.fmt is HIGH
+    *     - *FIXME*: Fulfill unrolled requests, and pack them
+    *   - If cf2as_latbuf_rx1hdr.fmt is LOW
+    *     - Fullfill request and passthru
+    */
+
+   // Packing states
+   typedef enum {
+		 PassThru_Pack1CL,
+		 Pack2CL,
+		 Pack3CL,
+		 Pack4CL,
+		 PackError
+		 } c1rx_pack_state;
+
+   c1rx_pack_state pack_state;
+
+   RxHdr_t      pack_hdr;
+   logic 	pack_hdr_valid;
+
+
+   assign pack_hdr       = pp_wrrsp_hdr;
+   assign pack_hdr_valid = pp_wrrsp_write;
+
+   // Packing state machine
    always @(posedge clk) begin
       if (ase_reset) begin
-	 wr1rsp_write <= 0;
-      end
-      else if (cf2as_latbuf_ch1_valid) begin
-	 cf2as_latbuf_to_wrrsp_fifo();
-	 wr1rsp_write <= 1;
+	 pack_state <= PassThru_Pack1CL;
       end
       else begin
-	 wr1rsp_write <= 0;
+	 case (pack_state)
+	   // ---------------------------------------- //
+	   // Pack 1CL if format enable, else passthru
+	   // ---------------------------------------- //
+	   PassThru_Pack1CL:
+	     begin
+		if (pack_hdr_valid) begin
+		   if (pack_hdr.format) begin
+		      if (pack_hdr.clnum == ASE_1CL) begin
+			 wrrsp_hdr_in <= pack_hdr;
+			 wrrsp_write  <= 1;
+			 pack_state   <= PassThru_Pack1CL;
+		      end
+		      else begin
+			 wrrsp_hdr_in <= pack_hdr;
+			 wrrsp_write  <= 0;
+			 pack_state <= Pack2CL;
+		      end
+		   end
+		   else begin
+		      wrrsp_hdr_in <= pack_hdr;
+		      wrrsp_write  <= 1;
+		      pack_state   <= PassThru_Pack1CL;
+		   end
+		end
+		else begin
+		   wrrsp_hdr_in <= pack_hdr;
+		   wrrsp_write  <= 0;
+		   pack_state   <= PassThru_Pack1CL;
+		end
+	     end
+
+	   // ---------------------------------------- //
+	   // Pack 2CL/4CL if format enable, else ERROR
+	   // ---------------------------------------- //
+	   Pack2CL:
+	     begin
+		if (pack_hdr_valid) begin
+		   if (pack_hdr.format) begin
+		      if (pack_hdr.clnum == ASE_2CL) begin
+			 wrrsp_hdr_in <= pack_hdr;
+			 wrrsp_write  <= 1;
+			 pack_state   <= PassThru_Pack1CL;
+		      end
+		      else if (pack_hdr.clnum == ASE_4CL) begin
+			 wrrsp_hdr_in <= pack_hdr;
+			 wrrsp_write  <= 0;
+			 pack_state   <= Pack3CL;
+		      end
+		      else begin
+			 wrrsp_hdr_in <= pack_hdr;
+			 wrrsp_write  <= 0;
+			 pack_state   <= PackError;
+		      end
+		   end
+		   else begin
+		      wrrsp_hdr_in <= pack_hdr;
+		      wrrsp_write  <= 0;
+		      pack_state   <= PackError;
+		   end
+		end
+		else begin
+		   wrrsp_hdr_in <= pack_hdr;
+		   wrrsp_write  <= 0;
+		   pack_state   <= Pack2CL;
+		end
+	     end
+
+	   // ---------------------------------------- //
+	   // Pack 3CL if format enable, else ERROR
+	   // ---------------------------------------- //
+	   Pack3CL:
+	     begin
+		if (pack_hdr_valid) begin
+		   if (pack_hdr.format) begin
+		      if (pack_hdr.clnum == ASE_4CL) begin
+			 wrrsp_hdr_in <= pack_hdr;
+			 wrrsp_write  <= 0;
+			 pack_state   <= Pack4CL;
+		      end
+		      else begin
+			 wrrsp_hdr_in <= pack_hdr;
+			 wrrsp_write  <= 0;
+			 pack_state   <= PackError;
+		      end
+		   end
+		   else begin
+		      wrrsp_hdr_in <= pack_hdr;
+		      wrrsp_write  <= 0;
+		      pack_state   <= PackError;
+		   end
+		end
+		else begin
+		   wrrsp_hdr_in <= pack_hdr;
+		   wrrsp_write  <= 0;
+		   pack_state   <= Pack3CL;
+		end
+	     end
+
+	   // ---------------------------------------- //
+	   // Pack 4CL if format enable, else ERROR
+	   // ---------------------------------------- //
+	   Pack4CL:
+	     begin
+		if (pack_hdr_valid) begin
+		   if (pack_hdr.format && pack_hdr.clnum == ASE_4CL) begin
+		      wrrsp_hdr_in <= pack_hdr;
+		      wrrsp_write  <= 1;
+		      pack_state   <= PassThru_Pack1CL;
+		   end
+		   else begin
+		      wrrsp_hdr_in <= pack_hdr;
+		      wrrsp_write  <= 0;
+		      pack_state   <= PackError;
+		   end
+		end
+		else begin
+		   wrrsp_hdr_in <= pack_hdr;
+		   wrrsp_write  <= 0;
+		   pack_state   <= Pack4CL;
+		end
+	     end
+
+	   // --------------------------------------------------- //
+	   // Packing ERROR, bail out | ASE should not reach here
+	   // --------------------------------------------------- //
+	   PackError:
+	     begin
+		`BEGIN_RED_FONTCOLOR;
+		$display("** ERROR ** : %d => Unexpected formatting order found --- packing cannot proceed, EXITING", $time);
+		`END_RED_FONTCOLOR;
+		start_simkill_countdown();
+	     end
+
+	   // --------------------------------------------------- //
+	   // Default
+	   // --------------------------------------------------- //
+	   default:
+	     begin
+		wrrsp_hdr_in <= pack_hdr;
+		wrrsp_write  <= 0;
+		pack_state   <= PassThru_Pack1CL;
+	     end
+	 endcase
+      end
+   end
+
+
+   // latbuf_ch1 -> pack logic
+   always @(posedge clk) begin
+      if (ase_reset) begin
+   	 pp_wrrsp_write <= 0;
+      end
+      else if (cf2as_latbuf_ch1_valid) begin
+   	 cf2as_latbuf_to_wrrsp_fifo();
+   	 pp_wrrsp_write <= 1;
+      end
+      else begin
+   	 pp_wrrsp_write <= 0;
       end
    end
 
@@ -1707,12 +2006,6 @@ module ccip_emulator
     * as2cf_umsg_fifo      | Unordered message staging *FIXME*
     *
     * *******************************************************************/
-
-   logic [CCIP_RX_HDR_WIDTH-1:0] rdrsp_hdr_out_vec;
-   logic [CCIP_RX_HDR_WIDTH-1:0] wr1rsp_hdr_out_vec;
-   logic [CCIP_RX_HDR_WIDTH-1:0] atomics_hdr_out_vec;
-
-
    /*
     * RX0 Read Response staging
     */
@@ -1741,37 +2034,6 @@ module ccip_emulator
 
    assign rdrsp_hdr_out = RxHdr_t'(rdrsp_hdr_out_vec);
 
-   /*
-    * RX0 CmpXchg Response staging
-    */
-   // ase_fifo
-   //   #(
-   //     .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH ),
-   //     .DEPTH_BASE2    ( 8 ),
-   //     .ALMFULL_THRESH ( 250 )
-   //     )
-   // atomics_fifo
-   //   (
-   //    .clk             ( clk ),
-   //    .rst             ( ase_reset ),
-   //    .wr_en           ( atomics_write ),
-   //    .data_in         ( { (CCIP_RX_HDR_WIDTH)'(atomics_hdr_in), atomics_data_in } ),
-   //    .rd_en           ( ~atomics_empty && atomics_read ),
-   //    .data_out        ( { atomics_hdr_out_vec, atomics_data_out } ),
-   //    .data_out_v      ( atomics_valid ),
-   //    .alm_full        ( atomics_full ),
-   //    .full            (),
-   //    .empty           ( atomics_empty ),
-   //    .count           (),
-   //    .overflow        (),
-   //    .underflow       ()
-   //    );
-
-   // assign atomics_hdr_out = RxHdr_t'(atomics_hdr_out_vec);
-
-   // Atomics_t DBG_RxAtomics;
-   // assign DBG_RxAtomics = Atomics_t'(C0RxHdr);
-
 
    /*
     * RX1 Write Response staging
@@ -1782,24 +2044,24 @@ module ccip_emulator
        .DEPTH_BASE2    ( 7 ),
        .ALMFULL_THRESH ( 120 )
        )
-   wr1rsp_fifo
+   wrrsp_fifo
      (
       .clk             ( clk ),
       .rst             ( ase_reset ),
-      .wr_en           ( wr1rsp_write ),
-      .data_in         ( (CCIP_RX_HDR_WIDTH)'(wr1rsp_hdr_in) ),
-      .rd_en           ( ~wr1rsp_empty && wr1rsp_read ),
-      .data_out        ( wr1rsp_hdr_out_vec ),
-      .data_out_v      ( wr1rsp_valid ),
-      .alm_full        ( wr1rsp_full ),
+      .wr_en           ( wrrsp_write ),
+      .data_in         ( (CCIP_RX_HDR_WIDTH)'(wrrsp_hdr_in) ),
+      .rd_en           ( ~wrrsp_empty && wrrsp_read ),
+      .data_out        ( wrrsp_hdr_out_vec ),
+      .data_out_v      ( wrrsp_valid ),
+      .alm_full        ( wrrsp_full ),
       .full            (),
-      .empty           ( wr1rsp_empty ),
+      .empty           ( wrrsp_empty ),
       .count           (),
       .overflow        (),
       .underflow       ()
       );
 
-   assign wr1rsp_hdr_out = RxHdr_t'(wr1rsp_hdr_out_vec);
+   assign wrrsp_hdr_out = RxHdr_t'(wrrsp_hdr_out_vec);
 
 
    /* *******************************************************************
@@ -1904,13 +2166,13 @@ module ccip_emulator
    // Read from staging FIFOs
    always @(posedge clk) begin
       if (ase_reset) begin
-	 wr1rsp_read  <= 0 ;
+	 wrrsp_read  <= 0 ;
       end
-      else if (~wr1rsp_empty) begin
-	 wr1rsp_read  <= 1 ;
+      else if (~wrrsp_empty) begin
+	 wrrsp_read  <= 1 ;
       end
       else begin
-	 wr1rsp_read  <= 0 ;
+	 wrrsp_read  <= 0 ;
       end
    end
 
@@ -1921,9 +2183,9 @@ module ccip_emulator
    	 C1RxWrValid <= 0;
    	 C1RxIntrValid <= 0;
       end
-      else if (wr1rsp_valid) begin
-   	 C1RxHdr       <= RxHdr_t'(wr1rsp_hdr_out);
-   	 C1RxWrValid   <= wr1rsp_valid;
+      else if (wrrsp_valid) begin
+   	 C1RxHdr       <= RxHdr_t'(wrrsp_hdr_out);
+   	 C1RxWrValid   <= wrrsp_valid;
    	 C1RxIntrValid <= 0;
       end
       else begin
@@ -2017,6 +2279,7 @@ module ccip_emulator
     *
     */
    initial begin : ase_entry_point
+      init_reset <= 1;
       $display("SIM-SV: Simulator started...");
 
       // Check if simulator is already running in this directory:
@@ -2034,6 +2297,7 @@ module ccip_emulator
       end
 
       // AFU reset
+      init_reset <= 0;
       afu_softreset_trig(1, 0 );
 
       // Initialize data-structures
@@ -2056,7 +2320,7 @@ module ccip_emulator
       // run_clocks(20);
       // ase_reset     <= 0;
       ase_reset_trig();
-      
+
       sw_reset_trig <= 0;
       run_clocks(20);
 
@@ -2091,8 +2355,7 @@ module ccip_emulator
    ccip_sniffer ccip_sniffer
      (
       // Logger control
-      // .enable_logger    (cfg.enable_cl_view),
-      .finish_logger    (finish_logger     ),
+      .finish_logger      (finish_logger     ),
       // Buffer message injection
       // .log_string_en    (buffer_msg_en     ),
       // .log_string       (buffer_msg        ),
@@ -2126,71 +2389,208 @@ module ccip_emulator
 
 
    // Stream-checker for ASE
-`ifdef ASE_DEBUG
-   // Read response checking
-   longint unsigned read_check_array[*];
-   always @(posedge clk) begin : read_array_checkproc
-      if (C0TxRdValid) begin
-	 read_check_array[C0TxHdr.mdata] = C0TxHdr.addr;
-      end
-      if (C0RxRdValid) begin
-	 if (read_check_array.exists(C0RxHdr.mdata))
-	   read_check_array.delete(C0RxHdr.mdata);
-      end
-   end
+// `ifdef ASE_DEBUG
+//    // Generate checker index
+//    function automatic int generate_checkarray_index(logic [15:0] mdata, int clnum);
+//       int ret;
+//       begin
+// 	 ret =  int'( {2'b00,clnum[1:0],mdata[15:0]} );
+// 	 return ret;
+//       end
+//    endfunction
 
-   // Write response checking
-   longint unsigned write_check_array[*];
-   always @(posedge clk) begin : write_array_checkproc
-      if (C1TxWrValid && (C1TxHdr.mdata != ASE_WRFENCE)) begin
-	 write_check_array[C1TxHdr.mdata] = C1TxHdr.addr;
-      end
-      if (C1RxWrValid) begin
-	 if (write_check_array.exists(C1RxHdr.mdata))
-	   write_check_array.delete(C1RxHdr.mdata);
-      end
-   end
-`endif
+//    // Read response checking
+//    longint unsigned read_check_array[*];
+//    always @(posedge clk) begin : read_array_checkproc
+//       if ( C0TxValid && isReadRequest(C0RxHdr)) begin
+// 	 for(int ii = 0; ii <= C0TxHdr.len ; ii = ii + 1) begin
+// 	    read_check_array[ generate_checkarray_index(C0TxHdr.mdata, ii) ] = C0TxHdr.addr + ii;
+// 	 end
+//       end
+//       if (C0RxRspValid && isReadResponse(C0RxHdr)) begin
+// 	 if (read_check_array.exists( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum))) begin
+// 	    read_check_array.delete( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
+// 	 end
+// 	 // else begin
+// 	 //    `BEGIN_RED_FONTCOLOR;
+// 	 //    $display("** ERROR ** => %d | RdResp %05x does not match check array", $time, generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
+// 	 //    `END_RED_FONTCOLOR;
+// 	 // end
+//       end
+//    end
+
+//    // Write response checking
+//    longint unsigned write_check_array[*];
+//    always @(posedge clk) begin : write_array_checkproc
+//       if (C1TxValid && isWriteRequest(C1TxHdr) ) begin
+// 	 write_check_array[ generate_checkarray_index(C1TxHdr.mdata,C1TxHdr.len) ] = C1TxHdr.addr;
+//       end
+//       if (C1RxRspValid && (C1RxHdr.resptype == ASE_WR_RSP)) begin
+// 	 if (isVHxResponse(C1RxHdr)) begin
+// 	    if (C0RxHdr.format) begin
+// 	       for(int ii = 0; ii <= C1RxHdr.clnum ; ii = ii + 1) begin
+// 		  if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,ii))) begin
+// 		     write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,ii) );
+// 		  end
+// 		  // else begin
+// 		  //    `BEGIN_RED_FONTCOLOR;
+// 		  //    $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,ii));
+// 		  //    `END_RED_FONTCOLOR;
+// 		  // end
+// 	       end
+// 	    end // if (C0RxHdr.format)
+// 	    else begin
+// 	       if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum))) begin
+// 		  write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+// 	       end
+// 	       // else begin
+// 	       // 	  `BEGIN_RED_FONTCOLOR;
+// 	       // 	  $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+// 	       // 	  `END_RED_FONTCOLOR;
+// 	       // end
+// 	    end
+// 	 end
+// 	 else if (isVL0Response(C1RxHdr)) begin
+// 	    if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum))) begin
+// 	       write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+// 	    end
+// 	    // else begin
+// 	    //    `BEGIN_RED_FONTCOLOR;
+// 	    //    $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
+// 	    //    `END_RED_FONTCOLOR;
+// 	    // end
+// 	 end
+//       end
+//    end
+// `endif
 
 
    /*
     * CCI Logger module
     */
 `ifndef ASE_DISABLE_LOGGER
-   ccip_logger ccip_logger
+   ccip_logger
+     #(
+       .LOGNAME         ("ccip_transactions.tsv")
+       )
+   ccip_logger
      (
       // Logger control
-      .enable_logger    (cfg.enable_cl_view),
-      .finish_logger    (finish_logger     ),
+      .finish_logger    ( finish_logger        ),
       // Buffer message injection
-      .log_string_en    (buffer_msg_en        ),
-      .log_timestamp_en (buffer_msg_tstamp_en ),
-      .log_string       (buffer_msg           ),
+      .log_string_en    ( buffer_msg_en        ),
+      .log_timestamp_en ( buffer_msg_tstamp_en ),
+      .log_string       ( buffer_msg           ),
       // CCIP ports
-      .clk              (clk             ),
-      .SoftReset        (SoftReset       ),
-      .C0TxHdr          (C0TxHdr         ),
-      .C0TxRdValid      (C0TxRdValid     ),
-      .C1TxHdr          (C1TxHdr         ),
-      .C1TxData         (C1TxData        ),
-      .C1TxWrValid      (C1TxWrValid     ),
-      .C1TxIntrValid    (1'b0   ),
-      .C2TxHdr          (C2TxHdr         ),
-      .C2TxMmioRdValid  (C2TxMmioRdValid ),
-      .C2TxData         (C2TxData        ),
-      .C0RxMmioWrValid  (C0RxMmioWrValid ),
-      .C0RxMmioRdValid  (C0RxMmioRdValid ),
-      .C0RxData         (C0RxData        ),
-      .C0RxHdr          (C0RxHdr         ),
-      .C0RxRdValid      (C0RxRdValid     ),
-      .C0RxUMsgValid    (C0RxUMsgValid   ),
-      .C1RxHdr          (C1RxHdr         ),
-      .C1RxWrValid      (C1RxWrValid     ),
-      .C1RxIntrValid    (C1RxIntrValid   ),
-      .C0TxAlmFull      (C0TxAlmFull     ),
-      .C1TxAlmFull      (C1TxAlmFull     )
+      .clk              ( clk                  ),
+      .SoftReset        ( SoftReset            ),
+      .ccip_rx          ( pck_cp2af_sRx        ),
+      .ccip_tx          ( pck_af2cp_sTx        )
       );
 `endif //  `ifndef ASE_DISABLE_LOGGER
+
+   /*
+    * Transaction drop checker
+    */
+`ifdef ASE_DEBUG
+   longint rdtxn_array[*];
+   longint wrtxn_array[*];
+   longint wrf_array[*];
+
+   logic [1:0] c1tx_mcl;
+
+   // Check and delete by key
+   function automatic void ccip_txn_check_delete(longint key, ref longint assoc_array [*] );
+      begin
+	 if (assoc_array.exists( key )) begin
+	    assoc_array.delete( key);
+	 end
+	 else begin
+	    `BEGIN_RED_FONTCOLOR;
+	    $display(" ** ERROR ** ccip_emulator checker couldnt find key=%x", key);
+	    `END_RED_FONTCOLOR;
+	 end
+      end
+   endfunction
+
+   // Iterate-print
+   function automatic void print_assoc_array(ref longint assoc_array[*]);
+      longint temp;
+      begin
+	 if (assoc_array.first(temp))
+	   do
+	     $display("( %05x : %12x) ", temp, assoc_array[temp] );
+	 while (assoc_array.next(temp));
+      end
+   endfunction
+
+   // c1tx_mcl
+   always @(*) begin
+      if (C1TxHdr.sop) begin
+	 c1tx_mcl = C1TxHdr.len;
+      end
+   end
+
+
+   // Checker array
+   // always @(posedge clk) begin
+   //    // ------------------------------------- //
+   //    // Read check
+   //    // ------------------------------------- //
+   //    if (C0TxValid && isReadRequest(C0TxHdr)) begin
+   // 	 for(int ii=0; ii <= C0TxHdr.len ; ii = ii + 1) begin
+   // 	    rdtxn_array[{ii[1:0], C0TxHdr.mdata}] = C0TxHdr.addr;
+   // 	 end
+   //    end
+   //    if (C0RxRspValid && isReadResponse(C0RxHdr)) begin
+   // 	 ccip_txn_check_delete( {C0RxHdr.clnum, C0RxHdr.mdata}, rdtxn_array);
+   //    end
+   //    // ------------------------------------- //
+   //    // Write check
+   //    // ------------------------------------- //
+   //    if (C1TxValid && isWriteRequest(C1TxHdr)) begin
+   // 	 // if (C1TxHdr.sop) begin
+   // 	 //    c1tx_mcl = C1TxHdr.len;
+   // 	 // end
+   // 	 case (c1tx_mcl)
+   // 	   ASE_1CL:
+   // 	     begin
+   // 		wrtxn_array[ {2'b00, C1TxHdr.mdata} ] = C1TxHdr.addr;
+   // 	     end
+
+   // 	   ASE_2CL:
+   // 	     begin
+   // 		wrtxn_array[ {1'b0, C1TxHdr.addr[0], C1TxHdr.mdata} ] = C1TxHdr.addr;
+   // 	     end
+
+   // 	   ASE_4CL:
+   // 	     begin
+   // 		wrtxn_array[ {C1TxHdr.addr[1:0], C1TxHdr.mdata} ] = C1TxHdr.addr;
+   // 	     end
+   // 	 endcase
+   //    end
+   //    if (C1RxRspValid && isWriteResponse(C1TxHdr)) begin
+   // 	 if (C1RxHdr.format) begin
+   // 	    for(int ii=0; ii <= C1RxHdr.clnum; ii = ii + 1) begin
+   // 	       ccip_txn_check_delete({ii[1:0], C1RxHdr.mdata}, wrtxn_array);
+   // 	    end
+   // 	 end
+   // 	 else begin
+   // 	    ccip_txn_check_delete({C1RxHdr.clnum, C1RxHdr.mdata}, wrf_array);
+   // 	 end
+   //    end
+   //    // ------------------------------------- //
+   //    // Write fence check
+   //    // ------------------------------------- //
+   //    if (C1TxValid && isWrFenceRequest(C1TxHdr)) begin
+   // 	 wrf_array[C1TxHdr.mdata] = C1TxHdr.mdata;
+   //    end
+   //    if (C1RxRspValid && isWrFenceResponse(C1RxHdr)) begin
+   // 	 ccip_txn_check_delete(C1RxHdr.mdata, wrf_array);
+   //    end
+   // end
+
+`endif
 
 
    /* ******************************************************************
@@ -2205,28 +2605,25 @@ module ccip_emulator
 
    // Simkill progress
    task simkill();
-   // function void simkill();
+      string print_str;      
       begin
 	 simkill_started = 1;
 	 $display("SIM-SV: Simulation kill command received...");
 	 // Print transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display("Transaction counts => ");
-	 $display("\tMMIO WrReq = %d", ase_rx0_mmiowrreq_cnt );
-	 $display("\tMMIO RdReq = %d", ase_rx0_mmiordreq_cnt );
-	 $display("\tMMIO RdRsp = %d", ase_tx2_mmiordrsp_cnt );
-	 $display("\tRdReq      = %d", ase_tx0_rdvalid_cnt   );
-	 $display("\tRdResp     = %d", ase_rx0_rdvalid_cnt   );
-	 $display("\tWrReq      = %d", ase_tx1_wrvalid_cnt   );
-	 $display("\tWrResp     = %d", ase_rx1_wrvalid_cnt   );
-	 $display("\tWrFence    = %d", ase_tx1_wrfence_cnt   );
-	 $display("\tWrFenceRsp = %d", ase_rx1_wrfence_cnt   );
-	 $display("\tUMsgHint   = %d", ase_rx0_umsghint_cnt  );
-	 $display("\tUMsgData   = %d", ase_rx0_umsgdata_cnt  );
-`ifdef DEFEATRUE_ATOMIC
-	 $display("\tAtomicReq  = %d", ase_tx1_atomic_cnt    );
-	 $display("\tAtomicRsp  = %d", ase_rx0_atomic_cnt    );
-`endif
+	 $display("  Transaction count \t|\tVA \tVL0 \tVH0 \tVH1   |  MCL-0 \t MCL-1 \t MCL-3");
+	 $display("  ========================================================================================");
+	 $display("  MMIOWrReq %d | ", ase_rx0_mmiowrreq_cnt );
+	 $display("  MMIORdReq %d | ", ase_rx0_mmiordreq_cnt );
+	 $display("  MMIORdRsp %d | ", ase_tx2_mmiordrsp_cnt );
+	 $display("  UMsgHint  %d | ", ase_rx0_umsghint_cnt  );
+	 $display("  UMsgData  %d | ", ase_rx0_umsgdata_cnt  );
+	 $display("  RdReq     %d | %08d %08d %08d %08d | %08d %08d %08d", ase_tx0_rdvalid_cnt, rdreq_vc_cnt.va, rdreq_vc_cnt.vl0, rdreq_vc_cnt.vh0, rdreq_vc_cnt.vh1, rdreq_mcl_cnt.mcl0, rdreq_mcl_cnt.mcl1, rdreq_mcl_cnt.mcl3);
+	 $display("  RdResp    %d | %08d %08d %08d %08d | ",               ase_rx0_rdvalid_cnt, rdrsp_vc_cnt.va, rdrsp_vc_cnt.vl0, rdrsp_vc_cnt.vh0, rdrsp_vc_cnt.vh1);
+	 $display("  WrReq     %d | %08d %08d %08d %08d | %08d %08d %08d", ase_tx1_wrvalid_cnt, wrreq_vc_cnt.va, wrreq_vc_cnt.vl0, wrreq_vc_cnt.vh0, wrreq_vc_cnt.vh1, wrreq_mcl_cnt.mcl0, wrreq_mcl_cnt.mcl1, wrreq_mcl_cnt.mcl3);
+	 $display("  WrResp    %d | %08d %08d %08d %08d | %08d %08d %08d", ase_rx1_wrvalid_cnt, wrrsp_vc_cnt.va, wrrsp_vc_cnt.vl0, wrrsp_vc_cnt.vh0, wrrsp_vc_cnt.vh1, wrrsp_mcl_cnt.mcl0, wrrsp_mcl_cnt.mcl1, wrrsp_mcl_cnt.mcl3);
+	 $display("  WrFence   %d | %08d %08d %08d %08d | ",               ase_tx1_wrfence_cnt, wrfreq_vc_cnt.va, wrfreq_vc_cnt.vl0, wrfreq_vc_cnt.vh0, wrfreq_vc_cnt.vh1);
+	 $display("  WrFenRsp  %d | %08d %08d %08d %08d | ",               ase_rx1_wrfence_cnt, wrfrsp_vc_cnt.va, wrfrsp_vc_cnt.vl0, wrfrsp_vc_cnt.vh0, wrfrsp_vc_cnt.vh1);
 	 `END_YELLOW_FONTCOLOR;
 
 	 // Valid Count
@@ -2244,18 +2641,24 @@ module ccip_emulator
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
-	 // $display("cf2as_latbuf_ch0 dropped =>");
-	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.checkunit.check_array);
-	 // $display("cf2as_latbuf_ch1 dropped =>");
-	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.checkunit.check_array);
-	 $display("Read Response checker =>");
-	 $display(read_check_array);
-	 $display("Write Response checker =>");
-	 $display(write_check_array);
+	 // $display("-------------------------------------------------");
+	 // $display("Read Transaction checker =>");
+	 // print_assoc_array(rdtxn_array);
+	 // $display("Write Transaction checker =>");
+	 // print_assoc_array(wrtxn_array);
+	 // $display("WrFence Transaction checker =>");
+	 // $display(wrf_array);
+	 // $display("-------------------------------------------------");
+	 // $display("cf2as_latbuf_ch0 contents =>");
+	 // print_assoc_array(ase_top.ccip_emulator.cf2as_latbuf_ch0.check_array);
+	 // $display("cf2as_latbuf_ch1 contents =>");
+	 // print_assoc_array(ase_top.ccip_emulator.cf2as_latbuf_ch1.check_array);
+	 // $display("-------------------------------------------------");
 	 `END_YELLOW_FONTCOLOR;
 `endif
 	 // $fclose(log_fd);
 	 finish_logger = 1;
+	 // @(posedge clk);
 
 	 // Command to close logfd
 	 $finish;
@@ -2285,24 +2688,15 @@ module ccip_emulator
 	 wr_credit     <= 0;
 	 mmiowr_credit <= 0;
 	 mmiord_credit <= 0;
-	 atomic_credit <= 0;	 
+	 // atomic_credit <= 0;
       end
       else begin
 	 // ---------------------------------------------------- //
 	 // Read credit counter
-	 case (  {C0TxRdValid, (C0RxRdValid && (C0RxHdr.resptype != ASE_ATOMIC_RSP)) } )
-	   2'b10   : rd_credit <= rd_credit + C0TxHdr.len + 1;
-	   2'b01   : rd_credit <= rd_credit - 1;
-	   2'b11   : rd_credit <= rd_credit + C0TxHdr.len + 1 - 1;
-	   default : rd_credit <= rd_credit;
-	 endcase // case ( {C0TxRdValid, C0RxRdValid} )
+	 rd_credit <= ase_tx0_rdvalid_cnt - ase_rx0_rdvalid_cnt;
 	 // ---------------------------------------------------- //
 	 // Write credit counter
-	 case ( { (C1TxWrValid && (C1TxHdr.reqtype != ASE_ATOMIC_REQ)), C1RxWrValid} )
-	   2'b10   : wr_credit <= wr_credit + 1;
-	   2'b01   : wr_credit <= wr_credit - 1;
-	   default : wr_credit <= wr_credit;
-	 endcase // case ( {C1TxWrValid, C1RxWrValid} )
+	 wr_credit <= ase_tx1_wrvalid_cnt - ase_rx1_wrvalid_cnt;
 	 // ---------------------------------------------------- //
 	 // MMIO Writevalid counter
 	 case ( {cwlp_wrvalid, C0RxMmioWrValid} )
@@ -2322,23 +2716,18 @@ module ccip_emulator
 	 umsg_credit <= $countones(umsg_hint_enable_array) + $countones(umsg_data_enable_array) + umsgfifo_cnt;
 	 // ---------------------------------------------------- //
 	 // Atomics CmpXchg counter
-	 case ( { (C1TxWrValid && (C1TxHdr.reqtype==ASE_ATOMIC_REQ)), (C0RxRdValid && (C0RxHdr.resptype==ASE_ATOMIC_RSP)) } )
-	   2'b10   : atomic_credit <= atomic_credit + 1;
-	   2'b01   : atomic_credit <= atomic_credit - 1;
-	   default : atomic_credit <= atomic_credit;
-	 endcase
+	 // case ( { (C1TxWrValid && (C1TxHdr.reqtype==ASE_ATOMIC_REQ)), (C0RxRdValid && (C0RxHdr.resptype==ASE_ATOMIC_RSP)) } )
+	 //   2'b10   : atomic_credit <= atomic_credit + 1;
+	 //   2'b01   : atomic_credit <= atomic_credit - 1;
+	 //   default : atomic_credit <= atomic_credit;
+	 // endcase
 	 // ---------------------------------------------------- //
       end
    end
 
    // Global dealloc flag enable
    always @(posedge clk) begin
-      // if (SoftReset) begin
-      // 	 glbl_dealloc_credit <= 0;
-      // end
-      // else begin
-      glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit + atomic_credit;
-      //end
+      glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit;
    end
 
    // Register for changes
@@ -2361,6 +2750,7 @@ module ccip_emulator
       	 update_glbl_dealloc(0);
       end
    end
+
 
 
 endmodule // cci_emulator

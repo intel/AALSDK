@@ -165,7 +165,7 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_VR,
       DEFAULT_AWP,
       DEFAULT_ST,
-	   DEFAULT_UT,
+	  DEFAULT_UT,
       DEFAULT_MINCX,
       DEFAULT_MAXCX,
       DEFAULT_CX,
@@ -257,6 +257,10 @@ CMyApp::CMyApp() :
    m_pALIuMSGService(NULL),
    m_pALIPerf(NULL),
    m_isOK(false),
+   m_pVTP_AALService(NULL),
+   m_pVTPService(NULL),
+   m_VTPDFHOffset(-1),
+   m_VTPActive(false),
    m_DSMVirt(NULL),
    m_DSMPhys(0),
    m_DSMSize(0),
@@ -284,24 +288,24 @@ CMyApp::~CMyApp()
 
 void CMyApp::Stop()
 {
-	   // Freed all three so now Release() the Service through the Services IAALService::Release() method
+
+   // Freed all three so now Release() the Service through the Services IAALService::Release() method
    if ( NULL != m_pFMEService ) {
 		 (dynamic_ptr<IAALService>(iidService, m_pFMEService))->Release(TransactionID());
 		 Wait(); // For service freed notification.
 		 m_pFMEService = NULL;
    }
 
-   if( NULL != m_pALIBufferService ) {
-      // Release the Workspaces
-      m_pALIBufferService->bufferFree(m_InputVirt);
-      m_pALIBufferService->bufferFree(m_OutputVirt);
-      m_pALIBufferService->bufferFree(m_DSMVirt);
-   }
-
    if ( NULL != m_pNLBService ) {
 		 (dynamic_ptr<IAALService>(iidService, m_pNLBService))->Release(TransactionID());
 		 Wait(); // For service freed notification.
 		 m_pNLBService = NULL;
+   }
+
+   if (NULL != m_pVTP_AALService){
+	   (dynamic_ptr<IAALService>(iidService, m_pVTP_AALService))->Release(TransactionID());
+		Wait(); // For service freed notification.
+		m_pVTP_AALService = NULL;
    }
 
    if ( NULL != m_pRuntime ) {
@@ -525,9 +529,9 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 	         m_bIsOK = false;
 	         return;
 	      }
-   }else{
+   }else if(tid.ID() == CMyApp::FME){
 
-	  m_pFMEService = pServiceBase;
+	   m_pFMEService = pServiceBase;
 	   ASSERT(NULL != m_pFMEService);
 	   if ( NULL == m_pFMEService ) {
 		  m_bIsOK = false;
@@ -543,11 +547,44 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 		  return;
 	   }
 	   */
+   }else if(tid.ID() == CMyApp::VTP){
+	  // Save the IBase for the VTP Service.
+	  m_pVTP_AALService = pServiceBase;
+	  ASSERT(NULL != m_pVTP_AALService);
+	  if ( NULL == m_pVTP_AALService ) {
+		 m_bIsOK = false;
+		 return;
+	  }
+
+	  // Documentation says VTP Service publishes
+	  //    IVTP as subclass interface. Used for allocating shared
+	  //    buffers that support virtual addresses from AFU
+	  m_pVTPService = dynamic_ptr<IMPFVTP>(iidMPFVTPService, pServiceBase);
+	  ASSERT(NULL != m_pVTPService);
+	  if ( NULL == m_pVTPService ) {
+		 m_bIsOK = false;
+		 return;
+	  }
+
+	  m_pVTPService->vtpReset();
+	  m_VTPActive = true;
    }
 
+   if(true == m_VTPActive){
+	   if( m_pFMEService &&
+		   m_pNLBService &&
+		   m_pVTPService ){
+	        INFO("Service Allocated");
+	        allocateWorkspaces();
+	     }
+   }
+   else{
+	   if( m_pFMEService && m_pNLBService){
+	   	  INFO("Service Allocated");
+	   	  allocateWorkspaces();
+	   }
+   }
    if( m_pFMEService && m_pNLBService){
-	  INFO("Service Allocated");
-	  allocateWorkspaces();
 	  Post();
    }
 }
@@ -557,26 +594,41 @@ void CMyApp::allocateWorkspaces()
 	// Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
    //   In workspaceAllocated() callback we allocate the rest
 
-   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(NLB_DSM_SIZE, &m_DSMVirt)){
+   if( ali_errnumOK != bufferAllocate(NLB_DSM_SIZE, &m_DSMVirt)){
 	  m_bIsOK = false;
 	  return;
    }
    m_DSMSize = NLB_DSM_SIZE;
-   m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
-
-   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_InputVirt)){
-	  m_bIsOK = false;
-	  return;
+   if (m_VTPActive) {
+	   m_DSMPhys = btPhysAddr(m_DSMVirt);
    }
+   else {
+	   m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
+   }
+
    m_InputSize = MAX_NLB_WKSPC_SIZE;
-   m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
-
-   if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_OutputVirt)){
+   if( ali_errnumOK != bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_InputVirt)){
 	  m_bIsOK = false;
 	  return;
    }
+   if (m_VTPActive) {
+	   m_InputPhys = btPhysAddr(m_InputVirt);
+   }
+   else {
+	   m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
+   }
+
    m_OutputSize = MAX_NLB_WKSPC_SIZE;
-   m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
+   if( ali_errnumOK != bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_OutputVirt)){
+	  m_bIsOK = false;
+	  return;
+   }
+   if (m_VTPActive) {
+	   m_OutputPhys = btPhysAddr(m_OutputVirt);
+   }
+   else {
+	   m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
+   }
 
    btUnsignedInt numUmsg = m_pALIuMSGService->umsgGetNumber();
    m_UMsgVirt = m_pALIuMSGService->umsgGetAddress(0);
@@ -585,6 +637,21 @@ void CMyApp::allocateWorkspaces()
 
 	  ERR("No uMSG support");
    }
+}
+
+ali_errnum_e CMyApp::bufferAllocate( btWSSize             Length,
+                                     btVirtAddr          *pBufferptr )
+{
+    ali_errnum_e s;
+
+    if (m_VTPActive) {
+        s = m_pVTPService->bufferAllocate(Length, pBufferptr);
+    }
+    else {
+        s = m_pALIBufferService->bufferAllocate(Length, pBufferptr);
+    }
+
+    return s;
 }
 
 void CMyApp::serviceAllocateFailed(const IEvent &e)
@@ -633,6 +700,76 @@ void CMyApp::serviceReleaseFailed(const IEvent &e)
    ERR("Service Release Failed");
    Post();
 }
+
+void CMyApp::serviceFreed(TransactionID const &tid)
+{
+	if( NULL != m_pALIBufferService ) {
+	  // Release the Workspaces
+	  m_pALIBufferService->bufferFree(m_InputVirt);
+	  m_pALIBufferService->bufferFree(m_OutputVirt);
+	  m_pALIBufferService->bufferFree(m_DSMVirt);
+	}
+    INFO("Service Freed");
+    Post();
+}
+
+void CMyApp::StartVTP()
+{
+	// Ask ALI for a BBB with MPF's feature ID and the expected VTP GUID
+	NamedValueSet filter;
+	filter.Add( ALI_GETFEATURE_TYPE_KEY, static_cast<ALI_GETFEATURE_TYPE_DATATYPE>(ALI_DFH_TYPE_BBB) );
+	filter.Add( ALI_GETFEATURE_GUID_KEY, (ALI_GETFEATURE_GUID_DATATYPE)MPF_VTP_BBB_GUID );
+
+	// FIXME: This is here only because of a caching bug in
+	// ASEALIAFU::mmioGetFeatureAddress() in SR-5.0.2-Beta. Once fixed
+	// this call can be removed.
+
+	m_pALIMMIOService->mmioGetAddress();
+
+	if ( false == m_pALIMMIOService->mmioGetFeatureOffset( &m_VTPDFHOffset, filter ) ) {
+	 // No VTP found - this could mean that VTP is not enabled in MPF
+	  m_VTPActive = false;
+	  return;
+	}
+
+   m_VTPActive = true;
+
+   INFO("Searching for VTP Service");
+   NamedValueSet Manifest;
+   NamedValueSet ConfigRecord;
+
+   // Allocate VTP service
+   // Service Library to use
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libMPF");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+
+   // Add the Config Record to the Manifest describing what we want to allocate
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+
+   // The VTPService will reuse the already established interfaces presented by
+   // the ALIAFU service
+   Manifest.Add(ALIAFU_IBASE_KEY, static_cast<ALIAFU_IBASE_DATATYPE>(m_pNLBService));
+
+   // MPFs feature ID, used to find correct features in DFH list
+   Manifest.Add(MPF_FEATURE_ID_KEY, static_cast<MPF_FEATURE_ID_DATATYPE>(1));
+
+   // MPF DFH address
+   Manifest.Add(MPF_VTP_DFH_OFFSET_KEY, static_cast<MPF_VTP_DFH_OFFSET_DATATYPE>(0x1000));
+
+   // In the future, everything could be figured out by just giving the service name.
+   Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "VTP");
+
+   TransactionID vtp_tid(CMyApp::VTP);
+   m_pRuntime->allocService(dynamic_cast<IBase *>(this), Manifest, vtp_tid);
+   m_Sem.Wait();
+   if (!m_bIsOK || !m_VTPActive) {
+      INFO("No VTP service found\n");
+   } else {
+      INFO("Using VTP translation...\n");
+   }
+
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -705,6 +842,14 @@ int main(int argc, char *argv[])
 	  myapp.Stop();
 	  myapp.Wait(); // For runtime stopped notification.
       return 5;
+   }
+
+   cout << "Trying VTP\n";
+   myapp.StartVTP();
+   if ( true == myapp.VTPActive()){
+	   cout << "VTP Active.\n";
+   }else{
+	   cout << "VTP not Active.\n";
    }
 
    if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_LPBK1)))

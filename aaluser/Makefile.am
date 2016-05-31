@@ -235,6 +235,7 @@ include/aalsdk/rm/InstanceRecord.h
 
 servicehdrs_HEADERS=\
 include/aalsdk/service/IALIAFU.h \
+include/aalsdk/service/IMPF.h \
 include/aalsdk/service/ALIService.h \
 include/aalsdk/service/HWALIAFUService.h \
 include/aalsdk/service/ASEALIAFUService.h \
@@ -250,6 +251,7 @@ include/aalsdk/utils/AALEventUtilities.h \
 include/aalsdk/utils/AALWorkSpaceUtilities.h \
 include/aalsdk/utils/CSyncClient.h \
 include/aalsdk/utils/NLBVAFU.h \
+include/aalsdk/utils/cci_mpf_csrs.h \
 include/aalsdk/utils/ResMgrUtilities.h \
 include/aalsdk/utils/SingleAFUApp.h \
 include/aalsdk/utils/Utilities.h
@@ -284,7 +286,6 @@ ase/hw/ccip_emulator.sv \
 ase/hw/ccip_logger.sv \
 ase/hw/ccip_sniffer.sv \
 ase/hw/ase_top.sv \
-ase/hw/stream_checker.sv \
 ase/hw/ase_pkg.sv \
 ase/hw/platform.vh \
 ase/scripts/generate_ase_environment.py \

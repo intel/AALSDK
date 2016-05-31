@@ -50,8 +50,8 @@ package ase_pkg;
    parameter ASE_MODE_TIMEOUT_SIMKILL = 2;
    parameter ASE_MODE_SW_SIMKILL      = 3;
    parameter ASE_MODE_REGRESSION      = 4;
-   
-   
+
+
    // Include platform.vh if not already
  `ifndef _PLATFORM_VH_
   `include "platform.vh"
@@ -70,29 +70,29 @@ package ase_pkg;
    /*
     * Sub-structures
     * Request type, response types, VC types
-    */ 
+    */
    // Request types {channel_id, ccip_if_pkg::req_type}
    typedef enum logic [3:0] {
 			     ASE_RDLINE_S   = 4'h1,
-			     ASE_RDLINE_I   = 4'h2,			     
+			     ASE_RDLINE_I   = 4'h2,
 			     ASE_WRLINE_I   = 4'h3,
 			     ASE_WRLINE_M   = 4'h4,
 			     ASE_WRPUSH     = 4'h5,
 			     ASE_WRFENCE    = 4'h6,
-			     ASE_INTR_REQ   = 4'h7, 
-			     ASE_ATOMIC_REQ = 4'h8 
-			     } ccip_reqtype_t;  		
+			     ASE_INTR_REQ   = 4'h7,
+			     ASE_ATOMIC_REQ = 4'h8
+			     } ccip_reqtype_t;
 
    // Response types
    typedef enum logic [3:0] {
-			     ASE_RD_RSP      = 4'h1,			     
+			     ASE_RD_RSP      = 4'h1,
 			     ASE_WR_RSP      = 4'h2,
 			     ASE_INTR_RSP    = 4'h3,
 			     ASE_WRFENCE_RSP = 4'h4,
 			     ASE_ATOMIC_RSP  = 4'h5,
 			     ASE_UMSG        = 4'h6
 			     } ccip_resptype_t;
-   
+
    // Virtual channel type
    typedef enum logic [1:0] {
 			     VC_VA  = 2'b00,
@@ -100,23 +100,23 @@ package ase_pkg;
 			     VC_VH0 = 2'b10,
 			     VC_VH1 = 2'b11
 			     } ccip_vc_t;
-   
+
    // Length type
    typedef enum logic [1:0] {
 			     ASE_1CL = 2'b00,
 			     ASE_2CL = 2'b01,
 			     ASE_3CL = 2'b10,
 			     ASE_4CL = 2'b11
-			     } ccip_len_t;  
+			     } ccip_len_t;
 
-   
+
    /* ***********************************************************
     * CCI-P headers
     * RxHdr, TxHdr, CCIP Packets
     * ***********************************************************/
    // RxHdr
    typedef struct packed {
-      //--------- CCIP standard header --------- //      
+      //--------- CCIP standard header --------- //
       ccip_vc_t       vc_used;  // 27:26  // Virtual channel select
       logic           rsvd25;   // 25     // Poison bit // Reserved in BDX-P
       logic           hitmiss;  // 24     // Hit/miss indicator
@@ -127,7 +127,7 @@ package ase_pkg;
       logic [15:0]    mdata;    // 15:0   // Metadata
    } RxHdr_t;
    parameter CCIP_RX_HDR_WIDTH     = $bits(RxHdr_t);
-   
+
    // TxHdr
    typedef struct packed {
       //--------- CCIP standard header --------- //
@@ -144,14 +144,14 @@ package ase_pkg;
    } TxHdr_t;
    parameter CCIP_TX_HDR_WIDTH     = $bits(TxHdr_t);
 
-   /* 
+   /*
     * Config MMIO Header
-    */ 			
+    */
    // MMIO Header specifics
    parameter int      CCIP_CFGHDR_INDEX_WIDTH = 16;
-   parameter int      CCIP_CFGHDR_TID_WIDTH = 9;    
-   
-   // CfgHdr   
+   parameter int      CCIP_CFGHDR_TID_WIDTH = 9;
+
+   // CfgHdr
    typedef struct packed {
       logic [15:0] index;  // 27:12
       logic [1:0]  len;    // 11:10
@@ -200,36 +200,36 @@ package ase_pkg;
       logic [11:0]    rsvd_79_68; // 79:68 // Reserved
       ccip_reqtype_t  req_type;   // 67:64 // Type
       logic [60:0]    rsvd_63_3;  // 63:3  // reserved
-      logic [2:0]     id;         // 2:0   // Intr vector 
+      logic [2:0]     id;         // 2:0   // Intr vector
    } IntrReq_t;
-         
+
    // Interrupt response header
    typedef struct     packed {
       logic [7:0]     rsvd1;      // 27:20 // reserved, don't care
       ccip_resptype_t resp_type;  // 19:16 // Response type
       logic [12:0]    rsvd_15_3;  // 15:3  // reserved, don't care
-      logic [2:0]     id;         // 2:0   // Vector    
+      logic [2:0]     id;         // 2:0   // Vector
    } IntrRsp_t;
-   
-   
+
+
    /* **********************************************************
     * Wrapped headers with channel Id
     * ASE's internal datatype used for bookkeeping
-    * *********************************************************/  
+    * *********************************************************/
    // Wrap TxHdr_t with channel_id
    typedef struct packed {
       logic 	  channel_id;
       TxHdr_t     txhdr;
    } ASETxHdr_t;
    parameter ASE_TX_HDR_WIDTH     = $bits(ASETxHdr_t);
-      
+
    // Wrap RxHdr_t with channel_id
    typedef struct packed {
       logic 	  channel_id;
       RxHdr_t     rxhdr;
    } ASERxHdr_t;
    parameter ASE_RX_HDR_WIDTH     = $bits(ASERxHdr_t);
-   
+
 
    /*
     * FIFO depth bit-width
@@ -249,6 +249,8 @@ package ase_pkg;
    parameter LATBUF_FULL_THRESHOLD   = LATBUF_NUM_TRANSACTIONS - 5;
    // Radix of ASE_fifo (subcomponent in latency scoreboard)
    parameter LATBUF_DEPTH_BASE2      = $clog2(LATBUF_NUM_TRANSACTIONS);
+   // Wait station timer width
+   parameter LATBUF_TIMER_WIDTH             = 9;
 
 
    /*
@@ -264,11 +266,11 @@ package ase_pkg;
       int 	  success;
    } cci_pkt;
 
-   parameter CCIPKT_WRITE_MODE   = 32'h1000;   
-   parameter CCIPKT_READ_MODE    = 32'h2000;   
-   parameter CCIPKT_WRFENCE_MODE = 32'hFFFF;   
+   parameter CCIPKT_WRITE_MODE   = 32'h1000;
+   parameter CCIPKT_READ_MODE    = 32'h2000;
+   parameter CCIPKT_WRFENCE_MODE = 32'hFFFF;
    parameter CCIPKT_ATOMIC_MODE  = 32'h8000;
-      
+
 
    /*
     * ASE config structure
@@ -280,6 +282,7 @@ package ase_pkg;
       int 	  ase_num_tests;
       int 	  enable_reuse_seed;
       int 	  enable_cl_view;
+      shortreal   usr_clk_mhz;
       int 	  phys_memory_available_gb;
    } ase_cfg_t;
    ase_cfg_t cfg;
@@ -294,8 +297,8 @@ package ase_pkg;
       int 	  addr;
       longint 	  qword[8];
       int 	  resp_en;
-      } mmio_t;  
-   
+      } mmio_t;
+
    // Request types
    parameter int  MMIO_WRITE_REQ    = 32'hAA88;
    parameter int  MMIO_READ_REQ     = 32'hBB88;
@@ -304,20 +307,20 @@ package ase_pkg;
    parameter int  MMIO_WIDTH_32 = 32;
    parameter int  MMIO_WIDTH_64 = 64;
 
-   
+
    /*
     * UMSG Hint/Data state machine
     */
    // Number of UMSGs per AFU
    parameter int  NUM_UMSG_PER_AFU = 8;
-   
+
    // Umsg command packet
    typedef struct {
       int 	  id;
       int 	  hint;
-      longint 	  qword[8] 		;	  
+      longint 	  qword[8] 		;
    } umsgcmd_t;
-   
+
 
    // UMSG control states
    typedef enum   {UMsgIdle, UMsgHintWait, UMsgSendHint, UMsgDataWait, UMsgSendData}
@@ -394,4 +397,210 @@ package ase_pkg;
       end
    endfunction
 
+
+   /*
+    * Easy check functions
+    */
+   // isReadRequest
+   function automatic logic isReadRequest(TxHdr_t hdr);
+      begin
+	 if ((hdr.reqtype == ASE_RDLINE_I)||(hdr.reqtype == ASE_RDLINE_S)) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   // isReadResponse
+   function automatic logic isReadResponse(RxHdr_t hdr);
+      begin
+	 if (hdr.resptype == ASE_RD_RSP ) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   // isWriteRequest
+   function automatic logic isWriteRequest(TxHdr_t hdr);
+      begin
+	 if ((hdr.reqtype == ASE_WRLINE_I)||(hdr.reqtype == ASE_WRLINE_M)) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   // isWriteResponse
+   function automatic logic isWriteResponse(RxHdr_t hdr);
+      begin
+	 if (hdr.resptype == ASE_WR_RSP ) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   // isWrFenceRequest
+   function automatic logic isWrFenceRequest(TxHdr_t hdr);
+      begin
+	 if (hdr.reqtype == ASE_WRFENCE) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   // isWrFenceResponse
+   function automatic logic isWrFenceResponse(RxHdr_t hdr);
+      begin
+	 if (hdr.resptype == ASE_WRFENCE_RSP) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   // isVL0Request
+   function automatic logic isVL0Request(TxHdr_t hdr);
+      begin
+	 if (hdr.vc == VC_VL0) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   // isVHxRequest
+   function automatic logic isVHxRequest(TxHdr_t hdr);
+      begin
+	 if ((hdr.vc == VC_VH0)||(hdr.vc == VC_VH1)) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   // isVH0Request
+   function automatic logic isVH0Request(TxHdr_t hdr);
+      begin
+	 if (hdr.vc == VC_VH0) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   // isVH1Request
+   function automatic logic isVH1Request(TxHdr_t hdr);
+      begin
+	 if (hdr.vc == VC_VH1) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   // isVARequest
+   function automatic logic isVARequest(TxHdr_t hdr);
+      begin
+	 if (hdr.vc == VC_VA) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   // isVL0Response
+   function automatic logic isVL0Response(RxHdr_t hdr);
+      begin
+	 if (hdr.vc_used == VC_VL0) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   // isVHxResponse
+   function automatic logic isVHxResponse(RxHdr_t hdr);
+      begin
+	 if ((hdr.vc_used == VC_VH0)||(hdr.vc_used == VC_VH1)) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   // isVH0Response
+   function automatic logic isVH0Response(RxHdr_t hdr);
+      begin
+	 if (hdr.vc_used == VC_VH0) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   // isVH1Response
+   function automatic logic isVH1Response(RxHdr_t hdr);
+      begin
+	 if (hdr.vc_used == VC_VH1) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction
+
+   /*
+    * Transaction count management
+    */
+   // VC Count struct
+   typedef struct packed {
+      int 	  va;
+      int 	  vl0;
+      int 	  vh0;
+      int 	  vh1;
+      } txn_vc_counts;
+
+   // MCL count struct
+   typedef struct packed {
+      int 	  mcl0;
+      int 	  mcl1;
+      int 	  mcl3;
+      } txn_mcl_counts;
+      
+   // Count increment macro
+ `define incr_cnt(condition, counter_val)\
+   if (condition == 1) counter_val <= counter_val + 1
+   
 endpackage

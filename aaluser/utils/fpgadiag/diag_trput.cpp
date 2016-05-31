@@ -69,6 +69,10 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd)
       return 1;
    }
 
+   if(NULL != m_pVTPService){
+   	   m_pVTPService->vtpReset();
+   }
+
    //Set DSM base, high then low
    m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
 
@@ -138,9 +142,11 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd)
    Timer     absolute = Timer() + Timer(&ts);
 #endif // OS
 
-   const btInt StopTimeoutMillis = 250;
-   btInt MaxPoll = StopTimeoutMillis;
-
+   btInt StopTimeoutMillis = 250;
+   if ( cmd.AFUTarget == ALIAFU_NVS_VAL_TARGET_ASE){
+	   StopTimeoutMillis = StopTimeoutMillis * 100000;
+   }
+	btInt MaxPoll = StopTimeoutMillis;
 
    while ( sz <= CL(cmd.endcls) )
    {
