@@ -388,7 +388,10 @@ module outoforder_wrf_channel
    logic [0:NUM_WAIT_STATIONS-1] 		 record_pop_arr;
    logic [0:NUM_WAIT_STATIONS-1] 		 record_push_arr;
 
-
+   // Remap input hdr_in
+   logic [CCIP_TX_HDR_WIDTH-1:0] 		 hdr_in_vec;
+   assign hdr_in_vec = '{hdr_in};
+      
    // Infifo, request staging
    always @(posedge clk) begin : infifo_push
       if (write_en) begin
@@ -398,7 +401,7 @@ module outoforder_wrf_channel
 	    $fwrite (log_fd, "%d | WrFence inserted in channel\n", $time);
 	 end
 	 `endif
-	 infifo.push_back({ tid_in, data_in, (CCIP_TX_HDR_WIDTH)'(hdr_in) });
+	 infifo.push_back({ tid_in, data_in, hdr_in_vec });
       end
    end
 
@@ -493,7 +496,7 @@ module outoforder_wrf_channel
 	 wrfence_rsp.resptype = ASE_WRFENCE_RSP;
 	 wrfence_rsp.mdata    = wrfence.mdata;
 	 // Cast back and return
-	 wrfence_rsp_vec = (CCIP_RX_HDR_WIDTH)'(wrfence_rsp);
+	 wrfence_rsp_vec = '{wrfence_rsp};
 	 return wrfence_rsp_vec;
       end
    endfunction
@@ -534,14 +537,16 @@ module outoforder_wrf_channel
 		      end
 		      vl0_hdr.addr = infifo_hdr_out.addr + ii;
 		      vl0_hdr.len = ccip_len_t'(ii);
-		      vl0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(vl0_hdr)});
+		      // vl0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(vl0_hdr)});
+		      vl0_array.push_back({infifo_tid_out, infifo_data_out, '{vl0_hdr} });
 	 `ifdef ASE_DEBUG
 		      $fwrite(log_fd, "%d | infifo_to_vc(VL0) : tid=%x TX=%s sent to VL0\n", $time, infifo_tid_out, return_txhdr(vl0_hdr) );
 	 `endif
 		   end // for (int ii = 0; ii <= infifo_hdr_out.len; ii = ii + 1)
 		end // if (WRITE_CHANNEL == 0)
 		else begin
-		   vl0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		   // vl0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		   vl0_array.push_back({infifo_tid_out, infifo_data_out, '{infifo_hdr_out}});
 	 `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc(VL0) : tid=%x TX=%s sent to VL0\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out) );
 	 `endif
@@ -551,7 +556,8 @@ module outoforder_wrf_channel
 	   VC_VH0:
 	     begin
 		vc_push = 3'b010;
-		vh0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		// vh0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		vh0_array.push_back({infifo_tid_out, infifo_data_out, '{infifo_hdr_out}});
 	 `ifdef ASE_DEBUG
 		$fwrite(log_fd, "%d | infifo_to_vc(VH0) : tid=%x TX=%s sent to VH0\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out));
 	 `endif
@@ -560,7 +566,8 @@ module outoforder_wrf_channel
 	   VC_VH1:
 	     begin
 		vc_push = 3'b001;
-		vh1_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		// vh1_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		vh1_array.push_back({infifo_tid_out, infifo_data_out, '{infifo_hdr_out}});
 	 `ifdef ASE_DEBUG
 		$fwrite(log_fd, "%d | infifo_to_vc(VH1) : tid=%x TX=%s sent to VH1\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out));
 	 `endif
@@ -593,11 +600,11 @@ module outoforder_wrf_channel
 	      VC_VA:
 		begin
 		   // Fence activatd
-		   vl0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
-		   vh0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
-		   vh1_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		   vl0_array.push_back({infifo_tid_out, infifo_data_out, '{infifo_hdr_out}});
+		   vh0_array.push_back({infifo_tid_out, infifo_data_out, '{infifo_hdr_out}});
+		   vh1_array.push_back({infifo_tid_out, infifo_data_out, '{infifo_hdr_out}});
 		   // Wrfence response
-		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out) } );
+		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), '{infifo_hdr_out} } );
 	 `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VA\n", $time, infifo_tid_out);
 	 `endif
@@ -606,8 +613,8 @@ module outoforder_wrf_channel
 	      // If single channel fence, stage requisite response
 	      VC_VL0:
 		begin
-		   vl0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
-		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out) } );
+		   vl0_array.push_back({infifo_tid_out, infifo_data_out, '{infifo_hdr_out}});
+		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), '{infifo_hdr_out} } );
 	 `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VL0\n", $time, infifo_tid_out);
 	 `endif
@@ -615,8 +622,8 @@ module outoforder_wrf_channel
 
 	      VC_VH0:
 		begin
-		   vh0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
-		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out) } );
+		   vh0_array.push_back({infifo_tid_out, infifo_data_out, '{infifo_hdr_out}});
+		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), '{infifo_hdr_out} } );
 	 `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VH0\n", $time, infifo_tid_out);
 	 `endif
@@ -624,8 +631,8 @@ module outoforder_wrf_channel
 
 	      VC_VH1:
 		begin
-		   vh1_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
-		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out) } );
+		   vh1_array.push_back({infifo_tid_out, infifo_data_out, '{infifo_hdr_out}});
+		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), '{infifo_hdr_out} } );
 	 `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VH1\n", $time, infifo_tid_out);
 	 `endif
@@ -651,14 +658,14 @@ module outoforder_wrf_channel
 			 end
 			 vl0_hdr.addr = infifo_hdr_out.addr + ii;
 			 vl0_hdr.len = ccip_len_t'(ii);
-			 vl0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(vl0_hdr)});
+			 vl0_array.push_back({infifo_tid_out, infifo_data_out, '{vl0_hdr}});
 	 `ifdef ASE_DEBUG
 			 $fwrite(log_fd, "%d | infifo_to_vc(VL0) : tid=%x TX=%s sent to VL0\n", $time, infifo_tid_out, return_txhdr(vl0_hdr) );
 	 `endif
 		      end // for (int ii = 0; ii <= infifo_hdr_out.len; ii = ii + 1)
 		   end // if (WRITE_CHANNEL == 0)
 		   else begin
-		      vl0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		      vl0_array.push_back({infifo_tid_out, infifo_data_out, '{infifo_hdr_out}});
 	 `ifdef ASE_DEBUG
 		      $fwrite(log_fd, "%d | infifo_to_vc(VL0) : tid=%x TX=%s sent to VL0\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out) );
 	 `endif
@@ -668,7 +675,7 @@ module outoforder_wrf_channel
 	      VC_VH0:
 		begin
 		   vc_push = 3'b010;
-		   vh0_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		   vh0_array.push_back({infifo_tid_out, infifo_data_out, '{infifo_hdr_out}});
 	 `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc(VH0) : tid=%x TX=%s sent to VH0\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out));
 	 `endif
@@ -677,7 +684,7 @@ module outoforder_wrf_channel
 	      VC_VH1:
 		begin
 		   vc_push = 3'b001;
-		   vh1_array.push_back({infifo_tid_out, infifo_data_out, (CCIP_TX_HDR_WIDTH)'(infifo_hdr_out)});
+		   vh1_array.push_back({infifo_tid_out, infifo_data_out, '{infifo_hdr_out}});
 	 `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc(VH1) : tid=%x TX=%s sent to VH1\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out));
 	 `endif
@@ -1319,7 +1326,7 @@ module outoforder_wrf_channel
 	       rxhdr.clnum   = txhdr.len;
 	       rxhdr.format  = 0;
 	       rxhdr.resptype = ASE_RD_RSP;
-	       array.push_back({ tid, data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
+	       array.push_back({ tid, data, '{rxhdr}, '{txhdr} });
          `ifdef ASE_DEBUG
 	       $fwrite(log_fd, "%d | record[%02d][0] size %1d with tid=%x unrolled TX=%s RX=%s \n", $time, ptr, loop_max, tid, return_txhdr(txhdr), return_rxhdr(rxhdr) );
          `endif
@@ -1330,7 +1337,7 @@ module outoforder_wrf_channel
 	    else if (isVHxRequest(base_hdr)) begin // && isReadRequest(base_hdr)) begin
 	       txhdr            = base_hdr;
 	       tid              = records[ptr].tid[0];
-	       data             = (CCIP_DATA_WIDTH)'(1'b0);
+	       data             = {CCIP_DATA_WIDTH{1'b0}};
 	       for(int jj = 0; jj <= txhdr.len; jj = jj + 1) begin
 		  txhdr.addr       = base_addr + jj;
 		  // --------------- RxHdr ------------------ //
@@ -1340,7 +1347,7 @@ module outoforder_wrf_channel
 		  rxhdr.clnum      = ccip_len_t'(jj);
 		  rxhdr.vc_used    = base_vc;
 		  rxhdr.resptype   = ASE_RD_RSP;
-		  array.push_back({ tid, data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
+		  array.push_back({ tid, data, '{rxhdr}, '{txhdr} });
          `ifdef ASE_DEBUG
 	    	  $fwrite(log_fd, "%d | record[%02d][%02d] size %1d with tid=%x unrolled TX=%s RX=%s \n", $time, ptr, jj, loop_max, tid, return_txhdr(txhdr), return_rxhdr(rxhdr) );
          `endif
@@ -1400,7 +1407,7 @@ module outoforder_wrf_channel
 	       rxhdr.clnum   = txhdr.len;
 	       rxhdr.format  = 0;
 	       rxhdr.resptype = ASE_WR_RSP;
-	       array.push_back({ tid, data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
+	       array.push_back({ tid, data, '{rxhdr}, '{txhdr} });
          `ifdef ASE_DEBUG
 	       $fwrite(log_fd, "%d | record[%02d][0] size %1d with tid=%x unrolled TX=%s RX=%s \n", $time, ptr, loop_max, tid, return_txhdr(txhdr), return_rxhdr(rxhdr) );
          `endif
@@ -1420,7 +1427,7 @@ module outoforder_wrf_channel
 		  rxhdr.vc_used    = base_vc;
 		  rxhdr.format     = 1;
 		  rxhdr.resptype   = ASE_WR_RSP;
-		  array.push_back({ tid, data, (CCIP_RX_HDR_WIDTH)'(rxhdr), (CCIP_TX_HDR_WIDTH)'(txhdr) });
+		  array.push_back({ tid, data, '{rxhdr}, '{txhdr} });
          `ifdef ASE_DEBUG
 	    	  $fwrite(log_fd, "%d | record[%02d][0] size %1d with tid=%x unrolled TX=%s RX=%s \n", $time, ptr, loop_max, tid, return_txhdr(txhdr), return_rxhdr(rxhdr) );
          `endif
@@ -1535,7 +1542,7 @@ module outoforder_wrf_channel
 			 vh1_wrfence_deassert <= 1;
 			 latbuf_pop_proc_status	<= 3'b100;
 			 glbl_wrfence_pop_status <= 1;
-			 outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
+			 outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, '{wrfence_rsphdr}, '{wrfence_reqhdr} });
 		      end
 		   end
 
@@ -1547,7 +1554,7 @@ module outoforder_wrf_channel
 			 vh1_wrfence_deassert <= 0;
 			 latbuf_pop_proc_status	<= 3'b101;
 			 glbl_wrfence_pop_status <= 1;
-			 outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
+			 outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, '{wrfence_rsphdr}, '{wrfence_reqhdr} });
 		      end
 		   end
 
@@ -1559,7 +1566,7 @@ module outoforder_wrf_channel
 			 vh1_wrfence_deassert <= 0;
 			 latbuf_pop_proc_status	<= 3'b110;
 			 glbl_wrfence_pop_status <= 1;
-			 outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
+			 outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, '{wrfence_rsphdr}, '{wrfence_reqhdr} });
 		      end
 		   end
 
@@ -1571,7 +1578,7 @@ module outoforder_wrf_channel
 			 vh1_wrfence_deassert <= 1;
 			 latbuf_pop_proc_status	<= 3'b111;
 			 glbl_wrfence_pop_status <= 1;
-			 outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, (CCIP_RX_HDR_WIDTH)'(wrfence_rsphdr), (CCIP_TX_HDR_WIDTH)'(wrfence_reqhdr) });
+			 outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, '{wrfence_rsphdr}, '{wrfence_reqhdr} });
 		      end
 		   end
 	       endcase
