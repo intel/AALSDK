@@ -128,6 +128,9 @@ package ase_pkg;
    } RxHdr_t;
    parameter CCIP_RX_HDR_WIDTH     = $bits(RxHdr_t);
 
+   typedef logic [CCIP_RX_HDR_WIDTH-1:0] logic_cast_RxHdr_t;
+ 
+   
    // TxHdr
    typedef struct packed {
       //--------- CCIP standard header --------- //
@@ -144,6 +147,9 @@ package ase_pkg;
    } TxHdr_t;
    parameter CCIP_TX_HDR_WIDTH     = $bits(TxHdr_t);
 
+   typedef logic [CCIP_TX_HDR_WIDTH-1:0] logic_cast_TxHdr_t;
+
+   
    /*
     * Config MMIO Header
     */
@@ -160,12 +166,18 @@ package ase_pkg;
       } CfgHdr_t;
    parameter CCIP_CFG_HDR_WIDTH    = $bits(CfgHdr_t);
 
+   typedef logic [CCIP_CFG_HDR_WIDTH-1:0] logic_cast_CfgHdr_t;
+   
+   
    // MMIO header
    typedef struct packed {
       logic [8:0] tid;
       } MMIOHdr_t;
    parameter CCIP_MMIO_TID_WIDTH    = $bits(MMIOHdr_t);
 
+   typedef logic [CCIP_MMIO_TID_WIDTH-1:0] logic_cast_MMIOHdr_t;
+ 
+   
    // Umsg header (received when UMsg is received)
    typedef struct packed {
       logic [1:0] rsvd_27_26;  // 27:26 // Reserved
@@ -178,6 +190,8 @@ package ase_pkg;
    } UMsgHdr_t;
    parameter ASE_UMSG_HDR_WIDTH    = $bits(UMsgHdr_t);
 
+   typedef logic [ASE_UMSG_HDR_WIDTH-1:0] logic_cast_UMsgHdr_t;
+      
    // CmpXchg header (received from a Compare-Exchange operation)
    typedef struct packed {
       ccip_vc_t       vc_used;    // 27:26
