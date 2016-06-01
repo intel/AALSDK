@@ -131,39 +131,53 @@ int main(int argc, char *argv[])
   printf("Cpu Count: %d \n",i);
 //
 // "User Mode Code"
-// Formulate pid list
+// Formulate pid list, to setup for pass array method, not really best.
 //
-  fp = popen("/bin/ps -A -o pid", "r");
-  //skip "PID" 
-  fgets(data, sizeof(data)-1, fp);
-  i = 0;
-  while(fgets(data, sizeof(data)-1, fp) != NULL){
-    //    printf("%s", data);
-    pid = strtol(data, &endptr, 10);
-    printf("pid: %d pic count: %d\n",pid, i);
-    pid_list[i++] = pid;   
-  }
-  max_pid_index = i;
+//  fp = popen("/bin/ps -A -o pid", "r");
+//skip "PID" 
+//  fgets(data, sizeof(data)-1, fp);
+//  i = 0;
+//  while(fgets(data, sizeof(data)-1, fp) != NULL){
+//    printf("%s", data);
+//    pid = strtol(data, &endptr, 10);
+//    printf("pid: %d pic count: %d\n",pid, i);
+//    pid_list[i++] = pid;   
+//  }
+//  max_pid_index = i - 1;
 
 //
 // Kernel Mode Code
 // Set affinity for pid 1 and pid 2.
 //
   if (syscall(203, 1, sizeof(set), &set) == -1){
-    printf("schedaffnity failure via syscall for pid: %d", pid);
+    printf("schedaffnity failure via syscall for pid: 1\n");
   }
   if (syscall(203, 2, sizeof(set), &set) == -1){
-    printf("schedaffnity failure via syscall for pid: %d", pid);
+    printf("schedaffnity failure via syscall for pid: 2%\n");
+  }
+//
+//  Get pid/set affinity paired method. 
+//
+  fp = popen("/bin/ps -A -o pid", "r");
+//skip "PID" 
+  fgets(data, sizeof(data)-1, fp);
+  while(fgets(data, sizeof(data)-1, fp) != NULL){
+    pid = strtol(data, &endptr, 10);
+    if ((pid == 1) || (pid == 2)) continue;
+    if (syscall(203,pid, sizeof(set), &set) == -1){
+      printf("schedaffnity failure via syscall for pid: %d\n", pid);
+    }   
   }
 
-  for (i = 0; i < max_pid_index; i++) {
-    pid = pid_list[i];
-    if ((pid_list[i]  == 1) || (pid_list[i] == 2)) continue;
-    printf("pid in sched loop: %d\n",pid);   
-    if (syscall(203,pid, sizeof(set), &set) == -1){
-      printf("schedaffnity failure via syscall for pid: %d", pid);
-    }
-  }  
+// Use array to pass pids
+//  for (i = 0; i < max_pid_index; i++) {
+//    pid = pid_list[i];
+//    if ((pid_list[i]  == 1) || (pid_list[i] == 2)) continue;
+//    printf("pid in sched loop: %d\n",pid);   
+//    if (syscall(203,pid, sizeof(set), &set) == -1){
+//      printf("schedaffnity failure via syscall for pid: %d", pid);
+//    }
+//  }  
   close(fp);
   return 0; 
 }
