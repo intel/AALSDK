@@ -1685,7 +1685,11 @@ module ccip_emulator
       .empty		( cf2as_latbuf_ch0_empty ),
       .almfull          ( C0TxAlmFull ),
       .full             ( cf2as_ch0_realfull ),
-      .overflow_error   ( )
+      .overflow_error   ( ),
+      .chk_txhdr_in     ( ),
+      .chk_txhdr_in_vld ( ),
+      .chk_txhdr_out    ( ),
+      .chk_txhdr_out_vld( )
       );
 
    // Read TX0
@@ -1763,7 +1767,11 @@ module ccip_emulator
       .empty		( cf2as_latbuf_ch1_empty ),
       .almfull          ( C1TxAlmFull ),
       .full             ( cf2as_ch1_realfull ),
-      .overflow_error   ( )
+      .overflow_error   ( ),
+      .chk_txhdr_in     ( ),
+      .chk_txhdr_in_vld ( ),
+      .chk_txhdr_out    ( ),
+      .chk_txhdr_out_vld( )
       );
 
 
