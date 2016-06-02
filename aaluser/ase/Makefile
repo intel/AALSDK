@@ -63,7 +63,7 @@ GLS_SIM = 1
 GLS_SAMPLE_LIB = $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
 
 # Timescale
-TIMESCALE = 1ns/1ns
+TIMESCALE = 10ps/10ps
 
 # ASE Source directory
 ASE_SRCDIR = $(shell pwd)
@@ -83,16 +83,16 @@ MENT_COMMAND = $(shell command -v vsim)
 CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1
 CC_OPT+= -Wall 
 ifeq ($(ASE_DEBUG), 1)
-CC_OPT+= -D ASE_DEBUG=1
+  CC_OPT+= -D ASE_DEBUG=1
 endif
 ifeq ($(SIMULATOR), VCS)
-CC_OPT+= -I $(VCS_HOME)/include/
+  CC_OPT+= -I $(VCS_HOME)/include/
 endif
 ifeq ($(SIMULATOR), QUESTA)
-CC_OPT+= -I $(MTI_HOME)/include/
+  CC_OPT+= -I $(MTI_HOME)/include/
 endif
 ifeq ($(ASE_LCOV_ENABLE), 1)
-CC_OPT+= -fprofile-arcs -ftest-coverage
+  CC_OPT+= -fprofile-arcs -ftest-coverage
 endif
 
 
@@ -115,7 +115,7 @@ WORK = work
 # -message queues and pthreads
 ASE_LD_SWITCHES = -lrt -lpthread -lstdc++
 ifeq ($(ASE_LCOV_ENABLE), 1)
-ASE_LD_SWITCHES+= -lgcov
+  ASE_LD_SWITCHES+= -lgcov
 endif
 
 
@@ -131,12 +131,12 @@ SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 # SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
-SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+USE_PLATFORM_CCIP  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
+SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+MPF_PLATFORM_BDX  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
 SNPS_VLOGAN_OPT+= +lint=all,noVCDE,noNS,NCEID,CAWM,TFIPC,IPDP,PCWM
+ifeq ($(ASE_DISABLE_LOGGER), 1)
+  SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
+endif
 ifeq ($(ASE_DEBUG), 1)
-  ifeq ($(ASE_DISABLE_LOGGER), 1)
-   SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
-  endif
   SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +warn
 endif
 ifdef GLS_SIM
@@ -153,21 +153,26 @@ endif
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
+SNPS_VCS_OPT+= -j 4
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) +lint=TFIPC-L
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
   SNPS_VCS_OPT+=  -race
-  ifeq ($(ASE_PROFILE_ENABLE), 1)
-    SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
-    SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
-    SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
-    SNPS_VCS_OPT+= -simprofile +prof
-  endif
-# SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 endif
+ifeq ($(ASE_PROFILE_ENABLE), 1)
+  SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
+  SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
+  SNPS_VCS_OPT+= -cm_hier $(ASEVAL_GIT)/ase_coverage.cfg
+  SNPS_VCS_OPT+= -simprofile +prof
+endif
+# SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 
 ## Simulation options
-VCS_SIM_OPT = -l run.log -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
+VCS_SIM_OPT = -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
+VCS_SIM_OPT+= -l run.log
+ifeq ($(ASE_PROFILE_ENABLE), 1)
+  VCS_SIM_OPT+= -cm line+cond+fsm+tgl+branch+assert
+endif
 
 
 #########################################################################
@@ -323,8 +328,8 @@ ifdef GLS_SIM
     endif
   else
     ifeq ($(wildcard $(GLS_SAMPLE_LIB)),)
-	@echo "**ERROR** : env(QUARTUS_HOME) not set up correctly."
-	@echo "**ERROR** : Cannot find Quartus library files in known locations"
+	@echo "** ERROR **: env(QUARTUS_HOME) not set up correctly."
+	@echo "** ERROR **: Cannot find Quartus library files in known locations"
     endif
   endif
 endif
@@ -332,21 +337,17 @@ endif
 ifeq ($(SIMULATOR), VCS)
   ifndef VCS_HOME
 	@echo "**ERROR** : env(VCS_HOME) is not set ! svdpi.h cannot be found !"
-#	exit 1
   endif
   ifndef SNPS_COMMAND
 	@echo "**ERROR** : Synopsys commands (vlogan, vcs) not found !"
-#	exit 1
   endif
 else 
   ifeq ($(SIMULATOR), QUESTA)
     ifndef MTI_HOME
 	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
-#	exit 1
     endif	
     ifndef MENT_COMMAND
 	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
-#	exit 1
     endif
   else
      @echo "**ERROR**: Unknown RTL simulator tool in use --- this is unsupported !"
@@ -505,9 +506,11 @@ scan-build:
 # Coverage
 coverage:
 	cd $(WORK) ; lcov --base-directory . --directory . --capture --output-file ase_libs.info ; genhtml -o lcov_coverage/ ase_libs.info ; cd -
-#	urg -dir $(WORK)/coverage.vdb ; cd -
-#	firefox $(WORK)/urgReport/dashboard.html &
+	cd $(WORK) ; urg -full64 -dir ase_simv.vdb ; cd -
+	firefox ./$(WORK)/urgReport/dashboard.html &
 	firefox ./$(WORK)/lcov_coverage/index.html &
+	firefox ./$(WORK)/profileReport.html &
+	dve -dir work/ase_simv.vdb/ -full64 &
 
 # Valgrind run
 valgrind_run:

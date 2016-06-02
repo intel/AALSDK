@@ -36,52 +36,30 @@
  */
 
 import ase_pkg::*;
+import ccip_if_pkg::*;
+
 `include "platform.vh"
 
 module ccip_logger
   #(
-    parameter LOGNAME   = "ccip_transactions.tsv"
+    parameter LOGNAME   = "CHANGE_MY_NAME.log"
     )
    (
     // Configure enable
-    input int 				     enable_logger,
-    input int 				     finish_logger,
+    input logic finish_logger,
     // Buffer message injection
-    input logic 			     log_timestamp_en,
-    input logic 			     log_string_en,
-    ref string 				     log_string,
+    input logic log_timestamp_en,
+    input logic log_string_en,
+    ref string 	log_string,
     //////////////////////////////////////////////////////////
     // CCI interface
-    input logic 			     clk,
-    input logic 			     SoftReset,
-    // Tx0 channel
-    input 				     TxHdr_t C0TxHdr,
-    input logic 			     C0TxRdValid,
-    // Tx1 channel
-    input 				     TxHdr_t C1TxHdr,
-    input logic [CCIP_DATA_WIDTH-1:0] 	     C1TxData,
-    input logic 			     C1TxWrValid,
-    input logic 			     C1TxIntrValid,
-    // Tx2 channel
-    input 				     MMIOHdr_t C2TxHdr,
-    input logic 			     C2TxMmioRdValid,
-    input logic [CCIP_MMIO_RDDATA_WIDTH-1:0] C2TxData,
-    // Rx0 channel
-    input logic 			     C0RxMmioWrValid,
-    input logic 			     C0RxMmioRdValid,
-    input logic [CCIP_DATA_WIDTH-1:0] 	     C0RxData,
-    input 				     RxHdr_t C0RxHdr,
-    input logic 			     C0RxRdValid,
-    input logic 			     C0RxUMsgValid,
-    // Rx1 channel
-    input 				     RxHdr_t C1RxHdr,
-    input logic 			     C1RxWrValid,
-    input logic 			     C1RxIntrValid,
-    // Almost full signals
-    input logic 			     C0TxAlmFull,
-    input logic 			     C1TxAlmFull
+    input logic clk,
+    input logic SoftReset,
+    input 	t_if_ccip_Rx ccip_rx,
+    input 	t_if_ccip_Tx ccip_tx
     );
 
+   
    /*
     * ASE Hardware Interface (CCI) logger
     * - Logs CCI transaction into a transactions.tsv file
@@ -99,81 +77,102 @@ module ccip_logger
    end
 
    // Config header
-   CfgHdr_t C0RxMmioHdr;
-   assign C0RxMmioHdr = CfgHdr_t'(C0RxHdr);
+   t_ccip_c0_ReqMmioHdr C0RxMmioHdr;
+   assign C0RxMmioHdr = t_ccip_c0_ReqMmioHdr'(ccip_rx.c0.hdr);
 
    // Umsg header
    UMsgHdr_t C0RxUMsgHdr;
-   assign C0RxUMsgHdr = UMsgHdr_t'(C0RxHdr);
+   assign C0RxUMsgHdr = UMsgHdr_t'(ccip_rx.c0.hdr);
 
-`ifndef DEFEATURE_ATOMICS
-   // Atomics header
-   Atomics_t C0RxAtomicHdr;
-   assign C0RxAtomicHdr = Atomics_t'(C0RxHdr);
-`endif
-
+   
    /*
     * Buffer channels, request and response types
     */
    // Print Channel function
-   function string print_channel (ccip_vc_t vc_sel);
+   function string print_channel (t_ccip_vc vc_sel);
       begin
-	 case (vc_sel)
-	   VC_VA  : return "VA ";
-	   VC_VL0 : return "VL0";
-	   VC_VH0 : return "VH0";
-	   VC_VH1 : return "VH1";
-	 endcase
+   	 case (vc_sel)
+   	   eVC_VA  : return "VA ";
+   	   eVC_VL0 : return "VL0";
+   	   eVC_VH0 : return "VH0";
+   	   eVC_VH1 : return "VH1";
+   	 endcase
       end
    endfunction
 
-   // Print Req Type
-   function string print_reqtype (ccip_reqtype_t req);
+   // Print Req Type - CH0
+   function string print_c0_reqtype (t_ccip_c0_ReqMemHdr req);
       begin
 	 case (req)
-	   ASE_RDLINE_S   : return "Rd_S       ";
-	   ASE_RDLINE_I   : return "Rd_I       ";
-	   ASE_WRLINE_I   : return "Wr_I       ";
-	   ASE_WRLINE_M   : return "Wr_M       ";
-	   ASE_WRFENCE    : return "WrFence    ";
-`ifndef DEFEATURE_ATOMICS
-	   ASE_ATOMIC_REQ : return "AtomicReq  ";
-`endif
-	   ASE_INTR_REQ   : return "IntrReq    ";
-	   default        : return "** ERROR %m : Request type unindentified **" ;
+	   eREQ_RDLINE_S   : return "Rd_S       ";
+	   eREQ_RDLINE_I   : return "Rd_I       ";
+	   default        : return "** ERROR %m : eREQ-CH0 unindentified **" ;
+	 endcase
+      end
+   endfunction
+   
+   // Print req type - CH1
+   function string print_c1_reqtype (t_ccip_c1_ReqMemHdr req);
+      begin
+	 case (req)
+	   eREQ_WRLINE_I   : return "Wr_I       ";
+	   eREQ_WRLINE_M   : return "Wr_M       ";
+	   eREQ_WRFENCE    : return "WrFence    ";
+	   eREQ_INTR       : return "IntrReq    ";
+	   default         : return "** ERROR %m : eREQ-CH1 unindentified **" ;
 	 endcase
       end
    endfunction
 
-   // Print resp type
-   function string print_resptype (ccip_resptype_t resp);
+   // Print CH0 response type
+   function string print_c0_resptype (t_ccip_c0_rsp resp);
       begin
 	 case (resp)
-	   ASE_RD_RSP      : return "RdResp     ";
-	   ASE_WR_RSP      : return "WrResp     ";
-	   ASE_WRFENCE_RSP : return "WrFenceResp";
-	   ASE_INTR_RSP    : return "IntrResp   ";
-`ifndef DEFEATURE_ATOMICS
-	   ASE_ATOMIC_RSP  : return "AtomicRsp  ";
-`endif
-	   default         : return "** ERROR %m : Request type unindentified **" ;
+	   eRSP_RDLINE     : return "RdResp     ";
+	   default         : return "** ERROR %m : eRSP-CH0 unindentified **" ;
 	 endcase
       end
    endfunction
 
-   // Print CL number
-   function string print_clnum (ccip_len_t len);
+   // Print CH1 response type
+   function string print_c1_resptype (t_ccip_c1_rsp resp);
+      begin
+	 case (resp)
+	   eRSP_WRLINE     : return "WrResp     ";
+	   eRSP_WRFENCE    : return "WrFenceResp";
+	   eRSP_INTR       : return "IntrResp   ";
+	   default         : return "** ERROR %m : eRSP-CH1 unindentified **" ;
+	 endcase
+      end
+   endfunction
+
+   
+   // Print CL number (in Request)
+   function string print_cllen (t_ccip_clLen len);
       begin
 	 case (len)
-	   ASE_1CL : return "#1CL";
-	   ASE_2CL : return "#2CL";
-	   ASE_3CL : return "#3CL";
-	   ASE_4CL : return "#4CL";
-	   default : return "** ERROR %m : Request type unindentified **" ;
+	   eCL_LEN_1 : return "#1CL";
+	   eCL_LEN_2 : return "#2CL";
+	   eCL_LEN_4 : return "#4CL";
+	   default : return "** ERROR %m : clLen unindentified **" ;
 	 endcase
       end
    endfunction
 
+   
+   // Print CL number (in Response)
+   function string print_clnum (t_ccip_clNum num);
+      begin
+	 case (num)
+	   2'b00 : return "#1CL";
+	   2'b01 : return "#2CL";
+	   2'b10 : return "#3CL";
+	   2'b11 : return "#4CL";
+	 endcase
+      end
+   endfunction
+
+   
    // Print CSR data
    function string csr_data(int num_bytes, logic [CCIP_DATA_WIDTH-1:0] rx0_data);
       string str_4;
@@ -200,6 +199,7 @@ module ccip_logger
       end
    endfunction
 
+   
    // MMIO Request length
    function int mmioreq_length (logic [1:0] mmio_len);
       begin
@@ -211,6 +211,7 @@ module ccip_logger
       end
    endfunction // mmioreq_length
 
+   
    // Space generator - formatting help
    function string ret_spaces (int num);
       string spaces;
@@ -224,6 +225,90 @@ module ccip_logger
       end
    endfunction
 
+
+   /*
+    * Function checks 
+    */ 
+   // Is a Read Request
+   function logic isRdLineRequest(t_ccip_c0_req req);
+      begin
+	 if ((req == eREQ_RDLINE_I)||(req == eREQ_RDLINE_S)) 
+	   return 1;
+	 else
+	   return 0;
+      end
+   endfunction
+   
+   // Is a Write Request
+   function logic isWrLineRequest(t_ccip_c1_req req);
+      begin
+	 if ((req == eREQ_WRLINE_I)||(req == eREQ_WRLINE_M)) 
+	   return 1;
+	 else
+	   return 0;
+      end
+   endfunction
+
+   // Is a Write Fence Request
+   function logic isWrFenceRequest(t_ccip_c1_req req);
+      begin
+	 if (req == eREQ_WRFENCE)
+	   return 1;
+	 else
+	   return 0;
+      end
+   endfunction
+
+   // Is a Intr Request
+   function logic isIntrRequest(t_ccip_c1_req req);
+      begin
+	 if (req == eREQ_INTR)
+	   return 1;
+	 else
+	   return 0;
+      end
+   endfunction
+   
+   // Is a Read Response
+   function logic isRdLineResponse(t_ccip_c0_rsp rsp);
+      begin
+	 if (rsp == eRSP_RDLINE)
+	   return 1;
+	 else
+	   return 0;
+      end
+   endfunction
+   
+   // Is a Umsg Response
+   function logic isUmsgResponse(t_ccip_c0_rsp rsp);
+      begin
+	 if (rsp == eRSP_UMSG)
+	   return 1;
+	 else
+	   return 0;
+      end
+   endfunction
+   
+   // Is a Write Response
+   function logic isWrLineResponse(t_ccip_c1_rsp rsp);
+      begin
+	 if (rsp == eRSP_WRLINE)
+	   return 1;
+	 else
+	   return 0;
+      end
+   endfunction
+   
+   // Is a Write Fence Response
+   function logic isWrFenceResponse(t_ccip_c1_rsp rsp);
+      begin
+	 if (rsp == eRSP_WRFENCE)
+	   return 1;
+	 else
+	   return 0;
+      end
+   endfunction
+   
 
    /*
     * Watcher process
@@ -256,132 +341,112 @@ module ccip_logger
 	    end
 	 end
 	 /////////////////////// CONFIG CHANNEL TRANSACTIONS //////////////////////////
-	 /******************* SW -> AFU MMIO Write *******************/
-	 if (C0RxMmioWrValid) begin
+	 /******************* MMIO Write Request *******************/
+	 if (ccip_rx.c0.mmioWrValid) begin
 	    if (cfg.enable_cl_view)  $display("%d\t   \tMMIOWrReq   \t%x\t%d bytes\t%s\n",
 					      $time,
-					      C0RxMmioHdr.index,
-					      mmioreq_length(C0RxMmioHdr.len),
-					      csr_data(mmioreq_length(C0RxMmioHdr.len), C0RxData)  );
+					      C0RxMmioHdr.address,
+					      mmioreq_length(C0RxMmioHdr.length),
+					      csr_data(mmioreq_length(C0RxMmioHdr.length), ccip_rx.c0.data)  );
 	    $fwrite(log_fd, "%d\t   \tMMIOWrReq   \t  \t%x\t%d bytes\t%s\n",
-		    $time,
-		    C0RxMmioHdr.index,
-		    mmioreq_length(C0RxMmioHdr.len),
-		    csr_data(mmioreq_length(C0RxMmioHdr.len), C0RxData)  );
-	    // $fwrite(log_fd, "%016x\n", C0RxData);
+					      $time,
+					      C0RxMmioHdr.address,
+					      mmioreq_length(C0RxMmioHdr.length),
+					      csr_data(mmioreq_length(C0RxMmioHdr.length), ccip_rx.c0.data)  );
 	 end
-	 /******************* SW -> AFU MMIO Read *******************/
-	 if (C0RxMmioRdValid) begin
+	 /******************* MMIO Read Request *******************/
+	 if (ccip_rx.c0.mmioRdValid) begin
 	    if (cfg.enable_cl_view) $display("%d\t   \tMMIORdReq   \t%x\t%x\t%d bytes\n",
 	    				     $time,
 	    				     C0RxMmioHdr.tid,
-	    				     C0RxMmioHdr.index,
-	    				     mmioreq_length(C0RxMmioHdr.len));
+	    				     C0RxMmioHdr.address,
+	    				     mmioreq_length(C0RxMmioHdr.length));
 	    $fwrite(log_fd, "%d\t   \tMMIORdReq   \t%x\t%x\t%d bytes\n",
 	    	    $time,
 	    	    C0RxMmioHdr.tid,
-	    	    C0RxMmioHdr.index,
-	    	    mmioreq_length(C0RxMmioHdr.len));
+	    	    C0RxMmioHdr.address,
+	    	    mmioreq_length(C0RxMmioHdr.length));
 	 end
 	 //////////////////////// C0 TX CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* AFU -> MEM Read Request *****************/
-	 if (C0TxRdValid) begin
+	 if (ccip_tx.c0.valid && isRdLineRequest(ccip_tx.c0.hdr.req_type) ) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%x\t%s",
 	 				     $time,
-	 				     print_channel(C0TxHdr.vc),
-	 				     print_reqtype(C0TxHdr.reqtype),
-	 				     C0TxHdr.mdata,
-	 				     C0TxHdr.addr,
-					     print_clnum(C0TxHdr.len));
+	 				     print_channel(ccip_tx.c0.hdr.vc_sel),
+	 				     print_c0_reqtype(ccip_tx.c0.hdr.req_type),
+	 				     ccip_tx.c0.hdr.mdata,
+	 				     ccip_tx.c0.hdr.address,
+					     print_cllen(ccip_tx.c0.hdr.cl_len));
 	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%x\t%s\n",
-	 	    $time,
-	 	    print_channel(C0TxHdr.vc),
-	 	    print_reqtype(C0TxHdr.reqtype),
-	 	    C0TxHdr.mdata,
-	 	    C0TxHdr.addr,
-		    print_clnum(C0TxHdr.len));
+	 				     $time,
+	 				     print_channel(ccip_tx.c0.hdr.vc_sel),
+	 				     print_c0_reqtype(ccip_tx.c0.hdr.req_type),
+	 				     ccip_tx.c0.hdr.mdata,
+	 				     ccip_tx.c0.hdr.address,
+					     print_cllen(ccip_tx.c0.hdr.cl_len));
 	 end
 	 //////////////////////// C1 TX CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* AFU -> MEM Write Request *****************/
-	 if (C1TxWrValid && (C1TxHdr.reqtype != ASE_WRFENCE)) begin
+	 if (ccip_tx.c1.valid && isWrLineRequest(ccip_tx.c1.hdr.req_type)) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%x\t%x\t%s",
 	 				     $time,
-	 				     print_channel(C1TxHdr.vc),
-	 				     print_reqtype(C1TxHdr.reqtype),
-	 				     C1TxHdr.mdata,
-	 				     C1TxHdr.addr,
-	 				     C1TxData,
-					     print_clnum(C1TxHdr.len));
+	 				     print_channel(ccip_tx.c1.hdr.vc_sel),
+	 				     print_c1_reqtype(ccip_tx.c1.hdr.req_type),
+	 				     ccip_tx.c1.hdr.mdata,
+	 				     ccip_tx.c1.hdr.address,
+	 				     ccip_tx.c1.data,
+					     print_clnum(ccip_tx.c1.hdr.cl_len));
 	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%x\t%x\t%s\n",
-	 	    $time,
-	 	    print_channel(C1TxHdr.vc),
-	 	    print_reqtype(C1TxHdr.reqtype),
-	 	    C1TxHdr.mdata,
-	 	    C1TxHdr.addr,
-	 	    C1TxData,
-		    print_clnum(C1TxHdr.len));
-	 end // if (C1TxWrValid && (C1TxHdr.reqtype != ASE_WRFENCE))
-	 if (C1TxWrValid && (C1TxHdr.reqtype == ASE_WRFENCE)) begin
+	 				     $time,
+	 				     print_channel(ccip_tx.c1.hdr.vc_sel),
+	 				     print_c1_reqtype(ccip_tx.c1.hdr.req_type),
+	 				     ccip_tx.c1.hdr.mdata,
+	 				     ccip_tx.c1.hdr.address,
+	 				     ccip_tx.c1.data,
+					     print_clnum(ccip_tx.c1.hdr.cl_len));
+	 end // if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.req_type != eREQ_WRFENCE))
+	 if (ccip_tx.c1.valid && isWrFenceRequest(ccip_tx.c1.hdr.req_type)) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\tWrFence \t%x\n",
 					     $time,
-					     print_channel(C1TxHdr.vc),
-					     C1TxHdr.mdata);
+					     print_channel(ccip_tx.c1.hdr.vc_sel),
+					     ccip_tx.c1.hdr.mdata);
 	    $fwrite(log_fd, "%d\t%s\tWrFence \t%x\n",
 		    $time,
-		    print_channel(C1TxHdr.vc),
-		    C1TxHdr.mdata);
-	 end
+		    print_channel(ccip_tx.c1.hdr.vc_sel),
+		    ccip_tx.c1.hdr.mdata);
+	 end	 
 	 //////////////////////// C2 TX CHANNEL TRANSACTIONS //////////////////////////
-	 /******************* AFU -> SW MMIO Read Response *****************/
-	 if (C2TxMmioRdValid) begin
+	 /********************** MMIO Read Response ********************/
+	 if (ccip_tx.c2.mmioRdValid) begin
 	    if (cfg.enable_cl_view) $display("%d\t   \tMMIORdRsp   \t%x\t%x\n",
 					     $time,
-					     C2TxHdr.tid,
-					     C2TxData);
+					     ccip_tx.c2.hdr.tid,
+					     ccip_tx.c2.data);
 	    $fwrite(log_fd, "%d\t   \tMMIORdRsp   \t%x\t%x\n",
 		    $time,
-		    C2TxHdr.tid,
-		    C2TxData);
+		    ccip_tx.c2.hdr.tid,
+		    ccip_tx.c2.data);
 	 end
 	 //////////////////////// C0 RX CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* MEM -> AFU Read Response *****************/
-	 if (C0RxRdValid && (C0RxHdr.resptype == ASE_RD_RSP)) begin
+	 if (ccip_rx.c0.rspValid && isRdLineResponse(ccip_rx.c0.hdr.resp_type)) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%s\t%x",
 	 				     $time,
-	 				     print_channel(C0RxHdr.vc_used),
-	 				     print_resptype(C0RxHdr.resptype),
-	 				     C0RxHdr.mdata,
-					     print_clnum(C0RxHdr.clnum),
-	 				     C0RxData);
+	 				     print_channel(ccip_rx.c0.hdr.vc_used),
+	 				     print_c0_resptype(ccip_rx.c0.hdr.resp_type),
+	 				     ccip_rx.c0.hdr.mdata,
+					     print_clnum(ccip_rx.c0.hdr.cl_num),
+	 				     ccip_rx.c0.data);
 	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%s\t%x\n",
-	 	    $time,
-	 	    print_channel(C0RxHdr.vc_used),
-	 	    print_resptype(C0RxHdr.resptype),
-	 	    C0RxHdr.mdata,
-		    print_clnum(C0RxHdr.clnum),
-	 	    C0RxData);
-	 end // if (C0RxRdValid && (C0RxHdr.resptype == ASE_RD_RSP))
-	 /*********** SW -> MEM -> AFU Atomic responses on C0Rx  **********/
-`ifndef DEFEATURE_ATOMICS
-	 if (C0RxRdValid && (C0RxHdr.resptype == ASE_ATOMIC_RSP)) begin
-	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%s\t%x",
-					     $time,
-					     print_channel(C0RxAtomicHdr.vc_used),
-					     print_resptype(C0RxAtomicHdr.resptype),
-					     C0RxAtomicHdr.mdata,
-					     ((C0RxAtomicHdr.success == 1) ? "Success" : "Fail   "),
-					     C0RxData);
-	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%s\t%x\n",
-		    $time,
-		    print_channel(C0RxAtomicHdr.vc_used),
-		    print_resptype(C0RxAtomicHdr.resptype),
-		    C0RxAtomicHdr.mdata,
-		    ((C0RxAtomicHdr.success == 1) ? "Success" : "Fail   "),
-		    C0RxData);
-	 end // if (C0RxRdValid && (C0RxHdr.resptype == ASE_ATOMIC_RSP))
-`endif
+	 				     $time,
+	 				     print_channel(ccip_rx.c0.hdr.vc_used),
+	 				     print_c0_resptype(ccip_rx.c0.hdr.resp_type),
+	 				     ccip_rx.c0.hdr.mdata,
+					     print_clnum(ccip_rx.c0.hdr.cl_num),
+	 				     ccip_rx.c0.data);
+	 end // if (ccip_tx.c0.rspValid && (ccip_rx.c0.hdr.resptype == eRSP_RDLINE)) 
 	 /*************** SW -> MEM -> AFU Unordered Message  *************/
-	 if (C0RxUMsgValid) begin
+	 if (ccip_rx.c0.rspValid && isUmsgResponse(ccip_rx.c0.hdr.resp_type)) begin
 	    if (C0RxUMsgHdr.umsg_type) begin
 	       if (cfg.enable_cl_view) $display("%d\t   \tUMsgHint   \t%d\n",
 						$time,
@@ -396,12 +461,12 @@ module ccip_logger
 	       if (cfg.enable_cl_view) $display("%d\t   \tUMsgData   \t%d\t%x\n",
 						$time,
 						C0RxUMsgHdr.umsg_id,
-						C0RxData
+						ccip_rx.c0.data
 						);
 	       $fwrite(log_fd, "%d\t   \tUMsgData   \t%d\t%x\n",
 		       $time,
 		       C0RxUMsgHdr.umsg_id,
-		       C0RxData
+		       ccip_rx.c0.data
 		       );
 	    end
 	 end
@@ -410,29 +475,29 @@ module ccip_logger
 	 // end
 	 //////////////////////// C1 RX CHANNEL TRANSACTIONS //////////////////////////
 	 /****************** MEM -> AFU Write Response  ****************/
-	 if (C1RxWrValid && (C1RxHdr.resptype != ASE_WRFENCE_RSP)) begin
+	 if (ccip_rx.c1.rspValid && isWrLineResponse(ccip_rx.c1.hdr.resp_type)) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%s",
 	 				     $time,
-	 				     print_channel(C1RxHdr.vc_used),
-	 				     print_resptype(C1RxHdr.resptype),
-	 				     C1RxHdr.mdata,
-					     print_clnum(C1RxHdr.clnum));
+	 				     print_channel(ccip_rx.c1.hdr.vc_used),
+	 				     print_c1_resptype(ccip_rx.c1.hdr.resp_type),
+	 				     ccip_rx.c1.hdr.mdata,
+					     print_clnum(ccip_rx.c1.hdr.cl_num));
 	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%s\n",
 	 	    $time,
-	 	    print_channel(C1RxHdr.vc_used),
-	 	    print_resptype(C1RxHdr.resptype),
-	 	    C1RxHdr.mdata,
-		    print_clnum(C1RxHdr.clnum));
-	 end // if (C1RxWrValid && (C1RxHdr.resptype != ASE_WRFENCE_RSP))
-	 if (C1RxWrValid && (C1RxHdr.resptype == ASE_WRFENCE_RSP)) begin
-	    if (cfg.enable_cl_view) $display("%d\t%s\tWrFenceRsp\t%x\n",
+	 	    print_channel(ccip_rx.c1.hdr.vc_used),
+	 	    print_c1_resptype(ccip_rx.c1.hdr.resp_type),
+	 	    ccip_rx.c1.hdr.mdata,
+		    print_clnum(ccip_rx.c1.hdr.cl_num));
+	 end
+	 if (ccip_rx.c1.rspValid && isWrFenceResponse(ccip_rx.c1.hdr.resp_type)) begin
+	    if (cfg.enable_cl_view) $display("%d\t%s\tWrFenceRsp\t%x",
 					     $time,
-					     print_channel(C1RxHdr.vc_used),
-					     C1RxHdr.mdata);
+					     print_channel(ccip_rx.c1.hdr.vc_used),
+					     ccip_rx.c1.hdr.mdata);
 	    $fwrite(log_fd, "%d\t%s\tWrFenceRsp\t%x\n",
 		    $time,
-		    print_channel(C1RxHdr.vc_used),
-		    C1RxHdr.mdata);
+		    print_channel(ccip_rx.c1.hdr.vc_used),
+		    ccip_rx.c1.hdr.mdata);
 	 end
 	 // /**************** MEM -> AFU Interrupt Response  **************/
 	 // if (C1RxIntrValid) begin

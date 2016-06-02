@@ -535,6 +535,7 @@ struct ase_cfg_t
   int ase_num_tests;
   int enable_reuse_seed;
   int enable_cl_view;
+  float usr_clk_mhz;
   int phys_memory_available_gb;
 };
 struct ase_cfg_t *cfg;

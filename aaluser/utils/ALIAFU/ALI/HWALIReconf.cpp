@@ -302,7 +302,7 @@ void CHWALIReconf::AFUEvent(AAL::IEvent const &theEvent)
 
    ASSERT(NULL != puidEvent);
 
-   std::cerr << "Got CHWALIReconf AFU event CHWALIReconf type " << puidEvent->MessageID() << "\n" << std::endl;
+   //std::cerr << "Got CHWALIReconf AFU event CHWALIReconf type " << puidEvent->MessageID() << "\n" << std::endl;
 
    switch(puidEvent->MessageID())
    {
@@ -315,7 +315,6 @@ void CHWALIReconf::AFUEvent(AAL::IEvent const &theEvent)
            {
            case uid_afurespDeactivateComplete:
               {
-                 std::cerr << "uid_afurespDeactivateComplete "  << "\n" << std::endl;
                  if( uid_errnumOK != puidEvent->ResultCode()){
                     getRuntime()->schedDispatchable(new AFUDeactivateFailed(m_pReconClient,new CExceptionTransactionEvent(NULL,
                                                                                                                           puidEvent->msgTranID(),
@@ -329,7 +328,6 @@ void CHWALIReconf::AFUEvent(AAL::IEvent const &theEvent)
               }
            case uid_afurespActivateComplete:
               {
-                 std::cerr << "uid_afurespActivateComplete "  << "\n" << std::endl;
                  if( uid_errnumOK != puidEvent->ResultCode()){
                      getRuntime()->schedDispatchable(new AFUActivateFailed(m_pReconClient,new CExceptionTransactionEvent(NULL,
                                                                                                                          puidEvent->msgTranID(),
@@ -343,7 +341,7 @@ void CHWALIReconf::AFUEvent(AAL::IEvent const &theEvent)
               }
            case uid_afurespConfigureComplete:
               {
-                 std::cerr << "uid_afurespConfigureComplete "  << "\n" << std::endl;
+
                  if( uid_errnumOK !=puidEvent->ResultCode()){
                      getRuntime()->schedDispatchable(new AFUReconfigureFailed(m_pReconClient,new CExceptionTransactionEvent(NULL,
                                                                                                                             puidEvent->msgTranID(),

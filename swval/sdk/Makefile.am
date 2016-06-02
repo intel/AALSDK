@@ -196,7 +196,6 @@ ase/hw/ccip_emulator.sv \
 ase/hw/ccip_logger.sv \
 ase/hw/ccip_sniffer.sv \
 ase/hw/ase_top.sv \
-ase/hw/stream_checker.sv \
 ase/hw/ase_pkg.sv \
 ase/hw/platform.vh \
 ase/scripts/generate_ase_environment.py \

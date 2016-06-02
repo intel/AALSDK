@@ -8,7 +8,9 @@ DMA_Buffer \
 Read_Perf_Counters \
 AFU_Reset \
 Signal_Tap \
-Partial_Reconfig \
+Partial_Reconfig/PR_SingleApp \
+Partial_Reconfig/PR_TwoApp/nlb_app \
+Partial_Reconfig/PR_TwoApp/pr_app \
 RAS \
 Power_Thermal \
 Error
