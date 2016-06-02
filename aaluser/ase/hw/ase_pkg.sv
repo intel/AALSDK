@@ -264,8 +264,10 @@ package ase_pkg;
    // Radix of ASE_fifo (subcomponent in latency scoreboard)
    parameter LATBUF_DEPTH_BASE2      = $clog2(LATBUF_NUM_TRANSACTIONS);
    // Wait station timer width
-   parameter LATBUF_TIMER_WIDTH             = 9;
-
+   parameter LATBUF_TIMER_WIDTH      = 9;
+   // Latency buffer TID width
+   parameter LATBUF_TID_WIDTH        = 32;
+   
 
    /*
     * CCI Transaction packet
@@ -612,5 +614,26 @@ package ase_pkg;
       int 	  mcl1;
       int 	  mcl3;
       } txn_mcl_counts;
+
+
+   /*
+    * Hazard checker interface
+    */
+   // Hazard event packet
+   typedef struct packed {
+      logic [LATBUF_TID_WIDTH-1:0] tid; 
+      logic 			   valid;
+      TxHdr_t                      hdr;
+      } ase_haz_pkt;
+   
+
+   // Unified interface for read/write insert/delete 
+   typedef struct packed {
+      ase_haz_pkt read_in;
+      ase_haz_pkt read_out;
+      ase_haz_pkt write_in;
+      ase_haz_pkt write_out;      
+      } ase_haz_if;
+   
       
 endpackage

@@ -1466,7 +1466,7 @@ module ccip_emulator
 	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VH0)), wrrsp_vc_cnt.vh0);
 	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VH1)), wrrsp_vc_cnt.vh1);
 	 // C1Tx MCL granular counts
-	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && ~C1RxHdr.format ), wrrsp_mcl_cnt.mcl0);
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr)), wrrsp_mcl_cnt.mcl0);
 	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.clnum == ASE_2CL) && C1RxHdr.format), wrrsp_mcl_cnt.mcl1);
 	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.clnum == ASE_4CL) && C1RxHdr.format), wrrsp_mcl_cnt.mcl3);
 	 // ------------------------------------ //
@@ -1650,9 +1650,21 @@ module ccip_emulator
    int 				 cf2as_latbuf_ch1_count;
    logic 			 cf2as_latbuf_ch1_valid;
 
-   // RxHdr_t                       cf2as_latbuf_rx0hdr_q;
-   // RxHdr_t                       cf2as_latbuf_rx1hdr_q;
-
+   // Hazard checker signals
+   ase_haz_if haz_if;
+      
+   // ase_haz_pkt rdhaz_in;
+   // ase_haz_pkt rdhaz_out;   
+   // TxHdr_t                       rdhaz_hdr_in;
+   // TxHdr_t                       rdhaz_hdr_out;
+   // logic 			 rdhaz_hdr_in_vld;
+   // logic 			 rdhaz_hdr_out_vld;  
+   // TxHdr_t                       wrhaz_hdr_in;
+   // TxHdr_t                       wrhaz_hdr_out;
+   // logic 			 wrhaz_hdr_in_vld;
+   // logic 			 wrhaz_hdr_out_vld;
+   
+   
    /*
     * CAFU->ASE CH0 (TX0)
     * Formed as {TxHdr_t}
@@ -1686,10 +1698,8 @@ module ccip_emulator
       .almfull          ( C0TxAlmFull ),
       .full             ( cf2as_ch0_realfull ),
       .overflow_error   ( ),
-      .chk_txhdr_in     ( ),
-      .chk_txhdr_in_vld ( ),
-      .chk_txhdr_out    ( ),
-      .chk_txhdr_out_vld( )
+      .hazpkt_in        ( haz_if.read_in ),
+      .hazpkt_out       ( haz_if.read_out )
       );
 
    // Read TX0
@@ -1768,10 +1778,8 @@ module ccip_emulator
       .almfull          ( C1TxAlmFull ),
       .full             ( cf2as_ch1_realfull ),
       .overflow_error   ( ),
-      .chk_txhdr_in     ( ),
-      .chk_txhdr_in_vld ( ),
-      .chk_txhdr_out    ( ),
-      .chk_txhdr_out_vld( )
+      .hazpkt_in        ( haz_if.write_in ),
+      .hazpkt_out       ( haz_if.write_out )
       );
 
 
@@ -2384,7 +2392,9 @@ module ccip_emulator
       // ----------------------------------------- //
       // Overflow check signals
       .cf2as_ch0_realfull ( cf2as_ch0_realfull ),
-      .cf2as_ch1_realfull ( cf2as_ch1_realfull )
+      .cf2as_ch1_realfull ( cf2as_ch1_realfull ),
+      // ----------------------------------------- //
+      .haz_if             ( haz_if )
       );
 
 

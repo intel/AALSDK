@@ -70,7 +70,7 @@ module ccip_sniffer
     input logic 			     cf2as_ch0_realfull,
     input logic 			     cf2as_ch1_realfull,
     // -------------------------------------------------------- //
-    ///////////////////// CCI interface //////////////////////////
+    //                    CCI interface                         //
     input logic 			     clk,
     input logic 			     SoftReset,
     // Tx0 channel
@@ -95,9 +95,21 @@ module ccip_sniffer
     input logic 			     C1RxRspValid,
     // Almost full signals
     input logic 			     C0TxAlmFull,
-    input logic 			     C1TxAlmFull
+    input logic 			     C1TxAlmFull,
+    // -------------------------------------------------------- //
+    //                    Hazard Signals                        //
+    input 				     ase_haz_if haz_if
+    // input 				     TxHdr_t rdhaz_hdr_in,
+    // input 				     TxHdr_t rdhaz_hdr_out,
+    // input logic 			     rdhaz_hdr_in_vld,
+    // input logic 			     rdhaz_hdr_out_vld,
+    // input 				     TxHdr_t wrhaz_hdr_in,
+    // input 				     TxHdr_t wrhaz_hdr_out,
+    // input logic 			     wrhaz_hdr_in_vld,
+    // input logic 			     wrhaz_hdr_out_vld			     
     );
 
+   
    /*
     * File descriptors
     */
@@ -293,96 +305,6 @@ module ccip_sniffer
    	 print_xz_message ( "C0RxMmio" );
       end
    end
-
-
-   /*
-    * MMIO Misbehaviour tracker
-    */
-   // MMIO Timeout management
-   // int mmioread_timeout_cnt;
-   // logic mmioread_cycle;
-   // logic mmioread_cycle_q;
-
-   // Check if MMIO TID returned was correct
-   // int 	 c0rx_mmiord_tid;
-   // int 	 c2tx_mmiord_tid;
-
-   // MMIO Read activity in progress
-   // always @(posedge clk) begin : mmiocycle_proc
-   //    if (SoftReset) begin
-   // 	 mmioread_cycle <= 0;
-   //    end
-   //    else begin
-   // 	 case ({C0RxMmioRdValid, C2TxMmioRdValid})
-   // 	   // MMIO Read request
-   // 	   2'b10   :
-   // 	     begin
-   // 		// c0rx_mmiord_tid <= C0RxCfg.tid;
-   // 		mmioread_cycle  <= 1;
-   // 	     end
-
-   // 	   // MMIO Read response
-   // 	   2'b01   :
-   // 	     begin
-   // 		// c2tx_mmiord_tid <= C2TxHdr.tid;
-   // 		mmioread_cycle  <= 0;
-   // 	     end
-
-   // 	   default :
-   // 	     begin
-   // 		mmioread_cycle <= mmioread_cycle;
-   // 	     end
-   // 	 endcase
-   //    end
-   // end
-
-   // Sample outgoing/incoming TID as current
-   // always @(posedge clk) begin
-   //    if (C0RxMmioRdValid) begin
-   // 	 c0rx_mmiord_tid <= C0RxCfg.tid;
-   //    end
-   //    if (C2TxMmioRdValid) begin
-   // 	 c2tx_mmiord_tid <= C2TxHdr.tid;
-   //    end
-   // end
-
-   // MMIO Cycle REG
-   // always @(posedge clk) begin
-   //    mmioread_cycle_q <= mmioread_cycle;
-   // end
-
-   // MMIO counter
-   // always @(posedge clk) begin : mmioread_timeout_ctr
-   //    if (SoftReset) begin
-   // 	 mmioread_timeout_cnt <= 0;
-   //    end
-   //    else if (mmioread_cycle) begin
-   // 	 mmioread_timeout_cnt <= mmioread_timeout_cnt + 1;
-   //    end
-   //    else begin
-   // 	 mmioread_timeout_cnt <= 0;
-   //    end
-   // end
-
-   // MMIO misbehaviour check
-   // always @(posedge clk) begin : mmio_timeout_simkill
-   //    if (mmioread_timeout_cnt >= `MMIO_RESPONSE_TIMEOUT) begin
-   // 	 print_message_and_log(0, "ASE timed out waiting for MMIO Read response to arrive !!");
-   // 	 print_message_and_log(0, "MMIO Read responses must return in 512 cycles");
-   // 	 print_and_simkill();
-   //    end
-   //    if (~mmioread_cycle && C2TxMmioRdValid) begin
-   //    	 print_message_and_log(0, "ASE detected an unsolicited MMIO Read response !!\n");
-   //    	 print_message_and_log(0, "In system, this can cause a crash");
-   //    	 print_and_simkill();
-   //    end
-   //    if (~mmioread_cycle && mmioread_cycle_q && (c0rx_mmiord_tid != c2tx_mmiord_tid)) begin
-   // 	 print_message_and_log(0, "ASE detected wrong TID returned on MMIO Read response !!\n");
-   // 	 print_message_and_log(0, "In system, this can cause a crash");
-   // 	 print_and_simkill();
-   //    end
-   // end
-
 
 
    /*
@@ -750,7 +672,7 @@ module ccip_sniffer
    longint rd_active_addr_array[*];
    longint wr_active_addr_array[*];
 
-   logic [41:0] c1tx_addr_mclbase;
+   // logic [41:0] c1tx_addr_mclbase;
 
    string  rd_addr_str;
    string  wr_addr_str;
@@ -758,6 +680,27 @@ module ccip_sniffer
    string  c0txaddr_str;
    string  c1txaddr_str;
 
+   string  waw_haz_str;
+   string  raw_haz_str;
+   string  war_haz_str;
+      
+   // ------------------------------------------- //
+   // Hazard check process
+   // ------------------------------------------- //
+   always @(posedge clk) begin
+      // ------------------------------------------- //
+      // Read/Write insert/delete
+      // ------------------------------------------- //
+      // Read in
+      if (haz_if.read_in.valid) begin
+	 
+      end
+      // Write in
+      // Read out
+      // Write out
+   end
+   
+   /*
    // Directory process
    always @(posedge clk) begin
       // Channel 0 valid transaction
@@ -772,7 +715,7 @@ module ccip_sniffer
 	    end
 	    else begin
 	       for (int ii = 0; ii < C0TxHdr.len; ii = ii + 1) begin
-		  rd_active_addr_array[C0TxHdr.addr] = C0TxHdr.addr + ii;
+		  rd_active_addr_array[C0TxHdr.addr ] = C0TxHdr.addr + ii;
 	       end
 	    end
 	 end
@@ -798,7 +741,7 @@ module ccip_sniffer
 	 end
       end // if (C1TxValid)
    end
-
+*/
 
    /*
     * Multiple outstandind MMIO Response tracking
