@@ -576,16 +576,15 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 		   m_pVTPService ){
 	        INFO("Service Allocated");
 	        allocateWorkspaces();
+	        Post();
 	     }
-   }
-   else{
+
+   }else{
 	   if( m_pFMEService && m_pNLBService){
 	   	  INFO("Service Allocated");
 	   	  allocateWorkspaces();
+	   	  Post();
 	   }
-   }
-   if( m_pFMEService && m_pNLBService){
-	  Post();
    }
 }
 
@@ -594,16 +593,10 @@ void CMyApp::allocateWorkspaces()
 	// Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
    //   In workspaceAllocated() callback we allocate the rest
 
+   m_DSMSize = NLB_DSM_SIZE;
    if( ali_errnumOK != bufferAllocate(NLB_DSM_SIZE, &m_DSMVirt)){
 	  m_bIsOK = false;
 	  return;
-   }
-   m_DSMSize = NLB_DSM_SIZE;
-   if (m_VTPActive) {
-	   m_DSMPhys = btPhysAddr(m_DSMVirt);
-   }
-   else {
-	   m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
    }
 
    m_InputSize = MAX_NLB_WKSPC_SIZE;
@@ -611,22 +604,21 @@ void CMyApp::allocateWorkspaces()
 	  m_bIsOK = false;
 	  return;
    }
-   if (m_VTPActive) {
-	   m_InputPhys = btPhysAddr(m_InputVirt);
-   }
-   else {
-	   m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
-   }
 
    m_OutputSize = MAX_NLB_WKSPC_SIZE;
    if( ali_errnumOK != bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_OutputVirt)){
 	  m_bIsOK = false;
 	  return;
    }
-   if (m_VTPActive) {
+
+   if (m_VTPActive) {	//FIXME: In case of VTP, PhysAddr member variables are actually pointing to VirtAddr.
+	   m_DSMPhys = btPhysAddr(m_DSMVirt);
+	   m_InputPhys = btPhysAddr(m_InputVirt);
 	   m_OutputPhys = btPhysAddr(m_OutputVirt);
-   }
-   else {
+
+   }else {
+	   m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
+	   m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
 	   m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
    }
 
@@ -634,7 +626,6 @@ void CMyApp::allocateWorkspaces()
    m_UMsgVirt = m_pALIuMSGService->umsgGetAddress(0);
 
    if(NULL == m_UMsgVirt){
-
 	  ERR("No uMSG support");
    }
 }
@@ -752,9 +743,6 @@ void CMyApp::StartVTP()
 
    // MPFs feature ID, used to find correct features in DFH list
    Manifest.Add(MPF_FEATURE_ID_KEY, static_cast<MPF_FEATURE_ID_DATATYPE>(1));
-
-   // MPF DFH address
-   Manifest.Add(MPF_VTP_DFH_OFFSET_KEY, static_cast<MPF_VTP_DFH_OFFSET_DATATYPE>(0x1000));
 
    // In the future, everything could be figured out by just giving the service name.
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "VTP");

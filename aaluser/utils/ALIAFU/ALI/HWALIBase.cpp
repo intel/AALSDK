@@ -540,14 +540,14 @@ void CHWALIBase::AFUEvent(AAL::IEvent const &theEvent)
 
    ASSERT(NULL != puidEvent);
 
-   std::cerr << "Got CHWALIBase AFU event BASE type " << puidEvent->MessageID() << "\n" << std::endl;
+   //std::cerr << "Got CHWALIBase AFU event BASE type " << puidEvent->MessageID() << "\n" << std::endl;
 
    switch(puidEvent->MessageID())
    {
 
    case rspid_AFU_PR_Revoke_Event:
    {
-      getRuntime()->schedDispatchable( new ServiceRevoke(dynamic_ptr<IServiceRevoke>(iidServiceRevoke,this)) );
+       getRuntime()->schedDispatchable( new ServiceRevoke(dynamic_ptr<IServiceRevoke>(iidServiceRevoke,dynamic_cast<ServiceBase *>(m_pServiceBase))) );
 
    }
    break;
