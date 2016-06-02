@@ -472,8 +472,7 @@ btInt ErrorMonApp::run(btBool bClear)
    NamedValueSet ConfigRecord;
    btInt         res = 0;
 
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
    ConfigRecord.Add(keyRegAFU_ID,CCIP_FME_AFUID);
 
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
