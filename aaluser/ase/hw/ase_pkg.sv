@@ -597,6 +597,53 @@ package ase_pkg;
       end
    endfunction
 
+   
+   /*
+    * Pretty print TXHdr & RxHdr
+    */
+   // Print channel
+   function string ase_channel_type (ccip_vc_t vc_sel);
+      begin
+	 case (vc_sel)
+	   VC_VA  : return "VA ";
+	   VC_VL0 : return "VL0";
+	   VC_VH0 : return "VH0";
+	   VC_VH1 : return "VH1";
+	 endcase
+      end
+   endfunction
+
+   // Print clnum
+   function string ase_print_clnum (ccip_len_t num);
+      begin
+	 case (num)
+	   ASE_1CL: return "#1CL";
+	   ASE_2CL: return "#2CL";
+	   ASE_3CL: return "#3CL";
+	   ASE_4CL: return "#4CL";
+	 endcase
+      end
+   endfunction
+
+   // TxHdr print
+   function automatic string return_txhdr(TxHdr_t hdr);
+      string 			  str;
+      begin
+	 $sformat(str, "{%s,%s,%x,%04x}", ase_print_clnum(hdr.len), ase_channel_type(hdr.vc), hdr.addr, hdr.mdata);
+	 return str;
+      end
+   endfunction
+   
+   // RxHdr print
+   function automatic string return_rxhdr(RxHdr_t hdr);
+      string str;
+      begin
+	 $sformat(str, "{%s,%s,%04x}", ase_print_clnum(hdr.clnum), ase_channel_type(hdr.vc_used), hdr.mdata);
+	 return str;
+      end
+   endfunction
+   
+   
    /*
     * Transaction count management
     */

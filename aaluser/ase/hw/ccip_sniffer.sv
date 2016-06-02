@@ -672,76 +672,76 @@ module ccip_sniffer
    longint rd_active_addr_array[*];
    longint wr_active_addr_array[*];
 
-   // logic [41:0] c1tx_addr_mclbase;
-
-   string  rd_addr_str;
-   string  wr_addr_str;
-
-   string  c0txaddr_str;
-   string  c1txaddr_str;
-
    string  waw_haz_str;
    string  raw_haz_str;
    string  war_haz_str;
+
+   logic   hazard_found;
       
    // ------------------------------------------- //
    // Hazard check process
+   // - Take in address, check if exists in 
    // ------------------------------------------- //
    always @(posedge clk) begin
       // ------------------------------------------- //
-      // Read/Write insert/delete
+      // Read in (unroll necessary) 
       // ------------------------------------------- //
-      // Read in
       if (haz_if.read_in.valid) begin
-	 
+	 for (int ii = 0; ii <= haz_if.read_in.hdr.len ; ii = ii + 1) begin
+	    rd_active_addr_array[ haz_if.read_in.hdr.addr + ii ] = haz_if.read_in.hdr.addr + ii;
+	    // Check for outstanding write request
+	    if (wr_active_addr_array.exists(haz_if.read_in.hdr.addr + ii)) begin
+	       $sformat(war_haz_str, 
+			"%d | Potential for Write-after-Read hazard with potential for C0TxHdr=%s arriving earlier than write to same address\n", 
+			$time, 
+			return_txhdr(haz_if.read_in.hdr));
+	       print_message_and_log(1, war_haz_str);
+	    end
+	 end
       end
+      // ------------------------------------------- //
       // Write in
-      // Read out
-      // Write out
+      // ------------------------------------------- //
+      if (haz_if.write_in.valid) begin
+	 // Check for outstanding read
+	 if (rd_active_addr_array.exists(haz_if.write_in.hdr.addr)) begin
+	    $sformat(raw_haz_str, 
+		     "%d | Potential for Read-after-Write hazard with potential for C1TxHdr=%s arriving earlier than write to same address\n", 
+		     $time, 
+		     return_txhdr(haz_if.write_in.hdr));
+	    print_message_and_log(1, raw_haz_str);	    
+	 end
+	 // Check for outstanding write
+	 else if (wr_active_addr_array.exists(haz_if.write_in.hdr.addr)) begin
+	    $sformat(waw_haz_str, 
+		     "%d | Potential for Write-after-Write hazard with potential for C1TxHdr=%s arriving earlier than write to same address\n", 
+		     $time, 
+		     return_txhdr(haz_if.write_in.hdr));
+	    print_message_and_log(1, waw_haz_str);	    
+	 end
+	 // If not, store
+	 else begin
+	    wr_active_addr_array[haz_if.write_in.hdr.addr] = haz_if.write_in.hdr.addr;	    
+	 end
+      end      
+      // ------------------------------------------- //
+      // Read out (delete from active list)
+      // ------------------------------------------- //
+      if (haz_if.read_out.valid) begin
+	 if (rd_active_addr_array.exists( haz_if.read_out.hdr.addr )) begin
+	    rd_active_addr_array.delete( haz_if.read_out.hdr.addr );	    
+	 end
+      end      
+      // ------------------------------------------- //
+      // Write out (delete from active list)
+      // ------------------------------------------- //
+      if (haz_if.write_out.valid) begin
+	 if (wr_active_addr_array.exists( haz_if.write_out.hdr.addr )) begin
+	    wr_active_addr_array.delete( haz_if.write_out.hdr.addr );	    
+	 end
+      end
    end
    
-   /*
-   // Directory process
-   always @(posedge clk) begin
-      // Channel 0 valid transaction
-      if (C0TxValid) begin
-	 // If Valid read request
-	 if ((C0TxHdr.reqtype == ASE_RDLINE_I)||(C0TxHdr.reqtype == ASE_RDLINE_S)) begin
-	    // If transaction address exists in active list
-	    if  ( wr_active_addr_array.exists(C0TxHdr.addr) ) begin
-	       c0txaddr_str.hextoa(C0TxHdr.addr);
-	       rd_addr_str = {"A request to CL Address ", c0txaddr_str, " is already in flight, potential for Read-after-Write data hazard !"};
-	       print_message_and_log(1, rd_addr_str);
-	    end
-	    else begin
-	       for (int ii = 0; ii < C0TxHdr.len; ii = ii + 1) begin
-		  rd_active_addr_array[C0TxHdr.addr ] = C0TxHdr.addr + ii;
-	       end
-	    end
-	 end
-      end
-      // Channel 1 valid transaction
-      if (C1TxValid) begin
-	 // If valid write request
-	 if ((C1TxHdr.reqtype == ASE_WRLINE_I)||(C1TxHdr.reqtype == ASE_WRLINE_M)) begin
-	    // If transaction address exists in active list
-	    if  ( rd_active_addr_array.exists(C1TxHdr.addr) ) begin
-	       c1txaddr_str.hextoa(C1TxHdr.addr);
-	       wr_addr_str = {"A request to Address ", c1txaddr_str, " is already in flight, potential for Write-after-Read data hazard"};
-	       print_message_and_log(1, wr_addr_str);
-	    end
-	    else if (wr_active_addr_array.exists(C1TxHdr.addr) ) begin
-	       c1txaddr_str.hextoa(C1TxHdr.addr);
-	       wr_addr_str = {"A request to Address ", c1txaddr_str, " is already in flight, potential for Write-after-Write data hazard"};
-	       print_message_and_log(1, wr_addr_str);
-	    end
-	    else begin
-	       wr_active_addr_array[C1TxHdr.addr] = C1TxHdr.addr;
-	    end
-	 end
-      end // if (C1TxValid)
-   end
-*/
 
    /*
     * Multiple outstandind MMIO Response tracking
