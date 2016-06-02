@@ -877,13 +877,12 @@ btVirtAddr HWALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
       else
       {
      	  m_uMSGsize = wsevt.wsParms.size;
-		  m_uMSGmap = wsevt.wsParms.ptr;
+          m_uMSGmap = wsevt.wsParms.ptr;
+          // store entire aalui_WSParms struct in map
+          //  to enable bufferGetIOVA()
+          m_mapWkSpc[wsevt.wsParms.ptr] = wsevt.wsParms;
       }
    }
-
-   // store entire aalui_WSParms struct in map
-   //  to keep track of physical address
-   m_mapWkSpc[wsevt.wsParms.ptr] = wsevt.wsParms;
 
    // Umsgs are separated by 1 Page + 1 CL
    // Malicious call could overflow and cause wrap to invalid address.
