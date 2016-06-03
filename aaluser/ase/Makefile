@@ -490,7 +490,7 @@ clean: header
 	rm -rf profile* simprofile* scanbuild/ DVEfiles/ csrc/
 	rm -rf .ase_* *.o ase_seed.txt warnings.txt
 	rm -rf transcript *.log .ase_ipc_local ase_seed.txt
-	rm -rf vsim.wlf *_smq
+	rm -rf vsim.wlf *_smq __hdl_xmr.tab
 
 distclean: header clean
 	./distclean.sh
