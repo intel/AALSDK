@@ -734,7 +734,7 @@ struct CCIP_FME_DFL_FPMON {
 };
 CASSERT(sizeof(struct CCIP_FME_DFL_FPMON) == (7*8));
 
-struct CCIP_FME_ERROR {
+struct CCIP_FME_ERROR0 {
 
    union {
       btUnsigned64bitInt csr;
@@ -744,7 +744,58 @@ struct CCIP_FME_ERROR {
    }; // end union
 
 }; // end struct CCIP_FME_ERROR
-CASSERT(sizeof(struct CCIP_FME_ERROR) == (1 *8));
+CASSERT(sizeof(struct CCIP_FME_ERROR0) == (1 *8));
+
+
+struct CCIP_FME_ERROR1 {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt rsvd :64;  // TBD
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_ERROR
+CASSERT(sizeof(struct CCIP_FME_ERROR1) == (1 *8));
+
+
+struct CCIP_FME_ERROR2 {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt rsvd :64;  // TBD
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_ERROR
+CASSERT(sizeof(struct CCIP_FME_ERROR2) == (1 *8));
+
+struct CCIP_FME_FIRST_ERROR {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt rsvd :64;  // TBD
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_ERROR
+CASSERT(sizeof(struct CCIP_FME_FIRST_ERROR) == (1 *8));
+
+struct CCIP_FME_NEXT_ERROR {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt rsvd :64;  // TBD
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_ERROR
+CASSERT(sizeof(struct CCIP_FME_NEXT_ERROR) == (1 *8));
+
 
 ///============================================================================
 /// Name: CCIP_FME_DFL_GERROR
@@ -758,19 +809,32 @@ struct CCIP_FME_DFL_GERROR {
    // FME Global Error header
    struct CCIP_DFH ccip_gerror_dflhdr;
 
-   //FME  Error mask  CSR
-   struct CCIP_FME_ERROR ccip_fme_error_mask;
+   //FME  Error mask0  CSR
+   struct CCIP_FME_ERROR0 ccip_fme_error_mask0;
 
+   // FME error0 CSR
+   struct CCIP_FME_ERROR0  ccip_fme_error0;
 
-   // FME error CSR
-   struct CCIP_FME_ERROR  ccip_fme_error;
+   //FME  Error mask1  CSR
+   struct CCIP_FME_ERROR1 ccip_fme_error_mask1;
 
+   // FME error1 CSR
+   struct CCIP_FME_ERROR1  ccip_fme_error1;
+
+   //FME  Error mask2  CSR
+   struct CCIP_FME_ERROR2 ccip_fme_error_mask2;
+
+   // FME error2 CSR
+   struct CCIP_FME_ERROR2  ccip_fme_error2;
 
    // FME first error CSR
-   struct CCIP_FME_ERROR ccip_fme_first_error;
+   struct CCIP_FME_FIRST_ERROR ccip_fme_first_error;
+
+   // FME next error CSR
+   struct CCIP_FME_NEXT_ERROR ccip_fme_next_error;
 
 }; //end CCIP_FME_GERROR_feature
-CASSERT(sizeof(struct CCIP_FME_DFL_GERROR) ==(4* 8));
+CASSERT(sizeof(struct CCIP_FME_DFL_GERROR) ==(9* 8));
 
 ///============================================================================
 /// Name: CCIP_FME_DFL_PR
