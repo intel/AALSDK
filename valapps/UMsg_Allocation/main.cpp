@@ -63,7 +63,7 @@ public:
 
    btInt VerifyUmsgWrites();    ///< Return 0 if success
 
-   void  VerifyUmsgAddress();
+   btInt  VerifyUmsgAddress();  ///< Return 0 if success
 
    void ReadPerfMonitors();
 
@@ -417,8 +417,6 @@ btInt UMsg_Client::run()
 
    if(true == m_bIsOK){
 
-      //   Verify that setting the hint bit in Umsgs turn on hint for that Umsg.
-
       if ( 0 == setUmsgHint())
       {
          MSG("Setting UMsg Hint was successful");
@@ -435,8 +433,10 @@ btInt UMsg_Client::run()
       {
          MSG("UMsg Writes outside of the defined CL but within the 4KiB block doesn't SegFault");
       }
-
-      VerifyUmsgAddress();
+      if ( 0 ==VerifyUmsgAddress())
+      {
+         MSG("Address available for UMsg writing correspond to the correct hardware-defined address");
+      }
    }
 
    cout << endl;
@@ -564,7 +564,7 @@ btInt UMsg_Client :: VerifyUmsgWrites()
    return 0;
 }
 
-void UMsg_Client :: VerifyUmsgAddress()
+btInt UMsg_Client :: VerifyUmsgAddress()
 {
    //   Verify that the address available for UMsg writing correspond to the
    //   correct hardware-defined addresses,
@@ -572,13 +572,23 @@ void UMsg_Client :: VerifyUmsgAddress()
    m_UMsgVirt = m_pALIuMSGService->umsgGetAddress(0);
    if(NULL == m_UMsgVirt){
      ERR("No uMSG support");
-     return;
+     return 1;
    }
+
+   //Get the physical address of the UMAS
    m_UMsgPhys = m_pALIBufferService->bufferGetIOVA(m_UMsgVirt);
 
-   printf ("Virtual address of the UMsg Workspace : 0x%lx\n", m_UMsgVirt);
-   printf ("Physical address of the UMsg Workspace: 0x%lx\n", m_UMsgPhys);
+   btUnsigned64bitInt umsg_baseAddr;
+   //Get the Umsg base address from the port region.
+   m_pALIMMIOService->mmioRead64(0x2010, &umsg_baseAddr);
 
+   //verify if both point to the same physical address in memory
+   if(umsg_baseAddr != m_UMsgPhys)
+   {
+      return 1;
+   }
+
+   return 0;
 }
 
 void UMsg_Client :: ReadPerfMonitors()
