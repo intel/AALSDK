@@ -77,21 +77,18 @@ public :
 
    // <IALIError>
    virtual btBool errorGet( INamedValueSet &rResult );
-   virtual btBool errorGet( btUnsigned64bitInt &error );
 
-   virtual btBool errorGetFirst( INamedValueSet &rResult );
-   virtual btBool errorGetFirst( btUnsigned64bitInt &stError );
+   virtual btBool errorGetOrder( INamedValueSet &rResult );
 
    virtual btBool errorGetMask( INamedValueSet &rResult ) ;
-   virtual btBool errorGetMask( btUnsigned64bitInt &errorMask );
 
    virtual btBool errorSetMask( const INamedValueSet &rInputArgs) ;
-   virtual btBool errorSetMask(const btUnsigned64bitInt errorMask);
 
    virtual btBool errorClear( const INamedValueSet &rInputArgs);
-   virtual btBool errorClear( const btUnsigned64bitInt error);
 
    virtual btBool errorClearAll() ;
+
+   virtual btBool printAllErrors() ;
    // </IALIError>
 
    // <IALITemperature>
@@ -104,6 +101,8 @@ public :
 
    // AFU Event Handler
    virtual void AFUEvent(AAL::IEvent const &theEvent);
+
+   void pirntFMEErrors(struct CCIP_ERROR *pError);
 };
 
 /// @}

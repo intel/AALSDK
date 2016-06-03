@@ -120,13 +120,18 @@ btBool CHWALIFME::performanceCountersGet ( INamedValueSet*  const  pResult,
    return true;
 }
 
+
 //
 // errorGet. Returns the FME Errors
 //
-btBool CHWALIFME::errorGet( btUnsigned64bitInt &error)
+btBool CHWALIFME::errorGet( INamedValueSet &rResult )
 {
+
    struct CCIP_ERROR *pError                = NULL;
-   struct CCIP_FME_ERROR  fme_error         = {0};
+   struct CCIP_FME_ERROR0  fme_error0         = {0};
+   struct CCIP_FME_ERROR1  fme_error1         = {0};
+   struct CCIP_FME_ERROR2  fme_error2         = {0};
+
    btWSSize size                            = sizeof(struct CCIP_ERROR);
 
    // Create the Transaction
@@ -148,35 +153,23 @@ btBool CHWALIFME::errorGet( btUnsigned64bitInt &error)
    }
 
    pError = (struct  CCIP_ERROR *)transaction.getBuffer();
-   error = pError->error;
+   fme_error0.csr = pError->error0;
+   fme_error1.csr = pError->error1;
+   fme_error2.csr = pError->error2;
 
-   return true;
-}
-//
-// errorGet. Returns the FME Errors
-//
-btBool CHWALIFME::errorGet( INamedValueSet &rResult )
-{
-   btUnsigned64bitInt error                 = 0;
-   struct CCIP_FME_ERROR  fme_error         = {0};
-
-   if(false == errorGet(error)) {
-      return false;
-   }
-
-   // FIXME FME Error are not defined in SAS.
-   fme_error.csr = error;
    return true;
 
 }
+
 
 //
 // errorGetFirst. Returns the FME First Errors
 //
-btBool CHWALIFME::errorGetFirst( btUnsigned64bitInt &firstError )
+btBool CHWALIFME::errorGetOrder( INamedValueSet &rResult )
 {
-   struct CCIP_ERROR *pError                = NULL;
-   struct CCIP_FME_ERROR fme_error          = {0};
+   struct CCIP_ERROR *pError                   = NULL;
+   struct CCIP_FME_FIRST_ERROR fme_first_error = {0};
+   struct CCIP_FME_NEXT_ERROR  fme_next_error  = {0};
    btWSSize size                            = sizeof(struct CCIP_ERROR);
 
    // Create the Transaction
@@ -198,87 +191,26 @@ btBool CHWALIFME::errorGetFirst( btUnsigned64bitInt &firstError )
    }
 
    pError = (struct  CCIP_ERROR *)transaction.getBuffer();
-   firstError = pError->first_error;
+   fme_first_error.csr = pError->first_error;
+   fme_next_error.csr = pError->next_error;
 
+
+    return true;
 }
 
-//
-// errorGetFirst. Returns the FME First Errors
-//
-btBool CHWALIFME::errorGetFirst( INamedValueSet &rResult )
-{
-   btUnsigned64bitInt errorFirstMask            = 0;
-   struct CCIP_FME_ERROR  fme_first_error       = {0};
-
-   if(false == errorGetFirst(errorFirstMask)) {
-      return false;
-   }
-
-   // FIXME FME Error are not defined in SAS.
-   fme_first_error.csr = errorFirstMask;
-
-   return true;
-}
-
-//
-// errorGetMask. Returns the FME  Errors Masks.
-//
- btBool CHWALIFME::errorGetMask( btUnsigned64bitInt &errorMask )
-{
-   struct CCIP_ERROR *pError                = NULL;
-   struct CCIP_FME_ERROR  fme_error         = {0};
-
-   // Create the Transaction
-   ErrorGet transaction(sizeof( struct CCIP_ERROR),ccipdrv_getFMEError);
-
-   // Should never fail
-   if ( !transaction.IsOK() ) {
-    return  false;
-   }
-
-   // Send transaction
-   m_pAFUProxy->SendTransaction(&transaction);
-   if(transaction.getErrno() != uid_errnumOK) {
-    return false;
-   }
-
-   if(NULL == transaction.getBuffer() )  {
-    return false;
-   }
-
-   pError = (struct  CCIP_ERROR *)transaction.getBuffer();
-   errorMask = pError->error_mask;
-
-   return true;
-}
 
 //
 // errorGetMask. Returns the FME  Errors Masks.
 //
 btBool CHWALIFME::errorGetMask( INamedValueSet &rResult )
 {
-   btUnsigned64bitInt errorMask                 = 0;
-   struct CCIP_FME_ERROR  fme_error_mask        = {0};
-
-   if(false == errorGetMask(errorMask)) {
-      return false;
-   }
-
-   // FIXME FME Error are not defined in SAS.
-   fme_error_mask.csr = errorMask;
-
-   return true;
-}
-
-//
-// errorSetMask, Sets FME Error mask
-//
-btBool CHWALIFME::errorSetMask(const btUnsigned64bitInt errorMask)
-{
-   struct CCIP_FME_ERROR  fme_errmsk = {0};;
+   struct CCIP_ERROR *pError                      = NULL;
+   struct CCIP_FME_ERROR0  fme_error0_mask         = {0};
+   struct CCIP_FME_ERROR1  fme_error1_mask         = {0};
+   struct CCIP_FME_ERROR2  fme_error2_mask         = {0};
 
    // Create the Transaction
-   SetError transaction(ccipdrv_SetFMEErrorMask,errorMask);
+   ErrorGet transaction(sizeof( struct CCIP_ERROR),ccipdrv_getFMEError);
 
    // Should never fail
    if ( !transaction.IsOK() ) {
@@ -291,33 +223,32 @@ btBool CHWALIFME::errorSetMask(const btUnsigned64bitInt errorMask)
       return false;
    }
 
+   if(NULL == transaction.getBuffer() )  {
+      return false;
+   }
+
+   pError = (struct  CCIP_ERROR *)transaction.getBuffer();
+   fme_error0_mask.csr = pError->error0_mask;
+   fme_error1_mask.csr = pError->error1_mask;
+   fme_error2_mask.csr = pError->error2_mask;
+
    return true;
 }
+
 
 //
 // errorSetMask, Sets FME Error mask
 //
 btBool CHWALIFME::errorSetMask( const INamedValueSet &rInputArgs )
 {
-   btUnsigned64bitInt errorMask            = 0;
-   struct CCIP_FME_ERROR  fme_error_mask   = {0};
+   struct CCIP_ERROR ccip_error      = {0};
 
-   if(false == errorSetMask(errorMask)) {
-      return false;
-   }
+   struct CCIP_FME_ERROR0  fme_error0_mask         = {0};
+   struct CCIP_FME_ERROR1  fme_error1_mask         = {0};
+   struct CCIP_FME_ERROR2  fme_error2_mask         = {0};
 
-   // FIXME FME Error are not defined in SAS.
-
-   return true;
-}
-
-//
-// errorClear, Clears Errors
-//
-btBool CHWALIFME::errorClear( const btUnsigned64bitInt error)
-{
    // Create the Transaction
-   SetError transaction(ccipdrv_ClearFMEError,error);
+   SetError transaction(ccipdrv_SetFMEErrorMask,ccip_error);
 
    // Should never fail
    if ( !transaction.IsOK() ) {
@@ -333,19 +264,34 @@ btBool CHWALIFME::errorClear( const btUnsigned64bitInt error)
    return true;
 }
 
+
 //
 // errorClear, Clears Errors
 //
 btBool CHWALIFME::errorClear(const INamedValueSet &rInputArgs )
 {
-   btUnsigned64bitInt error                 = 0;
-   struct CCIP_FME_ERROR  fme_error         = {0};
+   struct CCIP_ERROR ccip_error  = {0};
 
-   if(false == errorClear(error)) {
+   struct CCIP_FME_ERROR0  fme_error0         = {0};
+   struct CCIP_FME_ERROR1  fme_error1         = {0};
+   struct CCIP_FME_ERROR2  fme_error2         = {0};
+
+
+   // Create the Transaction
+   SetError transaction(ccipdrv_ClearFMEError,ccip_error);
+
+   // Should never fail
+   if ( !transaction.IsOK() ) {
+      return  false;
+   }
+
+   // Send transaction
+   m_pAFUProxy->SendTransaction(&transaction);
+   if(transaction.getErrno() != uid_errnumOK) {
       return false;
    }
 
-   // FIXME FME Error are not defined in SAS.
+
    return true;
 }
 
@@ -354,8 +300,10 @@ btBool CHWALIFME::errorClear(const INamedValueSet &rInputArgs )
 //
 btBool CHWALIFME::errorClearAll()
 {
+   struct CCIP_ERROR ccip_error  = {0};
+
    // Create the Transaction
-   SetError transaction(ccipdrv_ClearAllFMEErrors,0x0);
+   SetError transaction(ccipdrv_ClearAllFMEErrors,ccip_error);
 
    // Should never fail
    if ( !transaction.IsOK() ) {
@@ -367,8 +315,138 @@ btBool CHWALIFME::errorClearAll()
    if(transaction.getErrno() != uid_errnumOK) {
     return false;
    }
+   return true;
+}
+btBool CHWALIFME::printAllErrors()
+{
+   struct CCIP_ERROR *pError  = NULL;
+   btWSSize size              = sizeof(struct CCIP_ERROR);
+
+   // Create the Transaction
+   ErrorGet transaction(size,ccipdrv_getPortError);
+
+   // Should never fail
+   if ( !transaction.IsOK() ) {
+      return  false;
+   }
+
+   // Send transaction
+   m_pAFUProxy->SendTransaction(&transaction);
+   if(transaction.getErrno() != uid_errnumOK) {
+      return false;
+   }
+
+   if(NULL == transaction.getBuffer() )  {
+      return false;
+   }
+
+   pError = (struct  CCIP_ERROR *)transaction.getBuffer();
 
    return true;
+}
+
+void CHWALIFME::pirntFMEErrors(struct CCIP_ERROR *pError)
+{
+   btUnsignedInt count                             = 0;
+   struct CCIP_FME_ERROR0  fme_error0             = {0};
+   struct CCIP_FME_ERROR1  fme_error1             = {0};
+   struct CCIP_FME_ERROR2  fme_error2             = {0};
+   struct CCIP_FME_FIRST_ERROR  fme_first_error   = {0};
+   struct CCIP_FME_NEXT_ERROR  fme_next_error     = {0};
+   NamedValueSet fmeErrornvs;
+
+   // FME Error0
+   fmeErrornvs.Empty();
+   fme_error0.csr =  pError->error0;
+   fmeErrornvs.GetNumNames(&count);
+
+   for(int i=0;i<count ;i++) {
+
+      btStringKey type;
+      fmeErrornvs.GetName(i,&type);
+      std::cout << " FME Error: " << type <<"  Set"<< std::endl;
+   }
+
+   // FME Error0 Mask
+   fmeErrornvs.Empty();
+   fme_error0.csr =  pError->error0_mask;
+   fmeErrornvs.GetNumNames(&count);
+
+   for(int i=0;i<count ;i++) {
+
+      btStringKey type;
+      fmeErrornvs.GetName(i,&type);
+      std::cout << " FME Error Mask: " << type <<"  Set"<< std::endl;
+   }
+
+   // FME Error1
+   fmeErrornvs.Empty();
+   fme_error1.csr =  pError->error1;
+   fmeErrornvs.GetNumNames(&count);
+
+   for(int i=0;i<count ;i++) {
+      btStringKey type;
+      fmeErrornvs.GetName(i,&type);
+      std::cout << " FME Error: " << type <<"  Set"<< std::endl;
+   }
+
+   // FME Error1 Mask
+   fmeErrornvs.Empty();
+   fme_error1.csr =  pError->error1_mask;
+   fmeErrornvs.GetNumNames(&count);
+
+   for(int i=0;i<count ;i++) {
+
+      btStringKey type;
+      fmeErrornvs.GetName(i,&type);
+      std::cout << " FME Error Mask: " << type <<"  Set"<< std::endl;
+   }
+
+   // FME Error2
+   fmeErrornvs.Empty();
+   fme_error2.csr =  pError->error2;
+   fmeErrornvs.GetNumNames(&count);
+
+   for(int i=0;i<count ;i++) {
+      btStringKey type;
+      fmeErrornvs.GetName(i,&type);
+      std::cout << " FME Error: " << type <<"  Set"<< std::endl;
+   }
+
+   // FME Error2 Mask
+   fmeErrornvs.Empty();
+   fme_error2.csr =  pError->error2_mask;
+   fmeErrornvs.GetNumNames(&count);
+
+   for(int i=0;i<count ;i++) {
+      btStringKey type;
+      fmeErrornvs.GetName(i,&type);
+      std::cout << " FME Error Mask: " << type <<"  Set"<< std::endl;
+   }
+
+   // FME First Error
+   fmeErrornvs.Empty();
+   fme_first_error.csr =  pError->first_error;
+   fmeErrornvs.GetNumNames(&count);
+
+   for(int i=0;i<count ;i++) {
+
+      btStringKey type;
+      fmeErrornvs.GetName(i,&type);
+      std::cout << " FME First Error: " << type <<"  Set"<< std::endl;
+   }
+
+   // FME Next Error
+   fmeErrornvs.Empty();
+   fme_next_error.csr =  pError->next_error;
+   fmeErrornvs.GetNumNames(&count);
+
+   for(int i=0;i<count ;i++) {
+      btStringKey type;
+      fmeErrornvs.GetName(i,&type);
+      std::cout << " FME Next Error: " << type <<"  Set"<< std::endl;
+   }
+
 }
 
 //

@@ -517,7 +517,7 @@ private:
 class UAIA_API SetError : public IAIATransaction
 {
 public:
-   SetError(AAL::btUnsigned64bitInt cmd,AAL::btUnsigned64bitInt error);
+   SetError(AAL::btUnsigned64bitInt cmd,AAL::CCIP_ERROR ccip_error );
    AAL::btBool                IsOK() const;
 
    AAL::btVirtAddr                getPayloadPtr() const;

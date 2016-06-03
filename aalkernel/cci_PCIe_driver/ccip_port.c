@@ -459,11 +459,11 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
           }
 
           PVERBOSE("ccipdrv_portClearError CSR:%llX \n",ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr);
-          PVERBOSE("ccipdrv_portClearError CSR:%llX \n",preq->ahmreq.u.error_csr.error);
+          PVERBOSE("ccipdrv_portClearError CSR:%llX \n",preq->ahmreq.u.error_csr.error0);
 
           // Clear port error and First error
-          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr = preq->ahmreq.u.error_csr.error;
-          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_first_error.csr =preq->ahmreq.u.error_csr.error;
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr = preq->ahmreq.u.error_csr.error0;
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_first_error.csr =preq->ahmreq.u.error_csr.error0;
 
           // Success Event
           Message->m_errcode = uid_errnumOK;
@@ -481,9 +481,9 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
            }
 
            PVERBOSE("ccipdrv_portClearError CSR:%llX \n",cci_aaldev_pport(pdev)->m_pport_err->ccip_port_error_mask.csr);
-           PVERBOSE("ccipdrv_portClearError CSR:%llX \n",preq->ahmreq.u.error_csr.error);
+           PVERBOSE("ccipdrv_portClearError CSR:%llX \n",preq->ahmreq.u.error_csr.error0);
 
-           ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error_mask.csr =preq->ahmreq.u.error_csr.error;
+           ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error_mask.csr =preq->ahmreq.u.error_csr.error0;
 
            // Success Event
            Message->m_errcode = uid_errnumOK;
@@ -886,12 +886,12 @@ bt32bitInt get_port_error(struct port_device* pport_dev,
 
    memset(pport_error,0,sizeof(struct CCIP_ERROR));
 
-   pport_error->error_mask    = ccip_port_err(pport_dev)->ccip_port_error_mask.csr;
-   pport_error->error         = ccip_port_err(pport_dev)->ccip_port_error.csr;
-   pport_error->first_error   = ccip_port_err(pport_dev)->ccip_port_first_error.csr;
+   pport_error->error0_mask    = ccip_port_err(pport_dev)->ccip_port_error_mask.csr;
+   pport_error->error0         = ccip_port_err(pport_dev)->ccip_port_error.csr;
+   pport_error->first_error    = ccip_port_err(pport_dev)->ccip_port_first_error.csr;
 
-   pport_error->malreq0   = ccip_port_err(pport_dev)->ccip_port_malformed_req_0.csr;
-   pport_error->malreq1   = ccip_port_err(pport_dev)->ccip_port_malformed_req_1.csr;
+   pport_error->malreq0        = ccip_port_err(pport_dev)->ccip_port_malformed_req_0.csr;
+   pport_error->malreq1        = ccip_port_err(pport_dev)->ccip_port_malformed_req_1.csr;
 
    PTRACEOUT_INT(res);
    return res;

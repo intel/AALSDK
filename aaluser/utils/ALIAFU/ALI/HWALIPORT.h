@@ -69,26 +69,25 @@ public :
 
    // <IALIPortError>
    virtual btBool errorGet( INamedValueSet &rResult );
-   virtual btBool errorGet( btUnsigned64bitInt &error );
 
-   virtual btBool errorGetFirst( INamedValueSet &rResult );
-   virtual btBool errorGetFirst( btUnsigned64bitInt &firstError );
+   virtual btBool errorGetOrder( INamedValueSet &rResult );
 
    virtual btBool errorGetMask( INamedValueSet &rResult );
-   virtual btBool errorGetMask( btUnsigned64bitInt &errorMask );
 
    virtual btBool errorSetMask(const INamedValueSet &rInputArgs);
-   virtual btBool errorSetMask(const btUnsigned64bitInt errorMask);
 
    virtual btBool errorClear(const INamedValueSet &rInputArgs) ;
-   virtual btBool errorClear(const btUnsigned64bitInt error);
 
-   virtual btBool errorClearAll() ;
+   virtual btBool errorClearAll();
+
    virtual btBool errorGetPortMalformedReq( INamedValueSet &rResult );
+
+   virtual btBool printAllErrors() ;
    // </IALIPortError>
 
    void readPortError( struct CCIP_PORT_ERROR port_error, INamedValueSet &rResult );
-   void writePortError(struct CCIP_PORT_ERROR *pPort_Error,const INamedValueSet &rInputArgs);
+   void writePortError( struct CCIP_PORT_ERROR *pPort_Error,const INamedValueSet &rInputArgs);
+   void pirntPortErrors(struct CCIP_ERROR *pError);
 
    // AFU Event Handler
    virtual void AFUEvent(AAL::IEvent const &theEvent);
