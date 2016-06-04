@@ -538,3 +538,28 @@ int ase_read_lock_file(const char *workdir)
   // Return PID of Simulator instance
   return readback_pid;
 }
+
+
+/*
+ * Pretty print function - print_mmiopkt
+ */
+void print_mmiopkt(FILE *fp, char *activity, struct mmio_t *pkt)
+{
+  FUNC_CALL_ENTRY; 
+
+  char mmio_action_type[20];
+  memset(mmio_action_type, 0, 20);
+  
+  sprintf(mmio_action_type, 
+	  "MMIO-%s-%d-%s", 
+	  (pkt->write_en == MMIO_WRITE_REQ ? "Write" : "Read"),
+	  pkt->width,
+	  (pkt->resp_en == 0 ? "Req " : "Resp") ); 
+  
+  fprintf(fp, "%s\t%d\t%s\t%x\t%llx\n", activity, 
+	  pkt->tid, mmio_action_type, pkt->addr, pkt->qword[0]);
+
+  FUNC_CALL_EXIT;
+}
+
+

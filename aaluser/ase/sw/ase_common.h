@@ -70,6 +70,9 @@
 #define APP_SIDE
 #endif
 
+// ASE Debug switch
+// #define ASE_DEBUG
+
 /*
  * ASE Unique ID Check
  */

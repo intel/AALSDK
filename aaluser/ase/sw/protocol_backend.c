@@ -247,6 +247,10 @@ void mmio_response (struct mmio_t *mmio_pkt)
 
   // Lock channel
   pthread_mutex_lock (&mmio_resp_lock);
+  
+#ifdef ASE_DEBUG
+  print_mmiopkt(fp_memaccess_log, "MMIO Got ", mmio_pkt);
+#endif
 
   // Send MMIO Response
   mqueue_send(sim2app_mmiorsp_tx, (char*)mmio_pkt, sizeof(mmio_t));
@@ -631,6 +635,9 @@ int ase_listener()
       // Receive csr_write packet
       if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_pkt, sizeof(mmio_t) )==ASE_MSG_PRESENT)
 	{
+#ifdef ASE_DEBUG
+	  print_mmiopkt(fp_memaccess_log, "MMIO Sent", mmio_pkt);
+#endif
 	  mmio_dispatch (0, mmio_pkt);
 	}
 

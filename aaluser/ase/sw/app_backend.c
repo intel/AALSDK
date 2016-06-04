@@ -82,6 +82,7 @@ char *tstamp_string;
 
 #ifdef ASE_DEBUG
 FILE *fp_pagetable_log = (FILE *)NULL;
+FILE *fp_mmioaccess_log = (FILE *)NULL;
 #endif
 
 
@@ -105,12 +106,7 @@ volatile int mmio_rsp_pkt_accepted;
  * UMsg listener/packet
  */
 // UMsg Watch TID
-// #ifdef MT_UMSG_POLL
-#if 0
-pthread_t umsg_watch_tid[NUM_UMSG_PER_AFU];
-#else
 pthread_t umsg_watch_tid;
-#endif
 
 // UMsg port lock
 pthread_mutex_t umsg_port_lock;
@@ -202,6 +198,8 @@ void *mmio_response_watcher()
       if (ret == ASE_MSG_PRESENT) 
 	{
         #ifdef ASE_DEBUG
+	  // Logging event
+	  print_mmiopkt(fp_mmioaccess_log, "Got ", mmio_rsp_pkt);
 	  if (mmio_rsp_pkt->write_en == MMIO_WRITE_REQ)
 	    {
 	      strncpy(mmio_type, "WR\0", 3);
@@ -412,6 +410,7 @@ void session_init()
 
   // Page table tracker (optional logger)
 #ifdef ASE_DEBUG
+  // Create debug log of page table
   fp_pagetable_log = fopen("app_pagetable.log", "w");
   if (fp_pagetable_log == NULL)
     {
@@ -425,6 +424,20 @@ void session_init()
       printf("  [APP]  APP pagetable logger initialized\n");
       END_YELLOW_FONTCOLOR;
     }
+  // Debug log of MMIO
+  fp_mmioaccess_log = fopen("app_mmioaccess.log", "w");
+  if (fp_mmioaccess_log == NULL) 
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("  [APP]  APP MMIO access logger initialization failed !\n");
+      END_RED_FONTCOLOR;
+    }
+  else
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  APP MMIO access logger initialized\n");
+      END_YELLOW_FONTCOLOR;
+    }     
 #endif
   BEGIN_YELLOW_FONTCOLOR;
 
@@ -508,25 +521,25 @@ void session_init()
   END_YELLOW_FONTCOLOR;
 
   // #ifdef MT_UMSG_POLL
-#if 0
- int cl_index;
-  for(cl_index = 0; cl_index < NUM_UMSG_PER_AFU; cl_index++)
-    {
-      thr_err = pthread_create (&umsg_watch_tid[cl_index], NULL, &umsg_watcher, (void*) &cl_index);
-      if (thr_err != 0)
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("FAILED\n");
-	  perror("pthread_create");
-	  exit(1);
-	  END_RED_FONTCOLOR;
-	}
-      else
-	{
-	  printf("SUCCESS\n");
-	}      
-    }
-#else
+/* #if 0 */
+/*  int cl_index; */
+/*   for(cl_index = 0; cl_index < NUM_UMSG_PER_AFU; cl_index++) */
+/*     { */
+/*       thr_err = pthread_create (&umsg_watch_tid[cl_index], NULL, &umsg_watcher, (void*) &cl_index); */
+/*       if (thr_err != 0) */
+/* 	{ */
+/* 	  BEGIN_RED_FONTCOLOR; */
+/* 	  printf("FAILED\n"); */
+/* 	  perror("pthread_create"); */
+/* 	  exit(1); */
+/* 	  END_RED_FONTCOLOR; */
+/* 	} */
+/*       else */
+/* 	{ */
+/* 	  printf("SUCCESS\n"); */
+/* 	}       */
+/*     } */
+/* #else */
   thr_err = pthread_create (&umsg_watch_tid, NULL, &umsg_watcher, NULL);
   if (thr_err != 0)
     {
@@ -543,7 +556,7 @@ void session_init()
       END_YELLOW_FONTCOLOR;  
     }
   while(umas_init_flag != 1);
-#endif
+/* #endif */
 
   // Session status
   session_exist_status = ESTABLISHED;
@@ -583,27 +596,7 @@ void session_deinit()
 	  printf("  [APP]  Closing Watcher threads\n");
 	  END_YELLOW_FONTCOLOR;
 	  // Close UMsg thread	  
-	  // #ifdef MT_UMSG_POLL
-    #if 0
-	  for(umsg_id = 0; umsg_id < NUM_UMSG_PER_AFU ; umsg_id++)
- 	    {
-	      ret = pthread_kill(umsg_watch_tid[umsg_id], 0);
-	      if (ret != 0)
-		{
-		  printf("  [APP]  pthread_kill failed with ret=%d\n", ret);
-		}
-	    }
-	  // pthread_kill(*umsg_watch_tid, 0);
-    #else
-	  /* ret = pthread_kill(umsg_watch_tid, 0); */
-	  /* if (ret != 0) */
-	  /*   { */
-	  /*     printf("  [APP]  pthread_kill failed with ret=%d\n", ret); */
-	  /*   } */
-	  /* umas_exist_status = NOT_ESTABLISHED; */
-	  /* pthread_join (umsg_watch_tid, join_ret); */
 	  pthread_cancel (umsg_watch_tid);
-    #endif
 
 	  // Deallocate the region
 	  BEGIN_YELLOW_FONTCOLOR;
@@ -639,15 +632,10 @@ void session_deinit()
 
 #ifdef ASE_DEBUG
       fclose(fp_pagetable_log);
+      fclose(fp_mmioaccess_log);
 #endif
 
       // Close MMIO Response tracker thread
-      /* ret = pthread_kill(mmio_watch_tid, 0); */
-      /* if (ret != 0) */
-      /* 	{ */
-      /* 	  printf("  [APP]  pthread_kill failed with ret=%d\n", ret); */
-      /* 	} */
-      /* pthread_join (mmio_watch_tid, join_ret); */
       pthread_cancel (mmio_watch_tid);
 
       // close message queue
@@ -668,7 +656,6 @@ void session_deinit()
       runtime_nsec = time_snapshot.tv_sec*1e9 + time_snapshot.tv_nsec;
 
       // Session end, set locale
-
       printf("  [APP]  Session ended \n");
       printf("         Took ");
       // Set locale, inherit locale, and reset back
@@ -684,7 +671,6 @@ void session_deinit()
       // free(ase_workdir_path);
 
       // Lock deinit
-      // pthread_mutex_destroy(&app_lock);
       pthread_mutex_destroy(&mmio_port_lock);
       pthread_mutex_destroy(&mmio_tid_lock);
       pthread_mutex_destroy(&umsg_port_lock);
@@ -719,6 +705,10 @@ void mmio_request_put(struct mmio_t *pkt)
     {
       mmio_readreq_cnt++;
     }
+
+#ifdef ASE_DEBUG
+  print_mmiopkt(fp_mmioaccess_log, "Sent", pkt);
+#endif
 
   // Send packet
   mqueue_send( app2sim_mmioreq_tx, (char*)pkt, sizeof(mmio_t) );
@@ -1123,8 +1113,6 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
       fprintf(fp_pagetable_log,
 	      "%d\t%p\t%p\t%x\t%s\t\t%p\n",
 	      mem->index,
-	      /* fd_alloc, */
-	      /* mem->fd_ase, */
 	      (void*)mem->vbase,
 	      (void*)mem->pbase,
 	      mem->memsize,
