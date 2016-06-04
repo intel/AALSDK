@@ -1836,14 +1836,21 @@ module ccip_emulator
    RxHdr_t      pack_hdr;
    logic 	pack_hdr_valid;
 
-
-   assign pack_hdr       = pp_wrrsp_hdr;
-   assign pack_hdr_valid = pp_wrrsp_write;
+   // Packing input register
+   always @(posedge clk) begin
+      pack_hdr       <= pp_wrrsp_hdr;
+      pack_hdr_valid <= pp_wrrsp_write;
+   end
+   
+   // assign pack_hdr       = pp_wrrsp_hdr;
+   // assign pack_hdr_valid = pp_wrrsp_write;
 
    // Packing state machine
    always @(posedge clk) begin
       if (ase_reset) begin
-	 pack_state <= PassThru_Pack1CL;
+	 pack_state  <= PassThru_Pack1CL;
+	 wrrsp_write <= 0;
+	 wrrsp_hdr_in <= RxHdr_t'(0);	 
       end
       else begin
 	 case (pack_state)
