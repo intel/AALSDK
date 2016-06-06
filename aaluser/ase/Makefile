@@ -71,6 +71,11 @@ TIMESCALE = 1ps/1ps
 # ASE Source directory
 ASE_SRCDIR = $(shell pwd)
 
+# Configuration & regression file inputs
+ASE_CONFIG ?= $(ASE_SRCDIR)/ase.cfg
+ASE_SCRIPT ?= $(ASE_SRCDIR)/ase_regress.sh
+
+
 #########################################################################
 #                          Default options                              #
 #########################################################################
@@ -84,7 +89,7 @@ MENT_COMMAND = $(shell command -v vsim)
 
 ## C Compiler options
 CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1
-CC_OPT+= -Wall 
+CC_OPT+= -Wall
 ifeq ($(ASE_DEBUG), 1)
   CC_OPT+= -D ASE_DEBUG=1
 endif
@@ -130,7 +135,7 @@ SNPS_VHDLAN_OPT = -nc -verbose -full64
 SNPS_VHDLAN_OPT+= -work $(WORK)
 
 ## Verilog compile
-SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog 
+SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 # SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
@@ -207,7 +212,7 @@ endif
 
 ## VSIM elaboration, and run options
 MENT_VSIM_OPT = -64 -c -l run.log -dpioutoftheblue 1 -voptargs="+acc"
-MENT_VSIM_OPT+= -sv_lib $(ASE_SHOBJ_NAME) -do ../vsim_run.tcl
+MENT_VSIM_OPT+= -sv_lib $(ASE_SHOBJ_NAME) -do $(ASE_SRCDIR)/vsim_run.tcl
 
 #########################################################################
 #                         Valgrind options                              #
@@ -323,7 +328,7 @@ endif
 # Check gate simulation libraries
 ifdef GLS_SIM
   ifndef QUARTUS_HOME
-	@echo "** ERROR **: env(QUARTUS_HOME) has not been set." 
+	@echo "** ERROR **: env(QUARTUS_HOME) has not been set."
 	@echo "** ERROR **: GLS_SIM needs QUARTUS_HOME environment variable to be set."
     ifdef QUARTUS_ROOT
 	@echo "** ERROR **: env(QUARTUS_ROOT) is set up. Copy its contents to env(QUARTUS_HOME)."
@@ -344,11 +349,11 @@ ifeq ($(SIMULATOR), VCS)
   ifndef SNPS_COMMAND
 	@echo "**ERROR** : Synopsys commands (vlogan, vcs) not found !"
   endif
-else 
+else
   ifeq ($(SIMULATOR), QUESTA)
     ifndef MTI_HOME
 	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
-    endif	
+    endif
     ifndef MENT_COMMAND
 	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
     endif
@@ -370,7 +375,7 @@ header:
 
 # Help information
 help: header
-	@echo "#                                                          #"
+	@echo "#                |                                         #"
 	@echo "#  COMMAND       |   DESCRIPTION                           #"
 	@echo "# -------------------------------------------------------- #"
 	@echo "# make           | Build the HW Model using RTL supplied   #"
@@ -388,6 +393,18 @@ help: header
 	@echo "# make clean     | Clean simulation files                  #"
 	@echo "#                |                                         #"
 	@echo "# make distclean | Clean ASE sub-distribution              #"
+	@echo "#                |                                         #"
+	@echo "# ======================================================== #"
+	@echo "# CONFIG         |   DESCRIPTION                           #"
+	@echo "# -------------------------------------------------------- #"
+	@echo "# ASE_CONFIG     | Directly input an ASE configuration     #"
+	@echo "#                |   file path (ase.cfg)                   #"
+	@echo "#                |                                         #"
+	@echo "# ASE_SCRIPT     | Directly input an ASE regression file   #"
+	@echo "#                |   path (ase_regress.sh, for ASE_MODE=4) #"
+	@echo "#                |                                         #"
+	@echo "# SIMULATOR      | Directly input a simulator brand        #"
+	@echo "#                |   (select between 'VCS' or 'QUESTA')    #"
 	@echo "#                                                          #"
 	@echo "############################################################"
 
@@ -431,10 +448,10 @@ questa_build:
 	cd $(WORK) ; vlib $(WORK) ; vmap work $(WORK) ; cd -
 	cd $(WORK) ; vlog $(MENT_VLOG_OPT) $(ASEHW_FILE_LIST) ; cd -
 ifdef DUT_VHD_SRC_LIST
-	cd $(WORK) ; vcom $(MENT_VCOM_OPT) -f ../$(DUT_VHD_SRC_LIST) ; cd -
+	cd $(WORK) ; vcom $(MENT_VCOM_OPT) -f $(DUT_VHD_SRC_LIST) ; cd -
 endif
 ifdef DUT_VLOG_SRC_LIST
-	cd $(WORK) ; vlog $(MENT_VLOG_OPT) -f ../$(DUT_VLOG_SRC_LIST) ; cd -
+	cd $(WORK) ; vlog $(MENT_VLOG_OPT) -f $(DUT_VLOG_SRC_LIST) ; cd -
 endif
 
 
@@ -455,10 +472,10 @@ endif
 ## Run ASE Simulator ##
 sim: check
 ifeq ($(SIMULATOR), VCS)
-	cd ./$(WORK)/; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
+	cd ./$(WORK)/; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
 else
   ifeq ($(SIMULATOR), QUESTA)
-	cd $(WORK) ; vsim $(MENT_VSIM_OPT) $(ASE_TOP) ; cd -
+	cd $(WORK) ; vsim $(MENT_VSIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) $(ASE_TOP) ; cd -
   else
 	@echo "############################################################"
 	@echo "#         SIMULATOR=$(SIMULATOR) not supported             #"
@@ -516,18 +533,17 @@ coverage:
 
 # Valgrind run
 valgrind_run:
-	cd ./$(WORK)/; valgrind $(VALGRIND_OPTS) ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
+	cd ./$(WORK)/; valgrind $(VALGRIND_OPTS) ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
 
 # Test
 test: all sim
 
 # On long regression runs, dont create a run.log
 long_sim:
-	cd ./$(WORK)/; ./ase_simv -ucli -do $(ASE_SRCDIR)/vcs_run.tcl +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
+	cd ./$(WORK)/; ./ase_simv -ucli -do $(ASE_SRCDIR)/vcs_run.tcl +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
 
 cppcheck:
 	cd sw ; cppcheck *.c -DSIM_SIDE=1 -D__x86_64__ --enable=all -v --check-config | tee ../lint.log -I /usr/include/ ; cd -
 
 gdb_sim:
-	cd ./$(WORK)/; gdb -ex run --args ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
-
+	cd ./$(WORK)/; gdb -ex run --args ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
