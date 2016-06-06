@@ -1,8 +1,12 @@
 #!/bin/bash
 echo $"*********** PR SPRIPT START **********************************"
 
-BitStreamFile="/home/aravuri/kernelpr/pr_script/bitstream/10.rbf"
+##BitStreamFile="/home/aravuri/kernelpr/pr_script/bitstream/10.rbf"
 
+echo $1
+
+BitStreamFile=$1
+echo $BitStreamFile
 
 Hello_ali_app_loop=nlb_app/ALInlb
 PR_APP_SleepTime=5;
