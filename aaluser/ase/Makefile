@@ -88,8 +88,8 @@ SNPS_COMMAND = $(shell command -v vcs)
 MENT_COMMAND = $(shell command -v vsim)
 
 ## C Compiler options
-CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1
-CC_OPT+= -Wall
+CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -D SIMULATOR=$(SIMULATOR)
+CC_OPT+= -Wall 
 ifeq ($(ASE_DEBUG), 1)
   CC_OPT+= -D ASE_DEBUG=1
 endif
@@ -135,7 +135,7 @@ SNPS_VHDLAN_OPT = -nc -verbose -full64
 SNPS_VHDLAN_OPT+= -work $(WORK)
 
 ## Verilog compile
-SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog
+SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog +define+$(SIMULATOR)
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 # SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
@@ -191,13 +191,13 @@ MENT_VCOM_OPT = -nologo -work $(WORK)
 
 ## VLOG compile
 # MENT_VLOG_OPT = -64 
-MENT_VLOG_OPT+= -nologo +librescan -work $(WORK)
+MENT_VLOG_OPT+= -nologo +librescan -work $(WORK) +define+$(SIMULATOR)
 MENT_VLOG_OPT+= -dpiheader work/dpiheader.h
 MENT_VLOG_OPT+= +incdir+$(ASE_INCDIR)+$(DUT_INCDIR)+$(WORK)
 MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
 MENT_VLOG_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
 ifeq ($(ASE_DEBUG), 1)
-  MENT_VLOG_OPT+= +define+ASE_DEBUG
+  MENT_VLOG_OPT+= +define+ASE_DEBUG -hazards
 endif
 ifdef GLS_SIM
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
@@ -215,6 +215,9 @@ endif
 # MENT_VSIM_OPT = -64 
 MENT_VSIM_OPT+= -c -l run.log -dpioutoftheblue 1 
 MENT_VSIM_OPT+= -sv_lib $(ASE_SHOBJ_NAME) -do $(ASE_SRCDIR)/vsim_run.tcl
+ifeq ($(ASE_DEBUG), 1)
+  MENT_VLOG_OPT+= -hazards
+endif
 # -voptargs="+acc"
 
 #########################################################################

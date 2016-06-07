@@ -1837,14 +1837,20 @@ module ccip_emulator
    logic 	pack_hdr_valid;
 
    // Packing input register
+`ifdef VCS
    always @(posedge clk) begin
       pack_hdr       <= pp_wrrsp_hdr;
       pack_hdr_valid <= pp_wrrsp_write;
    end
+`else
+ `ifdef QUESTA
+   assign pack_hdr       = pp_wrrsp_hdr;
+   assign pack_hdr_valid = pp_wrrsp_write;
+ `else
+   // Compile time error goes here ?? 
+ `endif   
+`endif
    
-   // assign pack_hdr       = pp_wrrsp_hdr;
-   // assign pack_hdr_valid = pp_wrrsp_write;
-
    // Packing state machine
    always @(posedge clk) begin
       if (ase_reset) begin
