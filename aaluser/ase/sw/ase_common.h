@@ -345,6 +345,7 @@ uint64_t get_range_checked_physaddr(uint32_t);
 void ase_write_seed(uint64_t);
 uint64_t ase_read_seed();
 void ase_memory_barrier();
+void print_mmiopkt(FILE *, char *, struct mmio_t *);
 
 // ASE operations
 void ase_buffer_info(struct buffer_t *);

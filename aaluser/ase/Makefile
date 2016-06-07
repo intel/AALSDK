@@ -190,7 +190,8 @@ endif
 MENT_VCOM_OPT = -nologo -work $(WORK)
 
 ## VLOG compile
-MENT_VLOG_OPT = -64 -nologo +librescan -work $(WORK)
+# MENT_VLOG_OPT = -64 
+MENT_VLOG_OPT+= -nologo +librescan -work $(WORK)
 MENT_VLOG_OPT+= -dpiheader work/dpiheader.h
 MENT_VLOG_OPT+= +incdir+$(ASE_INCDIR)+$(DUT_INCDIR)+$(WORK)
 MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
@@ -211,8 +212,10 @@ ifdef GLS_SIM
 endif
 
 ## VSIM elaboration, and run options
-MENT_VSIM_OPT = -64 -c -l run.log -dpioutoftheblue 1 -voptargs="+acc"
+# MENT_VSIM_OPT = -64 
+MENT_VSIM_OPT+= -c -l run.log -dpioutoftheblue 1 
 MENT_VSIM_OPT+= -sv_lib $(ASE_SHOBJ_NAME) -do $(ASE_SRCDIR)/vsim_run.tcl
+# -voptargs="+acc"
 
 #########################################################################
 #                         Valgrind options                              #
@@ -492,7 +495,7 @@ ifeq ($(SIMULATOR), VCS)
 	dve -vpd `find . -name inter.vpd` || dve -vpd `find . -name inter.vpd` -full64
 else
   ifeq ($(SIMULATOR), QUESTA)
-	vsim -view vsim.wlf
+	vsim -view `find . -name vsim.wlf`
   endif
 endif
 
