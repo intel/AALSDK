@@ -290,6 +290,16 @@ public:
    /// The function will return the ID, GUID, and TYPE of the first matching
    /// feature in rOutputArgs, if supplied (optional argument via overloading).
    ///
+   /// Note that mmioGetFeature*() expects the values for the keys listed above
+   /// to be of a specific datatype, namely:
+   ///
+   ///    ALI_GETFEATURE_ID_DATATYPE
+   ///    ALI_GETFEATURE_TYPE_DATATYPE
+   ///    ALI_GETFEATURE_GUID_DATATYPE
+   ///
+   /// The function will return an error if it encounters an unexpected
+   /// datatype.
+   ///
    /// @note       Synchronous function; no TransactionID. Generally very fast.
    /// @param[out] pFeature    Where to place the address of the feature header.
    /// @param[in]  rInputArgs  Arguments specifying which feature to search for.
