@@ -331,7 +331,7 @@ void initialize_fme_dfh (struct buffer_t *buf)
 
   // PORT_UMSG DFH
   csr_port_umsg = (uint64_t*)((uint64_t)port_vbase + 0x2000);
-  *csr_port_umsg = (0x3 << 60) + (0x1000 << 39) + (0x11 << 0);
+  *csr_port_umsg = (uint64_t)((0x3UL << 60) || (0x1000 << 39) || (0x11 << 0));
 
   /*
    * UMSG settings

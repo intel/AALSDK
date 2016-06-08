@@ -233,11 +233,13 @@ void ase_eval_session_directory()
   ase_workdir_path = getenv ("PWD");
 #else
   ase_workdir_path = getenv ("ASE_WORKDIR");
+
   #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [DEBUG]  env(ASE_WORKDIR) = %s\n", ase_workdir_path);
   END_YELLOW_FONTCOLOR;
   #endif
+
   if (ase_workdir_path == NULL)
     {
       BEGIN_RED_FONTCOLOR;
@@ -339,35 +341,38 @@ void ase_write_lock_file()
       END_RED_FONTCOLOR;
       start_simkill_countdown();
     }
-
-  /////////// Write specifics ////////////////
-  // Line 1
-  fprintf(fp_ase_ready, "pid  = %d\n", ase_pid);
-
-  // Line 2
-  ase_hostname = ase_malloc(ASE_FILENAME_LEN);
-  ret_err = gethostname(ase_hostname, ASE_FILENAME_LEN);
-  if (ret_err != 0)
+  else
     {
-      BEGIN_RED_FONTCOLOR;
-      printf("SIM-C : **ERROR** => Hostname could not be calculated, Exiting\n");
-      END_RED_FONTCOLOR;
-      start_simkill_countdown();
+      // ///////// Write specifics ////////////////
+      // Line 1
+      fprintf(fp_ase_ready, "pid  = %d\n", ase_pid);
+
+      // Line 2
+      ase_hostname = ase_malloc(ASE_FILENAME_LEN);
+      ret_err = gethostname(ase_hostname, ASE_FILENAME_LEN);
+      if (ret_err != 0)
+	{
+	  BEGIN_RED_FONTCOLOR;
+	  printf("SIM-C : **ERROR** => Hostname could not be calculated, Exiting\n");
+	  END_RED_FONTCOLOR;
+	  start_simkill_countdown();
+	}
+
+      fprintf(fp_ase_ready, "host = %s\n", ase_hostname);
+
+      // Line 3
+      fprintf(fp_ase_ready, "dir  = %s\n", ase_workdir_path);
+
+      // Line 4
+      fprintf(fp_ase_ready, "uid  = %s\n", ASE_UNIQUE_ID);
+
+      ////////////////////////////////////////////
+      // Close file
+      fclose(fp_ase_ready);
+
+      // Notice on stdout
+      printf("SIM-C : ASE lock file .ase_ready.pid written in work directory\n");
     }
-  fprintf(fp_ase_ready, "host = %s\n", ase_hostname);
-
-  // Line 3
-  fprintf(fp_ase_ready, "dir  = %s\n", ase_workdir_path);
-
-  // Line 4
-  fprintf(fp_ase_ready, "uid  = %s\n", ASE_UNIQUE_ID);
-
-  ////////////////////////////////////////////
-  // Close file
-  fclose(fp_ase_ready);
-
-  // Notice on stdout
-  printf("SIM-C : ASE lock file .ase_ready.pid written in work directory\n");
 
   FUNC_CALL_EXIT;
 }
@@ -393,7 +398,7 @@ int ase_read_lock_file(const char *workdir)
   char *curr_hostname;
   char *readback_uid;
   char *curr_uid;
-  int readback_pid;
+  int readback_pid = 0;
   int ret_err;
 
   // Null check and exit
@@ -413,7 +418,7 @@ int ase_read_lock_file(const char *workdir)
       exit(1);
     #endif
     }
-
+  
   // Calculate ready file path
   exp_ready_filepath = ase_malloc(ASE_FILEPATH_LEN);
   sprintf(exp_ready_filepath, "%s/%s", workdir, ASE_READY_FILENAME);
@@ -444,6 +449,8 @@ int ase_read_lock_file(const char *workdir)
       line = ase_malloc(256);
       readback_hostname = ase_malloc(ASE_FILENAME_LEN);
       curr_hostname = ase_malloc(ASE_FILENAME_LEN);
+      readback_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
+      readback_uid = ase_malloc(ASE_FILEPATH_LEN);
 
       // Read file line by line
       while( getline(&line, &len, fp_exp_ready) != -1)
@@ -469,12 +476,12 @@ int ase_read_lock_file(const char *workdir)
 	    }
 	  else if ( strcmp (parameter, "dir") == 0)
 	    {
-	      readback_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
+	      // readback_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
 	      strncpy(readback_workdir_path, value, ASE_FILEPATH_LEN);
 	    }
 	  else if ( strcmp (parameter, "uid") == 0)
 	    {
-	      readback_uid = ase_malloc(ASE_FILEPATH_LEN);
+	      // readback_uid = ase_malloc(ASE_FILEPATH_LEN);
 	      strncpy(readback_uid, value, ASE_FILEPATH_LEN);
 	    }
 	}
@@ -505,28 +512,29 @@ int ase_read_lock_file(const char *workdir)
 	      exit(1);
 	    #endif
 	    }
-	}
-      
-      // If readback_uid (Readback unique ID from lock file) doesnt match ase_common.h
-      curr_uid = ase_malloc(ASE_FILENAME_LEN);
-      strncpy(curr_uid, ASE_UNIQUE_ID, ASE_FILENAME_LEN);
-      
-      // Check
-      if (strcmp(curr_uid, readback_uid) != 0)
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("** ERROR ** => Application UID does not match known release UID\n");
-	  printf("** ERROR ** => Simulator built with UID=%s, Application built with UID=%s\n", readback_uid, curr_uid );
-	  printf("** ERROR ** => Ensure that ASE simulator and AAL application are compiled from the same System Release version !\n");
-	  printf("** ERROR ** => Simulation cannot proceed ... EXITING\n");
-	  END_RED_FONTCOLOR;
-        #ifdef SIM_SIDE
-	  start_simkill_countdown();
-        #else
-	  exit(1);
-	#endif
-	}
-
+	  else
+	    {      
+	      // If readback_uid (Readback unique ID from lock file) doesnt match ase_common.h
+	      curr_uid = ase_malloc(ASE_FILENAME_LEN);
+	      strncpy(curr_uid, ASE_UNIQUE_ID, ASE_FILENAME_LEN);
+	      
+	      // Check
+	      if (strcmp(curr_uid, readback_uid) != 0)
+		{
+		  BEGIN_RED_FONTCOLOR;
+		  printf("** ERROR ** => Application UID does not match known release UID\n");
+		  printf("** ERROR ** => Simulator built with UID=%s, Application built with UID=%s\n", readback_uid, curr_uid );
+		  printf("** ERROR ** => Ensure that ASE simulator and AAL application are compiled from the same System Release version !\n");
+		  printf("** ERROR ** => Simulation cannot proceed ... EXITING\n");
+		  END_RED_FONTCOLOR;
+            #ifdef SIM_SIDE
+		  start_simkill_countdown();
+            #else
+		  exit(1);
+            #endif
+		}
+	    }
+	}      
     }
   else // File does not exist
     {

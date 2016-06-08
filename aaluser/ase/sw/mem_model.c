@@ -125,11 +125,11 @@ void ase_alloc_action(struct buffer_t *mem)
   struct buffer_t *new_buf;
   int fd_alloc;
 
-#ifdef ASE_DEBUG
+  #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
   printf("SIM-C : Adding a new buffer \"%s\"...\n", mem->memname);
   END_YELLOW_FONTCOLOR;
-#endif
+  #endif
 
   // Obtain a file descriptor
   fd_alloc = shm_open(mem->memname, O_RDWR, S_IRUSR|S_IWUSR);
@@ -140,93 +140,95 @@ void ase_alloc_action(struct buffer_t *mem)
       ase_perror_teardown();
       start_simkill_countdown(); // RRS: exit(1);
     }
-
-  // Add to IPC list
-#ifdef SIM_SIDE
-  add_to_ipc_list ("SHM", mem->memname);
-#endif
-
-  // Mmap to pbase, find one with unique low 38 bit
-  mem->pbase = (uint64_t)mmap(NULL, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED, fd_alloc, 0);
-  if(mem->pbase == (uint64_t)NULL)
+  else
     {
-      ase_error_report("mmap", errno, ASE_OS_MEMMAP_ERR);
-      /* perror("mmap"); */
-      ase_perror_teardown();
-      start_simkill_countdown(); // RRS: exit(1);
-    }
-  ftruncate(fd_alloc, (off_t)mem->memsize);
-  close(fd_alloc);
+      // Add to IPC list
+  #ifdef SIM_SIDE
+      add_to_ipc_list ("SHM", mem->memname);
+  #endif
 
-  // Record fake address
-  mem->fake_paddr = get_range_checked_physaddr(mem->memsize);
-  mem->fake_paddr_hi = mem->fake_paddr + (uint64_t)mem->memsize;
-
-  // Received buffer is valid
-  mem->valid = ASE_BUFFER_VALID;
-
-  // Create a buffer and store the information
-  new_buf = (struct buffer_t *)ase_malloc(BUFSIZE);
-  memcpy(new_buf, mem, BUFSIZE);
-
-  // Append to linked list
-  ll_append_buffer(new_buf);
-#ifdef ASE_LL_VIEW
-  BEGIN_YELLOW_FONTCOLOR;
-  ll_traverse_print();
-  END_YELLOW_FONTCOLOR;
-#endif
-
-  // Reply to MEM_ALLOC_REQ message with MEM_ALLOC_REPLY
-  // Set metadata to reply mode
-  mem->metadata = HDR_MEM_ALLOC_REPLY;
-  
-  // Convert buffer_t to string
-  mqueue_send(sim2app_alloc_tx, (char*)mem, ASE_MQ_MSGSIZE);
-
-   // If memtest is enabled
-#ifdef ASE_MEMTEST_ENABLE
-  ase_dbg_memtest(mem);
-#endif
-
-  if (mem->is_mmiomap == 1)
-    {
-      // Pin CSR address
-      mmio_afu_vbase = (uint64_t*)((uint64_t)mem->pbase + MMIO_AFU_OFFSET);
-#ifdef ASE_DEBUG
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("SIM-C : Global CSR Base address = %p\n", (void*)mmio_afu_vbase);
-      END_YELLOW_FONTCOLOR;
-#endif
-
-      // If UMSG is enabled, write information to CSR region
-      // *FIXME*: Maybe BB DFH has to be updated here
-    }
-
-#ifdef ASE_DEBUG  
-  if (fp_pagetable_log != NULL) 
-    {
-      if (mem->index % 20 == 0) 
+      // Mmap to pbase, find one with unique low 38 bit
+      mem->pbase = (uint64_t)mmap(NULL, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED, fd_alloc, 0);
+      if(mem->pbase == (uint64_t)NULL)
 	{
-	  fprintf(fp_pagetable_log, 
-		  "Index\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
-	  // "Index\tfd_app\tfd_ase\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
+	  ase_error_report("mmap", errno, ASE_OS_MEMMAP_ERR);
+	  /* perror("mmap"); */
+	  ase_perror_teardown();
+	  start_simkill_countdown(); // RRS: exit(1);
 	}
+      ftruncate(fd_alloc, (off_t)mem->memsize);
+      close(fd_alloc);
+
+      // Record fake address
+      mem->fake_paddr = get_range_checked_physaddr(mem->memsize);
+      mem->fake_paddr_hi = mem->fake_paddr + (uint64_t)mem->memsize;
+
+      // Received buffer is valid
+      mem->valid = ASE_BUFFER_VALID;
+
+      // Create a buffer and store the information
+      new_buf = (struct buffer_t *)ase_malloc(BUFSIZE);
+      memcpy(new_buf, mem, BUFSIZE);
+
+      // Append to linked list
+      ll_append_buffer(new_buf);
+  #ifdef ASE_LL_VIEW
+      BEGIN_YELLOW_FONTCOLOR;
+      ll_traverse_print();
+      END_YELLOW_FONTCOLOR;
+  #endif
+
+      // Reply to MEM_ALLOC_REQ message with MEM_ALLOC_REPLY
+      // Set metadata to reply mode
+      mem->metadata = HDR_MEM_ALLOC_REPLY;
+  
+      // Convert buffer_t to string
+      mqueue_send(sim2app_alloc_tx, (char*)mem, ASE_MQ_MSGSIZE);
+
+      // If memtest is enabled
+  #ifdef ASE_MEMTEST_ENABLE
+      ase_dbg_memtest(mem);
+  #endif
+
+      if (mem->is_mmiomap == 1)
+	{
+	  // Pin CSR address
+	  mmio_afu_vbase = (uint64_t*)((uint64_t)mem->pbase + MMIO_AFU_OFFSET);
+  #ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("SIM-C : Global CSR Base address = %p\n", (void*)mmio_afu_vbase);
+	  END_YELLOW_FONTCOLOR;
+  #endif
+
+	  // If UMSG is enabled, write information to CSR region
+	  // *FIXME*: Maybe BB DFH has to be updated here
+	}
+
+  #ifdef ASE_DEBUG  
+      if (fp_pagetable_log != NULL) 
+	{
+	  if (mem->index % 20 == 0) 
+	    {
+	      fprintf(fp_pagetable_log, 
+		      "Index\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
+	      // "Index\tfd_app\tfd_ase\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
+	    }
       
-      fprintf(fp_pagetable_log, 
-	      /* "%d\t%d\t%d\t%p\t%p\t%x\t%s\t\t%p\n", */
-	      "%d\t%p\t%p\t%x\t%s\t\t%p\n",
-	      mem->index,
-	      /* mem->fd_app, */
-	      /* mem->fd_ase, */
-	      (void*)mem->vbase, 
-	      (void*)mem->pbase,
-	      mem->memsize,
-	      mem->memname,
-	      (void*)mem->fake_paddr
-	      );
+	  fprintf(fp_pagetable_log, 
+		  /* "%d\t%d\t%d\t%p\t%p\t%x\t%s\t\t%p\n", */
+		  "%d\t%p\t%p\t%x\t%s\t\t%p\n",
+		  mem->index,
+		  /* mem->fd_app, */
+		  /* mem->fd_ase, */
+		  (void*)mem->vbase, 
+		  (void*)mem->pbase,
+		  mem->memsize,
+		  mem->memname,
+		  (void*)mem->fake_paddr
+		  );
+	}
+  #endif
     }
-#endif
 
   FUNC_CALL_EXIT;
 }
