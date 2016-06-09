@@ -97,7 +97,6 @@ int ase_instance_running()
 void sv2c_config_dex(const char *str)
 {
   sv2c_config_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  // strcpy(sv2c_config_filepath, str);
   strncpy(sv2c_config_filepath, str, ASE_FILEPATH_LEN);
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
@@ -125,7 +124,6 @@ void sv2c_config_dex(const char *str)
 void sv2c_script_dex(const char *str)
 {
   sv2c_script_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  // strcpy(sv2c_script_filepath, str);
   strncpy(sv2c_script_filepath, str, ASE_FILEPATH_LEN);
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;

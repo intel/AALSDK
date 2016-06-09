@@ -295,12 +295,9 @@ void ase_dealloc_action(struct buffer_t *buf)
 // --------------------------------------------------------------------
 void ase_empty_buffer(struct buffer_t *buf)
 {
-  /* buf->fd_app = 0; */
-  /* buf->fd_ase = 0; */
   buf->index = 0;
   buf->valid = ASE_BUFFER_INVALID;
   buf->metadata = 0;
-  //  strcpy(buf->memname, "");
   memset(buf->memname, 0, ASE_FILENAME_LEN);
   buf->memsize = 0;
   buf->vbase = (uint64_t)NULL;
