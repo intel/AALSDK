@@ -393,5 +393,11 @@ extern btInt
 ccidrv_sendevent( struct aaldev_ownerSession *,
                   struct aal_q_item *);
 
+extern inline void GetCSR(btUnsigned64bitInt *ptr, bt32bitCSR *pcsrval);
+extern inline void SetCSR(btUnsigned64bitInt *ptr, bt32bitCSR *csrval);
+extern inline void Get64CSR(btUnsigned64bitInt *ptr, bt64bitCSR *pcsrval);
+extern inline void Set64CSR(btUnsigned64bitInt *ptr, bt64bitCSR *csrval);
+
+
 #endif // __AALKERNEL_CCI_PCIE_DRIVER_INTERNAL_H__
 

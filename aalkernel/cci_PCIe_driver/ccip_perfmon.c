@@ -104,6 +104,8 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
    // freeze
    ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.freeze =0x1;
 
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr);
+
    //Cache_Read_Hit
    update_cache_event_counters(Cache_Read_Hit,pfme_dev,pPerf);
 
@@ -140,6 +142,7 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
 
    //un freeze
    ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.freeze =0x0;
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr);
  
    PTRACEOUT_INT(res);
    return res;
@@ -168,9 +171,11 @@ bt32bitInt update_fabric_event_counters(bt32bitInt event_code ,
    PTRACEIN;
 
    ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.fabric_evt_code =event_code;
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr);
 
    while (event_code != ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.event_code)  {
 
+      Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.csr);
       counter++;
       if (counter > CACHE_EVENT_COUNTER_MAX_TRY)    {
          PERR("Max Try \n");
@@ -180,6 +185,7 @@ bt32bitInt update_fabric_event_counters(bt32bitInt event_code ,
 
    } // end while
 
+   Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.csr);
    switch (event_code)
    {
 
@@ -258,9 +264,11 @@ bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
    PTRACEIN;
 
    ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.cache_event =event_code;
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr);
 
    while (event_code != ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.event_code)   {
 
+      Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.csr);
       counter++;
       if (counter > CACHE_EVENT_COUNTER_MAX_TRY)   {
          PERR("Max Try \n");
@@ -269,6 +277,9 @@ bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
       }
 
    } // end while
+
+   Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.csr);
+   Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_1.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_1.csr);
 
    total= ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.cache_counter + ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_1.cache_counter;
 
