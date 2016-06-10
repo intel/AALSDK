@@ -106,6 +106,11 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
 
    Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr);
 
+   // freeze
+   ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.freeze = 0x1;
+
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr);
+
    //Cache_Read_Hit
    update_cache_event_counters(Cache_Read_Hit,pfme_dev,pPerf);
 
@@ -120,17 +125,6 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
 
    //Cache_Evictions
    update_cache_event_counters(Cache_Evictions,pfme_dev,pPerf);
-
-   //un freeze
-   ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.freeze = 0x0;
-
-   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr);
-
-
-   // freeze
-   ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.freeze = 0x1;
-
-   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr);
 
    //pcie0 Read
    update_fabric_event_counters(Fabric_PCIe0_Read,pfme_dev,pPerf);
@@ -154,6 +148,11 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
    ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.freeze = 0x0;
 
    Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr);
+
+   //un freeze
+   ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.freeze = 0x0;
+
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr);
  
    PTRACEOUT_INT(res);
    return res;
