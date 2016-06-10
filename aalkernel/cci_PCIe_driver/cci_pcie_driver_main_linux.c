@@ -1168,8 +1168,15 @@ ccidrv_exitDriver(void)
    // Remove/destroy any devices that were not registered with the PCIe subsystem.
 
    // Stop & Remove logging timer
-   stop_logging_timer();
-   remove_logging_timer();
+   if(0 ==sim) {
+
+      PDEBUG("No ANANDA  NO SIM");
+   } else {
+      PDEBUG("No ANANDA   SIM");
+      stop_logging_timer();
+      remove_logging_timer();
+   }
+
 
    if( !kosal_list_is_empty(&g_device_list) ){
 
