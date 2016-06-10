@@ -208,15 +208,15 @@ enum e_CCIP_PORT_PR_status {
 };
 
 /// Partial Reconfiguration  mega function status codes
-enum e_CCIP_PR_Megafun_status {
-   CCIP_PR_MF_pwrup = 0x0,
-   CCIP_PR_MF_error = 0x1,
-   CCIP_PR_MF_crc_err = 0x2,
-   CCIP_PR_MF_Incomp_bts_err = 0x3,
-   CCIP_PR_MF_opr_inPros = 0x4,
-   CCIP_PR_MF_por_pass = 0x5,
-   CCIP_PR_MF_rsvd1 = 0x6,
-   CCIP_PR_MF_rsvd2 = 0x7
+enum e_CCIP_PR_ControllerBlock_status {
+   CCIP_PR_CLB_pwrup = 0x0,
+   CCIP_PR_CLB_error = 0x1,
+   CCIP_PR_CLB_crc_err = 0x2,
+   CCIP_PR_CLB_Incomp_bts_err = 0x3,
+   CCIP_PR_CLB_opr_inPros = 0x4,
+   CCIP_PR_CLB_por_pass = 0x5,
+   CCIP_PR_CLB_rsvd1 = 0x6,
+   CCIP_PR_CLB_rsvd2 = 0x7
 };
 
 ///=================================================================

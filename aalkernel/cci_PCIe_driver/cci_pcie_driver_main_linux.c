@@ -79,12 +79,17 @@
 #include "ccip_fme.h"
 #include "ccip_port.h"
 #include "ccip_perfmon_linux.h"
+#include "ccip_logging.h"
+#include "ccip_logging_linux.h"
 
 extern int print_sim_fme_device(struct fme_device *);
 extern int print_sim_port_device(struct port_device *pport_dev);
 
 /// g_device_list - Global device list for this module.
 kosal_list_head g_device_list;
+
+/// g_dev_list_sem - Global device list semaphore.
+kosal_semaphore g_dev_list_sem;
 
 static btBool isPFDriver = 0;
 
@@ -1077,6 +1082,7 @@ ccidrv_initDriver(void/*callback*/)
 
    // Initialize the list of devices controlled by this driver
    kosal_list_init(&g_device_list);
+   kosal_mutex_init(&g_dev_list_sem);
 
    // Display whether we are running with real or simulated hardware
    PINFO("Using %s configuration.\n", (0 == sim) ? "FPGA hardware" : "simulated hardware");
@@ -1119,6 +1125,11 @@ ccidrv_initDriver(void/*callback*/)
          goto ERR;
       }
 
+      // creates logging timer
+      create_logging_timer();
+      // Start logging timer
+      start_logging_timer();
+
    }
 
    PTRACEOUT_INT(ret);
@@ -1155,6 +1166,10 @@ ccidrv_exitDriver(void)
    PTRACEIN;
 
    // Remove/destroy any devices that were not registered with the PCIe subsystem.
+
+   // Stop & Remove logging timer
+   stop_logging_timer();
+   remove_logging_timer();
 
    if( !kosal_list_is_empty(&g_device_list) ){
 

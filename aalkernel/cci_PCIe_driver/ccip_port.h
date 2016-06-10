@@ -113,6 +113,7 @@ struct port_device
    struct cci_aal_device        *m_uafu;
    // Signal tap aal device
    struct cci_aal_device        *m_sigtap;
+   struct CCIP_PORT_DFL_ERR      m_last_porterr;         // PORT last Error DFL
 
 
 }; // end struct port_device
@@ -127,6 +128,9 @@ struct port_device
 #define ccip_port_umsg(pdev)                  ((pdev)->m_pport_umsg)
 #define ccip_port_pr(pdev)                    ((pdev)->m_pport_pr)
 #define ccip_port_stap(pdev)                  ((pdev)->m_pport_stap)
+
+#define ccip_port_lasterr(pdev)               ((pdev)->m_last_porterr)
+
 
 #define ccip_port_bustype(pdev)               ((pdev)->m_bustype)
 #define ccip_port_busnum(pdev)                ((pdev)->m_busNum)

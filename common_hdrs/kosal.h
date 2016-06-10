@@ -917,7 +917,8 @@ void _kosal_free_dma_coherent(__ASSERT_HERE_PROTO  KOSAL_HANDLE , KOSAL_VIRT , K
 # include <linux/workqueue.h>
    // Dev must be the an aal_device pointer but is not currently used here
    #define kosal_create_workqueue(name, dev)  create_workqueue(name)
-   #define kosal_destroy_workqueue(wq)   destroy_workqueue(wq)
+   #define kosal_destroy_workqueue(wq)        destroy_workqueue(wq)
+   #define kosal_cancel_workqueue(wq)         cancel_delayed_work(wq)
     // Worker thread items
 
    #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,19)
@@ -957,6 +958,7 @@ void _kosal_free_dma_coherent(__ASSERT_HERE_PROTO  KOSAL_HANDLE , KOSAL_VIRT , K
 
 void kosal_queue_delayed_work(kosal_work_queue wq, struct kosal_work_object* pwo, KOSAL_TIME msec);
 
+char* kosal_gettimestamp(void) ;
 
 #elif defined( __AAL_WINDOWS__ )
    typedef PIO_WORKITEM    kosal_work_queue;
@@ -967,6 +969,8 @@ void kosal_queue_delayed_work(kosal_work_queue wq, struct kosal_work_object* pwo
 #define kosal_create_workqueue(name, pd)     IoAllocateWorkItem(aaldev_to_basedev(pd))
 
 #define kosal_destroy_workqueue(wq)          IoFreeWorkItem(wq)
+
+#define kosal_cancel_workqueue(wq)           NeedIMP
 //kosal_create_workqueue
 
 typedef void (*osfunc)(PDEVICE_OBJECT,PVOID);
