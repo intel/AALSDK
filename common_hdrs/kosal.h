@@ -970,7 +970,7 @@ char* kosal_gettimestamp(void) ;
 
 #define kosal_destroy_workqueue(wq)          IoFreeWorkItem(wq)
 
-#define kosal_cancel_workqueue(wq)           NeedIMP
+#define kosal_cancel_workqueue(wq)           IoFreeWorkItem(wq)
 //kosal_create_workqueue
 
 typedef void (*osfunc)(PDEVICE_OBJECT,PVOID);

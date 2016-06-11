@@ -1170,9 +1170,8 @@ ccidrv_exitDriver(void)
    // Stop & Remove logging timer
    if(0 ==sim) {
 
-      PDEBUG("No ANANDA  NO SIM");
    } else {
-      PDEBUG("No ANANDA   SIM");
+
       stop_logging_timer();
       remove_logging_timer();
    }
