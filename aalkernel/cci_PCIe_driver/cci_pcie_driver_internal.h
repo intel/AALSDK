@@ -314,9 +314,9 @@ struct ccip_device
 #define ccip_set_VFdev(pdev)                 ((pdev)->m_isVF = 1)
 #define ccip_is_VFdev(pdev)                  ((pdev)->m_isVF == 1)
 
-#define ccip_set_resource(pdev,r)            ((pdev)->m_resources |= (1<<r))
-#define ccip_has_resource(pdev,r)            ((pdev)->m_resources & (1<<r))
-#define ccip_clr_resource(pdev,r)            ((pdev)->m_resources &= ~(1<<r))
+#define ccip_set_resource(pdev,r)            ((pdev)->m_resources |= (1<<(r+1)))
+#define ccip_has_resource(pdev,r)            ((pdev)->m_resources & (1<<(r+1)))
+#define ccip_clr_resource(pdev,r)            ((pdev)->m_resources &= ~(1<<(r+1)))
 
 #define ccip_list_to_ccip_device(plist)      kosal_list_entry(plist, struct ccip_device, m_list)
 #define aaldev_to_ccip_device(plist)         kosal_list_entry(plist, struct ccip_device, m_list)

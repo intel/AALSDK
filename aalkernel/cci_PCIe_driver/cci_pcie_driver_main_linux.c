@@ -518,7 +518,7 @@ struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev
    // If we are on the host node (aka Dom0) then we do not publish VF objects
    if(isPFDriver){
       PINFO("VF Device detected on PF Driver.\nIgnoring.\n");
-//      return NULL;   Currently disabled during debug
+      return NULL;
    }
 
    // Create the CCI device object
@@ -602,6 +602,9 @@ struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev
       goto ERR;
    }
 
+   // Record the resource
+   ccip_set_resource(pccipdev, 0);
+
    PDEBUG("Created Port Device\n");
    port_afu_Enable(pportdev);
 
@@ -634,6 +637,10 @@ struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev
       goto ERR;
    }
    ccip_set_VFdev(pccipdev);
+
+
+   // Start logging timer
+   start_logging_timer();
 
    return pccipdev;
 ERR:
@@ -686,6 +693,9 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       return NULL;
     }
 
+   // This is a PF driver
+   isPFDriver = 1;
+
    // Setup the PCIe device
    //----------------------
    res = pci_enable_device(pcidev);
@@ -737,6 +747,8 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
                               &barsize) ){
          goto ERR;
       }
+
+
 
       // Save the BAR information in the CCI Device object
       ccip_fmedev_phys_afu_mmio(pccipdev)    = __PHYS_ADDR_CAST(pbarPhyAddr);
@@ -896,8 +908,10 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
 
    }
 
-   // This is a PF driver
-   isPFDriver = 1;
+   // Start logging timer
+   start_logging_timer();
+
+
    return pccipdev;
 ERR:
 {
@@ -1012,7 +1026,7 @@ cci_remove_device(struct ccip_device *pccipdev)
    // TODO
 
    // Release the resources used for ports
-   for(x=1; x<5; x++){
+   for(x=0; x<5; x++){
       if(ccip_has_resource(pccipdev, x)){
          if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev,x)) {
             if(!ccip_is_simulated(pccipdev)){
@@ -1092,6 +1106,9 @@ ccidrv_initDriver(void/*callback*/)
      // Expecting real hardware. Register with PCIe subsystem and wait for OS enumeration
       ret =0;
 
+      // creates logging timer
+      create_logging_timer();
+
       // Attempt to register with the kernel PCIe subsystem.
       ret = pci_register_driver(&driver_info.pcidrv);
       ASSERT(0 == ret);
@@ -1113,6 +1130,13 @@ ccidrv_initDriver(void/*callback*/)
           ret = -EIO;
           goto ERR;
       }
+
+      // create the logging sysfs argument
+      if( create_logging_timervalue_sysfs(&driver_info.pcidrv.driver) ) {
+
+         DPRINTF (CCIPCIE_DBG_MOD, ": Failed to create Logging timer attributes\n");
+      }
+
 
    } else {
 
@@ -1170,11 +1194,13 @@ ccidrv_exitDriver(void)
    // Stop & Remove logging timer
    if(0 ==sim) {
 
-   } else {
-
-      stop_logging_timer();
-      remove_logging_timer();
+      if( remove_logging_timervalue_syfs(&driver_info.pcidrv.driver) ) {
+            DPRINTF (CCIPCIE_DBG_MOD, ": Failed to Remove Logging timer attributes\n");
+      }
    }
+
+   stop_logging_timer();
+   remove_logging_timer();
 
 
    if( !kosal_list_is_empty(&g_device_list) ){

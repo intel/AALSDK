@@ -100,7 +100,6 @@ int create_logging_timer(void)
    int res = 0;
    PTRACEIN;
 
-
    logging_msg_wq(g_logging_msg) = kosal_create_workqueue( "LoggingTimer",NULL);
    if(NULL ==  logging_msg_wq(g_logging_msg)) {
       res= -ENOMEM;
@@ -126,7 +125,23 @@ int start_logging_timer(void)
    int res = 0;
    PTRACEIN;
 
+   //  if work queue failed to initialize,no need to start work queue
+   if( NULL == logging_msg_wq(g_logging_msg)) {
+
+      res= -EFAULT;
+      return res;
+   }
+
    kosal_sem_get_krnl(logging_msg_sem(g_logging_msg) );
+
+   // checking for  work queue is  running /started
+   if(logging_timer_Running == logging_msg_wq_status(g_logging_msg) )  {
+
+      kosal_sem_put( logging_msg_sem(g_logging_msg));
+      res = -EBUSY ;
+      return res;
+   }
+
 
    // Start logging timer work queue.
    KOSAL_INIT_WORK(&(logging_msg_wobj(g_logging_msg)),error_logging_callback);
@@ -134,6 +149,9 @@ int start_logging_timer(void)
    kosal_queue_delayed_work( logging_msg_wq(g_logging_msg),
                              &(logging_msg_wobj(g_logging_msg)),
                              logging_msg_time(g_logging_msg));
+
+   logging_msg_wq_status(g_logging_msg) = logging_timer_Running;
+
 
    kosal_sem_put( logging_msg_sem(g_logging_msg));
 
@@ -153,6 +171,9 @@ int stop_logging_timer(void)
    PTRACEIN;
 
    kosal_sem_get_krnl( logging_msg_sem(g_logging_msg));
+
+   logging_msg_wq_status(g_logging_msg) = logging_timer_Stopped;
+
 
    // Stop logging timer work queue.
    if(NULL != logging_msg_wq(g_logging_msg)) {
@@ -339,55 +360,55 @@ void ccip_log_fme_error(struct ccip_device *pccipdev ,struct fme_device *pfme_de
    if((0x00 != ccip_fme_gerr(pfme_dev)->ccip_fme_error0.csr) &&
       (ccip_fme_lastgerr(pfme_dev).ccip_fme_error0.csr != ccip_fme_gerr(pfme_dev)->ccip_fme_error0.csr )) {
 
-      PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME Error0 CSR: %llx \n",kosal_gettimestamp(),
-                                                                             ccip_dev_pcie_busnum(pccipdev),
-                                                                             ccip_dev_pcie_devnum(pccipdev),
-                                                                             ccip_dev_pcie_fcnnum(pccipdev),
-                                                                             ccip_fme_gerr(pfme_dev)->ccip_fme_error0.csr);
+      PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME Error0 CSR: 0x%llx \n",kosal_gettimestamp(),
+                                                                               ccip_dev_pcie_busnum(pccipdev),
+                                                                               ccip_dev_pcie_devnum(pccipdev),
+                                                                               ccip_dev_pcie_fcnnum(pccipdev),
+                                                                               ccip_fme_gerr(pfme_dev)->ccip_fme_error0.csr);
    }
 
    // FME Error1
    if((0x00 != ccip_fme_gerr(pfme_dev)->ccip_fme_error1.csr) &&
       (ccip_fme_lastgerr(pfme_dev).ccip_fme_error1.csr != ccip_fme_gerr(pfme_dev)->ccip_fme_error1.csr )) {
 
-      PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME Error1 CSR:  %llx \n",kosal_gettimestamp(),
-                                                                              ccip_dev_pcie_busnum(pccipdev),
-                                                                              ccip_dev_pcie_devnum(pccipdev),
-                                                                              ccip_dev_pcie_fcnnum(pccipdev),
-                                                                              ccip_fme_gerr(pfme_dev)->ccip_fme_error1.csr);
+      PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME Error1 CSR:  0x%llx \n",kosal_gettimestamp(),
+                                                                                ccip_dev_pcie_busnum(pccipdev),
+                                                                                ccip_dev_pcie_devnum(pccipdev),
+                                                                                ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                ccip_fme_gerr(pfme_dev)->ccip_fme_error1.csr);
    }
 
    // FME Error2
    if((0x00 != ccip_fme_gerr(pfme_dev)->ccip_fme_error2.csr) &&
       (ccip_fme_lastgerr(pfme_dev).ccip_fme_error2.csr != ccip_fme_gerr(pfme_dev)->ccip_fme_error2.csr )) {
 
-      PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME Error2 CSR:  %llx \n",kosal_gettimestamp(),
-                                                                              ccip_dev_pcie_busnum(pccipdev),
-                                                                              ccip_dev_pcie_devnum(pccipdev),
-                                                                              ccip_dev_pcie_fcnnum(pccipdev),
-                                                                              ccip_fme_gerr(pfme_dev)->ccip_fme_error2.csr);
+      PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME Error2 CSR:  0x%llx \n",kosal_gettimestamp(),
+                                                                                ccip_dev_pcie_busnum(pccipdev),
+                                                                                ccip_dev_pcie_devnum(pccipdev),
+                                                                                ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                ccip_fme_gerr(pfme_dev)->ccip_fme_error2.csr);
    }
 
    // FME first error
    if((0x00 != ccip_fme_gerr(pfme_dev)->ccip_fme_first_error.csr) &&
       (ccip_fme_lastgerr(pfme_dev).ccip_fme_first_error.csr != ccip_fme_gerr(pfme_dev)->ccip_fme_first_error.csr )) {
 
-      PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME First Error CSR:  %llx \n",kosal_gettimestamp(),
-                                                                                   ccip_dev_pcie_busnum(pccipdev),
-                                                                                   ccip_dev_pcie_devnum(pccipdev),
-                                                                                   ccip_dev_pcie_fcnnum(pccipdev),
-                                                                                   ccip_fme_gerr(pfme_dev)->ccip_fme_first_error.csr);
+      PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME First Error CSR:  0x%llx \n",kosal_gettimestamp(),
+                                                                                     ccip_dev_pcie_busnum(pccipdev),
+                                                                                     ccip_dev_pcie_devnum(pccipdev),
+                                                                                     ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                     ccip_fme_gerr(pfme_dev)->ccip_fme_first_error.csr);
    }
 
    // FME next error
    if((0x00 != ccip_fme_gerr(pfme_dev)->ccip_fme_next_error.csr) &&
       (ccip_fme_lastgerr(pfme_dev).ccip_fme_next_error.csr != ccip_fme_gerr(pfme_dev)->ccip_fme_next_error.csr )) {
 
-      PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME Next Error CSR:  %llx \n",kosal_gettimestamp(),
-                                                                                  ccip_dev_pcie_busnum(pccipdev),
-                                                                                  ccip_dev_pcie_devnum(pccipdev),
-                                                                                  ccip_dev_pcie_fcnnum(pccipdev),
-                                                                                  ccip_fme_gerr(pfme_dev)->ccip_fme_next_error.csr);
+      PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME Next Error CSR:  0x%llx \n",kosal_gettimestamp(),
+                                                                                    ccip_dev_pcie_busnum(pccipdev),
+                                                                                    ccip_dev_pcie_devnum(pccipdev),
+                                                                                    ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                    ccip_fme_gerr(pfme_dev)->ccip_fme_next_error.csr);
    }
 
 
@@ -415,22 +436,22 @@ void ccip_log_port_error(struct ccip_device *pccipdev ,struct port_device *pport
    if((0x00 != ccip_port_err(pport_dev)->ccip_port_error.csr) &&
       (ccip_port_lasterr(pport_dev).ccip_port_error.csr != ccip_port_err(pport_dev)->ccip_port_error.csr )) {
 
-      PERR(" PORT Error occurred:%s B:D.F = %x:%x.%x  PORT Error CSR: %llx \n", kosal_gettimestamp(),
-                                                                               ccip_dev_pcie_busnum(pccipdev),
-                                                                               ccip_dev_pcie_devnum(pccipdev),
-                                                                               ccip_dev_pcie_fcnnum(pccipdev),
-                                                                               ccip_port_err(pport_dev)->ccip_port_error.csr);
+      PERR(" PORT Error occurred:%s B:D.F = %x:%x.%x  PORT Error CSR: 0x%llx \n", kosal_gettimestamp(),
+                                                                                  ccip_dev_pcie_busnum(pccipdev),
+                                                                                  ccip_dev_pcie_devnum(pccipdev),
+                                                                                  ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                  ccip_port_err(pport_dev)->ccip_port_error.csr);
    }
 
    // Port First Error
    if((0x00 != ccip_port_err(pport_dev)->ccip_port_first_error.csr) &&
       (ccip_port_lasterr(pport_dev).ccip_port_first_error.csr != ccip_port_err(pport_dev)->ccip_port_first_error.csr )) {
 
-      PERR(" PORT Error occurred%s B:D.F = %x:%x.%x  PORT First Error CSR: %llx \n",kosal_gettimestamp(),
-                                                                                    ccip_dev_pcie_busnum(pccipdev),
-                                                                                    ccip_dev_pcie_devnum(pccipdev),
-                                                                                    ccip_dev_pcie_fcnnum(pccipdev),
-                                                                                    ccip_port_err(pport_dev)->ccip_port_first_error.csr);
+      PERR(" PORT Error occurred%s B:D.F = %x:%x.%x  PORT First Error CSR: 0x%llx \n",kosal_gettimestamp(),
+                                                                                      ccip_dev_pcie_busnum(pccipdev),
+                                                                                      ccip_dev_pcie_devnum(pccipdev),
+                                                                                      ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                      ccip_port_err(pport_dev)->ccip_port_first_error.csr);
    }
 
    // Port malformed request
@@ -438,12 +459,12 @@ void ccip_log_port_error(struct ccip_device *pccipdev ,struct port_device *pport
       ((ccip_port_lasterr(pport_dev).ccip_port_malformed_req_0.csr  + ccip_port_lasterr(pport_dev).ccip_port_malformed_req_1.csr ) !=
         ccip_port_err(pport_dev)->ccip_port_malformed_req_0.csr + ccip_port_err(pport_dev)->ccip_port_malformed_req_1.csr ))  {
 
-      PERR(" PORT Error occurred;%s B:D.F = %x:%x.%x  PORT Malfromed Request CSR:%llx : %llx \n",kosal_gettimestamp(),
-                                                                                                ccip_dev_pcie_busnum(pccipdev),
-                                                                                                ccip_dev_pcie_devnum(pccipdev),
-                                                                                                ccip_dev_pcie_fcnnum(pccipdev),
-                                                                                                ccip_port_err(pport_dev)->ccip_port_malformed_req_0.csr ,
-                                                                                                ccip_port_err(pport_dev)->ccip_port_malformed_req_1.csr);
+      PERR(" PORT Error occurred;%s B:D.F = %x:%x.%x PORT Malfromed req lsb CSR:0x%llx  msb CSR:0x%llx \n",kosal_gettimestamp(),
+                                                                                                           ccip_dev_pcie_busnum(pccipdev),
+                                                                                                           ccip_dev_pcie_devnum(pccipdev),
+                                                                                                           ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                                           ccip_port_err(pport_dev)->ccip_port_malformed_req_0.csr ,
+                                                                                                           ccip_port_err(pport_dev)->ccip_port_malformed_req_1.csr);
 
 
    }

@@ -79,6 +79,15 @@
 
 BEGIN_NAMESPACE(AAL)
 
+// logging work queue status.
+typedef enum
+{
+   logging_timer_idle = 0x0,
+   logging_timer_Running,
+   logging_timer_Stopped
+
+} logging_wq_status_e;
+
 struct logging_msg
 {
    // Logging worker queue
@@ -91,12 +100,15 @@ struct logging_msg
    unsigned long                    m_logging_timer_value;
    // semaphore
    kosal_semaphore                  m_logging_sem;
+
+   logging_wq_status_e              m_logginf_wq_status;
 };
 
 #define logging_msg_wq(pdev)            ((pdev).m_workq_logging)
 #define logging_msg_wobj(pdev)          ((pdev).m_workobject)
 #define logging_msg_time(pdev)          ((pdev).m_logging_timer_value)
 #define logging_msg_sem(pdev)           (&(pdev).m_logging_sem)
+#define logging_msg_wq_status(pdev)     ((pdev).m_logginf_wq_status)
 
 /// Name:    create_logging_timer
 /// @brief   creates ccip logging polling time.
