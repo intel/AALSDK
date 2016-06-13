@@ -153,7 +153,7 @@ ifdef GLS_SIM
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
-#  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
+  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/twentynm_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
@@ -532,6 +532,11 @@ scan-build:
 coverage:
 	cd $(WORK) ; lcov --base-directory . --directory . --capture --output-file ase_libs.info ; genhtml -o lcov_coverage/ ase_libs.info ; cd -
 	cd $(WORK) ; urg -full64 -dir ase_simv.vdb ; cd -
+
+# GUI call for coverage
+cov_gui: coverage_gui
+
+coverage_gui:
 	firefox ./$(WORK)/urgReport/dashboard.html &
 	firefox ./$(WORK)/lcov_coverage/index.html &
 	firefox ./$(WORK)/profileReport.html &
