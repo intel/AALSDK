@@ -238,7 +238,7 @@ void ase_alloc_action(struct buffer_t *mem)
 // DPI dealloc buffer action - Deallocate buffer action inside DPI
 // Receive index and invalidates buffer
 // --------------------------------------------------------------------
-void ase_dealloc_action(struct buffer_t *buf)
+void ase_dealloc_action(struct buffer_t *buf, int mq_enable)
 {
   FUNC_CALL_ENTRY;
 
@@ -269,7 +269,13 @@ void ase_dealloc_action(struct buffer_t *buf)
       dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
       ll_remove_buffer(dealloc_ptr);
       memcpy(buf_str, dealloc_ptr, sizeof(struct buffer_t));
-      mqueue_send(sim2app_dealloc_tx, buf_str, ASE_MQ_MSGSIZE);
+
+      // If Buffer removal is requested by APP, send back notice, else no response
+      if (mq_enable == 1) 
+	{
+	  mqueue_send(sim2app_dealloc_tx, buf_str, ASE_MQ_MSGSIZE);
+	}
+
     #ifdef ASE_LL_VIEW
       BEGIN_YELLOW_FONTCOLOR;
       ll_traverse_print();
@@ -334,7 +340,7 @@ void ase_destroy()
     {
       while (ptr != (struct buffer_t*)NULL)
 	{
-	  ase_dealloc_action(ptr);
+	  ase_dealloc_action(ptr, 0);
 	  // ll_remove_buffer(ptr);
 	  ptr = ptr->next;
 	}

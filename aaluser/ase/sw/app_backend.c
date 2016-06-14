@@ -589,6 +589,9 @@ void session_deinit()
 
   if (session_exist_status == ESTABLISHED)
     {
+      // Mark session as destroyed
+      session_exist_status = NOT_ESTABLISHED;
+
       // Unmap UMAS region
       if (umas_exist_status == ESTABLISHED)
 	{
@@ -669,7 +672,7 @@ void session_deinit()
       /* free(umas_region); */
       /* free(mmio_region); */
       // free(ase_workdir_path);
-
+      
       // Lock deinit
       pthread_mutex_destroy(&mmio_port_lock);
       pthread_mutex_destroy(&mmio_tid_lock);
@@ -1198,7 +1201,7 @@ void append_wsmeta(struct wsmeta_t *new)
   wsptr = wsmeta_head;
   while(wsptr != NULL)
     {
-      printf("\t%d %p\n", wsptr->index, wsptr->buf_structaddr );
+      printf("\t%d %p %d\n", wsptr->index, wsptr->buf_structaddr, wsptr->valid );
       wsptr = wsptr->next;
     }
   printf("WSMeta traversal END\n");
@@ -1246,12 +1249,14 @@ void deallocate_buffer_by_index(int search_index)
       deallocate_buffer((struct buffer_t *)bufptr);
       wsptr->valid = 0;
     }
+#ifdef ASE_DEBUG
   else
     {
       BEGIN_RED_FONTCOLOR;
       printf("  [APP]  Buffer pointer was returned as NULL\n");
       END_RED_FONTCOLOR;
     }
+#endif
 
   FUNC_CALL_EXIT;
 }

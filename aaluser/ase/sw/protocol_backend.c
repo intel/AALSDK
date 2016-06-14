@@ -51,6 +51,9 @@ int session_empty;
 // MMIO Respons lock
 pthread_mutex_t mmio_resp_lock;
 
+//pthread_mutex_t ase_alloc_in_progress;
+//pthread_mutex_t ase_dealloc_in_progress;
+
 // User clock frequency
 float f_usrclk;
 
@@ -602,7 +605,7 @@ int ase_listener()
 	      sprintf(logger_str + strlen(logger_str), "\n");
 
 	      // Deallocate action
-	      ase_dealloc_action(&ase_buffer);
+	      ase_dealloc_action(&ase_buffer, 1);
 
 	      // Inject buffer message
 	      buffer_msg_inject (1, logger_str );

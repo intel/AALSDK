@@ -335,7 +335,7 @@ struct buffer_t* ll_search_buffer(int);
 // void ase_mqueue_teardown();
 int ase_recv_msg(struct buffer_t *);
 void ase_alloc_action(struct buffer_t *);
-void ase_dealloc_action(struct buffer_t *);
+void ase_dealloc_action(struct buffer_t *, int );
 void ase_destroy();
 uint64_t* ase_fakeaddr_to_vaddr(uint64_t);
 void ase_dbg_memtest(struct buffer_t *);
