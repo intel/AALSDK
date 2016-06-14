@@ -316,14 +316,14 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    write_ccip_csr64(ptr,offset,fme_gerror.ccip_gerror_dflhdr.csr);
 
    // FME error mask
-   fme_gerror.ccip_fme_error_mask.rsvd=0;
+   fme_gerror.ccip_fme_error_mask0.rsvd=0;
    offset = offset + OFFSET;
-   write_ccip_csr64(ptr,offset,fme_gerror.ccip_fme_error_mask.csr);
+   write_ccip_csr64(ptr,offset,fme_gerror.ccip_fme_error_mask0.csr);
 
    // FME error
-   fme_gerror.ccip_fme_error.rsvd=0;
+   fme_gerror.ccip_fme_error0.rsvd=0;
    offset = offset + OFFSET;
-   write_ccip_csr64(ptr,offset,fme_gerror.ccip_fme_error.csr);
+   write_ccip_csr64(ptr,offset,fme_gerror.ccip_fme_error0.csr);
 
    // FME First error
    fme_gerror.ccip_fme_first_error.rsvd =0;
@@ -881,9 +881,9 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "next_DFH_offset = %x \n",pfme_dev->m_pGerror->ccip_gerror_dflhdr.next_DFH_offset);
       PDEBUG( "End of List = %x \n",pfme_dev->m_pGerror->ccip_gerror_dflhdr.eol);
 
-      PDEBUG( "ccip_fme_error_mask rsvd = %x \n",( unsigned int)pfme_dev->m_pGerror->ccip_fme_error_mask.rsvd);
+      PDEBUG( "ccip_fme_error_mask rsvd = %x \n",( unsigned int)pfme_dev->m_pGerror->ccip_fme_error_mask0.rsvd);
       PDEBUG( "ccip_fme_first_error rsvd = %x \n",( unsigned int)pfme_dev->m_pGerror->ccip_fme_first_error.rsvd);
-      PDEBUG( "ccip_fme_error rsvd = %x \n",( unsigned int)pfme_dev->m_pGerror->ccip_fme_error.rsvd);
+      PDEBUG( "ccip_fme_error rsvd = %x \n",( unsigned int)pfme_dev->m_pGerror->ccip_fme_error0.rsvd);
       PDEBUG( "FME   Global Error END \n \n");
 
    }

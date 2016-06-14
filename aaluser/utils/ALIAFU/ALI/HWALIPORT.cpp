@@ -70,8 +70,9 @@ CHWALIPORT::CHWALIPORT( IBase *pSvcClient,
 //
 // errorGet. reads Port errors
 //
-btBool CHWALIPORT::errorGet( btUnsigned64bitInt &error )
+btBool CHWALIPORT::errorGet( INamedValueSet &rResult )
 {
+
    struct CCIP_ERROR *pError                = NULL;
    struct CCIP_PORT_ERROR ccip_port_error   = {0};
    btWSSize size                            = sizeof(struct CCIP_ERROR);
@@ -95,34 +96,19 @@ btBool CHWALIPORT::errorGet( btUnsigned64bitInt &error )
    }
 
    pError = (struct  CCIP_ERROR *)transaction.getBuffer();
-   error = pError->error;
 
-   return true;
-}
-
-//
-// errorGet. reads Port errors
-//
-btBool CHWALIPORT::errorGet( INamedValueSet &rResult )
-{
-   btUnsigned64bitInt error                 = 0;
-   struct CCIP_PORT_ERROR ccip_port_error  = {0};
-
-   if(false == errorGet(error)) {
-      return false;
-   }
-
-   ccip_port_error.csr = error;
+   ccip_port_error.csr =  pError->error0;
    readPortError(ccip_port_error,rResult);
 
    return true;
 }
 
 //
-// errorFirstGet. reads Port First errors
+// errorGetOrder. reads Port First errors
 //
-btBool CHWALIPORT::errorGetFirst( btUnsigned64bitInt &firstError )
+btBool CHWALIPORT::errorGetOrder( INamedValueSet &rResult )
 {
+
    struct CCIP_ERROR *pError                = NULL;
    struct CCIP_PORT_ERROR ccip_port_error   = {0};
    btWSSize size                            = sizeof(struct CCIP_ERROR);
@@ -146,24 +132,7 @@ btBool CHWALIPORT::errorGetFirst( btUnsigned64bitInt &firstError )
    }
 
    pError = (struct  CCIP_ERROR *)transaction.getBuffer();
-   firstError = pError->first_error;
-
-   return true;
-}
-
-//
-// errorFirstGet. reads Port First errors
-//
-btBool CHWALIPORT::errorGetFirst( INamedValueSet &rResult )
-{
-   btUnsigned64bitInt firstError           = 0;
-   struct CCIP_PORT_ERROR ccip_port_error  = {0};
-
-   if(false == errorGetFirst(firstError)) {
-      return false;
-   }
-
-   ccip_port_error.csr = firstError;
+   ccip_port_error.csr  = pError->first_error;
 
    readPortError(ccip_port_error,rResult);
 
@@ -171,12 +140,12 @@ btBool CHWALIPORT::errorGetFirst( INamedValueSet &rResult )
 }
 
 //
-// errorFirstGet. reads Port First errors
+// errorMaskGet. reads Port errors mask
 //
-btBool CHWALIPORT::errorGetMask( btUnsigned64bitInt &errorMask )
+btBool CHWALIPORT::errorGetMask( INamedValueSet &rResult )
 {
    struct CCIP_ERROR *pError               = NULL;
-   struct CCIP_PORT_ERROR ccip_port_error  = {0};
+   struct CCIP_PORT_ERROR ccip_port_error_msk  = {0};
    btWSSize size                           = sizeof(struct CCIP_ERROR);
 
    // Create the Transaction
@@ -198,47 +167,10 @@ btBool CHWALIPORT::errorGetMask( btUnsigned64bitInt &errorMask )
    }
 
    pError = (struct  CCIP_ERROR *)transaction.getBuffer();
-   errorMask = pError->error_mask;
 
-   return true;
-}
 
-//
-// errorMaskGet. reads Port errors mask
-//
-btBool CHWALIPORT::errorGetMask( INamedValueSet &rResult )
-{
-   btUnsigned64bitInt errorMask                 = 0;
-   struct CCIP_PORT_ERROR ccip_port_error_mask  = {0};
-
-   if(false == errorGetMask(errorMask)) {
-      return false;
-   }
-
-   ccip_port_error_mask.csr = errorMask;
-   readPortError(ccip_port_error_mask,rResult);
-
-   return true;
-}
-
-//
-// errorSetMask. sets port error mask.
-//
-btBool CHWALIPORT::errorSetMask(const btUnsigned64bitInt errorMask)
-{
-   // Create the Transaction
-   SetError transaction(ccipdrv_SetPortErrorMask,errorMask);
-
-   // Should never fail
-   if ( !transaction.IsOK() ) {
-      return  false;
-   }
-
-   // Send transaction
-   m_pAFUProxy->SendTransaction(&transaction);
-   if(transaction.getErrno() != uid_errnumOK) {
-      return false;
-   }
+   ccip_port_error_msk.csr = pError->error0_mask;;
+   readPortError(ccip_port_error_msk,rResult);
 
    return true;
 }
@@ -249,23 +181,14 @@ btBool CHWALIPORT::errorSetMask(const btUnsigned64bitInt errorMask)
 btBool CHWALIPORT::errorSetMask( const INamedValueSet &rInputArgs )
 {
    struct CCIP_PORT_ERROR cip_port_error_mask   = {0};
+   struct CCIP_ERROR ccip_error                 = {0};
 
    writePortError(&cip_port_error_mask,rInputArgs);
 
-   if(false == errorSetMask(cip_port_error_mask.csr)) {
-      return false;
-   }
+   ccip_error.error0_mask = cip_port_error_mask.csr;
 
-   return true;
-}
-
-//
-// errorClear. clears port errors.
-//
-btBool CHWALIPORT::errorClear(const btUnsigned64bitInt error)
-{
    // Create the Transaction
-   SetError transaction(ccipdrv_ClearPortError,error);
+   SetError transaction(ccipdrv_SetPortErrorMask,ccip_error);
 
    // Should never fail
    if ( !transaction.IsOK() ) {
@@ -281,16 +204,30 @@ btBool CHWALIPORT::errorClear(const btUnsigned64bitInt error)
    return true;
 }
 
+
 //
 // errorClear. clears port errors.
 //
 btBool CHWALIPORT::errorClear(const INamedValueSet &rInputArgs )
 {
    struct CCIP_PORT_ERROR port_error = {0};
+   struct CCIP_ERROR ccip_error      = {0};
 
    writePortError(&port_error,rInputArgs);
 
-   if(false == errorClear(port_error.csr)) {
+   ccip_error.error0 = port_error.csr;
+
+   // Create the Transaction
+   SetError transaction(ccipdrv_ClearPortError,ccip_error);
+
+   // Should never fail
+   if ( !transaction.IsOK() ) {
+      return  false;
+   }
+
+   // Send transaction
+   m_pAFUProxy->SendTransaction(&transaction);
+   if(transaction.getErrno() != uid_errnumOK) {
       return false;
    }
 
@@ -302,8 +239,9 @@ btBool CHWALIPORT::errorClear(const INamedValueSet &rInputArgs )
 //
 btBool CHWALIPORT::errorClearAll()
 {
+   struct CCIP_ERROR ccip_error      = {0};
    // Create the Transaction
-   SetError transaction(ccipdrv_ClearAllPortErrors,0x0);
+   SetError transaction(ccipdrv_ClearAllPortErrors,ccip_error);
 
    // Should never fail
    if ( !transaction.IsOK() ) {
@@ -359,6 +297,97 @@ btBool CHWALIPORT::errorGetPortMalformedReq( INamedValueSet &rResult )
    return true;
 }
 
+//
+// printAllErrors. Prints all errors.
+//
+btBool CHWALIPORT::printAllErrors()
+{
+
+   struct CCIP_ERROR *pError    =  NULL;
+   btWSSize size                = sizeof(struct CCIP_ERROR);
+
+   // Create the Transaction
+   ErrorGet transaction(size,ccipdrv_getPortError);
+
+   // Should never fail
+   if ( !transaction.IsOK() ) {
+      return  false;
+   }
+
+   // Send transaction
+   m_pAFUProxy->SendTransaction(&transaction);
+   if(transaction.getErrno() != uid_errnumOK) {
+      return false;
+   }
+
+   if(NULL == transaction.getBuffer() )  {
+      return false;
+   }
+
+   pError = (struct  CCIP_ERROR *)transaction.getBuffer();
+
+   pirntPortErrors(pError);
+
+   return true;
+
+}
+
+//
+// pirntPortErrors. Prints all port errors.
+//
+void CHWALIPORT::pirntPortErrors(struct CCIP_ERROR *pError)
+{
+   btUnsignedInt count;
+   NamedValueSet portErrornvs;
+   struct CCIP_PORT_ERROR ccip_port_error   = {0};
+
+   // Port Error
+   portErrornvs.Empty();
+   ccip_port_error.csr =  pError->error0;
+   readPortError(ccip_port_error,portErrornvs);
+   portErrornvs.GetNumNames(&count);
+
+   for(int i=0;i<count ;i++) {
+
+      btStringKey type;
+      portErrornvs.GetName(i,&type);
+      std::cout << " PORT Error: " << type <<"  Set"<< std::endl;
+   }
+
+   // Port Error Mask
+   portErrornvs.Empty();
+   ccip_port_error.csr =  pError->error0_mask;
+   readPortError(ccip_port_error,portErrornvs);
+   portErrornvs.GetNumNames(&count);
+
+   for(int i=0;i<count ;i++) {
+      btStringKey type;
+      portErrornvs.GetName(i,&type);
+      std::cout << " PORT Mask: " << type <<"  Set"<< std::endl;
+   }
+
+   // Port Firt Error
+   portErrornvs.Empty();
+   ccip_port_error.csr =  pError->first_error;
+   readPortError(ccip_port_error,portErrornvs);
+   portErrornvs.GetNumNames(&count);
+
+   for(int i=0;i<count ;i++) {
+      btStringKey type;
+      portErrornvs.GetName(i,&type);
+      std::cout << " PORT First: " << type <<"  Set"<< std::endl;
+   }
+
+   // Malformed Request count
+   if(0x0 != pError->malreq0) {
+      std::cout << "Port malformed request0 Error CSR:0x"<< std::hex << pError->malreq0 << std::endl;
+   }
+
+   if(0x0 != pError->malreq1) {
+      std::cout << "Port malformed request0 Error CSR:0x"<< std::hex << pError->malreq1 << std::endl;
+   }
+
+}
 //
 // AFUEvent,AFU Event Handler.
 //

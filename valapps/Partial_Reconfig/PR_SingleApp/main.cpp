@@ -1,3 +1,7 @@
+// INTEL CONFIDENTIAL - For Intel Internal Use Only
+//
+// valapps/Partial_Reconfig/PR_SingleApp/main.cpp
+//
 // Copyright(c) 2007-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
@@ -24,18 +28,17 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file ALIConfAFU.cpp
-/// @brief Basic ALI AFU interaction.
-/// @ingroup ALIConfAFU
+/// @file main.cpp
+/// @brief Partial reconfiguration of green bit stream service .
+/// @ingroup Partial_Reconfig
 /// @verbatim
-/// Accelerator Abstraction Layer Sample Application
+/// AAL Partial reconfiguration test application
 ///
-///    This application is for example purposes only.
+///    This application is for testing purposes only.
 ///    It is not intended to represent a model for developing commercially-
 ///       deployable applications.
-///    It is designed to show working examples of the AAL programming model and APIs.
+///    It is designed to test PR functionality.
 ///
-/// AUTHORS: Joseph Grecco, Intel Corporation.
 ///
 /// This Sample demonstrates how to use the basic ALI APIs.
 ///
@@ -43,16 +46,13 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 12/15/2015     JG       Initial version started based on older sample code.@endverbatim
+/// 06/06/2016     RP       Initial version started based on older sample
 //****************************************************************************
+
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/Runtime.h>
 #include <aalsdk/AALLoggerExtern.h>
-
 #include <aalsdk/service/IALIAFU.h>
-
-
-#include <string.h>
 
 #include "../PR_SingleApp/ALINLB.h"
 #include "../PR_SingleApp/ALIReconf.h"
@@ -84,7 +84,6 @@ AALCLP_DECLARE_GCS_COMPLIANT(stdout,
                              help_msg_callback,
                              &configCmdLine);
 END_C_DECLS
-
 
 
 class PRTest: public CAASBase, public IRuntimeClient
@@ -130,9 +129,9 @@ protected:
    Runtime                 m_Runtime;           ///< AAL Runtime
    CSemaphore              m_Sem;               ///< For synchronizing with the AAL runtime.
    btInt                   m_Result;            ///< Returned result v; 0 if success
-   btInt                   m_Errors;
-   AllocatesReconfService  m_reconfAFU;
-   AllocatesNLBService     m_ALINLB ;
+   btInt                   m_Errors;            /// < Partial Reconfiguration errors
+   AllocatesReconfService  m_reconfAFU;         /// < Reconfiguration Service
+   AllocatesNLBService     m_ALINLB ;           /// < NLB Service
 
 };
 
@@ -230,44 +229,6 @@ btBool PRTest::FreeRuntime()
 
 }
 
-
-//=============================================================================
-// Name: main
-// Description: Entry point to the application
-// Inputs: none
-// Outputs: none
-// Comments: Main initializes the system. The rest of the example is implemented
-//           in the object theApp.
-//=============================================================================
-
-int main(int argc, char *argv[])
-{
-   btInt Result =0;
-
-   if ( argc < 2 ) {
-      showhelp(stdout, &_aalclp_gcs_data);
-      return 1;
-   } else if ( 0!= ParseCmds(&configCmdLine, argc, argv) ) {
-      cerr << "Error scanning command line." << endl;
-      return 2;
-   }else if ( flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_HELP|ALICONIFG_CMD_FLAG_VERSION) ) {
-      return 0;
-   }
-
-   PRTest theApp;
-   if(!theApp.IsOK()){
-      ERR("Runtime Failed to Start");
-      exit(1);
-   }
-
-   theApp.runTests();
-
-   theApp.FreeRuntime();
-   MSG("Done");
-   return Result;
-}
-
-
 btBool PRTest::allocRecongService()
 {
    // Allocate Service
@@ -277,7 +238,7 @@ btBool PRTest::allocRecongService()
       ERR("--- Failed to Allocate Reconfigure Service --- ");
       return false;
    }
-   strcpy(configCmdLine.bitstream_file,BitStreamFile);
+   //strcpy(configCmdLine.bitstream_file,BitStreamFile);
    m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
 
    m_reconfAFU.reconfConfigure();
@@ -690,7 +651,7 @@ void PRTest::sw_pr_10()
 
    TEST_CASE("--------  sw_pr_10 START ---------");
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,true);
 
    m_reconfAFU.reconfConfigure();
    if(false == m_reconfAFU.IsOK() ) {
@@ -704,7 +665,7 @@ void PRTest::sw_pr_10()
 
    if(false == m_reconfAFU.IsOK() ) {
       ++m_Errors;
-      ERR("sw_pr_10:Deactivate  FAIL ");
+      ERR("sw_pr_10:Activate  FAIL ");
       return ;
    }
 
@@ -848,3 +809,41 @@ void PRTest::sw_pr_12()
    m_ALINLB.FreeNLBService();
 }
 
+
+//=============================================================================
+// Name: main
+// Description: Entry point to the application
+// Inputs: none
+// Outputs: none
+// Comments: Main initializes the system. The rest of the example is implemented
+//           in the object theApp.
+//=============================================================================
+
+int main(int argc, char *argv[])
+{
+   btInt Result =0;
+
+   if ( argc < 2 ) {
+      showhelp(stdout, &_aalclp_gcs_data);
+      return 1;
+   } else if ( 0!= ParseCmds(&configCmdLine, argc, argv) ) {
+      cerr << "Error scanning command line." << endl;
+      return 2;
+   }else if ( flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_HELP|ALICONIFG_CMD_FLAG_VERSION) ) {
+      return 0;
+   }
+
+   PRTest theApp;
+   if(!theApp.IsOK()){
+      ERR("Runtime Failed to Start");
+      exit(1);
+   }
+
+   // Test cases
+   theApp.runTests();
+
+   // Free Runtime
+   theApp.FreeRuntime();
+   MSG("Done");
+   return Result;
+}

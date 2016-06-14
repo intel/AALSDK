@@ -290,6 +290,16 @@ public:
    /// The function will return the ID, GUID, and TYPE of the first matching
    /// feature in rOutputArgs, if supplied (optional argument via overloading).
    ///
+   /// Note that mmioGetFeature*() expects the values for the keys listed above
+   /// to be of a specific datatype, namely:
+   ///
+   ///    ALI_GETFEATURE_ID_DATATYPE
+   ///    ALI_GETFEATURE_TYPE_DATATYPE
+   ///    ALI_GETFEATURE_GUID_DATATYPE
+   ///
+   /// The function will return an error if it encounters an unexpected
+   /// datatype.
+   ///
    /// @note       Synchronous function; no TransactionID. Generally very fast.
    /// @param[out] pFeature    Where to place the address of the feature header.
    /// @param[in]  rInputArgs  Arguments specifying which feature to search for.
@@ -792,13 +802,6 @@ public:
    ///              False if the read was failed
    virtual btBool errorGet( INamedValueSet &rResult ) = 0;
 
-   /// @brief       Obtains errors.
-   /// @note        Synchronous
-   /// @param[out]  rResult  Returns errors set by fpga
-   ///                       0 if a problem.
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
-   virtual btBool errorGet( btUnsigned64bitInt &error ) = 0;
 
    /// @brief       Obtains first errors.
    /// @note        Synchronous
@@ -806,15 +809,7 @@ public:
    ///                       NULL if a problem.
    /// @return      True if the read was successful.
    ///              False if the read was failed
-   virtual btBool errorGetFirst( INamedValueSet &rResult ) = 0;
-
-   /// @brief       Obtains first errors.
-   /// @note        Synchronous
-   /// @param[out]  rResult  Returns first errors set by fpga
-   ///                       0 if a problem.
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
-   virtual btBool errorGetFirst( btUnsigned64bitInt &firstError ) = 0;
+   virtual btBool errorGetOrder( INamedValueSet &rResult ) = 0;
 
    /// @brief       Obtains error mask.
    /// @note        Synchronous
@@ -824,14 +819,6 @@ public:
    ///              False if the read was failed
    virtual btBool errorGetMask( INamedValueSet &rResult ) = 0;
 
-   /// @brief       Obtains error mask.
-   /// @note        Synchronous
-   /// @param[out]  rResult  Returns  errors masks
-   ///                       0 if a problem.
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
-   virtual btBool errorGetMask( btUnsigned64bitInt &errorMask ) = 0;
-
    /// @brief       sets error mask.
    /// @note        Synchronous
    /// @param[in]   rInputArgs  Sets error mask
@@ -839,15 +826,6 @@ public:
    /// @return      True if the read was successful.
    ///              False if the read was failed
    virtual btBool errorSetMask(const INamedValueSet &rInputArgs) = 0;
-
-
-   /// @brief       sets error mask.
-   /// @note        Synchronous
-   /// @param[in]   rInputArgs  Sets error mask
-   ///                       0 if a problem.
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
-   virtual btBool errorSetMask(const btUnsigned64bitInt errorMask) = 0;
 
    /// @brief       clears errors.
    /// @note        Synchronous
@@ -857,19 +835,17 @@ public:
    ///              False if the read was failed
    virtual btBool errorClear( const INamedValueSet &rInputArgs) = 0;
 
-   /// @brief       clears errors.
-   /// @note        Synchronous
-   /// @param[in]   rInputArgs  Clears errors
-   ///                       0 if a problem.
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
-   virtual btBool errorClear( const btUnsigned64bitInt error) = 0;
-
    /// @brief       Clears all errors.
    /// @note        Synchronous
    /// @return      True if the read was successful.
    ///              False if the read was failed
    virtual btBool errorClearAll() = 0;
+
+   /// @brief       print all errors.
+   /// @note        Synchronous
+   /// @return      True if the read was successful.
+   ///              False if the read was failed
+   virtual btBool printAllErrors() = 0;
 
 }; // class IALIError
 

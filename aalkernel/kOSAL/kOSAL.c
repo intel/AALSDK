@@ -73,6 +73,7 @@
 #include <linux/vmalloc.h>
 # include <linux/delay.h>
 #include <linux/dma-mapping.h>
+#include <linux/rtc.h>
 #endif // __AAL_LINUX__
 
 #if defined( __AAL_UNKNOWN_OS__ )
@@ -654,6 +655,34 @@ void _kosal_free_user_buffer(__ASSERT_HERE_PROTO btVirtAddr user_prt,  btWSSize 
 #endif
 }
 
+
+char* kosal_gettimestamp(void) 
+{
+
+#if defined( __AAL_LINUX__ )
+
+   static char timestamp[200];
+   struct rtc_time tm;
+   struct timeval time;
+   unsigned long local_time;
+
+   do_gettimeofday(&time);
+   local_time = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
+   rtc_time_to_tm(local_time, &tm);
+
+   sprintf(timestamp," Time Stamp: %04d-%02d-%02d %02d:%02d:%02d\n",
+                                                                   tm.tm_year + 1900,
+                                                                   tm.tm_mon + 1,
+                                                                   tm.tm_mday,
+                                                                   tm.tm_hour,
+                                                                   tm.tm_min,
+                                                                   tm.tm_sec);
+
+   return timestamp;
+#elif defined( __AAL_WINDOWS__ )
+
+#endif
+}
 
 
 

@@ -895,7 +895,7 @@ ErrorGet::~ErrorGet() {
 // Input:         error  - 64bit ccip error csr
 // Comments:
 //=============================================================================
-SetError::SetError(btUnsigned64bitInt cmd,btUnsigned64bitInt error) :
+SetError::SetError(btUnsigned64bitInt cmd,struct CCIP_ERROR ccip_error ) :
    m_msgID(reqid_UID_SendAFU),
    m_cmd(cmd),
    m_bIsOK(false),
@@ -918,9 +918,14 @@ SetError::SetError(btUnsigned64bitInt cmd,btUnsigned64bitInt error) :
    afumsg->cmd     = m_cmd;
    afumsg->size    = sizeof(struct ahm_req) ;
 
-   req->u.error_csr.error  = error;
+   req->u.error_csr.error0  = ccip_error.error0;
+   req->u.error_csr.error1  = ccip_error.error1;
+   req->u.error_csr.error2  = ccip_error.error2;
 
-// package in AIA transaction
+   req->u.error_csr.first_error  = ccip_error.first_error;
+   req->u.error_csr.next_error  = ccip_error.next_error;
+
+  // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
 
    ASSERT(NULL != m_payload);

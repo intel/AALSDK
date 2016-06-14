@@ -251,6 +251,7 @@ CMyApp::CMyApp() :
    m_pRuntime(NULL),
    m_pNLBService(NULL),
    m_pFMEService(NULL),
+   m_pDiagBufferService(NULL),
    m_pALIBufferService(NULL),
    m_pALIMMIOService(NULL),
    m_pALIResetService(NULL),
@@ -503,6 +504,8 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 	         return;
 	      }
 
+	      m_pDiagBufferService = m_pALIBufferService;
+
 	      // Documentation says HWALIAFU Service publishes
 	      //    IALIMMIO as subclass interface. Used to set/get MMIO Region
 	      m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
@@ -568,24 +571,24 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 
 	  m_pVTPService->vtpReset();
 	  m_VTPActive = true;
+	  m_pDiagBufferService = dynamic_cast<IALIBuffer *>(m_pVTPService);
    }
 
-   if(true == m_VTPActive){
-	   if( m_pFMEService &&
-		   m_pNLBService &&
-		   m_pVTPService ){
+	if( m_pFMEService &&
+		m_pNLBService)
+	{
+		if(true == m_VTPActive){
+			if ( m_pVTPService ){
 	        INFO("Service Allocated");
 	        allocateWorkspaces();
 	        Post();
-	     }
-
-   }else{
-	   if( m_pFMEService && m_pNLBService){
+			}
+		}else{
 	   	  INFO("Service Allocated");
 	   	  allocateWorkspaces();
 	   	  Post();
-	   }
-   }
+		}
+	}
 }
 
 void CMyApp::allocateWorkspaces()
@@ -594,19 +597,19 @@ void CMyApp::allocateWorkspaces()
    //   In workspaceAllocated() callback we allocate the rest
 
    m_DSMSize = NLB_DSM_SIZE;
-   if( ali_errnumOK != bufferAllocate(NLB_DSM_SIZE, &m_DSMVirt)){
+   if( ali_errnumOK != m_pDiagBufferService->bufferAllocate(NLB_DSM_SIZE, &m_DSMVirt)){
 	  m_bIsOK = false;
 	  return;
    }
 
    m_InputSize = MAX_NLB_WKSPC_SIZE;
-   if( ali_errnumOK != bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_InputVirt)){
+   if( ali_errnumOK != m_pDiagBufferService->bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_InputVirt)){
 	  m_bIsOK = false;
 	  return;
    }
 
    m_OutputSize = MAX_NLB_WKSPC_SIZE;
-   if( ali_errnumOK != bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_OutputVirt)){
+   if( ali_errnumOK != m_pDiagBufferService->bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_OutputVirt)){
 	  m_bIsOK = false;
 	  return;
    }
@@ -617,9 +620,9 @@ void CMyApp::allocateWorkspaces()
 	   m_OutputPhys = btPhysAddr(m_OutputVirt);
 
    }else {
-	   m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
-	   m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
-	   m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
+	   m_DSMPhys = m_pDiagBufferService->bufferGetIOVA(m_DSMVirt);
+	   m_InputPhys = m_pDiagBufferService->bufferGetIOVA(m_InputVirt);
+	   m_OutputPhys = m_pDiagBufferService->bufferGetIOVA(m_OutputVirt);
    }
 
    btUnsignedInt numUmsg = m_pALIuMSGService->umsgGetNumber();
@@ -628,21 +631,6 @@ void CMyApp::allocateWorkspaces()
    if(NULL == m_UMsgVirt){
 	  ERR("No uMSG support");
    }
-}
-
-ali_errnum_e CMyApp::bufferAllocate( btWSSize             Length,
-                                     btVirtAddr          *pBufferptr )
-{
-    ali_errnum_e s;
-
-    if (m_VTPActive) {
-        s = m_pVTPService->bufferAllocate(Length, pBufferptr);
-    }
-    else {
-        s = m_pALIBufferService->bufferAllocate(Length, pBufferptr);
-    }
-
-    return s;
 }
 
 void CMyApp::serviceAllocateFailed(const IEvent &e)
@@ -694,11 +682,11 @@ void CMyApp::serviceReleaseFailed(const IEvent &e)
 
 void CMyApp::serviceFreed(TransactionID const &tid)
 {
-	if( NULL != m_pALIBufferService ) {
+	if( NULL != m_pDiagBufferService ) {
 	  // Release the Workspaces
-	  m_pALIBufferService->bufferFree(m_InputVirt);
-	  m_pALIBufferService->bufferFree(m_OutputVirt);
-	  m_pALIBufferService->bufferFree(m_DSMVirt);
+	  m_pDiagBufferService->bufferFree(m_InputVirt);
+	  m_pDiagBufferService->bufferFree(m_OutputVirt);
+	  m_pDiagBufferService->bufferFree(m_DSMVirt);
 	}
     INFO("Service Freed");
     Post();
@@ -1048,6 +1036,10 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
 
    for ( ; pCoolOff < pEndCoolOff ; ++pCoolOff ) {
       *pCoolOff = CoolOffData;
+   }
+
+   if(NULL != m_pVTPService){
+      m_pVTPService->vtpReset();
    }
 
    //Set DSM base, high then low

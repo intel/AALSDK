@@ -75,7 +75,7 @@
 #include <aalsdk/kernel/aaltypes.h>
 #include "cci_pcie_driver_internal.h"
 #include "aalsdk/kernel/ccipdriver.h"
-
+#include "aalsdk/kernel/ccip_defs.h"
 
 BEGIN_NAMESPACE(AAL)
 
@@ -104,6 +104,8 @@ struct fme_device
    // btUnsignedInt              m_flags;
 
    // struct aal_device         m_aal_dev;         // AAL Device from which this is derived
+   struct CCIP_FME_DFL_GERROR   m_lastGerror;
+   struct CCIP_FME_DFL_THERM    m_lastThermmgmt;
 
 }; // end struct fme_device
 
@@ -119,6 +121,9 @@ struct fme_device
 #define ccip_fme_perf(pdev)                  ((pdev)->m_pPerf)
 #define ccip_fme_gerr(pdev)                  ((pdev)->m_pGerror)
 #define ccip_fme_pr(pdev)                    ((pdev)->m_pPRmgmt)
+
+#define ccip_fme_lastgerr(pdev)               ((pdev)->m_lastGerror)
+#define ccip_fme_lasttherm(pdev)              ((pdev)->m_lastThermmgmt)
 
 #define ccip_fme_mem_sessionp(pdev)              ((pdev)->m_pmem_session)
 

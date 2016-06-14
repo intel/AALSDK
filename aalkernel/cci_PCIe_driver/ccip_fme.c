@@ -294,10 +294,18 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
              break;
           }
 
-          PVERBOSE("Port Error mask CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error_mask.csr);
-          PVERBOSE("preq->ahmreq.u.error_csr.error:%llx \n",preq->ahmreq.u.error_csr.error);
+          PVERBOSE("Port Error mask CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error_mask0.csr);
+          PVERBOSE("preq->ahmreq.u.error_csr.error:%llx \n",preq->ahmreq.u.error_csr.error0);
 
-          ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error_mask.csr = preq->ahmreq.u.error_csr.error;
+          PVERBOSE("Port Error mask CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error_mask1.csr);
+          PVERBOSE("preq->ahmreq.u.error_csr.error:%llx \n",preq->ahmreq.u.error_csr.error1);
+
+          PVERBOSE("Port Error mask CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error_mask2.csr);
+          PVERBOSE("preq->ahmreq.u.error_csr.error:%llx \n",preq->ahmreq.u.error_csr.error2);
+
+          ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error_mask0.csr = preq->ahmreq.u.error_csr.error0;
+          ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error_mask1.csr = preq->ahmreq.u.error_csr.error1;
+          ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error_mask2.csr = preq->ahmreq.u.error_csr.error2;
 
           //Success Event
           Message->m_errcode = uid_errnumOK;
@@ -315,12 +323,16 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
               break;
            }
 
-           PVERBOSE("Port Error CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error.csr);
+           PVERBOSE("Port Error CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error0.csr);
            PVERBOSE("Port First Error CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_first_error.csr);
-           PVERBOSE("preq->ahmreq.u.error_csr.error:%llx \n",preq->ahmreq.u.error_csr.error);
+           PVERBOSE("preq->ahmreq.u.error_csr.error:%llx \n",preq->ahmreq.u.error_csr.error0);
 
-           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error.csr = preq->ahmreq.u.error_csr.error;
-           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_first_error.csr = preq->ahmreq.u.error_csr.error;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error0.csr = preq->ahmreq.u.error_csr.error0;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error1.csr = preq->ahmreq.u.error_csr.error1;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error1.csr = preq->ahmreq.u.error_csr.error2;
+
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_first_error.csr = preq->ahmreq.u.error_csr.first_error;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_next_error.csr  = preq->ahmreq.u.error_csr.next_error;
 
            //Success Event
            Message->m_errcode = uid_errnumOK;
@@ -331,11 +343,15 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
            PVERBOSE("ccipdrv_ClearAllFMEError \n");
 
-           PVERBOSE("Port Error CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error.csr);
-           PVERBOSE("Port First Error CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_first_error.csr);
+           // PVERBOSE("Port Error CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error0.csr);
+           // PVERBOSE("Port First Error CSR:%llx \n",ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_first_error.csr);
 
-           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error.csr = 0x0;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error0.csr = 0x0;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error1.csr = 0x0;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_error2.csr = 0x0;
+
            ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_first_error.csr = 0x0;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ccip_fme_next_error.csr = 0x0;
 
            //Success Event
            Message->m_errcode = uid_errnumOK;
@@ -670,9 +686,18 @@ bt32bitInt get_fme_error(struct fme_device  *pfme_dev,
 
    memset(pfme_error,0,sizeof(struct CCIP_ERROR));
 
-   pfme_error->error_mask    = ccip_fme_gerr(pfme_dev)->ccip_fme_error_mask.csr;
-   pfme_error->error         = ccip_fme_gerr(pfme_dev)->ccip_fme_error.csr;
+   pfme_error->error0_mask    = ccip_fme_gerr(pfme_dev)->ccip_fme_error_mask0.csr;
+   pfme_error->error0         = ccip_fme_gerr(pfme_dev)->ccip_fme_error0.csr;
+
+   pfme_error->error1_mask    = ccip_fme_gerr(pfme_dev)->ccip_fme_error_mask1.csr;
+   pfme_error->error1         = ccip_fme_gerr(pfme_dev)->ccip_fme_error1.csr;
+
+   pfme_error->error2_mask    = ccip_fme_gerr(pfme_dev)->ccip_fme_error_mask2.csr;
+   pfme_error->error2         = ccip_fme_gerr(pfme_dev)->ccip_fme_error2.csr;
+
    pfme_error->first_error   = ccip_fme_gerr(pfme_dev)->ccip_fme_first_error.csr;
+
+   pfme_error->next_error   = ccip_fme_gerr(pfme_dev)->ccip_fme_next_error.csr;
 
    PTRACEOUT_INT(res);
    return res;

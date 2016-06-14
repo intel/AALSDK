@@ -153,11 +153,6 @@ public:
    /// @brief Routine to allocate input, output, DSM and Umsg workspaces.
    void allocateWorkspaces();
 
-   // @brief Allocate a buffer using either VTP or the base allocator
-   ali_errnum_e bufferAllocate( btWSSize             Length,
-							    btVirtAddr          *pBufferptr );
-
-
    /// @brief Mutator for setting the NVS value that selects the AFU Delegate.
    void AFUTarget(const std::string &target) { m_AFUTarget = target; }
    /// @brief Accessor for the NVS value that selects the AFU Delegate.
@@ -197,6 +192,7 @@ protected:
    IBase       *m_pNLBService;       ///< The generic AAL Service interface for the AFU.
    IBase       *m_pFMEService;       ///< The generic AAL Service interface for the AFU.
    IBase       *m_pVTP_AALService;	 ///< The generic AAL Service interface for the VTP
+   IALIBuffer  *m_pDiagBufferService;///< Pointer to Buffer Service
    CSemaphore   m_Sem;
    IALIBuffer  *m_pALIBufferService; ///< Pointer to Buffer Service
    IALIMMIO    *m_pALIMMIOService;   ///< Pointer to MMIO Service

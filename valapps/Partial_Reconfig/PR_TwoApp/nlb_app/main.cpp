@@ -1,3 +1,7 @@
+// INTEL CONFIDENTIAL - For Intel Internal Use Only
+//
+// valapps/Partial_Reconfig/PR_TwoApp/main.cpp
+//
 // Copyright(c) 2007-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
@@ -24,18 +28,17 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file HelloALINLB.cpp
-/// @brief Basic ALI AFU interaction.
-/// @ingroup HelloALINLB
+/// @file main.cpp
+/// @brief NLB Service and run NLB algorithm on fpga  .
+/// @ingroup Partial_Reconfig
 /// @verbatim
-/// Accelerator Abstraction Layer Sample Application
+/// AAL NLB test application
 ///
-///    This application is for example purposes only.
+///    This application is for testing purposes only.
 ///    It is not intended to represent a model for developing commercially-
 ///       deployable applications.
-///    It is designed to show working examples of the AAL programming model and APIs.
+///    It is designed to test NLB functionality.
 ///
-/// AUTHORS: Joseph Grecco, Intel Corporation.
 ///
 /// This Sample demonstrates how to use the basic ALI APIs.
 ///
@@ -43,24 +46,15 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 12/15/2015     JG       Initial version started based on older sample code.@endverbatim
+/// 06/06/2016     RP       Initial version started based on older sample
 //****************************************************************************
+
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/Runtime.h>
 #include <aalsdk/AALLoggerExtern.h>
-
 #include <aalsdk/service/IALIAFU.h>
 
-#include <string.h>
-
 #include "../../PR_SingleApp/ALINLB.h"
-
-//****************************************************************************
-// UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
-//    DEFAULT is to use Software Simulation.
-//****************************************************************************
-#define  HWAFU
-//#define  ASEAFU
 
 using namespace std;
 using namespace AAL;
@@ -70,6 +64,7 @@ using namespace AAL;
 # undef MSG
 #endif // MSG
 #define MSG(x) std::cout << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl
+#define TEST_CASE(x) std::cout << std::endl << x << std::endl
 #ifdef ERR
 # undef ERR
 #endif // ERR
@@ -85,49 +80,32 @@ public:
    ~HelloNLBTestApp();
 
    // <begin IRuntimeClient interface>
-   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent){};    // Not Used
-
-   void runtimeStarted(IRuntime            *pRuntime,
-                       const NamedValueSet &rConfigParms);
-
+   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent){};
+   void runtimeStarted(IRuntime  *pRuntime, const NamedValueSet &rConfigParms);
    void runtimeStopped(IRuntime *pRuntime);
-
    void runtimeStartFailed(const IEvent &rEvent);
-
    void runtimeStopFailed(const IEvent &rEvent);
-
    void runtimeAllocateServiceFailed( IEvent const &rEvent);
-
-   void runtimeAllocateServiceSucceeded(IBase               *pClient,
-                                        TransactionID const &rTranID);
-
+   void runtimeAllocateServiceSucceeded(IBase  *pClient, TransactionID const &rTranID);
    void runtimeEvent(const IEvent &rEvent);
-
    // <end IRuntimeClient interface>
-
-
 
    btBool FreeRuntime();
    btBool runTests(btBool brunloop,btBool bReleaseMode);
-
    btBool allocNLBService();
-
    Runtime* getRuntime() { return &m_Runtime;}
    btInt Errors() const { return m_Errors; }
-
    void setReleaseSevice(btBool bReleaseService) { m_bReleaseService = bReleaseService ; }
    void setTestMode(btBool btestMode) { m_btestMode = btestMode ; }
 
-
 protected:
-   Runtime               m_Runtime;           ///< AAL Runtime
-   CSemaphore            m_Sem;               ///< For synchronizing with the AAL runtime.
-   btInt                 m_Result;            ///< Returned result v; 0 if success
+   Runtime               m_Runtime;
+   CSemaphore            m_Sem;
+   btInt                 m_Result;
    btInt                 m_Errors;
    AllocatesNLBService   m_helloALINLB ;
    btBool                m_btestMode ;
    btBool                m_bReleaseService;
-
 
 };
 
@@ -149,10 +127,8 @@ HelloNLBTestApp::HelloNLBTestApp() :
 
 
 {
-
    SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
-   // Initialize our internal semaphore
    m_Sem.Create(0, 1);
 
    NamedValueSet configArgs;
@@ -178,97 +154,91 @@ HelloNLBTestApp::~HelloNLBTestApp()
 }
 
 
- void HelloNLBTestApp::runtimeStarted( IRuntime            *pRuntime,
+void HelloNLBTestApp::runtimeStarted( IRuntime            *pRuntime,
                                       const NamedValueSet &rConfigParms)
- {
-    m_bIsOK = true;
-    m_Sem.Post(1);
- }
+{
+   m_bIsOK = true;
+   m_Sem.Post(1);
+}
 
- void HelloNLBTestApp::runtimeStopped(IRuntime *pRuntime)
-  {
-     MSG("Runtime stopped");
-     m_bIsOK = false;
-     m_Sem.Post(1);
-  }
+void HelloNLBTestApp::runtimeStopped(IRuntime *pRuntime)
+{
+   MSG("Runtime stopped");
+   m_bIsOK = false;
+   m_Sem.Post(1);
+}
 
- void HelloNLBTestApp::runtimeStartFailed(const IEvent &rEvent)
- {
-    ERR("Runtime start failed");
-    PrintExceptionDescription(rEvent);
- }
+void HelloNLBTestApp::runtimeStartFailed(const IEvent &rEvent)
+{
+   ERR("Runtime start failed");
+   PrintExceptionDescription(rEvent);
+}
 
- void HelloNLBTestApp::runtimeStopFailed(const IEvent &rEvent)
- {
-     MSG("Runtime stop failed");
-     m_bIsOK = false;
-     m_Sem.Post(1);
- }
+void HelloNLBTestApp::runtimeStopFailed(const IEvent &rEvent)
+{
+   MSG("Runtime stop failed");
+   m_bIsOK = false;
+   m_Sem.Post(1);
+}
 
- void HelloNLBTestApp::runtimeAllocateServiceFailed( IEvent const &rEvent)
- {
-    ERR("Runtime AllocateService failed");
-    PrintExceptionDescription(rEvent);
- }
+void HelloNLBTestApp::runtimeAllocateServiceFailed( IEvent const &rEvent)
+{
+   ERR("Runtime AllocateService failed");
+   PrintExceptionDescription(rEvent);
+}
 
- void HelloNLBTestApp::runtimeAllocateServiceSucceeded(IBase *pClient,
-                                                     TransactionID const &rTranID)
- {
-     MSG("Runtime Allocate Service Succeeded");
- }
+void HelloNLBTestApp::runtimeAllocateServiceSucceeded(IBase *pClient,
+                                                      TransactionID const &rTranID)
+{
+   MSG("Runtime Allocate Service Succeeded");
+}
 
- void HelloNLBTestApp::runtimeEvent(const IEvent &rEvent)
- {
-     MSG("Generic message handler (runtime)");
- }
+void HelloNLBTestApp::runtimeEvent(const IEvent &rEvent)
+{
+   MSG("Generic message handler (runtime)");
+}
 
+btBool HelloNLBTestApp::FreeRuntime()
+{
+   m_Runtime.stop();
+   m_Sem.Wait();
 
+}
 
+btBool HelloNLBTestApp::allocNLBService()
+{
+   m_helloALINLB.AllocateNLBService(&m_Runtime);
 
- btBool HelloNLBTestApp::FreeRuntime()
- {
-    cout << "HelloNLBTestApp::FreeRuntime ENTER" << endl;
-    m_Runtime.stop();
-    m_Sem.Wait();
-
- }
-
- btBool HelloNLBTestApp::allocNLBService()
- {
-    m_helloALINLB.AllocateNLBService(&m_Runtime);
-
-
-    if(false == m_helloALINLB.IsOK() ) {
+   if(false == m_helloALINLB.IsOK() ) {
       ++m_Errors;
       ERR("--- Failed to Allocate Reconfigure Service --- ");
       return false;
-    }
+   }
 
- }
+}
 
- btBool HelloNLBTestApp::runTests(btBool brunloop,btBool bReleaseMode)
- {
+btBool HelloNLBTestApp::runTests(btBool brunloop,btBool bReleaseMode)
+{
+   if( false == allocNLBService() )
+   {
+      ERR("--- Failed to allocate Reconf Service  --- ");
+      return false;
+   }
 
-    if( false == allocNLBService() )
-    {
-       ERR("--- Failed to allocate Reconf Service  --- ");
-       return false;
-    }
+   TEST_CASE("-------- START TEST CASES  ---------");
 
-    cout << endl<< "-------- START TEST CASES  ---------" << endl<<  endl;
+   m_helloALINLB.setReleaseService(bReleaseMode);
+   if(brunloop == true)
+      m_helloALINLB.runInLoop();
+   else
+      m_helloALINLB.run();
 
-    m_helloALINLB.setReleaseService(bReleaseMode);
-    if(brunloop == true)
-       m_helloALINLB.runInLoop();
-    else
-       m_helloALINLB.run();
+   TEST_CASE("-------- END TEST CASES  ---------");
 
-    cout << endl<< "-------- END TEST CASES  ---------" << endl<<  endl;
+   m_helloALINLB.FreeNLBService();
 
-    m_helloALINLB.FreeNLBService();
-
-    return true;
- }
+   return true;
+}
 
 //=============================================================================
 // Name: main
@@ -298,6 +268,7 @@ int main(int argc, char *argv[])
       if (0 == strcmp (argv[2], "--NoRelease")) bReleaseMode = false ;
    }
 
+   // Run Test cases
    theApp.runTests(brunloop, bReleaseMode);
 
    theApp.FreeRuntime();

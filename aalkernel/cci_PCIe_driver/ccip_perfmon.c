@@ -102,7 +102,14 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
    pPerf->num_counters.value = PERF_MONITOR_COUNT;
 
    // freeze
-   ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.freeze =0x1;
+   ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.freeze = 0x1;
+
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr);
+
+   // freeze
+   ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.freeze = 0x1;
+
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr);
 
    //Cache_Read_Hit
    update_cache_event_counters(Cache_Read_Hit,pfme_dev,pPerf);
@@ -118,7 +125,6 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
 
    //Cache_Evictions
    update_cache_event_counters(Cache_Evictions,pfme_dev,pPerf);
-
 
    //pcie0 Read
    update_fabric_event_counters(Fabric_PCIe0_Read,pfme_dev,pPerf);
@@ -139,7 +145,14 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
    update_fabric_event_counters(Fabric_UPI_Write,pfme_dev,pPerf);
 
    //un freeze
-   ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.freeze =0x0;
+   ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.freeze = 0x0;
+
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr);
+
+   //un freeze
+   ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.freeze = 0x0;
+
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr);
  
    PTRACEOUT_INT(res);
    return res;
@@ -164,14 +177,21 @@ bt32bitInt update_fabric_event_counters(bt32bitInt event_code ,
 {
    bt32bitInt res       = 0;
    bt32bitInt counter   = 0;
+   btTime delay         = 10;
 
    PTRACEIN;
 
    ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.fabric_evt_code =event_code;
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr);
 
    while (event_code != ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.event_code)  {
 
+      Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.csr);
       counter++;
+
+      // Sleep
+      kosal_udelay(delay);
+
       if (counter > CACHE_EVENT_COUNTER_MAX_TRY)    {
          PERR("Max Try \n");
          res = 1;
@@ -180,6 +200,7 @@ bt32bitInt update_fabric_event_counters(bt32bitInt event_code ,
 
    } // end while
 
+   Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.csr);
    switch (event_code)
    {
 
@@ -251,17 +272,24 @@ bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
                                        struct fme_device *pfme_dev,
                                        struct CCIP_PERF_COUNTERS* pPerf)
 {
-   bt32bitInt res =0;
-   bt32bitInt counter =0;
-   btUnsigned64bitInt total =0;
+   bt32bitInt res           = 0;
+   bt32bitInt counter       = 0;
+   btUnsigned64bitInt total = 0;
+   btTime delay             = 10;
 
    PTRACEIN;
 
    ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.cache_event =event_code;
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr);
 
    while (event_code != ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.event_code)   {
 
+      Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.csr);
       counter++;
+
+      // Sleep
+      kosal_udelay(delay);
+
       if (counter > CACHE_EVENT_COUNTER_MAX_TRY)   {
          PERR("Max Try \n");
          res = 1;
@@ -269,6 +297,9 @@ bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
       }
 
    } // end while
+
+   Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.csr);
+   Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_1.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_1.csr);
 
    total= ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.cache_counter + ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_1.cache_counter;
 

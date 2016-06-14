@@ -208,15 +208,15 @@ enum e_CCIP_PORT_PR_status {
 };
 
 /// Partial Reconfiguration  mega function status codes
-enum e_CCIP_PR_Megafun_status {
-   CCIP_PR_MF_pwrup = 0x0,
-   CCIP_PR_MF_error = 0x1,
-   CCIP_PR_MF_crc_err = 0x2,
-   CCIP_PR_MF_Incomp_bts_err = 0x3,
-   CCIP_PR_MF_opr_inPros = 0x4,
-   CCIP_PR_MF_por_pass = 0x5,
-   CCIP_PR_MF_rsvd1 = 0x6,
-   CCIP_PR_MF_rsvd2 = 0x7
+enum e_CCIP_PR_ControllerBlock_status {
+   CCIP_PR_CLB_pwrup = 0x0,
+   CCIP_PR_CLB_error = 0x1,
+   CCIP_PR_CLB_crc_err = 0x2,
+   CCIP_PR_CLB_Incomp_bts_err = 0x3,
+   CCIP_PR_CLB_opr_inPros = 0x4,
+   CCIP_PR_CLB_por_pass = 0x5,
+   CCIP_PR_CLB_rsvd1 = 0x6,
+   CCIP_PR_CLB_rsvd2 = 0x7
 };
 
 ///=================================================================
@@ -734,7 +734,7 @@ struct CCIP_FME_DFL_FPMON {
 };
 CASSERT(sizeof(struct CCIP_FME_DFL_FPMON) == (7*8));
 
-struct CCIP_FME_ERROR {
+struct CCIP_FME_ERROR0 {
 
    union {
       btUnsigned64bitInt csr;
@@ -744,7 +744,58 @@ struct CCIP_FME_ERROR {
    }; // end union
 
 }; // end struct CCIP_FME_ERROR
-CASSERT(sizeof(struct CCIP_FME_ERROR) == (1 *8));
+CASSERT(sizeof(struct CCIP_FME_ERROR0) == (1 *8));
+
+
+struct CCIP_FME_ERROR1 {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt rsvd :64;  // TBD
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_ERROR
+CASSERT(sizeof(struct CCIP_FME_ERROR1) == (1 *8));
+
+
+struct CCIP_FME_ERROR2 {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt rsvd :64;  // TBD
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_ERROR
+CASSERT(sizeof(struct CCIP_FME_ERROR2) == (1 *8));
+
+struct CCIP_FME_FIRST_ERROR {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt rsvd :64;  // TBD
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_ERROR
+CASSERT(sizeof(struct CCIP_FME_FIRST_ERROR) == (1 *8));
+
+struct CCIP_FME_NEXT_ERROR {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt rsvd :64;  // TBD
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_ERROR
+CASSERT(sizeof(struct CCIP_FME_NEXT_ERROR) == (1 *8));
+
 
 ///============================================================================
 /// Name: CCIP_FME_DFL_GERROR
@@ -758,19 +809,32 @@ struct CCIP_FME_DFL_GERROR {
    // FME Global Error header
    struct CCIP_DFH ccip_gerror_dflhdr;
 
-   //FME  Error mask  CSR
-   struct CCIP_FME_ERROR ccip_fme_error_mask;
+   //FME  Error mask0  CSR
+   struct CCIP_FME_ERROR0 ccip_fme_error_mask0;
 
+   // FME error0 CSR
+   struct CCIP_FME_ERROR0  ccip_fme_error0;
 
-   // FME error CSR
-   struct CCIP_FME_ERROR  ccip_fme_error;
+   //FME  Error mask1  CSR
+   struct CCIP_FME_ERROR1 ccip_fme_error_mask1;
 
+   // FME error1 CSR
+   struct CCIP_FME_ERROR1  ccip_fme_error1;
+
+   //FME  Error mask2  CSR
+   struct CCIP_FME_ERROR2 ccip_fme_error_mask2;
+
+   // FME error2 CSR
+   struct CCIP_FME_ERROR2  ccip_fme_error2;
 
    // FME first error CSR
-   struct CCIP_FME_ERROR ccip_fme_first_error;
+   struct CCIP_FME_FIRST_ERROR ccip_fme_first_error;
+
+   // FME next error CSR
+   struct CCIP_FME_NEXT_ERROR ccip_fme_next_error;
 
 }; //end CCIP_FME_GERROR_feature
-CASSERT(sizeof(struct CCIP_FME_DFL_GERROR) ==(4* 8));
+CASSERT(sizeof(struct CCIP_FME_DFL_GERROR) ==(9* 8));
 
 ///============================================================================
 /// Name: CCIP_FME_DFL_PR

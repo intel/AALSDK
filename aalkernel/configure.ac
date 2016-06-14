@@ -175,7 +175,12 @@ AC_CONFIG_LINKS([cci_PCIe_driver/kbuild/cci_pcie_driver_main_linux.c:cci_PCIe_dr
                  cci_PCIe_driver/kbuild/ccip_perfmon.h:cci_PCIe_driver/ccip_perfmon.h
                  cci_PCIe_driver/kbuild/ccip_perfmon.c:cci_PCIe_driver/ccip_perfmon.c
                  cci_PCIe_driver/kbuild/ccip_perfmon_linux.h:cci_PCIe_driver/ccip_perfmon_linux.h
-                 cci_PCIe_driver/kbuild/ccip_perfmon_linux.c:cci_PCIe_driver/ccip_perfmon_linux.c                 
+                 cci_PCIe_driver/kbuild/ccip_perfmon_linux.c:cci_PCIe_driver/ccip_perfmon_linux.c
+                 cci_PCIe_driver/kbuild/ccip_logging.c:cci_PCIe_driver/ccip_logging.c 
+                 cci_PCIe_driver/kbuild/ccip_logging.h:cci_PCIe_driver/ccip_logging.h
+                 cci_PCIe_driver/kbuild/ccip_logging_linux.h:cci_PCIe_driver/ccip_logging_linux.h  
+                 cci_PCIe_driver/kbuild/ccip_logging_linux.c:cci_PCIe_driver/ccip_logging_linux.c
+
                  cci_PCIe_driver/kbuild/kOSAL.c:kOSAL/kOSAL.c])
 
 AC_CONFIG_FILES([Makefile

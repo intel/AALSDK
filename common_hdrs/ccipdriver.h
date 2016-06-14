@@ -303,7 +303,11 @@ struct ahm_req
       } pr_config;
 
       struct {
-        btUnsigned64bitInt       error;           /* IN   */
+        btUnsigned64bitInt       error0;           /* IN   */
+        btUnsigned64bitInt       error1;           /* IN   */
+        btUnsigned64bitInt       error2;           /* IN   */
+        btUnsigned64bitInt       first_error;      /* IN   */
+        btUnsigned64bitInt       next_error;       /* IN   */
       } error_csr;
 
    } u;
@@ -505,9 +509,18 @@ struct ccipdrv_DeviceAttributes
 //=============================================================================
 struct  CCIP_ERROR
 {
-   btUnsigned64bitInt error_mask;       // Error  csr
-   btUnsigned64bitInt error;            // Error mask csr
+   btUnsigned64bitInt error0_mask;       // Error0  csr
+   btUnsigned64bitInt error0;            // Error0 mask csr
+
+   btUnsigned64bitInt error1_mask;       // Error1  csr
+   btUnsigned64bitInt error1;            // Error1 mask csr
+
+   btUnsigned64bitInt error2_mask;       // Error2  csr
+   btUnsigned64bitInt error2;            // Error2 mask csr
+
    btUnsigned64bitInt first_error;      // First error csr
+   btUnsigned64bitInt next_error;       // Next error csr
+
    btUnsigned64bitInt malreq0;          // Port Malformed request 0
    btUnsigned64bitInt malreq1;          // Port Malformed request 0
 };

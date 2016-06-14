@@ -13,6 +13,7 @@
 #define MAX_NLB_WKSPC_SIZE        CL(65536)
 #define HIGH                      0xffffffff
 #define LOW                       0x00000000
+#define NUM_PERF_MONITORS         13
 
 using namespace std;
 using namespace AAL;
@@ -34,6 +35,21 @@ class UMsg_Client : public CAASBase,
 {
 public:
 
+   enum { //Performance Monitor keys
+        VERSION,
+        READ_HIT,
+        WRITE_HIT,
+        READ_MISS,
+        WRITE_MISS,
+        EVICTIONS,
+        PCIE0_READ,
+        PCIE0_WRITE,
+        PCIE1_READ,
+        PCIE1_WRITE,
+        UPI_READ,
+        UPI_WRITE
+   };
+
    UMsg_Client();
    ~UMsg_Client();
 
@@ -47,7 +63,15 @@ public:
 
    btInt VerifyUmsgWrites();    ///< Return 0 if success
 
-   void  VerifyUmsgAddress();
+   btInt  VerifyUmsgAddress();  ///< Return 0 if success
+
+   void ReadPerfMonitors();
+
+   void SavePerfMonitors();
+
+   void PrintWrites();
+
+   btUnsigned64bitInt   GetPerfMonitor(btUnsignedInt ) const;
 
    // <begin IServiceClient interface>
    void serviceAllocated(IBase *pServiceBase,
@@ -90,15 +114,20 @@ public:
 protected:
    enum {
          AFU,
-         PORT
+         PORT,
+         FME
       };
 
    Runtime               m_Runtime;           ///< AAL Runtime
    IBase                *m_pAALService;       ///< The generic AAL Service interface for the AFU.
    IBase                *m_pPORTService;      ///< The generic AAL Service interface for the PORT region.
+   IBase                *m_pFMEService;       ///< The generic AAL Service interface for the FME region.
    IALIBuffer           *m_pALIBufferService; ///< Pointer to Buffer Service
    IALIMMIO             *m_pALIMMIOService;   ///< Pointer to MMIO Service
    IALIUMsg             *m_pALIuMSGService;   ///< Pointer to uMSg Service
+   IALIPerf             *m_pALIPerf;          ///< ALI Performance Monitor
+   btUnsigned64bitInt    m_PerfMonitors[NUM_PERF_MONITORS];
+   btUnsigned64bitInt    m_SavedPerfMonitors[NUM_PERF_MONITORS];
    CSemaphore            m_Sem;               ///< For synchronizing with the AAL runtime.
    btInt                 m_Result;            ///< Returned result v; 0 if success
 
@@ -112,9 +141,11 @@ UMsg_Client::UMsg_Client() :
    m_Runtime(this),
    m_pAALService(NULL),
    m_pPORTService(NULL),
+   m_pFMEService(NULL),
    m_pALIBufferService(NULL),
    m_pALIMMIOService(NULL),
    m_pALIuMSGService(NULL),
+   m_pALIPerf(NULL),
    m_Result(0),
    m_UMsgVirt(NULL),
    m_UMsgPhys(0),
@@ -197,6 +228,23 @@ void UMsg_Client::serviceAllocated(IBase *pServiceBase,
       if ( NULL == m_pALIMMIOService ) {
          m_bIsOK = false;
          return;
+      }
+   }
+   else if(rTranID.ID() == UMsg_Client::FME){
+      m_pFMEService = pServiceBase;
+      ASSERT(NULL != m_pFMEService);
+      if ( NULL == m_pFMEService ) {
+        m_bIsOK = false;
+        return;
+      }
+
+      // Documentation says HWALIAFU Service publishes
+      //    IALIPerf as subclass interface. Used to access performance monitors
+      m_pALIPerf = dynamic_ptr<IALIPerf>(iidALI_PERF_Service, pServiceBase);
+      ASSERT(NULL != m_pALIPerf);
+      if ( NULL == m_pALIPerf ) {
+        m_bIsOK = false;
+        return;
       }
    }
    m_Sem.Post(1);
@@ -295,12 +343,12 @@ btInt UMsg_Client::run()
    NamedValueSet ConfigRecord;
 
    // Service Library to use
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
 
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
-   ConfigRecord.Add(keyRegAFU_ID, "A944F6E7-15D3-4D95-9452-15DBD47C76BD");
+   ConfigRecord.Add(keyRegAFU_ID, "7BAF4DEA-A57C-E91E-168A-455D9BDA88A3");
 
-   ConfigRecord.Add(keyRegSubDeviceNumber,0);
+//   ConfigRecord.Add(keyRegSubDeviceNumber,0);
 
    // indicate that this service needs to allocate an AIAService, too to talk to the HW
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
@@ -328,11 +376,11 @@ btInt UMsg_Client::run()
     Manifest.Delete(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED);
     ConfigRecord.Delete(keyRegAFU_ID);
 
-    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libAFU");
     ConfigRecord.Add(keyRegAFU_ID, "3AB49893-138D-42EB-9642-B06C6B355B87");
     Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
 
-   // Allocate the AFU
+   // Allocate the PORT region
    TransactionID port_tid(UMsg_Client::PORT);
    m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, port_tid);
 
@@ -342,13 +390,32 @@ btInt UMsg_Client::run()
       ERR( "PORT service Allocation failed \n" );
       m_Runtime.stop();
       m_Sem.Wait();
+      return m_Result;
+   }
+
+   // Modify the manifest for the NLB AFU
+   Manifest.Delete(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED);
+   ConfigRecord.Delete(keyRegAFU_ID);
+
+   ConfigRecord.Add(keyRegAFU_ID, "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764");
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+
+   // Allocate the FME region
+   TransactionID fme_tid(UMsg_Client::FME);
+   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, fme_tid);
+
+   m_Sem.Wait();
+
+   if(!m_bIsOK){
+      ERR( "FME service Allocation failed \n" );
+      m_Runtime.stop();
+      m_Sem.Wait();
+      return m_Result;
    }
 
    MSG("Running Test\n");
 
    if(true == m_bIsOK){
-
-      //   Verify that setting the hint bit in Umsgs turn on hint for that Umsg.
 
       if ( 0 == setUmsgHint())
       {
@@ -366,8 +433,10 @@ btInt UMsg_Client::run()
       {
          MSG("UMsg Writes outside of the defined CL but within the 4KiB block doesn't SegFault");
       }
-
-      VerifyUmsgAddress();
+      if ( 0 ==VerifyUmsgAddress())
+      {
+         MSG("Address available for UMsg writing correspond to the correct hardware-defined address");
+      }
    }
 
    cout << endl;
@@ -377,6 +446,9 @@ btInt UMsg_Client::run()
    m_Sem.Wait();
 
    (dynamic_ptr<IAALService>(iidService, m_pPORTService))->Release(TransactionID());
+   m_Sem.Wait();
+
+   (dynamic_ptr<IAALService>(iidService, m_pFMEService))->Release(TransactionID());
    m_Sem.Wait();
 
    m_Runtime.stop();
@@ -477,16 +549,22 @@ btInt UMsg_Client :: VerifyUmsgWrites()
      return 1;
    }
 
+   ReadPerfMonitors();
+   SavePerfMonitors();
+
    btUnsignedInt numCLs = (numUmsgs * KB(4))/CL(1);
    btUnsignedInt i;
    for (i = 0; i < numCLs; i++ ){
       *(btUnsigned32bitInt *)(m_UMsgVirt + CL(i)) = HIGH;
    }
 
+   ReadPerfMonitors();
+   PrintWrites();
+
    return 0;
 }
 
-void UMsg_Client :: VerifyUmsgAddress()
+btInt UMsg_Client :: VerifyUmsgAddress()
 {
    //   Verify that the address available for UMsg writing correspond to the
    //   correct hardware-defined addresses,
@@ -494,14 +572,124 @@ void UMsg_Client :: VerifyUmsgAddress()
    m_UMsgVirt = m_pALIuMSGService->umsgGetAddress(0);
    if(NULL == m_UMsgVirt){
      ERR("No uMSG support");
-     return;
+     return 1;
    }
+
+   //Get the physical address of the UMAS
    m_UMsgPhys = m_pALIBufferService->bufferGetIOVA(m_UMsgVirt);
 
-   cout << "Virtual address of the UMsg Workspace: 0x" << std::hex << m_UMsgVirt << std::dec << endl;
-   cout << "Physical address of the UMsg Workspace: 0x" << std::hex << m_UMsgPhys << std::dec << endl;
+   btUnsigned64bitInt umsg_baseAddr;
+   //Get the Umsg base address from the port region.
+   m_pALIMMIOService->mmioRead64(0x2010, &umsg_baseAddr);
 
+   //verify if both point to the same physical address in memory
+   if(umsg_baseAddr != m_UMsgPhys)
+   {
+      return 1;
+   }
+
+   return 0;
 }
+
+void UMsg_Client :: ReadPerfMonitors()
+{
+   NamedValueSet PerfMon;
+   btUnsigned64bitInt     value;
+
+   if (NULL != m_pALIPerf){
+      m_pALIPerf->performanceCountersGet(&PerfMon);
+
+      if (PerfMon.Has(AALPERF_VERSION)) {
+         PerfMon.Get( AALPERF_VERSION, &value);
+         m_PerfMonitors[VERSION] = value;
+      }
+      if (PerfMon.Has(AALPERF_READ_HIT)) {
+         PerfMon.Get( AALPERF_READ_HIT, &value);
+         m_PerfMonitors[READ_HIT] = value;
+      }
+      if (PerfMon.Has(AALPERF_WRITE_HIT)) {
+         PerfMon.Get( AALPERF_WRITE_HIT, &value);
+         m_PerfMonitors[WRITE_HIT] = value;
+      }
+      if (PerfMon.Has(AALPERF_READ_MISS)) {
+         PerfMon.Get( AALPERF_READ_MISS, &value);
+         m_PerfMonitors[READ_MISS] = value;
+      }
+      if (PerfMon.Has(AALPERF_WRITE_MISS)) {
+         PerfMon.Get( AALPERF_WRITE_MISS, &value);
+         m_PerfMonitors[WRITE_MISS] = value;
+      }
+      if (PerfMon.Has(AALPERF_EVICTIONS)) {
+         PerfMon.Get( AALPERF_EVICTIONS, &value);
+         m_PerfMonitors[EVICTIONS] = value;
+      }
+      if (PerfMon.Has(AALPERF_PCIE0_READ)) {
+         PerfMon.Get( AALPERF_PCIE0_READ, &value);
+         m_PerfMonitors[PCIE0_READ] = value;
+      }
+      if (PerfMon.Has(AALPERF_PCIE0_WRITE)) {
+         PerfMon.Get( AALPERF_PCIE0_WRITE, &value);
+         m_PerfMonitors[PCIE0_WRITE] = value;
+      }
+      if (PerfMon.Has(AALPERF_PCIE1_READ)) {
+         PerfMon.Get( AALPERF_PCIE1_READ, &value);
+         m_PerfMonitors[PCIE1_READ] = value;
+      }
+      if (PerfMon.Has(AALPERF_PCIE1_WRITE)) {
+         PerfMon.Get( AALPERF_PCIE1_WRITE, &value);
+         m_PerfMonitors[PCIE1_WRITE] = value;
+      }
+      if (PerfMon.Has(AALPERF_UPI_READ)) {
+         PerfMon.Get( AALPERF_UPI_READ, &value);
+         m_PerfMonitors[UPI_READ] = value;
+      }
+      if (PerfMon.Has(AALPERF_UPI_WRITE)) {
+         PerfMon.Get( AALPERF_UPI_WRITE, &value);
+         m_PerfMonitors[UPI_WRITE] = value;
+      }
+   }
+}
+
+void UMsg_Client :: SavePerfMonitors()
+{
+   btCSRValue i;
+   for ( i = 0 ; i < sizeof(m_PerfMonitors) / sizeof(m_PerfMonitors[0]) ; ++i ) {
+      m_SavedPerfMonitors[i] = m_PerfMonitors[i];
+   }
+}
+
+btUnsigned64bitInt UMsg_Client :: GetPerfMonitor(btUnsignedInt i) const
+{
+   switch ( i ) {
+      case VERSION      : // FALL THROUGH
+      case READ_HIT     : // FALL THROUGH
+      case WRITE_HIT    : // FALL THROUGH
+      case READ_MISS    : // FALL THROUGH
+      case WRITE_MISS   : // FALL THROUGH
+      case EVICTIONS    : // FALL THROUGH
+      case PCIE0_READ   : // FALL THROUGH
+      case PCIE0_WRITE  : // FALL THROUGH
+      case PCIE1_READ   : // FALL THROUGH
+      case PCIE1_WRITE  : // FALL THROUGH
+      case UPI_READ     : // FALL THROUGH
+      case UPI_WRITE    : return m_PerfMonitors[i] - m_SavedPerfMonitors[i];
+
+      default : return 0;
+   }
+}
+
+void UMsg_Client :: PrintWrites()
+{
+   cout << "VH0_Rd_Count VH0_Wr_Count VH1_Rd_Count VH1_Wr_Count VL0_Rd_Count VL0_Wr_Count " << endl;
+   cout << setw(12) << GetPerfMonitor(PCIE0_READ)     << ' '
+        << setw(12) << GetPerfMonitor(PCIE0_WRITE)    << ' '
+        << setw(12) << GetPerfMonitor(PCIE1_READ)     << ' '
+        << setw(12) << GetPerfMonitor(PCIE1_WRITE)    << ' '
+        << setw(12) << GetPerfMonitor(UPI_READ)       << ' '
+        << setw(12) << GetPerfMonitor(UPI_WRITE)      << ' '
+        << endl << endl;
+}
+
 
 int main(int argc, char *argv[])
 {

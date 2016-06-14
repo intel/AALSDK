@@ -1,3 +1,7 @@
+// INTEL CONFIDENTIAL - For Intel Internal Use Only
+//
+// valapps/Partial_Reconfig/PR_TwoApp/main.cpp
+//
 // Copyright(c) 2007-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
@@ -24,18 +28,17 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file ALIConfAFU.cpp
-/// @brief Basic ALI AFU interaction.
-/// @ingroup ALIConfAFU
+/// @file main.cpp
+/// @brief Partial reconfiguration of green bit stream service .
+/// @ingroup Partial_Reconfig
 /// @verbatim
-/// Accelerator Abstraction Layer Sample Application
+/// AAL Partial reconfiguration test application
 ///
-///    This application is for example purposes only.
+///    This application is for testing purposes only.
 ///    It is not intended to represent a model for developing commercially-
 ///       deployable applications.
-///    It is designed to show working examples of the AAL programming model and APIs.
+///    It is designed to test PR functionality.
 ///
-/// AUTHORS: Joseph Grecco, Intel Corporation.
 ///
 /// This Sample demonstrates how to use the basic ALI APIs.
 ///
@@ -43,25 +46,16 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 12/15/2015     JG       Initial version started based on older sample code.@endverbatim
+/// 06/06/2016     RP       Initial version started based on older sample
 //****************************************************************************
+
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/Runtime.h>
 #include <aalsdk/AALLoggerExtern.h>
-
 #include <aalsdk/service/IALIAFU.h>
 #include <aalsdk/aalclp/aalclp.h>
 
-#include <string.h>
-
 #include "../../PR_SingleApp/ALIReconf.h"
-
-//****************************************************************************
-// UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
-//    DEFAULT is to use Software Simulation.
-//****************************************************************************
-#define  HWAFU
-//#define  ASEAFU
 
 using namespace std;
 using namespace AAL;
@@ -71,21 +65,14 @@ using namespace AAL;
 # undef MSG
 #endif // MSG
 #define MSG(x) std::cout << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl
+#define TEST_CASE(x) std::cout << std::endl << x << std::endl
 #ifdef ERR
 # undef ERR
 #endif // ERR
 #define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
 
-// Print/don't print the event ID's entered in the event handlers.
-#if 1
-# define EVENT_CASE(x) case x : MSG(#x);
-#else
-# define EVENT_CASE(x) case x :
-#endif
-
 /// Command Line
 BEGIN_C_DECLS
-
 
 struct ALIConfigCommandLine configCmdLine = { 0,"",1,0,0 };
 
@@ -97,13 +84,7 @@ AALCLP_DECLARE_GCS_COMPLIANT(stdout,
                              &configCmdLine);
 END_C_DECLS
 
-/// @addtogroup ALIConfAFU
-/// @{
 
-
-/// @brief   Since this is a simple application, our App class implements both the IRuntimeClient and IServiceClient
-///           interfaces.  Since some of the methods will be redundant for a single object, they will be ignored.
-///
 class ALIConfAFUApp: public CAASBase, public IRuntimeClient
 {
 public:
@@ -160,7 +141,6 @@ ALIConfAFUApp::ALIConfAFUApp() :
    // Specify that the remote resource manager is to be used.
    configRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
    configArgs.Add(AALRUNTIME_CONFIG_RECORD, &configRecord);
-
 
    // Start the Runtime and wait for the callback by sitting on the semaphore.
    // the runtimeStarted() or runtimeStartFailed() callbacks should set m_bIsOK appropriately.
@@ -233,12 +213,11 @@ void ALIConfAFUApp::PrintReconfExceptionDescription(IEvent const &rEvent)
 }
  // <begin IRuntimeClient interface>
 
-/// @} group ALIConfAFUApp
 
 btBool ALIConfAFUApp::allocRecongService()
 {
    m_reconfAFU.AllocatePRService(&m_Runtime);
-   strcpy(configCmdLine.bitstream_file,BitStreamFile);
+   //strcpy(configCmdLine.bitstream_file,BitStreamFile);
 
    if(false == m_reconfAFU.IsOK() ) {
       ++m_Errors;
@@ -252,7 +231,6 @@ btBool ALIConfAFUApp::allocRecongService()
 
 btBool ALIConfAFUApp::runTests()
 {
-
    if( false == allocRecongService() ) {
       ERR("--- Failed to allocate Reconf Service  --- ");
       return false;
@@ -260,24 +238,31 @@ btBool ALIConfAFUApp::runTests()
 
    m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,configCmdLine.reconftimeout,configCmdLine.reconfAction,configCmdLine.reactivateDisabled);
 
+   TEST_CASE(" configCmdLine.reconfInterface");
    cout << "configCmdLine.reconfInterface" << configCmdLine.reconfInterface<< endl;
 
+
    if ( 0 == strcmp("D", configCmdLine.reconfInterface)) {
+
+      // DeActiavte AFU
       m_reconfAFU.reconfDeactivate();
 
-   } else if ( 0 == strcmp("A", configCmdLine.reconfInterface))
-   {
+   } else if ( 0 == strcmp("A", configCmdLine.reconfInterface)) {
+
+      // Actiavte AFU
       m_reconfAFU.reconfActivate();
+
    }else if ( 0 == strcmp("C", configCmdLine.reconfInterface))
    {
+      // Reconfigure  AFU
       m_reconfAFU.reconfConfigure();
-   } else if ( 0 == strcmp("ALL", configCmdLine.reconfInterface))
-   {
+
+   } else if ( 0 == strcmp("ALL", configCmdLine.reconfInterface))  {
+
       m_reconfAFU.reconfDeactivate();
       m_reconfAFU.reconfConfigure();
       m_reconfAFU.reconfActivate();
    }
-
    m_reconfAFU.FreePRService();
 
    return true;
@@ -285,11 +270,9 @@ btBool ALIConfAFUApp::runTests()
 
 btBool ALIConfAFUApp::FreeRuntime()
 {
-   cout << "HelloNLBTestApp::FreeRuntime ENTER" << endl;
    m_Runtime.stop();
    m_Sem.Wait();
 }
-
 
 //=============================================================================
 // Name: main
@@ -312,7 +295,6 @@ int main(int argc, char *argv[])
    }else if ( flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_HELP|ALICONIFG_CMD_FLAG_VERSION) ) {
       return 0;
    }
-
 
    ALIConfAFUApp theApp;
    if(!theApp.IsOK()){

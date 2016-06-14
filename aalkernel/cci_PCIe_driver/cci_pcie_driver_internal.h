@@ -314,9 +314,9 @@ struct ccip_device
 #define ccip_set_VFdev(pdev)                 ((pdev)->m_isVF = 1)
 #define ccip_is_VFdev(pdev)                  ((pdev)->m_isVF == 1)
 
-#define ccip_set_resource(pdev,r)            ((pdev)->m_resources |= (1<<r))
-#define ccip_has_resource(pdev,r)            ((pdev)->m_resources & (1<<r))
-#define ccip_clr_resource(pdev,r)            ((pdev)->m_resources &= ~(1<<r))
+#define ccip_set_resource(pdev,r)            ((pdev)->m_resources |= (1<<(r+1)))
+#define ccip_has_resource(pdev,r)            ((pdev)->m_resources & (1<<(r+1)))
+#define ccip_clr_resource(pdev,r)            ((pdev)->m_resources &= ~(1<<(r+1)))
 
 #define ccip_list_to_ccip_device(plist)      kosal_list_entry(plist, struct ccip_device, m_list)
 #define aaldev_to_ccip_device(plist)         kosal_list_entry(plist, struct ccip_device, m_list)
@@ -392,6 +392,12 @@ extern struct aal_wsid* ccidrv_getwsid( struct aal_device *pdev,
 extern btInt
 ccidrv_sendevent( struct aaldev_ownerSession *,
                   struct aal_q_item *);
+
+extern inline void GetCSR(btUnsigned64bitInt *ptr, bt32bitCSR *pcsrval);
+extern inline void SetCSR(btUnsigned64bitInt *ptr, bt32bitCSR *csrval);
+extern inline void Get64CSR(btUnsigned64bitInt *ptr, bt64bitCSR *pcsrval);
+extern inline void Set64CSR(btUnsigned64bitInt *ptr, bt64bitCSR *csrval);
+
 
 #endif // __AALKERNEL_CCI_PCIE_DRIVER_INTERNAL_H__
 
