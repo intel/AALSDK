@@ -1466,7 +1466,7 @@ module ccip_emulator
 	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VH0)), wrrsp_vc_cnt.vh0);
 	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.vc_used == VC_VH1)), wrrsp_vc_cnt.vh1);
 	 // C1Tx MCL granular counts
-	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr)), wrrsp_mcl_cnt.mcl0);
+	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (~C1RxHdr.format||(C1RxHdr.format && (C1RxHdr.clnum == ASE_1CL)))), wrrsp_mcl_cnt.mcl0);
 	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.clnum == ASE_2CL) && C1RxHdr.format), wrrsp_mcl_cnt.mcl1);
 	 `incr_cnt ( (C1RxRspValid && isWriteResponse(C1RxHdr) && (C1RxHdr.clnum == ASE_4CL) && C1RxHdr.format), wrrsp_mcl_cnt.mcl3);
 	 // ------------------------------------ //

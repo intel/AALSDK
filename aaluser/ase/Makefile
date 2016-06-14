@@ -478,10 +478,10 @@ endif
 ## Run ASE Simulator ##
 sim: check
 ifeq ($(SIMULATOR), VCS)
-	cd ./$(WORK)/; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
+	cd $(ASE_WORKDIR) ; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
 else
   ifeq ($(SIMULATOR), QUESTA)
-	cd $(WORK) ; vsim $(MENT_VSIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) $(ASE_TOP) ; cd -
+	cd $(ASE_WORKDIR) ; vsim $(MENT_VSIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) $(ASE_TOP) ; cd -
   else
 	@echo "############################################################"
 	@echo "#         SIMULATOR=$(SIMULATOR) not supported             #"

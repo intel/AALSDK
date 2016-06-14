@@ -97,7 +97,6 @@ int ase_instance_running()
 void sv2c_config_dex(const char *str)
 {
   sv2c_config_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  // strcpy(sv2c_config_filepath, str);
   strncpy(sv2c_config_filepath, str, ASE_FILEPATH_LEN);
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
@@ -125,7 +124,6 @@ void sv2c_config_dex(const char *str)
 void sv2c_script_dex(const char *str)
 {
   sv2c_script_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  // strcpy(sv2c_script_filepath, str);
   strncpy(sv2c_script_filepath, str, ASE_FILEPATH_LEN);
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
@@ -331,7 +329,7 @@ void initialize_fme_dfh (struct buffer_t *buf)
 
   // PORT_UMSG DFH
   csr_port_umsg = (uint64_t*)((uint64_t)port_vbase + 0x2000);
-  *csr_port_umsg = (0x3 << 60) + (0x1000 << 39) + (0x11 << 0);
+  *csr_port_umsg = (uint64_t)((0x3UL << 60) || (0x1000 << 39) || (0x11 << 0));
 
   /*
    * UMSG settings
