@@ -369,7 +369,7 @@ module outoforder_wrf_channel
    ccip_vc_t 		  vc_rd_arb;
    ccip_vc_t 		  vc_wr_arb;
 
-   ccip_vc_t sel_vc_array[4] = {VC_VL0, VC_VH0, VC_VL0, VC_VH1};
+   ccip_vc_t [0:3] sel_vc_array = {VC_VL0, VC_VH0, VC_VL0, VC_VH1};
    logic [1:0] 			 curr_vc_index = 2'b0;
 
 
