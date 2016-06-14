@@ -71,7 +71,7 @@ TIMESCALE = 1ps/1ps
 # ASE Source directory
 ASE_SRCDIR = $(shell pwd)
 
-# Configuration & regression file inputs 
+# Configuration & regression file inputs
 ASE_CONFIG ?= $(ASE_SRCDIR)/ase.cfg
 ASE_SCRIPT ?= $(ASE_SRCDIR)/ase_regress.sh
 
@@ -88,7 +88,7 @@ SNPS_COMMAND = $(shell command -v vcs)
 MENT_COMMAND = $(shell command -v vsim)
 
 ## C Compiler options
-CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1
+CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -D SIMULATOR=$(SIMULATOR)
 CC_OPT+= -Wall 
 ifeq ($(ASE_DEBUG), 1)
   CC_OPT+= -D ASE_DEBUG=1
@@ -135,7 +135,7 @@ SNPS_VHDLAN_OPT = -nc -verbose -full64
 SNPS_VHDLAN_OPT+= -work $(WORK)
 
 ## Verilog compile
-SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog 
+SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog +define+$(SIMULATOR)
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 # SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
@@ -153,7 +153,7 @@ ifdef GLS_SIM
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
-#  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
+  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/twentynm_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
@@ -190,13 +190,14 @@ endif
 MENT_VCOM_OPT = -nologo -work $(WORK)
 
 ## VLOG compile
-MENT_VLOG_OPT = -64 -nologo +librescan -work $(WORK)
+# MENT_VLOG_OPT = -64 
+MENT_VLOG_OPT+= -nologo +librescan -work $(WORK) +define+$(SIMULATOR)
 MENT_VLOG_OPT+= -dpiheader work/dpiheader.h
 MENT_VLOG_OPT+= +incdir+$(ASE_INCDIR)+$(DUT_INCDIR)+$(WORK)
 MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
 MENT_VLOG_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
 ifeq ($(ASE_DEBUG), 1)
-  MENT_VLOG_OPT+= +define+ASE_DEBUG
+  MENT_VLOG_OPT+= +define+ASE_DEBUG -hazards
 endif
 ifdef GLS_SIM
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
@@ -211,8 +212,13 @@ ifdef GLS_SIM
 endif
 
 ## VSIM elaboration, and run options
-MENT_VSIM_OPT = -64 -c -l run.log -dpioutoftheblue 1 -voptargs="+acc"
+# MENT_VSIM_OPT = -64 
+MENT_VSIM_OPT+= -c -l run.log -dpioutoftheblue 1 
 MENT_VSIM_OPT+= -sv_lib $(ASE_SHOBJ_NAME) -do $(ASE_SRCDIR)/vsim_run.tcl
+ifeq ($(ASE_DEBUG), 1)
+  MENT_VLOG_OPT+= -hazards
+endif
+# -voptargs="+acc"
 
 #########################################################################
 #                         Valgrind options                              #
@@ -328,7 +334,7 @@ endif
 # Check gate simulation libraries
 ifdef GLS_SIM
   ifndef QUARTUS_HOME
-	@echo "** ERROR **: env(QUARTUS_HOME) has not been set." 
+	@echo "** ERROR **: env(QUARTUS_HOME) has not been set."
 	@echo "** ERROR **: GLS_SIM needs QUARTUS_HOME environment variable to be set."
     ifdef QUARTUS_ROOT
 	@echo "** ERROR **: env(QUARTUS_ROOT) is set up. Copy its contents to env(QUARTUS_HOME)."
@@ -349,11 +355,11 @@ ifeq ($(SIMULATOR), VCS)
   ifndef SNPS_COMMAND
 	@echo "**ERROR** : Synopsys commands (vlogan, vcs) not found !"
   endif
-else 
+else
   ifeq ($(SIMULATOR), QUESTA)
     ifndef MTI_HOME
 	@echo "**ERROR** : env(MTI_HOME) is not set ! svdpi.h cannot be found !"
-    endif	
+    endif
     ifndef MENT_COMMAND
 	@echo "**ERROR** : Modelsim commands (vlog, vsim) not found !"
     endif
@@ -472,10 +478,10 @@ endif
 ## Run ASE Simulator ##
 sim: check
 ifeq ($(SIMULATOR), VCS)
-	cd ./$(WORK)/; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
+	cd $(ASE_WORKDIR) ; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
 else
   ifeq ($(SIMULATOR), QUESTA)
-	cd $(WORK) ; vsim $(MENT_VSIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) $(ASE_TOP) ; cd -
+	cd $(ASE_WORKDIR) ; vsim $(MENT_VSIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) $(ASE_TOP) ; cd -
   else
 	@echo "############################################################"
 	@echo "#         SIMULATOR=$(SIMULATOR) not supported             #"
@@ -492,7 +498,7 @@ ifeq ($(SIMULATOR), VCS)
 	dve -vpd `find . -name inter.vpd` || dve -vpd `find . -name inter.vpd` -full64
 else
   ifeq ($(SIMULATOR), QUESTA)
-	vsim -view vsim.wlf
+	vsim -view `find . -name vsim.wlf`
   endif
 endif
 
@@ -526,6 +532,11 @@ scan-build:
 coverage:
 	cd $(WORK) ; lcov --base-directory . --directory . --capture --output-file ase_libs.info ; genhtml -o lcov_coverage/ ase_libs.info ; cd -
 	cd $(WORK) ; urg -full64 -dir ase_simv.vdb ; cd -
+
+# GUI call for coverage
+cov_gui: coverage_gui
+
+coverage_gui:
 	firefox ./$(WORK)/urgReport/dashboard.html &
 	firefox ./$(WORK)/lcov_coverage/index.html &
 	firefox ./$(WORK)/profileReport.html &
@@ -547,4 +558,3 @@ cppcheck:
 
 gdb_sim:
 	cd ./$(WORK)/; gdb -ex run --args ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
-
