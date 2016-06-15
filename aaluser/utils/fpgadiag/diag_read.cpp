@@ -116,6 +116,11 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
    // Set input workspace address
    m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
 
+   //Set the stride value
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_STRIDED_ACS)){
+      m_pALIMMIOService->mmioWrite32(CSR_STRIDED_ACS, (csr_type)(cmd.strided_acs - 1 ));
+   }
+
    // Set the test mode
    m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
    csr_type cfg = (csr_type)NLB_TEST_MODE_READ;
