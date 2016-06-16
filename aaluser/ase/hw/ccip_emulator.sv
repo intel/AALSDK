@@ -2235,26 +2235,35 @@ module ccip_emulator
     * This feature can be disabled, if desired.
     *
     * *******************************************************************/
-   logic 	    first_transaction_seen = 1'b0;
+   logic 	    first_transaction_seen;
    int 		    inactivity_counter;
    logic 	    any_valid;
    logic 	    inactivity_found;
 
 
    // Inactivity management - Sense first transaction
-   assign any_valid = C0RxMmioRdValid |
+   always @(posedge clk) begin : any_valid_proc
+      if (ase_reset) begin
+	 any_valid <= 0;	 
+      end
+      else begin
+	 any_valid <= C0RxMmioRdValid |
 		      C0RxMmioWrValid |
 		      C0RxRspValid |
 		      C1RxRspValid |
 		      C0TxRdValid |
 		      C1TxWrValid |
 		      C2TxMmioRdValid;
-
-
+      end
+   end
+      
    // First transaction seen
    always @(posedge clk) begin : first_txn_watcher
-      if ((first_transaction_seen == 1'b0) && any_valid) begin
-	 first_transaction_seen <= 1'b1;
+      if (ase_reset) begin
+	 first_transaction_seen <= 0;	 
+      end
+      else if ( ~first_transaction_seen && any_valid ) begin
+	 first_transaction_seen <= 1;
       end
    end
 
@@ -2264,10 +2273,11 @@ module ccip_emulator
 	 inactivity_counter <= 0;
       end
       else begin
+	 // Watchdog countdown
 	 if (first_transaction_seen && any_valid) begin
 	    inactivity_counter <= 0;
 	 end
-	 else begin
+	 else if (first_transaction_seen && ~any_valid) begin
 	    inactivity_counter <= inactivity_counter + 1;
 	 end
       end
@@ -2275,8 +2285,7 @@ module ccip_emulator
 
    // Inactivity management - killswitch
    always @(posedge clk) begin : call_simkill_countdown
-      // ( inactivity_found && (inactivity_counter == cfg.ase_timeout) ) begin
-      if ( (inactivity_counter > cfg.ase_timeout) && (inactivity_counter == cfg.ase_timeout) ) begin
+      if ( (inactivity_counter > cfg.ase_timeout) && (cfg.ase_mode == ASE_MODE_TIMEOUT_SIMKILL) ) begin
 	 $display("SIM-SV: Inactivity timeout reached !!\n");
 	 start_simkill_countdown();
       end

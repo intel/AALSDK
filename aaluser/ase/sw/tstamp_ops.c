@@ -154,10 +154,6 @@ char* get_timestamp(int dont_kill)
             #endif
 	    }
 	  
-        #ifdef ASE_DEBUG
-	  printf("  [DEBUG] tstamp_str = %s\n", tstamp_str);
-        #endif
-	  
 	  fclose(fp);
 	}
     }

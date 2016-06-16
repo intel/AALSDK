@@ -564,7 +564,7 @@ void print_mmiopkt(FILE *fp, char *activity, struct mmio_t *pkt)
 	  pkt->width,
 	  (pkt->resp_en == 0 ? "Req " : "Resp") ); 
   
-  fprintf(fp, "%s\t%d\t%s\t%x\t%llx\n", activity, 
+  fprintf(fp, "%s\t%03x\t%s\t%x\t%llx\n", activity, 
 	  pkt->tid, mmio_action_type, pkt->addr, pkt->qword[0]);
 
   FUNC_CALL_EXIT;

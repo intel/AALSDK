@@ -98,9 +98,14 @@ pthread_t mmio_watch_tid;
 
 // MMIO Response packet handoff control
 mmio_t *mmio_rsp_pkt;
-volatile int mmio_rsp_pkt_available;
-volatile int mmio_rsp_pkt_accepted;
+// volatile int mmio_rsp_pkt_available;
 
+/* #ifdef TEST */
+/* pthread_mutex_t mmio_rsp_pkt_accepted; */
+/* #else */
+volatile int mmio_rsp_pkt_accepted;
+pthread_mutex_t mmiorsp_copy_lock;
+/* #endif */
 
 /*
  * UMsg listener/packet
@@ -189,9 +194,10 @@ void *mmio_response_watcher()
   while(mmio_exist_status == ESTABLISHED)
     {
       // Set available/accepted flag to 0
-      mmio_rsp_pkt_accepted = 0;
-      mmio_rsp_pkt_available = 0;
-      memset((void*)mmio_rsp_pkt, 0xff, sizeof(mmio_t));
+      mmio_rsp_pkt_accepted = 0; // lock mutex
+
+      // mmio_rsp_pkt_available = 0;
+      memset((void*)mmio_rsp_pkt, 0xbc, sizeof(mmio_t));
       
       // If received, update global message
       ret = mqueue_recv( sim2app_mmiorsp_rx, (char*)mmio_rsp_pkt, sizeof(mmio_t) );
@@ -222,9 +228,9 @@ void *mmio_response_watcher()
 	  if (mmio_rsp_pkt->write_en == MMIO_READ_REQ) 
 	    {
 	      // Mark as available
-	      mmio_rsp_pkt_available = 1;
+	      // mmio_rsp_pkt_available = 1;
 	      
-	      // Wait until ACK from requesting thread
+	      // wait until lock is unlocked
 	      while (mmio_rsp_pkt_accepted != 1)
 		{
 		  usleep(10);
@@ -327,15 +333,6 @@ void session_init()
 
   ipc_init();
 
-  // Initialize lock
-  /* if ( pthread_mutex_init(&app_lock, NULL) != 0) */
-  /*   { */
-  /*     BEGIN_YELLOW_FONTCOLOR; */
-  /*     printf("  [APP]  Lock initialization failed, EXIT\n"); */
-  /*     END_YELLOW_FONTCOLOR; */
-  /*     exit (EXIT_FAILURE); */
-  /*   } */
-
   // Initialize MMIO port lock
   if ( pthread_mutex_init(&mmio_port_lock, NULL) != 0)
     {
@@ -350,6 +347,15 @@ void session_init()
     {
       BEGIN_RED_FONTCOLOR;
       printf("  [APP]  MMIO TID Lock initialization failed, EXIT\n");
+      END_RED_FONTCOLOR;
+      exit (EXIT_FAILURE);
+    }
+
+  // mmiorsp_copy_lock
+  if ( pthread_mutex_init(&mmiorsp_copy_lock, NULL) != 0)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("  [APP]  MMIO Response Lock initialization failed, EXIT\n");
       END_RED_FONTCOLOR;
       exit (EXIT_FAILURE);
     }
@@ -400,12 +406,6 @@ void session_init()
   mq_exist_status = ESTABLISHED;
 
   // Issue soft reset
-  /* BEGIN_YELLOW_FONTCOLOR; */
-  /* printf("  [APP]  session_init => Issuing Soft Reset...\n"); */
-  /* END_YELLOW_FONTCOLOR; */
-  /* ase_portctrl("AFU_RESET 1"); */
-  /* usleep(1); */
-  /* ase_portctrl("AFU_RESET 0"); */
   send_swreset();
 
   // Page table tracker (optional logger)
@@ -520,26 +520,7 @@ void session_init()
   printf("  [APP]  Starting UMsg watcher ... ");
   END_YELLOW_FONTCOLOR;
 
-  // #ifdef MT_UMSG_POLL
-/* #if 0 */
-/*  int cl_index; */
-/*   for(cl_index = 0; cl_index < NUM_UMSG_PER_AFU; cl_index++) */
-/*     { */
-/*       thr_err = pthread_create (&umsg_watch_tid[cl_index], NULL, &umsg_watcher, (void*) &cl_index); */
-/*       if (thr_err != 0) */
-/* 	{ */
-/* 	  BEGIN_RED_FONTCOLOR; */
-/* 	  printf("FAILED\n"); */
-/* 	  perror("pthread_create"); */
-/* 	  exit(1); */
-/* 	  END_RED_FONTCOLOR; */
-/* 	} */
-/*       else */
-/* 	{ */
-/* 	  printf("SUCCESS\n"); */
-/* 	}       */
-/*     } */
-/* #else */
+  // Initiate UMsg watcher
   thr_err = pthread_create (&umsg_watch_tid, NULL, &umsg_watcher, NULL);
   if (thr_err != 0)
     {
@@ -556,7 +537,6 @@ void session_init()
       END_YELLOW_FONTCOLOR;  
     }
   while(umas_init_flag != 1);
-/* #endif */
 
   // Session status
   session_exist_status = ESTABLISHED;
@@ -866,15 +846,11 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
 	{
 	  usleep(1);
 	}
-
-    /* #ifdef ASE_DEBUG */
-    /*   BEGIN_YELLOW_FONTCOLOR; */
-    /*   printf("  [DEBUG]  mmio_read32 => tid=%03x addr=%x data=%016llx\n", mmio_rsp_pkt->tid, mmio_rsp_pkt->addr, mmio_rsp_pkt->qword[0]); */
-    /*   END_YELLOW_FONTCOLOR; */
-    /* #endif */
-
+      pthread_mutex_lock(&mmiorsp_copy_lock);
       memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t));
-      mmio_rsp_pkt_accepted = 1;
+      pthread_mutex_unlock(&mmiorsp_copy_lock);
+
+      mmio_rsp_pkt_accepted = 1; // Unlock mutex
 
       // Display
       BEGIN_YELLOW_FONTCOLOR;
@@ -884,12 +860,6 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
 
       printf("  [APP]  MMIO Read Resp : tid = 0x%03x, %08x\n", mmio_pkt->tid, (uint32_t)*data32);
       END_YELLOW_FONTCOLOR;
-
-    /* #ifdef ASE_DEBUG */
-    /*   BEGIN_YELLOW_FONTCOLOR; */
-    /*   printf("  [DEBUG]  mmio_read32 => tid=%03x addr=%x data=%016llx\n", mmio_pkt->tid, mmio_pkt->addr, mmio_pkt->qword[0]); */
-    /*   END_YELLOW_FONTCOLOR; */
-    /* #endif */
 
       free(mmio_pkt);
     }
@@ -904,6 +874,10 @@ void mmio_read32(uint32_t offset, uint32_t *data32)
 void mmio_read64(uint32_t offset, uint64_t *data64)
 {
   FUNC_CALL_ENTRY;
+
+#ifdef ASE_DEBUG
+  void *retptr;
+#endif
 
   if (offset < 0)
     {
@@ -937,14 +911,20 @@ void mmio_read64(uint32_t offset, uint64_t *data64)
 	  usleep(1);
 	};
 
-    /* #ifdef ASE_DEBUG */
-    /*   BEGIN_YELLOW_FONTCOLOR; */
-    /*   printf("  [DEBUG]  mmio_read64 => tid=%03x addr=%x data=%016llx\n", mmio_rsp_pkt->tid, mmio_rsp_pkt->addr, mmio_rsp_pkt->qword[0]); */
-    /*   END_YELLOW_FONTCOLOR; */
-    /* #endif */
-
+      pthread_mutex_lock(&mmiorsp_copy_lock);
+/* #ifdef ASE_DEBUG */
+/*       retptr = memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t)); */
+/*       if (retptr != (void*)mmio_pkt) */
+/* 	{ */
+/* 	  perror("memcpy"); */
+/* 	  printf("  [DEBUG]  memcpy may fail here !n"); */
+/* 	} */
+/* #else */
       memcpy(mmio_pkt, mmio_rsp_pkt, sizeof(mmio_t));
-      mmio_rsp_pkt_accepted = 1;
+/* #endif */
+      pthread_mutex_unlock(&mmiorsp_copy_lock);
+
+      mmio_rsp_pkt_accepted = 1; // unlock mutex
 
       // Display
       BEGIN_YELLOW_FONTCOLOR;
@@ -954,12 +934,6 @@ void mmio_read64(uint32_t offset, uint64_t *data64)
 
       printf("  [APP]  MMIO Read Resp : tid = 0x%03x, addr=%x, data = %llx\n", mmio_pkt->tid, mmio_pkt->addr, (unsigned long long)*data64);
       END_YELLOW_FONTCOLOR;
-
-    /* #ifdef ASE_DEBUG */
-    /*   BEGIN_YELLOW_FONTCOLOR; */
-    /*   printf("  [DEBUG]  mmio_read64 => tid=%03x addr=%x data=%016llx\n", mmio_pkt->tid, mmio_pkt->addr, mmio_pkt->qword[0]); */
-    /*   END_YELLOW_FONTCOLOR; */
-    /* #endif */
 
       free(mmio_pkt);
     }
@@ -1298,59 +1272,6 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
  * Umsg watcher thread
  * Setup UMSG tracker addresses, and watch for activity
  */
-// #ifdef MT_UMSG_POLL
-#if 0 
-// -------------------------------
-// Parallel UMSG watcher threads
-// -------------------------------
-void *umsg_watcher(void *thrptr)
-{
-  // Old known copy
-  char umsg_old_data[CL_BYTE_WIDTH];
-  int cl_id = *((int *) thrptr);  
-
-  // Declare and Allocate umsgcmd_t packet
-  umsgcmd_t *umsg_pkt;
-  umsg_pkt = (struct umsgcmd_t *)ase_malloc( sizeof(struct umsgcmd_t) );
-
-  // Initial copy
-  memcpy( (char*)umsg_old_data,
-	  (char*)((uint64_t)umas_region->vbase + umsg_byteindex_arr[cl_id]),
-	  CL_BYTE_WIDTH
-	  );
-  
-  // Calculate target address
-  umsg_addr_array[cl_id] =  (char*)((uint64_t)umas_region->vbase + umsg_byteindex_arr[cl_id]);      
-#ifdef ASE_DEBUG
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [DEBUG]  umsg_addr_array[%d] = %p\n", cl_id, umsg_addr_array[cl_id]);
-  END_YELLOW_FONTCOLOR;
-#endif
-  
-  // Start while loop
-  while(umas_exist_status == ESTABLISHED)
-    {
-      if ( memcmp(umsg_addr_array[cl_id], umsg_old_data, CL_BYTE_WIDTH) != 0)
-	{
-	  printf("Change found... %d\n", cl_id);
-	  // Construct UMsg packet
-	  umsg_pkt->id = cl_id;	      
-	  memcpy((char*)umsg_pkt->qword, (char*)umsg_addr_array[cl_id], CL_BYTE_WIDTH);
-	  
-	  // Send UMsg
-	  pthread_mutex_lock (&umsg_port_lock);
-	  mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt, sizeof(struct umsgcmd_t));
-	  pthread_mutex_unlock (&umsg_port_lock);
-	  
-	  // Update local mirror
-	  memcpy( (char*)umsg_old_data, (char*)umsg_pkt->qword, CL_BYTE_WIDTH );
-	}      
-    }
-}
-#else
-// -------------------------------
-// Single UMSG thread patrol
-// -------------------------------
 void *umsg_watcher()
 {
   // Mark as thread that can be cancelled anytime
@@ -1408,7 +1329,6 @@ void *umsg_watcher()
 	}	
     }
 }
-#endif
 
 
 /*
