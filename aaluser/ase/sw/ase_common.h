@@ -119,6 +119,9 @@
 #define UMAS_LENGTH                NUM_UMSG_PER_AFU * ASE_PAGESIZE
 #define UMAS_REGION_MEMSIZE        2*1024*1024
 
+// User clock default
+#define DEFAULT_USR_CLK_MHZ        312.500
+
 
 /* *******************************************************************************
  *

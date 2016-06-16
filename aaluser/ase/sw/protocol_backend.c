@@ -1109,14 +1109,14 @@ void ase_config_parse(char *filename)
 		    {
 		      BEGIN_RED_FONTCOLOR;
 		      printf("SIM-C : User Clock Frequency cannot be 0.000 MHz\n");
-		      printf("        Reverting to 300.000 MHz\n");
-		      f_usrclk = 300.000;
-		      cfg->usr_tps = 3333;
+		      printf("        Reverting to %f MHz\n", DEFAULT_USR_CLK_MHZ);
+		      f_usrclk = DEFAULT_USR_CLK_MHZ;
+		      cfg->usr_tps = 3200;
 		      END_RED_FONTCOLOR;
 		    }
-		  else if (f_usrclk == 300.000000) 
+		  else if (f_usrclk == DEFAULT_USR_CLK_MHZ) 
 		    {
-		      cfg->usr_tps = 3333;
+		      cfg->usr_tps = 3200;
 		    }
 		  else 
 		    {
@@ -1235,14 +1235,11 @@ void ase_config_parse(char *filename)
   // User clock frequency
   BEGIN_YELLOW_FONTCOLOR;
   printf("        User Clock Frequency       ... %.6f MHz, T_uclk = %d ps \n", f_usrclk, cfg->usr_tps);
-  END_YELLOW_FONTCOLOR;
-  if (f_usrclk != 300.000)
+  if (f_usrclk != DEFAULT_USR_CLK_MHZ)
     {
-      BEGIN_RED_FONTCOLOR;
-      printf("        ** NOTE **: User Clock Frequency is not controllable in In-System Mode\n");
-      printf("        ** NOTE **: User Clock configurability is available in ASE Simulation only ! \n");
-      END_RED_FONTCOLOR;
+      printf("        ** NOTE **: User Clock Frequency was changed from default %f MHz !\n", DEFAULT_USR_CLK_MHZ);
     }
+  END_YELLOW_FONTCOLOR;
 
   // GBs of physical memory available
   BEGIN_YELLOW_FONTCOLOR;

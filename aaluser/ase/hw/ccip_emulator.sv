@@ -590,14 +590,11 @@ module ccip_emulator
    /*
     * User clock, uclk{*}
     * *FIXME*: Must track for Beta
-    * Currently generates a 300 Mhz clock
+    * Currently generates a 312.500 Mhz clock
     */
-// `define UCLK_HZ         real'(300_000_000);
-// `define UCLK_DURATION   3.333ns
-
    logic 	  usrClk;
    logic 	  usrClkDiv2 = 0;
-   int 		  usrClk_delay = 3333;
+   int 		  usrClk_delay = 3200;
       
    // Function: Update usrclk_delay 
    function void update_usrclk_delay(int delay);
