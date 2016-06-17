@@ -46,6 +46,7 @@
 
 #include <aalsdk/service/IALIAFU.h>
 
+
 //#include <string.h>
 
 //****************************************************************************
@@ -89,6 +90,8 @@ using namespace AAL;
 #define MMIO_Start_Address       0x00
 #define SAS_HW_MMIO_SIZE         (256 * 1024)
 #define Data_4_Byte              0x12345678
+#define Data_8_Byte              0x1122334455667788
+#define TargetFeatureOffSet      0x38
 
 
 #define LPBK1_DSM_SIZE           MB(4)
@@ -100,7 +103,7 @@ using namespace AAL;
 #define DSM_STATUS_TEST_COMPLETE 0x40
 #define CSR_AFU_DSM_BASEL        0x0110
 #define CSR_AFU_DSM_BASEH        0x0114
-#	define NLB_TEST_MODE_PCIE0		0x2000
+#define NLB_TEST_MODE_PCIE0		 0x2000
 
 /// @addtogroup MMIO_Mapping
 /// @{
@@ -121,6 +124,9 @@ public:
    btInt runMMIOWholeRegion64();        ///< return 0 if success
    btInt runInvalidMMIORegion();        ///< return 0 if success
    btInt runMMIOLength();               ///< return 0 if success
+   btInt runDFHFeature();               ///< return 0 if success
+   btInt runCorruptDFH();               ///< return 0 if success
+   btInt runMMIOStress();               ///< return 0 if success
 
    // <begin IServiceClient interface>
    void serviceAllocated(IBase *pServiceBase,
@@ -182,6 +188,13 @@ protected:
 
    //get service routine for internal use only
    btBool _getALIMMIOService();
+
+   //Initialize DFH list
+   btBool _initDFHList();
+
+   //Verify Feature Type in the List
+   btBool _verifyFeatureType(btUnsigned32bitInt featureType,
+                              btUnsigned32bitInt featureID);
 };
 
 
