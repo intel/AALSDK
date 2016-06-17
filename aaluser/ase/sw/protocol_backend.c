@@ -653,19 +653,12 @@ int ase_listener()
       umsg_pkt = (struct umsgcmd_t *)ase_malloc(sizeof(struct umsgcmd_t) );
 
       // cleanse string before reading
-      /* memset(umsg_mapstr, 0, ASE_MQ_MSGSIZE); */
       if ( mqueue_recv(app2sim_umsg_rx, (char*)umsg_mapstr, sizeof(struct umsgcmd_t) ) == ASE_MSG_PRESENT)
 	{
 	  memcpy(umsg_pkt, (umsgcmd_t *)umsg_mapstr, sizeof(struct umsgcmd_t));
 
 	  // Hint trigger
 	  umsg_pkt->hint = (glbl_umsgmode >> umsg_pkt->id) & 0x1;
-
-        /* #ifdef ASE_DEBUG */
-	/*   BEGIN_YELLOW_FONTCOLOR; */
-	/*   printf("  [DEBUG] umsg_pkt %d %d %llx\n", umsg_pkt->id, umsg_pkt->hint, umsg_pkt->qword[0]); */
-	/*   END_YELLOW_FONTCOLOR; */
-        /* #endif */
 
 	  // dispatch to event processing
 	  umsg_dispatch(0, umsg_pkt);
@@ -738,6 +731,7 @@ int ase_init()
   // Runtime error handler (print backtrace)
   signal(SIGSEGV, backtrace_handler);
   signal(SIGBUS, backtrace_handler);
+  signal(SIGABRT, backtrace_handler);
 
   // Ignore SIGPIPE *FIXME*: Look for more elegant solution
   signal(SIGPIPE, SIG_IGN);
