@@ -47,9 +47,6 @@ include ase_sources.mk
 # ASE Version
 ASE_VERSION = 5.0.2-Beta-9a36b65
 
-# Base directory
-ASE_BASEDIR = $(PWD)
-
 # Enable Altera gates library
 GLS_SIM = 1
 GLS_SAMPLE_LIB = $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
@@ -57,8 +54,12 @@ GLS_SAMPLE_LIB = $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
 # Timescale
 TIMESCALE = 1ps/1ps
 
+# Work directory
+WORK = work
+
 # ASE Source directory
 ASE_SRCDIR = $(shell pwd)
+ASE_WORKDIR = $(ASE_SRCDIR)/$(WORK)
 
 # Configuration & regression file inputs
 ASE_CONFIG ?= $(ASE_SRCDIR)/ase.cfg
@@ -97,9 +98,6 @@ endif
 # Variables
 ASE_SHOBJ_NAME = ase_libs
 ASE_SHOBJ_SO = $(ASE_SHOBJ_NAME).so
-
-# Work directory
-WORK = work
 
 # -lrt option is required in order to use shared memory /dev/shm,
 # -message queues and pthreads
