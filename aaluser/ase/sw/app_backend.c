@@ -48,8 +48,8 @@ volatile uint32_t mmio_writersp_cnt = 0;
 volatile uint32_t mmio_readreq_cnt = 0;
 volatile uint32_t mmio_readrsp_cnt = 0;
 
-uint32_t mmio_read_outstanding = 0;
-uint32_t mmio_write_outstanding = 0;
+/* volatile uint32_t mmio_read_outstanding = 0; */
+/* volatile uint32_t mmio_write_outstanding = 0; */
 
 // uint32_t mmio_rsp_num_outstanding = 0;
 
@@ -147,14 +147,15 @@ pthread_t msix_watch_tid;
 uint32_t generate_mmio_tid()
 {
   // Calculate outstanding
-  mmio_read_outstanding = mmio_readreq_cnt - mmio_readrsp_cnt;
-  mmio_write_outstanding = mmio_writereq_cnt - mmio_writersp_cnt;
+  /* mmio_read_outstanding = mmio_readreq_cnt - mmio_readrsp_cnt; */
+  /* mmio_write_outstanding = mmio_writereq_cnt - mmio_writersp_cnt; */
 
   // *FIXME*: TID credit must not overrun, no more than 64 outstanding MMIO Requests
-  while ((mmio_read_outstanding + mmio_write_outstanding) >= MMIO_MAX_OUTSTANDING)
+  // while ((mmio_read_outstanding + mmio_write_outstanding) >= MMIO_MAX_OUTSTANDING)
+  while ( ((mmio_readreq_cnt-mmio_readrsp_cnt) + (mmio_writereq_cnt-mmio_writersp_cnt)) >= MMIO_MAX_OUTSTANDING )
     {
       printf("  [APP]  MMIO TIDs have run out --- waiting for some to get released !\n");
-      usleep(100000);
+      sleep(1);
     }
 
   // Return value
@@ -648,10 +649,6 @@ void session_deinit()
       setlocale(LC_NUMERIC, oldLocale);
 
       END_YELLOW_FONTCOLOR;
-
-      /* free(umas_region); */
-      /* free(mmio_region); */
-      // free(ase_workdir_path);
       
       // Lock deinit
       pthread_mutex_destroy(&mmio_port_lock);
