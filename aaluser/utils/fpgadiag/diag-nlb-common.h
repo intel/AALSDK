@@ -112,6 +112,9 @@ struct NLBDefaults
    quad_word_type maxhqw;
    quad_word_type minsqw;
    quad_word_type maxsqw;
+   wkspc_size_type strides;
+   wkspc_size_type min_strides;
+   wkspc_size_type max_strides;
 };
 
 struct NLBBandwidth
@@ -202,6 +205,7 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_CX		            (u64_type)0x800000000000	/*  --cmp-xchg       (Number of Cmp-Xchg operations)				  */
 
 #define NLB_CMD_FLAG_ALT_WR_PRN        (u64_type)0x1000000000000  /* --alt-wr-pattern  (Alternate write patterns)                  */
+#define NLB_CMD_FLAG_STRIDED_ACS       (u64_type)0x2000000000000  /* --strided-access  (non-unit strides in NLB)                   */
 
 #define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   		/* --0 */
 #define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  		/* --1 */
@@ -218,6 +222,7 @@ struct NLBCmdLine
    cmp_xchg_type            cx;
    quad_word_type           hqw;
    quad_word_type           sqw;
+   wkspc_size_type          strided_acs;
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
 #elif defined( __AAL_LINUX__ )

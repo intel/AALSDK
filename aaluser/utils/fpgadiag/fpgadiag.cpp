@@ -113,6 +113,7 @@ struct NLBCmdLine gCmdLine =
    DEFAULT_CX,
    DEFAULT_HQW,
    DEFAULT_SQW,
+   DEFAULT_STRIDES,
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
 #elif defined( __AAL_LINUX__ )
@@ -165,7 +166,7 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_VR,
       DEFAULT_AWP,
       DEFAULT_ST,
-	  DEFAULT_UT,
+	   DEFAULT_UT,
       DEFAULT_MINCX,
       DEFAULT_MAXCX,
       DEFAULT_CX,
@@ -174,7 +175,10 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_MINHQW,
       DEFAULT_MAXHQW,
       DEFAULT_MINSQW,
-      DEFAULT_MAXSQW
+      DEFAULT_MAXSQW,
+      DEFAULT_STRIDES,
+      DEFAULT_MIN_STRIDES,
+      DEFAULT_MAX_STRIDES
    },
    0,
    {
