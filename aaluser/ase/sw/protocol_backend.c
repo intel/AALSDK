@@ -729,12 +729,15 @@ int ase_init()
   // Set self_destruct flag = 0, SIMulator is not in lockdown
   self_destruct_in_progress = 0;
 
-  // Register SIGINT and listen to it
+  // Graceful kill handlers
   signal(SIGTERM, start_simkill_countdown);
   signal(SIGINT , start_simkill_countdown);
   signal(SIGQUIT, start_simkill_countdown);
-  // signal(SIGKILL, start_simkill_countdown); // *FIXME*: This possibly doesnt work //
   signal(SIGHUP,  start_simkill_countdown);
+
+  // Runtime error handler (print backtrace)
+  signal(SIGSEGV, backtrace_handler);
+  signal(SIGBUS, backtrace_handler);
 
   // Ignore SIGPIPE *FIXME*: Look for more elegant solution
   signal(SIGPIPE, SIG_IGN);

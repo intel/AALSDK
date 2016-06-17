@@ -380,7 +380,7 @@ char* generate_tstamp_path(char*);
 
 // Error report functions
 void ase_error_report(char *, int , int );
-void backtrace_wrapper();
+void backtrace_handler(int);
 
 // IPC management functions
 void final_ipc_cleanup();

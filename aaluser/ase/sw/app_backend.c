@@ -379,11 +379,15 @@ void session_init()
   // Read ready file and check sanity
   ase_read_lock_file(ase_workdir_path);
 
-  // Register kill signals
+  // Register kill signals to issue simkill
   signal(SIGTERM, send_simkill);
   signal(SIGINT , send_simkill);
   signal(SIGQUIT, send_simkill);
   signal(SIGHUP,  send_simkill);
+
+  // When bad stuff happens, print backtrace
+  signal(SIGSEGV, backtrace_handler);
+  signal(SIGBUS, backtrace_handler);
 
   // Ignore SIGPIPE *FIXME*: Look for more elegant solution
   signal(SIGPIPE, SIG_IGN);

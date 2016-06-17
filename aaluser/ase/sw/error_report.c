@@ -105,26 +105,34 @@ void ase_error_report(char *err_func, int err_num, int err_code)
 
 
 /*
- * Wrapper for backtrace wrapper
+ * Wrapper for backtrace handler
  * Useful for debugging broken symbols
  */
-void backtrace_wrapper()
+extern const char *__progname;
+
+void backtrace_handler(int sig)
 {
-  /* int bt_j, bt_nptrs;   */
-  /* void *bt_buffer[4096]; */
-  /* char **bt_strings; */
 
-  bt_nptrs = backtrace(bt_buffer, 4096);
-  printf("backtrace() returned %d addresses\n", bt_nptrs);
+  void *bt_addr[16];
+  char **bt_messages = (char **)NULL;
+  int ii, trace_depth = 0;
 
-  bt_strings = backtrace_symbols(bt_buffer, bt_nptrs);
-  if (bt_strings == NULL) {
-    perror("backtrace_symbols");
-    exit(EXIT_FAILURE);
-  }
+  char sys_cmd[256];
 
-  for (bt_j = 0; bt_j < bt_nptrs; bt_j++)
-    printf("%s\n", bt_strings[bt_j]);
 
-  free(bt_strings);
+  trace_depth = backtrace(bt_addr, 16);
+  bt_messages = backtrace_symbols(bt_addr, trace_depth);
+  BEGIN_RED_FONTCOLOR;
+  printf("[bt] Execution Backtrace:\n");
+  for (ii=1; ii < trace_depth ; ++ii)
+    {
+      printf("[bt] #%d %s\n", ii, bt_messages[ii]);
+      sprintf(sys_cmd,"addr2line %p -e %s", bt_addr[ii], __progname);
+      system(sys_cmd);
+    }
+  END_RED_FONTCOLOR;
+
+  exit(1);
 }
+
+
