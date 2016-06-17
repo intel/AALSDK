@@ -53,6 +53,24 @@
 
 using namespace std;
 
+/// Device Feature Header CSR
+struct AFU_DFH {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt Feature_ID :12;     // Feature ID
+         btUnsigned64bitInt Feature_rev :4;     // Feature revision
+         btUnsigned64bitInt next_DFH_offset :24;// Next Device Feature header offset
+         btUnsigned16bitInt eol :1;             // end of header bit
+         btUnsigned64bitInt rsvd :19;           // Reserved
+         btUnsigned64bitInt Type :4;            // Type of Device
+
+      }; //end struct
+   }; // end union
+
+}; //end struct AFU_DFH
+
 ///////////////////////////////////////////////////////////////////////////////
 ///
 ///  Implementation
@@ -79,7 +97,6 @@ MMIOMapping::MMIOMapping() :
    m_OutputPhys(0),
    m_OutputSize(0),
    m_TestNum(0)
-
 {
    // Register our Client side interfaces so that the Service can acquire them.
    //   SetInterface() is inherited from CAASBase
@@ -184,12 +201,128 @@ btBool MMIOMapping::_getALIMMIOService()
    return _status;
 }
 
+/// @brief _VerifyFeatureType finds feature type in known DFH;
+///
+///
+
+btBool MMIOMapping::_verifyFeatureType(btUnsigned32bitInt featureType, btUnsigned32bitInt featureID)
+{
+    btVirtAddr         _pfeatureAddress;
+    NamedValueSet      _afuReqst;
+    NamedValueSet      _afuOutput;
+    btUnsigned64bitInt _fType;
+    btUnsigned64bitInt _fID;
+    btBool             _status = false;
+    struct AFU_DFH     *_dfh;
+
+    //Feature type = ALI_DFH_TYPE_AFU
+    _afuReqst.Add(ALI_GETFEATURE_TYPE_KEY, static_cast<ALI_GETFEATURE_TYPE_DATATYPE> (featureType));
+
+    if (m_pALIMMIOService->mmioGetFeatureAddress(&_pfeatureAddress, _afuReqst, _afuOutput) == false)
+    {
+      cout <<"Fail to get feature address"<<endl;
+    }
+
+    if ((_afuOutput.Get(ALI_GETFEATURE_TYPE_KEY, &_fType)!= 0) &&
+            (_afuOutput.Get(ALI_GETFEATURE_ID_KEY, &_fID) != 0))
+    {
+       cout <<"Feature Type & ID are not found in DFH"<<endl;
+    }
+    else
+    {
+       //verify output feature type & ID
+       if ((_fType == featureType) && (_fID == featureID))
+       {
+           _status = true;
+       }
+       else
+       {
+           cout <<"Test Failed : Wrong feature Type & ID!!!"<<endl;
+       }
+    }
+
+    //parse DFH header based on feature Address
+    //_dfh = &_pfeatureAddress;
+    //cout <<"Output Type :"<<hex<<_dfh->Type <<"  OutPut ID : "<<hex<<_dfh->Feature_ID <<endl;
+    //cout <<"Input Type :"<<hex<<featureType <<"  Input ID : "<<hex<<featureID<<endl;
+
+   return _status;
+
+}
+/// @brief create DFH list
+///
+///
+btBool MMIOMapping::_initDFHList()
+{
+    btUnsigned64bitInt iData64 = 0;
+    btBool retStatus = false;
+
+    MSG("initialize DFH list");
+    //Next AFU
+    iData64=0x48;
+    retStatus = m_pALIMMIOService->mmioWrite64(0x18, iData64);
+    if (retStatus != true)
+    {
+        MSG("mmioWrite64 fail !!!!");
+        goto done;
+    }
+
+    //Reserve
+    iData64=0x0;
+    retStatus = m_pALIMMIOService->mmioWrite64(0x20, iData64);
+    if (retStatus != true)
+    {
+        MSG("mmioWrite64 fail !!!!");
+        goto done;
+    }
+
+    //1st private feature header in the list
+    iData64=0x30000000001010BB;
+    retStatus = m_pALIMMIOService->mmioWrite64(0x28, iData64);
+    if (retStatus != true)
+    {
+        MSG("mmioWrite64 fail !!!!");
+        goto done;
+    }
+
+    //Private feature CSR
+    iData64=0x1234123412341234;
+    retStatus = m_pALIMMIOService->mmioWrite64(0x30, iData64);
+    if (retStatus != true)
+    {
+        MSG("mmioWrite64 fail !!!!");
+        goto done;
+    }
+
+    //2nd private feature Header
+    iData64=iData64=0x300000000101012;
+    retStatus = m_pALIMMIOService->mmioWrite64(0x38, iData64);
+    if (retStatus != true)
+    {
+        MSG("mmioWrite64 fail !!!!");
+        goto done;
+    }
+
+    //Private feature CSR
+    iData64=0x1133557799224466;
+    retStatus = m_pALIMMIOService->mmioWrite64(0x40, iData64);
+    if (retStatus != true)
+    {
+        MSG("mmioWrite64 fail !!!!");
+        goto done;
+    }
+
+done:
+    MSG("DFH is initialized");
+    return retStatus;
+
+}
 
 /// @brief   run() is called from main performs the following:
 ///             - Allocate the appropriate ALI Service depending
 ///               on whether a hardware, ASE or software implementation is desired.
 ///             - Allocates the necessary buffers to be used by the NLB AFU algorithm
-///             - Executes the NLB algorithm
+///             - Executes the Test RTL function
 ///             - Cleans up.
 ///
 btInt MMIOMapping::run()
@@ -198,58 +331,12 @@ btInt MMIOMapping::run()
    cout <<"= Test MMIO 1 CL Transfer ="<<endl;
    cout <<"==========================="<<endl;
 
-   // Request the Servcie we are interested in.
-
-   // NOTE: This example is bypassing the Resource Manager's configuration record lookup
-   //  mechanism.  Since the Resource Manager Implementation is a sample, it is subject to change.
-   //  This example does illustrate the utility of having different implementations of a service all
-   //  readily available and bound at run-time.
-   NamedValueSet Manifest;
-   NamedValueSet ConfigRecord;
-
-#if defined( HWAFU )                /* Use FPGA hardware */
-   // Service Library to use
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
-
-   // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
-   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
-
-
-   // indicate that this service needs to allocate an AIAService, too to talk to the HW
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
-
-   #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
-   Manifest.Add(keyRegHandle, 20);
-
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASEALIAFU");
-   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
-
-   #else                            /* default is Software Simulator */
-#if 0 // NOT CURRRENTLY SUPPORTED
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimALIAFU");
-   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
-#endif
-   return -1;
-#endif
-
-   // Add the Config Record to the Manifest describing what we want to allocate
-   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
-
-   // in future, everything could be figured out by just giving the service name
-   Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Test MMIO with 1 CL transaction");
-
-   MSG("Allocating Service");
-
-   // Allocate the Service and wait for it to complete by sitting on the
-   //   semaphore. The serviceAllocated() callback will be called if successful.
-   //   If allocation fails the serviceAllocateFailed() should set m_bIsOK appropriately.
-   //   (Refer to the serviceAllocated() callback to see how the Service's interfaces
-   //    are collected.)
-   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest);
-   m_Sem.Wait();
-   if(!m_bIsOK){
-      ERR("Allocation failed\n");
-      goto done_0;
+   if (_getALIMMIOService() == false)
+   {
+           cout <<"service allocation failed "<<endl;
+           m_bIsOK = false;
+           m_Result = -1;
+           goto done_0;
    }
 
    // Now that we have the Service and have saved the IALIBuffer interface pointer
@@ -265,7 +352,7 @@ btInt MMIOMapping::run()
       goto done_1;
    }
 
-   // Save the size and get the IOVA from teh User Virtual address. The HW only uses IOVA.
+   // Save the size and get the IOVA from the User Virtual address. The HW only uses IOVA.
    m_DSMSize = LPBK1_DSM_SIZE;
    m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
 
@@ -330,30 +417,19 @@ btInt MMIOMapping::run()
          pCL[i].uint[15] = i;
       };                         // Cache-Line[n] is zero except last uint = n
 
-
-      // Original code puts DSM Reset prior to AFU Reset, but ccipTest
-      //    reverses that. We are following ccipTest here.
-
       // Initiate AFU Reset
       m_pALIResetService->afuReset();
 
 
       // Initiate DSM Reset
       // Set DSM base, high then low
-      m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys);
+      m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, CACHELINE_ALIGNED_ADDR(m_DSMPhys));
 
       // Assert AFU reset
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
       //De-Assert AFU reset
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
-
-      // If ASE, give it some time to catch up
-      /*
-      #if defined ( ASEAFU )
-      SleepSec(5);
-      #endif*/ /* ASE AFU */
-
 
       // Set input workspace address
       m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_InputPhys));
@@ -390,8 +466,15 @@ btInt MMIOMapping::run()
          MSG("Output matches Input!");
       }
    }
-   MSG("Done Running Test");
 
+   if (m_Result == 0)
+   {
+       MSG("Test Pass !!!");
+   }
+   else
+   {
+       MSG("Test Fail !!!");
+   }
    // Clean-up and return
 done_4:
    m_pALIBufferService->bufferFree(m_OutputVirt);
@@ -415,18 +498,119 @@ done_0:
 btInt MMIOMapping::runMMIOWholeRegion32()
 {
     btUnsigned32bitInt iData32 = Data_4_Byte;
+        btCSROffset offSet = MMIO_Start_Address;
+        btBool status = false;
+        btUnsigned32bitInt rData32 = 0x0;
+        btCSROffset endOffSet = MMIO_SIZE;  // at end of MMIO region
+
+        cout <<"=============================================================="<<endl;
+        cout <<"= Test AFU MMIO whole region by read/write every memory cell ="<<endl;
+        cout <<"=============================================================="<<endl;
+
+        if (_getALIMMIOService() == false)
+        {
+            cout <<"service allocation failed "<<endl;
+            m_bIsOK = false;
+            m_Result = -1;
+            goto done_0;
+        }
+
+        //=============================
+        // Now we have the AFU RTL Service
+        //   now we can use it
+        //=============================
+        MSG("Running Test");
+        if(true == m_bIsOK){
+
+            // Initiate AFU Reset
+            m_pALIResetService->afuReset();
+
+            // If ASE, give it some time to catch up
+            #if defined (ASEAFU)
+                SleepSec(2);
+            #endif
+
+            MSG("Done ASEAFU reset");
+
+            //write data through 32 bit interface
+            for (btUnsigned32bitInt j = 0; j< (MMIO_SIZE / 4); ++j) {
+            //for (btUnsigned32bitInt j = 0; j< (20); ++j) {
+                 status = m_pALIMMIOService->mmioWrite32(offSet, iData32);
+
+                 if (status == false)
+                 {
+                    cout <<" MMIO Region write/read Test failed !!!! " <<endl;
+                    m_Result = -1;
+                    goto done_0;
+                 }
+
+                 offSet = offSet + 4;
+            };
+
+            #if defined (ASEAFU)
+                SleepSec(5);
+            #endif
+
+            MSG("Done writing 32 bit data");
+
+            // read data with 32 bit interface and compare the value
+            offSet = MMIO_Start_Address;//at the beginning of the MMIO region
+
+            for (btUnsigned32bitInt j = 0; j<20; ++j) {
+                   m_pALIMMIOService->mmioRead32(offSet, &rData32);
+
+                   cout <<"0x"<< hex << offSet <<"  " << hex << rData32 << endl ;
+
+                   if (rData32 != Data_4_Byte)
+                   {
+                       m_Result = -1;
+                       cout << endl << "Test Failed !!!!!!!!"<<endl;
+                       goto done_0;
+                   }
+                   offSet = offSet + 4;
+            }
+
+
+             offSet = MMIO_Start_Address + MMIO_SIZE;  //at the end of the MMIO region
+             for (btUnsigned32bitInt j = 0; j<20; ++j) {
+                 m_pALIMMIOService->mmioRead32(offSet, &rData32);
+
+                 cout <<"0x"<< hex << offSet <<"  " << hex << rData32 << endl ;
+
+                 if (rData32 != Data_4_Byte)
+                 {
+                     m_Result = -1;
+                     cout << endl << "Test Failed !!!!!!!!"<<endl;
+                     goto done_0;
+                 }
+                 offSet = offSet - 4;
+             }
+        }
+
+       MSG("MMIO Region Write / Read (32 bit interface) Test PASS!");
+
+        done_0:
+           m_Runtime.stop();
+           m_Sem.Wait();
+
+           return m_Result;
+}
+
+btInt MMIOMapping::runMMIOWholeRegion64()
+{
     btCSROffset offSet = MMIO_Start_Address;
     btBool status = false;
-    btUnsigned32bitInt rData32 = 0x0;
-    btCSROffset endOffSet = MMIO_SIZE;  // at end of MMIO region
+    btCSROffset endOffSet = 0x40000;  // at end of MMIO region
 
-	cout <<"=============================================================="<<endl;
-	cout <<"= Test AFU MMIO whole region by read/write every memory cell ="<<endl;
-	cout <<"=============================================================="<<endl;
+    cout <<"=============================================================="<<endl;
+    cout <<"= Test AFU MMIO whole region by read/write every memory cell ="<<endl;
+    cout <<"=============================================================="<<endl;
 
-	if (_getALIMMIOService() == false)
+    if (_getALIMMIOService() == false)
     {
         cout <<"service allocation failed "<<endl;
+        m_bIsOK = false;
+        m_Result = -1;
         goto done_0;
     }
 
@@ -447,144 +631,44 @@ btInt MMIOMapping::runMMIOWholeRegion32()
 
         MSG("Done ASEAFU reset");
 
-        //write data through 32 bit interface
-        for (btUnsigned32bitInt j = 0; j< (MMIO_SIZE / 4); ++j) {
-             status = m_pALIMMIOService->mmioWrite32(offSet, iData32);
+        //write & read data through 64 bit interface in MMIO region
+        btUnsigned64bitInt iData64 = Data_8_Byte;
+        offSet = MMIO_Start_Address + 3;
 
-             if (status == false)
-             {
-                cout <<" MMIO Region write/read Test failed !!!! " <<endl;
-                goto done_0;
-             }
-
-             offSet = offSet + 4;
+        for (btUnsigned32bitInt j = 0; j< (MMIO_SIZE / 8); ++j) {
+            m_pALIMMIOService->mmioWrite64(offSet, iData64);
+            offSet = offSet + 8;
         };
 
-        cout <<endl;
+        MSG("Done writing 64 bit data");
 
-        // If ASE, give it some time to catch up
-        #if defined (ASEAFU)
-            SleepSec(10);
-        #endif
+        // read data with 64 bit interface and compare the value
 
-        MSG("Done writing 32 bit data");
+        btUnsigned64bitInt oData64 = 0x0;
+        offSet = MMIO_Start_Address;  //at the beginning of the MMIO region
 
-          // read data with 32 bit interface and compare the value
-          offSet = MMIO_Start_Address;  //at the beginning of the MMIO region
+        for (btUnsigned32bitInt j = 0; j<20; ++j) {
+             m_pALIMMIOService->mmioRead64(offSet, &oData64);
 
-          for (btUnsigned32bitInt j = 0; j<20; ++j) {
-               m_pALIMMIOService->mmioRead32(offSet, &rData32);
+             cout <<"0x"<< hex << offSet <<"  " << hex << oData64 << endl ;
 
-               cout <<"0x"<< hex << offSet <<"  " << hex << rData32 << endl ;
-
-               if (rData32 != Data_4_Byte)
-               {
-                   m_Result = -1;
-                   cout << endl << "Test Failed !!!!!!!!"<<endl;
-                   //goto done_0;
-               }
-               offSet = offSet + 4;
-          }
-
-          rData32 = 0x0;
-
-          for (btUnsigned32bitInt j = 0; j< 20; ++j) {
-               m_pALIMMIOService->mmioRead32(endOffSet, &rData32);
-               cout << "End: 0x"<< hex << endOffSet << " "<< hex << rData32 << endl ;
-               endOffSet = endOffSet - 4;
-          }
-    }
-
-   MSG("MMIO Region Write / Read (32 bit interface) Test PASS!");
-
-	done_0:
-	   m_Runtime.stop();
-	   m_Sem.Wait();
-
-	   return m_Result;
-}
-
-btInt MMIOMapping::runMMIOWholeRegion64()
-{
-    btCSROffset offSet = MMIO_Start_Address;
-    btBool status = false;
-    btCSROffset endOffSet = 0x40000;  // at end of MMIO region
-
-    cout <<"=============================================================="<<endl;
-    cout <<"= Test AFU MMIO whole region by read/write every memory cell ="<<endl;
-    cout <<"=============================================================="<<endl;
-
-    if (_getALIMMIOService() == false)
-    {
-        cout <<"service allocation failed "<<endl;
-        goto done_0;
-    }
-
-    //=============================
-    // Now we have the AFU RTL Service
-    //   now we can use it
-    //=============================
-    MSG("Running Test");
-    if(true == m_bIsOK){
-
-    // Initiate AFU Reset
-    m_pALIResetService->afuReset();
-
-    // If ASE, give it some time to catch up
-    #if defined (ASEAFU)
-        SleepSec(2);
-    #endif
-
-    MSG("Done ASEAFU reset");
-
-    //write & read data through 64 bit interface in MMIO region
-    btUnsigned64bitInt iData64 = Data_4_Byte;
-    offSet = MMIO_Start_Address;
-
-      for (btUnsigned32bitInt j = 0; j< (MMIO_SIZE / 8); ++j) {
-             m_pALIMMIOService->mmioWrite64(offSet, iData64);
+             if (oData64 != Data_8_Byte)
+             {
+                 m_Result = -1;
+                 cout << endl << "Test Failed !!!!!!!!"<<endl;
+                 goto done_0;
+             }
              offSet = offSet + 8;
-      };
+        }
 
-      MSG("Done writing 64 bit data");
+        oData64 = 0x0;
+        endOffSet = MMIO_SIZE;  // at end of MMIO region
 
-      // Initiate AFU Reset
-      m_pALIResetService->afuReset();
-
-      // If ASE, give it some time to catch up
-      #if defined (ASEAFU)
-          SleepSec(2);
-      #endif
-
-      MSG("Done ASEAFU reset");
-
-      // read data with 64 bit interface and compare the value
-
-      btUnsigned64bitInt oData64 = 0x0;
-      offSet = MMIO_Start_Address;  //at the beginning of the MMIO region
-
-      for (btUnsigned32bitInt j = 0; j<20; ++j) {
-           m_pALIMMIOService->mmioRead64(offSet, &oData64);
-
-           cout <<"0x"<< hex << offSet <<"  " << hex << oData64 << endl ;
-
-           if (oData64 != Data_4_Byte)
-           {
-               m_Result = -1;
-               cout << endl << "Test Failed !!!!!!!!"<<endl;
-               //goto done_0;
-           }
-           offSet = offSet + 8;
-      }
-
-      oData64 = 0x0;
-      endOffSet = 0x40000;  // at end of MMIO region
-
-      for (btUnsigned32bitInt j = 0; j< 20; ++j) {
-           m_pALIMMIOService->mmioRead64(endOffSet, &oData64);
-           cout << "End: 0x"<< hex << endOffSet << " "<< hex << oData64 << endl ;
-           endOffSet = endOffSet - 8;
-      }
+        for (btUnsigned32bitInt j = 0; j< 20; ++j) {
+             m_pALIMMIOService->mmioRead64(endOffSet, &oData64);
+             cout << "End: 0x"<< hex << endOffSet << " "<< hex << oData64 << endl ;
+             endOffSet = endOffSet - 8;
+        }
    }
 
    MSG("MMIO Region Write / Read Test (64 bit interface) PASS!");
@@ -596,7 +680,6 @@ btInt MMIOMapping::runMMIOWholeRegion64()
        return m_Result;
 }
 
-
 btInt MMIOMapping::runInvalidMMIORegion()
 {
     btUnsigned32bitInt iData32 = Data_4_Byte;
@@ -604,12 +687,14 @@ btInt MMIOMapping::runInvalidMMIORegion()
     btBool status = false;
 
     cout <<"=============================================================="<<endl;
-    cout <<"= Test AFU MMIO whole region by read/write every memory cell ="<<endl;
+    cout <<"= Test Invalid AFU MMIO boundary condition                   ="<<endl;
     cout <<"=============================================================="<<endl;
 
     if (_getALIMMIOService() == false)
     {
         cout <<"service allocation failed "<<endl;
+        m_bIsOK = false;
+        m_Result = -1;
         goto done_0;
     }
 
@@ -619,7 +704,7 @@ btInt MMIOMapping::runInvalidMMIORegion()
     //=============================
     MSG("Running Test");
     if(true == m_bIsOK){
-        //write data to out off boundary MMIo region through 32 bit interface
+        //write data to out off boundary MMIO region through 32 bit interface
         for (btUnsigned32bitInt j = 0; j< 2; ++j) {
              status = m_pALIMMIOService->mmioWrite32(offSet, iData32);
              if (status == true)
@@ -647,8 +732,6 @@ btInt MMIOMapping::runInvalidMMIORegion()
 
 btInt MMIOMapping::runMMIOLength()
 {
-    MSG("runMMIOWholeRegion");
-
     cout <<"=============================================================="<<endl;
     cout <<"= Get MMIO length and verify with HW supported MMIO size ="<<endl;
     cout <<"=============================================================="<<endl;
@@ -657,6 +740,8 @@ btInt MMIOMapping::runMMIOLength()
     if (_getALIMMIOService() == false)
     {
         cout <<"service allocation failed "<<endl;
+        m_bIsOK = false;
+        m_Result = -1;
         goto done_0;
     }
 
@@ -678,7 +763,14 @@ btInt MMIOMapping::runMMIOLength()
        }
    }
 
-   MSG("MMIOLength Test PASS !");
+   if (m_Result == 0){
+
+       MSG("MMIOLength Test PASS !");
+   }
+   else{
+
+       MSG("MMIOLength Test FAIL !");
+   }
 
 done_0:
    m_Runtime.stop();
@@ -686,6 +778,244 @@ done_0:
 
    return m_Result;
 }
+
+btInt MMIOMapping::runDFHFeature()
+{
+    btCSROffset offSet = MMIO_Start_Address;
+    ALI_GETFEATURE_ID_DATATYPE featureID = 0x12;
+    btUnsigned64bitInt oData64 = 0x0;
+
+    //discovery of DFH features using mmioGetFeatureOffset()
+    btCSROffset       _featureOffSet;
+    btBool            _retVal = false;
+    NamedValueSet     _afuReqst;
+
+    cout <<"=============================================================="<<endl;
+    cout <<"= Discover DFH features using mmioGetFeaturesOffset()        ="<<endl;
+    cout <<"=============================================================="<<endl;
+
+    if (_getALIMMIOService() == false)
+    {
+        cout <<"service allocation failed !"<<endl;
+        m_bIsOK = false;
+        m_Result = -1;
+        goto done_0;
+    }
+
+   //=============================
+   // Now we have the AFU RTL Service
+   //   now we can use it
+   //=============================
+   MSG("Running Test");
+   if(true == m_bIsOK){
+
+       // Initiate AFU Reset
+       m_pALIResetService->afuReset();
+
+       // If ASE, give it some time to catch up
+       #if defined (ASEAFU)
+           SleepSec(2);
+       #endif
+
+       MSG("Done ASEAFU reset");
+
+       for (btUnsigned64bitInt j = 0; j<8; ++j) {
+         m_pALIMMIOService->mmioRead64(offSet, &oData64);
+
+         cout <<"0x"<< hex << offSet <<"  " << hex << oData64 << endl ;
+
+         offSet = offSet + 8;
+       }
+
+       _afuReqst.Add(ALI_GETFEATURE_ID_KEY, featureID);
+
+       _retVal = m_pALIMMIOService->mmioGetFeatureOffset(&_featureOffSet, _afuReqst);
+
+       //check if featureOffset from the API is from the correct location in DFH
+       if ((_retVal == false) || (_featureOffSet != TargetFeatureOffSet))
+       {
+           cout << "Feature OffSet 0x:" << hex << _featureOffSet <<endl;
+           cout <<"feature ID 0x:"<<hex <<featureID << " is not found !!!!" <<endl;
+           MSG("DFH Feature discovery Test FAIL !");
+           m_Result = -1;
+           goto done_0;
+       }
+
+       cout << "Feature OffSet 0x:" << hex << _featureOffSet <<endl;
+
+   }
+
+   MSG("DFH Feature discovery Test PASS !");
+
+done_0:
+   m_Runtime.stop();
+   m_Sem.Wait();
+
+   return m_Result;
+}
+
+/// @brief use bad DFH header to trigger error path in
+///        mmioGetFeatureOffset API by using feature type
+///        as the files and e
+///
+///
+btInt MMIOMapping::runCorruptDFH()
+{
+    btCSROffset offSet = MMIO_Start_Address;
+    ALI_GETFEATURE_TYPE_DATATYPE featureType = ALI_DFH_TYPE_BBB;
+    btUnsigned64bitInt oData64 = 0x0;
+
+    //discovery of DFH features offset using mmioGetFeatureOffset()
+    btCSROffset       _featureOffSet;
+    btBool            _retVal = false;
+    NamedValueSet     _afuReqst;
+
+    cout <<"=============================================================="<<endl;
+    cout <<"= Discover DFH features offset using mmioGetFeaturesOffset() ="<<endl;
+    cout <<"=============================================================="<<endl;
+
+    if (_getALIMMIOService() == false)
+    {
+        cout <<"service allocation failed !"<<endl;
+        m_bIsOK = false;
+        m_Result = -1;
+        goto done_0;
+    }
+
+   //=============================
+   // Now we have the AFU RTL Service
+   //   now we can use it
+   //=============================
+   MSG("Running Test");
+   if(true == m_bIsOK){
+
+       // Initiate AFU Reset
+       m_pALIResetService->afuReset();
+
+       // If ASE, give it some time to catch up
+       #if defined (ASEAFU)
+           SleepSec(2);
+       #endif
+
+       MSG("Done ASEAFU reset");
+
+       for (btUnsigned64bitInt j = 0; j<13; ++j) {
+         m_pALIMMIOService->mmioRead64(offSet, &oData64);
+
+         cout <<"0x"<< hex << offSet <<"  " << hex << oData64 << endl ;
+
+         offSet = offSet + 8;
+       }
+
+       _afuReqst.Add(ALI_GETFEATURE_TYPE_KEY, featureType);
+
+       _retVal = m_pALIMMIOService->mmioGetFeatureOffset(&_featureOffSet, _afuReqst);
+
+       //check if featureOffset from the API is from the correct location in DFH
+       if (_retVal == false)
+       {
+           cout << "Feature OffSet 0x:" << hex << _featureOffSet <<endl;
+           cout <<"feature Type 0x:"<<hex <<featureType << " is not found !!!!" <<endl;
+           MSG("Corrupt DFH Feature discovery Test FAIL !");
+           m_Result = -1;
+           goto done_0;
+       }
+
+       cout << "Corrupt DFH Feature OffSet 0x:" << hex << _featureOffSet <<endl;
+
+   }
+
+   MSG("Corrupt DFH Feature discovery Test PASS !");
+
+done_0:
+   m_Runtime.stop();
+   m_Sem.Wait();
+
+   return m_Result;
+}
+
+/// @brief:MMIO stress test by using mmioGetFeatureAddress()
+///        to parse the AFU DHF
+///
+
+btInt MMIOMapping::runMMIOStress()
+{
+    btCSROffset        _offSet = MMIO_Start_Address;
+    btCSROffset        _featureOffSet;
+   // ALI_GETFEATURE_TYPE_DATATYPE _featureType = ALI_DFH_TYPE_AFU;
+    btUnsigned64bitInt _oData64 = 0x0;
+    btVirtAddr         _mmioAfuBaseAddr;
+    btUnsigned64bitInt *_pFeature_ID;
+    btUnsigned64bitInt featureType;
+    btUnsigned32bitInt typeArry[] = {ALI_DFH_TYPE_AFU, \
+                                    ALI_DFH_TYPE_BBB,  \
+                                    ALI_DFH_TYPE_PRIVATE};
+    btUnsigned32bitInt IDrry[] = {0xA, 0x12, 0xBB};
+
+    btVirtAddr        _pfeatureAddress;
+    NamedValueSet     _afuReqst;
+    NamedValueSet     _afuOutput;
+
+
+    cout <<"=============================================================="<<endl;
+    cout <<"= Discover DFH features offset using mmioGetFeaturesOffset() ="<<endl;
+    cout <<"=============================================================="<<endl;
+
+    if (_getALIMMIOService() == false)
+    {
+        cout <<"service allocation failed !"<<endl;
+        m_bIsOK = false;
+        m_Result = -1;
+        goto done_0;
+    }
+
+   //=============================
+   // Now we have the AFU RTL Service
+   //   now we can use it
+   //=============================
+   MSG("Running Test");
+   if(true == m_bIsOK){
+
+       // Initiate AFU Reset
+       m_pALIResetService->afuReset();
+
+       // If ASE, give it some time to catch up
+       #if defined (ASEAFU)
+           SleepSec(2);
+       #endif
+
+       MSG("Done ASEAFU reset");
+
+       for (btUnsigned64bitInt j = 0; j<13; ++j) {
+         m_pALIMMIOService->mmioRead64(_offSet, &_oData64);
+
+         cout <<"0x"<< hex << _offSet <<"  "<< hex << _oData64 << endl ;
+
+         _offSet = _offSet + 8;
+       }
+
+       for (int i = 0; i< 3; i++)
+       {
+           if(_verifyFeatureType(typeArry[i], IDrry[i]) == false)
+           {
+               cout <<"Feature type not found !!!"<<endl;
+               MSG("MMIO stress Test FAIL !!!!");
+               m_Result = -1;
+               goto done_0;
+           }
+       }
+
+   }
+
+   MSG("MMIO stress Test PASS !");
+
+done_0:
+   m_Runtime.stop();
+   m_Sem.Wait();
+
+   return m_Result;
+}
+
 //=================
 //  IServiceClient
 //=================
@@ -786,7 +1116,7 @@ void MMIOMapping::serviceAllocateFailed(const IEvent &rEvent)
  //  IRuntimeClient
  //=================
 
-  // <begin IRuntimeClient interface>
+ // <begin IRuntimeClient interface>
  // Because this simple example has one object implementing both IRuntieCLient and IServiceClient
  //   some of these interfaces are redundant. We use the IServiceClient in such cases and ignore
  //   the RuntimeClient equivalent e.g.,. runtimeAllocateServiceSucceeded()
@@ -858,43 +1188,63 @@ int main(int argc, char *argv[])
       exit(1);
    }
 
+   // Init the AAL logger.
+   //pAALLogger()->AddToMask(LM_All, 8); // All subsystems
+   //pAALLogger()->SetDestination(ILogger::CERR);
+
    if (argc < 2)
    {
 	   std::cout << "Usage: MMIO_Mapping x \n";
-	   std::cout << "x: 0 - MMIO 1 CL read/write \n";
-       std::cout << "x: 1 - MMIO whole region read/write (32 bit API)\n";
-       std::cout << "x: 2 - MMIO whole region read/write (64 bit API)\n";
-       std::cout << "x: 3 - Access invalid memory region and expect seg fault \n";
-       std::cout << "x: 4 - get AFU MMIO Length\n";
+	   std::cout << "x: 0 - MMIO 1 CL read/write "<<endl;
+       std::cout << "x: 1 - MMIO whole region read/write (32 bit API)"<<endl;
+       std::cout << "x: 2 - MMIO whole region read/write (64 bit API)"<<endl;
+       std::cout << "x: 3 - Access invalid memory region and expect seg fault"<<endl;
+       std::cout << "x: 4 - get AFU MMIO Length"<<endl;
+       std::cout << "x: 5 - discover device feature offset"<<endl;
+       std::cout << "x: 6 - trigger error path when searching by feature type" <<endl;
+       std::cout << "x: 7 - MMIO stress test"<<endl;
    }
    else
    {
 	   switch(*argv[1]){
 	      case '0' :
-	    	  std::cout <<"MMIO 1 CL read/write \n";
+	    	  std::cout <<"MMIO 1 CL read/write "<<endl;
 	    	  Result = theApp.run();
 	    	  break;
 	      case '1' :
-	    	  std::cout <<"MMIO whole region read/write \n";
+	    	  std::cout <<"MMIO whole region read/write (32 bit API)" <<endl;
 	    	  Result = theApp.runMMIOWholeRegion32();
 	    	  break;
 	      case '2' :
-              std::cout <<"MMIO whole region read/write \n";
+              std::cout <<"MMIO whole region read/write (64 bit API) "<<endl;
               Result = theApp.runMMIOWholeRegion64();
               break;
 	      case '3' :
-	    	  std::cout <<"Access invalid memory region and expect seg fault";
+	    	  std::cout <<"Access invalid memory region and expect seg fault "<<endl;
 	    	  Result = theApp.runInvalidMMIORegion();
 	    	  break;
 	      case '4' :
-              std::cout <<"get AFU MMIO Length";
+              std::cout <<"get AFU MMIO Length" <<endl;
               Result = theApp.runMMIOLength();
               break;
+	      case '5' :
+	          std::cout <<"Discover DFH Header" <<endl;
+	          Result = theApp.runDFHFeature();
+	          break;
+	      case '6' :
+              std::cout <<"Discover DFH Header with malfunction header" <<endl;
+              Result = theApp.runCorruptDFH();
+              break;
+	      case '7' :
+              std::cout <<"MMIO Stress Test" <<endl;
+              Result = theApp.runMMIOStress();
+              break;
 	      default:
-	    	  std::cout << "not valid test selection number !";
+	    	  std::cout << "not valid test selection number !"<<endl;
 	   }
    }
-   MSG("Done");
+
+   MSG("Done.");
    return Result;
 }
 
