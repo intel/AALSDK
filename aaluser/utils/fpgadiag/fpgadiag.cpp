@@ -159,11 +159,16 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_CSR_WRITE,
       DEFAULT_UMSG_DATA,
       DEFAULT_UMSG_HINT,
-      DEFAULT_VA,
-      DEFAULT_VL0,
-      DEFAULT_VH0,
-      DEFAULT_VH1,
-      DEFAULT_VR,
+      DEFAULT_READ_VA,
+      DEFAULT_READ_VL0,
+      DEFAULT_READ_VH0,
+      DEFAULT_READ_VH1,
+      DEFAULT_READ_VR,
+      DEFAULT_WRITE_VA,
+      DEFAULT_WRITE_VL0,
+      DEFAULT_WRITE_VH0,
+      DEFAULT_WRITE_VH1,
+      DEFAULT_WRITE_VR,
       DEFAULT_AWP,
       DEFAULT_ST,
 	   DEFAULT_UT,
@@ -1067,23 +1072,34 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
    m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, CoolSize / CL(1));
 
    csr_type cfc_cfg = (csr_type)NLB_TEST_MODE_READ;
-   // Select the channel.
-    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0))
-    {
-       cfc_cfg |= (csr_type)NLB_TEST_MODE_VL0;
-    }
-    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH0))
-    {
-       cfc_cfg |= (csr_type)NLB_TEST_MODE_VH0;
-    }
-    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1))
-    {
-       cfc_cfg |= (csr_type)NLB_TEST_MODE_VH1;
-    }
-    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VR))
-     {
-        cfc_cfg |= (csr_type)NLB_TEST_MODE_VR;
-     }
+
+   // Select the read channel.
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0)){
+      cfc_cfg |= (csr_type)NLB_TEST_MODE_READ_VL0;
+   }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH0)){
+      cfc_cfg |= (csr_type)NLB_TEST_MODE_READ_VH0;
+   }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH1)){
+      cfc_cfg |= (csr_type)NLB_TEST_MODE_READ_VH1;
+   }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VR)){
+      cfc_cfg |= (csr_type)NLB_TEST_MODE_READ_VR;
+   }
+
+   // Select the write channel.
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VL0)){
+      cfc_cfg |= (csr_type)NLB_TEST_MODE_WRITE_VL0;
+   }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH0)){
+      cfc_cfg |= (csr_type)NLB_TEST_MODE_WRITE_VH0;
+   }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH1)){
+      cfc_cfg |= (csr_type)NLB_TEST_MODE_WRITE_VH1;
+   }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VR)){
+      cfc_cfg |= (csr_type)NLB_TEST_MODE_WRITE_VR;
+   }
 
    // Set the test mode
    m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);

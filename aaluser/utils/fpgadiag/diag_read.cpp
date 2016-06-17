@@ -137,18 +137,32 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
       cfg |= (csr_type)NLB_TEST_MODE_RDI;
    }
 
-   // Select the channel.
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0)){
-	   cfg |= (csr_type)NLB_TEST_MODE_VL0;
+   // Select the read channel.
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0)){
+     cfg |= (csr_type)NLB_TEST_MODE_READ_VL0;
    }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH0)){
-	   cfg |= (csr_type)NLB_TEST_MODE_VH0;
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH0)){
+     cfg |= (csr_type)NLB_TEST_MODE_READ_VH0;
    }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1)){
-	   cfg |= (csr_type)NLB_TEST_MODE_VH1;
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH1)){
+     cfg |= (csr_type)NLB_TEST_MODE_READ_VH1;
    }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VR)){
-     cfg |= (csr_type)NLB_TEST_MODE_VR;
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VR)){
+     cfg |= (csr_type)NLB_TEST_MODE_READ_VR;
+   }
+
+   // Select the write channel.
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VL0)){
+     cfg |= (csr_type)NLB_TEST_MODE_WRITE_VL0;
+   }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH0)){
+     cfg |= (csr_type)NLB_TEST_MODE_WRITE_VH0;
+   }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH1)){
+     cfg |= (csr_type)NLB_TEST_MODE_WRITE_VH1;
+   }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VR)){
+     cfg |= (csr_type)NLB_TEST_MODE_WRITE_VR;
    }
 
    // Set Multi CL CSR.
@@ -165,17 +179,30 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
     if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE)){
 
        csr_type wfc_cfg = (csr_type)NLB_TEST_MODE_READ;
-       if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0)){
-          wfc_cfg |= (csr_type)NLB_TEST_MODE_VL0;
+       if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0)){
+          wfc_cfg |= (csr_type)NLB_TEST_MODE_READ_VL0;
        }
-       else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH0)){
-          wfc_cfg |= (csr_type)NLB_TEST_MODE_VH0;
+       else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH0)){
+          wfc_cfg |= (csr_type)NLB_TEST_MODE_READ_VH0;
        }
-       else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1)){
-          wfc_cfg |= (csr_type)NLB_TEST_MODE_VH1;
+       else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH1)){
+          wfc_cfg |= (csr_type)NLB_TEST_MODE_READ_VH1;
        }
-       else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VR)){
-         wfc_cfg |= (csr_type)NLB_TEST_MODE_VR;
+       else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VR)){
+          wfc_cfg |= (csr_type)NLB_TEST_MODE_READ_VR;
+       }
+
+       if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VL0)){
+          wfc_cfg |= (csr_type)NLB_TEST_MODE_WRITE_VL0;
+       }
+       else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH0)){
+          wfc_cfg |= (csr_type)NLB_TEST_MODE_WRITE_VH0;
+       }
+       else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH1)){
+          wfc_cfg |= (csr_type)NLB_TEST_MODE_WRITE_VH1;
+       }
+       else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VR)){
+          wfc_cfg |= (csr_type)NLB_TEST_MODE_WRITE_VR;
        }
 
        m_pALIMMIOService->mmioWrite32(CSR_CFG, (csr_type)wfc_cfg);

@@ -88,16 +88,25 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
 	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_DATA);
    } else if ((0 == strcmp("--umsg-hint", option)) || (0 == strcmp("--uh", option))) {
 	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_HINT);
-   } else if ( 0 == strcmp("--va", option) ) {
+   } else if ((0 == strcmp("--read-va", option))  || (0 == strcmp("--rva", option)) ||
+              (0 == strcmp("--write-va", option)) || (0 == strcmp("--wva", option))) {
    	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VA);
-   } else if ( 0 == strcmp("--vl0", option) ) {
-      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VL0);
-   } else if ( 0 == strcmp("--vh0", option) ) {
-      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VH0);
-   } else if ( 0 == strcmp("--vh1", option) ) {
-      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VH1);
-   } else if ( 0 == strcmp("--vr", option) ) {
-              flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VR);
+   } else if ((0 == strcmp("--read-vl0", option)) || (0 == strcmp("--rvl0", option)) ) {
+      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VL0);
+   } else if ((0 == strcmp("--read-vh0", option)) || (0 == strcmp("--rvh0", option))) {
+      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VH0);
+   } else if ((0 == strcmp("--read-vh1", option)) || (0 == strcmp("--rvh1", option)) ) {
+      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VH1);
+   } else if ((0 == strcmp("--read-vr", option)) || (0 == strcmp("--rvr", option))) {
+              flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VR);
+   } else if ((0 == strcmp("--write-vl0", option)) || (0 == strcmp("--wvl0", option)) ) {
+           flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VL0);
+   } else if ((0 == strcmp("--write-vh0", option)) || (0 == strcmp("--wvh0", option))) {
+           flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VH0);
+   } else if ((0 == strcmp("--write-vh1", option)) || (0 == strcmp("--wvh1", option)) ) {
+           flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VH1);
+   } else if ((0 == strcmp("--write-vr", option)) || (0 == strcmp("--wvr", option))) {
+              flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VR);
    } else if ( 0 == strcmp("--alt-wr-pattern", option) || (0 == strcmp("--awp", option))) {
               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_ALT_WR_PRN);
    } else if ( 0 == strcmp("--0", option) ) {
@@ -495,15 +504,15 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    fprintf(fp, "Usage:\n");
 
    if ( 0 == strcasecmp(test.c_str(), "LPBK1") ) {
-         fprintf(fp, "   --mode=lpbk1 <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [VC-SELECT] [<OUTPUT>]");
+         fprintf(fp, "   --mode=lpbk1 <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "READ") ) {
-         fprintf(fp, "   --mode=read <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [VC-SELECT] [<OUTPUT>]");
+         fprintf(fp, "   --mode=read <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "WRITE") ) {
-         fprintf(fp, "   --mode=write <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [VC-SELECT] [<WR-PATTERN>] [<OUTPUT>]");
+         fprintf(fp, "   --mode=write <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<READ-VC>] [<WRITE-VC>] [<WR-PATTERN>] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "TRPUT") ) {
-         fprintf(fp, "   --mode=trput <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [VC-SELECT] [<OUTPUT>]");
+         fprintf(fp, "   --mode=trput <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "SW") ) {
-         fprintf(fp, "   --mode=sw <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [VC-SELECT] [<OUTPUT>] [<NOTICE>]");
+         fprintf(fp, "   --mode=sw <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<OUTPUT>] [<NOTICE>]");
    }else if ( 0 == strcasecmp(test.c_str(), "ATOMIC") ) {
          fprintf(fp, "   --mode=atomic <TARGET> <SUB-MODE> [<CMP-XCHG>] [<QUAD-WORD>] [<OUTPUT>]");
    }else {
@@ -738,39 +747,74 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 	    0 == strcasecmp(test.c_str(), "TRPUT") ||
         0 == strcasecmp(test.c_str(), "SW"))   {
 
-      fprintf(fp, "      <VC-SELECT> = --va,                          Auto Mode,                                      ");
+      fprintf(fp, "      <READ-VC>   = --read-va,         OR --rva,   Auto Mode for reads,                            ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VA) ) {
     	  fprintf(fp, "yes\n");
       }  else {
-    	  fprintf(fp, "Default=%s\n", nlbcl->defaults.va);
+    	  fprintf(fp, "Default=%s\n", nlbcl->defaults.rva);
       }
 
-      fprintf(fp, "                  = --vl0,                         Low Latency Channel 0,                          ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VL0) ) {
+      fprintf(fp, "                    --read-vl0,        OR --rvl0,  Low Latency Channel 0 for reads,                ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VL0) ) {
     	 fprintf(fp, "yes\n");
       } else {
-    	 fprintf(fp, "Default=%s\n", nlbcl->defaults.vl0);
+    	 fprintf(fp, "Default=%s\n", nlbcl->defaults.rvl0);
       }
 
-      fprintf(fp, "                  = --vh0,                         High Latency Channel 0,                         ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VH0) ) {
+      fprintf(fp, "                    --read-vh0,        OR --rvh0,  High Latency Channel 0 for reads,               ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VH0) ) {
     	 fprintf(fp, "yes\n");
       } else {
-    	 fprintf(fp, "Default=%s\n", nlbcl->defaults.vh0);
+    	 fprintf(fp, "Default=%s\n", nlbcl->defaults.rvh0);
       }
 
-      fprintf(fp, "                  = --vh1,                         High Latency Channel 1,                         ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VH1) ) {
+      fprintf(fp, "                    --read-vh1,        OR --rvh1,  High Latency Channel 1 for reads,               ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VH1) ) {
     	 fprintf(fp, "yes\n");
       } else {
-    	 fprintf(fp, "Default=%s\n", nlbcl->defaults.vh1);
+    	 fprintf(fp, "Default=%s\n", nlbcl->defaults.rvh1);
       }
 
-      fprintf(fp, "                  = --vr,                          Randomly Chosen Channel,                        ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VR) ) {
+      fprintf(fp, "                    --read-vr,         OR --rvr,   Randomly Chosen Channel for reads,              ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VR) ) {
        fprintf(fp, "yes\n");
       } else {
-       fprintf(fp, "Default=%s\n", nlbcl->defaults.vr);
+       fprintf(fp, "Default=%s\n", nlbcl->defaults.rvr);
+      }
+
+      fprintf(fp, "      <WRITE-VC>  = --write-va,        OR --wva,   Auto Mode for writes,                           ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VR) ) {
+       fprintf(fp, "yes\n");
+      } else {
+       fprintf(fp, "Default=%s\n", nlbcl->defaults.wva);
+      }
+
+      fprintf(fp, "                    --write-vl0,       OR --wvl0,  Low Latency Channel 0 for writes,               ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VL0) ) {
+       fprintf(fp, "yes\n");
+      } else {
+       fprintf(fp, "Default=%s\n", nlbcl->defaults.wvl0);
+      }
+
+      fprintf(fp, "                    --write-vh0,       OR --wvh0,  High Latency Channel 0 for writes,              ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VH0) ) {
+       fprintf(fp, "yes\n");
+      } else {
+       fprintf(fp, "Default=%s\n", nlbcl->defaults.wvh0);
+      }
+
+      fprintf(fp, "                    --write-vh1,       OR --wvh1,  High Latency Channel 1 for writes,              ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VH1) ) {
+       fprintf(fp, "yes\n");
+      } else {
+       fprintf(fp, "Default=%s\n", nlbcl->defaults.wvh1);
+      }
+
+      fprintf(fp, "                    --write-vh1,       OR --wvr,   Randomly Chosen Channel for writes,             ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VR) ) {
+       fprintf(fp, "yes\n");
+      } else {
+       fprintf(fp, "Default=%s\n", nlbcl->defaults.wvr);
       }
    }
 
@@ -1008,19 +1052,35 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
 
    // --va, --vl0, --vh0, --vh1, --vr
 
-    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_VL0)  ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_VH0)  ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_VH1)  ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VL0|NLB_CMD_FLAG_VH0) ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VL0|NLB_CMD_FLAG_VH1) ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VH0|NLB_CMD_FLAG_VH1) ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_VR) ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VL0|NLB_CMD_FLAG_VR) ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VH0|NLB_CMD_FLAG_VR) ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VH1|NLB_CMD_FLAG_VR) ) {
-    	 os << "--va, --vl0, --vh0, --vh1 and --vr are mutually exclusive." << endl;
+    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_READ_VL0)  ||
+    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_READ_VH0)  ||
+    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_READ_VH1)  ||
+    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0|NLB_CMD_FLAG_READ_VH0) ||
+    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0|NLB_CMD_FLAG_READ_VH1) ||
+    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH0|NLB_CMD_FLAG_READ_VH1) ||
+    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_READ_VR) ||
+    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0|NLB_CMD_FLAG_READ_VR) ||
+    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH0|NLB_CMD_FLAG_READ_VR) ||
+    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH1|NLB_CMD_FLAG_READ_VR) ) {
+    	 os << "--read-va, --read-vl0, --read-vh0, --read-vh1 and --read-vr are mutually exclusive." << endl;
     	 return false;
     }
+
+    // --va, --vl0, --vh0, --vh1, --vr
+
+     if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_WRITE_VL0)  ||
+        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_WRITE_VH0)  ||
+        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_WRITE_VH1)  ||
+        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VL0|NLB_CMD_FLAG_WRITE_VH0) ||
+        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VL0|NLB_CMD_FLAG_WRITE_VH1) ||
+        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH0|NLB_CMD_FLAG_WRITE_VH1) ||
+        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_WRITE_VR) ||
+        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VL0|NLB_CMD_FLAG_WRITE_VR) ||
+        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH0|NLB_CMD_FLAG_WRITE_VR) ||
+        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH1|NLB_CMD_FLAG_WRITE_VR) ) {
+        os << "--write-va, --write-vl0, --write-vh0, --write-vh1 and --write-vr are mutually exclusive." << endl;
+        return false;
+     }
 
    // --wt, --wb, --pwr
 

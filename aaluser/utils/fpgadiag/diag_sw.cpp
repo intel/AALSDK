@@ -137,18 +137,32 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
 	   cfg |= (csr_type)NLB_TEST_MODE_WT;
     }
 
-    // Select the channel.
-    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0)){
-       cfg |= (csr_type)NLB_TEST_MODE_VL0;
+    // Select the read channel.
+    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0)){
+      cfg |= (csr_type)NLB_TEST_MODE_READ_VL0;
     }
-    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH0)){
-       cfg |= (csr_type)NLB_TEST_MODE_VH0;
+    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH0)){
+      cfg |= (csr_type)NLB_TEST_MODE_READ_VH0;
     }
-    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1)){
-       cfg |= (csr_type)NLB_TEST_MODE_VH1;
+    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH1)){
+      cfg |= (csr_type)NLB_TEST_MODE_READ_VH1;
     }
-    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VR)){
-      cfg |= (csr_type)NLB_TEST_MODE_VR;
+    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VR)){
+      cfg |= (csr_type)NLB_TEST_MODE_READ_VR;
+    }
+
+    // Select the write channel.
+    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VL0)){
+      cfg |= (csr_type)NLB_TEST_MODE_WRITE_VL0;
+    }
+    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH0)){
+      cfg |= (csr_type)NLB_TEST_MODE_WRITE_VH0;
+    }
+    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH1)){
+      cfg |= (csr_type)NLB_TEST_MODE_WRITE_VH1;
+    }
+    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VR)){
+      cfg |= (csr_type)NLB_TEST_MODE_WRITE_VR;
     }
 
     m_pALIMMIOService->mmioWrite32(CSR_CFG, (csr_type)cfg);
