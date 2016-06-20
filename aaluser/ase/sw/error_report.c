@@ -112,18 +112,45 @@ extern const char *__progname;
 
 void backtrace_handler(int sig)
 {
-
   void *bt_addr[16];
   char **bt_messages = (char **)NULL;
   int ii, trace_depth = 0;
-
   char sys_cmd[256];
+  
+  char app_or_sim[16];
+  memset(app_or_sim, 0, sizeof(app_or_sim));
+  
+#ifdef SIM_SIDE
+  sprintf(app_or_sim, "Simulator ");
+#else
+  sprintf(app_or_sim, "Application ");
+#endif
 
+  // Identify SIG received
+  BEGIN_RED_FONTCOLOR;
+  printf("%s received a ", app_or_sim);
+  switch (sig)
+    {
+    case SIGSEGV: 
+      printf("SIGSEGV\n");
+      break;
+      
+    case SIGBUS: 
+      printf("SIGINT\n");
+      break;
+      
+    case SIGABRT:
+      printf("SIGABRT\n");
+      break;
+
+    default:
+      printf("Unidentified signal %d\n", sig);
+      break;
+    }
 
   trace_depth = backtrace(bt_addr, 16);
   bt_messages = backtrace_symbols(bt_addr, trace_depth);
-  BEGIN_RED_FONTCOLOR;
-  printf("[bt] Execution Backtrace:\n");
+  printf("\n[bt] Execution Backtrace:\n");
   for (ii=1; ii < trace_depth ; ++ii)
     {
       printf("[bt] #%d %s\n", ii, bt_messages[ii]);
