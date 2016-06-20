@@ -47,8 +47,7 @@
 #include "nlb-specific.h"
 #include "diag-nlb-common.h"
 
-// cool off fpga cache.
-btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
+btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
 {
    btInt res = 0;
    btWSSize  sz = CL(cmd.begincls);
@@ -62,7 +61,9 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
 
    const btUnsigned32bitInt ReadBufData = 0xc0cac01a;
 
+   volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
    volatile btVirtAddr pInputUsrVirt = m_pMyApp->InputVirt();
+   btVirtAddr pOutputUsrVirt = m_pMyApp->OutputVirt();
 
    volatile btUnsigned32bitInt *pInput    = (volatile btUnsigned32bitInt *)pInputUsrVirt;
    volatile btUnsigned32bitInt *pEndInput = (volatile btUnsigned32bitInt *)pInput +
@@ -72,12 +73,11 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
       *pInput = ReadBufData;
    }
 
-   volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
-
-   btVirtAddr pCoolOffUsrVirt = m_pMyApp->OutputVirt();
-
    // Clear the DSM status fields
    ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
+
+   // Zero the dest buffer.
+   ::memset((void*)pOutputUsrVirt, 0, m_pMyApp->OutputSize());
 
    if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_COOL_FPGA_CACHE))
    {
@@ -87,12 +87,14 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
          return 1;
       }
 
-      if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->InputPhys(), m_pMyApp->InputSize(), cmd) ) {
+      if ( 0 != CacheCooldown(pOutputUsrVirt, m_pMyApp->InputPhys(), m_pMyApp->InputSize(), cmd) ) {
          ERR("Cool FPGA cache failed. Exiting test.");
          return 1;
       }
-   }
 
+      // Zero the dest buffer.
+      ::memset((void*)pOutputUsrVirt, 0, m_pMyApp->OutputSize());
+   }
 
    // Initiate AFU Reset
    if ( 0 != m_pALIResetService->afuReset()){
@@ -116,6 +118,9 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
    // Set input workspace address
    m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
 
+   // Set output workspace address
+   m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
+
    //Set the stride value
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_STRIDED_ACS)){
       m_pALIMMIOService->mmioWrite32(CSR_STRIDED_ACS, (csr_type)(cmd.strided_acs - 1 ));
@@ -123,7 +128,16 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
 
    // Set the test mode
    m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
-   csr_type cfg = (csr_type)NLB_TEST_MODE_READ;
+   csr_type cfg = 0;
+   if(0 == strcmp(NLB_TESTMODE_READ, cmd.TestMode.c_str())){
+      cfg = (csr_type)NLB_TEST_MODE_READ;
+   }
+   else if(0 == strcmp(NLB_TESTMODE_WRITE, cmd.TestMode.c_str())){
+      cfg = (csr_type)NLB_TEST_MODE_WRITE;
+   }
+   else if(0 == strcmp(NLB_TESTMODE_TRPUT, cmd.TestMode.c_str())){
+      cfg = (csr_type)NLB_TEST_MODE_TRPUT;
+   }
 
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT)){
 	  cfg |= (csr_type)NLB_TEST_MODE_CONT;
@@ -175,10 +189,22 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
         }
    }
 
+   //Check if alternate write data pattern has to be enabled.
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_ALT_WR_PRN)){
+     cfg |= (csr_type)NLB_TEST_MODE_ALT_WR_PRN;
+   }
+
    //if --warm-fpga-cache is mentioned
     if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE)){
 
-       csr_type wfc_cfg = (csr_type)NLB_TEST_MODE_READ;
+       csr_type wfc_cfg = 0;
+       if(0 == strcmp(NLB_TESTMODE_READ, cmd.TestMode.c_str())){
+          wfc_cfg = (csr_type)NLB_TEST_MODE_READ;
+       }
+       else if(0 == strcmp(NLB_TESTMODE_WRITE, cmd.TestMode.c_str())){
+          wfc_cfg = (csr_type)NLB_TEST_MODE_WRITE;
+       }
+
        if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0)){
           wfc_cfg |= (csr_type)NLB_TEST_MODE_READ_VL0;
        }
@@ -250,6 +276,9 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
 
        // Set input workspace address
        m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
+
+       // Zero the dest buffer.
+       ::memset((void*)pOutputUsrVirt, 0, m_pMyApp->OutputSize());
 
     }
 
@@ -374,7 +403,7 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
 }
 
 
-void  CNLBRead::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
+void  CNLBMode3::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 {
    nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
    bt64bitCSR ticks;

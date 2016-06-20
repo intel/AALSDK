@@ -38,10 +38,8 @@ bin_PROGRAMS=fpgadiag
 fpgadiag_SOURCES=\
 fpgadiag.cpp \
 diag_lpbk1.cpp \
-diag_read.cpp \
+diag_mode3.cpp \
 diag_sw.cpp \
-diag_trput.cpp \
-diag_write.cpp \
 diag_atomic.cpp \
 diag_defaults.h \
 diag-common.h \

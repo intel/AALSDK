@@ -855,7 +855,7 @@ int main(int argc, char *argv[])
 	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_READ)))
 	{
    		// Run NLB read test.
-   		CNLBRead nlb_read(&myapp);
+	      CNLBMode3 nlb_read(&myapp);
 
    		cout << " * Read Bandwidth from Memory - READ" << flush;
    		res = nlb_read.RunTest(gCmdLine);
@@ -870,7 +870,7 @@ int main(int argc, char *argv[])
 	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_WRITE)))
 	{
    		// Run NLB write test.
-   		CNLBWrite nlb_write(&myapp);
+	      CNLBMode3 nlb_write(&myapp);
 
    		cout << " * Write Bandwidth from Memory - WRITE" << flush;
    		res = nlb_write.RunTest(gCmdLine);
@@ -885,7 +885,7 @@ int main(int argc, char *argv[])
 	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_TRPUT)))
 	{
    		// Run NLB  trput test.
-   		CNLBTrput nlb_trput(&myapp);
+	      CNLBMode3 nlb_trput(&myapp);
 
    		cout << " * Simultaneous Read/Write Bandwidth - TRPUT" << flush;
    		res = nlb_trput.RunTest(gCmdLine);
