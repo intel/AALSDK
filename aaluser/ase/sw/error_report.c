@@ -136,7 +136,7 @@ void backtrace_handler(int sig)
       break;
       
     case SIGBUS: 
-      printf("SIGINT\n");
+      printf("SIGBUS\n");
       break;
       
     case SIGABRT:
