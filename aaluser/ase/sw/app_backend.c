@@ -146,9 +146,11 @@ pthread_t msix_watch_tid;
  */
 uint32_t generate_mmio_tid()
 {
-  // Calculate outstanding
-  /* mmio_read_outstanding = mmio_readreq_cnt - mmio_readrsp_cnt; */
-  /* mmio_write_outstanding = mmio_writereq_cnt - mmio_writersp_cnt; */
+  // Lock access to resource
+  pthread_mutex_lock(&mmio_tid_lock);
+
+  // Return value
+  uint32_t ret_mmio_tid;
 
   // *FIXME*: TID credit must not overrun, no more than 64 outstanding MMIO Requests
   // while ((mmio_read_outstanding + mmio_write_outstanding) >= MMIO_MAX_OUTSTANDING)
@@ -157,12 +159,6 @@ uint32_t generate_mmio_tid()
       printf("  [APP]  MMIO TIDs have run out --- waiting for some to get released !\n");
       sleep(1);
     }
-
-  // Return value
-  uint32_t ret_mmio_tid;
-
-  // Lock access to resource
-  pthread_mutex_lock(&mmio_tid_lock);
 
   // Increment and mask
   ret_mmio_tid = glbl_mmio_tid & MMIO_TID_BITMASK;
