@@ -523,7 +523,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 
    fprintf(fp, "\n\n");
 
-   fprintf(fp, "      <TARGET>    = --target=one of { fpga ase swsim }  OR --t=one of { fpga ase swsim }\n");
+   fprintf(fp, "      <TARGET>    = --target=one of { fpga ase }  OR --t=one of { fpga ase }\n");
 
    if ( 0 != strcasecmp(test.c_str(), "SW") &&
         0 != strcasecmp(test.c_str(), "ATOMIC") ) {
