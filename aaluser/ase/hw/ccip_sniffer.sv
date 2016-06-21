@@ -53,7 +53,10 @@
  */
 
 import ase_pkg::*;
+import ccip_if_pkg::*;
 `include "platform.vh"
+
+// `define STANDALONE_DEBUG
 
 module ccip_sniffer
   #(
@@ -61,52 +64,21 @@ module ccip_sniffer
     )
    (
     // Configure enable
-    input logic 			     finish_logger,
-    // Buffer message injection
-    // input logic 			     log_string_en,
-    // ref string 				     log_string,
+    input logic 			finish_logger,
     // -------------------------------------------------------- //
     // Channel overflow/realfull checks
-    input logic 			     cf2as_ch0_realfull,
-    input logic 			     cf2as_ch1_realfull,
+    input logic 			cf2as_ch0_realfull,
+    input logic 			cf2as_ch1_realfull,
+    // -------------------------------------------------------- //
+    //          Hazard/Indicator Signals                        //
+    input 				ase_haz_if haz_if,
+    output logic [SNIFF_CODE_WIDTH-1:0] error_code,
     // -------------------------------------------------------- //
     //                    CCI interface                         //
-    input logic 			     clk,
-    input logic 			     SoftReset,
-    // Tx0 channel
-    input 				     TxHdr_t C0TxHdr,
-    input logic 			     C0TxValid,
-    // Tx1 channel
-    input 				     TxHdr_t C1TxHdr,
-    input logic [CCIP_DATA_WIDTH-1:0] 	     C1TxData,
-    input logic 			     C1TxValid,
-    // Tx2 channel
-    input 				     MMIOHdr_t C2TxHdr,
-    input logic 			     C2TxMmioRdValid,
-    input logic [CCIP_MMIO_RDDATA_WIDTH-1:0] C2TxData,
-    // Rx0 channel
-    input 				     RxHdr_t C0RxHdr,
-    input logic [CCIP_DATA_WIDTH-1:0] 	     C0RxData,
-    input logic 			     C0RxMmioWrValid,
-    input logic 			     C0RxMmioRdValid,
-    input logic 			     C0RxRspValid,
-    // Rx1 channel
-    input 				     RxHdr_t C1RxHdr,
-    input logic 			     C1RxRspValid,
-    // Almost full signals
-    input logic 			     C0TxAlmFull,
-    input logic 			     C1TxAlmFull,
-    // -------------------------------------------------------- //
-    //                    Hazard Signals                        //
-    input 				     ase_haz_if haz_if
-    // input 				     TxHdr_t rdhaz_hdr_in,
-    // input 				     TxHdr_t rdhaz_hdr_out,
-    // input logic 			     rdhaz_hdr_in_vld,
-    // input logic 			     rdhaz_hdr_out_vld,
-    // input 				     TxHdr_t wrhaz_hdr_in,
-    // input 				     TxHdr_t wrhaz_hdr_out,
-    // input logic 			     wrhaz_hdr_in_vld,
-    // input logic 			     wrhaz_hdr_out_vld			     
+    input logic 			clk,
+    input logic 			SoftReset,
+    input 				t_if_ccip_Rx ccip_rx,
+    input 				t_if_ccip_Tx ccip_tx
     );
 
    
@@ -223,14 +195,14 @@ module ccip_sniffer
    logic tx_valid;
    logic rx_valid;
 
-   assign tx_valid = C0TxValid    |
-		     C1TxValid    |
-		     C2TxMmioRdValid;
+   assign tx_valid = ccip_tx.c0.valid    |
+		     ccip_tx.c1.valid    |
+		     ccip_tx.c2.mmioRdValid;
 
-   assign rx_valid = C0RxRspValid    |
-		     C0RxMmioRdValid |
-		     C0RxMmioWrValid |
-		     C1RxRspValid;
+   assign rx_valid = ccip_rx.c0.rspValid    |
+		     ccip_rx.c0.mmioRdValid |
+		     ccip_rx.c0.mmioWrValid |
+		     ccip_rx.c1.rspValid;
 
 
    // If reset is high, and transactions are asserted
@@ -258,17 +230,17 @@ module ccip_sniffer
    /*
     * TX checker files
     */
-   CfgHdr_t C0RxCfg;
-   assign C0RxCfg = CfgHdr_t'(C0RxHdr);
+   t_ccip_c0_ReqMmioHdr C0RxCfg;
+   assign C0RxCfg = t_ccip_c0_ReqMmioHdr'(ccip_rx.c0.hdr);
 
-   assign xz_tx0_flag = ( ^{C0TxHdr.vc,              C0TxHdr.len, C0TxHdr.reqtype, C0TxHdr.addr, C0TxHdr.mdata} )                        && C0TxValid ;
-   assign xz_tx1_flag = ( ^{C1TxHdr.vc, C1TxHdr.sop, C1TxHdr.len, C1TxHdr.reqtype, C1TxHdr.addr, C1TxHdr.mdata} )                        && C1TxValid ;
-   assign xz_tx2_flag = ( ^{C2TxHdr.tid, C2TxData})                                                                                      && C2TxMmioRdValid ;
+   assign xz_tx0_flag = ( ^{ccip_tx.c0.hdr.vc_sel,                     ccip_tx.c0.hdr.cl_len, ccip_tx.c0.hdr.req_type, ccip_tx.c0.hdr.address, ccip_tx.c0.hdr.mdata} ) && ccip_tx.c0.valid ;
+   assign xz_tx1_flag = ( ^{ccip_tx.c1.hdr.vc_sel, ccip_tx.c1.hdr.sop, ccip_tx.c1.hdr.cl_len, ccip_tx.c1.hdr.req_type, ccip_tx.c1.hdr.address, ccip_tx.c1.hdr.mdata} ) && ccip_tx.c1.valid ;
+   assign xz_tx2_flag = ( ^{ccip_tx.c2.hdr.tid, ccip_tx.c2.data})                                                                                           && ccip_tx.c2.mmioRdValid ;
 
-   assign xz_rx0_flag = ( ^{C0RxHdr.vc_used, C0RxHdr.hitmiss,                 C0RxHdr.clnum, C0RxHdr.resptype, C0RxHdr.mdata, C0RxData}  && C0RxRspValid );
-   assign xz_rx1_flag = ( ^{C1RxHdr.vc_used, C1RxHdr.hitmiss, C1RxHdr.format, C1RxHdr.clnum, C1RxHdr.resptype, C1RxHdr.mdata}            && C1RxRspValid );
+   assign xz_rx0_flag = ( ^{ccip_rx.c0.hdr.vc_used, ccip_rx.c0.hdr.hit_miss,                 ccip_rx.c0.hdr.cl_num, ccip_rx.c0.hdr.resp_type, ccip_rx.c0.hdr.mdata, ccip_rx.c0.data}  && ccip_rx.c0.rspValid );
+   assign xz_rx1_flag = ( ^{ccip_rx.c1.hdr.vc_used, ccip_rx.c1.hdr.hit_miss, ccip_rx.c1.hdr.format, ccip_rx.c1.hdr.cl_num, ccip_rx.c1.hdr.resp_type, ccip_rx.c1.hdr.mdata}            && ccip_rx.c1.rspValid );
 
-   assign xz_cfg_flag = ( ^{C0RxCfg.index, C0RxCfg.len, C0RxCfg.tid, C0RxData} ) && (C0RxMmioWrValid | C0RxMmioRdValid);
+   assign xz_cfg_flag = ( ^{C0RxCfg.address, C0RxCfg.length, C0RxCfg.tid, ccip_rx.c0.data} ) && (ccip_rx.c0.mmioWrValid | ccip_rx.c0.mmioRdValid);
 
 
    // FUNCTION: XZ message
@@ -311,11 +283,11 @@ module ccip_sniffer
     * Full {0,1} signaling
     */
    always @(posedge clk) begin
-      if (cf2as_ch0_realfull && C0TxValid) begin
+      if (cf2as_ch0_realfull && ccip_tx.c0.valid) begin
 	 print_message_and_log(1, "Transaction was possibly dropped due to C0Tx Overflow");
 	 print_message_and_log(1, "Transaction was pushed in when port was FULL");
       end
-      if (cf2as_ch1_realfull && C1TxValid) begin
+      if (cf2as_ch1_realfull && ccip_tx.c1.valid) begin
 	 print_message_and_log(1, "Transaction was possibly dropped due to C1Tx Overflow");
 	 print_message_and_log(1, "Transaction was pushed in when port was FULL");
       end
@@ -330,8 +302,8 @@ module ccip_sniffer
 
    // Check illegal transaction IDs in C0Tx
    always @(posedge clk) begin : c0tx_illegal_proc
-      if (C0TxValid) begin
-	 if ((C0TxHdr.reqtype == ASE_RDLINE_S)||(C0TxHdr.reqtype == ASE_RDLINE_I)) begin
+      if (ccip_tx.c0.valid) begin
+	 if ((ccip_tx.c0.hdr.req_type == eREQ_RDLINE_S)||(ccip_tx.c0.hdr.req_type == eREQ_RDLINE_I)) begin
 	    c0tx_illegal <= 0;
 	 end
 	 else begin
@@ -347,8 +319,8 @@ module ccip_sniffer
 
    // Check illegal transaction IDs in C1Tx
    always @(posedge clk) begin : c1tx_illegal_proc
-      if (C1TxValid) begin
-   	 if ((C1TxHdr.reqtype==ASE_WRLINE_M)||(C1TxHdr.reqtype==ASE_WRLINE_I)||(C1TxHdr.reqtype==ASE_WRFENCE)) begin
+      if (ccip_tx.c1.valid) begin
+   	 if ((ccip_tx.c1.hdr.req_type==eREQ_WRLINE_M)||(ccip_tx.c1.hdr.req_type==eREQ_WRLINE_I)||(ccip_tx.c1.hdr.req_type==eREQ_WRFENCE)) begin
    	    c1tx_illegal <= 0;
    	 end
    	 else begin
@@ -359,7 +331,7 @@ module ccip_sniffer
       end
       else begin
 	 c1tx_illegal <= 0;
-      end // if (C1TxValid)
+      end // if (ccip_tx.c1.valid)
    end
 
 
@@ -375,25 +347,25 @@ module ccip_sniffer
    ExpTxState exp_c1state;
 
    logic [PHYSCLADDR_WIDTH-1:0] exp_c1addr;
-   ccip_vc_t                    exp_c1vc;
-   ccip_len_t                   exp_c1len;
+   t_ccip_vc                    exp_c1vc;
+   t_ccip_clLen                 exp_c1len;
    logic [15:0] 		exp_c1mdata;
 
 
    /*
     * Write TX beat check
     */
-   logic 			c1tx_beat_in_progress;
+   // logic 			c1tx_beat_in_progress;
    logic 			wrline_en;
    logic 			wrfence_en;
 
    // Wrline_en
    always @(*) begin
-      if (C1TxValid && ((C1TxHdr.reqtype==ASE_WRLINE_M)||(C1TxHdr.reqtype==ASE_WRLINE_I))) begin
+      if (ccip_tx.c1.valid && ((ccip_tx.c1.hdr.req_type==eREQ_WRLINE_M)||(ccip_tx.c1.hdr.req_type==eREQ_WRLINE_I))) begin
    	 wrline_en <= 1;
 	 wrfence_en <= 0;
       end
-      else if (C1TxValid && (C1TxHdr.reqtype==ASE_WRFENCE)) begin
+      else if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.req_type==eREQ_WRFENCE)) begin
    	 wrline_en <= 0;
 	 wrfence_en <= 1;
       end
@@ -402,7 +374,32 @@ module ccip_sniffer
 	 wrfence_en <= 0;
       end
    end
+   
+   // isCCIPWriteRequest
+   function automatic logic isCCIPWriteRequest(t_ccip_c1_ReqMemHdr hdr);
+      begin
+	 if ((hdr.req_type==eREQ_WRLINE_M)||(hdr.req_type==eREQ_WRLINE_I)) begin
+	    return 1;	    
+	 end
+	 else begin
+	    return 0;	    
+	 end
+      end
+   endfunction
 
+   // isCCIPWrFenceRequest
+   function automatic logic isCCIPWrFenceRequest(t_ccip_c1_ReqMemHdr hdr);
+      begin
+	 if (ccip_tx.c1.hdr.req_type==eREQ_WRFENCE) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end	   
+      end
+   endfunction
+
+   
    // String for writing formatted messages
    string exp_c1tx_str;
 
@@ -411,7 +408,7 @@ module ccip_sniffer
       if (SoftReset) begin
 	 exp_c1state            <= Exp_1CL;
 	 exp_c1addr             <= {PHYSCLADDR_WIDTH{1'b0}};
-	 c1tx_beat_in_progress  <= 0;
+	 // c1tx_beat_in_progress  <= 0;
       end
       else begin
 	 case (exp_c1state)
@@ -419,53 +416,57 @@ module ccip_sniffer
 	   // Waiting for a C1Tx transaction
 	   Exp_1CL:
 	     begin
+		exp_c1addr  <= ccip_tx.c1.hdr.address;
+		exp_c1vc    <= ccip_tx.c1.hdr.vc_sel;
+		exp_c1len   <= ccip_tx.c1.hdr.cl_len;
+		exp_c1mdata <= ccip_tx.c1.hdr.mdata;
 		// 4 CL MCL request
-		if (wrline_en && (C1TxHdr.len == ASE_4CL)) begin
-		   exp_c1addr  <= C1TxHdr.addr;
-		   exp_c1vc    <= C1TxHdr.vc;
-		   exp_c1len   <= C1TxHdr.len;
-		   exp_c1mdata <= C1TxHdr.mdata;
+		if (wrline_en && (ccip_tx.c1.hdr.cl_len == 2'b11)) begin
+		   // exp_c1addr  <= ccip_tx.c1.hdr.address;
+		   // exp_c1vc    <= ccip_tx.c1.hdr.vc_sel;
+		   // exp_c1len   <= ccip_tx.c1.hdr.cl_len;
+		   // exp_c1mdata <= ccip_tx.c1.hdr.mdata;
 		   exp_c1state <= Exp_2CL;
-		   c1tx_beat_in_progress <= 1;
-		   if (C1TxHdr.addr[1:0] != 2'b00) begin
+		   // c1tx_beat_in_progress <= 1;
+		   if (ccip_tx.c1.hdr.address[1:0] != 2'b00) begin
    		      print_message_and_log(0, "Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned !");
 		      print_and_simkill();
 		   end
 		end
 		// 2 CL MCL request
-		else if (wrline_en && (C1TxHdr.len == ASE_2CL)) begin
-		   exp_c1addr  <= C1TxHdr.addr;
-		   exp_c1vc    <= C1TxHdr.vc;
-		   exp_c1len   <= C1TxHdr.len;
-		   exp_c1mdata <= C1TxHdr.mdata;
+		else if (wrline_en && (ccip_tx.c1.hdr.cl_len == 2'b01)) begin
+		   // exp_c1addr  <= ccip_tx.c1.hdr.address;
+		   // exp_c1vc    <= ccip_tx.c1.hdr.vc_sel;
+		   // exp_c1len   <= ccip_tx.c1.hdr.cl_len;
+		   // exp_c1mdata <= ccip_tx.c1.hdr.mdata;
 		   exp_c1state <= Exp_2CL;
-		   c1tx_beat_in_progress <= 1;
-		   if (C1TxHdr.addr[0] != 1'b0) begin
+		   // c1tx_beat_in_progress <= 1;
+		   if (ccip_tx.c1.hdr.address[0] != 1'b0) begin
    		      print_message_and_log(0, "Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned !");
 		      print_and_simkill();
 		   end
 		end
 		// If 3-cacheline request is made, thats ILLEGAL
-		else if (wrline_en && (C1TxHdr.len == ASE_3CL)) begin
-		   c1tx_beat_in_progress <= 0;
+		else if (wrline_en && (ccip_tx.c1.hdr.cl_len == 2'b10)) begin
+		   // c1tx_beat_in_progress <= 0;
 		   print_message_and_log(0, "Multi-cacheline request of length=3 is ILLEGAL !");
 		   print_and_simkill();
 		end
 		// 1CL MCL request
-		else if (wrline_en && (C1TxHdr.len == ASE_1CL)) begin
-		   c1tx_beat_in_progress <= 1;
-		   exp_c1addr  <= C1TxHdr.addr;
-		   exp_c1vc    <= C1TxHdr.vc;
-		   exp_c1len   <= C1TxHdr.len;
-		   exp_c1mdata <= C1TxHdr.mdata;
+		else if (wrline_en && (ccip_tx.c1.hdr.cl_len == 2'b00)) begin
+		   // c1tx_beat_in_progress <= 1;
+		   // exp_c1addr  <= ccip_tx.c1.hdr.address;
+		   // exp_c1vc    <= ccip_tx.c1.hdr.vc_sel;
+		   // exp_c1len   <= ccip_tx.c1.hdr.cl_len;
+		   // exp_c1mdata <= ccip_tx.c1.hdr.mdata;
 		   exp_c1state <= Exp_1CL;
 		end
 		else begin
-		   c1tx_beat_in_progress <= 0;
+		   // c1tx_beat_in_progress <= 0;
 		   exp_c1state <= Exp_1CL;
 		end
 		// SOP bit check
-		if (~C1TxHdr.sop && wrline_en) begin
+		if (~ccip_tx.c1.hdr.sop && wrline_en) begin
 		   print_message_and_log(0, "C1TxHdr SOP field is not HIGH in the first transaction of multi-line request !");
 		   print_and_simkill();
 		end
@@ -475,127 +476,124 @@ module ccip_sniffer
 	   // 2nd cache line of multiline request
 	   Exp_2CL:
 	     begin
-		c1tx_beat_in_progress <= 1;
+		// c1tx_beat_in_progress <= 1;
 		// State control
-		if (wrline_en && (exp_c1len == ASE_2CL)) begin
-		   exp_c1state <= Exp_1CL;
-		end
-		else if (wrline_en && (exp_c1len == ASE_4CL)) begin
-		   exp_c1state <= Exp_3CL;
-		end
-		else begin
-		   exp_c1state <= Exp_2CL;
-		end
+		// if (wrline_en && (exp_c1len == 2'b01)) begin
+		//    exp_c1state <= Exp_1CL;
+		// end
+		// else if (wrline_en && (exp_c1len == 2'b11)) begin
+		//    exp_c1state <= Exp_3CL;
+		// end
+		// else begin
+		//    exp_c1state <= Exp_2CL;
+		// end
 		// Check if SOP bit goes high
-		if (C1TxHdr.sop && wrline_en) begin
+		if (ccip_tx.c1.hdr.sop && wrline_en) begin
 		   print_message_and_log(0, "C1TxHdr SOP field is must NOT be HIGH on subsequent lines of multi-line Write request !");
 		   print_and_simkill();
 		end
 		// Check if address matches as expected
-		if (wrline_en && (C1TxHdr.addr != (exp_c1addr + 1)) ) begin
+		if (wrline_en && (ccip_tx.c1.hdr.address != (exp_c1addr + 1)) ) begin
 		   print_message_and_log(0, "C1TxHdr ADDR field expected an address incremented by 1 from previous transaction (Multi-line Write Request) !");
 		   print_message_and_log(0, "Refer to Multiline Request section of CCI-P specification for signalling details !");
 		   print_and_simkill();
 		end
 		// Just warn if mdata changes in flight
-		if (wrline_en && (C1TxHdr.mdata != exp_c1mdata)) begin
+		if (wrline_en && (ccip_tx.c1.hdr.mdata != exp_c1mdata)) begin
 		   print_message_and_log(1, "C1TxHdr MDATA field changed, this will be ignored and MDATA of 1st transaction will be used.");
 		end
 		// VC enforcement
-		if (wrline_en && (C1TxHdr.vc != exp_c1vc)) begin
+		if (wrline_en && (ccip_tx.c1.hdr.vc_sel != exp_c1vc)) begin
 		   print_message_and_log(0, "C1TxHdr VC field must not change while multi-line Write Request is in progress");
 		   print_and_simkill();
 		end
-		// LEN enforcement *FIXME*
-		// if (wrline_en && (C1TxHdr.len != exp_c1len)) begin
-		//    print_message_and_log(0, "C1TxHdr LEN field must not change while multi-line Write Request is in progress");
-		//    // print_and_simkill();
-		// end
+		// ----------- State transition ----------- //
+		if (wrline_en && (ccip_tx.c1.hdr.cl_len == 2'b01)) begin
+		   exp_c1state <= Exp_1CL;
+		end
+		else if (wrline_en && (ccip_tx.c1.hdr.cl_len == 2'b11)) begin
+		   exp_c1state <= Exp_3CL;
+		end
+		else begin
+		   exp_c1state <= Exp_2CL;
+		end 
 	     end
 
 	   // ----------------------------------------------------------- //
 	   // 3rd cache line of multiline request -- no return to base from here
 	   Exp_3CL:
 	     begin
-		c1tx_beat_in_progress <= 1;
+		// c1tx_beat_in_progress <= 1;
 		// State control
-		if (wrline_en && (exp_c1len == ASE_4CL)) begin
-		   exp_c1state <= Exp_4CL;
-		end
-		else begin
-		   exp_c1state <= Exp_3CL;
-		end
+		// if (wrline_en && (exp_c1len == 2'b11)) begin
+		//    exp_c1state <= Exp_4CL;
+		// end
+		// else begin
+		//    exp_c1state <= Exp_3CL;
+		// end
 		// Check if SOP bit goes high
-		if (C1TxHdr.sop && wrline_en) begin
+		if (ccip_tx.c1.hdr.sop && wrline_en) begin
 		   print_message_and_log(0, "C1TxHdr SOP field is must NOT be HIGH on subsequent lines of multi-line Write request !");
 		   print_and_simkill();
 		end
 		// Check if address matches as expected
-		if (wrline_en && (C1TxHdr.addr != (exp_c1addr + 2)) ) begin
+		if (wrline_en && (ccip_tx.c1.hdr.address != (exp_c1addr + 2)) ) begin
 		   print_message_and_log(0, "C1TxHdr ADDR field expected an address incremented by 1 from previous transaction (Multi-line Write Request) !");
 		   print_message_and_log(0, "Refer to Multiline Request section of CCI-P specification for signalling details !");
 		   print_and_simkill();
 		end
 		// Just warn if mdata changes in flight
-		if (wrline_en && (C1TxHdr.mdata != exp_c1mdata)) begin
+		if (wrline_en && (ccip_tx.c1.hdr.mdata != exp_c1mdata)) begin
 		   print_message_and_log(1, "C1TxHdr MDATA field changed, this will be ignored and MDATA of 1st transaction will be used.");
 		end
 		// VC enforcement
-		if (wrline_en && (C1TxHdr.vc != exp_c1vc)) begin
+		if (wrline_en && (ccip_tx.c1.hdr.vc_sel != exp_c1vc)) begin
 		   print_message_and_log(0, "C1TxHdr VC field must not change while multi-line Write Request is in progress");
 		   print_and_simkill();
 		end
-		// // LEN enforcement *FIXME*
-		// if (wrline_en && (C1TxHdr.len != exp_c1len)) begin
-		//    print_message_and_log(0, "C1TxHdr LEN field must not change while multi-line Write Request is in progress");
-		//    // print_and_simkill();
-		// end
+		// ----------- State transition ----------- //
+		
 	     end
 
 	   // ----------------------------------------------------------- //
 	   // 4th cacheline of multiline request
 	   Exp_4CL:
 	     begin
-		c1tx_beat_in_progress <= 1;
+		// c1tx_beat_in_progress <= 1;
 		// State control
-		if (wrline_en && (exp_c1len == ASE_4CL)) begin
+		if (wrline_en && (exp_c1len == 2'b11)) begin
 		   exp_c1state <= Exp_1CL;
 		end
 		else begin
 		   exp_c1state <= Exp_4CL;
 		end
 		// Check if SOP bit goes high
-		if (C1TxHdr.sop && wrline_en) begin
+		if (ccip_tx.c1.hdr.sop && wrline_en) begin
 		   print_message_and_log(0, "C1TxHdr SOP field is must NOT be HIGH on subsequent lines of multi-line Write request !");
 		   print_and_simkill();
 		end
 		// Check if address matches as expected
-		if (wrline_en && (C1TxHdr.addr != (exp_c1addr + 3)) ) begin
+		if (wrline_en && (ccip_tx.c1.hdr.address != (exp_c1addr + 3)) ) begin
 		   print_message_and_log(0, "C1TxHdr ADDR field expected an address incremented by 1 from previous transaction (Multi-line Write Request) !");
 		   print_message_and_log(0, "Refer to Multiline Request section of CCI-P specification for signalling details !");
 		   print_and_simkill();
 		end
 		// Just warn if mdata changes in flight
-		if (wrline_en && (C1TxHdr.mdata != exp_c1mdata)) begin
+		if (wrline_en && (ccip_tx.c1.hdr.mdata != exp_c1mdata)) begin
 		   print_message_and_log(1, "C1TxHdr MDATA field changed, this will be ignored and MDATA of 1st transaction will be used.");
 		end
 		// VC enforcement
-		if (wrline_en && (C1TxHdr.vc != exp_c1vc)) begin
+		if (wrline_en && (ccip_tx.c1.hdr.vc_sel != exp_c1vc)) begin
 		   print_message_and_log(0, "C1TxHdr VC field must not change while multi-line Write Request is in progress");
 		   print_and_simkill();
 		end
-		// // LEN enforcement *FIXME*
-		// if (wrline_en && (C1TxHdr.len != exp_c1len)) begin
-		//    print_message_and_log(0, "C1TxHdr LEN field must not change while multi-line Write Request is in progress");
-		//    // print_and_simkill();
-		// end
 	     end
 
 	   // ----------------------------------------------------------- //
 	   // lala land
 	   default:
 	     begin
-		c1tx_beat_in_progress <= 0;
+		// c1tx_beat_in_progress <= 0;
 		exp_c1state <= Exp_1CL;
 	     end
 
@@ -610,22 +608,22 @@ module ccip_sniffer
    always @(posedge clk) begin : c0tx_mcl_check
       // ------------------------------------------------------------ //
       // If Read request
-      if ( C0TxValid && ((C1TxHdr.reqtype == ASE_RDLINE_S)||(C0TxHdr.reqtype == ASE_RDLINE_S)) )  begin
+      if ( ccip_tx.c0.valid && ((ccip_tx.c1.hdr.req_type == eREQ_RDLINE_S)||(ccip_tx.c0.hdr.req_type == eREQ_RDLINE_S)) )  begin
 	 // ------------------------------------------------------------ //
 	 // Tx0 - 3 CL request illegal
-	 if (C0TxHdr.len == ASE_3CL) begin
+	 if (ccip_tx.c0.hdr.cl_len == 2'b10) begin
 	    print_message_and_log(1, "Request on C0Tx for 3 cachelines is ILLEGAL !");
 	    print_message_and_log(1, "In CCI-P specificaton document, see Section on Multi-cacheline requests");
 	    print_and_simkill();
 	 end
 	 // ------------------------------------------------------------ //
 	 // Address alignment check
-	 if ( (C0TxHdr.addr[0] != 1'b0) && (C0TxHdr.len == ASE_2CL) ) begin
+	 if ( (ccip_tx.c0.hdr.address[0] != 1'b0) && (ccip_tx.c0.hdr.cl_len == 2'b10) ) begin
 	    print_message_and_log(0, "Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned ");
 	    print_message_and_log(0, "Simulator will shut down now !\n");
 	    print_and_simkill();
 	 end
-	 else if ( (C0TxHdr.addr[1:0] != 2'b0) && (C0TxHdr.len == ASE_4CL) ) begin
+	 else if ( (ccip_tx.c0.hdr.address[1:0] != 2'b0) && (ccip_tx.c0.hdr.cl_len == 2'b11) ) begin
 	    print_message_and_log(0, "Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned ");
 	    print_message_and_log(0, "Simulator will shut down now !\n");
 	    print_and_simkill();
@@ -641,22 +639,22 @@ module ccip_sniffer
    always @(posedge clk) begin : c1tx_mcl_check
       // ------------------------------------------------------------ //
       // If Write request
-      if ( C1TxValid && ((C1TxHdr.reqtype == ASE_WRLINE_M)||(C1TxHdr.reqtype == ASE_RDLINE_I)) )  begin
+      if ( ccip_tx.c1.valid && ((ccip_tx.c1.hdr.req_type == eREQ_WRLINE_M)||(ccip_tx.c1.hdr.req_type == eREQ_RDLINE_I)) )  begin
    	 // ------------------------------------------------------------ //
    	 // Tx0 - 3 CL request illegal
-   	 if ((C1TxHdr.len == ASE_3CL) && C1TxHdr.sop) begin
+   	 if ((ccip_tx.c1.hdr.cl_len == 2'b10) && ccip_tx.c1.hdr.sop) begin
    	    print_message_and_log(0, "Request on C1Tx for 3 cachelines is ILLEGAL !");
    	    print_message_and_log(0, "In CCI-P specificaton document, please see Multi-cacheline requests");
 	    print_and_simkill();
    	 end
    	 // ------------------------------------------------------------ //
    	 // Address alignment check
-   	 if ( (C1TxHdr.addr[0] != 1'b0) && (C1TxHdr.len == ASE_2CL) && C1TxHdr.sop ) begin
+   	 if ( (ccip_tx.c1.hdr.address[0] != 1'b0) && (ccip_tx.c1.hdr.cl_len == 2'b10) && ccip_tx.c1.hdr.sop ) begin
    	    print_message_and_log(0, "Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned ");
    	    print_message_and_log(0, "Simulator will shut down now !\n");
 	    print_and_simkill();
    	 end
-   	 else if ( (C1TxHdr.addr[1:0] != 2'b0) && (C1TxHdr.len == ASE_4CL) && C1TxHdr.sop ) begin
+   	 else if ( (ccip_tx.c1.hdr.address[1:0] != 2'b0) && (ccip_tx.c1.hdr.cl_len == 2'b11) && ccip_tx.c1.hdr.sop ) begin
    	    print_message_and_log(0, "Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned ");
    	    print_message_and_log(0, "Simulator will shut down now !\n");
 	    print_and_simkill();
@@ -806,12 +804,12 @@ module ccip_sniffer
       end
       else begin
 	 // Push task
-	 if (C0RxMmioRdValid) begin
-	    update_mmio_activity(0, C0RxMmioRdValid, 0, C0RxCfg.tid);
+	 if (ccip_rx.c0.mmioRdValid) begin
+	    update_mmio_activity(0, ccip_rx.c0.mmioRdValid, 0, C0RxCfg.tid);
 	 end
 	 // Pop task
-	 if (C2TxMmioRdValid) begin
-	    update_mmio_activity(0, 0, C2TxMmioRdValid, C2TxHdr.tid);
+	 if (ccip_tx.c2.mmioRdValid) begin
+	    update_mmio_activity(0, 0, ccip_tx.c2.mmioRdValid, ccip_tx.c2.hdr.tid);
 	 end
       end
    end

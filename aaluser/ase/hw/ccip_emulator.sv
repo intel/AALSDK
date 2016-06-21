@@ -2389,31 +2389,16 @@ module ccip_emulator
       // .log_string       (buffer_msg        ),
       // ----------------------------------------- //
       // CCIP ports
-      .clk                ( clk             ),
-      .SoftReset          ( SoftReset       ),
-      .C0TxHdr            ( C0TxHdr         ),
-      .C0TxValid          ( C0TxValid       ),
-      .C1TxHdr            ( C1TxHdr         ),
-      .C1TxData           ( C1TxData        ),
-      .C1TxValid          ( C1TxValid       ),
-      .C2TxHdr            ( C2TxHdr         ),
-      .C2TxMmioRdValid    ( C2TxMmioRdValid ),
-      .C2TxData           ( C2TxData        ),
-      .C0RxMmioWrValid    ( C0RxMmioWrValid ),
-      .C0RxMmioRdValid    ( C0RxMmioRdValid ),
-      .C0RxData           ( C0RxData        ),
-      .C0RxHdr            ( C0RxHdr         ),
-      .C0RxRspValid       ( C0RxRspValid    ),
-      .C1RxHdr            ( C1RxHdr         ),
-      .C1RxRspValid       ( C1RxRspValid    ),
-      .C0TxAlmFull        ( C0TxAlmFull     ),
-      .C1TxAlmFull        ( C1TxAlmFull     ),
+      .clk                ( clk                ),
+      .SoftReset          ( SoftReset          ),
+      .ccip_rx            ( pck_cp2af_sRx      ),
+      .ccip_tx            ( pck_af2cp_sTx      ),
+      // ----------------------------------------- //
+      // .haz_if             ( haz_if ),
       // ----------------------------------------- //
       // Overflow check signals
       .cf2as_ch0_realfull ( cf2as_ch0_realfull ),
-      .cf2as_ch1_realfull ( cf2as_ch1_realfull ),
-      // ----------------------------------------- //
-      .haz_if             ( haz_if )
+      .cf2as_ch1_realfull ( cf2as_ch1_realfull )
       );
 
 

@@ -129,8 +129,8 @@ package ase_pkg;
    parameter CCIP_RX_HDR_WIDTH     = $bits(RxHdr_t);
 
    typedef logic [CCIP_RX_HDR_WIDTH-1:0] logic_cast_RxHdr_t;
- 
-   
+
+
    // TxHdr
    typedef struct packed {
       //--------- CCIP standard header --------- //
@@ -149,7 +149,7 @@ package ase_pkg;
 
    typedef logic [CCIP_TX_HDR_WIDTH-1:0] logic_cast_TxHdr_t;
 
-   
+
    /*
     * Config MMIO Header
     */
@@ -167,8 +167,8 @@ package ase_pkg;
    parameter CCIP_CFG_HDR_WIDTH    = $bits(CfgHdr_t);
 
    typedef logic [CCIP_CFG_HDR_WIDTH-1:0] logic_cast_CfgHdr_t;
-   
-   
+
+
    // MMIO header
    typedef struct packed {
       logic [8:0] tid;
@@ -176,8 +176,8 @@ package ase_pkg;
    parameter CCIP_MMIO_TID_WIDTH    = $bits(MMIOHdr_t);
 
    typedef logic [CCIP_MMIO_TID_WIDTH-1:0] logic_cast_MMIOHdr_t;
- 
-   
+
+
    // Umsg header (received when UMsg is received)
    typedef struct packed {
       logic [1:0] rsvd_27_26;  // 27:26 // Reserved
@@ -191,7 +191,7 @@ package ase_pkg;
    parameter ASE_UMSG_HDR_WIDTH    = $bits(UMsgHdr_t);
 
    typedef logic [ASE_UMSG_HDR_WIDTH-1:0] logic_cast_UMsgHdr_t;
-      
+
    // CmpXchg header (received from a Compare-Exchange operation)
    typedef struct packed {
       ccip_vc_t       vc_used;    // 27:26
@@ -267,7 +267,7 @@ package ase_pkg;
    parameter LATBUF_TIMER_WIDTH      = 9;
    // Latency buffer TID width
    parameter LATBUF_TID_WIDTH        = 32;
-   
+
 
    /*
     * CCI Transaction packet
@@ -597,7 +597,7 @@ package ase_pkg;
       end
    endfunction
 
-   
+
    /*
     * Pretty print TXHdr & RxHdr
     */
@@ -633,7 +633,7 @@ package ase_pkg;
 	 return str;
       end
    endfunction
-   
+
    // RxHdr print
    function automatic string return_rxhdr(RxHdr_t hdr);
       string str;
@@ -642,8 +642,8 @@ package ase_pkg;
 	 return str;
       end
    endfunction
-   
-   
+
+
    /*
     * Transaction count management
     */
@@ -668,19 +668,50 @@ package ase_pkg;
     */
    // Hazard event packet
    typedef struct packed {
-      logic [LATBUF_TID_WIDTH-1:0] tid; 
+      logic [LATBUF_TID_WIDTH-1:0] tid;
       logic 			   valid;
       TxHdr_t                      hdr;
       } ase_haz_pkt;
-   
 
-   // Unified interface for read/write insert/delete 
+
+   // Unified interface for read/write insert/delete
    typedef struct packed {
       ase_haz_pkt read_in;
       ase_haz_pkt read_out;
       ase_haz_pkt write_in;
-      ase_haz_pkt write_out;      
+      ase_haz_pkt write_out;
       } ase_haz_if;
+
+
+   /*
+    * ASE protocol sniff codes
+    */
+   parameter SNIFF_CODE_WIDTH = 8;
+
+   // Error codes
+   parameter SNIFF_NO_ERROR              = 8'h00;
+
+   // ---------------- C0TX ----------------- //
+   parameter SNIFF_C0TX_ADDRALIGN_ERROR  = 8'h40;
+   parameter SNIFF_C0TX_INVALID_REQTYPE  = 8'h41;
+   parameter SNIFF_C0TX_OVERFLOW         = 8'h42;
+
+   // ---------------- C1TX ----------------- //
+   parameter SNIFF_C1TX_ADDRALIGN_ERROR  = 8'h80;
+   parameter SNIFF_C1TX_INVALID_REQTYPE  = 8'h81;
+   parameter SNIFF_C1TX_OVERFLOW         = 8'h82;
    
-      
+   parameter SNIFF_C1TX_UNEXP_MDATA      = 8'h8A;
+   parameter SNIFF_C1TX_UNEXP_ADDR       = 8'h8B;
+   parameter SNIFF_C1TX_UNEXP_CLLEN      = 8'h8C;
+   parameter SNIFF_C1TX_PAYLOAD_OVERRUN  = 8'h8D;
+   parameter SNIFF_C1TX_PAYLOAD_UNDERRUN = 8'h8E;
+   parameter SNIFF_C1TX_SOP_NOT_SET      = 8'h8F;
+
+   // ---------------- C2TX ----------------- //
+   parameter MMIO_RDRSP_TIMEOUT          = 8'hC0;
+   parameter MMIO_RDRSP_TID_MISMATCH     = 8'hC1;
+   parameter MMIO_RDRSP_UNSOLICITED      = 8'hC2;
+
+
 endpackage
