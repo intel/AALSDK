@@ -93,11 +93,17 @@ struct NLBDefaults
    const char     *umsg_data;
    const char     *umsg_hint;
 
-   const char     *va;
-   const char     *vl0;
-   const char     *vh0;
-   const char     *vh1;
-   const char     *vr;
+   const char     *rva;
+   const char     *rvl0;
+   const char     *rvh0;
+   const char     *rvh1;
+   const char     *rvr;
+
+   const char     *wva;
+   const char     *wvl0;
+   const char     *wvh0;
+   const char     *wvh1;
+   const char     *wvr;
 
    const char     *awp;
 
@@ -190,11 +196,11 @@ struct NLBCmdLine
 
 #define NLB_CMD_FLAG_COOL_CPU_CACHE 	(u64_type)0x1000000000 		/* --cool-cpu-cache  Cool CPU Cache							           	  */
 
-#define NLB_CMD_FLAG_VA       			(u64_type)0x2000000000 		/* --va			  Distribute data among QPI, PCIe0 and PCIe1 channels  */
-#define NLB_CMD_FLAG_VL0		   		(u64_type)0x4000000000 		/* --vl0			  Data transferred on QPI channel					       */
-#define NLB_CMD_FLAG_VH0	   			(u64_type)0x8000000000 		/* --vh0		     Data transferred on PCIe0  channel					    */
-#define NLB_CMD_FLAG_VH1   				(u64_type)0x10000000000		/* --vh1		     Data transferred on PCIe1  channel			   	    */
-#define NLB_CMD_FLAG_VR                (u64_type)0x20000000000    /* --vr          Data transferred on ramdomly chosen channel          */
+#define NLB_CMD_FLAG_VA       			(u64_type)0x2000000000 		/* --rva	OR --wva		Distribute data among QPI, PCIe0 and PCIe1 channels  */
+#define NLB_CMD_FLAG_READ_VL0		   	(u64_type)0x4000000000 		/* --rvl0		      Data transferred on QPI channel for reads		        */
+#define NLB_CMD_FLAG_READ_VH0	   		(u64_type)0x8000000000 		/* --rvh0		      Data transferred on PCIe0  channel for reads		     */
+#define NLB_CMD_FLAG_READ_VH1   			(u64_type)0x10000000000		/* --rvh1		      Data transferred on PCIe1  channel for reads  	     */
+#define NLB_CMD_FLAG_READ_VR           (u64_type)0x20000000000    /* --rvr             Data transferred on randomly chosen channel for reads*/
 
 #define NLB_CMD_FLAG_MULTICL           (u64_type)0x40000000000		/* --multi-cl X  	 (number of cache lines)        					  */
 
@@ -206,6 +212,11 @@ struct NLBCmdLine
 
 #define NLB_CMD_FLAG_ALT_WR_PRN        (u64_type)0x1000000000000  /* --alt-wr-pattern  (Alternate write patterns)                  */
 #define NLB_CMD_FLAG_STRIDED_ACS       (u64_type)0x2000000000000  /* --strided-access  (non-unit strides in NLB)                   */
+
+#define NLB_CMD_FLAG_WRITE_VL0         (u64_type)0x4000000000000  /* --wvl0         Data transferred on QPI channel for writes            */
+#define NLB_CMD_FLAG_WRITE_VH0         (u64_type)0x8000000000000  /* --wvh0         Data transferred on PCIe0  channel for writes         */
+#define NLB_CMD_FLAG_WRITE_VH1         (u64_type)0x10000000000000 /* --wvh1         Data transferred on PCIe1  channel for writes         */
+#define NLB_CMD_FLAG_WRITE_VR          (u64_type)0x20000000000000 /* --wvr          Data transferred on randomly chosen channel for writes*/
 
 #define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   		/* --0 */
 #define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  		/* --1 */

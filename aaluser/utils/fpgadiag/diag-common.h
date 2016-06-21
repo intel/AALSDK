@@ -305,30 +305,10 @@ public:
    virtual btInt RunTest(const NLBCmdLine &cmd);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
-class CNLBRead : public INLB
+class CNLBMode3 : public INLB
 {
 public:
-	CNLBRead(CMyApp *pMyApp) :
-      INLB(pMyApp)
-    {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
-   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
-};
-
-class CNLBWrite : public INLB
-{
-public:
-   CNLBWrite(CMyApp *pMyApp) :
-      INLB(pMyApp)
-    {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
-   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
-};
-
-class CNLBTrput : public INLB
-{
-public:
-   CNLBTrput(CMyApp *pMyApp) :
+   CNLBMode3(CMyApp *pMyApp) :
       INLB(pMyApp)
     {}
    virtual btInt RunTest(const NLBCmdLine &cmd);
