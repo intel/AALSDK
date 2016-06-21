@@ -45,7 +45,7 @@
 include ase_sources.mk
 
 # ASE Version
-ASE_VERSION = 5.0.2-Beta-9a36b65
+ASE_VERSION = 5.0.2-Beta-7379227
 
 # Enable Altera gates library
 GLS_SIM = 1
