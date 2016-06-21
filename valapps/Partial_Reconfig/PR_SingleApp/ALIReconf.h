@@ -59,7 +59,6 @@
 #include <aalsdk/aalclp/aalclp.h>
 #include <string.h>
 
-#define BitStreamFile       "/home/aravuri/kernelpr/pr_script/bitstream/10.rbf"
 #define BitStreamWrongFile  "/home/aravuri/kernelpr/pr_script/bitstream/100.rbf"
 
 using namespace std;
@@ -81,7 +80,7 @@ void showhelp(FILE *fp, struct _aalclp_gcs_compliance_data *gcs);
 int  verifycmds(struct ALIConfigCommandLine *cl);
 
 
-// Command Line Paramaters
+// Command Line Parameters
 struct  ALIConfigCommandLine
 {
    btUIntPtr          flags;

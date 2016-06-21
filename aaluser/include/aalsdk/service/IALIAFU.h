@@ -165,7 +165,18 @@ typedef enum
    ali_errnumInvalidDeviceAddr,                  // 24
    ali_errnumCouldNotDestroy,                    // 25
    ali_errnumDeviceBusy,                         // 26
-   ali_errnumTimeout                             // 27
+   ali_errnumTimeout,                            // 27
+   ali_errnumNoAFU,                              // 28
+   ali_errnumAFUNotActivated,                    // 29
+   ali_errnumDeActiveTimeout,                    // 30
+   ali_errnumPRTimeout,                          // 31
+   ali_errnumPROperation,                        // 32
+   ali_errnumPRCRC,                              // 33
+   ali_errnumPRIncompatibleBitstream,            // 34
+   ali_errnumPRIPProtocal,                       // 35
+   ali_errnumPRFIFO,                             // 36
+   ali_errnumAFUActivationFail,                  // 37
+   ali_errnumPRDeviceBusy                        // 38
 } ali_errnum_e;
 
 
