@@ -61,6 +61,7 @@
 #include <dirent.h>
 #include <execinfo.h>
 #include <locale.h>
+#include <stdbool.h>
 
 #ifdef SIM_SIDE 
 #include "svdpi.h"
@@ -233,7 +234,6 @@ struct buffer_t                   //  Descriptiion                    Computed b
   int is_privmem;                 // Flag memory as a private memory |    
   int is_mmiomap;                 // Flag memory as CSR map          |   
   int is_umas;                    // Flag memory as UMAS region      |
-  // struct buffer_t *prev;
   struct buffer_t *next;
 };
 
@@ -410,13 +410,16 @@ extern "C" {
   void deallocate_buffer_by_index(int);
   void append_wsmeta(struct wsmeta_t *);
   // MMIO activity
+  int find_empty_mmio_scoreboard_slot();
+  int get_scoreboard_slot_by_tid();
+  int count_mmio_tid_used();
   uint32_t generate_mmio_tid();
-  void mmio_request_put(struct mmio_t *);
+  int mmio_request_put(struct mmio_t *);
   void mmio_response_get(struct mmio_t *);
-  void mmio_write32(uint32_t index, uint32_t data);
-  void mmio_write64(uint32_t index, uint64_t data);
-  void mmio_read32(uint32_t index, uint32_t *data);
-  void mmio_read64(uint32_t index, uint64_t *data);
+  void mmio_write32(int index, uint32_t data);
+  void mmio_write64(int index, uint64_t data);
+  void mmio_read32(int index, uint32_t *data);
+  void mmio_read64(int index, uint64_t *data);
   // UMSG functions
   uint64_t* umsg_get_address(int umsg_id);
   void umsg_send (int umsg_id, uint64_t *umsg_data);
