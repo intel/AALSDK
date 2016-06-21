@@ -364,7 +364,7 @@ void PRTest::sw_pr_02()
    // Deactiavte AFU Device
    m_reconfAFU.reconfDeactivate();
    if(( true == m_reconfAFU.IsOK() ) &&
-        (m_reconfAFU.getErrnum() != 28) ) {
+        (m_reconfAFU.getErrnum() != ali_errnumNoAFU) ) {
      ++m_Errors;
      ERR("sw_pr_02:Deactiavte  FAIL");
      return;
@@ -475,11 +475,14 @@ void PRTest::sw_pr_05a()
 
    m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,10,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfDeactivate();
-   if(true == m_reconfAFU.IsOK() ) {
+   if(( true == m_reconfAFU.IsOK() ) &&
+      (m_reconfAFU.getErrnum() != ali_errnumDeActiveTimeout) ){
       ++m_Errors;
       ERR("sw_pr_05a:ALLOC NLB Service FAIL");
       goto done_0;
    }
+
+
 
    delete t;
    m_ALINLB.FreeNLBService();
@@ -632,7 +635,9 @@ void PRTest::sw_pr_09()
    m_reconfAFU.setIsOk(true);
    m_reconfAFU.reconfConfigure();
 
-   if(false == m_reconfAFU.IsOK() ) {
+   if(( false == m_reconfAFU.IsOK() ) &&
+      (m_reconfAFU.getErrnum() != ali_errnumNoAFU) ){
+
       ++m_Errors;
       ERR("sw_pr_09:Deactivate  FAIL");
       return ;
@@ -710,7 +715,8 @@ void PRTest::sw_pr_11()
 
       cout << "index i=" << i<< endl;
       m_reconfAFU.reconfDeactivate();
-      if(true == m_reconfAFU.IsOK() ) {
+      if(( true == m_reconfAFU.IsOK() ) &&
+         (m_reconfAFU.getErrnum() != ali_errnumDeviceBusy) ){
          ++m_Errors;
          ERR("sw_pr_11:ALLOC NLB Service FAIL");
          goto done_0;
@@ -783,7 +789,8 @@ void PRTest::sw_pr_12()
    for(int i=0; i<=10 ;i++) {
       cout << "index i=" << i<< endl;
       m_reconfAFU.reconfConfigure();
-      if(true == m_reconfAFU.IsOK() ) {
+      if(( true == m_reconfAFU.IsOK() ) &&
+         (m_reconfAFU.getErrnum() != ali_errnumDeviceBusy) ){
          ++m_Errors;
          ERR("sw_pr_12:ALLOC NLB Service FAIL");
          goto done_0;
@@ -845,5 +852,10 @@ int main(int argc, char *argv[])
    // Free Runtime
    theApp.FreeRuntime();
    MSG("Done");
+
+   Result = theApp.Errors();
+
+   std::cout << "Error count:"<< Result << std::endl;
+
    return Result;
 }
