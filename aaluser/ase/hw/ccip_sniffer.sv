@@ -45,7 +45,7 @@
  * In the strictest sense, if there are multiple transactions to a
  * certain cache line
  *
- * All warnings are logged in ccip_warning_and_errors.log
+ * All warnings are logged in ccip_warning_and_errors.txt
  *
  * FIXME list
  * - Sop & cllen pattern matching
@@ -60,7 +60,7 @@ import ccip_if_pkg::*;
 
 module ccip_sniffer
   #(
-    parameter ERR_LOGNAME  = "ccip_warning_and_errors.log"
+    parameter ERR_LOGNAME  = "ccip_warning_and_errors.txt"
     )
    (
     // Configure enable
@@ -609,18 +609,18 @@ module ccip_sniffer
     * C1Tx Multi-line Request checker
     */
    // 3CL and Address alignment checker
-   always @(posedge clk) begin : c1tx_mcl_checker
-      if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr)) begin
-	 // -------------------------------------------------------- //
-	 // Address alignment checks
-	 if ((ccip_tx.c1.hdr.cl_len == 2'b01) && (ccip_tx.c1.hdr.address[0] != 1'b0) && ccip_tx.c1.hdr.sop) begin
-	    decode_error_code(0, SNIFF_C1TX_ADDRALIGN_2_ERROR);
-	 end
-	 else if ((ccip_tx.c1.hdr.cl_len == 2'b11) && (ccip_tx.c1.hdr.address[1:0] != 2'b00) && ccip_tx.c1.hdr.sop) begin
-	    decode_error_code(0, SNIFF_C1TX_ADDRALIGN_4_ERROR);
-	 end
-      end
-   end
+   // always @(posedge clk) begin : c1tx_mcl_checker
+   //    if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr)) begin
+   // 	 // -------------------------------------------------------- //
+   // 	 // Address alignment checks
+   // 	 if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b01) && (ccip_tx.c1.hdr.address[0] != 1'b0) && ccip_tx.c1.hdr.sop) begin
+   // 	    decode_error_code(0, SNIFF_C1TX_ADDRALIGN_2_ERROR);
+   // 	 end
+   // 	 else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b11) && (ccip_tx.c1.hdr.address[1:0] != 2'b00) && ccip_tx.c1.hdr.sop) begin
+   // 	    decode_error_code(0, SNIFF_C1TX_ADDRALIGN_4_ERROR);
+   // 	 end
+   //    end
+   // end
 
    /*
     * C1TX Incoming transaction checker
@@ -671,6 +671,14 @@ module ccip_sniffer
 		   decode_error_code(0, SNIFF_C1TX_SOP_NOT_SET);
 		end
 		// ----------------------------------------- //
+		// Address alignment checks
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b01) && (ccip_tx.c1.hdr.address[0] != 1'b0) && ccip_tx.c1.hdr.sop) begin
+		   decode_error_code(0, SNIFF_C1TX_ADDRALIGN_2_ERROR);
+		end
+		else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b11) && (ccip_tx.c1.hdr.address[1:0] != 2'b00) && ccip_tx.c1.hdr.sop) begin
+		   decode_error_code(0, SNIFF_C1TX_ADDRALIGN_4_ERROR);
+		end
+		// ----------------------------------------- //
 		// State Transition
 		if (ccip_tx.c1.valid && isWrFenceRequest(ccip_tx.c1.hdr)) begin
 		   exp_c1state <= Exp_1CL_WrFence;
@@ -711,6 +719,11 @@ module ccip_sniffer
 		// CL_LEN modification check [Warning only]
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
 		   decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);
+		end
+		// ----------------------------------------- //
+		// Address increment check
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 1))) begin
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);		   
 		end
 		// ----------------------------------------- //
 		// Write Fence must not be seen here
@@ -759,6 +772,11 @@ module ccip_sniffer
 		   decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);
 		end
 		// ----------------------------------------- //
+		// Address increment check
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 2))) begin
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);		   
+		end
+		// ----------------------------------------- //
 		// State transition
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (base_c1len == eCL_LEN_4)) begin
 		   exp_c1state <= Exp_4CL;
@@ -795,6 +813,11 @@ module ccip_sniffer
 		// CL_LEN modification check [Warning only]
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
 		   decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);
+		end
+		// ----------------------------------------- //
+		// Address increment check
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 3))) begin
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);		   
 		end
 		// ----------------------------------------- //
 		// State transition
