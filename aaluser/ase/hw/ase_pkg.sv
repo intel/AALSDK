@@ -706,24 +706,24 @@ package ase_pkg;
 		   SNIFF_C1TX_ADDRALIGN_4_ERROR  = 32'h83,
 		   SNIFF_C1TX_RESET_IGNORED_WARN = 32'h84,
 		   SNIFF_C1TX_XZ_FOUND_WARN      = 32'h85,
-		   SNIFF_C1TX_UNEXP_VCSEL        = 32'h86,   
+		   SNIFF_C1TX_UNEXP_VCSEL        = 32'h86,
 		   SNIFF_C1TX_UNEXP_MDATA        = 32'h87,
 		   SNIFF_C1TX_UNEXP_ADDR         = 32'h88,
 		   SNIFF_C1TX_UNEXP_CLLEN        = 32'h89,
-		   SNIFF_C1TX_PAYLOAD_OVERRUN    = 32'h8A,
-		   SNIFF_C1TX_PAYLOAD_UNDERRUN   = 32'h8B,
-		   SNIFF_C1TX_SOP_NOT_SET        = 32'h8C,
-		   SNIFF_C1TX_SOP_SET_MCL1TO3    = 32'h8D,
-		   SNIFF_C1TX_3CL_REQUEST        = 32'h8E,
+		   SNIFF_C1TX_UNEXP_REQTYPE      = 32'h8A,
+		   SNIFF_C1TX_PAYLOAD_OVERRUN    = 32'h8B,
+		   SNIFF_C1TX_PAYLOAD_UNDERRUN   = 32'h8C,
+		   SNIFF_C1TX_SOP_NOT_SET        = 32'h8D,
+		   SNIFF_C1TX_SOP_SET_MCL1TO3    = 32'h8E,
+		   SNIFF_C1TX_3CL_REQUEST        = 32'h8F,
+		   SNIFF_C1TX_WRFENCE_IN_MCL1TO3 = 32'h90,
 		   // ------------ C2TX -------------- //
 		   MMIO_RDRSP_TIMEOUT            = 32'hC0,
 		   MMIO_RDRSP_TID_MISMATCH       = 32'hC1,
 		   MMIO_RDRSP_UNSOLICITED        = 32'hC2,
 		   MMIO_RDRSP_RESET_IGNORED_WARN = 32'hC4,
 		   MMIO_RDRSP_XZ_FOUND_WARN      = 32'hC5
-		   
-		   } sniff_code_t;
-   
-endpackage
 
-   
+		   } sniff_code_t;
+
+endpackage

@@ -308,7 +308,7 @@ module ccip_sniffer
 		   print_message_and_log(1, log_str);
 		end
 
-	      // C0TX - X or Z found
+	      // C0TX - X or Z found [Warning only]
 	      SNIFF_C0TX_XZ_FOUND_WARN:
 		begin
 		   $sformat(log_str, "[%s] C0TxHdr request contained a 'Z' or 'X' !\n", errcode_str);
@@ -357,7 +357,7 @@ module ccip_sniffer
 		   print_message_and_log(1, log_str);
 		end
 
-	      // C1TX - X or Z found
+	      // C1TX - X or Z found [Warning only]
 	      SNIFF_C1TX_XZ_FOUND_WARN:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr request contained a 'Z' or 'X' !\n", errcode_str);
@@ -385,12 +385,14 @@ module ccip_sniffer
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C1Tx - Unexpected cl_len change [Warning only]
 	      SNIFF_C1TX_UNEXP_CLLEN:
 		begin
-		   $sformat(log_str, "[%s] C1TxHdr multi-line beat found unexpected cllen - cllen must decrement by 1 !\n", errcode_str);
-		   print_message_and_log(0, log_str);
+		   $sformat(log_str, "[%s] C1TxHdr cl_len field changed between multi-line beat !\n", errcode_str);
+		   print_message_and_log(1, log_str);
 		end
-	      
+
+	      // C1Tx - unexpected request type change
 	      SNIFF_C1TX_UNEXP_REQTYPE:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr multi-line beat found unexpected Request type change !\n", errcode_str);
@@ -409,12 +411,14 @@ module ccip_sniffer
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C1Tx - SOP field not set
 	      SNIFF_C1TX_SOP_NOT_SET:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr First transaction of multi-line beat must set SOP field to HIGH !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C1Tx - SOP field set for subsequent transactions
 	      SNIFF_C1TX_SOP_SET_MCL1TO3:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr Subsequent transaction of multi-line beat must set SOP field to LOG !\n", errcode_str);
@@ -422,12 +426,13 @@ module ccip_sniffer
 		end
 
 	      // C0TX - 3CL Request check
-	      SNIFF_C0TX_3CL_REQUEST:
+	      SNIFF_C1TX_3CL_REQUEST:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr 3-CL request issued. This is illegal !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C1Tx - Write fence observered between CL1-CL3 in MCL request
 	      SNIFF_C1TX_WRFENCE_IN_MCL1TO3:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr cannot issue a WriteFence in between a multi-line transaction !\n", errcode_str);
@@ -697,6 +702,16 @@ module ccip_sniffer
 		   decode_error_code(0, SNIFF_C1TX_UNEXP_REQTYPE);		   
 		end
 		// ----------------------------------------- //
+		// CL_LEN modification check [Warning only]
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);		   
+		end
+		// ----------------------------------------- //
+		// Write Fence must not be seen here
+		if (ccip_tx.c1.valid && isCCIPWrFenceRequest(ccip_tx.c1.hdr)) begin
+		   decode_error_code(0, SNIFF_C1TX_WRFENCE_IN_MCL1TO3);		   
+		end
+		// ----------------------------------------- //
 		// State transition
 	     end
 
@@ -709,6 +724,11 @@ module ccip_sniffer
 		   decode_error_code(0, SNIFF_C1TX_SOP_SET_MCL1TO3);
 		end
 		// ----------------------------------------- //
+		// Write Fence must not be seen here
+		if (ccip_tx.c1.valid && isCCIPWrFenceRequest(ccip_tx.c1.hdr)) begin
+		   decode_error_code(0, SNIFF_C1TX_WRFENCE_IN_MCL1TO3);		   
+		end
+		// ----------------------------------------- //
 		// VC modification check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.vc_sel != base_c1vc)) begin
 		   decode_error_code(0, SNIFF_C1TX_UNEXP_VCSEL);
@@ -717,6 +737,11 @@ module ccip_sniffer
 		// Request Type modification check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.req_type != base_c1reqtype)) begin
 		   decode_error_code(0, SNIFF_C1TX_UNEXP_REQTYPE);		   
+		end
+		// ----------------------------------------- //
+		// CL_LEN modification check [Warning only]
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);		   
 		end
 		// ----------------------------------------- //
 		// State transition
@@ -731,6 +756,11 @@ module ccip_sniffer
 		   decode_error_code(0, SNIFF_C1TX_SOP_SET_MCL1TO3);
 		end
 		// ----------------------------------------- //
+		// Write Fence must not be seen here
+		if (ccip_tx.c1.valid && isCCIPWrFenceRequest(ccip_tx.c1.hdr)) begin
+		   decode_error_code(0, SNIFF_C1TX_WRFENCE_IN_MCL1TO3);		   
+		end
+		// ----------------------------------------- //
 		// VC modification check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.vc_sel != base_c1vc)) begin
 		   decode_error_code(0, SNIFF_C1TX_UNEXP_VCSEL);
@@ -739,6 +769,11 @@ module ccip_sniffer
 		// Request Type modification check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.req_type != base_c1reqtype)) begin
 		   decode_error_code(0, SNIFF_C1TX_UNEXP_REQTYPE);		   
+		end
+		// ----------------------------------------- //
+		// CL_LEN modification check [Warning only]
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);		   
 		end
 		// ----------------------------------------- //
 		// State transition
