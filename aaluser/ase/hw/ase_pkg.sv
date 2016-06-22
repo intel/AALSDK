@@ -717,7 +717,9 @@ package ase_pkg;
 		   MMIO_RDRSP_TIMEOUT            = 32'hC0,
 		   MMIO_RDRSP_TID_MISMATCH       = 32'hC1,
 		   MMIO_RDRSP_UNSOLICITED        = 32'hC2,
+		   MMIO_RDRSP_RESET_IGNORED_WARN = 32'hC4,
 		   MMIO_RDRSP_XZ_FOUND_WARN      = 32'hC5
+		   
 		   } sniff_code_t;
    
 endpackage

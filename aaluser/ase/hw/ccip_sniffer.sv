@@ -249,12 +249,14 @@ module ccip_sniffer
 		   print_message_and_log(1, log_str);
 		end
 
+	      // C0TX - X or Z found
 	      SNIFF_C0TX_XZ_FOUND_WARN:
 		begin
 		   $sformat(log_str, "[%s] C0TxHdr request contained a 'Z' or 'X' !\n", errcode_str);
 		   print_message_and_log(1, log_str);
 		end
 
+	      // C1TX - Invalid request type
 	      SNIFF_C1TX_INVALID_REQTYPE:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr was issued with an invalid reqtype !\n", errcode_str);
@@ -285,6 +287,7 @@ module ccip_sniffer
 		   print_message_and_log(1, log_str);
 		end
 
+	      // C1TX - X or Z found
 	      SNIFF_C1TX_XZ_FOUND_WARN:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr request contained a 'Z' or 'X' !\n", errcode_str);
@@ -357,12 +360,20 @@ module ccip_sniffer
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C2TX - X or Z found
 	      MMIO_RDRSP_XZ_FOUND_WARN:
 		begin
 		   $sformat(log_str, "[%s] MMIO Response contained a 'Z' or 'X' !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C2TX - Reset ignored
+	      MMIO_RDRSP_RESET_IGNORED_WARN:
+		begin
+		   $sformat(log_str, "[%s] MMIO Response was issued when SoftReset signal was HIGH !\n", errcode_str);
+		   print_message_and_log(1, log_str);		   
+		end
+	      
 	      // Unknown type -- this must not happen
 	      default:
 		begin
@@ -377,20 +388,19 @@ module ccip_sniffer
 
 
    /*
-    * Valid aggregate for X, Z checking
+    * Valid aggregattion
     */
-   // any valid signals
-   logic tx_valid;
-   logic rx_valid;
+   // logic tx_valid;
+   // logic rx_valid;
 
-   assign tx_valid = ccip_tx.c0.valid    |
-		     ccip_tx.c1.valid    |
-		     ccip_tx.c2.mmioRdValid;
+   // assign tx_valid = ccip_tx.c0.valid    |
+   // 		     ccip_tx.c1.valid    |
+   // 		     ccip_tx.c2.mmioRdValid;
 
-   assign rx_valid = ccip_rx.c0.rspValid    |
-		     ccip_rx.c0.mmioRdValid |
-		     ccip_rx.c0.mmioWrValid |
-		     ccip_rx.c1.rspValid;
+   // assign rx_valid = ccip_rx.c0.rspValid    |
+   // 		     ccip_rx.c0.mmioRdValid |
+   // 		     ccip_rx.c0.mmioWrValid |
+   // 		     ccip_rx.c1.rspValid;
 
 
    // If reset is high, and transactions are asserted
@@ -402,6 +412,21 @@ module ccip_sniffer
    //    end
    // end
 
+   /*
+    * Reset ignorance check
+    */ 
+   always @(posedge clk) begin
+      if (SoftReset && ccip_tx.c0.valid) begin
+	 decode_error_code(0, SNIFF_C0TX_RESET_IGNORED_WARN);	 
+      end
+      if (SoftReset && ccip_tx.c1.valid) begin
+	 decode_error_code(0, SNIFF_C1TX_RESET_IGNORED_WARN);	 
+      end	
+      if (SoftReset && ccip_tx.c2.mmioRdValid) begin
+	 decode_error_code(0, MMIO_RDRSP_RESET_IGNORED_WARN);	 
+      end
+   end
+   
 
    /*
     * Cast MMIO Header
