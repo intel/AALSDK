@@ -2382,11 +2382,10 @@ module ccip_emulator
     */
    ccip_sniffer ccip_sniffer
      (
+      // ----------------------------------------- //
       // Logger control
       .finish_logger      (finish_logger     ),
-      // Buffer message injection
-      // .log_string_en    (buffer_msg_en     ),
-      // .log_string       (buffer_msg        ),
+      .init_sniffer       (ase_reset         ),
       // ----------------------------------------- //
       // CCIP ports
       .clk                ( clk                ),
