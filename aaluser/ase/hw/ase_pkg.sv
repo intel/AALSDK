@@ -689,29 +689,37 @@ package ase_pkg;
    parameter SNIFF_CODE_WIDTH = 8;
 
    // Error codes
-   parameter SNIFF_NO_ERROR              = 8'h00;
-
-   // ---------------- C0TX ----------------- //
-   parameter SNIFF_C0TX_ADDRALIGN_ERROR  = 8'h40;
-   parameter SNIFF_C0TX_INVALID_REQTYPE  = 8'h41;
-   parameter SNIFF_C0TX_OVERFLOW         = 8'h42;
-
-   // ---------------- C1TX ----------------- //
-   parameter SNIFF_C1TX_ADDRALIGN_ERROR  = 8'h80;
-   parameter SNIFF_C1TX_INVALID_REQTYPE  = 8'h81;
-   parameter SNIFF_C1TX_OVERFLOW         = 8'h82;
+   typedef enum   {
+		   SNIFF_NO_ERROR                = 32'h00,
+		   // ------------ C0TX ------------ //
+		   SNIFF_C0TX_INVALID_REQTYPE    = 32'h40,
+		   SNIFF_C0TX_OVERFLOW           = 32'h41,
+		   SNIFF_C0TX_ADDRALIGN_2_ERROR  = 32'h42,
+		   SNIFF_C0TX_ADDRALIGN_4_ERROR  = 32'h43,
+		   SNIFF_C0TX_RESET_IGNORED_WARN = 32'h44,
+		   SNIFF_C0TX_XZ_FOUND_WARN      = 32'h45,
+		   // ------------ C1TX -------------- //
+		   SNIFF_C1TX_INVALID_REQTYPE    = 32'h80,
+		   SNIFF_C1TX_OVERFLOW           = 32'h81,
+		   SNIFF_C1TX_ADDRALIGN_2_ERROR  = 32'h82,
+		   SNIFF_C1TX_ADDRALIGN_4_ERROR  = 32'h83,
+		   SNIFF_C1TX_RESET_IGNORED_WARN = 32'h84,
+		   SNIFF_C1TX_XZ_FOUND_WARN      = 32'h85,
+		   SNIFF_C1TX_UNEXP_VCSEL        = 32'h86,   
+		   SNIFF_C1TX_UNEXP_MDATA        = 32'h87,
+		   SNIFF_C1TX_UNEXP_ADDR         = 32'h88,
+		   SNIFF_C1TX_UNEXP_CLLEN        = 32'h89,
+		   SNIFF_C1TX_PAYLOAD_OVERRUN    = 32'h8A,
+		   SNIFF_C1TX_PAYLOAD_UNDERRUN   = 32'h8B,
+		   SNIFF_C1TX_SOP_NOT_SET        = 32'h8C,
+		   SNIFF_C1TX_SOP_SET_MCL1TO3    = 32'h8D,
+		   // ------------ C2TX -------------- //
+		   MMIO_RDRSP_TIMEOUT            = 32'hC0,
+		   MMIO_RDRSP_TID_MISMATCH       = 32'hC1,
+		   MMIO_RDRSP_UNSOLICITED        = 32'hC2,
+		   MMIO_RDRSP_XZ_FOUND_WARN      = 32'hC5
+		   } sniff_code_t;
    
-   parameter SNIFF_C1TX_UNEXP_MDATA      = 8'h8A;
-   parameter SNIFF_C1TX_UNEXP_ADDR       = 8'h8B;
-   parameter SNIFF_C1TX_UNEXP_CLLEN      = 8'h8C;
-   parameter SNIFF_C1TX_PAYLOAD_OVERRUN  = 8'h8D;
-   parameter SNIFF_C1TX_PAYLOAD_UNDERRUN = 8'h8E;
-   parameter SNIFF_C1TX_SOP_NOT_SET      = 8'h8F;
-
-   // ---------------- C2TX ----------------- //
-   parameter MMIO_RDRSP_TIMEOUT          = 8'hC0;
-   parameter MMIO_RDRSP_TID_MISMATCH     = 8'hC1;
-   parameter MMIO_RDRSP_UNSOLICITED      = 8'hC2;
-
-
 endpackage
+
+   

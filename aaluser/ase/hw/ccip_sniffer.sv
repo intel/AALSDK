@@ -64,29 +64,29 @@ module ccip_sniffer
     )
    (
     // Configure enable
-    input logic 			finish_logger,
+    input logic finish_logger,
     // -------------------------------------------------------- //
     // Channel overflow/realfull checks
-    input logic 			cf2as_ch0_realfull,
-    input logic 			cf2as_ch1_realfull,
+    input logic cf2as_ch0_realfull,
+    input logic cf2as_ch1_realfull,
     // -------------------------------------------------------- //
     //          Hazard/Indicator Signals                        //
-    input 				ase_haz_if haz_if,
-    output logic [SNIFF_CODE_WIDTH-1:0] error_code,
+    input 	ase_haz_if haz_if,
+    output 	sniff_code_t error_code,
     // -------------------------------------------------------- //
     //                    CCI interface                         //
-    input logic 			clk,
-    input logic 			SoftReset,
-    input 				t_if_ccip_Rx ccip_rx,
-    input 				t_if_ccip_Tx ccip_tx
+    input logic clk,
+    input logic SoftReset,
+    input 	t_if_ccip_Rx ccip_rx,
+    input 	t_if_ccip_Tx ccip_tx
     );
 
-   
+
    /*
-    * File descriptors
+    * File descriptors, codes etc
     */
    int 					     fd_errlog;
-
+   
    // FD open
    initial begin
       $display ("SIM-SV : Protocol Checker initialized");
@@ -104,27 +104,8 @@ module ccip_sniffer
 
 
    /*
-    * Generic print message
+    * Controlled kill of simulation
     */
-   // Print string and write to file
-   function void print_message_and_log(input integer warn_only,
-				       input string logstr);
-      begin
-	 if (warn_only == 1) begin
-	    `BEGIN_RED_FONTCOLOR;
-	    $display(" [WARN]  %d : %s", $time, logstr);
-	    `END_RED_FONTCOLOR;
-	    $fwrite(fd_errlog, " [WARN]  %d : %s\n", $time, logstr);
-	 end
-	 else begin
-	    `BEGIN_RED_FONTCOLOR;
-	    $display(" [ERROR] %d : %s", $time, logstr);
-	    `END_RED_FONTCOLOR;
-	    $fwrite(fd_errlog, " [ERROR] %d : %s\n", $time, logstr);
-	 end
-      end
-   endfunction
-
    logic simkill_en = 0;
    int 	 simkill_cnt;
 
@@ -189,6 +170,204 @@ module ccip_sniffer
 
 
    /*
+    * Helper functions
+    */
+   // Print string and write to file
+   function void print_message_and_log(input logic warn_only,
+				       input string logstr);
+      begin
+	 if (warn_only == 1) begin
+	    `BEGIN_RED_FONTCOLOR;
+	    $display(" [WARN]  %d : %s", $time, logstr);
+	    `END_RED_FONTCOLOR;
+	    $fwrite(fd_errlog, " [WARN]  %d : %s\n", $time, logstr);
+	 end
+	 else begin
+	    `BEGIN_RED_FONTCOLOR;
+	    $display(" [ERROR] %d : %s", $time, logstr);
+	    `END_RED_FONTCOLOR;
+	    $fwrite(fd_errlog, " [ERROR] %d : %s\n", $time, logstr);
+`ifndef STANDALONE_DEBUG
+	    print_and_simkill();
+`endif
+	 end
+      end
+   endfunction
+
+   // Error code enumeration
+   function void decode_error_code(
+				   input logic init,
+				   input       sniff_code_t code
+				   );
+      string 				       errcode_str;      
+      string 				       log_str;      
+      begin
+	 if (init) begin
+	    error_code = SNIFF_NO_ERROR;	    
+	 end
+	 else begin
+	    error_code = code;
+	    errcode_str = code.name;	    
+	    case (code)
+	      // C0TX - Invalid request type
+	      SNIFF_C0TX_INVALID_REQTYPE:
+		begin
+		   $sformat(log_str, "[%s] C0TxHdr was issued with an invalid reqtype !\n", errcode_str);
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C0TX_OVERFLOW:
+		begin
+		   $sformat(log_str, "[%s] Overflow detected on CCI-P Channel 0 !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C0TX_ADDRALIGN_2_ERROR:
+		begin
+		   $sformat(log_str, "[%s] C0TxHdr Multi-line address request is not aligned 2-CL aligned (C0TxHdr.addr[0] != 1'b0) !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C0TX_ADDRALIGN_4_ERROR:
+		begin
+		   $sformat(log_str, "[%s] C0TxHdr Multi-line address request is not aligned 4-CL aligned (C0TxHdr.addr[1:0] != 2'b00) !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C0TX_RESET_IGNORED_WARN:
+		begin
+		   $sformat(log_str, "[%s] C0TxHdr was issued when AFU Reset is HIGH !\n", errcode_str);		   
+		   print_message_and_log(1, log_str);		   
+		end
+
+	      SNIFF_C0TX_XZ_FOUND_WARN:
+		begin
+		   $sformat(log_str, "[%s] C0TxHdr request contained a 'Z' or 'X' !\n", errcode_str);		   
+		   print_message_and_log(1, log_str);		   
+		end
+
+	      SNIFF_C1TX_INVALID_REQTYPE:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr was issued with an invalid reqtype !\n", errcode_str);
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C1TX_OVERFLOW:
+		begin
+		   $sformat(log_str, "[%s] Overflow detected on CCI-P Channel 1 !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C1TX_ADDRALIGN_2_ERROR:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr Multi-line address request is not aligned 2-CL aligned (C1TxHdr.addr[0] != 1'b0) !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C1TX_ADDRALIGN_4_ERROR:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr Multi-line address request is not aligned 4-CL aligned (C1TxHdr.addr[1:0] != 2'b00) !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C1TX_RESET_IGNORED_WARN:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr was issued when AFU Reset is HIGH !\n", errcode_str);		   
+		   print_message_and_log(1, log_str);		   
+		end
+
+	      SNIFF_C1TX_XZ_FOUND_WARN:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr request contained a 'Z' or 'X' !\n", errcode_str);		   
+		   print_message_and_log(1, log_str);		   
+		end
+
+	      SNIFF_C1TX_UNEXP_VCSEL:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr VC-selection must not change in between multi-line beat !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C1TX_UNEXP_MDATA:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr MDATA-setting must not change in between multi-line beat !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C1TX_UNEXP_ADDR:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr multi-line beat found unexpected address - addr[1:0] must increment by 1 !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C1TX_UNEXP_CLLEN:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr multi-line beat found unexpected cllen - cllen must decrement by 1 !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C1TX_PAYLOAD_OVERRUN:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr multi-line beat detected more than expected number of transactions !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C1TX_PAYLOAD_UNDERRUN:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr multi-line beat detected less than expected number of transactions !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C1TX_SOP_NOT_SET:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr First transaction of multi-line beat must set SOP field to HIGH !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      SNIFF_C1TX_SOP_SET_MCL1TO3:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr Subsequent transaction of multi-line beat must set SOP field to LOG !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+	      
+	      MMIO_RDRSP_TIMEOUT:
+		begin
+		   $sformat(log_str, "[%s] MMIO Read Response timed out. AFU must respond to MMIO Read responses within %d clocks !\n", errcode_str, `MMIO_RESPONSE_TIMEOUT);
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      MMIO_RDRSP_TID_MISMATCH:
+		begin
+		   $sformat(log_str, "[%s] MMIO Read Response TID did not match MMIO Read Request !\n", errcode_str);
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      MMIO_RDRSP_UNSOLICITED:
+		begin
+		   $sformat(log_str, "[%s] ASE detected an unsolicited MMIO Response. In system, this can cause unexpected behavior !\n", errcode_str);
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      MMIO_RDRSP_XZ_FOUND_WARN:
+		begin
+		   $sformat(log_str, "[%s] MMIO Response contained a 'Z' or 'X' !\n", errcode_str);		   
+		   print_message_and_log(0, log_str);		   
+		end
+
+	      // Unknown type -- this must not happen
+	      default:
+		begin		   
+		   print_message_and_log(1, "** ASE Internal Error **: Undefined Error code found !");
+		end
+	      
+	    endcase
+	 end
+      end
+   endfunction
+
+
+
+   /*
     * Valid aggregate for X, Z checking
     */
    // any valid signals
@@ -214,7 +393,14 @@ module ccip_sniffer
       end
    end
 
+					 
+   /*
+    * Cast MMIO Header
+    */
+   t_ccip_c0_ReqMmioHdr C0RxCfg;
+   assign C0RxCfg = t_ccip_c0_ReqMmioHdr'(ccip_rx.c0.hdr);
 
+					 
    /*
     * UNDEF & HIIMP checker
     */
@@ -227,18 +413,12 @@ module ccip_sniffer
    logic 			   xz_cfg_flag;
 
 
-   /*
-    * TX checker files
-    */
-   t_ccip_c0_ReqMmioHdr C0RxCfg;
-   assign C0RxCfg = t_ccip_c0_ReqMmioHdr'(ccip_rx.c0.hdr);
-
    assign xz_tx0_flag = ( ^{ccip_tx.c0.hdr.vc_sel,                     ccip_tx.c0.hdr.cl_len, ccip_tx.c0.hdr.req_type, ccip_tx.c0.hdr.address, ccip_tx.c0.hdr.mdata} ) && ccip_tx.c0.valid ;
    assign xz_tx1_flag = ( ^{ccip_tx.c1.hdr.vc_sel, ccip_tx.c1.hdr.sop, ccip_tx.c1.hdr.cl_len, ccip_tx.c1.hdr.req_type, ccip_tx.c1.hdr.address, ccip_tx.c1.hdr.mdata} ) && ccip_tx.c1.valid ;
-   assign xz_tx2_flag = ( ^{ccip_tx.c2.hdr.tid, ccip_tx.c2.data})                                                                                           && ccip_tx.c2.mmioRdValid ;
+   assign xz_tx2_flag = ( ^{ccip_tx.c2.hdr.tid, ccip_tx.c2.data})                                                                                                      && ccip_tx.c2.mmioRdValid ;
 
-   assign xz_rx0_flag = ( ^{ccip_rx.c0.hdr.vc_used, ccip_rx.c0.hdr.hit_miss,                 ccip_rx.c0.hdr.cl_num, ccip_rx.c0.hdr.resp_type, ccip_rx.c0.hdr.mdata, ccip_rx.c0.data}  && ccip_rx.c0.rspValid );
-   assign xz_rx1_flag = ( ^{ccip_rx.c1.hdr.vc_used, ccip_rx.c1.hdr.hit_miss, ccip_rx.c1.hdr.format, ccip_rx.c1.hdr.cl_num, ccip_rx.c1.hdr.resp_type, ccip_rx.c1.hdr.mdata}            && ccip_rx.c1.rspValid );
+   assign xz_rx0_flag = ( ^{ccip_rx.c0.hdr.vc_used, ccip_rx.c0.hdr.hit_miss,                        ccip_rx.c0.hdr.cl_num, ccip_rx.c0.hdr.resp_type, ccip_rx.c0.hdr.mdata, ccip_rx.c0.data}  && ccip_rx.c0.rspValid );
+   assign xz_rx1_flag = ( ^{ccip_rx.c1.hdr.vc_used, ccip_rx.c1.hdr.hit_miss, ccip_rx.c1.hdr.format, ccip_rx.c1.hdr.cl_num, ccip_rx.c1.hdr.resp_type, ccip_rx.c1.hdr.mdata}                   && ccip_rx.c1.rspValid );
 
    assign xz_cfg_flag = ( ^{C0RxCfg.address, C0RxCfg.length, C0RxCfg.tid, ccip_rx.c0.data} ) && (ccip_rx.c0.mmioWrValid | ccip_rx.c0.mmioRdValid);
 
@@ -374,15 +554,15 @@ module ccip_sniffer
 	 wrfence_en <= 0;
       end
    end
-   
+
    // isCCIPWriteRequest
    function automatic logic isCCIPWriteRequest(t_ccip_c1_ReqMemHdr hdr);
       begin
 	 if ((hdr.req_type==eREQ_WRLINE_M)||(hdr.req_type==eREQ_WRLINE_I)) begin
-	    return 1;	    
+	    return 1;
 	 end
 	 else begin
-	    return 0;	    
+	    return 0;
 	 end
       end
    endfunction
@@ -395,11 +575,11 @@ module ccip_sniffer
 	 end
 	 else begin
 	    return 0;
-	 end	   
+	 end
       end
    endfunction
 
-   
+
    // String for writing formatted messages
    string exp_c1tx_str;
 
@@ -516,7 +696,7 @@ module ccip_sniffer
 		end
 		else begin
 		   exp_c1state <= Exp_2CL;
-		end 
+		end
 	     end
 
 	   // ----------------------------------------------------------- //
@@ -552,7 +732,7 @@ module ccip_sniffer
 		   print_and_simkill();
 		end
 		// ----------- State transition ----------- //
-		
+
 	     end
 
 	   // ----------------------------------------------------------- //
@@ -675,23 +855,23 @@ module ccip_sniffer
    string  war_haz_str;
 
    logic   hazard_found;
-      
+
    // ------------------------------------------- //
    // Hazard check process
-   // - Take in address, check if exists in 
+   // - Take in address, check if exists in
    // ------------------------------------------- //
    always @(posedge clk) begin
       // ------------------------------------------- //
-      // Read in (unroll necessary) 
+      // Read in (unroll necessary)
       // ------------------------------------------- //
       if (haz_if.read_in.valid) begin
 	 for (int ii = 0; ii <= haz_if.read_in.hdr.len ; ii = ii + 1) begin
 	    rd_active_addr_array[ haz_if.read_in.hdr.addr + ii ] = haz_if.read_in.hdr.addr + ii;
 	    // Check for outstanding write request
 	    if (wr_active_addr_array.exists(haz_if.read_in.hdr.addr + ii)) begin
-	       $sformat(war_haz_str, 
-			"%d | Potential for Write-after-Read hazard with potential for C0TxHdr=%s arriving earlier than write to same address\n", 
-			$time, 
+	       $sformat(war_haz_str,
+			"%d | Potential for Write-after-Read hazard with potential for C0TxHdr=%s arriving earlier than write to same address\n",
+			$time,
 			return_txhdr(haz_if.read_in.hdr));
 	       print_message_and_log(1, war_haz_str);
 	    end
@@ -703,43 +883,43 @@ module ccip_sniffer
       if (haz_if.write_in.valid) begin
 	 // Check for outstanding read
 	 if (rd_active_addr_array.exists(haz_if.write_in.hdr.addr)) begin
-	    $sformat(raw_haz_str, 
-		     "%d | Potential for Read-after-Write hazard with potential for C1TxHdr=%s arriving earlier than write to same address\n", 
-		     $time, 
+	    $sformat(raw_haz_str,
+		     "%d | Potential for Read-after-Write hazard with potential for C1TxHdr=%s arriving earlier than write to same address\n",
+		     $time,
 		     return_txhdr(haz_if.write_in.hdr));
-	    print_message_and_log(1, raw_haz_str);	    
+	    print_message_and_log(1, raw_haz_str);
 	 end
 	 // Check for outstanding write
 	 else if (wr_active_addr_array.exists(haz_if.write_in.hdr.addr)) begin
-	    $sformat(waw_haz_str, 
-		     "%d | Potential for Write-after-Write hazard with potential for C1TxHdr=%s arriving earlier than write to same address\n", 
-		     $time, 
+	    $sformat(waw_haz_str,
+		     "%d | Potential for Write-after-Write hazard with potential for C1TxHdr=%s arriving earlier than write to same address\n",
+		     $time,
 		     return_txhdr(haz_if.write_in.hdr));
-	    print_message_and_log(1, waw_haz_str);	    
+	    print_message_and_log(1, waw_haz_str);
 	 end
 	 // If not, store
 	 else begin
-	    wr_active_addr_array[haz_if.write_in.hdr.addr] = haz_if.write_in.hdr.addr;	    
+	    wr_active_addr_array[haz_if.write_in.hdr.addr] = haz_if.write_in.hdr.addr;
 	 end
-      end      
+      end
       // ------------------------------------------- //
       // Read out (delete from active list)
       // ------------------------------------------- //
       if (haz_if.read_out.valid) begin
 	 if (rd_active_addr_array.exists( haz_if.read_out.hdr.addr )) begin
-	    rd_active_addr_array.delete( haz_if.read_out.hdr.addr );	    
+	    rd_active_addr_array.delete( haz_if.read_out.hdr.addr );
 	 end
-      end      
+      end
       // ------------------------------------------- //
       // Write out (delete from active list)
       // ------------------------------------------- //
       if (haz_if.write_out.valid) begin
 	 if (wr_active_addr_array.exists( haz_if.write_out.hdr.addr )) begin
-	    wr_active_addr_array.delete( haz_if.write_out.hdr.addr );	    
+	    wr_active_addr_array.delete( haz_if.write_out.hdr.addr );
 	 end
       end
    end
-   
+
 
    /*
     * Multiple outstandind MMIO Response tracking
@@ -747,7 +927,7 @@ module ccip_sniffer
     * - Tracking key = MMIO TID
     */
    parameter int      MMIO_TRACKER_DEPTH = 2**CCIP_CFGHDR_TID_WIDTH;
-   
+
    // Tracker structure
    typedef struct {
       // Status management
@@ -774,7 +954,7 @@ module ccip_sniffer
 	 end
 	 else begin
 	    // Push TID
-	    mmioread_tracker[tid].tid = tid;   	    
+	    mmioread_tracker[tid].tid = tid;
 	    // Active setting
 	    case ({push, pop})
 	      2'b10: mmioread_tracker[tid].active = 1;
@@ -789,7 +969,7 @@ module ccip_sniffer
 	    if (~mmioread_tracker[tid].active && push) begin
 	       print_message_and_log(0, "ASE detected an unsolicited MMIO Read response !!\n");
       	       print_message_and_log(0, "In system, this can cause a crash");
-      	       print_and_simkill();	       
+      	       print_and_simkill();
 	    end
 	 end
       end
@@ -835,20 +1015,20 @@ module ccip_sniffer
 	 // Timeout flag
 	 always @(posedge clk) begin
 	    if (SoftReset|~mmioread_tracker[ii].active) begin
-	       mmioread_tracker[ii].timeout <= 0;	       
+	       mmioread_tracker[ii].timeout <= 0;
 	    end
 	    else if (mmioread_tracker[ii].timer_val >= `MMIO_RESPONSE_TIMEOUT) begin
 	       mmioread_tracker[ii].timeout <= 1;
    	       print_message_and_log(0, "ASE timed out waiting for MMIO Read response to arrive !!");
    	       print_message_and_log(0, "MMIO Read responses must return in 512 cycles");
-	       print_and_simkill();	       
+	       print_and_simkill();
 	    end
 	 end
- 	 
+
 	 // Global flag
 	 assign mmio_tracker_active_array[ii]  = mmioread_tracker[ii].active;
-	 
+
       end
    endgenerate
-   
+
 endmodule // cci_sniffer
