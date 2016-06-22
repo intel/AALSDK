@@ -97,7 +97,7 @@ module ccip_sniffer
 	 end
       end
    endfunction // isCCIPReadRequest
-   
+
 
    // isCCIPWriteRequest
    function automatic logic isCCIPWriteRequest(t_ccip_c1_ReqMemHdr hdr);
@@ -110,7 +110,7 @@ module ccip_sniffer
 	 end
       end
    endfunction // isCCIPWriteRequest
-   
+
 
    // isCCIPWrFenceRequest
    function automatic logic isCCIPWrFenceRequest(t_ccip_c1_ReqMemHdr hdr);
@@ -123,21 +123,21 @@ module ccip_sniffer
 	 end
       end
    endfunction // isCCIPWrFenceRequest
-   
-   
+
+
    // isXorZ
    function automatic logic isEqualsXorZ(logic inp);
       begin
 	 if ((inp == 1'bZ)||(inp == 1'bX)) begin
-	    return 1;	    
+	    return 1;
 	 end
 	 else begin
-	    return 0;	    
+	    return 0;
 	 end
       end
    endfunction // isEqualsXorZ
-   
-   
+
+
    /*
     * File descriptors, codes etc
     */
@@ -335,13 +335,15 @@ module ccip_sniffer
 		   $sformat(log_str, "[%s] Overflow detected on CCI-P Channel 1 !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
-	      
+
+	      // C1TX - 2CL address alignment check
 	      SNIFF_C1TX_ADDRALIGN_2_ERROR:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr Multi-line address request is not aligned 2-CL aligned (C1TxHdr.addr[0] != 1'b0) !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C1TX - 4CL address alignment check
 	      SNIFF_C1TX_ADDRALIGN_4_ERROR:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr Multi-line address request is not aligned 4-CL aligned (C1TxHdr.addr[1:0] != 2'b00) !\n", errcode_str);
@@ -362,18 +364,21 @@ module ccip_sniffer
 		   print_message_and_log(1, log_str);
 		end
 
+	      // C1Tx - Unexpected VC changes
 	      SNIFF_C1TX_UNEXP_VCSEL:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr VC-selection must not change in between multi-line beat !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C1Tx - Unexpected MDATA changes [Warning only]
 	      SNIFF_C1TX_UNEXP_MDATA:
 		begin
-		   $sformat(log_str, "[%s] C1TxHdr MDATA-setting must not change in between multi-line beat !\n", errcode_str);
-		   print_message_and_log(0, log_str);
+		   $sformat(log_str, "[%s] C1TxHdr MDATA changed between multi-line beat !\n", errcode_str);
+		   print_message_and_log(1, log_str);
 		end
 
+	      // C1Tx - Unexpected address changes
 	      SNIFF_C1TX_UNEXP_ADDR:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr multi-line beat found unexpected address - addr[1:0] must increment by 1 !\n", errcode_str);
@@ -385,7 +390,13 @@ module ccip_sniffer
 		   $sformat(log_str, "[%s] C1TxHdr multi-line beat found unexpected cllen - cllen must decrement by 1 !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
-
+	      
+	      SNIFF_C1TX_UNEXP_REQTYPE:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr multi-line beat found unexpected Request type change !\n", errcode_str);
+		   print_message_and_log(0, log_str);		   
+		end
+	      
 	      SNIFF_C1TX_PAYLOAD_OVERRUN:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr multi-line beat detected more than expected number of transactions !\n", errcode_str);
@@ -410,9 +421,16 @@ module ccip_sniffer
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C0TX - 3CL Request check
 	      SNIFF_C0TX_3CL_REQUEST:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr 3-CL request issued. This is illegal !\n", errcode_str);
+		   print_message_and_log(0, log_str);
+		end
+
+	      SNIFF_C1TX_WRFENCE_IN_MCL1TO3:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr cannot issue a WriteFence in between a multi-line transaction !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
 
@@ -584,15 +602,10 @@ module ccip_sniffer
 
    /*
     * C1Tx Multi-line Request checker
-    */ 
+    */
    // 3CL and Address alignment checker
    always @(posedge clk) begin : c1tx_mcl_checker
       if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr)) begin
-	 // -------------------------------------------------------- //
-	 // Invalid length - 3 CL checks
-	 if (ccip_tx.c1.hdr.cl_len == 2'b10 && ccip_tx.c1.hdr.sop) begin
-	    decode_error_code(0, SNIFF_C1TX_3CL_REQUEST);
-	 end
 	 // -------------------------------------------------------- //
 	 // Address alignment checks
 	 if ((ccip_tx.c1.hdr.cl_len == 2'b01) && (ccip_tx.c1.hdr.address[0] != 1'b0) && ccip_tx.c1.hdr.sop) begin
@@ -615,10 +628,130 @@ module ccip_sniffer
    		 } ExpTxState;
    ExpTxState exp_c1state;
 
-   logic [PHYSCLADDR_WIDTH-1:0] base_c1addr;
+   logic [15:0] 		base_c1mdata;
+   logic [1:0] 			base_c1addr_low2;
    t_ccip_vc                    base_c1vc;
    t_ccip_clLen                 base_c1len;
-   logic [15:0] 		base_c1mdata;
+   t_ccip_c1_req                base_c1reqtype;
+      
+   // Transaction Checker FSM
+   always @(posedge clk) begin
+      if (SoftReset) begin
+	 exp_c1state <= Exp_1CL_WrFence;
+      end
+      else begin
+	 case (exp_c1state)
+	   // 1st line in MCL request OR Write Fence Request
+	   Exp_1CL_WrFence:
+	     begin
+		base_c1addr_low2 <= ccip_tx.c1.hdr.address[1:0];
+		base_c1vc        <= ccip_tx.c1.hdr.vc_sel;
+		base_c1len       <= ccip_tx.c1.hdr.cl_len;
+		base_c1mdata     <= ccip_tx.c1.hdr.mdata;
+		base_c1reqtype   <= ccip_tx.c1.hdr.req_type;		
+		// ----------------------------------------- //
+		// 3CL transaction check
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b10) && ccip_tx.c1.hdr.sop) begin
+		   decode_error_code(0, SNIFF_C1TX_3CL_REQUEST);
+		end
+		// ----------------------------------------- //
+		// SOP check
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ~ccip_tx.c1.hdr.sop) begin
+		   decode_error_code(0, SNIFF_C1TX_SOP_NOT_SET);
+		end
+		// ----------------------------------------- //
+		// State Transition
+		if (ccip_tx.c1.valid && isWrFenceRequest(ccip_tx.c1.hdr)) begin
+		   exp_c1state <= Exp_1CL_WrFence;
+		end
+		else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (base_c1len == eCL_LEN_1)) begin
+		   exp_c1state <= Exp_1CL_WrFence;
+		end
+		else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (base_c1len==eCL_LEN_2) && (ccip_tx.c1.hdr.address[0]==(base_c1addr_low2+1))) begin
+		   exp_c1state <= Exp_2CL;
+		end
+		else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (base_c1len == eCL_LEN_4) && (ccip_tx.c1.hdr.address[1:0]==(base_c1addr_low2+1))) begin
+		   exp_c1state <= Exp_2CL;
+		end
+		else begin
+		   exp_c1state <= Exp_1CL_WrFence;
+		end
+	     end
+
+	   // 2nd line in MCL request
+	   Exp_2CL:
+	     begin
+		// ----------------------------------------- //
+		// SOP check
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop) begin
+		   decode_error_code(0, SNIFF_C1TX_SOP_SET_MCL1TO3);
+		end
+		// ----------------------------------------- //
+		// VC modification check
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.vc_sel != base_c1vc)) begin
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_VCSEL);
+		end
+		// ----------------------------------------- //
+		// Request Type modification check
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.req_type != base_c1reqtype)) begin
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_REQTYPE);		   
+		end
+		// ----------------------------------------- //
+		// State transition
+	     end
+
+	   // 3rd line in MCL request
+	   Exp_3CL:
+	     begin
+		// ----------------------------------------- //
+		// SOP check
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop) begin
+		   decode_error_code(0, SNIFF_C1TX_SOP_SET_MCL1TO3);
+		end
+		// ----------------------------------------- //
+		// VC modification check
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.vc_sel != base_c1vc)) begin
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_VCSEL);
+		end
+		// ----------------------------------------- //
+		// Request Type modification check
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.req_type != base_c1reqtype)) begin
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_REQTYPE);		   
+		end
+		// ----------------------------------------- //
+		// State transition
+	     end
+
+	   // 4th line in MCL request
+	   Exp_4CL:
+	     begin
+		// ----------------------------------------- //
+		// SOP check
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop) begin
+		   decode_error_code(0, SNIFF_C1TX_SOP_SET_MCL1TO3);
+		end
+		// ----------------------------------------- //
+		// VC modification check
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.vc_sel != base_c1vc)) begin
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_VCSEL);
+		end
+		// ----------------------------------------- //
+		// Request Type modification check
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.req_type != base_c1reqtype)) begin
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_REQTYPE);		   
+		end
+		// ----------------------------------------- //
+		// State transition
+	     end
+
+	   // Lala-land
+	   default:
+	     begin
+		exp_c1state <= Exp_1CL_WrFence;
+	     end
+	 endcase
+      end
+   end
 
 
    /*
