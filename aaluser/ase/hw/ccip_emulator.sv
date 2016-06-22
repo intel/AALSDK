@@ -2393,7 +2393,8 @@ module ccip_emulator
       .ccip_rx            ( pck_cp2af_sRx      ),
       .ccip_tx            ( pck_af2cp_sTx      ),
       // ----------------------------------------- //
-      // .haz_if             ( haz_if ),
+      // Hazard checker interface
+      .haz_if             ( haz_if ),
       // ----------------------------------------- //
       // Overflow check signals
       .cf2as_ch0_realfull ( cf2as_ch0_realfull ),

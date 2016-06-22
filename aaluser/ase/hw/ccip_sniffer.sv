@@ -84,6 +84,61 @@ module ccip_sniffer
 
 
    /*
+    * Function Request type checker
+    */
+   // isCCIPReadRequest
+   function automatic logic isCCIPReadRequest(t_ccip_c0_ReqMemHdr hdr);
+      begin
+	 if (hdr.req_type inside {eREQ_RDLINE_S, eREQ_RDLINE_I}) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction // isCCIPReadRequest
+   
+
+   // isCCIPWriteRequest
+   function automatic logic isCCIPWriteRequest(t_ccip_c1_ReqMemHdr hdr);
+      begin
+	 if (hdr.req_type inside {eREQ_WRLINE_M, eREQ_WRLINE_I}) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction // isCCIPWriteRequest
+   
+
+   // isCCIPWrFenceRequest
+   function automatic logic isCCIPWrFenceRequest(t_ccip_c1_ReqMemHdr hdr);
+      begin
+	 if (ccip_tx.c1.hdr.req_type == eREQ_WRFENCE) begin
+	    return 1;
+	 end
+	 else begin
+	    return 0;
+	 end
+      end
+   endfunction // isCCIPWrFenceRequest
+   
+   
+   // isXorZ
+   function automatic logic isEqualsXorZ(logic inp);
+      begin
+	 if ((inp == 1'bZ)||(inp == 1'bX)) begin
+	    return 1;	    
+	 end
+	 else begin
+	    return 0;	    
+	 end
+      end
+   endfunction // isEqualsXorZ
+   
+   
+   /*
     * File descriptors, codes etc
     */
    int 					     fd_errlog;
@@ -225,24 +280,28 @@ module ccip_sniffer
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C0TX - Overflow check
 	      SNIFF_C0TX_OVERFLOW:
 		begin
 		   $sformat(log_str, "[%s] Overflow detected on CCI-P Channel 0 !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C0TX - 2CL address alignment check
 	      SNIFF_C0TX_ADDRALIGN_2_ERROR:
 		begin
 		   $sformat(log_str, "[%s] C0TxHdr Multi-line address request is not aligned 2-CL aligned (C0TxHdr.addr[0] != 1'b0) !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C0TX - 4CL address alignment check
 	      SNIFF_C0TX_ADDRALIGN_4_ERROR:
 		begin
 		   $sformat(log_str, "[%s] C0TxHdr Multi-line address request is not aligned 4-CL aligned (C0TxHdr.addr[1:0] != 2'b00) !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C0TX - Reset ignored
 	      SNIFF_C0TX_RESET_IGNORED_WARN:
 		begin
 		   $sformat(log_str, "[%s] C0TxHdr was issued when AFU Reset is HIGH !\n", errcode_str);
@@ -256,6 +315,13 @@ module ccip_sniffer
 		   print_message_and_log(1, log_str);
 		end
 
+	      // C0TX - 3CL Read Request
+	      SNIFF_C0TX_3CL_REQUEST:
+		begin
+		   $sformat(log_str, "[%s] C0TxHdr 3-CL request issued. This is illegal !\n", errcode_str);
+		   print_message_and_log(0, log_str);
+		end
+
 	      // C1TX - Invalid request type
 	      SNIFF_C1TX_INVALID_REQTYPE:
 		begin
@@ -263,12 +329,13 @@ module ccip_sniffer
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C1TX - Overflow check
 	      SNIFF_C1TX_OVERFLOW:
 		begin
 		   $sformat(log_str, "[%s] Overflow detected on CCI-P Channel 1 !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
-
+	      
 	      SNIFF_C1TX_ADDRALIGN_2_ERROR:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr Multi-line address request is not aligned 2-CL aligned (C1TxHdr.addr[0] != 1'b0) !\n", errcode_str);
@@ -281,6 +348,7 @@ module ccip_sniffer
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C1TX - Reset ignored
 	      SNIFF_C1TX_RESET_IGNORED_WARN:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr was issued when AFU Reset is HIGH !\n", errcode_str);
@@ -342,6 +410,12 @@ module ccip_sniffer
 		   print_message_and_log(0, log_str);
 		end
 
+	      SNIFF_C0TX_3CL_REQUEST:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr 3-CL request issued. This is illegal !\n", errcode_str);
+		   print_message_and_log(0, log_str);
+		end
+
 	      MMIO_RDRSP_TIMEOUT:
 		begin
 		   $sformat(log_str, "[%s] MMIO Read Response timed out. AFU must respond to MMIO Read responses within %d clocks !\n", errcode_str, `MMIO_RESPONSE_TIMEOUT);
@@ -364,16 +438,16 @@ module ccip_sniffer
 	      MMIO_RDRSP_XZ_FOUND_WARN:
 		begin
 		   $sformat(log_str, "[%s] MMIO Response contained a 'Z' or 'X' !\n", errcode_str);
-		   print_message_and_log(0, log_str);
+		   print_message_and_log(1, log_str);
 		end
 
 	      // C2TX - Reset ignored
 	      MMIO_RDRSP_RESET_IGNORED_WARN:
 		begin
 		   $sformat(log_str, "[%s] MMIO Response was issued when SoftReset signal was HIGH !\n", errcode_str);
-		   print_message_and_log(1, log_str);		   
+		   print_message_and_log(1, log_str);
 		end
-	      
+
 	      // Unknown type -- this must not happen
 	      default:
 		begin
@@ -386,47 +460,21 @@ module ccip_sniffer
    endfunction
 
 
-
-   /*
-    * Valid aggregattion
-    */
-   // logic tx_valid;
-   // logic rx_valid;
-
-   // assign tx_valid = ccip_tx.c0.valid    |
-   // 		     ccip_tx.c1.valid    |
-   // 		     ccip_tx.c2.mmioRdValid;
-
-   // assign rx_valid = ccip_rx.c0.rspValid    |
-   // 		     ccip_rx.c0.mmioRdValid |
-   // 		     ccip_rx.c0.mmioWrValid |
-   // 		     ccip_rx.c1.rspValid;
-
-
-   // If reset is high, and transactions are asserted
-   // always @(posedge clk) begin
-   //    if (SoftReset) begin
-   // 	 if (tx_valid | rx_valid) begin
-   // 	    print_message_and_log(1, "Transaction was sent when SoftReset was HIGH, this will be ignored");
-   // 	 end
-   //    end
-   // end
-
    /*
     * Reset ignorance check
-    */ 
+    */
    always @(posedge clk) begin
       if (SoftReset && ccip_tx.c0.valid) begin
-	 decode_error_code(0, SNIFF_C0TX_RESET_IGNORED_WARN);	 
+	 decode_error_code(0, SNIFF_C0TX_RESET_IGNORED_WARN);
       end
       if (SoftReset && ccip_tx.c1.valid) begin
-	 decode_error_code(0, SNIFF_C1TX_RESET_IGNORED_WARN);	 
-      end	
+	 decode_error_code(0, SNIFF_C1TX_RESET_IGNORED_WARN);
+      end
       if (SoftReset && ccip_tx.c2.mmioRdValid) begin
-	 decode_error_code(0, MMIO_RDRSP_RESET_IGNORED_WARN);	 
+	 decode_error_code(0, MMIO_RDRSP_RESET_IGNORED_WARN);
       end
    end
-   
+
 
    /*
     * Cast MMIO Header
@@ -442,22 +490,6 @@ module ccip_sniffer
    logic 			   xz_tx0_flag;
    logic 			   xz_tx1_flag;
    logic 			   xz_tx2_flag;
-   logic 			   xz_rx0_flag;
-   logic 			   xz_rx1_flag;
-   logic 			   xz_cfg_flag;
-
-   // Z-X checker
-   // always @(*) begin
-   //    if (ccip_tx.c0.valid) begin
-   // 	 xz_tx0_flag <= ^{ccip_tx.c0.hdr.vc_sel,                     ccip_tx.c0.hdr.cl_len, ccip_tx.c0.hdr.req_type, ccip_tx.c0.hdr.address, ccip_tx.c0.hdr.mdata};
-   //    end
-   //    if (ccip_tx.c1.valid) begin
-   // 	 xz_tx1_flag <= ^{ccip_tx.c1.hdr.vc_sel, ccip_tx.c1.hdr.sop, ccip_tx.c1.hdr.cl_len, ccip_tx.c1.hdr.req_type, ccip_tx.c1.hdr.address, ccip_tx.c1.hdr.mdata};
-   //    end
-   //    if (ccip_tx.c2.mmioRdValid) begin
-   // 	 xz_tx2_flag <= ^{ccip_tx.c2.hdr.tid, ccip_tx.c2.data};
-   //    end
-   // end
 
    assign xz_tx0_flag = ^{ccip_tx.c0.hdr.vc_sel,                     ccip_tx.c0.hdr.cl_len, ccip_tx.c0.hdr.req_type, ccip_tx.c0.hdr.address, ccip_tx.c0.hdr.mdata};
 
@@ -467,74 +499,37 @@ module ccip_sniffer
 
    // Trigger XZ warnings
    always @(posedge clk) begin
-      if (ccip_tx.c0.valid && (xz_tx0_flag inside {1'bx, 1'bX, 1'bz, 1'bZ})) begin
+      // ------------------------------------------------- //
+      if (ccip_tx.c0.valid && isEqualsXorZ(xz_tx0_flag)) begin
 	 decode_error_code(0, SNIFF_C0TX_XZ_FOUND_WARN);
       end
-      if (ccip_tx.c1.valid && (xz_tx1_flag inside {1'bx, 1'bX, 1'bz, 1'bZ})) begin
+      // ------------------------------------------------- //
+      if (ccip_tx.c1.valid && isEqualsXorZ(xz_tx1_flag)) begin
 	 decode_error_code(0, SNIFF_C1TX_XZ_FOUND_WARN);
       end
-      if (ccip_tx.c2.mmioRdValid && (xz_tx2_flag inside {1'bx, 1'bX, 1'bz, 1'bZ})) begin
+      // ------------------------------------------------- //
+      if (ccip_tx.c2.mmioRdValid && isEqualsXorZ(xz_tx2_flag)) begin
 	 decode_error_code(0, MMIO_RDRSP_XZ_FOUND_WARN);
       end
+      // ------------------------------------------------- //
    end
-
-
-
-
-   // assign xz_rx0_flag = ( ^{ccip_rx.c0.hdr.vc_used, ccip_rx.c0.hdr.hit_miss,                        ccip_rx.c0.hdr.cl_num, ccip_rx.c0.hdr.resp_type, ccip_rx.c0.hdr.mdata, ccip_rx.c0.data}  && ccip_rx.c0.rspValid );
-   // assign xz_rx1_flag = ( ^{ccip_rx.c1.hdr.vc_used, ccip_rx.c1.hdr.hit_miss, ccip_rx.c1.hdr.format, ccip_rx.c1.hdr.cl_num, ccip_rx.c1.hdr.resp_type, ccip_rx.c1.hdr.mdata}                   && ccip_rx.c1.rspValid );
-
-   // assign xz_cfg_flag = ( ^{C0RxCfg.address, C0RxCfg.length, C0RxCfg.tid, ccip_rx.c0.data} ) && (ccip_rx.c0.mmioWrValid | ccip_rx.c0.mmioRdValid);
-
-
-   // FUNCTION: XZ message
-   // function void print_xz_message ( string channel_name );
-   //    begin
-   // 	 // Set message
-   // 	 `BEGIN_RED_FONTCOLOR;
-   // 	 $display ("SIM-SV: %d | X or Z found on %s is not recommended.", $time, channel_name);
-   // 	 `END_RED_FONTCOLOR;
-   // 	 $fwrite( fd_errlog, " %d | X or Z found on %s => \n", $time, channel_name);
-   // 	 $fwrite( fd_errlog, "    | This is not recommended, and can have unintended activity\n");
-   //    end
-   // endfunction
-
-
-   // Message call
-   // always @(posedge clk) begin
-   //    if ((xz_tx0_flag == `VLOG_HIIMP) || (xz_tx0_flag == `VLOG_UNDEF)) begin
-   // 	 print_xz_message ( "C0Tx" );
-   //    end
-   //    if ((xz_tx1_flag == `VLOG_HIIMP) || (xz_tx1_flag == `VLOG_UNDEF)) begin
-   // 	 print_xz_message ( "C1Tx" );
-   //    end
-   //    if ((xz_tx2_flag == `VLOG_HIIMP) || (xz_tx2_flag == `VLOG_UNDEF)) begin
-   // 	 print_xz_message ( "C2Tx" );
-   //    end
-   //    if ((xz_rx0_flag == `VLOG_HIIMP) || (xz_rx0_flag == `VLOG_UNDEF)) begin
-   // 	 print_xz_message ( "C0Rx" );
-   //    end
-   //    if ((xz_rx1_flag == `VLOG_HIIMP) || (xz_rx1_flag == `VLOG_UNDEF)) begin
-   // 	 print_xz_message ( "C1Rx" );
-   //    end
-   //    if ((xz_cfg_flag == `VLOG_HIIMP) || (xz_cfg_flag == `VLOG_UNDEF)) begin
-   // 	 print_xz_message ( "C0RxMmio" );
-   //    end
-   // end
 
 
    /*
     * Full {0,1} signaling
     */
    always @(posedge clk) begin
+      // ------------------------------------------------- //
+      // Channel 0 overflow check
       if (cf2as_ch0_realfull && ccip_tx.c0.valid) begin
-	 print_message_and_log(1, "Transaction was possibly dropped due to C0Tx Overflow");
-	 print_message_and_log(1, "Transaction was pushed in when port was FULL");
+	 decode_error_code(0, SNIFF_C0TX_OVERFLOW);
       end
+      // ------------------------------------------------- //
+      // Channel 1 overflow check
       if (cf2as_ch1_realfull && ccip_tx.c1.valid) begin
-	 print_message_and_log(1, "Transaction was possibly dropped due to C1Tx Overflow");
-	 print_message_and_log(1, "Transaction was pushed in when port was FULL");
+	 decode_error_code(0, SNIFF_C1TX_OVERFLOW);
       end
+      // ------------------------------------------------- //
    end
 
 
@@ -542,6 +537,7 @@ module ccip_sniffer
     * Illegal transaction checker
     */
    always @(posedge clk) begin : illegal_reqproc
+      // ------------------------------------------------- //
       // C0TxHdr reqtype
       if (ccip_tx.c0.valid) begin
 	 if (ccip_tx.c0.hdr.req_type inside {eREQ_RDLINE_S, eREQ_RDLINE_I}) begin
@@ -550,6 +546,7 @@ module ccip_sniffer
 	    decode_error_code(0, SNIFF_C0TX_INVALID_REQTYPE);
 	 end
       end
+      // ------------------------------------------------- //
       // C1TxHdr reqtype
       if (ccip_tx.c1.valid) begin
 	 if (ccip_tx.c1.hdr.req_type inside {eREQ_WRLINE_M, eREQ_WRLINE_I, eREQ_WRFENCE}) begin
@@ -558,70 +555,78 @@ module ccip_sniffer
 	    decode_error_code(0, SNIFF_C1TX_INVALID_REQTYPE);
 	 end
       end
+      // ------------------------------------------------- //
    end
 
 
-   // logic c0tx_illegal;
-   // logic c1tx_illegal;
-
-   // Check illegal transaction IDs in C0Tx
-   // always @(posedge clk) begin : c0tx_illegal_proc
-   //    if (ccip_tx.c0.valid) begin
-   // 	 if ((ccip_tx.c0.hdr.req_type == eREQ_RDLINE_S)||(ccip_tx.c0.hdr.req_type == eREQ_RDLINE_I)) begin
-   // 	    c0tx_illegal <= 0;
-   // 	 end
-   // 	 else begin
-   // 	    c0tx_illegal <= 1;
-   // 	    print_message_and_log(1, "Illegal transaction request type noticed on C0TxHdr");
-   // 	    print_and_simkill();
-   // 	 end
-   //    end
-   //    else begin
-   // 	 c0tx_illegal <= 0;
-   //    end
-   // end
-
-   // Check illegal transaction IDs in C1Tx
-   // always @(posedge clk) begin : c1tx_illegal_proc
-   //    if (ccip_tx.c1.valid) begin
-   // 	 if ((ccip_tx.c1.hdr.req_type==eREQ_WRLINE_M)||(ccip_tx.c1.hdr.req_type==eREQ_WRLINE_I)||(ccip_tx.c1.hdr.req_type==eREQ_WRFENCE)) begin
-   // 	    c1tx_illegal <= 0;
-   // 	 end
-   // 	 else begin
-   // 	    c1tx_illegal <= 1;
-   // 	    print_message_and_log(0, "Illegal transaction request type noticed on C1TxHdr");
-   // 	    print_and_simkill();
-   // 	 end
-   //    end
-   //    else begin
-   // 	 c1tx_illegal <= 0;
-   //    end // if (ccip_tx.c1.valid)
-   // end
+   /*
+    * C0Tx Multi-line Request checker
+    */
+   // 3CL and Address alignment checker
+   always @(posedge clk) begin : c0tx_mcl_checker
+      if (ccip_tx.c0.valid && isCCIPReadRequest(ccip_tx.c0.hdr)) begin
+	 // -------------------------------------------------------- //
+	 // Invalid length - 3 CL checks
+	 if (ccip_tx.c0.hdr.cl_len == 2'b10) begin
+	    decode_error_code(0, SNIFF_C0TX_3CL_REQUEST);
+	 end
+	 // -------------------------------------------------------- //
+	 // Address alignment checks
+	 if ((ccip_tx.c0.hdr.cl_len == 2'b01) && (ccip_tx.c0.hdr.address[0] != 1'b0)) begin
+	    decode_error_code(0, SNIFF_C0TX_ADDRALIGN_2_ERROR);
+	 end
+	 else if ((ccip_tx.c0.hdr.cl_len == 2'b11) && (ccip_tx.c0.hdr.address[1:0] != 2'b00)) begin
+	    decode_error_code(0, SNIFF_C0TX_ADDRALIGN_4_ERROR);
+	 end
+      end
+   end
 
 
    /*
-    * Incoming transaction checker
-    */
-   // typedef enum {
-   // 		 Exp_1CL,
-   // 		 Exp_2CL,
-   // 		 Exp_3CL,
-   // 		 Exp_4CL
-   // 		 } ExpTxState;
-   // ExpTxState exp_c1state;
+    * C1Tx Multi-line Request checker
+    */ 
+   // 3CL and Address alignment checker
+   always @(posedge clk) begin : c1tx_mcl_checker
+      if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr)) begin
+	 // -------------------------------------------------------- //
+	 // Invalid length - 3 CL checks
+	 if (ccip_tx.c1.hdr.cl_len == 2'b10 && ccip_tx.c1.hdr.sop) begin
+	    decode_error_code(0, SNIFF_C1TX_3CL_REQUEST);
+	 end
+	 // -------------------------------------------------------- //
+	 // Address alignment checks
+	 if ((ccip_tx.c1.hdr.cl_len == 2'b01) && (ccip_tx.c1.hdr.address[0] != 1'b0) && ccip_tx.c1.hdr.sop) begin
+	    decode_error_code(0, SNIFF_C1TX_ADDRALIGN_2_ERROR);
+	 end
+	 else if ((ccip_tx.c1.hdr.cl_len == 2'b11) && (ccip_tx.c1.hdr.address[1:0] != 2'b00) && ccip_tx.c1.hdr.sop) begin
+	    decode_error_code(0, SNIFF_C1TX_ADDRALIGN_4_ERROR);
+	 end
+      end
+   end
 
-   // logic [PHYSCLADDR_WIDTH-1:0] exp_c1addr;
-   // t_ccip_vc                    exp_c1vc;
-   // t_ccip_clLen                 exp_c1len;
-   // logic [15:0] 		exp_c1mdata;
+   /*
+    * C1TX Incoming transaction checker
+    */
+   typedef enum {
+   		 Exp_1CL_WrFence,
+   		 Exp_2CL,
+   		 Exp_3CL,
+   		 Exp_4CL
+   		 } ExpTxState;
+   ExpTxState exp_c1state;
+
+   logic [PHYSCLADDR_WIDTH-1:0] base_c1addr;
+   t_ccip_vc                    base_c1vc;
+   t_ccip_clLen                 base_c1len;
+   logic [15:0] 		base_c1mdata;
 
 
    /*
     * Write TX beat check
     */
    // logic 			c1tx_beat_in_progress;
-   logic 			wrline_en;
-   logic 			wrfence_en;
+   // logic 			wrline_en;
+   // logic 			wrfence_en;
 
    // Wrline_en
    // always @(*) begin
@@ -638,30 +643,6 @@ module ccip_sniffer
    // 	 wrfence_en <= 0;
    //    end
    // end
-
-   // isCCIPWriteRequest
-   function automatic logic isCCIPWriteRequest(t_ccip_c1_ReqMemHdr hdr);
-      begin
-	 if ((hdr.req_type==eREQ_WRLINE_M)||(hdr.req_type==eREQ_WRLINE_I)) begin
-	    return 1;
-	 end
-	 else begin
-	    return 0;
-	 end
-      end
-   endfunction
-
-   // isCCIPWrFenceRequest
-   function automatic logic isCCIPWrFenceRequest(t_ccip_c1_ReqMemHdr hdr);
-      begin
-	 if (ccip_tx.c1.hdr.req_type==eREQ_WRFENCE) begin
-	    return 1;
-	 end
-	 else begin
-	    return 0;
-	 end
-      end
-   endfunction
 
 
    // String for writing formatted messages
