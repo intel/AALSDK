@@ -142,21 +142,40 @@ module ccip_sniffer
     * File descriptors, codes etc
     */
    int 					     fd_errlog;
+   logic 				     logfile_created;
+   logic 				     init_sniffer_q;
 
+   // Watch init_sniffer
+   always @(posedge clk) begin
+      init_sniffer_q <= init_sniffer;      
+   end
+   
    // Initialize sniffer
    always @(posedge clk) begin
+      // Indicate logfile created
       if (init_sniffer) begin
+	 logfile_created <= 0;	 
 	 decode_error_code(1, SNIFF_NO_ERROR);
+      end
+      // Print that checker is running
+      if (~init_sniffer && init_sniffer_q) begin
+	 $display ("SIM-SV: Protocol Checker initialized");
       end
    end
 
    // FD open
+   function automatic void open_logfile();
+      begin
+	 fd_errlog = $fopen(ERR_LOGNAME, "w");
+	 logfile_created = 1;	 
+      end
+   endfunction
+
+   // Watch logfile and close until finished
    initial begin
-      $display ("SIM-SV : Protocol Checker initialized");
-
-      // Open log files
-      fd_errlog = $fopen(ERR_LOGNAME, "w");
-
+      // Wait until logfile exists
+      wait (logfile_created == 1);      
+      
       // Wait until finish logger
       wait (finish_logger == 1);
 
@@ -247,6 +266,11 @@ module ccip_sniffer
    function void print_message_and_log(input logic warn_only,
 				       input string logstr);
       begin
+	 // If logfile doesnt exist it, create it
+	 if (logfile_created == 0) begin
+	    open_logfile();	    
+	 end	 
+	 // Write log
 	 if (warn_only == 1) begin
 	    `BEGIN_RED_FONTCOLOR;
 	    $display(" [WARN]  %d : %s", $time, logstr);
@@ -403,18 +427,20 @@ module ccip_sniffer
 		   $sformat(log_str, "[%s] C1TxHdr multi-line beat found unexpected Request type change !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
-	      
-	      SNIFF_C1TX_PAYLOAD_OVERRUN:
-		begin
-		   $sformat(log_str, "[%s] C1TxHdr multi-line beat detected more than expected number of transactions !\n", errcode_str);
-		   print_message_and_log(0, log_str);
-		end
 
-	      SNIFF_C1TX_PAYLOAD_UNDERRUN:
-		begin
-		   $sformat(log_str, "[%s] C1TxHdr multi-line beat detected less than expected number of transactions !\n", errcode_str);
-		   print_message_and_log(0, log_str);
-		end
+	      // Covered by SOP bit not found
+	      // SNIFF_C1TX_PAYLOAD_OVERRUN:
+	      // 	begin
+	      // 	   $sformat(log_str, "[%s] C1TxHdr multi-line beat detected more than expected number of transactions !\n", errcode_str);
+	      // 	   print_message_and_log(0, log_str);
+	      // 	end
+
+	      // Covered by SOP bit found
+	      // SNIFF_C1TX_PAYLOAD_UNDERRUN:
+	      // 	begin
+	      // 	   $sformat(log_str, "[%s] C1TxHdr multi-line beat detected less than expected number of transactions !\n", errcode_str);
+	      // 	   print_message_and_log(0, log_str);
+	      // 	end
 
 	      // C1Tx - SOP field not set
 	      SNIFF_C1TX_SOP_NOT_SET:
@@ -713,7 +739,7 @@ module ccip_sniffer
 		//    decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);
 		// end
 		// ----------------------------------------- //
-		// Address increment check
+		// address increment check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 1))) begin
 		   decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);		   
 		end

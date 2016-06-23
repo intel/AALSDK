@@ -432,8 +432,8 @@ int ase_listener()
 	      sprintf(tstamp_filepath, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 	      // Print timestamp
 	      printf("SIM-C : Session ID => %s\n", get_timestamp(0) );
-
 	      session_empty = 0;
+	      
 	      // Send portctrl_rsp message
 	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
 	    }
@@ -735,7 +735,7 @@ int ase_init()
 
   // Ignore SIGPIPE *FIXME*: Look for more elegant solution
   signal(SIGPIPE, SIG_IGN);
-
+  
   // Get PID
   ase_pid = getpid();
   printf("SIM-C : PID of simulator is %d\n", ase_pid);
@@ -760,6 +760,10 @@ int ase_init()
 
   // Create IPC cleanup setup
   create_ipc_listfile();
+
+  // Sniffer file stat path
+  ccip_sniffer_file_statpath = ase_malloc(ASE_FILEPATH_LEN);
+  sprintf(ccip_sniffer_file_statpath, "%s/ccip_warning_and_errors.txt", ase_workdir_path);
 
 #ifdef ASE_DEBUG
   // Create a memory access log
@@ -938,7 +942,7 @@ void start_simkill_countdown()
 
   // Close and unlink message queue
   printf("SIM-C : Closing message queue and unlinking...\n");
-  //ase_mqueue_teardown();
+
   // Close message queues
   mqueue_close(app2sim_alloc_rx);
   mqueue_close(sim2app_alloc_tx);
@@ -998,10 +1002,17 @@ void start_simkill_countdown()
   // Print location of log files
   BEGIN_GREEN_FONTCOLOR;
   printf("SIM-C : Simulation generated log files\n");
-  printf("        Transactions file   | $ASE_WORKDIR/ccip_transactions.tsv\n");
-  printf("        Workspaces info     | $ASE_WORKDIR/workspace_info.log\n");
-  printf("        Protocol Warnings   | $ASE_WORKDIR/ccip_errors_and_warnings.txt\n");
-  printf("        ASE seed            | $ASE_WORKDIR/ase_seed.txt\n");
+  printf("        Transactions file       | $ASE_WORKDIR/ccip_transactions.tsv\n");
+  printf("        Workspaces info         | $ASE_WORKDIR/workspace_info.log\n");
+  END_GREEN_FONTCOLOR;
+  if ( access(ccip_sniffer_file_statpath, F_OK) != -1 )
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("        Protocol warning/errors | $ASE_WORKDIR/ccip_warning_and_errors.txt\n");
+      END_RED_FONTCOLOR;
+    }
+  BEGIN_GREEN_FONTCOLOR;
+  printf("        ASE seed                | $ASE_WORKDIR/ase_seed.txt\n");
   END_GREEN_FONTCOLOR;
 
   // Send a simulation kill command

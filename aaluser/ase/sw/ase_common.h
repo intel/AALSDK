@@ -148,6 +148,9 @@ char *ase_run_path;
 #define TSTAMP_FILENAME ".ase_timestamp"
 char *tstamp_filepath;
 
+// CCIP Warnings and Error stat location
+char *ccip_sniffer_file_statpath;
+
 // READY file name 
 #define ASE_READY_FILENAME ".ase_ready.pid"
 
