@@ -719,7 +719,7 @@ package ase_pkg;
 		   SNIFF_C1TX_WRFENCE_IN_MCL1TO3 = 32'h90,
 		   // ------------ C2TX -------------- //
 		   MMIO_RDRSP_TIMEOUT            = 32'hC0,
-		   MMIO_RDRSP_TID_MISMATCH       = 32'hC1,
+		   // MMIO_RDRSP_TID_MISMATCH       = 32'hC1,
 		   MMIO_RDRSP_UNSOLICITED        = 32'hC2,
 		   MMIO_RDRSP_RESET_IGNORED_WARN = 32'hC4,
 		   MMIO_RDRSP_XZ_FOUND_WARN      = 32'hC5

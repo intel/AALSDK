@@ -125,10 +125,10 @@ module ccip_sniffer
    endfunction // isCCIPWrFenceRequest
 
 
-   // isXorZ
+   // isEqualsXorZ
    function automatic logic isEqualsXorZ(logic inp);
       begin
-	 if ((inp == 1'bZ)||(inp == 1'bX)) begin
+	 if ((inp == 1'bZ)||(inp == 1'bX)||(inp == 1'bz)||(inp == 1'bx)) begin
 	    return 1;
 	 end
 	 else begin
@@ -146,7 +146,7 @@ module ccip_sniffer
    // Initialize sniffer
    always @(posedge clk) begin
       if (init_sniffer) begin
-	 decode_error_code(1, 0);
+	 decode_error_code(1, SNIFF_NO_ERROR);
       end
    end
 
@@ -199,6 +199,7 @@ module ccip_sniffer
       end
       else begin
 	 case (simkill_state)
+	   
 	   SimkillIdle:
 	     begin
 		simkill_cnt <= 20;
@@ -209,6 +210,7 @@ module ccip_sniffer
 		   simkill_state <= SimkillIdle;
 		end
 	     end
+
 	   SimkillCountdown:
 	     begin
 		simkill_cnt <= simkill_cnt - 1;
@@ -219,6 +221,7 @@ module ccip_sniffer
 		   simkill_state <= SimkillCountdown;
 		end
 	     end
+
 	   SimkillNow:
 	     begin
 		simkill_state <= SimkillNow;
@@ -226,10 +229,12 @@ module ccip_sniffer
 		start_simkill_countdown();
 `endif
 	     end
+
 	   default:
 	     begin
 		simkill_state <= SimkillIdle;
 	     end
+
 	 endcase
       end
    end
@@ -398,7 +403,7 @@ module ccip_sniffer
 		   $sformat(log_str, "[%s] C1TxHdr multi-line beat found unexpected Request type change !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
-
+	      
 	      SNIFF_C1TX_PAYLOAD_OVERRUN:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr multi-line beat detected more than expected number of transactions !\n", errcode_str);
@@ -439,18 +444,21 @@ module ccip_sniffer
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C2Tx - MMIO Read Response timeout
 	      MMIO_RDRSP_TIMEOUT:
 		begin
 		   $sformat(log_str, "[%s] MMIO Read Response timed out. AFU must respond to MMIO Read responses within %d clocks !\n", errcode_str, `MMIO_RESPONSE_TIMEOUT);
 		   print_message_and_log(0, log_str);
 		end
 
-	      MMIO_RDRSP_TID_MISMATCH:
-		begin
-		   $sformat(log_str, "[%s] MMIO Read Response TID did not match MMIO Read Request !\n", errcode_str);
-		   print_message_and_log(0, log_str);
-		end
+	      
+	      // MMIO_RDRSP_TID_MISMATCH:
+	      // 	begin
+	      // 	   $sformat(log_str, "[%s] MMIO Read Response TID did not match MMIO Read Request !\n", errcode_str);
+	      // 	   print_message_and_log(0, log_str);
+	      // 	end
 
+	      // C2TX - MMIO Read Response was unsolicited
 	      MMIO_RDRSP_UNSOLICITED:
 		begin
 		   $sformat(log_str, "[%s] ASE detected an unsolicited MMIO Response. In system, this can cause unexpected behavior !\n", errcode_str);
@@ -514,8 +522,9 @@ module ccip_sniffer
    logic 			   xz_tx1_flag;
    logic 			   xz_tx2_flag;
 
-   assign xz_tx0_flag = ^{ccip_tx.c0.hdr.vc_sel,                     ccip_tx.c0.hdr.cl_len, ccip_tx.c0.hdr.req_type, ccip_tx.c0.hdr.address, ccip_tx.c0.hdr.mdata};
-
+   // XZ flags check
+   assign xz_tx0_flag = ^{ccip_tx.c0.hdr.vc_sel,                     ccip_tx.c0.hdr.cl_len, ccip_tx.c0.hdr.req_type, ccip_tx.c0.hdr.address, ccip_tx.c0.hdr.mdata};  
+   
    assign xz_tx1_flag = ^{ccip_tx.c1.hdr.vc_sel, ccip_tx.c1.hdr.sop, ccip_tx.c1.hdr.cl_len, ccip_tx.c1.hdr.req_type, ccip_tx.c1.hdr.address, ccip_tx.c1.hdr.mdata};
 
    assign xz_tx2_flag = ^{ccip_tx.c2.hdr.tid, ccip_tx.c2.data};
@@ -607,23 +616,6 @@ module ccip_sniffer
 
    /*
     * C1Tx Multi-line Request checker
-    */
-   // 3CL and Address alignment checker
-   // always @(posedge clk) begin : c1tx_mcl_checker
-   //    if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr)) begin
-   // 	 // -------------------------------------------------------- //
-   // 	 // Address alignment checks
-   // 	 if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b01) && (ccip_tx.c1.hdr.address[0] != 1'b0) && ccip_tx.c1.hdr.sop) begin
-   // 	    decode_error_code(0, SNIFF_C1TX_ADDRALIGN_2_ERROR);
-   // 	 end
-   // 	 else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b11) && (ccip_tx.c1.hdr.address[1:0] != 2'b00) && ccip_tx.c1.hdr.sop) begin
-   // 	    decode_error_code(0, SNIFF_C1TX_ADDRALIGN_4_ERROR);
-   // 	 end
-   //    end
-   // end
-
-   /*
-    * C1TX Incoming transaction checker
     */
    typedef enum {
    		 Exp_1CL_WrFence,
@@ -717,9 +709,9 @@ module ccip_sniffer
 		end
 		// ----------------------------------------- //
 		// CL_LEN modification check [Warning only]
-		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
-		   decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);
-		end
+		// if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
+		//    decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);
+		// end
 		// ----------------------------------------- //
 		// Address increment check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 1))) begin
@@ -768,9 +760,9 @@ module ccip_sniffer
 		end
 		// ----------------------------------------- //
 		// CL_LEN modification check [Warning only]
-		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
-		   decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);
-		end
+		// if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
+		//    decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);
+		// end
 		// ----------------------------------------- //
 		// Address increment check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 2))) begin
@@ -811,9 +803,9 @@ module ccip_sniffer
 		end
 		// ----------------------------------------- //
 		// CL_LEN modification check [Warning only]
-		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
-		   decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);
-		end
+		// if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
+		//    decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);
+		// end
 		// ----------------------------------------- //
 		// Address increment check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 3))) begin
@@ -840,294 +832,6 @@ module ccip_sniffer
 
 
    /*
-    * Write TX beat check
-    */
-   // logic 			c1tx_beat_in_progress;
-   // logic 			wrline_en;
-   // logic 			wrfence_en;
-
-   // Wrline_en
-   // always @(*) begin
-   //    if (ccip_tx.c1.valid && ((ccip_tx.c1.hdr.req_type==eREQ_WRLINE_M)||(ccip_tx.c1.hdr.req_type==eREQ_WRLINE_I))) begin
-   // 	 wrline_en <= 1;
-   // 	 wrfence_en <= 0;
-   //    end
-   //    else if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.req_type==eREQ_WRFENCE)) begin
-   // 	 wrline_en <= 0;
-   // 	 wrfence_en <= 1;
-   //    end
-   //    else begin
-   // 	 wrline_en <= 0;
-   // 	 wrfence_en <= 0;
-   //    end
-   // end
-
-
-   // String for writing formatted messages
-   // string exp_c1tx_str;
-
-   // Checker state machine
-   // always @(posedge clk) begin
-   //    if (SoftReset) begin
-   // 	 exp_c1state            <= Exp_1CL;
-   // 	 exp_c1addr             <= {PHYSCLADDR_WIDTH{1'b0}};
-   // 	 // c1tx_beat_in_progress  <= 0;
-   //    end
-   //    else begin
-   // 	 case (exp_c1state)
-   // 	   // ----------------------------------------------------------- //
-   // 	   // Waiting for a C1Tx transaction
-   // 	   Exp_1CL:
-   // 	     begin
-   // 		exp_c1addr  <= ccip_tx.c1.hdr.address;
-   // 		exp_c1vc    <= ccip_tx.c1.hdr.vc_sel;
-   // 		exp_c1len   <= ccip_tx.c1.hdr.cl_len;
-   // 		exp_c1mdata <= ccip_tx.c1.hdr.mdata;
-   // 		// 4 CL MCL request
-   // 		if (wrline_en && (ccip_tx.c1.hdr.cl_len == 2'b11)) begin
-   // 		   // exp_c1addr  <= ccip_tx.c1.hdr.address;
-   // 		   // exp_c1vc    <= ccip_tx.c1.hdr.vc_sel;
-   // 		   // exp_c1len   <= ccip_tx.c1.hdr.cl_len;
-   // 		   // exp_c1mdata <= ccip_tx.c1.hdr.mdata;
-   // 		   exp_c1state <= Exp_2CL;
-   // 		   // c1tx_beat_in_progress <= 1;
-   // 		   if (ccip_tx.c1.hdr.address[1:0] != 2'b00) begin
-   // 		      print_message_and_log(0, "Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned !");
-   // 		      print_and_simkill();
-   // 		   end
-   // 		end
-   // 		// 2 CL MCL request
-   // 		else if (wrline_en && (ccip_tx.c1.hdr.cl_len == 2'b01)) begin
-   // 		   // exp_c1addr  <= ccip_tx.c1.hdr.address;
-   // 		   // exp_c1vc    <= ccip_tx.c1.hdr.vc_sel;
-   // 		   // exp_c1len   <= ccip_tx.c1.hdr.cl_len;
-   // 		   // exp_c1mdata <= ccip_tx.c1.hdr.mdata;
-   // 		   exp_c1state <= Exp_2CL;
-   // 		   // c1tx_beat_in_progress <= 1;
-   // 		   if (ccip_tx.c1.hdr.address[0] != 1'b0) begin
-   // 		      print_message_and_log(0, "Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned !");
-   // 		      print_and_simkill();
-   // 		   end
-   // 		end
-   // 		// If 3-cacheline request is made, thats ILLEGAL
-   // 		else if (wrline_en && (ccip_tx.c1.hdr.cl_len == 2'b10)) begin
-   // 		   // c1tx_beat_in_progress <= 0;
-   // 		   print_message_and_log(0, "Multi-cacheline request of length=3 is ILLEGAL !");
-   // 		   print_and_simkill();
-   // 		end
-   // 		// 1CL MCL request
-   // 		else if (wrline_en && (ccip_tx.c1.hdr.cl_len == 2'b00)) begin
-   // 		   // c1tx_beat_in_progress <= 1;
-   // 		   // exp_c1addr  <= ccip_tx.c1.hdr.address;
-   // 		   // exp_c1vc    <= ccip_tx.c1.hdr.vc_sel;
-   // 		   // exp_c1len   <= ccip_tx.c1.hdr.cl_len;
-   // 		   // exp_c1mdata <= ccip_tx.c1.hdr.mdata;
-   // 		   exp_c1state <= Exp_1CL;
-   // 		end
-   // 		else begin
-   // 		   // c1tx_beat_in_progress <= 0;
-   // 		   exp_c1state <= Exp_1CL;
-   // 		end
-   // 		// SOP bit check
-   // 		if (~ccip_tx.c1.hdr.sop && wrline_en) begin
-   // 		   print_message_and_log(0, "C1TxHdr SOP field is not HIGH in the first transaction of multi-line request !");
-   // 		   print_and_simkill();
-   // 		end
-   // 	     end
-
-   // 	   // ----------------------------------------------------------- //
-   // 	   // 2nd cache line of multiline request
-   // 	   Exp_2CL:
-   // 	     begin
-   // 		// c1tx_beat_in_progress <= 1;
-   // 		// State control
-   // 		// if (wrline_en && (exp_c1len == 2'b01)) begin
-   // 		//    exp_c1state <= Exp_1CL;
-   // 		// end
-   // 		// else if (wrline_en && (exp_c1len == 2'b11)) begin
-   // 		//    exp_c1state <= Exp_3CL;
-   // 		// end
-   // 		// else begin
-   // 		//    exp_c1state <= Exp_2CL;
-   // 		// end
-   // 		// Check if SOP bit goes high
-   // 		if (ccip_tx.c1.hdr.sop && wrline_en) begin
-   // 		   print_message_and_log(0, "C1TxHdr SOP field is must NOT be HIGH on subsequent lines of multi-line Write request !");
-   // 		   print_and_simkill();
-   // 		end
-   // 		// Check if address matches as expected
-   // 		if (wrline_en && (ccip_tx.c1.hdr.address != (exp_c1addr + 1)) ) begin
-   // 		   print_message_and_log(0, "C1TxHdr ADDR field expected an address incremented by 1 from previous transaction (Multi-line Write Request) !");
-   // 		   print_message_and_log(0, "Refer to Multiline Request section of CCI-P specification for signalling details !");
-   // 		   print_and_simkill();
-   // 		end
-   // 		// Just warn if mdata changes in flight
-   // 		if (wrline_en && (ccip_tx.c1.hdr.mdata != exp_c1mdata)) begin
-   // 		   print_message_and_log(1, "C1TxHdr MDATA field changed, this will be ignored and MDATA of 1st transaction will be used.");
-   // 		end
-   // 		// VC enforcement
-   // 		if (wrline_en && (ccip_tx.c1.hdr.vc_sel != exp_c1vc)) begin
-   // 		   print_message_and_log(0, "C1TxHdr VC field must not change while multi-line Write Request is in progress");
-   // 		   print_and_simkill();
-   // 		end
-   // 		// ----------- State transition ----------- //
-   // 		if (wrline_en && (ccip_tx.c1.hdr.cl_len == 2'b01)) begin
-   // 		   exp_c1state <= Exp_1CL;
-   // 		end
-   // 		else if (wrline_en && (ccip_tx.c1.hdr.cl_len == 2'b11)) begin
-   // 		   exp_c1state <= Exp_3CL;
-   // 		end
-   // 		else begin
-   // 		   exp_c1state <= Exp_2CL;
-   // 		end
-   // 	     end
-
-   // 	   // ----------------------------------------------------------- //
-   // 	   // 3rd cache line of multiline request -- no return to base from here
-   // 	   Exp_3CL:
-   // 	     begin
-   // 		// c1tx_beat_in_progress <= 1;
-   // 		// State control
-   // 		// if (wrline_en && (exp_c1len == 2'b11)) begin
-   // 		//    exp_c1state <= Exp_4CL;
-   // 		// end
-   // 		// else begin
-   // 		//    exp_c1state <= Exp_3CL;
-   // 		// end
-   // 		// Check if SOP bit goes high
-   // 		if (ccip_tx.c1.hdr.sop && wrline_en) begin
-   // 		   print_message_and_log(0, "C1TxHdr SOP field is must NOT be HIGH on subsequent lines of multi-line Write request !");
-   // 		   print_and_simkill();
-   // 		end
-   // 		// Check if address matches as expected
-   // 		if (wrline_en && (ccip_tx.c1.hdr.address != (exp_c1addr + 2)) ) begin
-   // 		   print_message_and_log(0, "C1TxHdr ADDR field expected an address incremented by 1 from previous transaction (Multi-line Write Request) !");
-   // 		   print_message_and_log(0, "Refer to Multiline Request section of CCI-P specification for signalling details !");
-   // 		   print_and_simkill();
-   // 		end
-   // 		// Just warn if mdata changes in flight
-   // 		if (wrline_en && (ccip_tx.c1.hdr.mdata != exp_c1mdata)) begin
-   // 		   print_message_and_log(1, "C1TxHdr MDATA field changed, this will be ignored and MDATA of 1st transaction will be used.");
-   // 		end
-   // 		// VC enforcement
-   // 		if (wrline_en && (ccip_tx.c1.hdr.vc_sel != exp_c1vc)) begin
-   // 		   print_message_and_log(0, "C1TxHdr VC field must not change while multi-line Write Request is in progress");
-   // 		   print_and_simkill();
-   // 		end
-   // 		// ----------- State transition ----------- //
-
-   // 	     end
-
-   // 	   // ----------------------------------------------------------- //
-   // 	   // 4th cacheline of multiline request
-   // 	   Exp_4CL:
-   // 	     begin
-   // 		// c1tx_beat_in_progress <= 1;
-   // 		// State control
-   // 		if (wrline_en && (exp_c1len == 2'b11)) begin
-   // 		   exp_c1state <= Exp_1CL;
-   // 		end
-   // 		else begin
-   // 		   exp_c1state <= Exp_4CL;
-   // 		end
-   // 		// Check if SOP bit goes high
-   // 		if (ccip_tx.c1.hdr.sop && wrline_en) begin
-   // 		   print_message_and_log(0, "C1TxHdr SOP field is must NOT be HIGH on subsequent lines of multi-line Write request !");
-   // 		   print_and_simkill();
-   // 		end
-   // 		// Check if address matches as expected
-   // 		if (wrline_en && (ccip_tx.c1.hdr.address != (exp_c1addr + 3)) ) begin
-   // 		   print_message_and_log(0, "C1TxHdr ADDR field expected an address incremented by 1 from previous transaction (Multi-line Write Request) !");
-   // 		   print_message_and_log(0, "Refer to Multiline Request section of CCI-P specification for signalling details !");
-   // 		   print_and_simkill();
-   // 		end
-   // 		// Just warn if mdata changes in flight
-   // 		if (wrline_en && (ccip_tx.c1.hdr.mdata != exp_c1mdata)) begin
-   // 		   print_message_and_log(1, "C1TxHdr MDATA field changed, this will be ignored and MDATA of 1st transaction will be used.");
-   // 		end
-   // 		// VC enforcement
-   // 		if (wrline_en && (ccip_tx.c1.hdr.vc_sel != exp_c1vc)) begin
-   // 		   print_message_and_log(0, "C1TxHdr VC field must not change while multi-line Write Request is in progress");
-   // 		   print_and_simkill();
-   // 		end
-   // 	     end
-
-   // 	   // ----------------------------------------------------------- //
-   // 	   // lala land
-   // 	   default:
-   // 	     begin
-   // 		// c1tx_beat_in_progress <= 0;
-   // 		exp_c1state <= Exp_1CL;
-   // 	     end
-
-   // 	   // ----------------------------------------------------------- //
-   // 	 endcase
-   //    end
-   // end
-
-   /*
-    * Multi-cache READ line request checks
-    */
-   // always @(posedge clk) begin : c0tx_mcl_check
-   //    // ------------------------------------------------------------ //
-   //    // If Read request
-   //    if ( ccip_tx.c0.valid && ((ccip_tx.c1.hdr.req_type == eREQ_RDLINE_S)||(ccip_tx.c0.hdr.req_type == eREQ_RDLINE_S)) )  begin
-   // 	 // ------------------------------------------------------------ //
-   // 	 // Tx0 - 3 CL request illegal
-   // 	 if (ccip_tx.c0.hdr.cl_len == 2'b10) begin
-   // 	    print_message_and_log(1, "Request on C0Tx for 3 cachelines is ILLEGAL !");
-   // 	    print_message_and_log(1, "In CCI-P specificaton document, see Section on Multi-cacheline requests");
-   // 	    print_and_simkill();
-   // 	 end
-   // 	 // ------------------------------------------------------------ //
-   // 	 // Address alignment check
-   // 	 if ( (ccip_tx.c0.hdr.address[0] != 1'b0) && (ccip_tx.c0.hdr.cl_len == 2'b10) ) begin
-   // 	    print_message_and_log(0, "Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned ");
-   // 	    print_message_and_log(0, "Simulator will shut down now !\n");
-   // 	    print_and_simkill();
-   // 	 end
-   // 	 else if ( (ccip_tx.c0.hdr.address[1:0] != 2'b0) && (ccip_tx.c0.hdr.cl_len == 2'b11) ) begin
-   // 	    print_message_and_log(0, "Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned ");
-   // 	    print_message_and_log(0, "Simulator will shut down now !\n");
-   // 	    print_and_simkill();
-   // 	 end
-   // 	 // ------------------------------------------------------------ //
-   //    end
-   // end // block: c0tx_mcl_check
-
-
-   /*
-    * Multi-cache WRITE line request checks
-    */
-   // always @(posedge clk) begin : c1tx_mcl_check
-   //    // ------------------------------------------------------------ //
-   //    // If Write request
-   //    if ( ccip_tx.c1.valid && ((ccip_tx.c1.hdr.req_type == eREQ_WRLINE_M)||(ccip_tx.c1.hdr.req_type == eREQ_RDLINE_I)) )  begin
-   // 	 // ------------------------------------------------------------ //
-   // 	 // Tx0 - 3 CL request illegal
-   // 	 if ((ccip_tx.c1.hdr.cl_len == 2'b10) && ccip_tx.c1.hdr.sop) begin
-   // 	    print_message_and_log(0, "Request on C1Tx for 3 cachelines is ILLEGAL !");
-   // 	    print_message_and_log(0, "In CCI-P specificaton document, please see Multi-cacheline requests");
-   // 	    print_and_simkill();
-   // 	 end
-   // 	 // ------------------------------------------------------------ //
-   // 	 // Address alignment check
-   // 	 if ( (ccip_tx.c1.hdr.address[0] != 1'b0) && (ccip_tx.c1.hdr.cl_len == 2'b10) && ccip_tx.c1.hdr.sop ) begin
-   // 	    print_message_and_log(0, "Multi-cacheline request address with cl_len = 2 must be 2-Cacheline Aligned ");
-   // 	    print_message_and_log(0, "Simulator will shut down now !\n");
-   // 	    print_and_simkill();
-   // 	 end
-   // 	 else if ( (ccip_tx.c1.hdr.address[1:0] != 2'b0) && (ccip_tx.c1.hdr.cl_len == 2'b11) && ccip_tx.c1.hdr.sop ) begin
-   // 	    print_message_and_log(0, "Multi-cacheline request address with cl_len = 4 must be 4-Cacheline Aligned ");
-   // 	    print_message_and_log(0, "Simulator will shut down now !\n");
-   // 	    print_and_simkill();
-   // 	 end
-   // 	 // ------------------------------------------------------------ //
-   //    end
-   // end // block: c1tx_mcl_check
-
-
-   /*
     * Check memory transactions in flight, maintain active list
     */
    longint rd_active_addr_array[*];
@@ -1148,7 +852,7 @@ module ccip_sniffer
       // Read in (unroll necessary)
       // ------------------------------------------- //
       if (haz_if.read_in.valid) begin
-	 for (int ii = 0; ii <= haz_if.read_in.hdr.len ; ii = ii + 1) begin
+	 for (int ii = 0; ii <= haz_if.read_in.hdr.len ; ii = ii + 1) begin : read_channel_haz_monitor
 	    rd_active_addr_array[ haz_if.read_in.hdr.addr + ii ] = haz_if.read_in.hdr.addr + ii;
 	    // Check for outstanding write request
 	    if (wr_active_addr_array.exists(haz_if.read_in.hdr.addr + ii)) begin
@@ -1165,7 +869,7 @@ module ccip_sniffer
       // ------------------------------------------- //
       if (haz_if.write_in.valid) begin
 	 // Check for outstanding read
-	 if (rd_active_addr_array.exists(haz_if.write_in.hdr.addr)) begin
+	 if (rd_active_addr_array.exists(haz_if.write_in.hdr.addr)) begin : write_channel_haz_monitor
 	    $sformat(raw_haz_str,
 		     "%d | Potential for Read-after-Write hazard with potential for C1TxHdr=%s arriving earlier than write to same address\n",
 		     $time,
@@ -1209,109 +913,100 @@ module ccip_sniffer
     * - Maintains `MMIO_MAX_OUTSTANDING records tracking activity
     * - Tracking key = MMIO TID
     */
-   // parameter int      MMIO_TRACKER_DEPTH = 2**CCIP_CFGHDR_TID_WIDTH;
+   parameter int      MMIO_TRACKER_DEPTH = 2**CCIP_CFGHDR_TID_WIDTH;
 
-   // // Tracker structure
-   // typedef struct {
-   //    // Status management
-   //    logic [`MMIO_RESPONSE_TIMEOUT_RADIX-1:0] timer_val;
-   //    logic 				       timeout;
-   //    logic [CCIP_CFGHDR_TID_WIDTH-1:0]        tid;
-   //    logic 				       active;
-   // } mmioread_track_t;
-   // mmioread_track_t mmioread_tracker[0:MMIO_TRACKER_DEPTH-1];
+   // Tracker structure
+   typedef struct {
+      // Status management
+      logic [`MMIO_RESPONSE_TIMEOUT_RADIX-1:0] timer_val;
+      logic 				       timeout;
+      // logic [CCIP_CFGHDR_TID_WIDTH-1:0]        tid;
+      logic 				       active;
+   } mmioread_track_t;
+   mmioread_track_t mmioread_tracker[0:MMIO_TRACKER_DEPTH-1];
 
-   // // Tracker status array
-   // logic [0:MMIO_TRACKER_DEPTH-1] 	       mmio_tracker_active_array;
+   // Tracker status array
+   logic [0:MMIO_TRACKER_DEPTH-1] 	       mmio_tracker_active_array;
 
-   // // Push/pop control process
-   // task update_mmio_activity(
-   // 			     logic 			       clear,
-   // 			     logic 			       push,
-   // 			     logic 			       pop,
-   // 			     logic [CCIP_CFGHDR_TID_WIDTH-1:0] tid
-   // 			     );
-   //    begin
-   // 	 if (clear) begin
-   // 	    mmioread_tracker[tid].active = 0;
-   // 	 end
-   // 	 else begin
-   // 	    // Push TID
-   // 	    mmioread_tracker[tid].tid = tid;
-   // 	    // Active setting
-   // 	    case ({push, pop})
-   // 	      2'b10: mmioread_tracker[tid].active = 1;
-   // 	      2'b01: mmioread_tracker[tid].active = 0;
-   // 	      2'b11:
-   // 		begin
-   // 		   print_message_and_log(0, "Tracker push-pop occured at the same time, this is an error");
-   // 		   print_and_simkill();
-   // 		end
-   // 	    endcase // case ({push, pop})
-   // 	    // If pop occured when not active
-   // 	    if (~mmioread_tracker[tid].active && push) begin
-   // 	       print_message_and_log(0, "ASE detected an unsolicited MMIO Read response !!\n");
-   //    	       print_message_and_log(0, "In system, this can cause a crash");
-   //    	       print_and_simkill();
-   // 	    end
-   // 	 end
-   //    end
-   // endtask
+   // Push/pop control process
+   task update_mmio_activity(
+   			     logic 			       clear,
+   			     logic 			       push,
+   			     logic 			       pop,
+   			     logic [CCIP_CFGHDR_TID_WIDTH-1:0] tid
+   			     );
+      begin
+   	 if (clear) begin
+   	    mmioread_tracker[tid].active = 0;
+   	 end
+   	 else begin
+	    // Active management
+	    if (push) begin
+	       mmioread_tracker[tid].active = 1;
+	    end
+	    else if (pop) begin
+	       mmioread_tracker[tid].active = 0;
+	    end    
+   	    // If pop occured when not active
+   	    if (~mmioread_tracker[tid].active && pop) begin
+	       decode_error_code(0, MMIO_RDRSP_UNSOLICITED);
+   	    end
+   	 end
+      end
+   endtask
 
-   // // Push/pop glue
-   // always @(posedge clk) begin
-   //    if (SoftReset) begin
-   // 	 for (int track_i = 0; track_i < MMIO_TRACKER_DEPTH ; track_i = track_i + 1) begin
-   // 	    update_mmio_activity(1, 0, 0, 0);
-   // 	 end
-   //    end
-   //    else begin
-   // 	 // Push task
-   // 	 if (ccip_rx.c0.mmioRdValid) begin
-   // 	    update_mmio_activity(0, ccip_rx.c0.mmioRdValid, 0, C0RxCfg.tid);
-   // 	 end
-   // 	 // Pop task
-   // 	 if (ccip_tx.c2.mmioRdValid) begin
-   // 	    update_mmio_activity(0, 0, ccip_tx.c2.mmioRdValid, ccip_tx.c2.hdr.tid);
-   // 	 end
-   //    end
-   // end
+   // Push/pop glue
+   always @(posedge clk) begin
+      if (SoftReset) begin
+   	 for (int track_i = 0; track_i < MMIO_TRACKER_DEPTH ; track_i = track_i + 1) begin
+   	    update_mmio_activity(1, 0, 0, 0);
+   	 end
+      end
+      else begin
+   	 // Push transaction to checker (mmioRead Request)
+   	 if (ccip_rx.c0.mmioRdValid) begin
+   	    update_mmio_activity(0, ccip_rx.c0.mmioRdValid, 0, C0RxCfg.tid);
+   	 end
+   	 // Pop transaction from checker (mmioRead Response)
+   	 if (ccip_tx.c2.mmioRdValid) begin
+   	    update_mmio_activity(0, 0, ccip_tx.c2.mmioRdValid, ccip_tx.c2.hdr.tid);
+   	 end
+      end
+   end
 
-   // // Tracker block
-   // generate
-   //    for (genvar ii = 0; ii < MMIO_TRACKER_DEPTH ; ii = ii + 1) begin : mmio_tracker_block
-   // 	 // Counter value
-   // 	 always @(posedge clk) begin
-   // 	    if (SoftReset) begin
-   // 	       mmioread_tracker[ii].timer_val <= 0;
-   // 	    end
-   // 	    else begin
-   // 	       if (~mmioread_tracker[ii].active) begin
-   // 		  mmioread_tracker[ii].timer_val <= 0;
-   // 	       end
-   // 	       else if (mmioread_tracker[ii].active) begin
-   // 		  mmioread_tracker[ii].timer_val <= mmioread_tracker[ii].timer_val + 1;
-   // 	       end
-   // 	    end
-   // 	 end // always @ (posedge clk)
+   // Tracker block
+   generate
+      for (genvar ii = 0; ii < MMIO_TRACKER_DEPTH ; ii = ii + 1) begin : mmio_tracker_block
+   	 // Counter value
+   	 always @(posedge clk) begin
+   	    if (SoftReset) begin
+   	       mmioread_tracker[ii].timer_val <= 0;
+   	    end
+   	    else begin
+   	       if (~mmioread_tracker[ii].active) begin
+   		  mmioread_tracker[ii].timer_val <= 0;
+   	       end
+   	       else if (mmioread_tracker[ii].active) begin
+   		  mmioread_tracker[ii].timer_val <= mmioread_tracker[ii].timer_val + 1;
+   	       end
+   	    end
+   	 end // always @ (posedge clk)
 
-   // 	 // Timeout flag
-   // 	 always @(posedge clk) begin
-   // 	    if (SoftReset|~mmioread_tracker[ii].active) begin
-   // 	       mmioread_tracker[ii].timeout <= 0;
-   // 	    end
-   // 	    else if (mmioread_tracker[ii].timer_val >= `MMIO_RESPONSE_TIMEOUT) begin
-   // 	       mmioread_tracker[ii].timeout <= 1;
-   // 	       print_message_and_log(0, "ASE timed out waiting for MMIO Read response to arrive !!");
-   // 	       print_message_and_log(0, "MMIO Read responses must return in 512 cycles");
-   // 	       print_and_simkill();
-   // 	    end
-   // 	 end
+   	 // Timeout flag
+   	 always @(posedge clk) begin
+   	    if (SoftReset|~mmioread_tracker[ii].active) begin
+   	       mmioread_tracker[ii].timeout <= 0;
+   	    end
+   	    else if (mmioread_tracker[ii].timer_val >= `MMIO_RESPONSE_TIMEOUT) begin
+   	       mmioread_tracker[ii].timeout <= 1;
+	       decode_error_code(0, MMIO_RDRSP_TIMEOUT);
+   	    end
+   	 end
 
-   // 	 // Global flag
-   // 	 assign mmio_tracker_active_array[ii]  = mmioread_tracker[ii].active;
+   	 // Global flag
+   	 assign mmio_tracker_active_array[ii]  = mmioread_tracker[ii].active;
 
-   //    end
-   // endgenerate
+      end
+   endgenerate
 
 endmodule // cci_sniffer
