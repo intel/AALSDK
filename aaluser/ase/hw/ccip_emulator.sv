@@ -2395,6 +2395,7 @@ module ccip_emulator
       // ----------------------------------------- //
       // Hazard checker interface
       .haz_if             ( haz_if ),
+      .error_code         ( ),
       // ----------------------------------------- //
       // Overflow check signals
       .cf2as_ch0_realfull ( cf2as_ch0_realfull ),

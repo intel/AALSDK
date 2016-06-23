@@ -926,34 +926,34 @@ module ccip_sniffer
    mmioread_track_t mmioread_tracker[0:MMIO_TRACKER_DEPTH-1];
 
    // Tracker status array
-   logic [0:MMIO_TRACKER_DEPTH-1] 	       mmio_tracker_active_array;
+   // logic [0:MMIO_TRACKER_DEPTH-1] 	       mmio_tracker_active_array;
 
    // Push/pop control process
-   task update_mmio_activity(
-   			     logic 			       clear,
-   			     logic 			       push,
-   			     logic 			       pop,
-   			     logic [CCIP_CFGHDR_TID_WIDTH-1:0] tid
-   			     );
+   function update_mmio_activity(
+   				 logic 				   clear,
+   				 logic 				   mmio_request,
+   				 logic 				   mmio_response,
+   				 logic [CCIP_CFGHDR_TID_WIDTH-1:0] tid
+   				 );
       begin
    	 if (clear) begin
    	    mmioread_tracker[tid].active = 0;
    	 end
    	 else begin
-	    // Active management
-	    if (push) begin
-	       mmioread_tracker[tid].active = 1;
-	    end
-	    else if (pop) begin
-	       mmioread_tracker[tid].active = 0;
-	    end    
-   	    // If pop occured when not active
-   	    if (~mmioread_tracker[tid].active && pop) begin
+	    // If pop occured when not active
+   	    if (~mmioread_tracker[tid].active && mmio_response) begin
 	       decode_error_code(0, MMIO_RDRSP_UNSOLICITED);
    	    end
+	    // Active management
+	    if (mmio_request) begin
+	       mmioread_tracker[tid].active = 1;
+	    end
+	    else if (mmio_response) begin
+	       mmioread_tracker[tid].active = 0;
+	    end    
    	 end
       end
-   endtask
+   endfunction
 
    // Push/pop glue
    always @(posedge clk) begin
@@ -1002,9 +1002,11 @@ module ccip_sniffer
 	       decode_error_code(0, MMIO_RDRSP_TIMEOUT);
    	    end
    	 end
+	 
 
+	 
    	 // Global flag
-   	 assign mmio_tracker_active_array[ii]  = mmioread_tracker[ii].active;
+   	 // assign mmio_tracker_active_array[ii]  = mmioread_tracker[ii].active;
 
       end
    endgenerate
