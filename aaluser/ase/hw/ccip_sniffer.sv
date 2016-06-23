@@ -126,9 +126,9 @@ module ccip_sniffer
 
 
    // isEqualsXorZ
-   function automatic logic isEqualsXorZ(logic inp);
+   function automatic logic isEqualsXorZ(reg inp);
       begin
-	 if ((inp == 1'bZ)||(inp == 1'bX)||(inp == 1'bz)||(inp == 1'bx)) begin
+	 if ((inp === 1'bZ)||(inp === 1'bX)) begin
 	    return 1;
 	 end
 	 else begin
@@ -518,10 +518,10 @@ module ccip_sniffer
     * UNDEF & HIIMP checker
     */
    // Z and X flags
-   logic 			   xz_tx0_flag;
-   logic 			   xz_tx1_flag;
-   logic 			   xz_tx2_flag;
-
+   reg 			   xz_tx0_flag;
+   reg 			   xz_tx1_flag;
+   reg 			   xz_tx2_flag;
+   
    // XZ flags check
    assign xz_tx0_flag = ^{ccip_tx.c0.hdr.vc_sel,                     ccip_tx.c0.hdr.cl_len, ccip_tx.c0.hdr.req_type, ccip_tx.c0.hdr.address, ccip_tx.c0.hdr.mdata};  
    
@@ -532,20 +532,20 @@ module ccip_sniffer
    // Trigger XZ warnings
    always @(posedge clk) begin
       // ------------------------------------------------- //
-      if (ccip_tx.c0.valid && isEqualsXorZ(xz_tx0_flag)) begin
-	 decode_error_code(0, SNIFF_C0TX_XZ_FOUND_WARN);
+      if (ccip_tx.c0.valid  && isEqualsXorZ(xz_tx0_flag)) begin
+	 decode_error_code(0, SNIFF_C0TX_XZ_FOUND_WARN);	 
       end
       // ------------------------------------------------- //
       if (ccip_tx.c1.valid && isEqualsXorZ(xz_tx1_flag)) begin
-	 decode_error_code(0, SNIFF_C1TX_XZ_FOUND_WARN);
+	 decode_error_code(0, SNIFF_C1TX_XZ_FOUND_WARN);	 
       end
       // ------------------------------------------------- //
       if (ccip_tx.c2.mmioRdValid && isEqualsXorZ(xz_tx2_flag)) begin
-	 decode_error_code(0, MMIO_RDRSP_XZ_FOUND_WARN);
+	 decode_error_code(0, MMIO_RDRSP_XZ_FOUND_WARN);	 
       end
       // ------------------------------------------------- //
    end
-
+   
 
    /*
     * Full {0,1} signaling
