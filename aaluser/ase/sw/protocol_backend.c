@@ -1000,7 +1000,7 @@ void start_simkill_countdown()
   printf("SIM-C : Simulation generated log files\n");
   printf("        Transactions file   | $ASE_WORKDIR/ccip_transactions.tsv\n");
   printf("        Workspaces info     | $ASE_WORKDIR/workspace_info.log\n");
-  printf("        Protocol Warnings   | $ASE_WORKDIR/ccip_errors_and_warnings.log\n");
+  printf("        Protocol Warnings   | $ASE_WORKDIR/ccip_errors_and_warnings.txt\n");
   printf("        ASE seed            | $ASE_WORKDIR/ase_seed.txt\n");
   END_GREEN_FONTCOLOR;
 
