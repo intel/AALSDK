@@ -86,7 +86,7 @@ FILE *fp_mmioaccess_log = (FILE *)NULL;
  */
 // MMIO Tid
 int glbl_mmio_tid;
-pthread_mutex_t mmio_tid_lock;
+//pthread_mutex_t mmio_tid_lock;
 
 // Tracker thread Id
 pthread_t mmio_watch_tid;
@@ -101,7 +101,7 @@ mmio_t *mmio_rsp_pkt;
 pthread_t umsg_watch_tid;
 
 // UMsg port lock
-pthread_mutex_t umsg_port_lock;
+// pthread_mutex_t umsg_port_lock;
 
 // UMsg byte offset
 const int umsg_byteindex_arr[] = 
@@ -232,14 +232,14 @@ void *mmio_response_watcher()
 	      mmio_table[slot_idx].tx_flag = false;
 	      mmio_table[slot_idx].rx_flag = false;
 	    }
+#ifdef ASE_DEBUG
 	  else 
 	    {
-	    #ifdef ASE_DEBUG
 	      BEGIN_RED_FONTCOLOR;
 	      printf("  [DEBUG]  Illegal MMIO request found -- must not happen !\n");
 	      END_RED_FONTCOLOR;
-            #endif
 	    }
+#endif
 	}
     }
 }
@@ -330,22 +330,22 @@ void session_init()
 	}
 
       // MMIO TID counter lock
-      if ( pthread_mutex_init(&mmio_tid_lock, NULL) != 0)
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("  [APP]  MMIO TID Lock initialization failed, EXIT\n");
-	  END_RED_FONTCOLOR;
-	  exit (EXIT_FAILURE);
-	}
+      /* if ( pthread_mutex_init(&mmio_tid_lock, NULL) != 0) */
+      /* 	{ */
+      /* 	  BEGIN_RED_FONTCOLOR; */
+      /* 	  printf("  [APP]  MMIO TID Lock initialization failed, EXIT\n"); */
+      /* 	  END_RED_FONTCOLOR; */
+      /* 	  exit (EXIT_FAILURE); */
+      /* 	} */
 
       // Initialize UMsg port lock
-      if ( pthread_mutex_init(&umsg_port_lock, NULL) != 0)
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("  [APP]  UMsg Port Lock initialization failed, EXIT\n");
-	  END_RED_FONTCOLOR;
-	  exit (EXIT_FAILURE);
-	}
+      /* if ( pthread_mutex_init(&umsg_port_lock, NULL) != 0) */
+      /* 	{ */
+      /* 	  BEGIN_RED_FONTCOLOR; */
+      /* 	  printf("  [APP]  UMsg Port Lock initialization failed, EXIT\n"); */
+      /* 	  END_RED_FONTCOLOR; */
+      /* 	  exit (EXIT_FAILURE); */
+      /* 	} */
 
       // Initialize ase_workdir_path
       BEGIN_YELLOW_FONTCOLOR;
@@ -643,8 +643,8 @@ void session_deinit()
       
       // Lock deinit
       pthread_mutex_destroy(&mmio_port_lock);
-      pthread_mutex_destroy(&mmio_tid_lock);
-      pthread_mutex_destroy(&umsg_port_lock);
+      // pthread_mutex_destroy(&mmio_tid_lock);
+      // pthread_mutex_destroy(&umsg_port_lock);
     }
   else
     {
