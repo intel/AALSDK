@@ -124,7 +124,7 @@ unsigned long long runtime_nsec;
  * MSI-X watcher 
  */
 // MSI-X watcher 
-pthread_t msix_watch_tid;
+// pthread_t msix_watch_tid;
 
 
 /*
@@ -134,7 +134,7 @@ pthread_t msix_watch_tid;
 uint32_t generate_mmio_tid()
 {
   // Lock access to resource
-  pthread_mutex_lock(&mmio_tid_lock);
+  // pthread_mutex_lock(&mmio_tid_lock);
 
   // Return value
   uint32_t ret_mmio_tid;
@@ -144,7 +144,7 @@ uint32_t generate_mmio_tid()
   // while ( ((mmio_readreq_cnt-mmio_readrsp_cnt) + (mmio_writereq_cnt-mmio_writersp_cnt)) >= MMIO_MAX_OUTSTANDING )
   while ( count_mmio_tid_used() == MMIO_MAX_OUTSTANDING )
     {
-      printf("  [APP]  MMIO TIDs have run out --- waiting for some to get released !\n");
+      printf("  [APP]  MMIO TIDs have run out --- waiting !\n");
       sleep(1);
     }
 
@@ -153,7 +153,7 @@ uint32_t generate_mmio_tid()
   glbl_mmio_tid++;
 
   // Unlock access to resource
-  pthread_mutex_unlock(&mmio_tid_lock);
+  // pthread_mutex_unlock(&mmio_tid_lock);
 
   // Return ID
   return ret_mmio_tid;
@@ -208,18 +208,27 @@ void *mmio_response_watcher()
 	  
 	  // Find scoreboard slot number to update
 	  slot_idx = get_scoreboard_slot_by_tid(mmio_rsp_pkt->tid);
-	  
+#ifdef ASE_DEBUG
+	  if (slot_idx == 0xFFFF)
+	    {
+	      BEGIN_RED_FONTCOLOR;
+	      printf("get_scoreboard_slot_by_tid() found a bad slot !");
+	      raise(SIGABRT);
+	      END_RED_FONTCOLOR;
+	    }
+#endif
+
 	  // MMIO Read response (for credit count only)
 	  if (mmio_rsp_pkt->write_en == MMIO_READ_REQ) 
 	    {	      
 	      mmio_table[slot_idx].tid = mmio_rsp_pkt->tid;
-	      mmio_table[slot_idx].data = mmio_rsp_pkt->qword[0];
+	      mmio_table[slot_idx].data = mmio_rsp_pkt->qword[0];	     
 	      mmio_table[slot_idx].tx_flag = true;
 	      mmio_table[slot_idx].rx_flag = true;
 	    }
 	  // MMIO Write response (for credit count only)
 	  else if (mmio_rsp_pkt->write_en == MMIO_WRITE_REQ)
-	    {
+	    {	      
 	      mmio_table[slot_idx].tx_flag = false;
 	      mmio_table[slot_idx].rx_flag = false;
 	    }
@@ -290,6 +299,7 @@ void send_simkill()
   mqueue_close(app2sim_dealloc_tx);
   mqueue_close(sim2app_dealloc_rx);
   mqueue_close(sim2app_portctrl_rsp_rx);
+  mqueue_close(sim2app_intr_request_rx);
 
   exit(0);
 }
@@ -354,7 +364,8 @@ void session_init()
 
       // When bad stuff happens, print backtrace
       signal(SIGSEGV, backtrace_handler);
-      signal(SIGBUS, backtrace_handler);
+      signal(SIGBUS,  backtrace_handler);
+      signal(SIGABRT, backtrace_handler);
 
       // Ignore SIGPIPE *FIXME*: Look for more elegant solution
       signal(SIGPIPE, SIG_IGN);
@@ -688,7 +699,7 @@ int count_mmio_tid_used()
 
   for(ii = 0; ii < MMIO_MAX_OUTSTANDING ; ii = ii + 1) 
     if (mmio_table[ii].tx_flag == true)	
-      cnt = cnt++;	
+      cnt++;	
     
   return cnt;
 }
@@ -703,7 +714,7 @@ int mmio_request_put(struct mmio_t *pkt)
   FUNC_CALL_ENTRY;
 
   // Lock MMIO port
-  pthread_mutex_lock (&mmio_port_lock);
+  // pthread_mutex_lock (&mmio_port_lock);
 
 #ifdef ASE_DEBUG
   print_mmiopkt(fp_mmioaccess_log, "Sent", pkt);
@@ -719,18 +730,21 @@ int mmio_request_put(struct mmio_t *pkt)
       mmio_table[mmiotable_idx].tid = pkt->tid;
       mmio_table[mmiotable_idx].data = pkt->qword[0];
     }
+#ifdef ASE_DEBUG
   else
     {
       BEGIN_RED_FONTCOLOR;
       printf("  [APP] ASE Error generating MMIO TID, simulation cannot proceed !\n");
+      raise(SIGABRT);
       END_RED_FONTCOLOR;
     }
+#endif
 
   // Send packet
   mqueue_send( app2sim_mmioreq_tx, (char*)pkt, sizeof(mmio_t) );
 
   // Unlock MMIO port
-  pthread_mutex_unlock (&mmio_port_lock);
+  // pthread_mutex_unlock (&mmio_port_lock);
 
   FUNC_CALL_EXIT;
 
@@ -759,28 +773,36 @@ void mmio_write32 (int offset, uint32_t data)
     {
       BEGIN_RED_FONTCOLOR;
       printf("  [APP]  Requested offset is not in AFU MMIO region\n");
-      printf("         Ignoring MMIO Write\n");
+      printf("         MMIO Write Error\n");      
       END_RED_FONTCOLOR;
+      exit(1);
     }
   else
     {
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
-      mmio_pkt->tid      = generate_mmio_tid();
       mmio_pkt->write_en = MMIO_WRITE_REQ;
       mmio_pkt->width    = MMIO_WIDTH_32;
       mmio_pkt->addr     = offset;
       memcpy(mmio_pkt->qword, &data, sizeof(uint32_t));
       mmio_pkt->resp_en  = 0;
 
+      // Critical Section
+      {      
+	pthread_mutex_lock (&mmio_port_lock);
+	
+	mmio_pkt->tid = generate_mmio_tid();
+	slot_idx = mmio_request_put(mmio_pkt);            
+	
+	pthread_mutex_unlock (&mmio_port_lock);
+      }
+      
+      // Write to MMIO map
       uint32_t *mmio_vaddr;
       mmio_vaddr = (uint32_t*)((uint64_t)mmio_afu_vbase + offset);
+      memcpy(mmio_vaddr, (char*)&data, sizeof(uint32_t));     
 
-      // Message
-      slot_idx = mmio_request_put(mmio_pkt);            
-      memcpy(mmio_vaddr, (char*)&data, sizeof(uint32_t));
-      
       // Display
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  MMIO Write     : tid = 0x%03x, offset = 0x%x, data = 0x%08x\n", mmio_pkt->tid, mmio_pkt->addr, data);
@@ -814,18 +836,25 @@ void mmio_write64 (int offset, uint64_t data)
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
-      mmio_pkt->tid= generate_mmio_tid();
       mmio_pkt->write_en = MMIO_WRITE_REQ;
       mmio_pkt->width = MMIO_WIDTH_64;
       mmio_pkt->addr = offset;
       memcpy(mmio_pkt->qword, &data, sizeof(uint64_t));
       mmio_pkt->resp_en = 0;
 
+      // Critical section
+      {
+	pthread_mutex_lock (&mmio_port_lock);
+
+	mmio_pkt->tid= generate_mmio_tid();
+	slot_idx = mmio_request_put(mmio_pkt);
+
+	pthread_mutex_unlock (&mmio_port_lock);
+      }
+
+      // Write to MMIO Map
       uint64_t *mmio_vaddr;
       mmio_vaddr = (uint64_t*)((uint64_t)mmio_afu_vbase + offset);
-
-      // Message
-      slot_idx = mmio_request_put(mmio_pkt);
       *mmio_vaddr = data;
 
       BEGIN_YELLOW_FONTCOLOR;
@@ -875,17 +904,24 @@ void mmio_read32(int offset, uint32_t *data32)
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
-      mmio_pkt->tid      = generate_mmio_tid();
       mmio_pkt->write_en = MMIO_READ_REQ;
       mmio_pkt->width    = MMIO_WIDTH_32;
       mmio_pkt->addr     = offset;
       mmio_pkt->resp_en  = 0;
-      
+
+      // Critical section
+      {
+	pthread_mutex_lock (&mmio_port_lock);
+
+	mmio_pkt->tid      = generate_mmio_tid();
+	slot_idx = mmio_request_put(mmio_pkt);
+	
+	pthread_mutex_unlock (&mmio_port_lock);
+      }
+
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  MMIO Read      : tid = 0x%03x, offset = 0x%x\n", mmio_pkt->tid, mmio_pkt->addr);
       END_YELLOW_FONTCOLOR;
-
-      slot_idx = mmio_request_put(mmio_pkt);
       
 #ifdef ASE_DEBUG
       BEGIN_YELLOW_FONTCOLOR;
@@ -900,12 +936,11 @@ void mmio_read32(int offset, uint32_t *data32)
 	  usleep(1);
 	}
 
-      // Display
-      BEGIN_YELLOW_FONTCOLOR;
-
       // Write data
       *data32 = (uint32_t)mmio_table[slot_idx].data;
 
+      // Display
+      BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  MMIO Read Resp : tid = 0x%03x, %08x\n", mmio_table[slot_idx].tid, (uint32_t)*data32);
       END_YELLOW_FONTCOLOR;
 
@@ -944,18 +979,24 @@ void mmio_read64(int offset, uint64_t *data64)
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
-      mmio_pkt->tid      = generate_mmio_tid();
       mmio_pkt->write_en = MMIO_READ_REQ;
       mmio_pkt->width    = MMIO_WIDTH_64;
       mmio_pkt->addr     = offset;
       mmio_pkt->resp_en  = 0;
+
+      // Critical section
+      {
+	pthread_mutex_lock (&mmio_port_lock);
+	
+	mmio_pkt->tid      = generate_mmio_tid();
+	slot_idx = mmio_request_put(mmio_pkt);
+	
+	pthread_mutex_unlock (&mmio_port_lock);
+      }
       
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  MMIO Read      : tid = 0x%03x, offset = 0x%x\n", mmio_pkt->tid, mmio_pkt->addr);
       END_RED_FONTCOLOR;
-
-      // Send request
-      slot_idx = mmio_request_put(mmio_pkt);
 
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
