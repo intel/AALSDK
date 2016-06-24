@@ -45,7 +45,7 @@
 include ase_sources.mk
 
 # ASE Version
-ASE_VERSION = 5.0.2-Beta-7379227
+ASE_VERSION = 5.0.2-Beta-fc3b156
 
 # Base directory
 ASE_BASEDIR = $(PWD)
