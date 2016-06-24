@@ -44,9 +44,6 @@
 
 include ase_sources.mk
 
-# ASE Version
-ASE_VERSION = 5.0.2-Beta-fc3b156
-
 # Enable Altera gates library
 GLS_SIM = 1
 GLS_SAMPLE_LIB = $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v

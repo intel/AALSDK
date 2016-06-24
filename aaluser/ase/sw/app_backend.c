@@ -144,8 +144,10 @@ uint32_t generate_mmio_tid()
   // while ( ((mmio_readreq_cnt-mmio_readrsp_cnt) + (mmio_writereq_cnt-mmio_writersp_cnt)) >= MMIO_MAX_OUTSTANDING )
   while ( count_mmio_tid_used() == MMIO_MAX_OUTSTANDING )
     {
+#ifdef ASE_DEBUG
       printf("  [APP]  MMIO TIDs have run out --- waiting !\n");
-      sleep(1);
+#endif
+      usleep(10000);
     }
 
   // Increment and mask
