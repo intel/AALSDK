@@ -1418,6 +1418,7 @@ void *umsg_watcher()
 	      memcpy( (char*)umsg_old_data[cl_index], (char*)umsg_pkt->qword, CL_BYTE_WIDTH );
 	    }
 	}	
+      usleep(1);
     }
 }
 

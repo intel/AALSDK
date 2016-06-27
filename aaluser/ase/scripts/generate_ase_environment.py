@@ -119,12 +119,12 @@ def print_instructions():
 ######################## Script begins here #################################
 ### Argument checking ###
 #############################################################################
-print("#############################################################################")
-print("#                                                                           #")
-print("#              Xeon(R) + FPGA Accelerator Abstraction Layer 5.0.3           #")
-print("#                       AFU Simulation Environment (ASE)                    #")
-print("#                                                                           #")
-print("#############################################################################")
+print("####################################################################")
+print("#                                                                  #")
+print("#           Xeon(R) + FPGA Accelerator Abstraction Layer           #")
+print("#                 AFU Simulation Environment (ASE)                 #")
+print("#                                                                  #")
+print("####################################################################")
 if len(sys.argv) == 1:
     show_help()
     sys.exit(0)

@@ -106,6 +106,10 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
       }
    }
 
+   // Umsg Base settings
+   m_uMSGmap  = (btVirtAddr)umsg_umas_vbase;
+   m_uMSGsize = UMAS_LENGTH;
+
    // Populate internal data structures for feature discovery
    if (! _discoverFeatures() ) {
       // FIXME: use correct error classes
@@ -581,7 +585,8 @@ btPhysAddr ASEALIAFU::bufferGetIOVA( btVirtAddr Address)
 //
 btUnsignedInt ASEALIAFU::umsgGetNumber( void )
 {
-  return true;
+  return NUM_UMSG_PER_AFU;
+  // return true;
 }
 
 //
@@ -589,7 +594,47 @@ btUnsignedInt ASEALIAFU::umsgGetNumber( void )
 //
 btVirtAddr ASEALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
 {
+#if 1
+   // If we've never gotten the map getit now
+  // if(NULL == m_uMSGmap){
+    // UmsgGetBaseAddress transaction;
+    
+    //   m_pAFUProxy->SendTransaction(&transaction);
+    //   if(uid_errnumOK != transaction.getErrno()){
+    //      return NULL;
+    //   }
+    //   struct AAL::aalui_WSMEvent wsevt = transaction.getWSIDEvent();
+
+      // mmap
+   //    if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr)) {
+   //       AAL_ERR( LM_All,"FATAL: MapWSID failed");
+   //       return NULL;
+   //    }
+   //    else
+   //    {
+   //   	  m_uMSGsize = wsevt.wsParms.size;
+   //        m_uMSGmap = wsevt.wsParms.ptr;
+   //        // store entire aalui_WSParms struct in map
+   //        //  to enable bufferGetIOVA()
+   //        m_mapWkSpc[wsevt.wsParms.ptr] = wsevt.wsParms;
+   //    }
+   // }
+
+   // Umsgs are separated by 1 Page + 1 CL
+   // Malicious call could overflow and cause wrap to invalid address.
+   // TODO: Check if there is any problem with using a different address
+   //       in the UMAS range
+   btUnsigned32bitInt offset = UMsgNumber * (4096 + 64) ;
+
+   if ( offset >=  m_uMSGsize) {
+      return NULL;
+   } else {
+      // m_uMSGmap is btVirtAddr is char* so math is in bytes
+      return m_uMSGmap + offset;
+   }
+#else
   return 0;
+#endif
 }
 
 
