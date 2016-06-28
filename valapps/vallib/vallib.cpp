@@ -101,13 +101,10 @@ void AllocatesNLBLpbk1AFU::Allocate(AAL::IRuntime *pRuntime)
 #if defined( HWAFU )                /* Use FPGA hardware */
 
    // Service Library to use
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
 
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID, "D8424DC4-A4A3-C413-F89E-433683F9040B");
-
-   // indicate that this service needs to allocate an AIAService, too to talk to the HW
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
 
 #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
 
@@ -149,13 +146,10 @@ void AllocatesFME::Allocate(AAL::IRuntime *pRuntime)
 #if defined( HWAFU )                /* Use FPGA hardware */
 
    // Service Library to use
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
 
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID, "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764");
-
-   // indicate that this service needs to allocate an AIAService, too to talk to the HW
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
 
 #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
 
@@ -197,13 +191,10 @@ void AllocatesPort::Allocate(AAL::IRuntime *pRuntime)
 #if defined( HWAFU )                /* Use FPGA hardware */
 
    // Service Library to use
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
 
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID, "3AB49893-138D-42EB-9642-B06C6B355B87");
-
-   // indicate that this service needs to allocate an AIAService, too to talk to the HW
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
 
 #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
 

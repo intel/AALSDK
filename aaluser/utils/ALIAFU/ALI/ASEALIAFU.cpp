@@ -93,18 +93,7 @@ btBool CASEALIAFU::ASEInit()
 {
    session_init();
 
-   if( EObjOK != SetInterface(iidALI_UMSG_Service, dynamic_cast<IALIUMsg *>(this)) ){
-      m_bIsOK = false;
-   }
-
-   if( EObjOK != SetInterface(iidALI_BUFF_Service, dynamic_cast<IALIBuffer *>(this)) ){
-      m_bIsOK = false;
-   }
-
-   if( EObjOK != SetInterface(iidALI_RSET_Service, dynamic_cast<IALIReset *>(this)) ){
-      m_bIsOK = false;
-   }
-
+  
    // update member variables that cache parameters
    m_MMIORmap = mmioGetAddress();
    m_MMIORsize = (MMIO_LENGTH - MMIO_AFU_OFFSET);
@@ -633,10 +622,7 @@ IALIReset::e_Reset CASEALIAFU::afuEnable( NamedValueSet const &rInputArgs)
 
 IALIReset::e_Reset CASEALIAFU::afuReset( NamedValueSet const &rInputArgs )
 {
-   // Port control
-   ase_portctrl("AFU_RESET 1");
-   usleep(10000);
-   ase_portctrl("AFU_RESET 0");
+   send_swreset();
 
    return e_OK;
 }

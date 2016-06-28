@@ -173,6 +173,12 @@ btBool ALI::Release(TransactionID const &TranID, btTime timeout)
 
       if(targetType == ali_afu_ase) {
          (static_cast<CASEALIAFU *>(m_pALIBase))->ASERelease();
+
+         if(m_pALIBase) {
+            delete m_pALIBase ;
+            m_pALIBase =NULL;
+         }
+         return ServiceBase::Release(m_tidSaved,timeout);
       }
    }
 
@@ -511,8 +517,34 @@ btBool ALI::ASEInit()
 
          return false;
          }
+
+      if( EObjOK != SetInterface(iidALI_UMSG_Service, dynamic_cast<IALIUMsg *>(m_pALIBase)) ){
+         goto FAIL;
+      }
+
+      if( EObjOK != SetInterface(iidALI_BUFF_Service, dynamic_cast<IALIBuffer *>(m_pALIBase)) ){
+         goto FAIL;
+      }
+
+      if( EObjOK != SetInterface(iidALI_RSET_Service, dynamic_cast<IALIReset *>(m_pALIBase)) ){
+         goto FAIL;
+      }
+
+      if( EObjOK != SetInterface(iidALI_MMIO_Service, dynamic_cast<IALIMMIO *>(m_pALIBase)) ){
+          goto FAIL;
+      }
    }
-   return ((dynamic_cast<CASEALIAFU *>(m_pALIBase))->ASEInit());
+
+   return  ((dynamic_cast<CASEALIAFU *>(m_pALIBase))->ASEInit());
+
+FAIL:
+   m_bIsOK = false;
+   initFailed(new CExceptionTransactionEvent( NULL,
+                                              m_tidSaved,
+                                              errCreationFailure,
+                                              reasUnknown,
+                                              "Error: Could not register interface."));
+   return false;
 }
 
 void ALI::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
