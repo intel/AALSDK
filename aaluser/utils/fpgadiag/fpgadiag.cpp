@@ -638,6 +638,7 @@ void CMyApp::allocateWorkspaces()
 
    btUnsignedInt numUmsg = m_pALIuMSGService->umsgGetNumber();
    m_UMsgVirt = m_pALIuMSGService->umsgGetAddress(0);
+   m_UMsgSize = numUmsg * KB(4);
 
    if(NULL == m_UMsgVirt){
 	  ERR("No uMSG support");
