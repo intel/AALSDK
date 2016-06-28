@@ -86,7 +86,6 @@ FILE *fp_mmioaccess_log = (FILE *)NULL;
  */
 // MMIO Tid
 int glbl_mmio_tid;
-//pthread_mutex_t mmio_tid_lock;
 
 // Tracker thread Id
 pthread_t mmio_watch_tid;
@@ -99,9 +98,6 @@ mmio_t *mmio_rsp_pkt;
  */
 // UMsg Watch TID
 pthread_t umsg_watch_tid;
-
-// UMsg port lock
-// pthread_mutex_t umsg_port_lock;
 
 // UMsg byte offset
 const int umsg_byteindex_arr[] = 
@@ -133,15 +129,10 @@ unsigned long long runtime_nsec;
  */
 uint32_t generate_mmio_tid()
 {
-  // Lock access to resource
-  // pthread_mutex_lock(&mmio_tid_lock);
-
   // Return value
   uint32_t ret_mmio_tid;
 
   // *FIXME*: TID credit must not overrun, no more than 64 outstanding MMIO Requests
-  // while ((mmio_read_outstanding + mmio_write_outstanding) >= MMIO_MAX_OUTSTANDING)
-  // while ( ((mmio_readreq_cnt-mmio_readrsp_cnt) + (mmio_writereq_cnt-mmio_writersp_cnt)) >= MMIO_MAX_OUTSTANDING )
   while ( count_mmio_tid_used() == MMIO_MAX_OUTSTANDING )
     {
 #ifdef ASE_DEBUG
@@ -153,9 +144,6 @@ uint32_t generate_mmio_tid()
   // Increment and mask
   ret_mmio_tid = glbl_mmio_tid & MMIO_TID_BITMASK;
   glbl_mmio_tid++;
-
-  // Unlock access to resource
-  // pthread_mutex_unlock(&mmio_tid_lock);
 
   // Return ID
   return ret_mmio_tid;
@@ -210,6 +198,7 @@ void *mmio_response_watcher()
 	  
 	  // Find scoreboard slot number to update
 	  slot_idx = get_scoreboard_slot_by_tid(mmio_rsp_pkt->tid);
+
 #ifdef ASE_DEBUG
 	  if (slot_idx == 0xFFFF)
 	    {
@@ -330,24 +319,6 @@ void session_init()
 	  END_RED_FONTCOLOR;
 	  exit (EXIT_FAILURE);
 	}
-
-      // MMIO TID counter lock
-      /* if ( pthread_mutex_init(&mmio_tid_lock, NULL) != 0) */
-      /* 	{ */
-      /* 	  BEGIN_RED_FONTCOLOR; */
-      /* 	  printf("  [APP]  MMIO TID Lock initialization failed, EXIT\n"); */
-      /* 	  END_RED_FONTCOLOR; */
-      /* 	  exit (EXIT_FAILURE); */
-      /* 	} */
-
-      // Initialize UMsg port lock
-      /* if ( pthread_mutex_init(&umsg_port_lock, NULL) != 0) */
-      /* 	{ */
-      /* 	  BEGIN_RED_FONTCOLOR; */
-      /* 	  printf("  [APP]  UMsg Port Lock initialization failed, EXIT\n"); */
-      /* 	  END_RED_FONTCOLOR; */
-      /* 	  exit (EXIT_FAILURE); */
-      /* 	} */
 
       // Initialize ase_workdir_path
       BEGIN_YELLOW_FONTCOLOR;
@@ -478,7 +449,6 @@ void session_init()
       printf("  [APP]  UMAS Virtual Base address = %p\n", (void*)umsg_umas_vbase);
       END_YELLOW_FONTCOLOR;
 
-
       // Start MMIO read response watcher watcher thread
       BEGIN_YELLOW_FONTCOLOR;  
       printf("  [APP]  Starting MMIO Read Response watcher ... ");
@@ -498,7 +468,6 @@ void session_init()
 	  printf("SUCCESS\n");
 	  END_YELLOW_FONTCOLOR;  
 	} 
-
 
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  Starting UMsg watcher ... ");
@@ -631,10 +600,10 @@ void session_deinit()
       // Clock snapshot
       clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time_snapshot);
       runtime_nsec = time_snapshot.tv_sec*1e9 + time_snapshot.tv_nsec;
-
       // Session end, set locale
       printf("  [APP]  Session ended \n");
       printf("         Took ");
+
       // Set locale, inherit locale, and reset back
       char *oldLocale = setlocale(LC_NUMERIC, NULL);
       setlocale(LC_NUMERIC, "");
@@ -645,8 +614,6 @@ void session_deinit()
       
       // Lock deinit
       pthread_mutex_destroy(&mmio_port_lock);
-      // pthread_mutex_destroy(&mmio_tid_lock);
-      // pthread_mutex_destroy(&umsg_port_lock);
     }
   else
     {
@@ -715,9 +682,6 @@ int mmio_request_put(struct mmio_t *pkt)
 {
   FUNC_CALL_ENTRY;
 
-  // Lock MMIO port
-  // pthread_mutex_lock (&mmio_port_lock);
-
 #ifdef ASE_DEBUG
   print_mmiopkt(fp_mmioaccess_log, "Sent", pkt);
 #endif
@@ -744,9 +708,6 @@ int mmio_request_put(struct mmio_t *pkt)
 
   // Send packet
   mqueue_send( app2sim_mmioreq_tx, (char*)pkt, sizeof(mmio_t) );
-
-  // Unlock MMIO port
-  // pthread_mutex_unlock (&mmio_port_lock);
 
   FUNC_CALL_EXIT;
 
@@ -777,7 +738,7 @@ void mmio_write32 (int offset, uint32_t data)
       printf("  [APP]  Requested offset is not in AFU MMIO region\n");
       printf("         MMIO Write Error\n");      
       END_RED_FONTCOLOR;
-      exit(1);
+      raise(SIGABRT);
     }
   else
     {
@@ -824,14 +785,13 @@ void mmio_write64 (int offset, uint64_t data)
   FUNC_CALL_ENTRY;
   int slot_idx;
 
-  // pthread_mutex_lock (&app_lock);
-
   if (offset < 0)
     {
       BEGIN_RED_FONTCOLOR;
-      printf("  [APP]  Requested offset is not in AFU MMIO region\n");
-      printf("         Ignoring MMIO Write\n");
+      printf("  [APP]  Requested offset is not in AFU MMIO region\n");      
+      printf("         MMIO Write Error\n");      
       END_RED_FONTCOLOR;
+      raise(SIGABRT);
     }
   else
     {
@@ -898,8 +858,9 @@ void mmio_read32(int offset, uint32_t *data32)
     {
       BEGIN_RED_FONTCOLOR;
       printf("  [APP]  Requested offset is not in AFU MMIO region\n");
-      printf("         Ignoring MMIO Read\n");
+      printf("         MMIO Read Error\n");      
       END_RED_FONTCOLOR;
+      raise(SIGABRT);
     }
   else
     {
@@ -932,7 +893,6 @@ void mmio_read32(int offset, uint32_t *data32)
 #endif
       
       // Wait until correct response found
-      // while (mmio_pkt->tid != mmio_rsp_pkt->tid)
       while (mmio_table[slot_idx].rx_flag != true)
 	{
 	  usleep(1);
@@ -973,8 +933,9 @@ void mmio_read64(int offset, uint64_t *data64)
     {
       BEGIN_RED_FONTCOLOR;
       printf("  [APP]  Requested offset is not in AFU MMIO region\n");
-      printf("         Ignoring MMIO Read\n");
+      printf("         MMIO Read Error\n");      
       END_RED_FONTCOLOR;
+      raise(SIGABRT);
     }
   else
     {
@@ -1007,7 +968,6 @@ void mmio_read64(int offset, uint64_t *data64)
 #endif
       
       // Wait for correct response to be back
-      // while (mmio_pkt->tid != mmio_rsp_pkt->tid)
       while(mmio_table[slot_idx].rx_flag != true)
 	{
 	  usleep(1);
@@ -1168,7 +1128,6 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   ws->index = mem->index;
   ws->buf_structaddr = (uint64_t*)mem;
   append_wsmeta(ws);
-  // pthread_mutex_unlock(&app_lock);
 
 #ifdef ASE_DEBUG
   if (fp_pagetable_log != NULL)
@@ -1296,7 +1255,6 @@ void deallocate_buffer_by_index(int search_index)
     {
       if (wsptr->index == search_index)
 	{
-	  //wsid = wsptr->index;
 	  bufptr = wsptr->buf_structaddr;
 	  printf("FOUND\n");
 	  break;
@@ -1356,6 +1314,22 @@ uint64_t* umsg_get_address(int umsg_id)
 void umsg_send (int umsg_id, uint64_t *umsg_data)
 {
   memcpy((char*)umsg_addr_array[umsg_id], (char*)umsg_data, sizeof(uint64_t));
+}
+
+
+/*
+ * umsg_set_attribute: Set UMSG Hint setting
+ */
+void umsg_set_attribute(uint32_t hint_mask)
+{
+  char *umsg_attrib_cmd;
+  
+  // Cast message
+  umsg_attrib_cmd = ase_malloc(ASE_MQ_MSGSIZE);
+  sprintf(umsg_attrib_cmd, "UMSG_MODE %d", hint_mask);
+
+  // Send transaction
+  ase_portctrl(umsg_attrib_cmd);
 }
 
 
@@ -1426,13 +1400,10 @@ void *umsg_watcher()
 /*
  * ase_portctrl: Send port control message to simulator
  *
- * AFU_RESET
- * UMSG_MODE <mode_bits>[7:0]
- *
- * ## WARNING ##: Do not remove __attribute__ optimization control
- * The extra delay is required for portctrl command to be parsed
- * by simulator. Removing this CAN have unintended program control
- * or race conditions
+ * AFU_RESET   <setting>            | (0,1)
+ * UMSG_MODE   <mode_nibbles>[31:0] | (0xF0FF0FF0)
+ * ASE_INIT    <dummy number>       | (X)
+ * ASE_SIMKILL <dummy number>       | (X)
  *
  */
 // void __attribute__((optimize("O0"))) ase_portctrl(const char *ctrl_msg)

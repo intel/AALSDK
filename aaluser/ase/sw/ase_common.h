@@ -419,14 +419,14 @@ extern "C" {
   uint32_t generate_mmio_tid();
   int mmio_request_put(struct mmio_t *);
   void mmio_response_get(struct mmio_t *);
-  void mmio_write32(int index, uint32_t data);
-  void mmio_write64(int index, uint64_t data);
-  void mmio_read32(int index, uint32_t *data);
-  void mmio_read64(int index, uint64_t *data);
+  void mmio_write32 (int , uint32_t  );
+  void mmio_write64 (int , uint64_t  );
+  void mmio_read32  (int , uint32_t* );
+  void mmio_read64  (int , uint64_t* );
   // UMSG functions
-  uint64_t* umsg_get_address(int umsg_id);
-  void umsg_send (int umsg_id, uint64_t *umsg_data);
-  void umsg_set_attribute(uint32_t hint_mask);
+  uint64_t* umsg_get_address(int);
+  void umsg_send (int , uint64_t *);
+  void umsg_set_attribute(uint32_t);
   // Driver activity
   void ase_portctrl(const char *);
   // Threaded watch processes

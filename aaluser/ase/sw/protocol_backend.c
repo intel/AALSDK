@@ -51,9 +51,6 @@ int session_empty;
 // MMIO Respons lock
 pthread_mutex_t mmio_resp_lock;
 
-//pthread_mutex_t ase_alloc_in_progress;
-//pthread_mutex_t ase_dealloc_in_progress;
-
 // User clock frequency
 float f_usrclk;
 
@@ -417,7 +414,7 @@ int ase_listener()
 	  else if ( memcmp(portctrl_cmd, "UMSG_MODE", 9) == 0)
 	    {
 	      // Umsg mode setting here
-	      glbl_umsgmode = portctrl_value & 0xFF;
+	      glbl_umsgmode = portctrl_value & 0xFFFFFFFF;
 	      printf("SIM-C : UMSG Mode mask set to 0x%x\n", glbl_umsgmode);
 
 	      // Send portctrl_rsp message
@@ -658,7 +655,7 @@ int ase_listener()
 	  memcpy(umsg_pkt, (umsgcmd_t *)umsg_mapstr, sizeof(struct umsgcmd_t));
 
 	  // Hint trigger
-	  umsg_pkt->hint = (glbl_umsgmode >> umsg_pkt->id) & 0x1;
+	  umsg_pkt->hint = (glbl_umsgmode >> (4*umsg_pkt->id)) & 0xF;
 
 	  // dispatch to event processing
 	  umsg_dispatch(0, umsg_pkt);
