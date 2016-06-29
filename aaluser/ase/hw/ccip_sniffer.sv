@@ -946,13 +946,9 @@ module ccip_sniffer
       // Status management
       logic [`MMIO_RESPONSE_TIMEOUT_RADIX-1:0] timer_val;
       logic 				       timeout;
-      // logic [CCIP_CFGHDR_TID_WIDTH-1:0]        tid;
       logic 				       active;
    } mmioread_track_t;
    mmioread_track_t mmioread_tracker[0:MMIO_TRACKER_DEPTH-1];
-
-   // Tracker status array
-   // logic [0:MMIO_TRACKER_DEPTH-1] 	       mmio_tracker_active_array;
 
    // Push/pop control process
    function update_mmio_activity(
@@ -985,7 +981,7 @@ module ccip_sniffer
    always @(posedge clk) begin
       if (SoftReset) begin
    	 for (int track_i = 0; track_i < MMIO_TRACKER_DEPTH ; track_i = track_i + 1) begin
-   	    update_mmio_activity(1, 0, 0, 0);
+   	    update_mmio_activity(1, 0, 0, track_i);
    	 end
       end
       else begin
@@ -1029,11 +1025,6 @@ module ccip_sniffer
    	    end
    	 end
 	 
-
-	 
-   	 // Global flag
-   	 // assign mmio_tracker_active_array[ii]  = mmioread_tracker[ii].active;
-
       end
    endgenerate
 
