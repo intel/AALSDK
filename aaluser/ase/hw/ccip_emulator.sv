@@ -723,16 +723,22 @@ module ccip_emulator
 	    cwlp_data    = 0;
 	 end
 	 else begin
+	    hdr.index    = mmio_pkt.addr[CCIP_CFGHDR_ADDR_WIDTH-1:2];
+	    hdr.rsvd9    = 1'b0;
+	    hdr.tid      = mmio_pkt.tid[CCIP_CFGHDR_TID_WIDTH-1:0];
+	    // Set MMIO Width
+	    if (mmio_pkt.width == MMIO_WIDTH_32) begin
+	       hdr.len      = 2'b00;
+	    end
+	    else if (mmio_pkt.width == MMIO_WIDTH_64) begin
+	       hdr.len      = 2'b01;
+	    end
+	    // Set behavior
 	    if (mmio_pkt.write_en == MMIO_WRITE_REQ) begin
-	       hdr.index  = {mmio_pkt.addr[17:2]};
-	       hdr.rsvd9  = 1'b0;
-	       hdr.tid    = mmio_pkt.tid[CCIP_CFGHDR_TID_WIDTH-1:0];
 	       if (mmio_pkt.width == MMIO_WIDTH_32) begin
-		  hdr.len = 2'b00;
 		  cwlp_data = {480'b0, mmio_pkt.qword[0][31:0]};
 	       end
 	       else if (mmio_pkt.width == MMIO_WIDTH_64) begin
-		  hdr.len = 2'b01;
 		  cwlp_data = {448'b0, mmio_pkt.qword[0][63:0]};
 	       end
 	       cwlp_header = logic_cast_CfgHdr_t'(hdr);
@@ -745,16 +751,7 @@ module ccip_emulator
 	       run_clocks(`MMIO_WRITE_LATRANGE);
 	    end
 	    else if (mmio_pkt.write_en == MMIO_READ_REQ) begin
-	       cwlp_data    = 0;
-	       hdr.index    = {2'b0, mmio_pkt.addr[15:2]};
-	       if (mmio_pkt.width == MMIO_WIDTH_32) begin
-		  hdr.len      = 2'b00;
-	       end
-	       else if (mmio_pkt.width == MMIO_WIDTH_64) begin
-		  hdr.len      = 2'b01;
-	       end
-	       hdr.rsvd9    = 1'b0;
-	       hdr.tid      = mmio_pkt.tid[CCIP_CFGHDR_TID_WIDTH-1:0];
+	       cwlp_data    = 0; 
 	       cwlp_header  = logic_cast_CfgHdr_t'(hdr);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 1;

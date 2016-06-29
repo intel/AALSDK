@@ -154,15 +154,16 @@ package ase_pkg;
     * Config MMIO Header
     */
    // MMIO Header specifics
+   parameter int      CCIP_CFGHDR_ADDR_WIDTH  = 18;
    parameter int      CCIP_CFGHDR_INDEX_WIDTH = 16;
-   parameter int      CCIP_CFGHDR_TID_WIDTH = 9;
+   parameter int      CCIP_CFGHDR_TID_WIDTH   = 9;
 
    // CfgHdr
    typedef struct packed {
-      logic [15:0] index;  // 27:12
-      logic [1:0]  len;    // 11:10
-      logic 	   rsvd9;  // 9
-      logic [8:0]  tid;    // 8:0
+      logic [CCIP_CFGHDR_INDEX_WIDTH-1:0] index;  // 27:12
+      logic [1:0] 			  len;    // 11:10
+      logic 				  rsvd9;  // 9
+      logic [CCIP_CFGHDR_TID_WIDTH-1:0]   tid;    // 8:0
       } CfgHdr_t;
    parameter CCIP_CFG_HDR_WIDTH    = $bits(CfgHdr_t);
 
