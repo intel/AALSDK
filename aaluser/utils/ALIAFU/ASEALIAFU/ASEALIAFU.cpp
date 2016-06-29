@@ -495,25 +495,10 @@ AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize             Length,
   memset(buf, 0, sizeof(buffer_t));
 
   buf->memsize = (uint32_t)Length;
-  // ASECCIAFU::sm_ASEMtx.Lock();
 
-#if 0  // FIXME: Retrying several times to work around ASE issue (Redmine #674)
-  int retriesLeft;
-  for ( retriesLeft = 3; retriesLeft > 0; retriesLeft-- ) {
-#endif
-     allocate_buffer(buf, (uint64_t*)pTargetVirtAddr);
-#if 0
-     if ( ( ASE_BUFFER_VALID == buf->valid )   &&
-           ( MAP_FAILED != (void *)buf->vbase ) &&
-           ( 0 != buf->fake_paddr ) ) {
-        break;
-     }
-     AAL_WARNING(LM_AFU, "ASE buffer allocation failed, retrying..." <<
-           std::endl);
-  }
-#endif
+  // Allocate buffer (ASE call)
+  allocate_buffer(buf, (uint64_t*)pTargetVirtAddr);
 
-  //ASECCIAFU::sm_ASEMtx.Unlock();
   if ( ( ASE_BUFFER_VALID != buf->valid )   ||
        ( MAP_FAILED == (void *)buf->vbase ) ||
        ( 0 == buf->fake_paddr ) )
@@ -586,7 +571,6 @@ btPhysAddr ASEALIAFU::bufferGetIOVA( btVirtAddr Address)
 btUnsignedInt ASEALIAFU::umsgGetNumber( void )
 {
   return NUM_UMSG_PER_AFU;
-  // return true;
 }
 
 //
@@ -594,32 +578,6 @@ btUnsignedInt ASEALIAFU::umsgGetNumber( void )
 //
 btVirtAddr ASEALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
 {
-#if 1
-   // If we've never gotten the map getit now
-  // if(NULL == m_uMSGmap){
-    // UmsgGetBaseAddress transaction;
-    
-    //   m_pAFUProxy->SendTransaction(&transaction);
-    //   if(uid_errnumOK != transaction.getErrno()){
-    //      return NULL;
-    //   }
-    //   struct AAL::aalui_WSMEvent wsevt = transaction.getWSIDEvent();
-
-      // mmap
-   //    if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr)) {
-   //       AAL_ERR( LM_All,"FATAL: MapWSID failed");
-   //       return NULL;
-   //    }
-   //    else
-   //    {
-   //   	  m_uMSGsize = wsevt.wsParms.size;
-   //        m_uMSGmap = wsevt.wsParms.ptr;
-   //        // store entire aalui_WSParms struct in map
-   //        //  to enable bufferGetIOVA()
-   //        m_mapWkSpc[wsevt.wsParms.ptr] = wsevt.wsParms;
-   //    }
-   // }
-
    // Umsgs are separated by 1 Page + 1 CL
    // Malicious call could overflow and cause wrap to invalid address.
    // TODO: Check if there is any problem with using a different address
@@ -632,9 +590,6 @@ btVirtAddr ASEALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
       // m_uMSGmap is btVirtAddr is char* so math is in bytes
       return m_uMSGmap + offset;
    }
-#else
-  return 0;
-#endif
 }
 
 
@@ -650,8 +605,26 @@ void ASEALIAFU::umsgTrigger64( const btVirtAddr pUMsg,
 //
 // TODO: not implemented
 //
-bool ASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
+bool __attribute__((optimize("O0"))) ASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 {
+   if( true != nvsArgs.Has(UMSG_HINT_MASK_KEY)){
+      AAL_ERR( LM_All,"Missing Parameter or Key");
+      return false;
+   }
+   eBasicTypes nvsType;
+   if(ENamedValuesOK !=  nvsArgs.Type(UMSG_HINT_MASK_KEY, &nvsType)){
+      AAL_ERR( LM_All,"Unable to get key value type.");
+      return false;
+   }
+
+   if(btUnsigned64bitInt_t !=  nvsType){
+      AAL_ERR( LM_All,"Bad value type.");
+      return false;
+   }
+
+   // Send UMSG setup (call ASE)
+   // umsg_set_attribute((uint32_t)nvsArgs);
+
    return true;
 }
 
@@ -673,12 +646,7 @@ IALIReset::e_Reset ASEALIAFU::afuEnable( NamedValueSet const &rInputArgs)
 
 IALIReset::e_Reset ASEALIAFU::afuReset( NamedValueSet const &rInputArgs )
 {
-   // Port control
-   // ase_portctrl("AFU_RESET 1");
-   // usleep(10000);
-   // ase_portctrl("AFU_RESET 0");
-
-  send_swreset();
+   send_swreset();
 
    return e_OK;
 }
