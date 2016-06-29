@@ -101,13 +101,10 @@ void AllocatesNLBLpbk1AFU::Allocate(AAL::IRuntime *pRuntime)
 #if defined( HWAFU )                /* Use FPGA hardware */
 
    // Service Library to use
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
 
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID, "D8424DC4-A4A3-C413-F89E-433683F9040B");
-
-   // indicate that this service needs to allocate an AIAService, too to talk to the HW
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
 
 #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
 
@@ -149,13 +146,10 @@ void AllocatesFME::Allocate(AAL::IRuntime *pRuntime)
 #if defined( HWAFU )                /* Use FPGA hardware */
 
    // Service Library to use
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
 
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID, "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764");
-
-   // indicate that this service needs to allocate an AIAService, too to talk to the HW
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
 
 #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
 
@@ -183,6 +177,50 @@ void AllocatesFME::Allocate(AAL::IRuntime *pRuntime)
    pRuntime->allocService(dynamic_cast<IBase *>(this), Manifest);
 }
 
+
+void AllocatesPort::Allocate(AAL::IRuntime *pRuntime)
+{
+   MSG("Allocating PORT Service Enter");
+   // NOTE: This example is bypassing the Resource Manager's configuration record lookup
+   //  mechanism.  Since the Resource Manager Implementation is a sample, it is subject to change.
+   //  This example does illustrate the utility of having different implementations of a service all
+   //  readily available and bound at run-time.
+   AAL::NamedValueSet Manifest;
+   AAL::NamedValueSet ConfigRecord;
+
+#if defined( HWAFU )                /* Use FPGA hardware */
+
+   // Service Library to use
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
+
+   // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
+   ConfigRecord.Add(keyRegAFU_ID, "3AB49893-138D-42EB-9642-B06C6B355B87");
+
+#elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
+
+   Manifest.Add(keyRegHandle, 20);
+
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASEALIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+
+#else
+# error Must define HWAFU or ASEAFU.
+#endif // HWAFU
+
+   // Add the Config Record to the Manifest describing what we want to allocate
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+
+   Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "PORT");
+
+   MSG("Allocating PORT Service");
+
+   // Allocate the Service and wait for it to complete by sitting on the
+   //   semaphore. The serviceAllocated() callback will be called if successful.
+   //   If allocation fails the serviceAllocateFailed() should set m_Errors appropriately.
+
+   // We are the service client.
+   pRuntime->allocService(dynamic_cast<IBase *>(this), Manifest);
+}
 ////////////////////////////////////////////////////////////////////////////////
 
 DoesNLBLpbk1::DoesNLBLpbk1(AAL::IBase   *pAALService,

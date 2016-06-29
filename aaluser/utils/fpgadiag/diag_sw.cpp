@@ -65,10 +65,6 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
     volatile btUnsigned32bitInt *pEndInput = (volatile btUnsigned32bitInt *)pInput +
 	                                     (m_pMyApp->InputSize() / sizeof(btUnsigned32bitInt));
 
-    for ( ; pInput < pEndInput ; ++pInput ) {
-         *pInput = InputData;
-    }
-
     volatile btVirtAddr pOutputUsrVirt = m_pMyApp->OutputVirt();
     volatile btVirtAddr pUMsgUsrVirt = m_pMyApp->UMsgVirt();
     volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
@@ -77,15 +73,15 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
       ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_DATA) ||
         flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT))){
 
-	  NamedValueSet nvs;
-	  if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_DATA)){
-		  nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)LOW);
+        NamedValueSet nvs;
+        if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_DATA)){
+           nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)LOW);
 
-	  }else if (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT)){
-		  nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)HIGH);
-	  }
+        }else if (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT)){
+           nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)HIGH);
+        }
 
-	  btBool ret = m_pALIuMSGService->umsgSetAttributes(nvs);
+        btBool ret = m_pALIuMSGService->umsgSetAttributes(nvs);
     }
 
     // Initiate AFU Reset
@@ -127,8 +123,7 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
     else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_DATA)){
        cfg |= (csr_type)NLB_TEST_MODE_UMSG_DATA;
     }
-    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT))
-    {
+    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT)){
        cfg |= (csr_type)NLB_TEST_MODE_UMSG_HINT;
     }
 
@@ -185,6 +180,19 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
    SavePerfMonitors();
 
    while ( sz <= CL(cmd.endcls)){
+
+      // Clear the UMsg address space
+      ::memset((void *)pUMsgUsrVirt, 0, m_pMyApp->UMsgSize());
+
+      // zero the output buffer
+      ::memset((void *)pOutputUsrVirt, 0, m_pMyApp->OutputSize());
+
+      //Re-initialise the Input buffer
+      pInput    = (volatile btUnsigned32bitInt *)pInputUsrVirt;
+      for ( ; pInput < pEndInput ; ++pInput ) {
+          *pInput = InputData;
+      }
+
 	   // Assert Device Reset
 	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 

@@ -94,6 +94,17 @@ public:
    virtual const char * ServiceDescription() const { return "FME"; }
 };
 
+
+// Allocates the PORT AAL Service.
+// keyRegAFU_ID : 3AB49893-138D-42EB-9642-B06C6B355B87
+class AllocatesPort : public AllocatesAALService
+{
+public:
+   AllocatesPort() {}
+   virtual void                   Allocate(AAL::IRuntime * );
+   virtual const char * ServiceDescription() const { return "PORT"; }
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // Definition of an object that can perform a basic NLB Lpbk1 (mode 0) transfer.

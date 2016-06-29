@@ -121,7 +121,7 @@ static ssize_t ccip_logging_timervalue_attrib_store_debug(struct device_driver *
    return size;
 }
 
-DRIVER_ATTR(logging_timer,0666, ccip_logging_timervalue_attrib_show,ccip_logging_timervalue_attrib_store_debug);
+DRIVER_ATTR(logging_timer,S_IRUGO|S_IWUSR|S_IWGRP, ccip_logging_timervalue_attrib_show,ccip_logging_timervalue_attrib_store_debug);
 
 
 ///============================================================================

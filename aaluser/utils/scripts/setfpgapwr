@@ -39,7 +39,7 @@
 # Uses pcimem for register access. If not found, the script will offer to
 # download and build.
 #
-# Known issues: 
+# Known issues:
 #    - uses fixed MMIO offset for accessing PM_THRESHOLD CSR. Should in fact
 #      walk DFH list to find correct offset.
 #    - does not check FME AFU GUID, but assumes that we are pointed at the
@@ -61,6 +61,7 @@ PCIMEM_URL="https://github.com/billfarrow/pcimem"
 PCIMEM_BUILDDIR=$(pwd)/build_pcimem # Path to build pcimem in
 PATH="${PATH}:${PWD}:${PCIMEM_BUILDDIR}"  # PATH including PWD and built pcimem
 PM_THRESHOLD_OFFSET="0x2008"        # FIXME: hardcoded, should discover via DFL
+PM_RDVR_OFFSET="0x2010"             # FIXME: hardcoded, should discover via DFL
 PM_DFH_OFFSET="0x2000"              # FIXME: hardcoded, should discover via DFL
 PM_FTYPE="3"                        # Expected feature type for PM
 PM_FREV="0"                         # Expected feature revision for PM
@@ -130,6 +131,8 @@ function print_usage ()
       echo "                    Units of 0.78125 A. Default: 0x57 (68 A)"
       echo "       -2           Read core supply threshold 2 value."
       echo "                    Units of 0.78125 A. Default: 0x53 (64.8 A)"
+      echo "       -l           Read live core supply value."
+      echo "                    Units of 0.09765625 A."
       echo "       -v           Be verbose. Can be issued multiple times (-vv)."
    fi
 }
@@ -176,7 +179,7 @@ function parse_arguments()
 
    elif [ "${SCRIPTNAME}" = "getfpgapwr" ]; then
 
-      while getopts ":hv12d:" OPT; do
+      while getopts ":hlv12d:" OPT; do
          case "${OPT}" in
             1)
                THRESHOLD_1=1
@@ -184,9 +187,17 @@ function parse_arguments()
                   echo "ERROR: Please do not specify Threshold 2 before Threshold 1."
                   exit 1
                fi
+               if [ ! -z "${LIVE_MODE}" ]; then
+                  echo "ERROR: Please do not specify -l before -1 or -2."
+                  exit 1
+               fi
                ;;
             2)
                THRESHOLD_2=1
+               if [ ! -z "${LIVE_MODE}" ]; then
+                  echo "ERROR: Please do not specify -l before -1 or -2."
+                  exit 1
+               fi
                ;;
             d)
                DEVICE="${OPTARG}"
@@ -205,6 +216,9 @@ function parse_arguments()
             h)
                print_usage
                exit 0
+               ;;
+            l)
+               LIVE_MODE=1
                ;;
          esac
       done
@@ -226,8 +240,8 @@ function check_arguments()
 
    elif [ "${SCRIPTNAME}" = "getfpgapwr" ]; then
 
-      if [ -z "${THRESHOLD_1}" -a -z "${THRESHOLD_2}" ]; then
-         echo "ERROR: No threshold to read specified."
+      if [ -z "${THRESHOLD_1}" -a -z "${THRESHOLD_2}" -a -z "${LIVE_MODE}" ]; then
+         echo "ERROR: No threshold to read or live mode specified."
          exit 1
       fi
 
@@ -414,8 +428,18 @@ if [ "${SCRIPTNAME}" = "setfpgapwr" ]; then
    # Write register contents back
    write32 "${PM_THRESHOLD_OFFSET}" "${WRITE_VAL}"
 
-# --- GETFPGAPWR: write values ----------------------------------------------------
+# --- GETFPGAPWR: read values ----------------------------------------------------
 elif [ "${SCRIPTNAME}" = "getfpgapwr" ]; then
+
+   if [ -n "${LIVE_MODE}" ]; then
+      # Read lower half of PM_RDVR register
+      read32 "${PM_RDVR_OFFSET}" "READ_VAL"
+
+      # Extract core supply current
+      CORE=$(( ( READ_VAL >> 16 ) & 0x0000FFFF ))
+      CORE_AMPS=$(echo "${CORE} * 0.09765625" | bc )
+      CORE_WATTS=$(echo "${CORE_AMPS} * ${CORE_VOLTAGE}" | bc )
+   fi
 
    # Read lower half of PM_THRESHOLD register
    read32 "${PM_THRESHOLD_OFFSET}" "READ_VAL"
@@ -443,6 +467,14 @@ elif [ "${SCRIPTNAME}" = "getfpgapwr" ]; then
          printf "0x%02x (dec: %i) (%f A, %f W)\n" "${OLD_T2}" "${OLD_T2}" "${OLD_T2_AMPS}" "${OLD_T2_WATTS}"
       else
          printf "%i\n" "${OLD_T2}"
+      fi
+   fi
+   if [ ! -z "${LIVE_MODE}" ]; then
+      if [ "${VERBOSE}" -gt 0 ]; then
+         echo -n "Current FPGA core consumption value: "
+         printf "0x%02x (dec: %i) (%f A, %f W)\n" "${CORE}" "${CORE}" "${CORE_AMPS}" "${CORE_WATTS}"
+      else
+         printf "%i\n" "${CORE}"
       fi
    fi
 
