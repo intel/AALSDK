@@ -24,13 +24,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 // **************************************************************************
-/* 
+/*
  * Module Info: ASE Error reporting functions
  * Language   : System{Verilog} | C/C++
  * Owner      : Rahul R Sharma
  *              rahul.r.sharma@intel.com
  *              Intel Corporation
- */ 
+ */
 
 #include "ase_common.h"
 
@@ -44,7 +44,7 @@ void ase_error_report(char *err_func, int err_num, int err_code)
 
   // Report error
   printf("@ERROR in %s CODE %d | %s\n", err_func, err_num, strerror(err_num) );
-    
+
   // Corrective actions
   switch (err_code)
     {
@@ -52,13 +52,13 @@ void ase_error_report(char *err_func, int err_num, int err_code)
     case ASE_USR_CAPCM_NOINIT:
       printf("QPI-CA private memory has not been initialized.\n");
       break;
-      
+
       // Message queue error
     case ASE_OS_MQUEUE_ERR:
       printf("There was an error in the POSIX Message Queue subsystem.\n");
       printf("Please look up 'man mq_overview' for more information.\n");
       break;
-      
+
       // Message queue error
     case ASE_OS_SHM_ERR:
       printf("There was an error in the POSIX Shared Memory subsystem.\n");
@@ -70,7 +70,7 @@ void ase_error_report(char *err_func, int err_num, int err_code)
       printf("1. ASE is being run from the wrong relative paths, and causing fstat to fail.\n");
       printf("2. File system permissions are not optimal\n");
       break;
-      
+
       // Memory map/unmap failed
     case ASE_OS_MEMMAP_ERR:
       printf("A problem occured when mapping or unmapping a memory region to a virtual base pointer.\n");
@@ -116,10 +116,11 @@ void backtrace_handler(int sig)
   char **bt_messages = (char **)NULL;
   int ii, trace_depth = 0;
   char sys_cmd[256];
-  
   char app_or_sim[16];
+  int cmd_ret;
+
   memset(app_or_sim, 0, sizeof(app_or_sim));
-  
+
 #ifdef SIM_SIDE
   sprintf(app_or_sim, "Simulator ");
 #else
@@ -131,14 +132,14 @@ void backtrace_handler(int sig)
   printf("%s received a ", app_or_sim);
   switch (sig)
     {
-    case SIGSEGV: 
+    case SIGSEGV:
       printf("SIGSEGV\n");
       break;
-      
-    case SIGBUS: 
+
+    case SIGBUS:
       printf("SIGBUS\n");
       break;
-      
+
     case SIGABRT:
       printf("SIGABRT\n");
       break;
@@ -155,11 +156,14 @@ void backtrace_handler(int sig)
     {
       printf("[bt] #%d %s\n", ii, bt_messages[ii]);
       sprintf(sys_cmd,"addr2line %p -e %s", bt_addr[ii], __progname);
-      system(sys_cmd);
+      cmd_ret = system(sys_cmd);
+      // man page for system asks users to check for SIGINT/SIGQUIT
+      if (WIFSIGNALED(cmd_ret) && ((WTERMSIG(cmd_ret) == SIGINT)||(WTERMSIG(cmd_ret) == SIGQUIT)))
+	{
+	  break;
+	}
     }
   END_RED_FONTCOLOR;
 
   exit(1);
 }
-
-

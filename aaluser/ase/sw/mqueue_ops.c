@@ -202,7 +202,6 @@ int mqueue_open(char *mq_name, int perm_flag)
   char *mq_path;
 
   mq_path = ase_malloc (ASE_FILEPATH_LEN);
-  /* memset (mq_path, 0, ASE_FILEPATH_LEN); */
   sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name);
 
   // Dummy function to open WRITE only MQs
@@ -306,16 +305,17 @@ void mqueue_destroy(char* mq_name_suffix)
 void mqueue_send(int mq, const char* str, int size)
 {
   FUNC_CALL_ENTRY;
-  int ret_tx;
 
+  int ret_tx;
   ret_tx = write(mq, (void*)str, size);
-#ifdef ASE_DEBUG
+
   if ((ret_tx == 0) || (ret_tx != size))
     {
+#ifdef ASE_DEBUG
       perror("write");
       printf("  [DEBUG]  write() returned wrong data size.");
-    }
 #endif
+    }
   
   FUNC_CALL_EXIT;
 }
