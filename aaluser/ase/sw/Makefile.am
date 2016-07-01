@@ -45,7 +45,6 @@ error_report.c
 
 libASE_la_CPPFLAGS=\
 -I$(top_srcdir)/ase/sw
-# -DASE_DEBUG
 
 libASE_la_LDFLAGS=\
 -version-info $(ASE_VERSION_CURRENT):$(ASE_VERSION_REVISION):$(ASE_VERSION_AGE)

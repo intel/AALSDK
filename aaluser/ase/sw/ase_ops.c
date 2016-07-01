@@ -128,9 +128,6 @@ void ase_buffer_info(struct buffer_t *mem)
   FUNC_CALL_ENTRY;
 
   BEGIN_YELLOW_FONTCOLOR;
-  // printf("BUFFER parameters...\n");
-  /* printf("\tfd_app      = %d \n",    mem->fd_app); */
-  /* printf("\tfd_ase      = %d \n",    mem->fd_ase); */
   printf("\tindex       = %d \n",    mem->index);
   printf("\tvalid       = %s \n",    (mem->valid == 0xffff) ? "VALID" : "INVALID" );
   printf("\tAPPVirtBase = %p \n",    (void *)mem->vbase);
@@ -216,14 +213,9 @@ void ase_memory_barrier()
  *     - Check if "work" directory already exists, if not create one
  *   - If not Error out
  */
-//char* ase_eval_session_directory()
-// void ase_eval_session_directory(char* env_path)
 void ase_eval_session_directory()
 {
   FUNC_CALL_ENTRY;
-
-  // char *workdir_path;
-  // char *env_path;
 
   // workdir_path = ase_malloc (ASE_FILEPATH_LEN);
   ase_workdir_path = ase_malloc (ASE_FILEPATH_LEN);
@@ -269,9 +261,6 @@ void ase_eval_session_directory()
 	}
     }
 #endif
-
-  // return env_path;
-  // return ase_workdir_path;
 }
 
 
@@ -476,12 +465,10 @@ int ase_read_lock_file(const char *workdir)
 	    }
 	  else if ( strcmp (parameter, "dir") == 0)
 	    {
-	      // readback_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
 	      strncpy(readback_workdir_path, value, ASE_FILEPATH_LEN);
 	    }
 	  else if ( strcmp (parameter, "uid") == 0)
 	    {
-	      // readback_uid = ase_malloc(ASE_FILEPATH_LEN);
 	      strncpy(readback_uid, value, ASE_FILEPATH_LEN);
 	    }
 	}
@@ -540,6 +527,9 @@ int ase_read_lock_file(const char *workdir)
     {
       BEGIN_RED_FONTCOLOR;
       printf("ASE Ready file was not found at env(ASE_WORKDIR) !\n");
+      printf("This could be for one of two reasons =>\n");
+      printf(" - Simualtor is not running yet  \n");
+      printf(" - env(ASE_WORKDIR) is set to the wrong location \n");
       END_RED_FONTCOLOR;
     }
 
