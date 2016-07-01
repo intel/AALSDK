@@ -748,8 +748,8 @@ module ccip_emulator
 	       @(posedge clk);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 0;
-	       @(posedge clk);
-	       // run_clocks(`MMIO_WRITE_LATRANGE);
+	       // @(posedge clk);
+	       run_clocks(`MMIO_WRITE_LATRANGE);
 	    end
 	    else if (mmio_pkt.write_en == MMIO_READ_REQ) begin
 	       cwlp_data    = 0; 
@@ -760,8 +760,8 @@ module ccip_emulator
 	       @(posedge clk);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 0;
-	       @(posedge clk);
-	       // run_clocks(`MMIO_READ_LATRANGE);
+	       // @(posedge clk);
+	       run_clocks(`MMIO_READ_LATRANGE);
 	    end
 	 end
       end
