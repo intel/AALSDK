@@ -112,7 +112,7 @@ char* umsg_addr_array[NUM_UMSG_PER_AFU];
 volatile int umas_init_flag;
 
 // Time taken calc
-struct timespec time_snapshot;
+struct timespec start_time_snapshot, end_time_snapshot;
 unsigned long long runtime_nsec;
 
 
@@ -303,6 +303,10 @@ void send_simkill()
 void session_init()
 {
   FUNC_CALL_ENTRY;
+
+  // Start clock
+  // start_time_snapshot = clock();
+  clock_gettime(CLOCK_MONOTONIC, &start_time_snapshot);
 
   if (session_exist_status != ESTABLISHED)
     {
@@ -595,11 +599,14 @@ void session_deinit()
       mqueue_close(sim2app_dealloc_rx);
       mqueue_close(sim2app_portctrl_rsp_rx);
 
-      BEGIN_YELLOW_FONTCOLOR;
-      
-      // Clock snapshot
-      clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time_snapshot);
-      runtime_nsec = time_snapshot.tv_sec*1e9 + time_snapshot.tv_nsec;
+      // Lock deinit
+      pthread_mutex_destroy(&mmio_port_lock);
+
+      BEGIN_YELLOW_FONTCOLOR;      
+      // End Clock snapshot
+      clock_gettime(CLOCK_MONOTONIC, &end_time_snapshot);
+      runtime_nsec = 1e9*(end_time_snapshot.tv_sec - start_time_snapshot.tv_sec) + (end_time_snapshot.tv_nsec - start_time_snapshot.tv_nsec);
+
       // Session end, set locale
       printf("  [APP]  Session ended \n");
       printf("         Took ");
@@ -610,10 +617,7 @@ void session_deinit()
       printf("%'llu nsec \n", runtime_nsec);
       setlocale(LC_NUMERIC, oldLocale);
 
-      END_YELLOW_FONTCOLOR;
-      
-      // Lock deinit
-      pthread_mutex_destroy(&mmio_port_lock);
+      END_YELLOW_FONTCOLOR;      
     }
   else
     {
