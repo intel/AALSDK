@@ -107,8 +107,8 @@
  * LAT_UNDEFINED   : Undefined latency
  * 
  */ 
-`define MMIO_WRITE_LATRANGE         2       // 730 ns
-`define MMIO_READ_LATRANGE          2
+`define MMIO_WRITE_LATRANGE         4       // 730 ns
+`define MMIO_READ_LATRANGE          4
 `define RDLINE_S_LATRANGE          8,16
 `define RDLINE_I_LATRANGE          8,16
 `define WRLINE_M_LATRANGE          4,7
