@@ -449,6 +449,7 @@ void session_init()
       allocate_buffer(umas_region, NULL);
       umsg_umas_vbase = (uint64_t*)((uint64_t)umas_region->vbase);
       umas_exist_status = ESTABLISHED;
+      umsg_set_attribute(0x0);
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  UMAS Virtual Base address = %p\n", (void*)umsg_umas_vbase);
       END_YELLOW_FONTCOLOR;

@@ -44,6 +44,7 @@ int glbl_test_cmplt_cnt;
 
 // Global umsg mode, lookup before issuing UMSG
 int glbl_umsgmode;
+char umsg_mode_msg[ASE_LOGGER_LEN];
 
 // Session status
 int session_empty;
@@ -415,7 +416,9 @@ int ase_listener()
 	    {
 	      // Umsg mode setting here
 	      glbl_umsgmode = portctrl_value & 0xFFFFFFFF;
-	      printf("SIM-C : UMSG Mode mask set to 0x%x\n", glbl_umsgmode);
+	      sprintf(umsg_mode_msg, "UMSG Mode mask set to 0x%x", glbl_umsgmode);
+	      printf("SIM-C : %s\n", umsg_mode_msg);
+	      buffer_msg_inject(1, umsg_mode_msg);
 
 	      // Send portctrl_rsp message
 	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);

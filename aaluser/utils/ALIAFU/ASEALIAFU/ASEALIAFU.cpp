@@ -607,6 +607,8 @@ void ASEALIAFU::umsgTrigger64( const btVirtAddr pUMsg,
 //
 bool __attribute__((optimize("O0"))) ASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 {
+  btUnsigned64bitInt hint_flag;
+
    if( true != nvsArgs.Has(UMSG_HINT_MASK_KEY)){
       AAL_ERR( LM_All,"Missing Parameter or Key");
       return false;
@@ -621,9 +623,15 @@ bool __attribute__((optimize("O0"))) ASEALIAFU::umsgSetAttributes( NamedValueSet
       AAL_ERR( LM_All,"Bad value type.");
       return false;
    }
-
+   
+   if (nvsArgs.Get(UMSG_HINT_MASK_KEY, &hint_flag) != ENamedValuesOK)
+     {
+       AAL_ERR( LM_All,"Get Failed");
+       return false;
+     }
+   
    // Send UMSG setup (call ASE)
-   // umsg_set_attribute((uint32_t)nvsArgs);
+   umsg_set_attribute(hint_flag);
 
    return true;
 }
