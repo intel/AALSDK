@@ -98,7 +98,6 @@
  * Latency model 
  * Coded as a Min,Max tuple
  * -------------------------------------------------------
- * CSR_WR_LATRANGE : CSR Write latency range
  * RDLINE_LATRANGE : ReadLine turnaround time
  * WRLINE_LATRANGE : WriteLine turnaround time
  * UMSG_LATRANGE   : UMsg latency
@@ -107,8 +106,7 @@
  * LAT_UNDEFINED   : Undefined latency
  * 
  */ 
-`define MMIO_WRITE_LATRANGE         4       // 730 ns
-`define MMIO_READ_LATRANGE          4
+`define MMIO_LATENCY                1
 `define RDLINE_S_LATRANGE          8,16
 `define RDLINE_I_LATRANGE          8,16
 `define WRLINE_M_LATRANGE          4,7

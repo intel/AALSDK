@@ -646,7 +646,7 @@ module ccip_emulator
    task run_clocks (int num_clks);
       int clk_iter;
       begin
-	 for (clk_iter = 0; clk_iter < num_clks; clk_iter = clk_iter + 1) begin
+	 for (clk_iter = 0; clk_iter <= num_clks; clk_iter = clk_iter + 1) begin
 	    @(posedge clk);
 	 end
       end
@@ -711,18 +711,23 @@ module ccip_emulator
    logic [CCIP_DATA_WIDTH-1:0] 		     mmio_data512;
    logic [CCIP_CFG_HDR_WIDTH-1:0] 	     mmio_hdrvec;
 
+   logic 				     mmio_dispatch_lock;
 
    // MMIO dispatch unit
    task mmio_dispatch (int initialize, mmio_t mmio_pkt);
-      CfgHdr_t hdr;
+      CfgHdr_t hdr;      
       begin
 	 if (initialize) begin
-	    cwlp_wrvalid = 0;
-	    cwlp_rdvalid = 0;
-	    cwlp_header  = 0;
-	    cwlp_data    = 0;
+	    cwlp_wrvalid       = 0;
+	    cwlp_rdvalid       = 0;
+	    cwlp_header        = 0;
+	    cwlp_data          = 0;
+	    mmio_dispatch_lock = 0;	    
 	 end
 	 else begin
+	    while(mmio_dispatch_lock != 0);
+	    mmio_dispatch_lock = 1;
+	    @(posedge clk);
 	    hdr.index    = mmio_pkt.addr[CCIP_CFGHDR_ADDR_WIDTH-1:2];
 	    hdr.rsvd9    = 1'b0;
 	    hdr.tid      = mmio_pkt.tid[CCIP_CFGHDR_TID_WIDTH-1:0];
@@ -733,7 +738,7 @@ module ccip_emulator
 	    else if (mmio_pkt.width == MMIO_WIDTH_64) begin
 	       hdr.len      = 2'b01;
 	    end
-	    // Set behavior
+	    // Set MMIO Read/Write behavior
 	    if (mmio_pkt.write_en == MMIO_WRITE_REQ) begin
 	       if (mmio_pkt.width == MMIO_WIDTH_32) begin
 		  cwlp_data = {480'b0, mmio_pkt.qword[0][31:0]};
@@ -745,25 +750,20 @@ module ccip_emulator
 	       cwlp_wrvalid = 1;
 	       cwlp_rdvalid = 0;
 	       mmio_pkt.resp_en = 1;
-	       @(posedge clk);
-	       cwlp_wrvalid = 0;
-	       cwlp_rdvalid = 0;
-	       // @(posedge clk);
-	       run_clocks(`MMIO_WRITE_LATRANGE);
-	    end
+	    end // if (mmio_pkt.write_en == MMIO_WRITE_REQ)	    
 	    else if (mmio_pkt.write_en == MMIO_READ_REQ) begin
 	       cwlp_data    = 0; 
 	       cwlp_header  = logic_cast_CfgHdr_t'(hdr);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 1;
 	       mmio_pkt.resp_en = 1;
-	       @(posedge clk);
-	       cwlp_wrvalid = 0;
-	       cwlp_rdvalid = 0;
-	       // @(posedge clk);
-	       run_clocks(`MMIO_READ_LATRANGE);
-	    end
-	 end
+	    end // if (mmio_pkt.write_en == MMIO_READ_REQ)
+	    @(posedge clk);
+	    cwlp_wrvalid = 0;
+	    cwlp_rdvalid = 0;
+	    mmio_dispatch_lock = 0;
+	    run_clocks (`MMIO_LATENCY);
+	 end // else: !if(initialize)
       end
    endtask
 
