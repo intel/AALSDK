@@ -1054,10 +1054,6 @@ void ase_config_parse(char *filename)
 	  sprintf(ase_cfg_filepath, "%s", sv2c_config_filepath);
 	}
     }
-  /* else */
-  /*   { */
-  /*     sprintf(ase_cfg_filepath, "%s/%s", ase_run_path, ASE_CONFIG_FILE); */
-  /*   } */
 
   // Allocate space to store ASE config
   cfg = (struct ase_cfg_t *)ase_malloc( sizeof(struct ase_cfg_t) );
@@ -1134,6 +1130,13 @@ void ase_config_parse(char *filename)
 		      printf("  [DEBUG]  usr_tps = %d\n", cfg->usr_tps); 
 		      END_YELLOW_FONTCOLOR;
 #endif
+		      if (f_usrclk != DEFAULT_USR_CLK_MHZ)
+			{
+			  BEGIN_RED_FONTCOLOR;
+			  printf("SIM-C : User clock Frequency was modified from %f to %f MHz\n", DEFAULT_USR_CLK_MHZ, f_usrclk);
+			  printf("        **WARNING** Modifying User Clock is not supported in-system !\n");
+			  END_RED_FONTCOLOR;
+			}
 		    }
 		}
 	      else if (strcmp(parameter,"PHYS_MEMORY_AVAILABLE_GB") == 0)
