@@ -62,6 +62,7 @@
 #include <execinfo.h>
 #include <locale.h>
 #include <stdbool.h>
+#include <sys/wait.h>
 
 #ifdef SIM_SIDE 
 #include "svdpi.h"
