@@ -90,8 +90,9 @@ MENT_COMMAND = $(shell command -v vsim)
 
 ## C Compiler options
 CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -D SIMULATOR=$(SIMULATOR)
-CC_OPT+= -Wall 
+CC_OPT+= -Wall
 ifeq ($(ASE_DEBUG), 1)
+  CC_OPT+= -std=c99 -pedantic
   CC_OPT+= -D ASE_DEBUG=1
 endif
 ifeq ($(SIMULATOR), VCS)
