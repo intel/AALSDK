@@ -64,22 +64,23 @@ module ccip_sniffer
     )
    (
     // Configure enable
-    input logic finish_logger,
-    input logic init_sniffer,
+    input logic 			  finish_logger,
+    input logic 			  init_sniffer,
+    input logic 			  ase_reset,
     // -------------------------------------------------------- //
-    // Channel overflow/realfull checks
-    input logic cf2as_ch0_realfull,
-    input logic cf2as_ch1_realfull,
+    //      Channel overflow/realfull checks
+    input logic 			  cf2as_ch0_realfull,
+    input logic 			  cf2as_ch1_realfull,
     // -------------------------------------------------------- //
     //          Hazard/Indicator Signals                        //
-    input 	ase_haz_if haz_if,
-    output 	sniff_code_t error_code,
+    input 				  ase_haz_if haz_if,
+    output logic [SNIFF_VECTOR_WIDTH-1:0] error_code,
     // -------------------------------------------------------- //
-    //                   CCI-P interface                        //
-    input logic clk,
-    input logic SoftReset,
-    input 	t_if_ccip_Rx ccip_rx,
-    input 	t_if_ccip_Tx ccip_tx
+    //              CCI-P interface                             //
+    input logic 			  clk,
+    input logic 			  SoftReset,
+    input 				  t_if_ccip_Rx ccip_rx,
+    input 				  t_if_ccip_Tx ccip_tx
     );
 
 
@@ -147,14 +148,14 @@ module ccip_sniffer
 
    // Watch init_sniffer
    always @(posedge clk) begin
-      init_sniffer_q <= init_sniffer;      
+      init_sniffer_q <= init_sniffer;
    end
-   
+
    // Initialize sniffer
    always @(posedge clk) begin
       // Indicate logfile created
       if (init_sniffer) begin
-	 logfile_created <= 0;	 
+	 logfile_created <= 0;
 	 decode_error_code(1, SNIFF_NO_ERROR);
       end
       // Print that checker is running
@@ -167,15 +168,15 @@ module ccip_sniffer
    function automatic void open_logfile();
       begin
 	 fd_errlog = $fopen(ERR_LOGNAME, "w");
-	 logfile_created = 1;	 
+	 logfile_created = 1;
       end
    endfunction
 
    // Watch logfile and close until finished
    initial begin
       // Wait until logfile exists
-      wait (logfile_created == 1);      
-      
+      wait (logfile_created == 1);
+
       // Wait until finish logger
       wait (finish_logger == 1);
 
@@ -212,13 +213,13 @@ module ccip_sniffer
 
    // Simkill countdown and issue simkill
    always @(posedge clk) begin
-      if (SoftReset) begin
+      if (ase_reset) begin
 	 simkill_cnt <= 20;
 	 simkill_state <= SimkillIdle;
       end
       else begin
 	 case (simkill_state)
-	   
+
 	   SimkillIdle:
 	     begin
 		simkill_cnt <= 20;
@@ -268,8 +269,8 @@ module ccip_sniffer
       begin
 	 // If logfile doesnt exist it, create it
 	 if (logfile_created == 0) begin
-	    open_logfile();	    
-	 end	 
+	    open_logfile();
+	 end
 	 // Write log
 	 if (warn_only == 1) begin
 	    `BEGIN_RED_FONTCOLOR;
@@ -287,19 +288,39 @@ module ccip_sniffer
       end
    endfunction
 
-   // Error code enumeration
-   function void decode_error_code(
-				   input logic init,
-				   input       sniff_code_t code
-				   );
-      string 				       errcode_str;
-      string 				       log_str;
+   
+   // Trigger Error bit by index
+   task trigger_error_bit(logic init, int index);
       begin
 	 if (init) begin
-	    error_code = SNIFF_NO_ERROR;
+	    error_code[index] = 0;	    
 	 end
 	 else begin
-	    error_code = code;
+	    error_code[index] = 1;
+	    @(posedge clk);
+	    error_code[index] = 0;
+	    @(posedge clk);
+	 end
+      end
+   endtask
+   
+   
+   // Error code enumeration
+   task decode_error_code(
+			  input logic init,
+			  input       sniff_code_t code
+			  );
+      string 			      errcode_str;
+      string 			      log_str;
+      begin
+	 if (init) begin
+	    for(int jj = 0; jj < SNIFF_VECTOR_WIDTH; jj = jj + 1) begin
+	       trigger_error_bit(1, jj);	       
+	    end
+	 end
+	 else begin
+	    trigger_error_bit(0, code);	    
+	    // error_code = code;
 	    errcode_str = code.name;
 	    case (code)
 	      // C0TX - Invalid request type
@@ -477,7 +498,7 @@ module ccip_sniffer
 		   print_message_and_log(0, log_str);
 		end
 
-	      
+
 	      // MMIO_RDRSP_TID_MISMATCH:
 	      // 	begin
 	      // 	   $sformat(log_str, "[%s] MMIO Read Response TID did not match MMIO Read Request !\n", errcode_str);
@@ -514,7 +535,7 @@ module ccip_sniffer
 	    endcase
 	 end
       end
-   endfunction
+   endtask
 
 
    /*
@@ -547,10 +568,10 @@ module ccip_sniffer
    reg 			   xz_tx0_flag;
    reg 			   xz_tx1_flag;
    reg 			   xz_tx2_flag;
-   
+
    // XZ flags check
-   assign xz_tx0_flag = ^{ccip_tx.c0.hdr.vc_sel,                     ccip_tx.c0.hdr.cl_len, ccip_tx.c0.hdr.req_type, ccip_tx.c0.hdr.address, ccip_tx.c0.hdr.mdata};  
-   
+   assign xz_tx0_flag = ^{ccip_tx.c0.hdr.vc_sel,                     ccip_tx.c0.hdr.cl_len, ccip_tx.c0.hdr.req_type, ccip_tx.c0.hdr.address, ccip_tx.c0.hdr.mdata};
+
    assign xz_tx1_flag = ^{ccip_tx.c1.hdr.vc_sel, ccip_tx.c1.hdr.sop, ccip_tx.c1.hdr.cl_len, ccip_tx.c1.hdr.req_type, ccip_tx.c1.hdr.address, ccip_tx.c1.hdr.mdata, ccip_tx.c1.data};
 
    assign xz_tx2_flag = ^{ccip_tx.c2.hdr.tid, ccip_tx.c2.data};
@@ -559,19 +580,19 @@ module ccip_sniffer
    always @(posedge clk) begin
       // ------------------------------------------------- //
       if (ccip_tx.c0.valid  && isEqualsXorZ(xz_tx0_flag)) begin
-	 decode_error_code(0, SNIFF_C0TX_XZ_FOUND_WARN);	 
+	 decode_error_code(0, SNIFF_C0TX_XZ_FOUND_WARN);
       end
       // ------------------------------------------------- //
       if (ccip_tx.c1.valid && isEqualsXorZ(xz_tx1_flag)) begin
-	 decode_error_code(0, SNIFF_C1TX_XZ_FOUND_WARN);	 
+	 decode_error_code(0, SNIFF_C1TX_XZ_FOUND_WARN);
       end
       // ------------------------------------------------- //
       if (ccip_tx.c2.mmioRdValid && isEqualsXorZ(xz_tx2_flag)) begin
-	 decode_error_code(0, MMIO_RDRSP_XZ_FOUND_WARN);	 
+	 decode_error_code(0, MMIO_RDRSP_XZ_FOUND_WARN);
       end
       // ------------------------------------------------- //
    end
-   
+
 
    /*
     * Full {0,1} signaling
@@ -670,7 +691,7 @@ module ccip_sniffer
 
    // Transaction Checker FSM
    always @(posedge clk) begin
-      if (SoftReset) begin
+      if (ase_reset) begin
 	 exp_c1state <= Exp_1CL_WrFence;
       end
       else begin
@@ -741,7 +762,7 @@ module ccip_sniffer
 		// ----------------------------------------- //
 		// address increment check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 1))) begin
-		   decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);		   
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);
 		end
 		// ----------------------------------------- //
 		// Write Fence must not be seen here
@@ -792,7 +813,7 @@ module ccip_sniffer
 		// ----------------------------------------- //
 		// Address increment check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 2))) begin
-		   decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);		   
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);
 		end
 		// ----------------------------------------- //
 		// State transition
@@ -835,7 +856,7 @@ module ccip_sniffer
 		// ----------------------------------------- //
 		// Address increment check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 3))) begin
-		   decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);		   
+		   decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);
 		end
 		// ----------------------------------------- //
 		// State transition
@@ -951,12 +972,12 @@ module ccip_sniffer
    mmioread_track_t mmioread_tracker[0:MMIO_TRACKER_DEPTH-1];
 
    // Push/pop control process
-   function update_mmio_activity(
-   				 logic 				   clear,
-   				 logic 				   mmio_request,
-   				 logic 				   mmio_response,
-   				 logic [CCIP_CFGHDR_TID_WIDTH-1:0] tid
-   				 );
+   task update_mmio_activity(
+   			     logic 			       clear,
+   			     logic 			       mmio_request,
+   			     logic 			       mmio_response,
+   			     logic [CCIP_CFGHDR_TID_WIDTH-1:0] tid
+   			     );
       begin
    	 if (clear) begin
    	    mmioread_tracker[tid].active = 0;
@@ -972,14 +993,14 @@ module ccip_sniffer
 	    end
 	    else if (mmio_response) begin
 	       mmioread_tracker[tid].active = 0;
-	    end    
+	    end
    	 end
       end
-   endfunction
+   endtask
 
    // Push/pop glue
    always @(posedge clk) begin
-      if (SoftReset) begin
+      if (ase_reset) begin
    	 for (int track_i = 0; track_i < MMIO_TRACKER_DEPTH ; track_i = track_i + 1) begin
    	    update_mmio_activity(1, 0, 0, track_i);
    	 end
@@ -1001,7 +1022,7 @@ module ccip_sniffer
       for (genvar ii = 0; ii < MMIO_TRACKER_DEPTH ; ii = ii + 1) begin : mmio_tracker_block
    	 // Counter value
    	 always @(posedge clk) begin
-   	    if (SoftReset) begin
+   	    if (ase_reset) begin
    	       mmioread_tracker[ii].timer_val <= 0;
    	    end
    	    else begin
@@ -1016,7 +1037,7 @@ module ccip_sniffer
 
    	 // Timeout flag
    	 always @(posedge clk) begin
-   	    if (SoftReset|~mmioread_tracker[ii].active) begin
+   	    if (ase_reset|~mmioread_tracker[ii].active) begin
    	       mmioread_tracker[ii].timeout <= 0;
    	    end
    	    else if (mmioread_tracker[ii].timer_val >= `MMIO_RESPONSE_TIMEOUT) begin
@@ -1024,7 +1045,7 @@ module ccip_sniffer
 	       decode_error_code(0, MMIO_RDRSP_TIMEOUT);
    	    end
    	 end
-	 
+
       end
    endgenerate
 

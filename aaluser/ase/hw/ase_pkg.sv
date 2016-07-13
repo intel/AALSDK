@@ -688,8 +688,9 @@ package ase_pkg;
     * ASE protocol sniff codes
     */
    parameter SNIFF_CODE_WIDTH = 8;
-
-   // Error codes
+   parameter SNIFF_VECTOR_WIDTH = 2**SNIFF_CODE_WIDTH;
+      
+   // Error code indices
    typedef enum   {
 		   SNIFF_NO_ERROR                = 32'h00,
 		   // ------------ C0TX ------------ //

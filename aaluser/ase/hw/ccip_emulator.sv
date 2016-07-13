@@ -2397,7 +2397,8 @@ module ccip_emulator
       // ----------------------------------------- //
       // Logger control
       .finish_logger      (finish_trigger     ),
-      .init_sniffer       (ase_reset         ),
+      .init_sniffer       (ase_reset          ),
+      .ase_reset          (ase_reset          ),
       // ----------------------------------------- //
       // CCIP ports
       .clk                ( clk                ),
