@@ -1709,10 +1709,10 @@ endgenerate
     * Sniffs dropped transactions, unexpected mdata, vc or mcl responses
     */
 `ifdef ASE_DEBUG
-/*
+   
    // Checker array store as {hash_key, address}
-   longint check_array[*];
-
+   TxHdr_t check_array[*];
+   
    // Generate checker hash key
    function automatic longint gen_checker_hash_index(logic [1:0] index,
 						     logic [LATBUF_TID_WIDTH-1:0] tid);
@@ -1729,49 +1729,49 @@ endgenerate
 	 end
 	 else begin
 	    `BEGIN_RED_FONTCOLOR;
-	    $display(" ** HASH ERROR ** %09x key was not found ", key);
-	    $fwrite(log_fd, " ** HASH ERROR ** %09x key was not found ", key);
+	    $display(" ** HASH ERROR ** %x key was not found ", key);
+	    $fwrite(log_fd, " ** HASH ERROR ** %x key was not found ", key);
 	    `END_RED_FONTCOLOR;
 	 end
       end
    endfunction
-
-
-   // Craft an index
+     
+   
+   // Database maintainer
    always @(posedge clk) begin
       if (WRITE_CHANNEL == 0) begin
-	 if (write_en) begin
+   	 if (write_en) begin
    	    for (int ii = 0; ii <= int'(hdr_in.len) ; ii = ii + 1) begin
-   	       check_array[ {ii[1:0], tid_in} ] = hdr_in.addr + ii;
+   	       check_array[ {ii[1:0], tid_in} ] = hdr_in;	       
    	       $fwrite(log_fd, "Check array snapshot =>\n");
    	       $fwrite(log_fd, check_array);
    	       $fwrite(log_fd, "\n");
    	    end
-	 end
-	 else if (valid_out) begin
-	    check_delete_from_array( gen_checker_hash_index( rxhdr_out.clnum, tid_out ) );
-	 end
+   	 end
+   	 else if (valid_out) begin
+   	    check_delete_from_array( gen_checker_hash_index( rxhdr_out.clnum, tid_out ) );
+   	 end
       end
       else if (WRITE_CHANNEL == 1) begin
-	 if (write_en) begin
-	    check_array[ {hdr_in.len, tid_in} ] = hdr_in.addr;
-	 end
-	 else if (valid_out) begin
-	    check_delete_from_array({txhdr_out.len, tid_out});
-	 end
+   	 if (write_en) begin
+   	    check_array[ {hdr_in.len, tid_in} ] = hdr_in;
+   	 end
+   	 else if (valid_out) begin
+   	    check_delete_from_array({txhdr_out.len, tid_out});
+   	 end
       end
    end
 
    // Log dump signal
    always @(posedge clk) begin
       if (finish_trigger) begin
-	 $fwrite(log_fd, "check_array contents =>\n");
-	 $fwrite(log_fd, check_array);
-	 $display("%m check_array contents =>");
-	 $display(check_array);
+   	 $fwrite(log_fd, "check_array contents =>\n");
+   	 $fwrite(log_fd, check_array);
+   	 $display("%m check_array contents =>");
+   	 $display(check_array);
       end
    end
-*/
+
 `endif
 
 endmodule // outoforder_wrf_channel

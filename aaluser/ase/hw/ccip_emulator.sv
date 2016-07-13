@@ -374,6 +374,9 @@ module ccip_emulator
    // Ready PID
    int 	 ase_ready_pid;
 
+   // Finish logger command   
+   logic finish_trigger = 0;
+
 
    /*
     * ASE Simulator reset
@@ -386,8 +389,21 @@ module ccip_emulator
 	 ase_reset = 0;
 	 run_clocks(20);
       end
-   endtask
+   endtask // ase_reset_trig
+   
 
+   /*
+    * Issue Simulation Finish trigger
+    */  
+   task issue_finish_trig();
+      begin
+	 finish_trigger = 1;
+	 @(posedge clk);
+	 finish_trigger = 0;
+	 @(posedge clk);	 
+      end
+   endtask // issue_finish_trig
+   
 
    /*
     * Multi-instance multi-user +CONFIG,+SCRIPT instrumentation
@@ -419,9 +435,6 @@ module ccip_emulator
    initial $value$plusargs("SCRIPT=%S", script_filepath);
 `endif
 
-
-   // Finish logger command
-   logic finish_logger = 0;
 
 
    /*
@@ -1681,7 +1694,7 @@ module ccip_emulator
      (
       .clk		( clk ),
       .rst		( ase_reset ),
-      .finish_trigger   ( finish_logger ),
+      .finish_trigger   ( finish_trigger ),
       .hdr_in		( C0TxHdr ),
       .data_in		( {CCIP_DATA_WIDTH{1'b0}} ),
       .write_en		( C0TxRdValid ),
@@ -1761,7 +1774,7 @@ module ccip_emulator
      (
       .clk		( clk ),
       .rst		( ase_reset ),
-      .finish_trigger   ( finish_logger ),
+      .finish_trigger   ( finish_trigger ),
       .hdr_in		( C1TxHdr ),
       .data_in		( C1TxData ),
       .write_en		( C1TxWrValid ),
@@ -2383,7 +2396,7 @@ module ccip_emulator
      (
       // ----------------------------------------- //
       // Logger control
-      .finish_logger      (finish_logger     ),
+      .finish_logger      (finish_trigger     ),
       .init_sniffer       (ase_reset         ),
       // ----------------------------------------- //
       // CCIP ports
@@ -2491,7 +2504,7 @@ module ccip_emulator
    ccip_logger
      (
       // Logger control
-      .finish_logger    ( finish_logger        ),
+      .finish_logger    ( finish_trigger        ),
       // Buffer message injection
       .log_string_en    ( buffer_msg_en        ),
       .log_timestamp_en ( buffer_msg_tstamp_en ),
@@ -2529,15 +2542,15 @@ module ccip_emulator
    endfunction
 
    // Iterate-print
-   function automatic void print_assoc_array(ref longint assoc_array[*]);
-      longint temp;
-      begin
-	 if (assoc_array.first(temp))
-	   do
-	     $display("( %05x : %12x) ", temp, assoc_array[temp] );
-	 while (assoc_array.next(temp));
-      end
-   endfunction
+   // function automatic void print_assoc_array(ref longint assoc_array[*]);
+   //    longint temp;
+   //    begin
+   // 	 if (assoc_array.first(temp))
+   // 	   do
+   // 	     $display("( %05x : %12x) ", temp, assoc_array[temp] );
+   // 	 while (assoc_array.next(temp));
+   //    end
+   // endfunction
 
    // c1tx_mcl
    always @(*) begin
@@ -2626,7 +2639,7 @@ module ccip_emulator
 	 $display("SIM-SV: Simulation kill command received...");
 	 // Print transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display("  Transaction count \t| %8s %8s %8s %8s | %8s %8s %8s", "VA", "VL0", "VH0", "VH1", "MCL-0", "MCL-1", "MCL-3");
+	 $display("  Transaction count \t| %8s %8s %8s %8s | %8s %8s %8s", "VA", "VL0", "VH0", "VH1", "MCL-1", "MCL-2", "MCL-4");
 	 $display("  ========================================================================================");
 	 $display("  MMIOWrReq %d | ", ase_rx0_mmiowrreq_cnt );
 	 $display("  MMIORdReq %d | ", ase_rx0_mmiordreq_cnt );
@@ -2661,7 +2674,7 @@ module ccip_emulator
 	   $display("\tWrFence : Response counts dont match request count !!");
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
-	 `BEGIN_YELLOW_FONTCOLOR;
+	 // `BEGIN_YELLOW_FONTCOLOR;
 	 // $display("-------------------------------------------------");
 	 // $display("Read Transaction checker =>");
 	 // print_assoc_array(rdtxn_array);
@@ -2669,18 +2682,17 @@ module ccip_emulator
 	 // print_assoc_array(wrtxn_array);
 	 // $display("WrFence Transaction checker =>");
 	 // $display(wrf_array);
-	 // $display("-------------------------------------------------");
-	 // $display("cf2as_latbuf_ch0 contents =>");
-	 // print_assoc_array(ase_top.ccip_emulator.cf2as_latbuf_ch0.check_array);
-	 // $display("cf2as_latbuf_ch1 contents =>");
-	 // print_assoc_array(ase_top.ccip_emulator.cf2as_latbuf_ch1.check_array);
-	 // $display("-------------------------------------------------");
+	 $display("-------------------------------------------------");
+	 $display("cf2as_latbuf_ch0 contents =>");
+	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.check_array);
+	 $display("cf2as_latbuf_ch1 contents =>");
+	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.check_array);
+	 $display("-------------------------------------------------");
 	 `END_YELLOW_FONTCOLOR;
 `endif
-	 // $fclose(log_fd);
-	 finish_logger = 1;
-	 // @(posedge clk);
-
+	 // Finish command issue
+	 // issue_finish_trig();
+	 
 	 // Command to close logfd
 	 $finish;
       end

@@ -405,6 +405,7 @@ extern "C" {
   // Session control
   void session_init();
   void session_deinit();
+  void poll_for_session_id();
   int ase_read_lock_file(const char*);
   void send_simkill();
   void send_swreset();

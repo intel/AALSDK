@@ -1022,6 +1022,7 @@ void start_simkill_countdown()
   // Set scope
   svSetScope(scope);
 
+  // Issue Simulation kill
   simkill();
 
   FUNC_CALL_EXIT;
