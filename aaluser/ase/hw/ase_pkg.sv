@@ -701,6 +701,7 @@ package ase_pkg;
 		   SNIFF_C0TX_RESET_IGNORED_WARN = 32'h44,
 		   SNIFF_C0TX_XZ_FOUND_WARN      = 32'h45,
 		   SNIFF_C0TX_3CL_REQUEST        = 32'h4E,
+		   SNIFF_C0TX_ADDR_ZERO_WARN     = 32'h51,
 		   // ------------ C1TX -------------- //
 		   SNIFF_C1TX_INVALID_REQTYPE    = 32'h80,
 		   SNIFF_C1TX_OVERFLOW           = 32'h81,
@@ -719,6 +720,7 @@ package ase_pkg;
 		   SNIFF_C1TX_SOP_SET_MCL1TO3    = 32'h8E,
 		   SNIFF_C1TX_3CL_REQUEST        = 32'h8F,
 		   SNIFF_C1TX_WRFENCE_IN_MCL1TO3 = 32'h90,
+		   SNIFF_C1TX_ADDR_ZERO_WARN     = 32'h91,
 		   // ------------ C2TX -------------- //
 		   MMIO_RDRSP_TIMEOUT            = 32'hC0,
 		   // MMIO_RDRSP_TID_MISMATCH       = 32'hC1,

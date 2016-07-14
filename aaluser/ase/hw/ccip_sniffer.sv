@@ -372,6 +372,13 @@ module ccip_sniffer
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C0TX - Address found to be zero
+	      SNIFF_C0TX_ADDR_ZERO_WARN:
+		begin
+		   $sformat(log_str, "[%s] C0TxHdr address was ZERO.. this will cause simulation failure", errcode_str);
+		   print_message_and_log(1, log_str);		   
+		end	      
+	      
 	      // C1TX - Invalid request type
 	      SNIFF_C1TX_INVALID_REQTYPE:
 		begin
@@ -491,13 +498,19 @@ module ccip_sniffer
 		   print_message_and_log(0, log_str);
 		end
 
+	      // C1TX - Address found to be zero
+	      SNIFF_C1TX_ADDR_ZERO_WARN:
+		begin
+		   $sformat(log_str, "[%s] C1TxHdr address was ZERO.. this will cause simulation failure", errcode_str);
+		   print_message_and_log(1, log_str);		   
+		end	      
+	      
 	      // C2Tx - MMIO Read Response timeout
 	      MMIO_RDRSP_TIMEOUT:
 		begin
 		   $sformat(log_str, "[%s] MMIO Read Response timed out. AFU must respond to MMIO Read responses within %d clocks !\n", errcode_str, `MMIO_RESPONSE_TIMEOUT);
 		   print_message_and_log(0, log_str);
 		end
-
 
 	      // MMIO_RDRSP_TID_MISMATCH:
 	      // 	begin
@@ -657,6 +670,11 @@ module ccip_sniffer
 	 else if ((ccip_tx.c0.hdr.cl_len == 2'b11) && (ccip_tx.c0.hdr.address[1:0] != 2'b00)) begin
 	    decode_error_code(0, SNIFF_C0TX_ADDRALIGN_4_ERROR);
 	 end
+	 // -------------------------------------------------------- //
+	 // Address zero warning
+	 if (ccip_tx.c0.hdr.address == t_ccip_clAddr'(0)) begin
+	    decode_error_code(0, SNIFF_C0TX_ADDR_ZERO_WARN);	    
+	 end
       end
    end
 
@@ -716,6 +734,11 @@ module ccip_sniffer
 		end
 		else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b11) && (ccip_tx.c1.hdr.address[1:0] != 2'b00) && ccip_tx.c1.hdr.sop) begin
 		   decode_error_code(0, SNIFF_C1TX_ADDRALIGN_4_ERROR);
+		end
+		// -------------------------------------------------------- //
+		// Address zero warning
+		if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.address == t_ccip_clAddr'(0))) begin
+		   decode_error_code(0, SNIFF_C1TX_ADDR_ZERO_WARN);	    
 		end
 		// ----------------------------------------- //
 		// State Transition
