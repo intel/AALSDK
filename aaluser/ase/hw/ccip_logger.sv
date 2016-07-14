@@ -117,6 +117,7 @@ module ccip_logger
 	 case (req)
 	   eREQ_WRLINE_I   : return "Wr_I       ";
 	   eREQ_WRLINE_M   : return "Wr_M       ";
+	   eREQ_WRPUSH_I   : return "WrPush_I   ";	   
 	   eREQ_WRFENCE    : return "WrFence    ";
 	   eREQ_INTR       : return "IntrReq    ";
 	   default         : return "** ERROR %m : eREQ-CH1 unindentified **" ;
@@ -242,7 +243,7 @@ module ccip_logger
    // Is a Write Request
    function logic isWrLineRequest(t_ccip_c1_req req);
       begin
-	 if ((req == eREQ_WRLINE_I)||(req == eREQ_WRLINE_M)) 
+	 if ((req == eREQ_WRLINE_I)||(req == eREQ_WRLINE_M)||(req == eREQ_WRPUSH_I)) 
 	   return 1;
 	 else
 	   return 0;

@@ -445,7 +445,7 @@ package ase_pkg;
    // isWriteRequest
    function automatic logic isWriteRequest(TxHdr_t hdr);
       begin
-	 if ((hdr.reqtype == ASE_WRLINE_I)||(hdr.reqtype == ASE_WRLINE_M)) begin
+	 if ((hdr.reqtype == ASE_WRLINE_I)||(hdr.reqtype == ASE_WRLINE_M)||(hdr.reqtype == ASE_WRPUSH)) begin
 	    return 1;
 	 end
 	 else begin

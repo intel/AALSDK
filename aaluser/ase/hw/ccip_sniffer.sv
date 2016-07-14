@@ -103,7 +103,7 @@ module ccip_sniffer
    // isCCIPWriteRequest
    function automatic logic isCCIPWriteRequest(t_ccip_c1_ReqMemHdr hdr);
       begin
-	 if (hdr.req_type inside {eREQ_WRLINE_M, eREQ_WRLINE_I}) begin
+	 if (hdr.req_type inside {eREQ_WRLINE_M, eREQ_WRLINE_I, eREQ_WRPUSH_I}) begin
 	    return 1;
 	 end
 	 else begin
@@ -628,7 +628,7 @@ module ccip_sniffer
       // ------------------------------------------------- //
       // C1TxHdr reqtype
       if (ccip_tx.c1.valid) begin
-	 if (ccip_tx.c1.hdr.req_type inside {eREQ_WRLINE_M, eREQ_WRLINE_I, eREQ_WRFENCE}) begin
+	 if (ccip_tx.c1.hdr.req_type inside {eREQ_WRLINE_M, eREQ_WRLINE_I, eREQ_WRFENCE, eREQ_WRPUSH_I}) begin
 	 end
 	 else begin
 	    decode_error_code(0, SNIFF_C1TX_INVALID_REQTYPE);
