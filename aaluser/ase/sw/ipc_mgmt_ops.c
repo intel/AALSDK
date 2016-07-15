@@ -109,7 +109,7 @@ void final_ipc_cleanup()
     }
   
   // Parse through list
-  printf("SIM-C : Removing message queues and buffer handles ... ");
+  printf("SIM-C : Removing message queues and buffer handles ... \n");
   while(1)
     {
       fscanf(local_ipc_fp, "%s\t%s", ipc_type, ipc_name);

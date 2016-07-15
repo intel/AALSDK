@@ -120,30 +120,30 @@ module ccip_emulator
    /*
     * Local valid/debug breakout signals
     */
-   logic 			      C0TxRdValid;
-   logic 			      C1TxWrValid;
+   // logic 			      C0TxRdValid;
+   // logic 			      C1TxWrValid;
    logic 			      C0RxRdValid;
    logic 			      C0RxUMsgValid;
    logic 			      C1RxWrValid;
    logic 			      C1RxIntrValid;
 
    // Valid setting
-   always @(*) begin
-      // --------------------------------------------------------- //
-      // Read Request
-      if (C0TxValid &&
-	  ((C0TxHdr.reqtype == ASE_RDLINE_S)||(C0TxHdr.reqtype == ASE_RDLINE_I)) )
-	C0TxRdValid <= 1;
-      else
-	C0TxRdValid <= 0;
-      // --------------------------------------------------------- //
-      // Write Request
-      if (C1TxValid && ( (C1TxHdr.reqtype == ASE_WRFENCE)||(C1TxHdr.reqtype == ASE_WRLINE_I)||(C1TxHdr.reqtype == ASE_WRLINE_M)||(C1TxHdr.reqtype == ASE_WRPUSH) ) )
-	C1TxWrValid <= 1;
-      else
-	C1TxWrValid <= 0;
-      // --------------------------------------------------------- //
-   end
+   // always @(*) begin
+   //    // --------------------------------------------------------- //
+   //    // Read Request
+   //    if (C0TxValid &&
+   // 	  ((C0TxHdr.reqtype == ASE_RDLINE_S)||(C0TxHdr.reqtype == ASE_RDLINE_I)) )
+   // 	C0TxRdValid <= 1;
+   //    else
+   // 	C0TxRdValid <= 0;
+   //    // --------------------------------------------------------- //
+   //    // Write Request
+   //    if (C1TxValid && ( (C1TxHdr.reqtype == ASE_WRFENCE)||(C1TxHdr.reqtype == ASE_WRLINE_I)||(C1TxHdr.reqtype == ASE_WRLINE_M)||(C1TxHdr.reqtype == ASE_WRPUSH) ) )
+   // 	C1TxWrValid <= 1;
+   //    else
+   // 	C1TxWrValid <= 0;
+   //    // --------------------------------------------------------- //
+   // end
 
 
    /*
@@ -258,19 +258,19 @@ module ccip_emulator
    assign pClkDiv2 = Clk32UI;
    assign pClkDiv4 = Clk64UI;
 
-   // Reset out
-   assign pck_cp2af_softReset = SoftReset;
 
    // Rx/Tx mapping from ccip_if_pkg to ASE's internal format
    always @(*) begin : ccip2ase_remap
+      // Reset out
+      pck_cp2af_softReset          <= SoftReset;
       // Rx OUT (CH0)
       // If MMIO RDWR request, cast directly to interface format
       if (C0RxMmioRdValid|C0RxMmioWrValid) begin
-	 pck_cp2af_sRx.c0.hdr <= t_ccip_c0_RspMemHdr'(C0RxHdr);
+	 pck_cp2af_sRx.c0.hdr      <= t_ccip_c0_RspMemHdr'(C0RxHdr);
       end
       // Else, cast via function, changing resptype(s)
       else begin
-	 pck_cp2af_sRx.c0.hdr <= ase_rx0_to_ccip_rx0(t_ccip_c0_RspMemHdr'(C0RxHdr));
+	 pck_cp2af_sRx.c0.hdr      <= ase_rx0_to_ccip_rx0(t_ccip_c0_RspMemHdr'(C0RxHdr));
       end
       pck_cp2af_sRx.c0.data        <= t_ccip_clData'(C0RxData);
       pck_cp2af_sRx.c0.rspValid    <= C0RxRspValid;
@@ -1697,7 +1697,8 @@ module ccip_emulator
       .finish_trigger   ( finish_trigger ),
       .hdr_in		( C0TxHdr ),
       .data_in		( {CCIP_DATA_WIDTH{1'b0}} ),
-      .write_en		( C0TxRdValid ),
+      // .write_en		( C0TxRdValid ),
+      .write_en		( C0TxValid && isReadRequest(C0TxHdr) ),
       .txhdr_out	( cf2as_latbuf_tx0hdr ),
       .rxhdr_out        ( cf2as_latbuf_rx0hdr ),
       .data_out		(  ),
@@ -1777,7 +1778,8 @@ module ccip_emulator
       .finish_trigger   ( finish_trigger ),
       .hdr_in		( C1TxHdr ),
       .data_in		( C1TxData ),
-      .write_en		( C1TxWrValid ),
+      // .write_en		( C1TxWrValid ),
+      .write_en		( C1TxValid && isWriteRequest(C1TxHdr) ),
       .txhdr_out	( cf2as_latbuf_tx1hdr ),
       .rxhdr_out        ( cf2as_latbuf_rx1hdr ),
       .data_out		( cf2as_latbuf_tx1data ),
@@ -2256,13 +2258,20 @@ module ccip_emulator
 	 any_valid <= 0;	 
       end
       else begin
-	 any_valid <= C0RxMmioRdValid |
-		      C0RxMmioWrValid |
-		      C0RxRspValid |
-		      C1RxRspValid |
-		      C0TxRdValid |
-		      C1TxWrValid |
-		      C2TxMmioRdValid;
+	 // any_valid <= C0RxMmioRdValid |
+	 // 	      C0RxMmioWrValid |
+	 // 	      C0RxRspValid |
+	 // 	      C1RxRspValid |
+	 // 	      C0TxRdValid |
+	 // 	      C1TxWrValid |
+	 // 	      C2TxMmioRdValid;
+	 any_valid <= pck_cp2af_sRx.c0.rspValid    |
+		      pck_cp2af_sRx.c0.mmioRdValid |
+		      pck_cp2af_sRx.c0.mmioWrValid |
+		      pck_cp2af_sRx.c1.rspValid    |
+		      pck_af2cp_sTx.c0.valid       |
+		      pck_af2cp_sTx.c1.valid       |
+		      pck_af2cp_sTx.c2.mmioRdValid;	 
       end
    end
       

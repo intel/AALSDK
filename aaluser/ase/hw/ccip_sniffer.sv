@@ -425,7 +425,7 @@ module ccip_sniffer
 	      SNIFF_C1TX_UNEXP_VCSEL:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr VC-selection must not change in between multi-line beat !\n", errcode_str);
-		   print_message_and_log(0, log_str);
+		   print_message_and_log(1, log_str);
 		end
 
 	      // C1Tx - Unexpected MDATA changes [Warning only]

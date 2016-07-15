@@ -25,8 +25,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 // **************************************************************************
 /*
- * Module Info: Generic protocol backend for keeping IPCs alive,
- * interfacing with DPI-C, messages and SW application
+ * Module Info: 
+ * - Protocol backend for keeping IPCs alive
+ * - Interfacing with DPI-C, messaging
+ * - Interface to page table
  *
  * Language   : C/C++
  * Owner      : Rahul R Sharma
@@ -523,7 +525,6 @@ int ase_listener()
       char logger_str[ASE_LOGGER_LEN];
 
       // Receive a DPI message and get information from replicated buffer
-      // if (ase_recv_msg(&ase_buffer)==ASE_MSG_PRESENT)
       ase_empty_buffer(&ase_buffer);
       if (mqueue_recv(app2sim_alloc_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
 	{
@@ -629,7 +630,6 @@ int ase_listener()
        * MMIO request listener
        */
       // Message string
-      // char mmio_str[ASE_MQ_MSGSIZE];
       struct mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(mmio_t) );
 
@@ -765,6 +765,28 @@ int ase_init()
   ccip_sniffer_file_statpath = ase_malloc(ASE_FILEPATH_LEN);
   sprintf(ccip_sniffer_file_statpath, "%s/ccip_warning_and_errors.txt", ase_workdir_path);
 
+  // Remove existing error log files from previous run
+  BEGIN_YELLOW_FONTCOLOR;
+  if ( access(ccip_sniffer_file_statpath, F_OK) == 0)
+    {
+      if (unlink(ccip_sniffer_file_statpath) == 0) 
+	{
+	  printf("SIM-C : Removed sniffer log file from previous run\n");
+	}
+      else
+	{
+	  perror("SIM-C : Couldn't unlink protocol checker log file !\n");
+	}
+    }
+  else
+    {
+      perror("SIM-C : Couldn't access protocol checker log file !\n");
+    }
+  END_YELLOW_FONTCOLOR;
+
+  /*
+   * Debug logs
+   */
 #ifdef ASE_DEBUG
   // Create a memory access log
   fp_memaccess_log = fopen("aseafu_access.log", "w");
@@ -860,27 +882,9 @@ int ase_ready()
 
   // App run command
   app_run_cmd = ase_malloc (ASE_FILEPATH_LEN);
-  /* memset (app_run_cmd, 0, ASE_FILEPATH_LEN); */
 
   // Set test_cnt to 0
   glbl_test_cmplt_cnt = 0;
-
-  // Indicate readiness with .ase_ready file
-  /* ase_ready_filepath = ase_malloc (ASE_FILEPATH_LEN); */
-  /* sprintf(ase_ready_filepath, "%s/%s", ase_workdir_path, ASE_READY_FILENAME); */
-
-  /* // Write .ase_ready file */
-  /* fp_ase_ready = fopen( ase_ready_filepath, "w"); */
-  /* if (fp_ase_ready != NULL)  */
-  /*   { */
-  /*     fprintf(fp_ase_ready, "%d", ase_pid); */
-  /*     fclose(fp_ase_ready); */
-  /*   } */
-  /* else */
-  /*   { */
-  /*     printf("SIM-C : Error creating ready file\n"); */
-  /*     ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR); */
-  /*   } */
 
   // Write lock file
   ase_write_lock_file();
@@ -1078,7 +1082,6 @@ void ase_config_parse(char *filename)
   cfg->phys_memory_available_gb = 256;
 
   // Find ase.cfg OR not
-  // if ( access (ASE_CONFIG_FILE, F_OK) != -1 )
   if ( access (ase_cfg_filepath, F_OK) != -1 )
     {
       // FILE exists, overwrite
@@ -1086,7 +1089,6 @@ void ase_config_parse(char *filename)
       fp = fopen(ase_cfg_filepath, "r");
 
       // Parse file line by line
-      // while ((read = getline(&line, &len, fp)) != -1)
       while (getline(&line, &len, fp) != -1)
 	{
 	  // Remove all invalid characters

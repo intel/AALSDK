@@ -506,7 +506,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 		  "        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n"
 		  "              The simulator may be committing AFU transactions out of order\n",
 		  (void*)req_paddr );
-	  //fflush(error_fp);
+
 	  fclose(error_fp);
 	}
 
