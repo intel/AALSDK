@@ -56,3 +56,10 @@ kernel
 */nlb_test
 */spl_shm
 */umsg_test
+*.log
+work/
+synopsys_sim.setup
+*.tcl
+*.mk
+*.list
+*.pyc
