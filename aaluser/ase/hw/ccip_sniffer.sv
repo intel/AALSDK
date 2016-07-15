@@ -288,12 +288,12 @@ module ccip_sniffer
       end
    endfunction
 
-   
+
    // Trigger Error bit by index
    task trigger_error_bit(logic init, int index);
       begin
 	 if (init) begin
-	    error_code[index] = 0;	    
+	    error_code[index] = 0;
 	 end
 	 else begin
 	    error_code[index] = 1;
@@ -303,8 +303,8 @@ module ccip_sniffer
 	 end
       end
    endtask
-   
-   
+
+
    // Error code enumeration
    task decode_error_code(
 			  input logic init,
@@ -315,11 +315,11 @@ module ccip_sniffer
       begin
 	 if (init) begin
 	    for(int jj = 0; jj < SNIFF_VECTOR_WIDTH; jj = jj + 1) begin
-	       trigger_error_bit(1, jj);	       
+	       trigger_error_bit(1, jj);
 	    end
 	 end
 	 else begin
-	    trigger_error_bit(0, code);	    
+	    trigger_error_bit(0, code);
 	    // error_code = code;
 	    errcode_str = code.name;
 	    case (code)
@@ -376,9 +376,9 @@ module ccip_sniffer
 	      SNIFF_C0TX_ADDR_ZERO_WARN:
 		begin
 		   $sformat(log_str, "[%s] C0TxHdr address was ZERO.. this will cause simulation failure", errcode_str);
-		   print_message_and_log(1, log_str);		   
-		end	      
-	      
+		   print_message_and_log(1, log_str);
+		end
+
 	      // C1TX - Invalid request type
 	      SNIFF_C1TX_INVALID_REQTYPE:
 		begin
@@ -502,9 +502,9 @@ module ccip_sniffer
 	      SNIFF_C1TX_ADDR_ZERO_WARN:
 		begin
 		   $sformat(log_str, "[%s] C1TxHdr address was ZERO.. this will cause simulation failure", errcode_str);
-		   print_message_and_log(1, log_str);		   
-		end	      
-	      
+		   print_message_and_log(1, log_str);
+		end
+
 	      // C2Tx - MMIO Read Response timeout
 	      MMIO_RDRSP_TIMEOUT:
 		begin
@@ -673,7 +673,7 @@ module ccip_sniffer
 	 // -------------------------------------------------------- //
 	 // Address zero warning
 	 if (ccip_tx.c0.hdr.address == t_ccip_clAddr'(0)) begin
-	    decode_error_code(0, SNIFF_C0TX_ADDR_ZERO_WARN);	    
+	    decode_error_code(0, SNIFF_C0TX_ADDR_ZERO_WARN);
 	 end
       end
    end
@@ -737,8 +737,8 @@ module ccip_sniffer
 		end
 		// -------------------------------------------------------- //
 		// Address zero warning
-		if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.address == t_ccip_clAddr'(0))) begin
-		   decode_error_code(0, SNIFF_C1TX_ADDR_ZERO_WARN);	    
+		if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.address == t_ccip_clAddr'(0)) && isCCIPWriteRequest(ccip_tx.c1.hdr)) begin
+		   decode_error_code(0, SNIFF_C1TX_ADDR_ZERO_WARN);
 		end
 		// ----------------------------------------- //
 		// State Transition

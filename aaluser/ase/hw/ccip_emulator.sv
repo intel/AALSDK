@@ -2683,12 +2683,12 @@ module ccip_emulator
 	 // print_assoc_array(wrtxn_array);
 	 // $display("WrFence Transaction checker =>");
 	 // $display(wrf_array);
-	 $display("-------------------------------------------------");
-	 $display("cf2as_latbuf_ch0 contents =>");
-	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.check_array);
-	 $display("cf2as_latbuf_ch1 contents =>");
-	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.check_array);
-	 $display("-------------------------------------------------");
+	 // $display("-------------------------------------------------");
+	 // $display("cf2as_latbuf_ch0 contents =>");
+	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.check_array);
+	 // $display("cf2as_latbuf_ch1 contents =>");
+	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.check_array);
+	 // $display("-------------------------------------------------");
 	 `END_YELLOW_FONTCOLOR;
 `endif
 	 // Finish command issue
