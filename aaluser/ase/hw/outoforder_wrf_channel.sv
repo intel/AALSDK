@@ -428,9 +428,12 @@ module outoforder_wrf_channel
    	      3'b110: hdr.vc = VC_VH1;
    	    endcase
    	    vc_wr_arb = ccip_vc_t'(hdr.vc);
-	 end // if (hdr.sop)
-	 else begin
-	    hdr.vc = vc_wr_arb;
+	 end // if (hdr.sop && (hdr.vc == VC_VA))
+	 else if (hdr.sop && (hdr.vc != VC_VA)) begin
+   	    vc_wr_arb = ccip_vc_t'(hdr.vc);
+	 end
+	 else if (~hdr.sop) begin
+	    hdr.vc = vc_wr_arb;	    
 	 end
       end
    endfunction
