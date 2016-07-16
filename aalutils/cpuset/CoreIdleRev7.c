@@ -47,6 +47,7 @@
 //   3.) Set affinity mask for pids 1 and 2.
 //   4.) Use pid_max number from /proc/sys/kernel/pid_max file.
 //   5.) Set affinity mask for list
+// Requires modprobe msr
 //
 // Again this for test purposes only.
 // WHEN:          WHO:     WHAT:
