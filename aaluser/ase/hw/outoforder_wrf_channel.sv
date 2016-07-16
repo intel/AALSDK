@@ -413,7 +413,7 @@ module outoforder_wrf_channel
    	 if (init) begin
    	    vc_wr_arb = ccip_vc_t'(VC_VL0);
    	 end
-   	 else if (hdr.sop && (hdr.vc == VC_VA)) begin
+   	 else if (hdr.sop && (hdr.vc == VC_VA) && isWriteRequest(hdr)) begin
    	    case ({vl0_array_full, vh0_array_full, vh1_array_full})
    	      3'b000:
    		begin
