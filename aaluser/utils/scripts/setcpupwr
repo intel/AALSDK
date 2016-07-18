@@ -38,7 +38,7 @@
 #
 # Uses msr-tools for MSR access. Will fail if not found.
 #
-# Known issues: 
+# Known issues:
 #    - does not modify time windows
 #    - assumes default conversion units (checks CSR MSR_PKG_POWER_LIMIT). Will
 #      fail if modified.
@@ -85,9 +85,9 @@ function print_usage ()
    elif [ "${SCRIPTNAME}" = "getcpupwr" ]; then
       echo "USAGE: ${SCRIPTNAME} [-v] [-1] [-2]"
       echo ""
-      echo "       -1 <limit 1>    Get RAPL power target 1 value."
+      echo "       -1              Get RAPL power target 1 value."
       echo "                       Units of 0.125 W."
-      echo "       -2 <limit 2>    Get RAPL power target 2 value."
+      echo "       -2              Get RAPL power target 2 value."
       echo "                       Units of 0.125 W."
       echo "       -v              Be verbose. Can be issued multiple times (-vv)."
    fi

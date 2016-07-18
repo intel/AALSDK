@@ -811,7 +811,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
        fprintf(fp, "Default=%s\n", nlbcl->defaults.wvh1);
       }
 
-      fprintf(fp, "                    --write-vh1,       OR --wvr,   Randomly Chosen Channel for writes,             ");
+      fprintf(fp, "                    --write-vr,        OR --wvr,   Randomly Chosen Channel for writes,             ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VR) ) {
        fprintf(fp, "yes\n");
       } else {
