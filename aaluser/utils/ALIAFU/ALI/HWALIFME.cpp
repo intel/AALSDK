@@ -129,8 +129,8 @@ btBool CHWALIFME::errorGet( INamedValueSet &rResult )
 
    struct CCIP_ERROR *pError                = NULL;
    struct CCIP_FME_ERROR0  fme_error0         = {0};
-   struct CCIP_FME_ERROR1  fme_error1         = {0};
-   struct CCIP_FME_ERROR2  fme_error2         = {0};
+   struct CCIP_FME_PCIE0_ERROR  fme_error1         = {0};
+   struct CCIP_FME_PCIE1_ERROR  fme_error2         = {0};
 
    btWSSize size                            = sizeof(struct CCIP_ERROR);
 
@@ -206,8 +206,8 @@ btBool CHWALIFME::errorGetMask( INamedValueSet &rResult )
 {
    struct CCIP_ERROR *pError                      = NULL;
    struct CCIP_FME_ERROR0  fme_error0_mask         = {0};
-   struct CCIP_FME_ERROR1  fme_error1_mask         = {0};
-   struct CCIP_FME_ERROR2  fme_error2_mask         = {0};
+   struct CCIP_FME_PCIE0_ERROR  fme_error1_mask         = {0};
+   struct CCIP_FME_PCIE1_ERROR  fme_error2_mask         = {0};
 
    // Create the Transaction
    ErrorGet transaction(sizeof( struct CCIP_ERROR),ccipdrv_getFMEError);
@@ -244,8 +244,8 @@ btBool CHWALIFME::errorSetMask( const INamedValueSet &rInputArgs )
    struct CCIP_ERROR ccip_error      = {0};
 
    struct CCIP_FME_ERROR0  fme_error0_mask         = {0};
-   struct CCIP_FME_ERROR1  fme_error1_mask         = {0};
-   struct CCIP_FME_ERROR2  fme_error2_mask         = {0};
+   struct CCIP_FME_PCIE0_ERROR  fme_error1_mask         = {0};
+   struct CCIP_FME_PCIE1_ERROR  fme_error2_mask         = {0};
 
    // Create the Transaction
    SetError transaction(ccipdrv_SetFMEErrorMask,ccip_error);
@@ -273,8 +273,8 @@ btBool CHWALIFME::errorClear(const INamedValueSet &rInputArgs )
    struct CCIP_ERROR ccip_error  = {0};
 
    struct CCIP_FME_ERROR0  fme_error0         = {0};
-   struct CCIP_FME_ERROR1  fme_error1         = {0};
-   struct CCIP_FME_ERROR2  fme_error2         = {0};
+   struct CCIP_FME_PCIE0_ERROR  fme_error1         = {0};
+   struct CCIP_FME_PCIE1_ERROR  fme_error2         = {0};
 
 
    // Create the Transaction
@@ -349,8 +349,8 @@ void CHWALIFME::pirntFMEErrors(struct CCIP_ERROR *pError)
 {
    btUnsignedInt count                             = 0;
    struct CCIP_FME_ERROR0  fme_error0             = {0};
-   struct CCIP_FME_ERROR1  fme_error1             = {0};
-   struct CCIP_FME_ERROR2  fme_error2             = {0};
+   struct CCIP_FME_PCIE0_ERROR  fme_error1             = {0};
+   struct CCIP_FME_PCIE1_ERROR  fme_error2             = {0};
    struct CCIP_FME_FIRST_ERROR  fme_first_error   = {0};
    struct CCIP_FME_NEXT_ERROR  fme_next_error     = {0};
    NamedValueSet fmeErrornvs;
