@@ -114,21 +114,11 @@ class RuntimeClient : public CAASBase,
 {
 public:
 	RuntimeClient();
-		   ~RuntimeClient();
+   ~RuntimeClient();
 
-    /// @brief Synchronous wrapper for stopping the Runtime.
 	void end();
-	/// @brief Accessor for pointer to IRuntime stored in Runtime Client
-	///
-	/// This pointer is used to allocate Service.
 	IRuntime* getRuntime();
 
-	/// @brief Checks that the object is in an internally consistent state
-	///
-	/// The general paradigm in AAL is for an object to track its internal state for subsequent query,
-	/// as opposed to throwing exceptions or having to constantly check return codes.
-	/// We implement this to check if the status of the service allocated.
-	/// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
     btBool isOK();
 
    // <begin IRuntimeClient interface>
@@ -159,11 +149,7 @@ protected:
    CSemaphore       m_Sem;       // For synchronizing with the AAL runtime.
 };
 
-///////////////////////////////////////////////////////////////////////////////
-///
-///  MyRuntimeClient Implementation
-///
-///////////////////////////////////////////////////////////////////////////////
+//  MyRuntimeClient Implementation
 RuntimeClient::RuntimeClient() :
     m_Runtime(this),        // Instantiate the AAL Runtime
     m_pRuntime(NULL),
@@ -194,6 +180,12 @@ RuntimeClient::~RuntimeClient()
    m_Sem.Destroy();
 }
 
+/// @brief Checks that the object is in an internally consistent state
+///
+/// The general paradigm in AAL is for an object to track its internal state for subsequent query,
+/// as opposed to throwing exceptions or having to constantly check return codes.
+/// We implement this to check if the status of the service allocated.
+/// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
 btBool RuntimeClient::isOK()
 {
    return m_isOK;
@@ -215,6 +207,9 @@ void RuntimeClient::runtimeStarted(IRuntime *pRuntime,
    m_Sem.Post(1);
 }
 
+/// @brief Synchronous wrapper for stopping the Runtime.
+///
+/// @return void
 void RuntimeClient::end()
 {
    m_Runtime.stop();
@@ -258,6 +253,9 @@ void RuntimeClient::runtimeEvent(const IEvent &rEvent)
    MSG("Generic message handler (runtime)");
 }
 
+/// @brief Accessor for pointer to IRuntime stored in Runtime Client
+///
+/// @return A pointer to an IRuntime used to allocate Service.
 IRuntime * RuntimeClient::getRuntime()
 {
    return m_pRuntime;
@@ -274,10 +272,6 @@ public:
 
    llApp(RuntimeClient * rtc);
    ~llApp();
-   /// @brief Called by the main part of the application,Returns 0 if Success
-   ///
-   /// Application Requests Service using Runtime Client passing a pointer to self.
-   /// Blocks calling thread from [Main} untill application is done.
 
    btInt  run();
 
@@ -332,11 +326,7 @@ protected:
    btWSSize       m_AFUDSMSize;  ///< Length in bytes of DSM
 };
 
-///////////////////////////////////////////////////////////////////////////////
-///
 ///  Implementation
-///
-///////////////////////////////////////////////////////////////////////////////
 llApp::llApp(RuntimeClient *rtc) :
    m_pAALService(NULL),
    m_runtimClient(rtc),
@@ -368,6 +358,11 @@ typedef struct list {
 } __attribute__((__packed__)) list_t;
 
 
+/// @brief Called by the main part of the application.
+///
+/// Application Requests Service using Runtime Client passing a pointer to self.
+/// Blocks calling thread from main() until application is done.
+/// @return 0 if Success.
 int llApp::run()
 {
    cout <<"======================="<<endl;
@@ -548,6 +543,15 @@ int llApp::run()
 // We must implement the IServiceClient interface (IServiceClient.h):
 
 // <begin IServiceClient interface>
+
+/// @brief Callback called after a Service has been successfully
+///        allocated.
+///
+/// llApp Client implementation of IServiceClient::serviceAllocated().
+///
+/// @param[out] pServiceBase A pointer to the Service interface.
+/// @param[out] rTranID A reference to the TransactionID.
+/// @return void
 void llApp::serviceAllocated(IBase *pServiceBase,
                              TransactionID const &rTranID)
 {
@@ -569,6 +573,13 @@ void llApp::serviceAllocated(IBase *pServiceBase,
 
 }
 
+/// @brief Callback called after a Service allocation failed.
+///
+/// llApp Client implementation of IServiceClient::serviceAllocateFailed().
+///
+/// @param[out] rEvent A reference to an IEvent containing information
+///             about the failure.
+/// @return void
 void llApp::serviceAllocateFailed(const IEvent &rEvent)
 {
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
@@ -578,12 +589,26 @@ void llApp::serviceAllocateFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
+/// @brief Callback called after a Service release failed.
+///
+/// llApp Client implementation of IServiceClient::serviceReleaseFailed().
+///
+/// @param[out] rEvent A reference to an IEvent containing information
+///             about the failure.
+/// @return void
 void llApp::serviceReleaseFailed(const IEvent        &rEvent)
 {
    MSG("Failed to Release a Service");
    m_Sem.Post(1);
 }
 
+/// @brief Callback called after a Service has been successfully
+///        released.
+///
+/// llApp Client implementation of IServiceClient::serviceReleased().
+///
+/// @param[out] rTranID A reference to the TransactionID.
+/// @return void
 void llApp::serviceReleased(TransactionID const &rTranID)
 {
    MSG("Service Released");
@@ -591,6 +616,22 @@ void llApp::serviceReleased(TransactionID const &rTranID)
 }
 
 // <ISPLClient>
+
+/// @brief A Client callback called after a Workspace is allocated.
+///
+/// llApp Client implementation of ISPLClient::OnWorkspaceAllocated().
+///
+/// This is how the client is supplied with the data required to
+/// utilize the Workspace - its address and size. This callback is
+/// the only mechanism for the client to notified when a Workspace
+/// has been allocated and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @param[out] WkspcVirt The virtual address of the Workspace.
+/// @param[out] WkspcPhys The physical address of the Workspace.
+/// @param[out] WkspcSize The size of the Workspace.
+/// @return void
 void llApp::OnWorkspaceAllocated(TransactionID const &TranID,
                                  btVirtAddr WkspcVirt,
                                  btPhysAddr WkspcPhys,
@@ -605,6 +646,18 @@ void llApp::OnWorkspaceAllocated(TransactionID const &TranID,
    m_Sem.Post(1);
 }
 
+/// @brief A Client callback called after a Workspace allocation failed.
+///
+/// llApp Client implementation of ISPLClient::OnWorkspaceAllocateFailed().
+///
+/// This callback is the only mechanism for the client to be notified that
+/// a Workspace allocation has failed and must be implemented for the client
+/// to receive these notifications.
+///
+/// @param[out] rEvent A reference to the IEvent containing details about
+///             the failure.
+///
+/// @return void
 void llApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
 {
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
@@ -614,6 +667,16 @@ void llApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
+/// @brief A Client callback called after a Workspace is freed.
+///
+/// llApp Client implementation of ISPLClient::OnWorkspaceFreed().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Workspace has been freed and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @return void
 void llApp::OnWorkspaceFreed(TransactionID const &TranID)
 {
    INFO("OnWorkspaceFreed");
@@ -621,6 +684,18 @@ void llApp::OnWorkspaceFreed(TransactionID const &TranID)
    (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
 }
 
+/// @brief A Client callback called after an attempt to free a Workspace
+///        failed.
+///
+/// llApp Client implementation of ISPLClient::OnWorkspaceFreeFailed().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// an attempt to free a Workspace has failed and must be implemented for the
+/// client to receive these notifications.
+///
+/// @param[out] rEvent A reference to the IEvent containing details about
+///             the failure.
+/// @return void
 void llApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
 {
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
@@ -630,7 +705,18 @@ void llApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
-/// CMyApp Client implementation of ISPLClient::OnTransactionStarted
+/// @brief A Client callback called after a Transaction is started.
+///
+/// llApp Client implementation of ISPLClient::OnTransactionStarted().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Transaction has started and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @param[out] AFUDSMVirt The virtual address of the Device Status Memory.
+/// @param[out] AFUDSMSize The size of the Device Status Memory.
+/// @return void
 void llApp::OnTransactionStarted( TransactionID const &TranID,
                                    btVirtAddr           AFUDSMVirt,
                                    btWSSize             AFUDSMSize)
@@ -640,13 +726,34 @@ void llApp::OnTransactionStarted( TransactionID const &TranID,
    m_AFUDSMSize =  AFUDSMSize;
    m_Sem.Post(1);
 }
-/// CMyApp Client implementation of ISPLClient::OnContextWorkspaceSet
+
+/// @brief A Client callback called after a Context Workspace is set.
+///
+/// llApp Client implementation of ISPLClient::OnContextWorkspaceSet().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Context Workspace is set and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @return void
 void llApp::OnContextWorkspaceSet( TransactionID const &TranID)
 {
    INFO("Context Set");
    m_Sem.Post(1);
 }
-/// CMyApp Client implementation of ISPLClient::OnTransactionFailed
+
+/// @brief A Client callback called after a Transaction failed.
+///
+/// llApp Client implementation of ISPLClient::OnTransactionFailed().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Transaction failed and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] rEvent A reference to the IEvent containing details about
+///             the failure.
+/// @return void
 void llApp::OnTransactionFailed( const IEvent &rEvent)
 {
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
@@ -659,7 +766,17 @@ void llApp::OnTransactionFailed( const IEvent &rEvent)
    ERR("Transaction Failed");
    m_Sem.Post(1);
 }
-/// CMyApp Client implementation of ISPLClient::OnTransactionComplete
+
+/// @brief A Client callback called after a Transaction is completed.
+///
+/// llApp Client implementation of ISPLClient::OnTransactionComplete().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Transaction has completed and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @return void
 void llApp::OnTransactionComplete( TransactionID const &TranID)
 {
    m_AFUDSMVirt = NULL;
@@ -667,7 +784,17 @@ void llApp::OnTransactionComplete( TransactionID const &TranID)
    INFO("Transaction Complete");
    m_Sem.Post(1);
 }
-/// CMyApp Client implementation of ISPLClient::OnTransactionStopped
+
+/// @brief A Client callback called after a Transaction is stopped.
+///
+/// llApp Client implementation of ISPLClient::OnTransactionStopped().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Transaction has been stopped and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @return void
 void llApp::OnTransactionStopped( TransactionID const &TranID)
 {
    m_AFUDSMVirt = NULL;
@@ -676,6 +803,13 @@ void llApp::OnTransactionStopped( TransactionID const &TranID)
    m_Sem.Post(1);
 }
 
+/// @brief Callback called to send unsolicited or unusual events.
+///
+/// llApp Client implementation of ISPLClient::serviceEvent().
+///
+/// @param[out] rEvent A reference to an IEvent containing information
+///              about the event.
+/// @return void
 void llApp::serviceEvent(const IEvent &rEvent)
 {
    ERR("unexpected event 0x" << hex << rEvent.SubClassID());
