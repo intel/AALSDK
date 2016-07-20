@@ -286,7 +286,6 @@ END_C_DECLS
 
 /// @brief   Since this is a simple application, our App class implements both the IRuntimeClient and IServiceClient
 ///           interfaces.  Since some of the methods will be redundant for a single object, they will be ignored.
-///
 class ALIConfAFUApp: public CAASBase, public IRuntimeClient, public IServiceClient, IALIReconfigure_Client
 {
 public:
@@ -360,7 +359,6 @@ protected:
 
 /// @brief   Constructor registers this objects client interfaces and starts
 ///          the AAL Runtime. The member m_bisOK is used to indicate an error.
-///
 ALIConfAFUApp::ALIConfAFUApp() :
    m_Runtime(this),\
    m_pAALService(NULL),
@@ -400,8 +398,7 @@ ALIConfAFUApp::ALIConfAFUApp() :
    m_bIsOK = true;
 }
 
-/// @brief   Destructor
-///
+// @brief   Destructor
 ALIConfAFUApp::~ALIConfAFUApp()
 {
    m_Sem.Destroy();
@@ -413,7 +410,6 @@ ALIConfAFUApp::~ALIConfAFUApp()
 ///             - Allocates the necessary buffers to be used by the NLB AFU algorithm
 ///             - Executes the NLB algorithm
 ///             - Cleans up.
-///
 btInt ALIConfAFUApp::run()
 {
    cout <<"============================="<<endl;
