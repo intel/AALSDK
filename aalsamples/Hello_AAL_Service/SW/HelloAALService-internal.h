@@ -84,15 +84,31 @@ public:
    {
       SetInterface(iidSampleHelloAAL, dynamic_cast<IHelloAALService *>(this));
    }
-   /// Hook to allow the object to initialize
+
+   /// @brief Hook to allow the object to initialize.
+   ///
+   /// @param[in] pclientBase A pointer to the Service Client interface.
+   /// @param[in] optArgs A reference to the optional arguments passed to allocService().
+   /// @param[in] rtid A reference to the Transaction ID.
+   /// @retval True if the initialization succeeds.
+   /// @retval False if a severe failure prevented sending a response or calling
+   ///               initFailed().
    btBool init( IBase *pclientBase,
                 NamedValueSet const &optArgs,
                 TransactionID const &rtid);
 
+   /// Send a message to the AFU.
+   /// @param[in] sMessage The message to send.
+   /// @param[in] rTranID A reference to the Transaction ID.
+   /// @return void
    void Hello( btcString            sMessage,
                TransactionID const &rTranID);
 
-   /// Called when the service is released
+   // Called when the service is released
+   /// Release the Service and its resources.
+   /// @param[in] rTranID A reference to the Transaction ID.
+   /// @param[in] timeout The maximum time to wait for the Service to be released.
+   /// @return void
    btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);
 
 protected:
@@ -101,11 +117,24 @@ protected:
    TransactionID          m_CurrTranID;
 };
 
-// AAL - aware event for generating the response.
+/// @brief AAL - aware event for generating the response.
 class HelloAppDispatchable : public IDispatchable
 {
 public:
+   /// Dispatchable class for sending the response to the client.
+   /// @param[in] pSvcClient A pointer to the HelloAAL Client.
+   /// @param[in] pService A pointer to the HelloAAL Service.
+   /// @param[in] rTranID A reference to the Transaction ID.
+   /// @return void
    HelloAppDispatchable(IHelloAALClient *pSvcClient, IBase *pService, TransactionID const &rTranID);
+
+   //  operator()
+   /// Dispatch Event.
+   ///
+   /// Functors can be created by overriding this function.
+   ///
+   /// <B>Parameters</B> [in]  target Assumed to be of type EventHandler.
+   /// @return void
    virtual void operator() ();
 
 protected:
