@@ -54,10 +54,10 @@ BEGIN_NAMESPACE(AAL)
 class OSAL_API Barrier : private CriticalSection
 {
 public:
-   /// Barrier Constructor.
+   // Barrier Constructor.
    Barrier();
 
-   /// Barrier Destructor.
+   // Barrier Destructor.
    virtual ~Barrier();
 
    /// Initialize the Barrier object before its first use.
@@ -79,28 +79,29 @@ public:
    /// @retval  false  Barrier not initialized or an error occurred during destruction.
    btBool Destroy();
 
-   /// Reset the Barrier to locked (manual-reset Barrier, only).
+   /// Reset the Barrier to locked (manual-reset Barrier only).
    ///
    /// The current count is set to zero. The unlock count is modified only if UnlockCount != 0.
    ///
    /// @retval  true   The Barrier was reset.
-   /// @retval  false  Barrier not initialized or error during the reset attempt.
+   /// @retval  false  Barrier not initialized or an error during the reset attempt.
    btBool Reset(btUnsignedInt UnlockCount=0);
 
    /// Get the current values of the Barrier counts.
    ///
-   /// @param[out]  rCurCount  Current count value.
-   /// @param[out]  rMaxCount  Unlock count value.
+   /// @param[out]  rCurCount  Location where current count value will be stored.
+   /// @param[out]  rUnlockCount  Location where unlock count value will be stored.
    ///
    /// @retval  true   The counts were retrieved.
    /// @retval  false  Barrier not initialized.
    btBool CurrCounts(btUnsignedInt &rCurCount, btUnsignedInt &rUnlockCount);
 
-   /// Increment the current count by the minimum of nCount and the unlock count - current count.
+   /// Increment the current count by the minimum of nCount and unlock count - current count.
    ///
    /// If the current count becomes equal to the unlock count, wake all threads blocked
    /// on the Barrier.
    ///
+   /// @param[in] nCount The amount to increment the current count.
    /// @retval  true   The operation was successful. Does not necessarily indicate that threads were resumed.
    /// @retval  false  Barrier not initialized or error during the post attempt.
    btBool Post(btUnsignedInt nCount);
@@ -112,11 +113,13 @@ public:
    btBool UnblockAll();
 
    /// Returns the current number of waiters.
-   /// NOTE: This is a snapshot and may change by the time the caller examines the value.
+   /// @note This is a snapshot and may change by the time the caller examines the value.
+   /// @return The current number of waiters.
    btUnsignedInt NumWaiters() const;
 
    /// Wait for the Barrier count to become equal to the unlock count.
    ///
+   /// @retval  true   The wait succeeded.
    /// @retval  false  Barrier not initialized, failed wait attempt, or this call was canceled by
    ///          UnblockAll().
    btBool Wait();
@@ -134,11 +137,14 @@ public:
 
    /// Associate a User-Defined pointer with this Barrier object.
    ///
-   /// @param[in]  User  A User-Defined data item, not touched by Barrier.
+   /// @param[in]  User  A pointer to a User-Defined data item, not touched by Barrier object.
+   /// @return void
    void UserDefined(btObjectType User);
+
    /// Retrieve the User-Defined pointer associated with this Barrier object.
    ///
-   /// @return The User-Defined pointer, or NULL if none was set.
+   /// @return The User-Defined pointer.
+   /// @return NULL if no User-Defined data item has been associated with this Barrier instance.
    btObjectType UserDefined() const;
 
 private:
