@@ -106,9 +106,12 @@ using namespace AAL;
 /// @{
 
 
+///////////////////////////////////////////////////////////////////////////////
+///
 /// @brief   Since this is a simple application, our App class implements both the IRuntimeClient and IServiceClient
 ///           interfaces.  Since some of the methods will be redundant for a single object, they will be ignored.
 ///
+///////////////////////////////////////////////////////////////////////////////
 class HelloALINLBApp: public CAASBase, public IRuntimeClient, public IServiceClient
 {
 public:
@@ -176,13 +179,12 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 ///
-///  Implementation
+/// @brief   Implementation
+///          Constructor registers this objects client interfaces and starts
+///          the AAL Runtime. The member m_bisOK is used to indicate an error.
 ///
 ///////////////////////////////////////////////////////////////////////////////
 
-/// @brief   Constructor registers this objects client interfaces and starts
-///          the AAL Runtime. The member m_bisOK is used to indicate an error.
-///
 HelloALINLBApp::HelloALINLBApp() :
    m_Runtime(this),
    m_pAALService(NULL),
@@ -232,8 +234,8 @@ HelloALINLBApp::HelloALINLBApp() :
    m_bIsOK = true;
 }
 
-/// @brief   Destructor
-///
+// @brief   Destructor
+//
 HelloALINLBApp::~HelloALINLBApp()
 {
    m_Sem.Destroy();
