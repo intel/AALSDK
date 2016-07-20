@@ -601,6 +601,7 @@ void session_deinit()
       mqueue_close(sim2app_portctrl_rsp_rx);
 
       // Lock deinit
+      pthread_mutex_unlock(&mmio_port_lock);
       pthread_mutex_destroy(&mmio_port_lock);
 
       BEGIN_YELLOW_FONTCOLOR;      

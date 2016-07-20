@@ -963,6 +963,9 @@ void start_simkill_countdown()
     mqueue_destroy(mq_array[ipc_iter].name);
 
   // free(mq_array);
+  // Destroy mutex 
+  pthread_mutex_unlock (&mmio_resp_lock);
+  pthread_mutex_destroy (&mmio_resp_lock);
 
   // Destroy all open shared memory regions
   printf("SIM-C : Unlinking Shared memory regions.... \n");
