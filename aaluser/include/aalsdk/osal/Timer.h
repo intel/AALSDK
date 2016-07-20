@@ -48,6 +48,8 @@
 
 BEGIN_NAMESPACE(AAL)
 
+/// Timer class.
+///
 class OSAL_API Timer
 {
 public:
@@ -61,18 +63,29 @@ public:
    Timer & operator = (struct timespec ts) { m_Start = ts; return *this; }
 #endif // __AAL_LINUX__
 
-   // capture the current timestamp
+   /// Capture the current system time
+   /// @returns A Timer instance with the current system time.
    Timer Now() const;
 
    // *this + other
+   /// Return a new Timer that is the sum of this Timer and the other Timer.
+   //
+   /// @param[in] other A reference to the Timer to be added to this Timer.
+   /// @return A new Timer instance with time equal to the sum of the two Timers.
    Timer Add(const Timer &other) const;
 
    // *this - other
+   /// Return a new Timer that is this Timer less the other Timer.
+   //
+   /// @param[in] other A reference to the Timer to be subtracted from this Timer.
+   /// @return A new Timer instance with time equal to this Timer less the other Timer.
    Timer Subtract(const Timer &other) const;
 
-   // <  0 if *this < other
-   // >  0 if *this > other
-   // == 0 if *this == other
+   /// Compare this Timer to an other Timer.
+   /// @param[in] other A reference to the Timer to be compared to this Timer.
+   /// @retval <  0 if *this < other
+   /// @retval >  0 if *this > other
+   /// @retval == 0 if *this == other
    int Compare(const Timer &other) const;
 
    void      AsSeconds(double & )                     const;
