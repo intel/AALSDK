@@ -82,7 +82,11 @@ OSAL_API btInt GetNumProcessors();
 
 /// Retrieve a 32-bit random number in a thread-safe manner.
 ///
-/// @param[in,out]  storage  Provides the seed for the generation (and the thread-specific storage).
+/// Retrieve a 32-bit random number in a thread-safe manner.
+///
+/// @param[in,out]  storage  [Linux] Provides the seed for the generation (and the thread-specific storage).
+/// @param[in,out]  storage  [Windows] Provides thread-specific storage for the random number generated.
+/// @return A 32-bit random number.
 OSAL_API btUnsigned32bitInt GetRand(btUnsigned32bitInt *storage);
 
 
@@ -128,37 +132,53 @@ public:
 
    /// OSLThread Constructor.
    ///
-   /// @param[in]  pProc       The thread function to be executed.
+   /// @param[in]  pProc       The function to be executed by the thread.
    /// @param[in]  nPriority   The thread priority. Must be one of ThreadPriority values. If not, default is normal.
    /// @param[in]  pContext    Parameter to be passed to pProc.
    /// @param[in]  ThisThread  true if pProc is to be run in the context of this thread. false if in a new thread.
-	OSLThread(ThreadProc                    pProc,
+   /// @return void
+   OSLThread(ThreadProc                    pProc,
 	          OSLThread::ThreadPriority     nPriority,
 	          void                         *pContext,
 	          btBool                        ThisThread = false);
-   /// OSLThread Destructor.
+   // OSLThread Destructor.
 	virtual ~OSLThread();
-	/// Internal state check.
+   /// Check the internal state of the thread.
+   /// @retval true  if the state of the thread is OK.
+   /// @retval false otherwise.
    btBool              IsOK() { return 0 != flag_is_set(m_State, THR_ST_OK); }
    /// Send a kill signal to a thread to unblock a system call.
+   /// @return void
    void             Unblock();
    /// Post one count to the thread's local synchronization object.
+   /// @return void
    void              Signal();
-   /// Wait for the thread's local synchronization object for a given time.
+   /// Wait for the thread's local synchronization object for the specified time.
+   /// @param[in] ulMilliseconds The number of milliseconds to wait.
+   /// @return void
    void                Wait(btTime ulMilliseconds);
-   /// Wait for the thread's local synchronization object.
+   /// Wait without a timeout for the thread's local synchronization object.
+   /// @return void
    void                Wait();
    /// Wait for the thread to exit.
+   /// @return void
    void                Join();
-   /// The underlying thread resource will never be join()'ed.
+   /// Prevent the underlying thread resource from ever being join()'ed.
+   /// @return void
    void              Detach();
-   /// The non-Windows implementation of this member function issues a pthread_cancel to the thread.
+   /// Cancel a running thread.
+   /// @note The non-Windows implementation of this member function issues a pthread_cancel to the thread.
+   /// @note The Windows implementation of this member function calls TerminateThread().
    ///
-   /// @note There is currently no Windows implementation.
+   /// @return void
    void              Cancel();
-   /// Compare this thread's identifier with id.
+   /// Compare this thread's identifier with the supplied id.
+   /// @param[in] id The thread ID to which the current thread's ID will be compared.
+   /// @retval true  if the thread id is the current thread's ID.
+   /// @retval false otherwise.
    btBool      IsThisThread(btTID id ) const;
    /// Retrieve this thread's identifier. Don't compare ID's outright. Use IsThisThread().
+   /// @return This thread's ID.
    btTID                tid();
 
 
