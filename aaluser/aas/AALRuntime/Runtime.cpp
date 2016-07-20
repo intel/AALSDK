@@ -84,7 +84,6 @@ Runtime::~Runtime()
 //=============================================================================
 /// Starts the AAL Runtime implementation after initial construction
 ///
-/// @param[in]    pClient        Pointer to the Runtime's client object (IBase).
 /// @param[in]    rConfigParms   Configuration parameter NVS
 /// @return       True if successful. Possible to fail, e.g. the pClient does
 ///                  not contain an IRuntimeClient to call back. But more
@@ -119,8 +118,6 @@ void Runtime::stop()
 /// @param[in]    pClient        IBase of owner, containing an IServiceClient
 /// @param[in]    rManifest      Optional manifest defining the service
 /// @param[in]    rTranID        Optional transactionID
-/// @param[in]    mode           Option mode whether to notify just the service
-///                                 or also the runtime client
 /// @return       void
 //=============================================================================
 void Runtime::allocService(IBase               *pClient,
@@ -177,7 +174,6 @@ IRuntime * Runtime::getRuntimeProxy(IRuntimeClient *pClient)
 //=============================================================================
 /// Get a new pointer to the Runtime
 ///
-/// @param[in]    pRuntime - Pointer to Proxy to release
 /// @return       true - Success
 //=============================================================================
 btBool Runtime::releaseRuntimeProxy()
