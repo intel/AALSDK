@@ -175,15 +175,15 @@ BEGIN_NAMESPACE(AAL)
 //=============================================================================
 
 //=============================================================================
-/// FindLowestBitSet64
+//  FindLowestBitSet64
 /// @brief     Find the first bit set, scanning low to high.
-/// @param[in] 64-bit entity to test
+/// @param[in] value The 64-bit entity to test.
 /// @return    0 if no bits set, otherwise bit position 1 to 64
-///            NOT 0 to 63
+///            NOT 0 to 63.
 ///
 /// @note   Windows intrinsic numbers bits 0 to 63, ffsll numbers
 ///         them 1 to 64. Using ffsll variation.
-/// @note   Windows intrinsic must be set outside function
+/// @note   Windows intrinsic must be set outside function.
 //
 #if defined( __AAL_WINDOWS__ )    /* proxy for all Windows code */
 # if (8 == sizeof_void_ptr)
