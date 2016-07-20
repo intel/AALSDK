@@ -136,11 +136,7 @@ protected:
    CSemaphore       m_Sem;       // For synchronizing with the AAL runtime.
 };
 
-///////////////////////////////////////////////////////////////////////////////
-///
 ///  MyRuntimeClient Implementation
-///
-///////////////////////////////////////////////////////////////////////////////
 RuntimeClient::RuntimeClient() :
    m_Runtime(this),        // Instantiate the AAL Runtime
    m_pRuntime(NULL),
@@ -244,7 +240,7 @@ public:
    /// @brief Called by the main part of the application,Returns 0 if Success
    ///
    /// Application Requests Service using Runtime Client passing a pointer to self.
-   /// Blocks calling thread from [Main} untill application is done. 
+   /// Blocks calling thread from main() until the application is done. 
    int run();
 
    // <begin IHelloAALClient>
@@ -273,11 +269,7 @@ protected:
    int               m_Result;         // Returned result value; 0 if success
 };
 
-///////////////////////////////////////////////////////////////////////////////
-///
 ///  MyServiceClient Implementation
-///
-///////////////////////////////////////////////////////////////////////////////
 HelloAALApp::HelloAALApp(RuntimeClient *rtc) :
    m_pAALService(NULL),
    m_runtimClient(rtc),
