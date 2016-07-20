@@ -772,35 +772,10 @@ module ccip_sniffer
 	   Exp_2CL:
 	     begin
 		// ----------------------------------------- //
-		// SOP check
-		// if (ccip_tx.c1.valid && ccip_tx.c1.hdr.sop) begin
-		//    decode_error_code(0, SNIFF_C1TX_SOP_SET_MCL1TO3);
-		// end
-		// ----------------------------------------- //
-		// Write Fence must not be seen here
-		// if (ccip_tx.c1.valid && isCCIPWrFenceRequest(ccip_tx.c1.hdr)) begin
-		//    decode_error_code(0, SNIFF_C1TX_WRFENCE_IN_MCL1TO3);
-		// end
-		// ----------------------------------------- //
-		// Request Type modification check
-		// if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.req_type != base_c1reqtype)) begin
-		//    decode_error_code(0, SNIFF_C1TX_UNEXP_REQTYPE);
-		// end
-		// ----------------------------------------- //
 		// address increment check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 1))) begin
 		   decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);
 		end
-		// ----------------------------------------- //
-		// VC modification check
-		// if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.vc_sel != base_c1vc)) begin
-		//    decode_error_code(0, SNIFF_C1TX_UNEXP_VCSEL);
-		// end
-		// ----------------------------------------- //
-		// CL_LEN modification check [Warning only]
-		// if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
-		//    decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);
-		// end
 		// ----------------------------------------- //
 		// State transition
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (base_c1len == 2'b11)) begin
@@ -822,35 +797,10 @@ module ccip_sniffer
 	   Exp_3CL:
 	     begin
 		// ----------------------------------------- //
-		// SOP check
-		// if (ccip_tx.c1.valid && ccip_tx.c1.hdr.sop) begin
-		//    decode_error_code(0, SNIFF_C1TX_SOP_SET_MCL1TO3);
-		// end
-		// ----------------------------------------- //
-		// Write Fence must not be seen here
-		// if (ccip_tx.c1.valid && isCCIPWrFenceRequest(ccip_tx.c1.hdr)) begin
-		//    decode_error_code(0, SNIFF_C1TX_WRFENCE_IN_MCL1TO3);
-		// end
-		// ----------------------------------------- //
-		// Request Type modification check
-		// if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.req_type != base_c1reqtype)) begin
-		//    decode_error_code(0, SNIFF_C1TX_UNEXP_REQTYPE);
-		// end
-		// ----------------------------------------- //
 		// address increment check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 2))) begin
 		   decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);
 		end
-		// ----------------------------------------- //
-		// VC modification check
-		// if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.vc_sel != base_c1vc)) begin
-		//    decode_error_code(0, SNIFF_C1TX_UNEXP_VCSEL);
-		// end
-		// ----------------------------------------- //
-		// CL_LEN modification check [Warning only]
-		// if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
-		//    decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);
-		// end
 		// ----------------------------------------- //
 		// State transition
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (base_c1len == 2'b11)) begin
@@ -868,35 +818,10 @@ module ccip_sniffer
 	   Exp_4CL:
 	     begin
 		// ----------------------------------------- //
-		// SOP check
-		// if (ccip_tx.c1.valid && ccip_tx.c1.hdr.sop) begin
-		//    decode_error_code(0, SNIFF_C1TX_SOP_SET_MCL1TO3);
-		// end
-		// ----------------------------------------- //
-		// Write Fence must not be seen here
-		// if (ccip_tx.c1.valid && isCCIPWrFenceRequest(ccip_tx.c1.hdr)) begin
-		//    decode_error_code(0, SNIFF_C1TX_WRFENCE_IN_MCL1TO3);
-		// end
-		// ----------------------------------------- //
-		// Request Type modification check
-		// if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.req_type != base_c1reqtype)) begin
-		//    decode_error_code(0, SNIFF_C1TX_UNEXP_REQTYPE);
-		// end
-		// ----------------------------------------- //
 		// address increment check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 3))) begin
 		   decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);
 		end
-		// ----------------------------------------- //
-		// VC modification check
-		// if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.vc_sel != base_c1vc)) begin
-		//    decode_error_code(0, SNIFF_C1TX_UNEXP_VCSEL);
-		// end
-		// ----------------------------------------- //
-		// CL_LEN modification check [Warning only]
-		// if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
-		//    decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);
-		// end
 		// ----------------------------------------- //
 		// State transition
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (base_c1len == 2'b11)) begin
