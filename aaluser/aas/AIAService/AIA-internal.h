@@ -35,7 +35,7 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 8/21/2015      JG       Initial version
+/// 8/21/2015      JG       Initial version@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_AIASERVICE_AIA_INTERNAL_H__
 #define __AALSDK_AIASERVICE_AIA_INTERNAL_H__
