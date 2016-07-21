@@ -320,6 +320,7 @@ public:
    /// This is an atomic function as once it returns the executable
    ///  will be deleted. The call stack and all threads within this
    ///  modules address space MUST be deleted.
+   /// @return void
    virtual void Destroy() = 0;
 
 };
@@ -335,6 +336,7 @@ public:
 
    /// Callback invoked by the Service to indicate that it is released.
    /// @param[in]  pService  The Service that has been released.
+   /// @return void
    virtual void      ServiceReleased(IBase *pService)                            = 0;
 
    /// Callback invoked by the Service to indicate that it has been initialized.
@@ -428,10 +430,11 @@ private:
    //=============================================================================
    // Name: SendReleaseToAll
    /// @brief Sends a Release to all services
-   /// 			The object remains locked through the loop of Releases to prevent
-   ///           Services being removed in the background and corrupting the iter
+   ///          The object remains locked through the loop of Releases to prevent
+   ///           Services being removed in the background and corrupting the iter.
    ///           The Release() used here is a quiet one. It does not generate an event.
    ///           This is to allow the Service to cleanly shutdown for unloading.
+   /// @return void
    //=============================================================================
    void SendReleaseToAll();
 
