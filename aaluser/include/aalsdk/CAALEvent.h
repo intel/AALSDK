@@ -144,10 +144,13 @@ public:
    /// Update the object pointed to by the Event, and its associated cached context.
    void SetObject(IBase *pObject);  // needed for ReThrow
 
-   /// operator() Dispatch Event.
+   // operator()
+   /// Dispatch Event.
    ///
-   /// @param[in]  target  Assumed to be of type EventHandler.
-   ///             Functors can be created by overriding this function
+   /// Functors can be created by overriding this function.
+   ///
+   /// <B>Parameters</B> [in]  target Assumed to be of type EventHandler.
+   /// @return void
    virtual void operator()();
 
    /// Deletes this.
@@ -262,7 +265,6 @@ public:
    /// @param[in]  ExceptionNumber  Numeric id for the exception.
    /// @param[in]  Reason           Numeric reason code.
    /// @param[in]  Description      A textual description of the exception.
-   /// @param[in]  pHandler         For specific routing
    CExceptionEvent(IBase    *pObject,
                    btID      ExceptionNumber,
                    btID      Reason,
@@ -274,7 +276,6 @@ public:
    /// @param[in]  ExceptionNumber  Numeric id for the exception.
    /// @param[in]  Reason           Numeric reason code.
    /// @param[in]  Description      A textual description of the exception.
-   /// @param[in]  pHandler         For specific routing
    CExceptionEvent(IBase    *pObject,
                    btIID     SubClassID,
                    btID      ExceptionNumber,
