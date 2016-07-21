@@ -400,7 +400,7 @@ err:
    //=============================================================================
    /// @brief Disconnect remote party and destroy channel
    ///
-   ///@param[in] optArgs named ValueSet contains connection arguments
+   /// @retval True.
    btBool disconnect(void)
    {
 
@@ -429,7 +429,8 @@ err:
    ///
    ///Returns a pointer to message (NULL in case of error or EOF)
    ///@param[in] *len pointer of where to return message length
-   ///@param[out] length of message (-1) in case of error, 0 means EOF (remote close)
+   ///           length of message (-1) in case of error, 0 means EOF (remote close)
+   ///@return The message string.
    btcString getmsg(btWSSize *len)
    {
       // Get the length of the message as a string for portability
