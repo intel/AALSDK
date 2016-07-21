@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file uidrvMessaging.cpp
+/// @file uidrvMessage.cpp
 /// @brief Implementation uidrvMessage class. This is an abstraction of the low
 ///        level message structure used by the driver interface.
 /// @ingroup uAIA
