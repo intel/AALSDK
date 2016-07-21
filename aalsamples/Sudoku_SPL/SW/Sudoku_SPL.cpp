@@ -928,8 +928,7 @@ btInt Sudoku::run()
 
 /// @brief Callback called after a Service allocation succeeded.
 /// @param[out] pServiceBase A pointer to Service.
-/// @param[out] rEvent A reference to an IEvent containing information
-///             about the failure.
+/// @param[out] rTranID A reference to the TransactionID.
 /// @return void
 void Sudoku::serviceAllocated(IBase               *pServiceBase,
                               TransactionID const &rTranID)
@@ -987,7 +986,7 @@ void Sudoku::serviceReleaseFailed(const IEvent        &rEvent)
 /// @brief Callback called after a Service has been successfully
 ///        released.
 ///
-/// @param[out] rTranID A reference to the TransactionID.
+/// <B>Parameters:</B> \n[out]  rTranID A reference to the TransactionID.
 /// @return void
 void Sudoku::serviceReleased(TransactionID const &rTranID)
 {
