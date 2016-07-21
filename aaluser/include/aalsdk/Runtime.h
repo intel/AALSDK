@@ -188,7 +188,7 @@ public:
    /// @return    void
    virtual void runtimeEvent(const IEvent &rEvent)                            = 0;
 
-   /// @brief     Destructor
+   // @brief     Destructor
    virtual ~IRuntimeClient() {}
 };
 
@@ -213,10 +213,10 @@ public:
    /// @return    void
    virtual void                         stop()                                                  = 0;
 
-   /// @brief     Allocates a Service
+   /// @brief     Allocates a Service.
    /// @param[in] pClient - IBase of client object.
-   ///            rManifest - reference to a Manifest describing teh Service desired
-   ///            rTranID - Transaction ID
+   /// @param[in] rManifest - reference to a Manifest describing the Service desired.
+   /// @param[in] rTranID - Transaction ID.
    /// @return    void
    virtual void                 allocService(IBase                *pClient,
                                              NamedValueSet const  &rManifest,
@@ -230,8 +230,7 @@ public:
    /// @brief     Returns a unique pointer to the Runtime. This enables subordinate
    ///               objects to use the Runtime independently. Note that this pointer
    ///               references the singleton Runtime instance.
-   /// @param[in] rEvent will be an event that can be parsed to determine
-   ///               what occurred.
+   /// @param[in] pClient is the Runtime interface pointer.
    /// @return    void
    virtual IRuntime *        getRuntimeProxy(IRuntimeClient *pClient)                           = 0;
 
