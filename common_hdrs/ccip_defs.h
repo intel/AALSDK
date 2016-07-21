@@ -255,6 +255,12 @@ enum e_CCIP_PR_ControllerBlock_status {
 #define CCIP_PR_PIPIID              (0x7C4D41EA156C4D81ULL)
 
 
+/// FME Power  GUID
+#define CCIP_PWR_GUIDL               (0x99DE979A70CEE6C9ULL)
+#define CCIP_PWR_GUIDH               (0x93136515D527451AULL)
+#define CCIP_PWR_PIPIID              (0xBBD60200C0A80117ULL)
+
+
 /// Vender ID and Device ID
 #define CCIP_FPGA_VENDER_ID         0x8086
 
@@ -308,7 +314,7 @@ struct CCIP_AFU_ID_L {
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt afu_id_l :64; // AFU ID low
+         btUnsigned64bitInt afu_id_l :64;    // AFU ID low
 
       }; // end struct
    }; // end union
@@ -322,7 +328,7 @@ struct CCIP_AFU_ID_H {
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt afu_id_h :64; // AFU ID low
+         btUnsigned64bitInt afu_id_h :64;    // AFU ID low
 
       }; // end struct
    }; // end union
@@ -351,7 +357,7 @@ struct CCIP_SCRATCHPAD {
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt scratch_pad :64; //Scratch pad Register
+         btUnsigned64bitInt scratch_pad :64;   //Scratch pad Register
 
       }; // end struct
    }; // end union
@@ -359,26 +365,180 @@ struct CCIP_SCRATCHPAD {
 }; // end struct CCIP_SCRATCHPAD
 CASSERT(sizeof(struct CCIP_SCRATCHPAD) == 8);
 
+// Fabric capability
+struct CCIP_FAB_CAPABILITY {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt fabric_verid :8;             // Fabric version ID
+         btUnsigned64bitInt socket_id :1;                // Socket id
+         btUnsigned64bitInt rsvd1 :3;                    // Reserved
+         btUnsigned64bitInt pci0_link_avile :1;          // pci0 link available yes /no
+         btUnsigned64bitInt pci1_link_avile :1;          // pci1 link available yes /no
+         btUnsigned64bitInt qpi_link_avile :1;           // Coherent (QPI/UPI) link available yes /no
+         btUnsigned64bitInt rsvd2 :1;                    // Reserved
+         btUnsigned64bitInt iommu_support :1;            // IOMMU or VT-d supported  yes/no
+         btUnsigned64bitInt num_ports :3;                // Number of ports
+         btUnsigned64bitInt rsvd3 :4;                    // Reserved
+         btUnsigned64bitInt address_width_bits :6;       // Address width supported in bits  BXT -0x26 , SKX -0x30
+         btUnsigned64bitInt rsvd4 :2;                    // Reserved
+         btUnsigned64bitInt cache_size :12;              // Size of cache supported in kb
+         btUnsigned64bitInt cache_assoc :4;              // Cache Associativity
+         btUnsigned64bitInt rsvd5 :15;                   // Reserved
+         btUnsigned64bitInt lock_bit :1;                 // Lock bit
+      }; // end struct
+   }; // end union
+
+}; // struct CCIP_FME_CAPABILITY
+
+CASSERT(sizeof(struct CCIP_FAB_CAPABILITY) == 8);
+
 /// FPGA Port offset CSR
 struct CCIP_PORT_AFU_OFFSET {
 
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt port_offset :24; // Port offset
-         btUnsigned64bitInt rsvd1 :8; // Reserved
-         btUnsigned64bitInt port_bar :3; // Port BAR
-         btUnsigned64bitInt rsvd2 :21; // Reserved
-         btUnsigned64bitInt port_arbit_poly :4; // Port Arbitration
-         btUnsigned64bitInt port_imp :1; // Port Implemented
-         btUnsigned64bitInt rsvd3 :3; // Reserved
+         btUnsigned64bitInt port_offset :24;          // Port offset
+         btUnsigned64bitInt rsvd1 :8;                 // Reserved
+         btUnsigned64bitInt port_bar :3;              // Port BAR
+         btUnsigned64bitInt rsvd2 :20;                // Reserved
+         btUnsigned64bitInt afu_access_control :1;    // afu access type
+         btUnsigned64bitInt rsvd3 :4;                 // Reserved
+         btUnsigned64bitInt port_imp :1;              // Port Implemented
+         btUnsigned64bitInt rsvd4 :3;                 // Reserved
       }; // end struct
    }; // end union
 
 }; // end struct CCIP_PORT_AFU_OFFSET
 CASSERT(sizeof(struct CCIP_PORT_AFU_OFFSET) == 8);
 
+// Fabric status
+struct CCIP_FAB_STATUS {
 
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt upilink_status :4;     // UPI Link Status
+         btUnsigned64bitInt rsvd1 :4;              // Reserved
+
+         btUnsigned64bitInt pci0link_status :5;    // pci0 link status
+         btUnsigned64bitInt rsvd2 :3;              // Reserved
+
+         btUnsigned64bitInt pci1link_status :5;    // pci1 link status
+         btUnsigned64bitInt rsvd3 :43;             // Reserved
+      }; // end struct
+   }; // end union
+
+}; // struct CCIP_FAB_STATUS
+CASSERT(sizeof(struct CCIP_FAB_STATUS) == 8);
+
+/// Blue bitstream ID  CSR
+struct CCIP_BBS_ID {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt bbs_id :64;   // BBS ID
+
+      }; // end struct
+   }; // end union
+
+}; //end struct CCIP_BBS_ID
+CASSERT(sizeof(struct CCIP_BBS_ID) == 8);
+
+
+/// Blue bitstream metadata  CSR
+struct CCIP_BBS_MD {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt bbs_md :64;   // BBS Meta data
+
+      }; // end struct
+   }; // end union
+
+}; //end struct CCIP_BBS_MD
+CASSERT(sizeof(struct CCIP_BBS_MD) == 8);
+
+/// FPGA Protected Range Base Address
+struct CCIP_FME_GENPROTRANGE2_BASE {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt rsvd1 :16;                  // Reserved
+         btUnsigned64bitInt protected_base_addrss:4;    // Base Address of memory range
+         btUnsigned64bitInt rsvd2 :44;                  // Reserved
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_GENPROTRANGE2_BASE
+CASSERT(sizeof(struct CCIP_FME_GENPROTRANGE2_BASE) == 8);
+
+/// FPGA Protected Range Base limit address
+struct CCIP_FME_GENPROTRANGE2_LIMIT {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt rsvd1 :16;                   // Reserved
+         btUnsigned64bitInt protected_limit_addrss:4;    // Limit Address of memory range
+         btUnsigned64bitInt rsvd2 :44;                   // Reserved
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_GENPROTRANGE2_LIMIT
+CASSERT(sizeof(struct CCIP_FME_GENPROTRANGE2_LIMIT) == 8);
+
+
+/// DXE LOCK
+struct CCIP_DXE_LOCK {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt dxe_lock:64;   // DXE LOCK
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_DXE_LOCK
+CASSERT(sizeof(struct CCIP_DXE_LOCK) == 8);
+
+
+// HSSI Control
+struct CCIP_HSSI_CTRL {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt data:32;       // Data
+         btUnsigned64bitInt address:16;    // Address
+         btUnsigned64bitInt command:16;    // Command
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_HSSI_CTRL
+CASSERT(sizeof(struct CCIP_HSSI_CTRL) == 8);
+
+
+// HSSI status
+struct CCIP_HSSI_STAT{
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt data:32;      // Data
+         btUnsigned64bitInt ack:1;        // acknowledge
+         btUnsigned64bitInt spare:1;      // Spare
+         btUnsigned64bitInt rsvd:30;      // Reserved
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_HSSI_STAT
+CASSERT(sizeof(struct CCIP_HSSI_STAT) == 8);
 
 /******************************************************************************
  *  FPGA Management Engine  Header
@@ -398,54 +558,55 @@ CASSERT(sizeof(struct CCIP_PORT_AFU_OFFSET) == 8);
 struct CCIP_FME_HDR {
 
    // FME  Header
-   struct CCIP_DFH         dfh;               // Offset 0
+   struct CCIP_DFH                                 dfh;                   // Offset 0
 
    // FME afu id  low
-   struct CCIP_AFU_ID_L    afu_id_l;         // Offset 0x8
+   struct CCIP_AFU_ID_L                            afu_id_l;              // Offset 0x8
 
    // FME afu id  high
-   struct CCIP_AFU_ID_H    afu_id_h;         // Offset 0x10
+   struct CCIP_AFU_ID_H                            afu_id_h;              // Offset 0x10
 
    // Next AFU offset
-   struct CCIP_NEXT_AFU    next_afu;         // Offset 0x18
+   struct CCIP_NEXT_AFU                            next_afu;               // Offset 0x18
 
    // Reserved
-   btUnsigned64bitInt      rsvd_fmehdr;      // Offset 0x20
+   btUnsigned64bitInt                              rsvd_fmehdr;            // Offset 0x20
 
    // FME Scratch pad
-   struct CCIP_SCRATCHPAD  fme_scratchpad;
+   struct CCIP_SCRATCHPAD                          scratchpad;             // Offset 0x28
 
    // Fabric capability
-   struct CCIP_FAB_CAPABILITY {
+   struct CCIP_FAB_CAPABILITY                      fab_capability;          // Offset 0x30
 
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt fabric_verid :8; // Fabric version ID
-            btUnsigned64bitInt socket_id :1; // Socket id
-            btUnsigned64bitInt rsvd1 :3;
-            btUnsigned64bitInt pci0_link_avile :1; // pci0 link available yes /no
-            btUnsigned64bitInt pci1_link_avile :1; // pci1 link available yes /no
-            btUnsigned64bitInt qpi_link_avile :1; //Coherent (QPI/UPI) link available yes /no
-            btUnsigned64bitInt rsvd2 :1;
-            btUnsigned64bitInt iommu_support :1; //IOMMU or VT-d supported  yes/no
-            btUnsigned64bitInt rsvd3 :7;
-            btUnsigned64bitInt address_width_bits :6; // Address width supported in bits  BXT -0x26 , SKX -0x30
-            btUnsigned64bitInt rsvd4 :2;
-            btUnsigned64bitInt cache_size :12; // Size of cache supported in kb
-            btUnsigned64bitInt cache_assoc :4; // Cache Associativity
-            btUnsigned64bitInt rsvd5 :14;
-            btUnsigned64bitInt lock_bit :1; //Lock bit
-         }; // end struct
-      }; // end union
+   // Beginning of the list of offsets to
+   //the Port regions
+   struct CCIP_PORT_AFU_OFFSET                     port_offsets[4];         // Offset 0x38
 
-   } ccip_fme_capability; // struct CCIP_FME_CAPABILITY
+   // fabric status csr
+   struct CCIP_FAB_STATUS                          fab_status ;              // Offset 0x58
 
-   // Beginning of the list of offsets to the Port regions
-   struct CCIP_PORT_AFU_OFFSET port_offsets[1];
+   // Bitstream ID
+   struct CCIP_BBS_ID                              bbs_id ;                  // Offset 0x60
+
+   // Bitstream medadata
+   struct CCIP_BBS_MD                              bbs_md ;                  // Offset 0x68
+
+   struct CCIP_FME_GENPROTRANGE2_BASE              genprotrannge2_base ;     // Offset 0x70
+
+   struct CCIP_FME_GENPROTRANGE2_LIMIT             enprotrannge2_limit ;     // Offset 0x78
+
+   //DXE LOCK
+   struct CCIP_DXE_LOCK                            dxe_lock ;                 // Offset 0x80
+
+   //HSSI Lock
+   struct CCIP_HSSI_CTRL                           hssi_ctrl ;                // Offset 0x88
+
+   // HSSI Status
+   struct CCIP_HSSI_STAT                           hssi_status;               // Offset 0x90
+
 
 }; //end struct CCIP_FME_HDR
-CASSERT(sizeof(struct CCIP_FME_HDR) == (8 * 8));
+CASSERT(sizeof(struct CCIP_FME_HDR) == (8 * 19));
 
 ///============================================================================
 /// Name: CCIP_FME_DFL_THERM
@@ -454,7 +615,6 @@ CASSERT(sizeof(struct CCIP_FME_HDR) == (8 * 8));
 ///  Feature Type: = Private
 ///  Feature Revision: 0
 ///============================================================================
-
 
 
 // Temperature Threshold
@@ -467,16 +627,16 @@ struct CCIP_TEMP_THRESHOLD {
          btUnsigned64bitInt tmp_thshold1_status :1;         // temperature Threshold 1 enable /disable
          btUnsigned64bitInt tmp_thshold2 :7;                // temperature Threshold 2
          btUnsigned64bitInt tmp_thshold2_status :1;         // temperature Threshold 2 enable /disable
-         btUnsigned64bitInt rsvd4 :8;
+         btUnsigned64bitInt rsvd4 :8;                       // Reserved
          btUnsigned64bitInt therm_trip_thshold :7;          // Thermeal Trip Threshold
-         btUnsigned64bitInt rsvd3 :1;
+         btUnsigned64bitInt rsvd3 :1;                       // Reserved
          btUnsigned64bitInt thshold1_status :1;             // Threshold 1 Status
          btUnsigned64bitInt thshold2_status :1;             // Threshold 2 Status
-         btUnsigned64bitInt rsvd5 :1;
+         btUnsigned64bitInt rsvd5 :1;                       // Reserved
          btUnsigned64bitInt therm_trip_thshold_status :1;   // Thermeal Trip Threshold status
-         btUnsigned64bitInt rsvd2 :8;
+         btUnsigned64bitInt rsvd2 :8;                       // Reserved
          btUnsigned64bitInt thshold_policy :1;              // threshold policy
-         btUnsigned64bitInt rsvd :19;
+         btUnsigned64bitInt rsvd :19;                       // Reserved
 
      }; //end struct
    }; // end union
@@ -490,13 +650,13 @@ struct CCIP_TEMP_RDSSENSOR_FMT1 {
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt tmp_reading :7; // Reads out FPGA temperature in celsius.
-         btUnsigned64bitInt rsvd2 :1;
-         btUnsigned64bitInt tmp_reading_seq_num :16; // Temperature reading sequence number
-         btUnsigned64bitInt tmp_reading_valid :1; // Temperature reading is valid
-         btUnsigned64bitInt rsvd1 :7;
-         btUnsigned64bitInt dbg_mode :8; //Debug mode
-         btUnsigned64bitInt rsvd :24;
+         btUnsigned64bitInt tmp_reading :7;               // Reads out FPGA temperature in celsius.
+         btUnsigned64bitInt rsvd2 :1;                     // Reserved
+         btUnsigned64bitInt tmp_reading_seq_num :16;      // Temperature reading sequence number
+         btUnsigned64bitInt tmp_reading_valid :1;         // Temperature reading is valid
+         btUnsigned64bitInt rsvd1 :7;                     // Reserved
+         btUnsigned64bitInt dbg_mode :8;                  // Debug mode
+         btUnsigned64bitInt rsvd :24;                     // Reserved
 
       }; // end struct
    } ; // end union
@@ -537,89 +697,52 @@ CASSERT(sizeof(struct CCIP_FME_DFL_THERM) == (4*8));
 ///  Feature Revision: 0
 ///============================================================================
 
-
 //Power Management Status
 struct CCIP_PM_STATUS {
 
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt pwr_consumed :17;
-         btUnsigned64bitInt fpga_latency_report :1; // FPGA Latency Tolerance Reporting (LTR)
-         btUnsigned64bitInt rsvd3 :45;
+         btUnsigned64bitInt pwr_consumed :17;        // power consumed
+         btUnsigned64bitInt fpga_latency_report :1;  // FPGA Latency Tolerance Reporting (LTR)
+         btUnsigned64bitInt rsvd3 :45;               // Reserved
       }; // end struct
    }; // end union
 
 } ; // end struct CCIP_PM_STATUS
 CASSERT(sizeof(struct CCIP_PM_STATUS) == (1*8));
 
+
+//Power Management Status
+struct CCIP_FME_THRESHOLDS {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt threshold1 :10;   // threshold1
+         btUnsigned64bitInt threshold2 :10;   // threshold2
+         btUnsigned64bitInt threshold3 :10;   // threshold3
+         btUnsigned64bitInt threshold4 :10;   // threshold4
+         btUnsigned64bitInt rsvd3 :24;        // Reserved
+      }; // end struct
+   }; // end union
+
+} ; // end struct CCIP_FME_THRESHOLDS
+CASSERT(sizeof(struct CCIP_FME_THRESHOLDS) == (1*8));
+
 struct CCIP_FME_DFL_PM {
 
    // FME Power Management Feature header
-   struct CCIP_DFH  ccip_fme_pm_dflhdr;
+   struct CCIP_DFH                  ccip_fme_pm_dflhdr;
 
-   //Power Management threshold
-   struct CCIP_PM_THRESHOLD {
+   // PM Status
+   struct CCIP_PM_STATUS            pm_status;
 
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt threshold1 :7; //threshold 1
-            btUnsigned64bitInt rsvd1 :1;
-            btUnsigned64bitInt threshold2 :7; //threshold 2
-            btUnsigned64bitInt rsvd2 :1;
-            btUnsigned64bitInt threshold1_sts :1; // Threshold 1 status
-            btUnsigned64bitInt threshold2_sts :1; // Threshold 2 status
-            btUnsigned64bitInt fpga_latency_report :1; // FPGA Latency Tolerance Reporting (LTR)
-            btUnsigned64bitInt rsvd3 :45;
-         }; // end struct
-      }; // end union
-
-   } ccip_pm_threshold; // end struct CCIP_PM_THRESHOLD
-
-   //Power Management Record  values
-   struct CCIP_PM_RDVR {
-
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt clock_buffer_supply_i_valid :1; // clock buffer supply current valid
-            btUnsigned64bitInt core_supply_i_valid :1;         // core supply current valid
-            btUnsigned64bitInt trans_supply_i_valid :1;        // transceiver supply current valid
-            btUnsigned64bitInt fpga_supply_i_valid :1;         // fpga 1.8v supply current valid
-            btUnsigned64bitInt volt_regulator_readmods :1;     // Voltage regulator read modes
-            btUnsigned64bitInt rsvd :3;
-            btUnsigned64bitInt clock_buffer_supply_i_value :8; // clock buffer supply current value
-            btUnsigned64bitInt core_supply_i_value :16;        // core supply current value
-            btUnsigned64bitInt trans_supply_i_value :8;        // transceiver supply current value
-            btUnsigned64bitInt fpga_supply_i_value :8;         // fpga supply current value
-            btUnsigned64bitInt sequence_number :16;            // read sample sequence number
-         }; // end struct
-      }; // end union
-
-   } ccip_pm_rdvr; // end struct CCIP_PM_RDVR
-
-
-   //Power Management Record Maximum values
-   struct CCIP_PM_MAXVR {
-
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt hw_set_field :1;          //Hardware set field
-            btUnsigned64bitInt rsvd :7;
-            btUnsigned64bitInt max_clock_supply_i_rec :8; // Maximum clock buffer supply current recorded
-            btUnsigned64bitInt max_core_supply_i_rec :16; // Maximum core  supply current recorded
-            btUnsigned64bitInt max_trans_supply_i_rec :8; // Maximum Transceiver  supply current recorded
-            btUnsigned64bitInt max_fpga_supply_i_rec :8;  // Maximum FPGA  supply current recorded
-            btUnsigned64bitInt rsvd1 :16;
-         }; // end struct
-      }; // end union
-
-   }ccip_pm_mrdvr; // end struct CCIP_PM_MAXVR
+   // PM thresholds
+   struct CCIP_FME_THRESHOLDS       pm_thresholds;
 
 }; // end struct CCIP_PM_MAXVR
-CASSERT(sizeof(struct CCIP_FME_DFL_PM) == (4*8));
+CASSERT(sizeof(struct CCIP_FME_DFL_PM) == (8* 3));
 
 ///============================================================================
 /// Name: CCIP_FME_DFL_FPMON
@@ -639,15 +762,12 @@ struct CCIP_FME_DFL_FPMON {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt reset_counter :1; //Reset counter
-            btUnsigned64bitInt rsvd2 :7;
-            btUnsigned64bitInt freeze :1; // Freeze
-            btUnsigned64bitInt rsvd1 :7;
-            btUnsigned64bitInt cache_event :4; // Cache Event code
-
-            //enum  e_Cache_Event_Code  cache_event :4;
-
-            btUnsigned64bitInt rsvd :44;
+            btUnsigned64bitInt rsvd2 :8;           // Reserved
+            btUnsigned64bitInt freeze :1;          // Freeze
+            btUnsigned64bitInt rsvd1 :7;           // Reserved
+            btUnsigned64bitInt cache_event :4;     // Cache Event code
+            btUnsigned64bitInt cci_chsel :1;       // CCI channel selection
+            btUnsigned64bitInt rsvd :43;           // Reserved
          }; // end struct
       }; // end union
 
@@ -659,8 +779,9 @@ struct CCIP_FME_DFL_FPMON {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt cache_counter : 60; //Cache counter
-            btUnsigned64bitInt event_code : 4;
+            btUnsigned64bitInt cache_counter : 48;    // Cache counter
+            btUnsigned64bitInt rsvd : 12;             // Reserved
+            btUnsigned64bitInt event_code : 4;        // Event code
          }; // end struct
       }; // end union
 
@@ -672,8 +793,9 @@ struct CCIP_FME_DFL_FPMON {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt cache_counter : 60; //Cache counter
-            btUnsigned64bitInt event_code : 4;
+            btUnsigned64bitInt cache_counter : 48;    // Cache counter
+            btUnsigned64bitInt rsvd : 12;             // Reserved
+            btUnsigned64bitInt event_code : 4;        // Event Code
          }; // end struct
       }; // end union
 
@@ -685,21 +807,14 @@ struct CCIP_FME_DFL_FPMON {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt reset_counter :1; // Reset Counters
-            btUnsigned64bitInt rsvd3 :7;
-            btUnsigned64bitInt freeze :1; // Freeze
-            btUnsigned64bitInt rsvd2 :7;
-            btUnsigned64bitInt fabric_evt_code :4; // Fabric Event Code
-
-            // e_Fabric_Event_Code fabric_evt_code :4; // Fabric Event Code
-
-            btUnsigned64bitInt port_id :2; // CCI-P Port ID
-
-            //enum e_CCIP_Port_Id port_id :2; // CCI-P Port ID
-
-            btUnsigned64bitInt rsvd1 :1;
-            btUnsigned64bitInt ccip_port_filter :1; // CCI-P Port Filter enable /disbale
-            btUnsigned64bitInt rsvd :40;
+            btUnsigned64bitInt rsvd3 :8;                 // Reserved
+            btUnsigned64bitInt freeze :1;                // Freeze
+            btUnsigned64bitInt rsvd2 :7;                 // Reserved
+            btUnsigned64bitInt fabric_evt_code :4;       // Fabric Event Code
+            btUnsigned64bitInt port_id :2;               // CCI-P Port ID
+            btUnsigned64bitInt rsvd1 :1;                 // Reserved
+            btUnsigned64bitInt ccip_port_filter :1;      // CCI-P Port Filter enable /disable
+            btUnsigned64bitInt rsvd :40;                 // Reserved
          }; // end stuct
       }; // end unon
 
@@ -711,8 +826,8 @@ struct CCIP_FME_DFL_FPMON {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt fabric_counter : 60; // Fabric event counter
-            btUnsigned64bitInt event_code : 4;
+            btUnsigned64bitInt fabric_counter : 60;   // Fabric event counter
+            btUnsigned64bitInt event_code : 4;        // Event code
          }; // end struct
       }; //end union
 
@@ -724,22 +839,70 @@ struct CCIP_FME_DFL_FPMON {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt afu_interf_clock :64; // AFU interface clock
+            btUnsigned64bitInt afu_interf_clock :64;     // AFU interface clock
          }; // end struct
       }; //end union
 
 
    }ccip_fpmon_clk_ctrs; // end struct CCIP_FPMON_CLK_CTRS
 
+   // FPGA  VTD control
+   struct CCIP_FPMON_VTD_CTL {
+
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt rsvd : 8;              // Reserved
+            btUnsigned64bitInt freeze : 1;            // Freeze and un freeze
+            btUnsigned64bitInt rsvd1 : 7;             // Reserved
+            btUnsigned64bitInt vtd_evtcode : 4;       // VTD Event code
+            btUnsigned64bitInt rsvd3 : 44;            // Reserved
+         }; // end struct
+      }; //end union
+
+   }ccip_fpmon_vtd_ctl; //end struct CCIP_FPMON_VTD_CTL
+
+   // FPGA  VTD counter
+   struct CCIP_FPMON_VTD_CTR {
+
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt vtd_counter : 48;      // vt-d event counter
+            btUnsigned64bitInt rsvd : 12;             // Reserved
+            btUnsigned64bitInt event_code : 4;        // Event code
+         }; // end struct
+      }; //end union
+
+   }ccip_fpmon_vtd_ctr; //end struct CCIP_FPMON_VTD_CTR
 };
-CASSERT(sizeof(struct CCIP_FME_DFL_FPMON) == (7*8));
+CASSERT(sizeof(struct CCIP_FME_DFL_FPMON) == (9*8));
+
+// FME Errors
+
+struct CCIP_FME_ERROR_MASK0 {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt error_mask :4;      // Error mask
+         btUnsigned64bitInt rsvd :60;           // Reserved
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_ERROR_MASK0
+CASSERT(sizeof(struct CCIP_FME_ERROR_MASK0) == (1 *8));
 
 struct CCIP_FME_ERROR0 {
 
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt rsvd :64;  // TBD
+         btUnsigned64bitInt fabFifo_underflow :1;        // Fabric fifo underflow
+         btUnsigned64bitInt fabFifo_overflow :1;         // Fabric fifo overflow
+         btUnsigned64bitInt poison_detected :1;          // Poison Detected
+         btUnsigned64bitInt parity_error :1;             // Parity Error
+         btUnsigned64bitInt rsvd :60;                    // Reserved
       }; // end struct
    }; // end union
 
@@ -747,37 +910,84 @@ struct CCIP_FME_ERROR0 {
 CASSERT(sizeof(struct CCIP_FME_ERROR0) == (1 *8));
 
 
-struct CCIP_FME_ERROR1 {
+struct CCIP_FME_PCIE0_ERROR_MASK {
 
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt rsvd :64;  // TBD
+         btUnsigned64bitInt error_mask :4;         // Pcie0 Error mask
+         btUnsigned64bitInt rsvd :60;              // Reserved
       }; // end struct
    }; // end union
 
-}; // end struct CCIP_FME_ERROR
-CASSERT(sizeof(struct CCIP_FME_ERROR1) == (1 *8));
+}; // end struct CCIP_FME_PCIE0_ERROR_MASK
+CASSERT(sizeof(struct CCIP_FME_PCIE0_ERROR_MASK) == (1 *8));
 
-
-struct CCIP_FME_ERROR2 {
+struct CCIP_FME_PCIE0_ERROR {
 
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt rsvd :64;  // TBD
+         btUnsigned64bitInt formattype_err :1;              // TLP Format/type error
+         btUnsigned64bitInt MWAddr_err :1;                  // TLP MW Address error
+         btUnsigned64bitInt MWAddrLength_err :1;            // TLP MW Length error
+         btUnsigned64bitInt MRAddr_err :1;                  // TLP MR Address error
+         btUnsigned64bitInt MRAddrLength_err :1;            // TLP MR Length error
+         btUnsigned64bitInt cpl_tag_err :1;                 // TLP CPL TAP error
+         btUnsigned64bitInt cpl_status_err :1;              // TLP CPL status error
+         btUnsigned64bitInt cpl_timeout_err :1;             // TLP CPL Timeout error
+         btUnsigned64bitInt rsvd :54;                       // Reserved
+
+         btUnsigned64bitInt vfnumb_err :1;                  // VF number error
+         btUnsigned64bitInt funct_type_err :1;              // PF or VF error
+
       }; // end struct
    }; // end union
 
-}; // end struct CCIP_FME_ERROR
-CASSERT(sizeof(struct CCIP_FME_ERROR2) == (1 *8));
+}; // end struct CCIP_FME_PCIE0_ERROR
+CASSERT(sizeof(struct CCIP_FME_PCIE0_ERROR) == (1 *8));
+
+
+struct CCIP_FME_PCIE1_ERROR_MASK {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt error_mask :4;      // Pcie1 Error mask
+         btUnsigned64bitInt rsvd :60;           // Reserved
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_PCIE1_ERROR_MASK
+CASSERT(sizeof(struct CCIP_FME_PCIE1_ERROR_MASK) == (1 *8));
+
+struct CCIP_FME_PCIE1_ERROR {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt formattype_err :1;              // TLP Format/type error
+         btUnsigned64bitInt MWAddr_err :1;                  // TLP MW Address error
+         btUnsigned64bitInt MWAddrLength_err :1;            // TLP MW Length error
+         btUnsigned64bitInt MRAddr_err :1;                  // TLP MR Address error
+         btUnsigned64bitInt MRAddrLength_err :1;            // TLP MR Length error
+         btUnsigned64bitInt cpl_tag_err :1;                 // TLP CPL TAP error
+         btUnsigned64bitInt cpl_status_err :1;              // TLP CPL status error
+         btUnsigned64bitInt cpl_timeout_err :1;             // TLP CPL Timeout error
+         btUnsigned64bitInt rsvd :56;                       // Reserved
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_PCIE1_ERROR
+CASSERT(sizeof(struct CCIP_FME_PCIE1_ERROR) == (1 *8));
 
 struct CCIP_FME_FIRST_ERROR {
 
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt rsvd :64;  // TBD
+         btUnsigned64bitInt err_reg_status :60;          // Error Register trigger bit
+         btUnsigned64bitInt errReg_id :4;                // Error Register trigger first
       }; // end struct
    }; // end union
 
@@ -789,13 +999,112 @@ struct CCIP_FME_NEXT_ERROR {
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt rsvd :64;  // TBD
+         btUnsigned64bitInt err_reg_status :60;          // Error Register trigger bit
+         btUnsigned64bitInt errReg_id :4;                // Error Register trigger first
       }; // end struct
    }; // end union
 
 }; // end struct CCIP_FME_ERROR
 CASSERT(sizeof(struct CCIP_FME_NEXT_ERROR) == (1 *8));
 
+
+
+struct CCIP_FME_RAS_ERROR_MASK {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt error_mask :4;         // Pcie1 Error mask
+         btUnsigned64bitInt rsvd :60;              // Reserved
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_RAS_ERROR_MASK
+CASSERT(sizeof(struct CCIP_FME_RAS_ERROR_MASK) == (1 *8));
+
+
+struct CCIP_FME_RAS_GERROR {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt therm_warn0 :1;                  // thremal threshold warning 0
+         btUnsigned64bitInt therm_warn1 :1;                  // thremal threshold warning 1
+         btUnsigned64bitInt pcie_error :1;                   // pcie Error
+         btUnsigned64bitInt afufatal_error :1;               // afu fatal error
+         btUnsigned64bitInt rsvd :4;                         // Reserved
+         btUnsigned64bitInt gb_crc_err :1;                   // Green bitstream CRC Error
+         btUnsigned64bitInt rsvd2 :55;                       // Reserved
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_RAS_GERROR
+CASSERT(sizeof(struct CCIP_FME_RAS_GERROR) == (1 *8));
+
+
+struct CCIP_FME_RAS_BERROR_MASK {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt error_mask :4;            // Pcie1 Error mask
+         btUnsigned64bitInt rsvd :60;                 // Reserved
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_RAS_BERROR_MASK
+CASSERT(sizeof(struct CCIP_FME_RAS_BERROR_MASK) == (1 *8));
+
+struct CCIP_FME_RAS_BERROR {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt ktilink_fatal_err :1;                  // KTI Link layer error detected
+         btUnsigned64bitInt tagcch_fatal_err :1;                   // tag-n-cache error detected
+         btUnsigned64bitInt cci_fatal_err :1;                      // CCI error detected
+         btUnsigned64bitInt ktiprpto_fatal_err :1;                 // KTI Protocol error detected
+         btUnsigned64bitInt dma_fatal_err :1;                      // DMA error detected
+         btUnsigned64bitInt iommu_fatal_err :1;                    // IOMMU detected
+         btUnsigned64bitInt rsvd :2;                               // Reserved
+         btUnsigned64bitInt iommu_catast__err :1;                  // Catastrophic IOMMU Error
+         btUnsigned64bitInt crc_catast__err :1;                    // Catastrophic CRC Error
+         btUnsigned64bitInt therm_catast__err :1;                  // Catastrophic Thermal Error
+         btUnsigned64bitInt rsvd1 :53;                             // Reserved
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_RAS_BERROR
+CASSERT(sizeof(struct CCIP_FME_RAS_BERROR) == (1 *8));
+
+
+struct CCIP_FME_RAS_WARNERROR_MASK {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt error_mask :4;               // Pcie1 Error mask
+         btUnsigned64bitInt rsvd :60;                    // Reserved
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_RAS_WARNERROR_MASK
+CASSERT(sizeof(struct CCIP_FME_RAS_WARNERROR_MASK) == (1 *8));
+
+
+
+struct CCIP_FME_RAS_WARNERROR {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt event_warn_err :1;                  // Green bitstream fatal event
+         btUnsigned64bitInt rsvd :63;                           // Reserved
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_RAS_WARNERROR
+CASSERT(sizeof(struct CCIP_FME_RAS_WARNERROR) == (1 *8));
 
 ///============================================================================
 /// Name: CCIP_FME_DFL_GERROR
@@ -807,34 +1116,52 @@ CASSERT(sizeof(struct CCIP_FME_NEXT_ERROR) == (1 *8));
 struct CCIP_FME_DFL_GERROR {
 
    // FME Global Error header
-   struct CCIP_DFH ccip_gerror_dflhdr;
+   struct CCIP_DFH                        ccip_gerror_dflhdr;
 
-   //FME  Error mask0  CSR
-   struct CCIP_FME_ERROR0 ccip_fme_error_mask0;
+   // FME pcie0 error mask
+   struct CCIP_FME_ERROR_MASK0            fme_err_mask;
 
-   // FME error0 CSR
-   struct CCIP_FME_ERROR0  ccip_fme_error0;
+   // FME pcie0 error
+   struct CCIP_FME_ERROR0                 fme_err;
 
-   //FME  Error mask1  CSR
-   struct CCIP_FME_ERROR1 ccip_fme_error_mask1;
+   // FME pcie0 error mask
+   struct CCIP_FME_PCIE0_ERROR_MASK       pcie0_err_mask;
 
-   // FME error1 CSR
-   struct CCIP_FME_ERROR1  ccip_fme_error1;
+   // FME pcie0 error
+   struct CCIP_FME_PCIE0_ERROR            pcie0_err;
 
-   //FME  Error mask2  CSR
-   struct CCIP_FME_ERROR2 ccip_fme_error_mask2;
+   // FME pcie1 error mask
+   struct CCIP_FME_PCIE1_ERROR_MASK       pcie1_err_mask;
 
-   // FME error2 CSR
-   struct CCIP_FME_ERROR2  ccip_fme_error2;
+   // FME pcie1 error
+   struct CCIP_FME_PCIE1_ERROR            pcie1_err;
 
-   // FME first error CSR
-   struct CCIP_FME_FIRST_ERROR ccip_fme_first_error;
+   // FME first error
+   struct CCIP_FME_FIRST_ERROR            fme_first_err;
 
-   // FME next error CSR
-   struct CCIP_FME_NEXT_ERROR ccip_fme_next_error;
+   // FME next error
+   struct CCIP_FME_NEXT_ERROR             fme_next_err;
+
+   // FME RAS Green BS error Mask
+   struct CCIP_FME_RAS_ERROR_MASK         ras_err_mask;
+
+   // FME RAS Green BS error
+   struct CCIP_FME_RAS_GERROR             ras_gerr;
+
+   // FME RAS blue bitstream error mask
+   struct CCIP_FME_RAS_BERROR_MASK        ras_berror_mask;
+
+   // FME RAS blue bitstream error
+   struct CCIP_FME_RAS_BERROR             ras_berror;
+
+   // FME RAS warning error mask
+   struct CCIP_FME_RAS_WARNERROR_MASK     ras_warnerror_mask;
+
+   // FME RAS warning error
+   struct CCIP_FME_RAS_WARNERROR          ras_warnerror;
 
 }; //end CCIP_FME_GERROR_feature
-CASSERT(sizeof(struct CCIP_FME_DFL_GERROR) ==(9* 8));
+CASSERT(sizeof(struct CCIP_FME_DFL_GERROR) ==(15* 8));
 
 ///============================================================================
 /// Name: CCIP_FME_DFL_PR
@@ -843,6 +1170,19 @@ CASSERT(sizeof(struct CCIP_FME_DFL_GERROR) ==(9* 8));
 ///  Feature Type: = Private
 ///  Feature Revision: 0
 ///============================================================================
+
+struct CCIP_FME_PR_KEY {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt key :64;
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_PR_KEY
+CASSERT(sizeof(struct CCIP_FME_PR_KEY) == (1 *8));
+
 struct CCIP_FME_DFL_PR {
 
    // FME PR device feature header
@@ -854,16 +1194,14 @@ struct CCIP_FME_DFL_PR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt enable_pr_port_access :1; // Enable PR Port access
-            btUnsigned64bitInt rsvd3 :7;
-            btUnsigned64bitInt pr_regionid :2; // PR Region ID
-
-            //enum e_FME_PR_REGION_ID  pr_regionid :2; // PR Region ID
-
-            btUnsigned64bitInt rsvd1 :2;
-            btUnsigned64bitInt pr_start_req :1; // PR Start Request
-            btUnsigned64bitInt pr_push_complete :1; // PR Data push complete
-            btUnsigned64bitInt rsvd :50;
+            btUnsigned64bitInt enable_pr_port_access :1;          // Enable PR Port access
+            btUnsigned64bitInt rsvd3 :7;                          // Reserved
+            btUnsigned64bitInt pr_regionid :2;                    // PR Region ID
+            btUnsigned64bitInt rsvd1 :2;                          // Reserved
+            btUnsigned64bitInt pr_start_req :1;                   // PR Start Request
+            btUnsigned64bitInt pr_push_complete :1;               // PR Data push complete
+            btUnsigned64bitInt pr_kind :1;                        // PR Data push complete
+            btUnsigned64bitInt rsvd :49;                          // Reserved
          }; // end struct
       }; //end union
 
@@ -876,16 +1214,14 @@ struct CCIP_FME_DFL_PR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt pr_credit :9;             // PR Credits
-            btUnsigned64bitInt rsvd2 :7;
-            btUnsigned64bitInt pr_status :1;             // PR status
-            btUnsigned64bitInt rsvd :3;
-            btUnsigned64bitInt pr_contoller_status :3;    // Altra PR Controller Block status
-
-            btUnsigned64bitInt rsvd1 :1;
-            btUnsigned64bitInt pr_host_status :4;  // PR Host status
-
-            btUnsigned64bitInt rsvd3 :36;
+            btUnsigned64bitInt pr_credit :9;                // PR Credits
+            btUnsigned64bitInt rsvd2 :7;                    // Reserved
+            btUnsigned64bitInt pr_status :1;                // PR status
+            btUnsigned64bitInt rsvd :3;                     // Reserved
+            btUnsigned64bitInt pr_contoller_status :3;      // Altra PR Controller Block status
+            btUnsigned64bitInt rsvd1 :1;                    // Reserved
+            btUnsigned64bitInt pr_host_status :4;           // PR Host status
+            btUnsigned64bitInt rsvd3 :36;                   // Reserved
          }; // end struct
       }; // end union
 
@@ -897,8 +1233,8 @@ struct CCIP_FME_DFL_PR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt pr_data_raw :32;  // PR data from the raw binary file
-            btUnsigned64bitInt rsvd :32;
+            btUnsigned64bitInt pr_data_raw :32;             // PR data from the raw binary file
+            btUnsigned64bitInt rsvd :32;                    // Reserved
          }; // end struct
       }; // end union
 
@@ -906,25 +1242,63 @@ struct CCIP_FME_DFL_PR {
    }ccip_fme_pr_data; // end struct CCIP_FME_PR_DATA
 
    //Partial Reconfiguration data  CSR
-   struct CSR_FME_PR_ERROR {
+   struct CCIP_FME_PR_ERROR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt PR_operation_err :1;
-            btUnsigned64bitInt PR_CRC_err :1;
-            btUnsigned64bitInt PR_bitstream_err :1;
-            btUnsigned64bitInt PR_IP_err :1;
-            btUnsigned64bitInt PR_FIFIO_err :1;
-            btUnsigned64bitInt PR_timeout_err :1;
-            btUnsigned64bitInt rsvd : 58;
+            btUnsigned64bitInt PR_operation_err :1;           // Previous errors detected by PR Host
+            btUnsigned64bitInt PR_CRC_err :1;                 // CRC errors detected
+            btUnsigned64bitInt PR_bitstream_err :1;           // InCompatible errors detected
+            btUnsigned64bitInt PR_IP_err :1;                  // PR protocol error
+            btUnsigned64bitInt PR_FIFIO_err :1;               // PR FIFO error
+            btUnsigned64bitInt PR_timeout_err :1;             // PR Timeout error
+            btUnsigned64bitInt PR_secure_load_err :1;         // PR Security error
+            btUnsigned64bitInt rsvd : 57;                     // Reserved
          }; // end struct
       }; // end union
 
 
-   }ccip_fme_pr_err; // end struct CCIP_FME_PR_ERR
+   }ccip_fme_pr_err; // end struct CCIP_FME_PR_ERROR
+
+   // FME PR Publish HASH
+   struct CCIP_FME_PR_KEY fme_pr_pub_harsh0 ;
+   struct CCIP_FME_PR_KEY fme_pr_pub_harsh1 ;
+   struct CCIP_FME_PR_KEY fme_pr_pub_harsh2 ;
+   struct CCIP_FME_PR_KEY fme_pr_pub_harsh3 ;
+
+   // FME PR Private HASH
+   struct CCIP_FME_PR_KEY fme_pr_priv_harsh0 ;
+   struct CCIP_FME_PR_KEY fme_pr_priv_harsh1 ;
+   struct CCIP_FME_PR_KEY fme_pr_priv_harsh2 ;
+   struct CCIP_FME_PR_KEY fme_pr_priv_harsh3 ;
+
+   // FME PR License
+   struct CCIP_FME_PR_KEY fme_pr_license0 ;
+   struct CCIP_FME_PR_KEY fme_pr_license1 ;
+   struct CCIP_FME_PR_KEY fme_pr_license2 ;
+   struct CCIP_FME_PR_KEY fme_pr_license3 ;
+
+   // FME PR Session Key
+   struct CCIP_FME_PR_KEY fme_pr_seskey0 ;
+   struct CCIP_FME_PR_KEY fme_pr_seskey1 ;
+   struct CCIP_FME_PR_KEY fme_pr_seskey2 ;
+   struct CCIP_FME_PR_KEY fme_pr_seskey3 ;
+
+   // PR Interface ID
+   struct CCIP_FME_PR_KEY fme_pr_intfc_id0_l;
+   struct CCIP_FME_PR_KEY fme_pr_intfc_id0_h;
+
+   struct CCIP_FME_PR_KEY fme_pr_intfc_id1_l;
+   struct CCIP_FME_PR_KEY fme_pr_intfc_id1_h ;
+
+   struct CCIP_FME_PR_KEY fme_pr_intfc_id2_l;
+   struct CCIP_FME_PR_KEY fme_pr_intfc_id2_h ;
+
+   struct CCIP_FME_PR_KEY fme_pr_intfc_id3_l;
+   struct CCIP_FME_PR_KEY fme_pr_intfc_id3_h ;
 
 }; //end struct  CCIP_FME_GERROR_feature
-CASSERT(sizeof(struct CCIP_FME_DFL_PR) ==(5* 8));
+CASSERT(sizeof(struct CCIP_FME_DFL_PR) ==(29* 8));
 
 /******************************************************************************
  *  FPGA port header
@@ -935,27 +1309,39 @@ CASSERT(sizeof(struct CCIP_FME_DFL_PR) ==(5* 8));
  *
  ******************************************************************************/
 
+struct CCIP_USER_CLK_FREQ {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt usr_clk_frq :64;
+
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_USER_CLK_FREQ
+CASSERT(sizeof(struct CCIP_USER_CLK_FREQ) == (1 *8));
+
 // Port status
 struct CCIP_PORT_HDR {
 
    // port  header
-   struct CCIP_DFH ccip_port_dfh;
-
-
-   // Port afu id  low
-   struct CCIP_AFU_ID_L ccip_port_afuidl;
+   struct CCIP_DFH                  ccip_port_dfh;
 
    // Port afu id  low
-   struct CCIP_AFU_ID_H  ccip_port_afuidh;
+   struct CCIP_AFU_ID_L             ccip_port_afuidl;
+
+   // Port afu id  low
+   struct CCIP_AFU_ID_H             ccip_port_afuidh;
 
    // Next AFU offset
-   struct CCIP_NEXT_AFU  ccip_port_next_afu;
+   struct CCIP_NEXT_AFU             ccip_port_next_afu;
 
    // Reserved
-   btUnsigned64bitInt rsvd_porthdr;
+   btUnsigned64bitInt               rsvd_porthdr;
 
    // Port Scratch pad
-   struct CCIP_SCRATCHPAD ccip_port_scratchpad;
+   struct CCIP_SCRATCHPAD           ccip_port_scratchpad;
 
    //  Port scratch pad
    struct CCIP_PORT_CAPABILITY {
@@ -963,12 +1349,12 @@ struct CCIP_PORT_HDR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt port_id :2;   // CCI-P port ID
-            btUnsigned64bitInt rsvd1 :6;
-            btUnsigned64bitInt mmio_size :16; // MMIO size
-            btUnsigned64bitInt rsvd3 :8;
-            btUnsigned64bitInt interrupts :4; //Interrupts supported
-            btUnsigned64bitInt rsvd :28;
+            btUnsigned64bitInt port_id :2;         // CCI-P port ID
+            btUnsigned64bitInt rsvd1 :6;           // Reserved
+            btUnsigned64bitInt mmio_size :16;      // MMIO size
+            btUnsigned64bitInt rsvd3 :8;           // Reserved
+            btUnsigned64bitInt interrupts :4;      //Interrupts supported
+            btUnsigned64bitInt rsvd :28;           // Reserved
          }; // end struct
       }; // end union
 
@@ -979,12 +1365,12 @@ struct CCIP_PORT_HDR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt port_sftreset_control :1; //port soft reset control
-            btUnsigned64bitInt port_freeze :1; //  Port Freeze
-            btUnsigned64bitInt afu_latny_rep :1; // AFU Latency Tolerance Reorting
-            btUnsigned64bitInt rsvd1 :1;
-            btUnsigned64bitInt ccip_outstanding_request :1; // NO outstanding CCI-P requests, set to 1
-            btUnsigned64bitInt rsvd :59;
+            btUnsigned64bitInt port_sftreset_control :1;       // port soft reset control
+            btUnsigned64bitInt port_freeze :1;                 //  Port Freeze
+            btUnsigned64bitInt afu_latny_rep :1;               // AFU Latency Tolerance Reorting
+            btUnsigned64bitInt rsvd1 :1;                       // Reserved
+            btUnsigned64bitInt ccip_outstanding_request :1;    // NO outstanding CCI-P requests, set to 1
+            btUnsigned64bitInt rsvd :59;                       // Reserved
          }; // end struct
       }; // end union
 
@@ -995,21 +1381,35 @@ struct CCIP_PORT_HDR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt rsvd1 :8;
-            btUnsigned64bitInt afu_pwr_state :4; //Reports AFU Power state
-
-            // enum e_AFU_Power_State afu_pwr_state :4; //Reports AFU Power state
-
-            btUnsigned64bitInt rsvd :48;
+            btUnsigned64bitInt rsvd1 :8;                 // Reserved
+            btUnsigned64bitInt afu_pwr_state :4;         // Reports AFU Power state
+            btUnsigned64bitInt rsvd :48;                 // Reserved
          }; // end struct
       }; // end union
 
    }ccip_port_status; // end struct CCIP_PORT_STATUS
 
+
+   // Port status
+   struct CCIP_AFU_PWR_BUDGET {
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt afu_pwr_budget :64;          // AFU power budget
+         }; // end struct
+      }; // end union
+
+   }ccip_afu_pwr_budget; // end struct CCIP_AFU_PWR_BUDGET
+
+
+   struct CCIP_USER_CLK_FREQ user_clk_freq_cmd0;
+   struct CCIP_USER_CLK_FREQ user_clk_freq_cmd1;
+
+   struct CCIP_USER_CLK_FREQ user_clk_freq_sts0;
+   struct CCIP_USER_CLK_FREQ user_clk_freq_sts1;
+
 }; // end struct CCIP_FME_HDR
-CASSERT(sizeof(struct CCIP_PORT_HDR) == (9 *8));
-
-
+CASSERT(sizeof(struct CCIP_PORT_HDR) == (14 *8));
 
 
 /******************************************************************************
@@ -1025,36 +1425,44 @@ struct CCIP_PORT_ERROR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt tx_ch0_overflow :1;       //Tx Channel0 : Overflow
-            btUnsigned64bitInt tx_ch0_invalidreq :1;     //Tx Channel0 : Invalid request encoding
-            btUnsigned64bitInt tx_ch0_req_cl_len3 :1;    //Tx Channel0 : Request with cl_len=3
-            btUnsigned64bitInt tx_ch0_req_cl_len2 :1;    //Tx Channel0 : Request with cl_len=2
-            btUnsigned64bitInt tx_ch0_req_cl_len4 :1;    //Tx Channel0 : Request with cl_len=4
+            btUnsigned64bitInt tx_ch0_overflow :1;             // Tx Channel0 : Overflow
+            btUnsigned64bitInt tx_ch0_invalidreq :1;           // Tx Channel0 : Invalid request encoding
+            btUnsigned64bitInt tx_ch0_req_cl_len3 :1;          // Tx Channel0 : Request with cl_len=3
+            btUnsigned64bitInt tx_ch0_req_cl_len2 :1;          // Tx Channel0 : Request with cl_len=2
+            btUnsigned64bitInt tx_ch0_req_cl_len4 :1;          // Tx Channel0 : Request with cl_len=4
 
-            btUnsigned64bitInt rsvd :11;
+            btUnsigned64bitInt rsvd :11;                       // Reserved
 
-            btUnsigned64bitInt tx_ch1_overflow :1;       //Tx Channel1 : Overflow
-            btUnsigned64bitInt tx_ch1_invalidreq :1;     //Tx Channel1 : Invalid request encoding
-            btUnsigned64bitInt tx_ch1_req_cl_len3 :1;    //Tx Channel1 : Request with cl_len=3
-            btUnsigned64bitInt tx_ch1_req_cl_len2 :1;    //Tx Channel1 : Request with cl_len=2
-            btUnsigned64bitInt tx_ch1_req_cl_len4 :1;    //Tx Channel1 : Request with cl_len=4
+            btUnsigned64bitInt tx_ch1_overflow :1;             // Tx Channel1 : Overflow
+            btUnsigned64bitInt tx_ch1_invalidreq :1;           // Tx Channel1 : Invalid request encoding
+            btUnsigned64bitInt tx_ch1_req_cl_len3 :1;          // Tx Channel1 : Request with cl_len=3
+            btUnsigned64bitInt tx_ch1_req_cl_len2 :1;          // Tx Channel1 : Request with cl_len=2
+            btUnsigned64bitInt tx_ch1_req_cl_len4 :1;          // Tx Channel1 : Request with cl_len=4
 
+            btUnsigned64bitInt tx_ch1_insuff_datapayload :1;   // Tx Channel1 : Insufficient data payload
+            btUnsigned64bitInt tx_ch1_datapayload_overrun:1;   // Tx Channel1 : Data payload overrun
+            btUnsigned64bitInt tx_ch1_incorr_addr  :1;         // Tx Channel1 : Incorrect address
+            btUnsigned64bitInt tx_ch1_sop_detcted  :1;         // Tx Channel1 : NON-Zero SOP Detected
+            btUnsigned64bitInt tx_ch1_atomic_req  :1;          // Tx Channel1 : Illegal VC_SEL, atomic request VLO
+            btUnsigned64bitInt rsvd1 :6;                       // Reserved
 
-            btUnsigned64bitInt tx_ch1_insuff_datapayload :1; //Tx Channel1 : Insufficient data payload
-            btUnsigned64bitInt tx_ch1_datapayload_overrun:1; //Tx Channel1 : Data payload overrun
-            btUnsigned64bitInt tx_ch1_incorr_addr  :1;       //Tx Channel1 : Incorrect address
-            btUnsigned64bitInt tx_ch1_sop_detcted  :1;       //Tx Channel1 : NON-Zero SOP Detected
-            btUnsigned64bitInt tx_ch1_atomic_req  :1;        //Tx Channel1 : Illegal VC_SEL, atomic request VLO
-            btUnsigned64bitInt rsvd1 :6;
+            btUnsigned64bitInt mmioread_timeout :1;            // MMIO Read Timeout in AFU
+            btUnsigned64bitInt tx_ch2_fifo_overflow :1;        // Tx Channel2 : FIFO overflow
 
-            btUnsigned64bitInt mmioread_timeout :1;         // MMIO Read Timeout in AFU
-            btUnsigned64bitInt tx_ch2_fifo_overflow :1;     //Tx Channel2 : FIFO overflow
+            btUnsigned64bitInt rsvd2 :6;                       // Reserved
 
-            btUnsigned64bitInt rsvd2 :6;
+            btUnsigned64bitInt num_pending_req_overflow :1;    // Number of pending Requests: counter overflow
+            btUnsigned64bitInt llpr_smrr_err :1;               // Number of pending Requests: counter overflow
+            btUnsigned64bitInt llpr_smrr2_err :1;              // Number of pending Requests: counter overflow
+            btUnsigned64bitInt llpr_mesg_err :1;               // Number of pending Requests: counter overflow
+            btUnsigned64bitInt genport_range_err :1;           // Number of pending Requests: counter overflow
+            btUnsigned64bitInt legrange_low_err :1;            // Number of pending Requests: counter overflow
+            btUnsigned64bitInt legrange_hight_err :1;          // Number of pending Requests: counter overflow
+            btUnsigned64bitInt vgmem_range_err :1;             // Number of pending Requests: counter overflow
+            btUnsigned64bitInt page_fault_err :1;              // Number of pending Requests: counter overflow
+            btUnsigned64bitInt pmr_err :1;                     // Number of pending Requests: counter overflow
 
-            btUnsigned64bitInt num_pending_req_overflow :1; //Number of pending Requests: counter overflow
-
-            btUnsigned64bitInt rsvd3 :23;
+            btUnsigned64bitInt rsvd3 :14;                      // Reserved
          }; // end struct
       }; // end union
 
@@ -1065,16 +1473,16 @@ CASSERT(sizeof(struct CCIP_PORT_ERROR) == (1 *8));
 struct CCIP_PORT_DFL_ERR {
 
    // Port Error Header
-   struct CCIP_DFH ccip_port_err_dflhdr;
+   struct CCIP_DFH                  ccip_port_err_dflhdr;
 
    // Port error Mask
-   struct CCIP_PORT_ERROR ccip_port_error_mask;
+   struct CCIP_PORT_ERROR           ccip_port_error_mask;
 
    //Port Error
-   struct CCIP_PORT_ERROR ccip_port_error;
+   struct CCIP_PORT_ERROR           ccip_port_error;
 
    //Port First Error
-   struct CCIP_PORT_ERROR ccip_port_first_error;
+   struct CCIP_PORT_ERROR           ccip_port_first_error;
 
    // port malformed request0
    struct CCIP_PORT_MALFORMED_REQ_0 {
@@ -1082,7 +1490,7 @@ struct CCIP_PORT_DFL_ERR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt malfrd_req_lsb :64; // LSB header bit first malformed request
+            btUnsigned64bitInt malfrd_req_lsb :64;    // LSB header bit first malformed request
          }; // end struct
       }; // end union
 
@@ -1094,13 +1502,13 @@ struct CCIP_PORT_DFL_ERR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt malfrd_req_msb :64; // MSB header bit first malformed request
+            btUnsigned64bitInt malfrd_req_msb :64;    // MSB header bit first malformed request
          }; // end struct
       }; // end union
 
    }ccip_port_malformed_req_1;  // end struct CCIP_PORT_MALFORMED_REQ_1
 
-}; // end struct CCIP_PORT_ERR_DFL
+}; // end struct CCIP_PORT_DFL_ERR
 CASSERT(sizeof(struct CCIP_PORT_DFL_ERR ) == (6 *8));
 
 /******************************************************************************
@@ -1121,10 +1529,10 @@ struct CCIP_PORT_DFL_UMSG {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt no_umsg_alloc_port :8; // number of umsg allocated to this port
-            btUnsigned64bitInt status_umsg_engine :1; //  enable umsg engine for this ort 1-enable 0-disable
-            btUnsigned64bitInt umsg_init_status :1;    // usmg initialization status
-            btUnsigned64bitInt rsvd :54;
+            btUnsigned64bitInt no_umsg_alloc_port :8;    // number of umsg allocated to this port
+            btUnsigned64bitInt status_umsg_engine :1;    // enable umsg engine for this ort 1-enable 0-disable
+            btUnsigned64bitInt umsg_init_status :1;      // usmg initialization status
+            btUnsigned64bitInt rsvd :54;                 // Reserved
          }; // end struct
       }; // end union
 
@@ -1137,7 +1545,8 @@ struct CCIP_PORT_DFL_UMSG {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt umsg_base_address :64; // UMAS segment start physical byte address
+            btUnsigned64bitInt umsg_base_address :64;    // UMAS segment start physical byte address
+
          }; // end struct
       }; // end union
 
@@ -1150,8 +1559,8 @@ struct CCIP_PORT_DFL_UMSG {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt umsg_hit :32; // UMSG hit enable / disable
-            btUnsigned64bitInt rsvd :32;
+            btUnsigned64bitInt umsg_hit :32;          // UMSG hit enable / disable
+            btUnsigned64bitInt rsvd :32;              // Reserved
          }; // ens struct
       }; // end union
 
@@ -1193,25 +1602,19 @@ struct CCIP_PORT_DFL_PR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt pr_credit :9;         // Credits
-            btUnsigned64bitInt rsvd2 :3;
-            btUnsigned64bitInt pr_acces_grant :1;    // PR access Grant
-            btUnsigned64bitInt pr_access :1;         // PR access enabled
-            btUnsigned64bitInt rsvd3 :2;
-            btUnsigned64bitInt pr_timeout_error :1;  // PR port timeout error
-            btUnsigned64bitInt pr_engine_error :1;   // PR Engine error
-            btUnsigned64bitInt pr_data_ovrferr :1;   // PR data overfow error
-            btUnsigned64bitInt rsvd4 :1;
-            btUnsigned64bitInt pr_mega_fstatus :3;   // Altra PR Mega-function status
-
-            // enum e_CCIP_PR_Megafun_status pr_mega_fstatus :3; // Altra PR Mega-function status
-
-            btUnsigned64bitInt rsvd1 :1;
-            btUnsigned64bitInt pr_status :4;         // PR Status
-
-            //enum e_CCIP_PORT_PR_status   pr_status :4; // PR Status
-
-            btUnsigned64bitInt rsvd :35;
+            btUnsigned64bitInt pr_credit :9;             // Credits
+            btUnsigned64bitInt rsvd2 :3;                 // Reserved
+            btUnsigned64bitInt pr_acces_grant :1;        // PR access Grant
+            btUnsigned64bitInt pr_access :1;             // PR access enabled
+            btUnsigned64bitInt rsvd3 :2;                 // Reserved
+            btUnsigned64bitInt pr_timeout_error :1;      // PR port timeout error
+            btUnsigned64bitInt pr_engine_error :1;       // PR Engine error
+            btUnsigned64bitInt pr_data_ovrferr :1;       // PR data overfow error
+            btUnsigned64bitInt rsvd4 :1;                 // Reserved
+            btUnsigned64bitInt pr_mega_fstatus :3;       // Altra PR Mega-function status
+            btUnsigned64bitInt rsvd1 :1;                 // Reserved
+            btUnsigned64bitInt pr_status :4;             // PR Status
+            btUnsigned64bitInt rsvd :35;                 // Reserved
          }; // end struct
       };  // end union
 
@@ -1223,8 +1626,8 @@ struct CCIP_PORT_DFL_PR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt pr_data_raw :32; // PR data from the raw-binary file
-            btUnsigned64bitInt rsvd :32;
+            btUnsigned64bitInt pr_data_raw :32;          // PR data from the raw-binary file
+            btUnsigned64bitInt rsvd :32;                 // Reserved
          }; // end struct
       }; // end union
 
@@ -1235,8 +1638,8 @@ struct CCIP_PORT_DFL_PR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt pwr_format :48; // AFU Power budget format
-            btUnsigned64bitInt rsvd :16;
+            btUnsigned64bitInt pwr_format :48;           // AFU Power budget format
+            btUnsigned64bitInt rsvd :16;                 // Reserved
 
          }; // end struct
       }; // end union
@@ -1250,7 +1653,7 @@ struct CCIP_PORT_DFL_PR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt rsvd :64; // TBD
+            btUnsigned64bitInt rsvd :64;                   // Reserved
          }; // end union
       }; // end stuct
 
@@ -1278,20 +1681,20 @@ struct CCIP_PORT_DFL_STAP {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt rsvd :64; // TBD
+            btUnsigned64bitInt rsvd :64;           // Reserved
          };
       };
 
    }ccip_port_stap; // end struct CCIP_PORT_STAP
 
-}; // end struct CCIP_PORT_UMSG_feature
+}; // end struct CCIP_PORT_STAP
 CASSERT(sizeof(struct CCIP_PORT_DFL_STAP) == (2*8));
 
 
 /******************************************************************************
- *  FPGA Port signal tap  feature
- *  Feature ID =0x13
- *  Feature Description Port signal Tap
+ *  FPGA AFU Header
+ *  Feature ID = AFU
+ *  Feature Description: AFU header
  *  Feature Type = Private
  *
  ******************************************************************************/
@@ -1310,24 +1713,6 @@ struct CCIP_AFU_Header {
    struct CCIP_NEXT_AFU  ccip_next_afu;
 } ;
 CASSERT(sizeof(struct CCIP_AFU_Header) == (4*8));
-
-///============================================================================
-/// Name: port_device
-/// @brief  Port device struct
-///============================================================================
-// CCIP afu device
-struct afu_device
-{
-
-   //   struct aal_device         aal_dev;         // AAL Device from which this is derived
-
-   struct CCIP_AFU_Header    *pAfu_header;
-
-   struct CCIP_AFU_Feature   *pAfu_feature;
-
-
-}; // end struct ccip_afu_device
-
 
 
 /// @} group aalkernel_ccip
