@@ -398,7 +398,7 @@ err:
    // Description: Disconnect remote party and destroy channel
    // Inputs optArgs - named ValueSet contains connection arguments
    //=============================================================================
-   /// @brief Disconnect remote party and destroy channel
+   /// @brief Disconnect remote party and destroy channel.
    ///
    /// @retval True.
    btBool disconnect(void)
@@ -425,11 +425,11 @@ err:
    // Outputs: length of message (-1) in case of error, 0 means EOF (remote close)
    // Returns: pointer to message (NULL in case of error or EOF)
    //=============================================================================
-   /// @brief Gets a message from remote end
+   /// @brief Gets a message from remote end.
    ///
-   ///Returns a pointer to message (NULL in case of error or EOF)
-   ///@param[in] *len pointer of where to return message length
-   ///           length of message (-1) in case of error, 0 means EOF (remote close)
+   ///Returns a pointer to message (NULL in case of error or EOF).
+   ///@param[in] *len pointer of where to return message length.
+   ///           Length of message (-1) in case of error, 0 means EOF (remote close).
    ///@return The message string.
    btcString getmsg(btWSSize *len)
    {
