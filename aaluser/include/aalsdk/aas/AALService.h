@@ -409,7 +409,7 @@ public:
 
    // Accessors for marshallers and transport
    /// Accessor to get the Marshaller interface.
-   /// @return A Reference to a IAALMarshaller interface.
+   /// @return A Reference to an IAALMarshaller interface.
    IAALMarshaller   &   marshall();
    /// Accessor to get the UnMarshaller interface.
    /// @return A Reference to an IAALUnMarshaller interface.
@@ -421,15 +421,15 @@ public:
    /// @return A Reference to the sender IAALTransport interface.
    IAALTransport    &     sender();
 
-   /// Accessor to discover whether or not thee Service has a Marshaller interface.
-   /// @retval  True The Service has a IAALMarshaller interface.
+   /// Accessor to discover whether or not the Service has a Marshaller interface.
+   /// @retval  True The Service has an IAALMarshaller interface.
    /// @retval  False The Service does not have a IAALMarshaller interface.
    btBool          HasMarshaller() const;
-   /// Accessor to discover whether or not thee Service has an UnMarshaller interface.
+   /// Accessor to discover whether or not the Service has an UnMarshaller interface.
    /// @retval  True The Service has an IAALUnMarshaller interface.
    /// @retval  False The Service does not have an IAALUnMarshaller interface.
    btBool        HasUnMarshaller() const;
-   /// Accessor to discover whether or not thee Service has an IAALTransport interface.
+   /// Accessor to discover whether or not the Service has an IAALTransport interface.
    /// @retval  True The Service has an IAALTransport interface.
    /// @retval  False The Service does not have an IAALTransport interface.
    btBool           HasTransport() const;
