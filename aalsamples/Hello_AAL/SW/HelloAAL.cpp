@@ -94,19 +94,10 @@ public:
    RuntimeClient();
    ~RuntimeClient();
 
-   /// @brief Synchronous wrapper for stopping the Runtime.
    void end();
-   /// @brief Accessor for pointer to IRuntime stored in Runtime Client
-   ///
-   /// This pointer is used to allocate Service. 
+
    IRuntime* getRuntime();
 
-   /// @brief Checks that the object is in an internally consistent state
-   ///
-   /// The general paradigm in AAL is for an object to track its internal state for subsequent query,
-   /// as opposed to throwing exceptions or having to constantly check return codes.
-   /// We implement this to check if the status of the service allocated.
-   /// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
    btBool isOK();
 
    // <begin IRuntimeClient interface>
@@ -157,6 +148,14 @@ RuntimeClient::~RuntimeClient()
    m_Sem.Destroy();
 }
 
+/// @brief Checks that the object is in an internally consistent state
+///
+/// The general paradigm in AAL is for an object to track its internal state for subsequent query,
+/// as opposed to throwing exceptions or having to constantly check return codes.
+/// We implement this to check if the status of the service allocated.
+/// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
+/// @retval True if the status of the Runtime Client is OK.
+/// @retval False if the status of the Runtime Client is not OK.
 btBool RuntimeClient::isOK()
 {
    return m_isOK;
@@ -178,6 +177,8 @@ void RuntimeClient::runtimeStarted(IRuntime *pRuntime,
    m_Sem.Post(1);
 }
 
+/// @brief Synchronous wrapper for stopping the Runtime.
+/// @return void
 void RuntimeClient::end()
 {
    m_Runtime.stop();
@@ -222,6 +223,10 @@ void RuntimeClient::runtimeEvent(const IEvent &rEvent)
    MSG("Generic message handler (runtime)");
 }
 
+/// @brief Accessor for pointer to the IRuntime interface to the Runtime Client
+///
+/// This pointer is used to allocate the Service.
+/// @retval Pointer to the Runtime Interface.
 IRuntime * RuntimeClient::getRuntime()
 {
    return m_pRuntime;
