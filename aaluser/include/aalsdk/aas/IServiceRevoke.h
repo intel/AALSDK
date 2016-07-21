@@ -45,14 +45,14 @@ BEGIN_NAMESPACE(AAL)
 /// @{
 
 /// @interface IServiceRevoke
-/// @brief Interface to enable Revok Service Requests.
+/// @brief Interface to enable Revoke Service Requests.
 ///
 /// The intent of this API is to enable the Service at the root
 ///  of a Service hierarchy to Release. This call is typically invoked by a
 ///  lower level component to cause the Service stack to unwind cleanly. An
-///   example of the intended us is:  An arbitrarily deep Service stack (i.e.,
+///   example of the intended use is:  An arbitrarily deep Service stack (i.e.,
 ///   a Service has allocated Services that may allocate Services). In the case that
-///   a resource fails or becomes unavailable teh Service stack may no longer be usable.
+///   a resource fails or becomes unavailable the Service stack may no longer be usable.
 ///   In order to clean up gracefully a Release() must be called on the root Service. This
 ///   interface is implemented by the root Service.  The Service is expected to call
 //    Release() on itself.
@@ -60,6 +60,9 @@ class IServiceRevoke
 {
 public:
 
+   /// Implemented by a Service to clean up gracefully when resources are
+   /// revoked from the Service.
+   /// @return void
    virtual void serviceRevoke() = 0;
 
    virtual ~IServiceRevoke() {}
