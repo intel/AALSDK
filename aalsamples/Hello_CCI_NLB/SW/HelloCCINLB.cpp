@@ -556,7 +556,7 @@ void HelloCCINLBApp::serviceAllocateFailed(const IEvent &rEvent)
 /// @brief Callback called after a Service has been successfully
 ///        released.
 ///
-/// @param[out] rTranID A reference to the TransactionID.
+/// <B>Parameters:</B> \n[out]  rTranID A reference to the TransactionID.
 /// @return void
 void HelloCCINLBApp::serviceReleased(TransactionID const &rTranID)
 {
@@ -567,8 +567,8 @@ void HelloCCINLBApp::serviceReleased(TransactionID const &rTranID)
 
 /// @brief Callback called after a Service release failed.
 ///
-/// @param[out] rEvent A reference to an IEvent containing
-///                    information about the failure.
+/// <B>Parameters:</B> \n[out]  rEvent A reference to an IEvent containing
+///                          information about the failure.
 /// @return void
  void HelloCCINLBApp::serviceReleaseFailed(const IEvent        &rEvent)
  {
