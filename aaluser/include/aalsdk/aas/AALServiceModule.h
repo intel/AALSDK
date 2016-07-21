@@ -258,10 +258,7 @@ public:
    /// Create an instance of a Service object.
    ///
    /// @param[in]  container  The AALServiceModule which contains this factory.
-   /// @param[in]  Client   The interface to receive the serviceAllocated call. The
-   ///   object contained within the call may be queried for the desired Service interfaces.
-   /// @param[in]  tid        TransactionID for the event.
-   /// @param[in]  optArgs    Optional Service-specific arguments.
+   /// @param[in]  pRuntime   The interface to runtime object.
    ///
    /// @retval  IBase *  On success.
    /// @retval  NULL     On failure.
@@ -271,6 +268,16 @@ public:
    // Used to destroy and uninitialized Service Object
    virtual void   DestroyServiceObject(IBase               *pServiceBase) = 0;
 
+   /// Initialize an instance of a Service object.
+   ///
+   /// @param[in]  newService  The interface to the service.
+   /// @param[in]  Client   The interface to receive the serviceAllocated call. The
+   ///   object contained within the call may be queried for the desired Service interfaces.
+   /// @param[in]  rtid        TransactionID for the event.
+   /// @param[in]  optArgs    Optional Service-specific arguments.
+   ///
+   /// @retval  true  On success.
+   /// @retval  false On failure.
    virtual btBool    InitializeService(IBase               *newService,
                                        IBase               *Client,
                                        TransactionID const &rtid,
@@ -295,13 +302,14 @@ public:
    ///  does not guarantee the object creates successfully. It only indicates that the
    ///  request is being serviced.  Final response is delivered via callback.
    ///
+   /// @param[in]  pAALRUNTIME
    /// @param[in]  Client  The callback interface to receive the serviceAllocated. The
    ///   object passed in the call may be queried for the desired Service interfaces.
    /// @param[in]  tid       Optional TransactionID for the event.
    /// @param[in]  optArgs   Optional Service-specific arguments.
    ///
-   /// @retval  IBase *  On success.
-   /// @retval  false     On failure.
+   /// @retval  true    On success.
+   /// @retval  false   On failure.
    virtual btBool Construct(IRuntime            *pAALRUNTIME,
                             IBase               *Client,
                             TransactionID const &tid = TransactionID(),
@@ -331,8 +339,16 @@ public:
 
    /// Callback invoked by the Service to indicate that it has been initialized.
    /// @param[in]  pService  The Service that has been initialized.
+   /// @param[in]  rtid      Pointer to a transaction id.
+   /// @retval true  On success.
+   /// @retval false  On error.
    virtual btBool ServiceInitialized(IBase *pService, TransactionID const &rtid) = 0;
 
+   /// Callback invoked by the Service to indicate initialization failed.
+   /// @param[in]  pService  The Service that has been initialized.
+   /// @param[in]  pEvent    Pointer to an event with details of what failed.
+   /// @retval true  On success.
+   /// @retval false  On error.
    virtual btBool  ServiceInitFailed(IBase *pService, IEvent const *pEvent)      = 0;
 };
 
@@ -412,7 +428,6 @@ private:
    //=============================================================================
    // Name: SendReleaseToAll
    /// @brief Sends a Release to all services
-   /// @param[in]   pService IBase of service
    /// 			The object remains locked through the loop of Releases to prevent
    ///           Services being removed in the background and corrupting the iter
    ///           The Release() used here is a quiet one. It does not generate an event.
