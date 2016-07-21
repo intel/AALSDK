@@ -58,10 +58,10 @@ class IServiceBroker
 public:
    /// Allocate a Service
    ///@param[in] pProxy Runtime Proxy for this Service
-   ///@param[in] pRuntimClient of client for this Service
-   ///@param[in] pServiceClient IBase of client for this Service
-   ///@param[in] rManifest Manifest describing the Service to allocate
-   ///@param[in] rTranID Transaction ID
+   ///@param[in] pRuntimClient Pointer to the Runtime Client for this Service.
+   ///@param[in] pServiceClientBase Pointer to the IBase interface of the Service Client for this Service.
+   ///@param[in] rManifest Reference to the Manifest describing the Service to allocate.
+   ///@param[in] rTranID Reference to the Transaction ID.
    virtual void allocService(IRuntime            *pProxy,
                              IRuntimeClient      *pRuntimClient,
                              IBase               *pServiceClientBase,
