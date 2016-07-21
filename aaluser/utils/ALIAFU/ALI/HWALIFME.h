@@ -103,6 +103,13 @@ public :
    virtual void AFUEvent(AAL::IEvent const &theEvent);
 
    void pirntFMEErrors(struct CCIP_ERROR *pError);
+
+   void readfmeError( struct CCIP_ERROR *pError, INamedValueSet &rResult ,btBool errMask =false);
+
+   void writewriteError( struct CCIP_ERROR *pError,const INamedValueSet &rInputArgs,btBool errMask = false);
+
+   void readOrderError( struct CCIP_ERROR *pError, INamedValueSet &rResult);
+
 };
 
 /// @}

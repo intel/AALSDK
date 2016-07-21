@@ -50,6 +50,9 @@
 #include "ALIAIATransactions.h"
 #include "HWALIFME.h"
 
+#define FME_FIRST_ERR_STR "First "
+#define FME_NEXT_ERR_STR  "Next "
+
 BEGIN_NAMESPACE(AAL)
 
 /// @addtogroup HWALIAFU
@@ -127,12 +130,8 @@ btBool CHWALIFME::performanceCountersGet ( INamedValueSet*  const  pResult,
 btBool CHWALIFME::errorGet( INamedValueSet &rResult )
 {
 
-   struct CCIP_ERROR *pError                = NULL;
-   struct CCIP_FME_ERROR0  fme_error0         = {0};
-   struct CCIP_FME_PCIE0_ERROR  fme_error1         = {0};
-   struct CCIP_FME_PCIE1_ERROR  fme_error2         = {0};
-
-   btWSSize size                            = sizeof(struct CCIP_ERROR);
+   struct CCIP_ERROR *pError    = NULL;
+   btWSSize size                = sizeof(struct CCIP_ERROR);
 
    // Create the Transaction
    ErrorGet transaction(size,ccipdrv_getFMEError);
@@ -153,23 +152,187 @@ btBool CHWALIFME::errorGet( INamedValueSet &rResult )
    }
 
    pError = (struct  CCIP_ERROR *)transaction.getBuffer();
-   fme_error0.csr = pError->error0;
-   fme_error1.csr = pError->error1;
-   fme_error2.csr = pError->error2;
+
+   readfmeError(pError,rResult );
 
    return true;
 
 }
 
+void CHWALIFME::readfmeError( struct CCIP_ERROR *pError, INamedValueSet &rResult,btBool errMask  )
+{
+   struct CCIP_FME_ERROR0  fme_error0              = {0};
+   struct CCIP_FME_PCIE0_ERROR pcie0_error         = {0};
+   struct CCIP_FME_PCIE1_ERROR pcie1_error         = {0};
+   struct CCIP_FME_RAS_GERROR  ras_gerr            = {0};
+   struct CCIP_FME_RAS_BERROR ras_berror           = {0};
+   struct CCIP_FME_RAS_WARNERROR ras_warnerror     = {0};
 
+   if(false == errMask) {
+      fme_error0.csr       = pError->error0;
+      pcie0_error.csr      = pError->pcie0_error;
+      pcie1_error.csr      = pError->pcie1_error;
+      ras_gerr.csr         = pError->ras_gerr;
+      ras_berror.csr       = pError->ras_berror;
+      ras_warnerror.csr    = pError->ras_warnerror;
+   } else  {
+
+      fme_error0.csr       = pError->error0_mask;
+      pcie0_error.csr      = pError->pcie0_error_mask;
+      pcie1_error.csr      = pError->pcie1_error_mask;
+      ras_gerr.csr         = pError->ras_gerr_mask;
+      ras_berror.csr       = pError->ras_berror_mask;
+      ras_warnerror.csr    = pError->ras_warnerror_mask;
+   }
+
+
+   if(fme_error0.fabFifo_underflow) {
+      rResult.Add(AAL_ERR_FME_FAB_UNDERFLOW,true);
+   }
+
+   if(fme_error0.fabFifo_overflow) {
+      rResult.Add(AAL_ERR_FME_FAB_OVERFLOW,true);
+   }
+
+   if(fme_error0.poison_detected) {
+      rResult.Add(AAL_ERR_FME_POSION_DETECT,true);
+   }
+
+   if(fme_error0.parity_error) {
+        rResult.Add(AAL_ERR_FME_PARIRY,true);
+   }
+
+   if(pcie0_error.formattype_err) {
+        rResult.Add(AAL_ERR_PCIE0_FORMAT,true);
+   }
+
+   if(pcie0_error.MWAddr_err) {
+        rResult.Add(AAL_ERR_PCIE0_MWADDR,true);
+   }
+
+   if(pcie0_error.MWAddrLength_err) {
+        rResult.Add(AAL_ERR_PCIE0_MWLEN,true);
+   }
+
+   if(pcie0_error.MRAddr_err) {
+        rResult.Add(AAL_ERR_PCIE0_MRADDR,true);
+   }
+
+   if(pcie0_error.MRAddrLength_err) {
+        rResult.Add(AAL_ERR_PCIE0_MRLEN,true);
+   }
+
+   if(pcie0_error.cpl_tag_err) {
+      rResult.Add(AAL_ERR_PCIE0_COMPTAG,true);
+   }
+
+   if(pcie0_error.cpl_status_err) {
+      rResult.Add(AAL_ERR_PCIE0_COMPSTAT,true);
+   }
+
+   if(pcie0_error.cpl_timeout_err) {
+      rResult.Add(AAL_ERR_PCIE0_TIMEOUT,true);
+   }
+
+   if(pcie1_error.formattype_err) {
+      rResult.Add(AAL_ERR_PCIE1_FORMAT,true);
+   }
+
+   if(pcie1_error.MWAddr_err) {
+      rResult.Add(AAL_ERR_PCIE1_MWADDR,true);
+   }
+
+   if(pcie1_error.MWAddrLength_err) {
+      rResult.Add(AAL_ERR_PCIE1_MWLEN,true);
+   }
+
+   if(pcie1_error.MRAddr_err) {
+      rResult.Add(AAL_ERR_PCIE1_MRADDR,true);
+   }
+
+   if(pcie1_error.MRAddrLength_err) {
+      rResult.Add(AAL_ERR_PCIE1_MRLEN,true);
+   }
+
+   if(pcie1_error.cpl_tag_err) {
+      rResult.Add(AAL_ERR_PCIE1_COMPTAG,true);
+   }
+
+   if(pcie1_error.cpl_status_err) {
+      rResult.Add(AAL_ERR_PCIE1_COMPSTAT,true);
+   }
+
+   if(pcie1_error.cpl_timeout_err) {
+      rResult.Add(AAL_ERR_PCIE1_TIMEOUT,true);
+   }
+
+   if(ras_gerr.therm_warn0) {
+      rResult.Add(AAL_ERR_RAS_THERMWARN0,true);
+   }
+
+   if(ras_gerr.therm_warn1) {
+      rResult.Add(AAL_ERR_RAS_THERMWARN1,true);
+   }
+
+   if(ras_gerr.pcie_error) {
+      rResult.Add(AAL_ERR_RAS_PCIE,true);
+   }
+
+   if(ras_gerr.afufatal_error) {
+      rResult.Add(AAL_ERR_RAS_AFUFATAL,true);
+   }
+
+   if(ras_gerr.gb_crc_err) {
+      rResult.Add(AAL_ERR_RAS_GBCRC,true);
+   }
+
+   if(ras_berror.ktilink_fatal_err) {
+      rResult.Add(AAL_ERR_RAS_GBCRC,true);
+   }
+
+   if(ras_berror.tagcch_fatal_err) {
+      rResult.Add(AAL_ERR_RAS_TAGCCH_FATAL,true);
+   }
+
+   if(ras_berror.cci_fatal_err) {
+      rResult.Add(AAL_ERR_RAS_CCI_FATAL,true);
+   }
+
+   if(ras_berror.ktiprpto_fatal_err) {
+      rResult.Add(AAL_ERR_RAS_KTIPROTO_FATAL,true);
+   }
+
+   if(ras_berror.dma_fatal_err) {
+      rResult.Add(AAL_ERR_RAS_DMA_FATAL,true);
+   }
+
+   if(ras_berror.iommu_fatal_err) {
+      rResult.Add(AAL_ERR_RAS_IOMMU_FATAL,true);
+   }
+
+   if(ras_berror.iommu_catast_err) {
+      rResult.Add(AAL_ERR_RAS_IOMMU_CATAS,true);
+   }
+
+   if(ras_berror.crc_catast_err) {
+      rResult.Add(AAL_ERR_RAS_CRC_CATAS,true);
+   }
+
+   if(ras_berror.therm_catast_err) {
+      rResult.Add(AAL_ERR_RAS_THER_CATAS,true);
+   }
+
+   if(ras_warnerror.event_warn_err) {
+      rResult.Add(AAL_ERR_RAS_GB_FATAL,true);
+   }
+
+}
 //
 // errorGetFirst. Returns the FME First Errors
 //
 btBool CHWALIFME::errorGetOrder( INamedValueSet &rResult )
 {
-   struct CCIP_ERROR *pError                   = NULL;
-   struct CCIP_FME_FIRST_ERROR fme_first_error = {0};
-   struct CCIP_FME_NEXT_ERROR  fme_next_error  = {0};
+   struct CCIP_ERROR *pError                = NULL;
    btWSSize size                            = sizeof(struct CCIP_ERROR);
 
    // Create the Transaction
@@ -191,13 +354,256 @@ btBool CHWALIFME::errorGetOrder( INamedValueSet &rResult )
    }
 
    pError = (struct  CCIP_ERROR *)transaction.getBuffer();
-   fme_first_error.csr = pError->first_error;
-   fme_next_error.csr = pError->next_error;
 
+   readOrderError(pError,rResult);
 
     return true;
 }
+void CHWALIFME::readOrderError( struct CCIP_ERROR *pError, INamedValueSet &rResult)
+{
+   struct CCIP_FME_ERROR0  fme_error0              = {0};
+   struct CCIP_FME_PCIE0_ERROR pcie0_error         = {0};
+   struct CCIP_FME_PCIE1_ERROR pcie1_error         = {0};
 
+   struct CCIP_FME_FIRST_ERROR fme_first_err       = {0};
+   struct CCIP_FME_NEXT_ERROR fme_next_err         = {0};
+
+
+   fme_first_err.csr    = pError->first_error;
+   fme_next_err.csr     = pError->next_error;
+
+   if(0x0 == fme_first_err.errReg_id )
+   {
+      fme_error0.csr    = pError->first_error;
+
+      if(fme_error0.fabFifo_underflow) {
+          std::string str(FME_FIRST_ERR_STR);
+          rResult.Add(str.append(AAL_ERR_FME_FAB_UNDERFLOW).c_str(),true);
+      }
+
+      if(fme_error0.fabFifo_overflow) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_FME_FAB_OVERFLOW).c_str(),true);
+      }
+
+      if(fme_error0.poison_detected) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_FME_POSION_DETECT).c_str(),true);
+      }
+
+      if(fme_error0.parity_error) {
+           std::string str(FME_FIRST_ERR_STR);
+           rResult.Add(str.append(AAL_ERR_FME_PARIRY).c_str(),true);
+      }
+
+   }
+
+   if(0x0 == fme_next_err.errReg_id ) {
+
+      fme_error0.csr    = pError->next_error;
+
+      if(fme_error0.fabFifo_underflow) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_FME_FAB_UNDERFLOW).c_str(),true);
+      }
+
+      if(fme_error0.fabFifo_overflow) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_FME_FAB_OVERFLOW).c_str(),true);
+      }
+
+      if(fme_error0.poison_detected) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_FME_POSION_DETECT).c_str(),true);
+      }
+
+      if(fme_error0.parity_error) {
+           std::string str(FME_NEXT_ERR_STR);
+           rResult.Add(str.append(AAL_ERR_FME_PARIRY).c_str(),true);
+      }
+   }
+
+   if(0x1 == fme_first_err.errReg_id ) {
+
+      pcie0_error.csr    = pError->first_error;
+
+      if(pcie0_error.formattype_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_FORMAT).c_str(),true);
+      }
+
+      if(pcie0_error.MWAddr_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_MWADDR).c_str(),true);
+      }
+
+      if(pcie0_error.MWAddrLength_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_MWLEN).c_str(),true);
+      }
+
+      if(pcie0_error.MRAddr_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_MRADDR).c_str(),true);
+      }
+
+      if(pcie0_error.MRAddrLength_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_MRLEN).c_str(),true);
+      }
+
+      if(pcie0_error.cpl_tag_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_COMPTAG).c_str(),true);
+      }
+
+      if(pcie0_error.cpl_status_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_COMPSTAT).c_str(),true);
+      }
+
+      if(pcie0_error.cpl_timeout_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_TIMEOUT).c_str(),true);
+      }
+   }
+
+   if(0x1 == fme_next_err.errReg_id ) {
+
+      pcie0_error.csr    = pError->next_error;
+
+      if(pcie0_error.formattype_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_FORMAT).c_str(),true);
+      }
+
+      if(pcie0_error.MWAddr_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_MWADDR).c_str(),true);
+      }
+
+      if(pcie0_error.MWAddrLength_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_MWLEN).c_str(),true);
+      }
+
+      if(pcie0_error.MRAddr_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_MRADDR).c_str(),true);
+      }
+
+      if(pcie0_error.MRAddrLength_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_MRLEN).c_str(),true);
+      }
+
+      if(pcie0_error.cpl_tag_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_COMPTAG).c_str(),true);
+      }
+
+      if(pcie0_error.cpl_status_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_COMPSTAT).c_str(),true);
+      }
+
+      if(pcie0_error.cpl_timeout_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE0_TIMEOUT).c_str(),true);
+      }
+   }
+
+   if(0x2 == fme_first_err.errReg_id ) {
+
+      pcie1_error.csr    = pError->first_error;
+
+      if(pcie1_error.formattype_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_FORMAT).c_str(),true);
+      }
+
+      if(pcie1_error.MWAddr_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_MWADDR).c_str(),true);
+      }
+
+      if(pcie1_error.MWAddrLength_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_MWLEN).c_str(),true);
+      }
+
+      if(pcie1_error.MRAddr_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_MRADDR).c_str(),true);
+      }
+
+      if(pcie1_error.MRAddrLength_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_MRLEN).c_str(),true);
+      }
+
+      if(pcie1_error.cpl_tag_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_COMPTAG).c_str(),true);
+      }
+
+      if(pcie1_error.cpl_status_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_COMPSTAT).c_str(),true);
+      }
+
+      if(pcie1_error.cpl_timeout_err) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_TIMEOUT).c_str(),true);
+      }
+   }
+
+   if(0x2 == fme_next_err.errReg_id ) {
+
+      pcie1_error.csr    = pError->next_error;
+
+      if(pcie1_error.formattype_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_FORMAT).c_str(),true);
+      }
+
+      if(pcie1_error.MWAddr_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_MWADDR).c_str(),true);
+      }
+
+      if(pcie1_error.MWAddrLength_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_MWLEN).c_str(),true);
+      }
+
+      if(pcie1_error.MRAddr_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_MRADDR).c_str(),true);
+      }
+
+      if(pcie1_error.MRAddrLength_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_MRLEN).c_str(),true);
+      }
+
+      if(pcie1_error.cpl_tag_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_COMPTAG).c_str(),true);
+      }
+
+      if(pcie1_error.cpl_status_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_COMPSTAT).c_str(),true);
+      }
+
+      if(pcie1_error.cpl_timeout_err) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(str.append(AAL_ERR_PCIE1_TIMEOUT).c_str(),true);
+      }
+   }
+
+}
 
 //
 // errorGetMask. Returns the FME  Errors Masks.
@@ -205,9 +611,6 @@ btBool CHWALIFME::errorGetOrder( INamedValueSet &rResult )
 btBool CHWALIFME::errorGetMask( INamedValueSet &rResult )
 {
    struct CCIP_ERROR *pError                      = NULL;
-   struct CCIP_FME_ERROR0  fme_error0_mask         = {0};
-   struct CCIP_FME_PCIE0_ERROR  fme_error1_mask         = {0};
-   struct CCIP_FME_PCIE1_ERROR  fme_error2_mask         = {0};
 
    // Create the Transaction
    ErrorGet transaction(sizeof( struct CCIP_ERROR),ccipdrv_getFMEError);
@@ -228,9 +631,8 @@ btBool CHWALIFME::errorGetMask( INamedValueSet &rResult )
    }
 
    pError = (struct  CCIP_ERROR *)transaction.getBuffer();
-   fme_error0_mask.csr = pError->error0_mask;
-   fme_error1_mask.csr = pError->error1_mask;
-   fme_error2_mask.csr = pError->error2_mask;
+
+   readfmeError(pError,rResult ,true);
 
    return true;
 }
@@ -243,9 +645,7 @@ btBool CHWALIFME::errorSetMask( const INamedValueSet &rInputArgs )
 {
    struct CCIP_ERROR ccip_error      = {0};
 
-   struct CCIP_FME_ERROR0  fme_error0_mask         = {0};
-   struct CCIP_FME_PCIE0_ERROR  fme_error1_mask         = {0};
-   struct CCIP_FME_PCIE1_ERROR  fme_error2_mask         = {0};
+   writewriteError(&ccip_error,rInputArgs,true);
 
    // Create the Transaction
    SetError transaction(ccipdrv_SetFMEErrorMask,ccip_error);
@@ -264,7 +664,6 @@ btBool CHWALIFME::errorSetMask( const INamedValueSet &rInputArgs )
    return true;
 }
 
-
 //
 // errorClear, Clears Errors
 //
@@ -272,10 +671,7 @@ btBool CHWALIFME::errorClear(const INamedValueSet &rInputArgs )
 {
    struct CCIP_ERROR ccip_error  = {0};
 
-   struct CCIP_FME_ERROR0  fme_error0         = {0};
-   struct CCIP_FME_PCIE0_ERROR  fme_error1         = {0};
-   struct CCIP_FME_PCIE1_ERROR  fme_error2         = {0};
-
+   writewriteError(&ccip_error,rInputArgs,false);
 
    // Create the Transaction
    SetError transaction(ccipdrv_ClearFMEError,ccip_error);
@@ -291,8 +687,177 @@ btBool CHWALIFME::errorClear(const INamedValueSet &rInputArgs )
       return false;
    }
 
-
    return true;
+}
+
+void CHWALIFME::writewriteError( struct CCIP_ERROR *pError,const INamedValueSet &rInputArgs,btBool errMask)
+{
+
+   struct CCIP_FME_ERROR0  fme_error0              = {0};
+   struct CCIP_FME_PCIE0_ERROR pcie0_error         = {0};
+   struct CCIP_FME_PCIE1_ERROR pcie1_error         = {0};
+   struct CCIP_FME_RAS_GERROR  ras_gerr            = {0};
+   struct CCIP_FME_RAS_BERROR ras_berror           = {0};
+   struct CCIP_FME_RAS_WARNERROR ras_warnerror     = {0};
+
+
+   if(rInputArgs.Has(AAL_ERR_FME_FAB_UNDERFLOW)) {
+      fme_error0.fabFifo_underflow = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_FME_FAB_OVERFLOW)) {
+      fme_error0.fabFifo_overflow = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_FME_POSION_DETECT)) {
+      fme_error0.poison_detected = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_FME_PARIRY)) {
+      fme_error0.parity_error = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE0_FORMAT)) {
+      pcie0_error.formattype_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE0_MWADDR)) {
+      pcie0_error.MWAddr_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE0_MWLEN)) {
+      pcie0_error.MWAddrLength_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE0_MRADDR)) {
+      pcie0_error.MRAddr_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE0_MRLEN)) {
+      pcie0_error.MRAddrLength_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE0_COMPTAG)) {
+      pcie0_error.cpl_tag_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE0_COMPSTAT)) {
+      pcie0_error.cpl_status_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE0_TIMEOUT)) {
+      pcie0_error.cpl_timeout_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE1_FORMAT)) {
+      pcie1_error.formattype_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE1_MWADDR)) {
+      pcie1_error.MWAddr_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE1_MWLEN)) {
+      pcie1_error.MWAddrLength_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE1_MWADDR)) {
+      pcie1_error.MRAddr_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE1_MRLEN)) {
+      pcie1_error.MRAddrLength_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE1_COMPTAG)) {
+      pcie1_error.cpl_tag_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE1_COMPSTAT)) {
+      pcie1_error.cpl_status_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PCIE1_TIMEOUT)) {
+      pcie1_error.cpl_timeout_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_THERMWARN0)) {
+      ras_gerr.therm_warn0 = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_THERMWARN1)) {
+      ras_gerr.therm_warn1 = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_PCIE)) {
+      ras_gerr.pcie_error = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_AFUFATAL)) {
+      ras_gerr.afufatal_error = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_GBCRC)) {
+      ras_gerr.gb_crc_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_GBCRC)) {
+      ras_berror.ktilink_fatal_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_TAGCCH_FATAL)) {
+      ras_berror.tagcch_fatal_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_CCI_FATAL)) {
+      ras_berror.cci_fatal_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_KTIPROTO_FATAL)) {
+      ras_berror.ktiprpto_fatal_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_DMA_FATAL)) {
+      ras_berror.dma_fatal_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_IOMMU_FATAL)) {
+      ras_berror.iommu_fatal_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_IOMMU_CATAS)) {
+      ras_berror.iommu_catast_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_CRC_CATAS)) {
+      ras_berror.crc_catast_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_THER_CATAS)) {
+      ras_berror.therm_catast_err = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_GB_FATAL)) {
+      ras_warnerror.event_warn_err = 0x1;
+   }
+
+   if(false == errMask) {
+      pError->error0                 = fme_error0.csr;
+      pError->pcie0_error            = pcie0_error.csr;
+      pError->pcie1_error            = pcie1_error.csr;
+      pError->ras_gerr               = ras_gerr.csr;
+      pError->ras_berror             = ras_berror.csr;
+      pError->ras_warnerror          = ras_warnerror.csr;
+   } else {
+
+      pError->error0_mask            = fme_error0.csr;
+      pError->pcie0_error_mask       = pcie0_error.csr;
+      pError->pcie1_error_mask       = pcie1_error.csr;
+      pError->ras_gerr_mask          = ras_gerr.csr;
+      pError->ras_berror_mask        = ras_berror.csr;
+      pError->ras_warnerror_mask     = ras_warnerror.csr;
+   }
+
 }
 
 //
@@ -323,7 +888,7 @@ btBool CHWALIFME::printAllErrors()
    btWSSize size              = sizeof(struct CCIP_ERROR);
 
    // Create the Transaction
-   ErrorGet transaction(size,ccipdrv_getPortError);
+   ErrorGet transaction(size,ccipdrv_getFMEError);
 
    // Should never fail
    if ( !transaction.IsOK() ) {
@@ -342,109 +907,69 @@ btBool CHWALIFME::printAllErrors()
 
    pError = (struct  CCIP_ERROR *)transaction.getBuffer();
 
+   pirntFMEErrors(pError);
+
    return true;
 }
 
 void CHWALIFME::pirntFMEErrors(struct CCIP_ERROR *pError)
 {
-   btUnsignedInt count                             = 0;
-   struct CCIP_FME_ERROR0  fme_error0             = {0};
-   struct CCIP_FME_PCIE0_ERROR  fme_error1             = {0};
-   struct CCIP_FME_PCIE1_ERROR  fme_error2             = {0};
-   struct CCIP_FME_FIRST_ERROR  fme_first_error   = {0};
-   struct CCIP_FME_NEXT_ERROR  fme_next_error     = {0};
    NamedValueSet fmeErrornvs;
+   btUnsignedInt count          = 0;
 
-   // FME Error0
+   // print CSR
+   std::cout << " FME Error CSR 0x: "<< std::hex << pError->error0 << std::endl;
+   std::cout << " FME Error Mask CSR 0x: "<<std::hex << pError->error0_mask << std::endl;
+
+   std::cout << " PCIe0 Error CSR 0x: "<<std::hex << pError->pcie0_error << std::endl;
+   std::cout << " PCIe0 Error Mask CSR 0x: "<<std::hex << pError->pcie0_error_mask << std::endl;
+
+   std::cout << " PCIe1 Error CSR 0x: "<<std::hex << pError->pcie1_error << std::endl;
+   std::cout << " PCIe1 Error Mask CSR 0x: "<<std::hex << pError->pcie1_error_mask << std::endl;
+
+   std::cout << " First Error CSR 0x: "<<std::hex << pError->first_error << std::endl;
+   std::cout << " Next Error Mask CSR 0x: "<<std::hex << pError->next_error << std::endl;
+
+   std::cout << " RAS Green BS CSR 0x: "<<std::hex << pError->ras_gerr << std::endl;
+   std::cout << " RAS Green BS Mask CSR 0x: "<<std::hex << pError->ras_gerr_mask << std::endl;
+
+   std::cout << " RAS blue bitstream  CSR 0x: "<<std::hex << pError->ras_berror << std::endl;
+   std::cout << " RAS blue bitstream  Mask CSR 0x: "<<std::hex << pError->ras_berror_mask << std::endl;
+
+   std::cout << " RAS warning CSR 0x: "<<std::hex << pError->ras_warnerror << std::endl;
+   std::cout << " RAS warning Mask CSR 0x: "<<std::hex << pError->ras_warnerror_mask << std::endl;
+
+   // FME Error
    fmeErrornvs.Empty();
-   fme_error0.csr =  pError->error0;
+   readfmeError(pError,fmeErrornvs,false );
    fmeErrornvs.GetNumNames(&count);
 
    for(int i=0;i<count ;i++) {
-
       btStringKey type;
       fmeErrornvs.GetName(i,&type);
-      std::cout << " FME Error: " << type <<"  Set"<< std::endl;
+      std::cout << "Error: " << type <<"  Set"<< std::endl;
    }
 
-   // FME Error0 Mask
+   // FME Error Mask
    fmeErrornvs.Empty();
-   fme_error0.csr =  pError->error0_mask;
+   readfmeError(pError,fmeErrornvs,true );
    fmeErrornvs.GetNumNames(&count);
 
    for(int i=0;i<count ;i++) {
-
       btStringKey type;
       fmeErrornvs.GetName(i,&type);
-      std::cout << " FME Error Mask: " << type <<"  Set"<< std::endl;
+      std::cout << "Error Mask: " << type <<" Set"<< std::endl;
    }
 
-   // FME Error1
+   // First Error & Next Error
    fmeErrornvs.Empty();
-   fme_error1.csr =  pError->error1;
+   readOrderError(pError,fmeErrornvs);
    fmeErrornvs.GetNumNames(&count);
 
    for(int i=0;i<count ;i++) {
       btStringKey type;
       fmeErrornvs.GetName(i,&type);
-      std::cout << " FME Error: " << type <<"  Set"<< std::endl;
-   }
-
-   // FME Error1 Mask
-   fmeErrornvs.Empty();
-   fme_error1.csr =  pError->error1_mask;
-   fmeErrornvs.GetNumNames(&count);
-
-   for(int i=0;i<count ;i++) {
-
-      btStringKey type;
-      fmeErrornvs.GetName(i,&type);
-      std::cout << " FME Error Mask: " << type <<"  Set"<< std::endl;
-   }
-
-   // FME Error2
-   fmeErrornvs.Empty();
-   fme_error2.csr =  pError->error2;
-   fmeErrornvs.GetNumNames(&count);
-
-   for(int i=0;i<count ;i++) {
-      btStringKey type;
-      fmeErrornvs.GetName(i,&type);
-      std::cout << " FME Error: " << type <<"  Set"<< std::endl;
-   }
-
-   // FME Error2 Mask
-   fmeErrornvs.Empty();
-   fme_error2.csr =  pError->error2_mask;
-   fmeErrornvs.GetNumNames(&count);
-
-   for(int i=0;i<count ;i++) {
-      btStringKey type;
-      fmeErrornvs.GetName(i,&type);
-      std::cout << " FME Error Mask: " << type <<"  Set"<< std::endl;
-   }
-
-   // FME First Error
-   fmeErrornvs.Empty();
-   fme_first_error.csr =  pError->first_error;
-   fmeErrornvs.GetNumNames(&count);
-
-   for(int i=0;i<count ;i++) {
-
-      btStringKey type;
-      fmeErrornvs.GetName(i,&type);
-      std::cout << " FME First Error: " << type <<"  Set"<< std::endl;
-   }
-
-   // FME Next Error
-   fmeErrornvs.Empty();
-   fme_next_error.csr =  pError->next_error;
-   fmeErrornvs.GetNumNames(&count);
-
-   for(int i=0;i<count ;i++) {
-      btStringKey type;
-      fmeErrornvs.GetName(i,&type);
-      std::cout << " FME Next Error: " << type <<"  Set"<< std::endl;
+      std::cout  << type <<" Set"<< std::endl;
    }
 
 }

@@ -880,19 +880,6 @@ CASSERT(sizeof(struct CCIP_FME_DFL_FPMON) == (9*8));
 
 // FME Errors
 
-struct CCIP_FME_ERROR_MASK0 {
-
-   union {
-      btUnsigned64bitInt csr;
-      struct {
-         btUnsigned64bitInt error_mask :4;      // Error mask
-         btUnsigned64bitInt rsvd :60;           // Reserved
-      }; // end struct
-   }; // end union
-
-}; // end struct CCIP_FME_ERROR_MASK0
-CASSERT(sizeof(struct CCIP_FME_ERROR_MASK0) == (1 *8));
-
 struct CCIP_FME_ERROR0 {
 
    union {
@@ -909,19 +896,6 @@ struct CCIP_FME_ERROR0 {
 }; // end struct CCIP_FME_ERROR
 CASSERT(sizeof(struct CCIP_FME_ERROR0) == (1 *8));
 
-
-struct CCIP_FME_PCIE0_ERROR_MASK {
-
-   union {
-      btUnsigned64bitInt csr;
-      struct {
-         btUnsigned64bitInt error_mask :4;         // Pcie0 Error mask
-         btUnsigned64bitInt rsvd :60;              // Reserved
-      }; // end struct
-   }; // end union
-
-}; // end struct CCIP_FME_PCIE0_ERROR_MASK
-CASSERT(sizeof(struct CCIP_FME_PCIE0_ERROR_MASK) == (1 *8));
 
 struct CCIP_FME_PCIE0_ERROR {
 
@@ -947,19 +921,6 @@ struct CCIP_FME_PCIE0_ERROR {
 }; // end struct CCIP_FME_PCIE0_ERROR
 CASSERT(sizeof(struct CCIP_FME_PCIE0_ERROR) == (1 *8));
 
-
-struct CCIP_FME_PCIE1_ERROR_MASK {
-
-   union {
-      btUnsigned64bitInt csr;
-      struct {
-         btUnsigned64bitInt error_mask :4;      // Pcie1 Error mask
-         btUnsigned64bitInt rsvd :60;           // Reserved
-      }; // end struct
-   }; // end union
-
-}; // end struct CCIP_FME_PCIE1_ERROR_MASK
-CASSERT(sizeof(struct CCIP_FME_PCIE1_ERROR_MASK) == (1 *8));
 
 struct CCIP_FME_PCIE1_ERROR {
 
@@ -1009,20 +970,6 @@ CASSERT(sizeof(struct CCIP_FME_NEXT_ERROR) == (1 *8));
 
 
 
-struct CCIP_FME_RAS_ERROR_MASK {
-
-   union {
-      btUnsigned64bitInt csr;
-      struct {
-         btUnsigned64bitInt error_mask :4;         // Pcie1 Error mask
-         btUnsigned64bitInt rsvd :60;              // Reserved
-      }; // end struct
-   }; // end union
-
-}; // end struct CCIP_FME_RAS_ERROR_MASK
-CASSERT(sizeof(struct CCIP_FME_RAS_ERROR_MASK) == (1 *8));
-
-
 struct CCIP_FME_RAS_GERROR {
 
    union {
@@ -1042,19 +989,6 @@ struct CCIP_FME_RAS_GERROR {
 CASSERT(sizeof(struct CCIP_FME_RAS_GERROR) == (1 *8));
 
 
-struct CCIP_FME_RAS_BERROR_MASK {
-
-   union {
-      btUnsigned64bitInt csr;
-      struct {
-         btUnsigned64bitInt error_mask :4;            // Pcie1 Error mask
-         btUnsigned64bitInt rsvd :60;                 // Reserved
-      }; // end struct
-   }; // end union
-
-}; // end struct CCIP_FME_RAS_BERROR_MASK
-CASSERT(sizeof(struct CCIP_FME_RAS_BERROR_MASK) == (1 *8));
-
 struct CCIP_FME_RAS_BERROR {
 
    union {
@@ -1067,30 +1001,15 @@ struct CCIP_FME_RAS_BERROR {
          btUnsigned64bitInt dma_fatal_err :1;                      // DMA error detected
          btUnsigned64bitInt iommu_fatal_err :1;                    // IOMMU detected
          btUnsigned64bitInt rsvd :2;                               // Reserved
-         btUnsigned64bitInt iommu_catast__err :1;                  // Catastrophic IOMMU Error
-         btUnsigned64bitInt crc_catast__err :1;                    // Catastrophic CRC Error
-         btUnsigned64bitInt therm_catast__err :1;                  // Catastrophic Thermal Error
+         btUnsigned64bitInt iommu_catast_err :1;                  // Catastrophic IOMMU Error
+         btUnsigned64bitInt crc_catast_err :1;                    // Catastrophic CRC Error
+         btUnsigned64bitInt therm_catast_err :1;                  // Catastrophic Thermal Error
          btUnsigned64bitInt rsvd1 :53;                             // Reserved
       }; // end struct
    }; // end union
 
 }; // end struct CCIP_FME_RAS_BERROR
 CASSERT(sizeof(struct CCIP_FME_RAS_BERROR) == (1 *8));
-
-
-struct CCIP_FME_RAS_WARNERROR_MASK {
-
-   union {
-      btUnsigned64bitInt csr;
-      struct {
-         btUnsigned64bitInt error_mask :4;               // Pcie1 Error mask
-         btUnsigned64bitInt rsvd :60;                    // Reserved
-      }; // end struct
-   }; // end union
-
-}; // end struct CCIP_FME_RAS_WARNERROR_MASK
-CASSERT(sizeof(struct CCIP_FME_RAS_WARNERROR_MASK) == (1 *8));
-
 
 
 struct CCIP_FME_RAS_WARNERROR {
@@ -1119,19 +1038,19 @@ struct CCIP_FME_DFL_GERROR {
    struct CCIP_DFH                        ccip_gerror_dflhdr;
 
    // FME pcie0 error mask
-   struct CCIP_FME_ERROR_MASK0            fme_err_mask;
+   struct CCIP_FME_ERROR0                 fme_err_mask;
 
    // FME pcie0 error
    struct CCIP_FME_ERROR0                 fme_err;
 
    // FME pcie0 error mask
-   struct CCIP_FME_PCIE0_ERROR_MASK       pcie0_err_mask;
+   struct CCIP_FME_PCIE0_ERROR            pcie0_err_mask;
 
    // FME pcie0 error
    struct CCIP_FME_PCIE0_ERROR            pcie0_err;
 
    // FME pcie1 error mask
-   struct CCIP_FME_PCIE1_ERROR_MASK       pcie1_err_mask;
+   struct CCIP_FME_PCIE1_ERROR            pcie1_err_mask;
 
    // FME pcie1 error
    struct CCIP_FME_PCIE1_ERROR            pcie1_err;
@@ -1143,19 +1062,19 @@ struct CCIP_FME_DFL_GERROR {
    struct CCIP_FME_NEXT_ERROR             fme_next_err;
 
    // FME RAS Green BS error Mask
-   struct CCIP_FME_RAS_ERROR_MASK         ras_err_mask;
+   struct CCIP_FME_RAS_GERROR             ras_gerr_mask;
 
    // FME RAS Green BS error
    struct CCIP_FME_RAS_GERROR             ras_gerr;
 
    // FME RAS blue bitstream error mask
-   struct CCIP_FME_RAS_BERROR_MASK        ras_berror_mask;
+   struct CCIP_FME_RAS_BERROR             ras_berror_mask;
 
    // FME RAS blue bitstream error
    struct CCIP_FME_RAS_BERROR             ras_berror;
 
    // FME RAS warning error mask
-   struct CCIP_FME_RAS_WARNERROR_MASK     ras_warnerror_mask;
+   struct CCIP_FME_RAS_WARNERROR          ras_warnerror_mask;
 
    // FME RAS warning error
    struct CCIP_FME_RAS_WARNERROR          ras_warnerror;
