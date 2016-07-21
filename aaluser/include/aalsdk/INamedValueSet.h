@@ -205,6 +205,7 @@ public:
    virtual ENamedValues Delete(btNumberKey Name)                                     = 0;
    /// Determine the number of elements stored in an entry keyed by integer.
    ///
+   /// @param[in]  Name The name of the ENamedValues to find the number of elements.
    /// @param[out]  pSize  Receives the number of elements.
    ///
    /// @retval ENamedValuesNameNotFound  Name not found.
@@ -212,7 +213,8 @@ public:
    virtual ENamedValues GetSize(btNumberKey Name, btWSSize *pSize) const             = 0;
    /// Determine the type of element(s) stored in an entry keyed by integer.
    ///
-   /// @param[out]  pType  Receives the type..
+   /// @param[in]  Name The name of the ENamedValues to find its type.
+   /// @param[out]  pType  Receives the type.
    ///
    /// @retval ENamedValuesNameNotFound  Name not found.
    /// @retval ENamedValuesOK            On success.
@@ -358,6 +360,7 @@ public:
    virtual ENamedValues Delete(btStringKey Name)                                     = 0;
    /// Determine the number of elements stored in an entry keyed by string.
    ///
+   /// @param[in]  Name The name of the ENamedValues to find the number of elements.
    /// @param[out]  pSize  Receives the number of elements.
    ///
    /// @retval ENamedValuesNameNotFound  Name not found.
@@ -365,6 +368,7 @@ public:
    virtual ENamedValues GetSize(btStringKey Name, btWSSize *pSize) const             = 0;
    /// Determine the type of element(s) stored in an entry keyed by string.
    ///
+   /// @param[in]  Name The name of the ENamedValues to find its type.
    /// @param[out]  pType  Receives the type..
    ///
    /// @retval ENamedValuesNameNotFound  Name not found.
@@ -414,7 +418,8 @@ public:
 
    /// @brief Merges one NamedValueSet into another
    ///
-   /// @param[in] INamedValueSet nvsInput and nvsOutput will be merged together
+   /// <B>Parameters</B> [in]  INamedValueSet nvsInput and nvsOutput will be
+   ///                         merged together
    /// @return ENamedValuesOK for success, appropriate value otherwise
    ///
    /// If there are duplicate names, the original value in the
@@ -424,7 +429,8 @@ public:
 
    /// @brief Converts a std::string length into an NamedValueSet
    ///
-   /// @param[in] std::string & containing the serialized representation of the NamedValueSet
+   /// <B>Parameters</B> [in]  std::string & containing the serialized representation
+   ///                         of the NamedValueSet.
    ///
    /// output nvs is a non-constant reference to the returned NamedValueSet
    virtual ENamedValues FromStr(const std::string & )                                = 0;
