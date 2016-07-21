@@ -111,7 +111,7 @@ public:
    TransactionID(const TransactionID &rOther);
 
    /// @brief Application specified ID
-   /// @param[in] ID application context
+   /// @param[in] Context application context
    TransactionID(btApplicationContext Context);
 
    /// @brief Specified Integer ID
@@ -120,14 +120,12 @@ public:
 
    /// @brief Application specified Context and Handler
    /// @param intID
-   /// @param ID
-   /// @param EventHandler
-   /// @param Filter
+   /// @param Context
    TransactionID(btID                 intID,
                  btApplicationContext Context);
 
    /// @brief Application specified Context and Handler
-   /// @param ID
+   /// @param Context
    /// @param EventHandler
    /// @param Filter
    TransactionID(btApplicationContext Context,
@@ -144,7 +142,7 @@ public:
 
    /// @brief Application specified ID, Context, Handler, Filter
    /// @param intID
-   /// @param ID
+   /// @param Context
    /// @param EventHandler
    /// @param Filter
    TransactionID(btID                 intID,
@@ -160,8 +158,8 @@ public:
 
 
   /// @brief Application specified Context and Handler
-   /// @param ID
-   /// @param iBase
+   /// @param Context
+   /// @param pIBase
    /// @param Filter
    TransactionID(btApplicationContext Context,
                  IBase               *pIBase,
@@ -169,7 +167,7 @@ public:
 
    /// @brief Application specified ID and Handler
    /// @param intID
-   /// @param iBase
+   /// @param pIBase
    /// @param Filter
    TransactionID(btID                 intID,
                  IBase               *pIBase,
@@ -177,8 +175,8 @@ public:
 
    /// @brief Application specified ID, Context, Handler, Filter
    /// @param intID
-   /// @param ID
-   /// @param iBase
+   /// @param Context
+   /// @param pIBase
    /// @param Filter
    TransactionID(btID                 intID,
                  btApplicationContext Context,
@@ -186,7 +184,7 @@ public:
                  btBool               Filter=true);
 
    /// @brief System assigned ID application provided Handler.
-   /// @param iBase
+   /// @param pIBase
    /// @param Filter
    TransactionID(IBase               *pIBase,
                  btBool               Filter=true);
