@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file AFUProxy.cpp
+/// @file ALIAFUProxy.cpp
 /// @brief Implementation of the ALI AFUProxy Class. The AFUProxy class
 ///          is an abstraction of the AFU.
 /// @ingroup uAIA
