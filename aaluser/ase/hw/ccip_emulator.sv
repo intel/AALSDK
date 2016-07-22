@@ -2515,7 +2515,7 @@ module ccip_emulator
      (
       // Logger control
       .finish_logger    ( finish_trigger       ),
-      .stdout_en        ( cfg.enable_cl_view   ),
+      .stdout_en        ( cfg.enable_cl_view[0]),
       // Buffer message injection
       .log_string_en    ( buffer_msg_en        ),
       .log_timestamp_en ( buffer_msg_tstamp_en ),

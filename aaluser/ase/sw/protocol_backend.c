@@ -773,15 +773,17 @@ int ase_init()
 	{
 	  printf("SIM-C : Removed sniffer log file from previous run\n");
 	}
-      else
-	{
-	  perror("SIM-C : Couldn't unlink protocol checker log file !\n");
-	}
+      /* else */
+      /* 	{ */
+      /* 	  perror("SIM-C : Couldn't unlink protocol checker log file !\n"); */
+      /* 	} */
     }
-  else
-    {
-      perror("SIM-C : Couldn't access protocol checker log file !\n");
-    }
+/* #ifdef ASE_DEBUG */
+/*   else */
+/*     { */
+/*       perror("SIM-C : Couldn't access protocol checker log file !\n"); */
+/*     } */
+/* #endif */
   END_YELLOW_FONTCOLOR;
 
   /*
