@@ -1892,6 +1892,10 @@ btBool subsetIfArrayValuesNotEqual(const TNamedValueSet<Kt> &rThis,
    rThis.Get(CurrName,&valThis);
    rOther.Get(CurrName,&valOther);
 
+   if ( (NULL == valThis) || (NULL == valOther) ) { // Did we fail to find this or other?
+      return true;                                  // Not a match.
+   }
+
    if (fEqual) {
       while (numThis--) {                 // iterate, testinq for equality
          if (*valThis++ != *valOther++) {
@@ -1978,6 +1982,10 @@ btBool subsetIfArrayValuesNotEqualbtStringArray( const TNamedValueSet<Kt> &rThis
    btStringArray valThis, valOther;       // get arrays, always pointers to something
    rThis.Get( CurrName, &valThis );
    rOther.Get( CurrName, &valOther );
+
+   if ( (NULL == valThis) || (NULL == valOther) ) {  // One or both are missing.
+      return true;                                   // No match.
+   }
 
    if ( fEqual ) {
       while ( numThis-- ) {               // iterate, testinq for equality
@@ -2126,6 +2134,12 @@ btBool TNamedValueSet<Kt>::Subset(const TNamedValueSet<Kt> &rOther,
             INamedValueSet const *valOther = NULL;
             Get(CurrName, &valThis);
             rOther.Get(CurrName, &valOther);
+            if ( (NULL==valThis) && (NULL==valOther) ) { // if both null, okay
+               return true;
+            }
+            if ( (NULL==valThis) || (NULL==valOther) ) { // if either null, bad
+               return false;
+            }
             if (fEqual) {                             // Truly want equality
                if (!(*valThis == *valOther)) {        // Handles equality testing in NVS
                   return false;
@@ -2261,67 +2275,36 @@ public:
    ENamedValues Add(btNumberKey Name, bt64bitInt Value)            { AutoLock(this); return m_iNVS.Add(Name, Value); }
    ENamedValues Add(btNumberKey Name, btUnsigned64bitInt Value)    { AutoLock(this); return m_iNVS.Add(Name, Value); }
    ENamedValues Add(btNumberKey Name, btFloat Value)               { AutoLock(this); return m_iNVS.Add(Name, Value); }
-   ENamedValues Add(btNumberKey Name, btcString Value)             { ASSERT(NULL != Value); AutoLock(this); return m_iNVS.Add(Name, Value); }
+
+   /// Add a 'btcString' value to a 'numeric key' NVS.
+   ENamedValues Add(btNumberKey Name, btcString Value)             { ASSERT(NULL != Value); AutoLock(this); return ((NULL == Value) ?
+                                                                        ENamedValuesNullPointerArgument : m_iNVS.Add(Name, Value)); }
+   /// Add a 'btObjectType' value to a 'numberic key' NVS.
    ENamedValues Add(btNumberKey Name, btObjectType Value)          { AutoLock(this); return m_iNVS.Add(Name, Value); }
+
+   /// Add a 'INamedValueSet' value to a 'numberic key' NVS.
    ENamedValues Add(btNumberKey Name, const INamedValueSet *Value)
    {
       ASSERT(NULL != Value);
       AutoLock(this);
+      if ( NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
       if ( this == Value->Concrete() ) {
          return ENamedValuesRecursiveAdd;
       }
       return m_iNVS.Add(Name, Value->Concrete());
    }
 
+   /// Add a 'btByteArray' value to a 'numberic key' NVS.
    ENamedValues Add(btNumberKey        Name,
                     btByteArray        Value,
                     btUnsigned32bitInt NumElements)
    {
       ASSERT(NULL != Value);
-      if ( 0 == NumElements ) {
-         return ENamedValuesZeroSizedArray;
+      if ( NULL == Value) {
+         return ENamedValuesNullPointerArgument;
       }
-      AutoLock(this);
-      return m_iNVS.Add(Name, Value, NumElements);
-   }
-   ENamedValues Add(btNumberKey        Name,
-                    bt32bitIntArray    Value,
-                    btUnsigned32bitInt NumElements)
-   {
-      ASSERT(NULL != Value);
-      if ( 0 == NumElements ) {
-         return ENamedValuesZeroSizedArray;
-      }
-      AutoLock(this);
-      return m_iNVS.Add(Name, Value, NumElements);
-   }
-   ENamedValues Add(btNumberKey             Name,
-                    btUnsigned32bitIntArray Value,
-                    btUnsigned32bitInt      NumElements)
-   {
-      ASSERT(NULL != Value);
-      if ( 0 == NumElements ) {
-         return ENamedValuesZeroSizedArray;
-      }
-      AutoLock(this);
-      return m_iNVS.Add(Name, Value, NumElements);
-   }
-   ENamedValues Add(btNumberKey        Name,
-                    bt64bitIntArray    Value,
-                    btUnsigned32bitInt NumElements)
-   {
-      ASSERT(NULL != Value);
-      if ( 0 == NumElements ) {
-         return ENamedValuesZeroSizedArray;
-      }
-      AutoLock(this);
-      return m_iNVS.Add(Name, Value, NumElements);
-   }
-   ENamedValues Add(btNumberKey             Name,
-                    btUnsigned64bitIntArray Value,
-                    btUnsigned32bitInt      NumElements)
-   {
-      ASSERT(NULL != Value);
       if ( 0 == NumElements ) {
          return ENamedValuesZeroSizedArray;
       }
@@ -2329,62 +2312,204 @@ public:
       return m_iNVS.Add(Name, Value, NumElements);
    }
 
+   /// Add a 'btUnsigned32bitIntArray' value to a numeric key' NVS.
+   ENamedValues Add(btNumberKey        Name,
+                    bt32bitIntArray    Value,
+                    btUnsigned32bitInt NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_iNVS.Add(Name, Value, NumElements);
+   }
+
+   /// Add a 'btUnsigned32bitIntArray' value to a numeric key' NVS.
+   ENamedValues Add(btNumberKey             Name,
+                    btUnsigned32bitIntArray Value,
+                    btUnsigned32bitInt      NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_iNVS.Add(Name, Value, NumElements);
+   }
+
+   /// Add a 'bt64bitIntArray' value to a numeric key' NVS.
+   ENamedValues Add(btNumberKey        Name,
+                    bt64bitIntArray    Value,
+                    btUnsigned32bitInt NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_iNVS.Add(Name, Value, NumElements);
+   }
+
+   /// Add a 'btUnsigned64bitIntArray' value to a numeric key' NVS.
+   ENamedValues Add(btNumberKey             Name,
+                    btUnsigned64bitIntArray Value,
+                    btUnsigned32bitInt      NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_iNVS.Add(Name, Value, NumElements);
+   }
+
+   /// Add a 'btFloatArray' value to a numeric key' NVS.
    ENamedValues Add(btNumberKey        Name,
                     btFloatArray       Value,
                     btUnsigned32bitInt NumElements)
    {
       ASSERT(NULL != Value);
+      if ( NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
       if ( 0 == NumElements ) {
          return ENamedValuesZeroSizedArray;
       }
       AutoLock(this);
       return m_iNVS.Add(Name, Value, NumElements);
    }
+
+   /// Add a 'btStringArray' value to a numeric key' NVS.
    ENamedValues Add(btNumberKey        Name,
                     btStringArray      Value,
                     btUnsigned32bitInt NumElements)
    {
       ASSERT(NULL != Value);
+      if ( NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
       if ( 0 == NumElements ) {
          return ENamedValuesZeroSizedArray;
       }
       AutoLock(this);
       return m_iNVS.Add(Name, Value, NumElements);
    }
+
+   /// Add a 'btObjectArray' value to a numeric key' NVS.
    ENamedValues Add(btNumberKey        Name,
                     btObjectArray      Value,
                     btUnsigned32bitInt NumElements)
    {
       ASSERT(NULL != Value);
+      if ( NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
       if ( 0 == NumElements ) {
          return ENamedValuesZeroSizedArray;
       }
       AutoLock(this); return m_iNVS.Add(Name, Value, NumElements);
    }
 
-   ENamedValues Get(btNumberKey Name, btBool *pValue) const                  { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btByte *pValue) const                  { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, bt32bitInt *pValue) const              { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btUnsigned32bitInt  *pValue) const     { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, bt64bitInt *pValue) const              { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btUnsigned64bitInt *pValue) const      { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btFloat *pValue) const                 { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btcString *pValue) const               { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, INamedValueSet const **pValue) const   { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btByteArray *pValue) const             { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, bt32bitIntArray *pValue) const         { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btUnsigned32bitIntArray *pValue) const { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, bt64bitIntArray *pValue) const         { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btUnsigned64bitIntArray *pValue) const { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btObjectType *pValue) const            { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btFloatArray *pValue) const            { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btStringArray *pValue) const           { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btObjectArray *pValue) const           { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   /// Get a 'btBool' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, btBool *pValue) const                  { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
 
+   /// Get a 'btByte' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, btByte *pValue) const                  { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'bt32bitInt' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, bt32bitInt *pValue) const              { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'btUnsigned32bitInt' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, btUnsigned32bitInt  *pValue) const     { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'bt64bitInt' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, bt64bitInt *pValue) const              { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'btUnsigned64bitInt' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, btUnsigned64bitInt *pValue) const      { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'btFloat' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, btFloat *pValue) const                 { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'btcString' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, btcString *pValue) const               { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'INamedValueSet *' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, INamedValueSet const **pValue) const   { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'btByteArray' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, btByteArray *pValue) const             { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'bt32bitIntArray' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, bt32bitIntArray *pValue) const         { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'btUnsigned32bitIntArray' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, btUnsigned32bitIntArray *pValue) const { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'bt64bitIntArray' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, bt64bitIntArray *pValue) const         { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'btUnsigned64bitIntArray' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, btUnsigned64bitIntArray *pValue) const { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'btObjectType' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, btObjectType *pValue) const            { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'btFloatArray' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, btFloatArray *pValue) const            { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'btStringArray' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, btStringArray *pValue) const           { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Get a 'btObjectArray' value from a 'numeric key' NVS.
+   ENamedValues Get(btNumberKey Name, btObjectArray *pValue) const           { ASSERT(NULL != pValue); AutoLock(this); return ((NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_iNVS.Get(Name, pValue)); }
+
+   /// Delete a Name/Value pair from a 'numeric key' NVS.
    ENamedValues  Delete(btNumberKey Name)                                    { AutoLock(this); return m_iNVS.Delete(Name);        }
-   ENamedValues GetSize(btNumberKey Name, btWSSize *pSize)       const       { ASSERT(NULL != pSize); AutoLock(this); return m_iNVS.GetSize(Name,pSize); }
-   ENamedValues    Type(btNumberKey Name, eBasicTypes *pType)    const       { ASSERT(NULL != pType); AutoLock(this); return m_iNVS.Type(Name,pType);    }
+
+   /// Get the size of a 'numeric key' NVS entry.
+   ENamedValues GetSize(btNumberKey Name, btWSSize *pSize)       const       { ASSERT(NULL != pSize); AutoLock(this); return ((NULL == pSize) ?
+                                                                                  ENamedValuesNullPointerArgument :   m_iNVS.GetSize(Name,pSize)); }
+
+   /// Get the type of an item stored in a 'numeric key' NVS.
+   ENamedValues    Type(btNumberKey Name, eBasicTypes *pType)    const       { ASSERT(NULL != pType); AutoLock(this); return ((NULL == pType) ?
+                                                                                  ENamedValuesNullPointerArgument :m_iNVS.Type(Name,pType));    }
+
+   /// Return 'True' if the 'numeric key' NVS contains an entry for 'Name'.
    btBool           Has(btNumberKey Name)                        const       { AutoLock(this); return m_iNVS.Has(Name);           }
+
+   /// Get the name (numeric key) at the given index in the NVS.
    ENamedValues GetName(btUnsignedInt index, btNumberKey *pName) const
    {
       eNameTypes   Type = btNumberKey_t;
@@ -2403,6 +2528,10 @@ public:
          return ENamedValuesBadType;
       }
 
+      if ( NULL == pName ) {
+         return ENamedValuesNullPointerArgument;
+      }
+
       return m_iNVS.GetName(index, pName);
    }
 
@@ -2413,18 +2542,26 @@ public:
    ENamedValues Add(btStringKey Name, bt64bitInt Value)            { AutoLock(this); return m_sNVS.Add(Name, Value); }
    ENamedValues Add(btStringKey Name, btUnsigned64bitInt Value)    { AutoLock(this); return m_sNVS.Add(Name, Value); }
    ENamedValues Add(btStringKey Name, btFloat Value)               { AutoLock(this); return m_sNVS.Add(Name, Value); }
-   ENamedValues Add(btStringKey Name, btcString Value)             { ASSERT(NULL != Value); AutoLock(this); return m_sNVS.Add(Name, Value); }
+
+   /// Add a 'btcString' value to a 'text key' NVS.
+   ENamedValues Add(btStringKey Name, btcString Value)             { ASSERT(NULL != Value); AutoLock(this); return ((NULL == Value) ?
+                                                                        ENamedValuesNullPointerArgument : m_sNVS.Add(Name, Value)); }
+
    ENamedValues Add(btStringKey Name, btObjectType Value)          { AutoLock(this); return m_sNVS.Add(Name, Value); }
    ENamedValues Add(btStringKey Name, const INamedValueSet *Value)
    {
       ASSERT(NULL != Value);
       AutoLock(this);
+      if (NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
       if ( this == Value->Concrete() ) {
          return ENamedValuesRecursiveAdd;
       }
       return m_sNVS.Add(Name, Value->Concrete());
    }
 
+   /// Add a 'btByteArray' value for the Name to the 'text key' NVS.
    ENamedValues Add(btStringKey        Name,
                     btByteArray        Value,
                     btUnsigned32bitInt NumElements)
@@ -2433,9 +2570,14 @@ public:
       if ( 0 == NumElements ) {
          return ENamedValuesZeroSizedArray;
       }
+      if (NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
       AutoLock(this);
       return m_sNVS.Add(Name, Value, NumElements);
    }
+
+   /// Add a 'bt32bitIntArray' value for the Name to the 'text key' NVS.
    ENamedValues Add(btStringKey        Name,
                     bt32bitIntArray    Value,
                     btUnsigned32bitInt NumElements)
@@ -2444,9 +2586,14 @@ public:
       if ( 0 == NumElements ) {
          return ENamedValuesZeroSizedArray;
       }
+      if (NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
       AutoLock(this);
       return m_sNVS.Add(Name, Value, NumElements);
    }
+
+   /// Add a 'btUnsigned32bitIntArray' value for Name to the 'text key' NVS.
    ENamedValues Add(btStringKey             Name,
                     btUnsigned32bitIntArray Value,
                     btUnsigned32bitInt      NumElements)
@@ -2455,9 +2602,14 @@ public:
       if ( 0 == NumElements ) {
          return ENamedValuesZeroSizedArray;
       }
+      if (NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
       AutoLock(this);
       return m_sNVS.Add(Name, Value, NumElements);
    }
+
+   /// Add a 'bt64bitIntArray' value for Name to the 'text key' NVS.
    ENamedValues Add(btStringKey        Name,
                     bt64bitIntArray    Value,
                     btUnsigned32bitInt NumElements)
@@ -2466,9 +2618,14 @@ public:
       if ( 0 == NumElements ) {
          return ENamedValuesZeroSizedArray;
       }
+      if (NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
       AutoLock(this);
       return m_sNVS.Add(Name, Value, NumElements);
    }
+
+   /// Add a 'btUnsigned64bitIntArray' value for Name to the 'text key' NVS.
    ENamedValues Add(btStringKey             Name,
                     btUnsigned64bitIntArray Value,
                     btUnsigned32bitInt      NumElements)
@@ -2477,9 +2634,14 @@ public:
       if ( 0 == NumElements ) {
          return ENamedValuesZeroSizedArray;
       }
+      if (NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
       AutoLock(this);
       return m_sNVS.Add(Name, Value, NumElements);
    }
+
+   /// Add a 'btFloatArray' value for Name to the 'text key' NVS.
    ENamedValues Add(btStringKey        Name,
                     btFloatArray       Value,
                     btUnsigned32bitInt NumElements)
@@ -2488,9 +2650,14 @@ public:
       if ( 0 == NumElements ) {
          return ENamedValuesZeroSizedArray;
       }
+      if (NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
       AutoLock(this);
       return m_sNVS.Add(Name, Value, NumElements);
    }
+
+   /// Add a 'btStringArray' value for Name to the 'text key' NVS.
    ENamedValues Add(btStringKey        Name,
                     btStringArray      Value,
                     btUnsigned32bitInt NumElements)
@@ -2499,9 +2666,14 @@ public:
       if ( 0 == NumElements ) {
          return ENamedValuesZeroSizedArray;
       }
+      if (NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
       AutoLock(this);
       return m_sNVS.Add(Name, Value, NumElements);
    }
+
+   /// Add a 'btObjectArray' value for Name to the 'text key' NVS.
    ENamedValues Add(btStringKey        Name,
                     btObjectArray      Value,
                     btUnsigned32bitInt NumElements)
@@ -2510,34 +2682,99 @@ public:
       if ( 0 == NumElements ) {
          return ENamedValuesZeroSizedArray;
       }
+      if (NULL == Value) {
+         return ENamedValuesNullPointerArgument;
+      }
       AutoLock(this);
       return m_sNVS.Add(Name, Value, NumElements);
    }
 
-   ENamedValues Get(btStringKey Name, btBool *pValue) const                  { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btByte *pValue) const                  { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, bt32bitInt *pValue) const              { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btUnsigned32bitInt *pValue) const      { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, bt64bitInt *pValue) const              { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btUnsigned64bitInt *pValue) const      { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btFloat *pValue) const                 { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btcString *pValue) const               { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, INamedValueSet const **pValue) const   { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btByteArray *pValue) const             { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, bt32bitIntArray *pValue) const         { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btUnsigned32bitIntArray *pValue) const { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, bt64bitIntArray *pValue) const         { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btUnsigned64bitIntArray *pValue) const { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btObjectType *pValue) const            { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btFloatArray *pValue) const            { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btStringArray *pValue) const           { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btObjectArray *pValue) const           { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   /// Get a 'btBool' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, btBool *pValue) const                  { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
 
+   /// Get a 'btByte' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, btByte *pValue) const                  { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a 'bt32bitInt' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, bt32bitInt *pValue) const              { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a 'btUnsigned32bitInt' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, btUnsigned32bitInt *pValue) const      { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a 'bt64bitInt' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, bt64bitInt *pValue) const              { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a 'btUnsigned64bitInt' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, btUnsigned64bitInt *pValue) const      { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a 'btFloat' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, btFloat *pValue) const                 { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a 'btcString' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, btcString *pValue) const               { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a 'INamedValueSet' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, INamedValueSet const **pValue) const   { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a 'btByteArray' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, btByteArray *pValue) const             { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a 'bt32bitIntArray' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, bt32bitIntArray *pValue) const         { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a 'btUnsigned32bitIntArray' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, btUnsigned32bitIntArray *pValue) const { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a 'bt64bitIntArray' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, bt64bitIntArray *pValue) const         { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a 'btUnsigned64bitIntArray' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, btUnsigned64bitIntArray *pValue) const { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a '' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, btObjectType *pValue) const            { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a '' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, btFloatArray *pValue) const            { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a '' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, btStringArray *pValue) const           { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a '' value from a 'text key' NVS.
+   ENamedValues Get(btStringKey Name, btObjectArray *pValue) const           { ASSERT(NULL != pValue); AutoLock(this); return (NULL == pValue) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Get(Name, pValue); }
+
+   /// Get a '' value from a 'text key' NVS.
    ENamedValues  Delete(btStringKey Name)                                    { AutoLock(this); return m_sNVS.Delete(Name);         }
-   ENamedValues GetSize(btStringKey Name, btWSSize *pSize)    const          { ASSERT(NULL != pSize); AutoLock(this); return m_sNVS.GetSize(Name, pSize); }
+
+   /// Get a '' value from a 'text key' NVS.
+   ENamedValues GetSize(btStringKey Name, btWSSize *pSize)    const          { ASSERT(NULL != pSize); AutoLock(this); return (NULL == pSize) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.GetSize(Name, pSize); }
+
+   /// Get a '' value from a 'text key' NVS.
    ENamedValues    Type(btStringKey Name, eBasicTypes *pType) const          { ASSERT(NULL != pType); AutoLock(this); return m_sNVS.Type(Name, pType);    }
+
+   /// Return 'True' if the 'text key' NVS contains an entry for 'Name'.
    btBool           Has(btStringKey Name)                     const          { AutoLock(this); return m_sNVS.Has(Name);            }
 
+   /// Get the name (text key) at the given index in the NVS.
    ENamedValues GetName(btUnsignedInt index, btStringKey *pName) const
    {
       eNameTypes    Type = btStringKey_t;
@@ -2555,6 +2792,10 @@ public:
 
       if ( Type != btStringKey_t ) {
          return ENamedValuesBadType;
+      }
+
+      if ( NULL == pName ) {
+         return ENamedValuesIndexOutOfRange;
       }
 
       // Adjust the index for non-string keys
@@ -2620,6 +2861,10 @@ public:
       ENamedValues  result;
 
       ASSERT(NULL != pNum);
+
+      if (NULL == pNum) {
+         return ENamedValuesNullPointerArgument;
+      }
 
       AutoLock(this);
 
