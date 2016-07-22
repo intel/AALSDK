@@ -79,23 +79,30 @@
 BEGIN_NAMESPACE(AAL)
 
 #define CACHE_EVENT_COUNTER_MAX_TRY 30
-#define PERF_MONITOR_VERSION 1
-#define PERF_MONITOR_COUNT 11
+#define PERFMON_POLLING_SLEEP       10
 
-#define PMONITOR_VERSION        "version"
-#define NUM_COUNTERS            "number of counters"
-#define CACHE_READ_HIT          "Read_Hit"
-#define CACHE_WRITE_HIT         "Write_Hit"
-#define CACHE_READ_MISS         "Read_Miss"
-#define CACHE_WRITE_MISS        "Write_Miss"
-#define CACHE_EVICTIONS         "Evictions"
-#define FABRIC_PCIE0_READ       "PCIe0 Read"
-#define FABRIC_PCIE0_WRITE      "PCIe0 Write"
-#define FABRIC_PCIE1_READ       "PCIe1 Read"
-#define FABRIC_PCIE1_WRITE      "PCIe1 Write"
-#define FABRIC_UPI_READ         "UPI Read"
-#define FABRIC_UPI_WRITE        "UPI Write"
-#define VTD_COUNTER              "VT-d"
+#define PERF_MONITOR_VERSION 1
+#define PERF_MONITOR_COUNT 15
+
+#define PMONITOR_VERSION               "version"
+#define NUM_COUNTERS                   "number of counters"
+#define CACHE_READ_HIT                 "Read_Hit"
+#define CACHE_WRITE_HIT                "Write_Hit"
+#define CACHE_READ_MISS                "Read_Miss"
+#define CACHE_WRITE_MISS               "Write_Miss"
+#define CACHE_EVICTIONS                "Evictions"
+#define FABRIC_PCIE0_READ              "PCIe0 Read"
+#define FABRIC_PCIE0_WRITE             "PCIe0 Write"
+#define FABRIC_PCIE1_READ              "PCIe1 Read"
+#define FABRIC_PCIE1_WRITE             "PCIe1 Write"
+#define FABRIC_UPI_READ                "UPI Read"
+#define FABRIC_UPI_WRITE               "UPI Write"
+
+#define VTD_AFU_MEMREAD_TRANS          "VT-d AFU Memory Read Transaction"
+#define VTD_AFU_MEMWRITE_TRANS         "VT-d AFU Memory Write Transaction"
+#define VTD_AFU_DEVTLBREAD_HIT         "VT-d AFU DevTLB Read Hit"
+#define VTD_AFU_DEVTLBWRITE_HIT        "VT-d AFU DevTLB Write Hit"
+
 
 
 /// Name:    get_perfmonitor_counters
@@ -137,6 +144,17 @@ bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
 /// @return    error code
 bt32bitInt get_perfmon_counters(struct fme_device* pfme_dev,
                                 struct CCIP_PERF_COUNTERS* pPerfCounter);
+
+/// Name:    update_vtd_event_counters
+/// @brief   get VT-D performance counters
+///
+/// @param[in] event_code VTD event code.
+/// @param[in] pfme_dev fme device pointer.
+/// @param[in] pPerf performance counters pointer
+/// @return    error code
+bt32bitInt update_vtd_event_counters(bt32bitInt event_code,
+                                     struct fme_device *pfme_dev,
+                                     struct CCIP_PERF_COUNTERS* pPerf);
 
 END_NAMESPACE(AAL)
 

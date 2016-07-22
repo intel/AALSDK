@@ -559,12 +559,13 @@ struct  CCIP_THERMAL_PWR
 //=============================================================================
 struct  PERFCOUNTER_EVENT
 {
-   char  name[50];
+   char  name[45];
    btUnsigned64bitInt value;
 };
 
 struct  CCIP_PERF_COUNTERS
 {
+   //Cache
    struct  PERFCOUNTER_EVENT num_counters;
    struct  PERFCOUNTER_EVENT version;
    struct  PERFCOUNTER_EVENT read_hit;
@@ -573,13 +574,21 @@ struct  CCIP_PERF_COUNTERS
    struct  PERFCOUNTER_EVENT write_miss;
    struct  PERFCOUNTER_EVENT evictions;
 
+   //Fabric
    struct  PERFCOUNTER_EVENT pcie0_read;
    struct  PERFCOUNTER_EVENT pcie0_write;
    struct  PERFCOUNTER_EVENT pcie1_read;
    struct  PERFCOUNTER_EVENT pcie1_write;
    struct  PERFCOUNTER_EVENT upi_read;
    struct  PERFCOUNTER_EVENT upi_write;
-   struct  PERFCOUNTER_EVENT vtd_counter;
+
+   // VTD
+   struct  PERFCOUNTER_EVENT AFU0_MemRead_Trans;
+   struct  PERFCOUNTER_EVENT AFU0_MemWrite_Trans;
+   struct  PERFCOUNTER_EVENT AFU0_DevTLBRead_Hit;
+   struct  PERFCOUNTER_EVENT AFU0_DevTLBWrite_Hit;
+
+
 };
 END_C_DECLS
 

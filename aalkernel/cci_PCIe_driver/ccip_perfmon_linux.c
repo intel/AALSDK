@@ -108,6 +108,10 @@ static ssize_t perf_monitor_attrib_show_hr(struct device *pdev,
                                      "%s : %lu \n"
                                      "%s : %lu \n"
                                      "%s : %lu \n"
+                                     "%s : %lu \n"
+                                     "%s : %lu \n"
+                                     "%s : %lu \n"
+                                     "%s : %lu \n"
                                      "%s : %lu \n",
                                      NUM_COUNTERS,               (unsigned long int) perf_mon.num_counters.value ,
                                      PMONITOR_VERSION,           (unsigned long int) perf_mon.version.value ,
@@ -121,10 +125,16 @@ static ssize_t perf_monitor_attrib_show_hr(struct device *pdev,
                                      FABRIC_PCIE1_READ,          (unsigned long int) perf_mon.pcie1_read.value ,
                                      FABRIC_PCIE1_WRITE,         (unsigned long int) perf_mon.pcie1_write.value ,
                                      FABRIC_UPI_READ,            (unsigned long int) perf_mon.upi_read.value ,
-                                     FABRIC_UPI_WRITE,           (unsigned long int) perf_mon.upi_write.value
+                                     FABRIC_UPI_WRITE,           (unsigned long int) perf_mon.upi_write.value,
+                                     VTD_AFU_MEMREAD_TRANS,      (unsigned long int) perf_mon.AFU0_MemRead_Trans.value,
+                                     VTD_AFU_MEMWRITE_TRANS,     (unsigned long int) perf_mon.AFU0_MemWrite_Trans.value,
+                                     VTD_AFU_DEVTLBREAD_HIT,     (unsigned long int) perf_mon.AFU0_DevTLBRead_Hit.value,
+                                     VTD_AFU_DEVTLBWRITE_HIT,    (unsigned long int) perf_mon.AFU0_DevTLBWrite_Hit.value
                                      ));
 
 }
+
+
 
 DEVICE_ATTR(perfmon_hr_0,0444, perf_monitor_attrib_show_hr,NULL);
 
@@ -150,7 +160,11 @@ static ssize_t perf_monitor_attrib_show_bin(struct device *pdev,
 
    get_perfmonitor_snapshot(pfme_dev, &perf_mon);
 
-   return (snprintf(buf,PAGE_SIZE,  "%lu  "
+   return (snprintf(buf, PAGE_SIZE,  "%lu  "
+                                    "%lu  "
+                                    "%lu  "
+                                    "%lu  "
+                                    "%lu  "
                                     "%lu  "
                                     "%lu  "
                                     "%lu  "
@@ -175,7 +189,11 @@ static ssize_t perf_monitor_attrib_show_bin(struct device *pdev,
                                      (unsigned long int) perf_mon.pcie1_read.value ,
                                      (unsigned long int) perf_mon.pcie1_write.value ,
                                      (unsigned long int) perf_mon.upi_read.value ,
-                                     (unsigned long int) perf_mon.upi_write.value
+                                     (unsigned long int) perf_mon.upi_write.value,
+                                     (unsigned long int) perf_mon.AFU0_MemRead_Trans.value,
+                                     (unsigned long int) perf_mon.AFU0_MemWrite_Trans.value,
+                                     (unsigned long int) perf_mon.AFU0_DevTLBRead_Hit.value,
+                                     (unsigned long int) perf_mon.AFU0_DevTLBWrite_Hit.value
                                     ));
 
  }

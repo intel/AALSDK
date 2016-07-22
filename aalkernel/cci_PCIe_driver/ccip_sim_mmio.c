@@ -137,7 +137,7 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    fme_hdr.fab_capability.cache_assoc =0x0;
    fme_hdr.fab_capability.cache_size = 0x10;
    fme_hdr.fab_capability.address_width_bits =0x26;
-   fme_hdr.fab_capability.iommu_support =0x0;
+   fme_hdr.fab_capability.iommu_support =0x1;
    fme_hdr.fab_capability.qpi_link_avile =0x01;
    fme_hdr.fab_capability.pci0_link_avile =0x01;
    fme_hdr.fab_capability.pci1_link_avile =0x01;

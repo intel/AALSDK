@@ -120,6 +120,12 @@ btBool CHWALIFME::performanceCountersGet ( INamedValueSet*  const  pResult,
    pResult->Add(pPref->upi_read.name,pPref->upi_read.value);
    pResult->Add(pPref->upi_write.name,pPref->upi_write.value);
 
+   pResult->Add(pPref->AFU0_MemRead_Trans.name,pPref->AFU0_MemRead_Trans.value);
+   pResult->Add(pPref->AFU0_MemWrite_Trans.name,pPref->AFU0_MemWrite_Trans.value);
+   pResult->Add(pPref->AFU0_DevTLBRead_Hit.name,pPref->AFU0_DevTLBRead_Hit.value);
+   pResult->Add(pPref->AFU0_DevTLBWrite_Hit.name,pPref->AFU0_DevTLBWrite_Hit.value);
+
+
    return true;
 }
 

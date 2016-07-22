@@ -521,6 +521,12 @@ public:
    #define AALPERF_PCIE1_WRITE      "PCIe1 Write"
    #define AALPERF_UPI_READ         "UPI Read"
    #define AALPERF_UPI_WRITE        "UPI Write"
+
+   #define AALPERF_VTD_AFU_MEMREAD_TRANS            "VT-d AFU Memory Read Transaction"
+   #define AALPERF_VTD_AFU_MEMWRITE_TRANS           "VT-d AFU Memory Write Transaction"
+   #define AALPERF_VTD_AFU_DEVTLBREAD_HIT           "VT-d AFU DevTLB Read Hit"
+   #define AALPERF_VTD_AFU_DEVTLBWRITE_HIT          "VT-d AFU DevTLB Write Hit"
+
    ///
    /// @code
    /// INamedValueSet const *pResult = NULL;

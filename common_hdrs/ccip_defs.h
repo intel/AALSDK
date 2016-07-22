@@ -174,6 +174,18 @@ enum e_Fabric_Event_Code {
    Fabric_UPI_Write = 0x5
 };
 
+// VT-D event codes
+enum e_vtd_Event_Code {
+   AFU0_MemRead_Trans        = 0x0,
+   AFU1_MemRead_Trans        = 0x1,
+   AFU0_MemWrite_Trans       = 0x2,
+   AFU1_MemWrite_Trans       = 0x3,
+   AFU0_DevTLBRead_Hit       = 0x4,
+   AFU1_DevTLBRead_Hit       = 0x5,
+   AFU0_DevTLBWrite_Hit      = 0x6,
+   AFU1_DevTLBWrite_Hit      = 0x7,
+};
+
 /// CCI-P port id
 enum e_CCIP_Port_Id {
    CCIP_Port_Id0 = 0x0,
