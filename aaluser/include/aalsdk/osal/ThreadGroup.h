@@ -381,11 +381,11 @@ private:
       friend class OSLThreadGroup;
    };
 
-   /// @brief ExecProc is the body of a worker thread.
-   ///
-   /// @param[in] pThread The pointer to the Thread that will execute the function.
-   /// @param[in] lpParms The ThrGrpState of the Thread Group the worker thread will be part of.
-   /// @return void
+   // @brief ExecProc is the body of a worker thread.
+   //
+   // @param[in] pThread The pointer to the Thread that will execute the function.
+   // @param[in] lpParms The ThrGrpState of the Thread Group the worker thread will be part of.
+   // @return void
    static void ExecProc(OSLThread *pThread, void *lpParms);
 
    btBool       m_bDestroyed;
