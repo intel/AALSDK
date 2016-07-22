@@ -116,8 +116,6 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VH0);
    } else if ((0 == strcmp("--wrfence-vh1", option)) || (0 == strcmp("--wrfvh1", option)) ) {
         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VH1);
-   } else if ((0 == strcmp("--wrfence-vr", option)) || (0 == strcmp("--wrfvr", option))) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VR);
    } else if ( 0 == strcmp("--alt-wr-pattern", option) || (0 == strcmp("--awp", option))) {
         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_ALT_WR_PRN);
    } else if ( 0 == strcmp("--0", option) ) {

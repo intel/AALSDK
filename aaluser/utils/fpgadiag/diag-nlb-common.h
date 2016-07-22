@@ -228,7 +228,6 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_WRFENCE_VL0       (u64_type)0x100000000000000 /* --wrfvl0      Data transferred on QPI channel for write fence       		*/
 #define NLB_CMD_FLAG_WRFENCE_VH0       (u64_type)0x200000000000000 /* --wrfvh0      Data transferred on PCIe0  channel for write fence          */
 #define NLB_CMD_FLAG_WRFENCE_VH1       (u64_type)0x400000000000000 /* --wrfvh1      Data transferred on PCIe1  channel for write fence          */
-#define NLB_CMD_FLAG_WRFENCE_VR        (u64_type)0x800000000000000 /* --wrfvr       Data transferred on randomly chosen channel for write fence */
 
 #define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   		/* --0 */
 #define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  		/* --1 */

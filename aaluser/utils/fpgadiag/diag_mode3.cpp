@@ -168,7 +168,11 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
 
    // Select the write fence channel.
    bool wrfence_flag = false;
-	if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRFENCE_VL0)){
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRFENCE_VA)){
+   		cfg |= (csr_type)NLB_TEST_MODE_WRFENCE_VA;
+   		wrfence_flag = true;
+   	}
+    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRFENCE_VL0)){
 		cfg |= (csr_type)NLB_TEST_MODE_WRFENCE_VL0;
 		wrfence_flag = true;
 	}
