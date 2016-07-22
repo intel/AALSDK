@@ -357,67 +357,67 @@ void ccip_log_fme_error(struct ccip_device *pccipdev ,struct fme_device *pfme_de
 {
 
    // FME Error0
-   if((0x00 != ccip_fme_gerr(pfme_dev)->ccip_fme_error0.csr) &&
-      (ccip_fme_lastgerr(pfme_dev).ccip_fme_error0.csr != ccip_fme_gerr(pfme_dev)->ccip_fme_error0.csr )) {
+   if((0x00 != ccip_fme_gerr(pfme_dev)->fme_err.csr) &&
+      (ccip_fme_lastgerr(pfme_dev).fme_err.csr != ccip_fme_gerr(pfme_dev)->fme_err.csr )) {
 
       PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME Error0 CSR: 0x%llx \n",kosal_gettimestamp(),
                                                                                ccip_dev_pcie_busnum(pccipdev),
                                                                                ccip_dev_pcie_devnum(pccipdev),
                                                                                ccip_dev_pcie_fcnnum(pccipdev),
-                                                                               ccip_fme_gerr(pfme_dev)->ccip_fme_error0.csr);
+                                                                               ccip_fme_gerr(pfme_dev)->fme_err.csr);
    }
 
    // FME Error1
-   if((0x00 != ccip_fme_gerr(pfme_dev)->ccip_fme_error1.csr) &&
-      (ccip_fme_lastgerr(pfme_dev).ccip_fme_error1.csr != ccip_fme_gerr(pfme_dev)->ccip_fme_error1.csr )) {
+   if((0x00 != ccip_fme_gerr(pfme_dev)->pcie0_err.csr) &&
+      (ccip_fme_lastgerr(pfme_dev).pcie0_err.csr != ccip_fme_gerr(pfme_dev)->pcie0_err.csr )) {
 
       PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME Error1 CSR:  0x%llx \n",kosal_gettimestamp(),
                                                                                 ccip_dev_pcie_busnum(pccipdev),
                                                                                 ccip_dev_pcie_devnum(pccipdev),
                                                                                 ccip_dev_pcie_fcnnum(pccipdev),
-                                                                                ccip_fme_gerr(pfme_dev)->ccip_fme_error1.csr);
+                                                                                ccip_fme_gerr(pfme_dev)->pcie0_err.csr);
    }
 
    // FME Error2
-   if((0x00 != ccip_fme_gerr(pfme_dev)->ccip_fme_error2.csr) &&
-      (ccip_fme_lastgerr(pfme_dev).ccip_fme_error2.csr != ccip_fme_gerr(pfme_dev)->ccip_fme_error2.csr )) {
+   if((0x00 != ccip_fme_gerr(pfme_dev)->pcie1_err.csr) &&
+      (ccip_fme_lastgerr(pfme_dev).pcie1_err.csr != ccip_fme_gerr(pfme_dev)->pcie1_err.csr )) {
 
       PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME Error2 CSR:  0x%llx \n",kosal_gettimestamp(),
                                                                                 ccip_dev_pcie_busnum(pccipdev),
                                                                                 ccip_dev_pcie_devnum(pccipdev),
                                                                                 ccip_dev_pcie_fcnnum(pccipdev),
-                                                                                ccip_fme_gerr(pfme_dev)->ccip_fme_error2.csr);
+                                                                                ccip_fme_gerr(pfme_dev)->pcie1_err.csr);
    }
 
    // FME first error
-   if((0x00 != ccip_fme_gerr(pfme_dev)->ccip_fme_first_error.csr) &&
-      (ccip_fme_lastgerr(pfme_dev).ccip_fme_first_error.csr != ccip_fme_gerr(pfme_dev)->ccip_fme_first_error.csr )) {
+   if((0x00 != ccip_fme_gerr(pfme_dev)->fme_first_err.csr) &&
+      (ccip_fme_lastgerr(pfme_dev).fme_first_err.csr != ccip_fme_gerr(pfme_dev)->fme_first_err.csr )) {
 
       PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME First Error CSR:  0x%llx \n",kosal_gettimestamp(),
                                                                                      ccip_dev_pcie_busnum(pccipdev),
                                                                                      ccip_dev_pcie_devnum(pccipdev),
                                                                                      ccip_dev_pcie_fcnnum(pccipdev),
-                                                                                     ccip_fme_gerr(pfme_dev)->ccip_fme_first_error.csr);
+                                                                                     ccip_fme_gerr(pfme_dev)->fme_first_err.csr);
    }
 
    // FME next error
-   if((0x00 != ccip_fme_gerr(pfme_dev)->ccip_fme_next_error.csr) &&
-      (ccip_fme_lastgerr(pfme_dev).ccip_fme_next_error.csr != ccip_fme_gerr(pfme_dev)->ccip_fme_next_error.csr )) {
+   if((0x00 != ccip_fme_gerr(pfme_dev)->fme_next_err.csr) &&
+      (ccip_fme_lastgerr(pfme_dev).fme_next_err.csr != ccip_fme_gerr(pfme_dev)->fme_next_err.csr )) {
 
       PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME Next Error CSR:  0x%llx \n",kosal_gettimestamp(),
                                                                                     ccip_dev_pcie_busnum(pccipdev),
                                                                                     ccip_dev_pcie_devnum(pccipdev),
                                                                                     ccip_dev_pcie_fcnnum(pccipdev),
-                                                                                    ccip_fme_gerr(pfme_dev)->ccip_fme_next_error.csr);
+                                                                                    ccip_fme_gerr(pfme_dev)->fme_next_err.csr);
    }
 
 
-   ccip_fme_lastgerr(pfme_dev).ccip_fme_error0.csr = ccip_fme_gerr(pfme_dev)->ccip_fme_error0.csr ;
-   ccip_fme_lastgerr(pfme_dev).ccip_fme_error1.csr = ccip_fme_gerr(pfme_dev)->ccip_fme_error1.csr;
-   ccip_fme_lastgerr(pfme_dev).ccip_fme_error2.csr = ccip_fme_gerr(pfme_dev)->ccip_fme_error2.csr ;
+   ccip_fme_lastgerr(pfme_dev).fme_err.csr = ccip_fme_gerr(pfme_dev)->fme_err.csr ;
+   ccip_fme_lastgerr(pfme_dev).pcie0_err.csr = ccip_fme_gerr(pfme_dev)->pcie0_err.csr;
+   ccip_fme_lastgerr(pfme_dev).pcie1_err.csr = ccip_fme_gerr(pfme_dev)->pcie1_err.csr ;
 
-   ccip_fme_lastgerr(pfme_dev).ccip_fme_first_error.csr = ccip_fme_gerr(pfme_dev)->ccip_fme_first_error.csr ;
-   ccip_fme_lastgerr(pfme_dev).ccip_fme_next_error.csr  = ccip_fme_gerr(pfme_dev)->ccip_fme_next_error.csr ;
+   ccip_fme_lastgerr(pfme_dev).fme_first_err.csr = ccip_fme_gerr(pfme_dev)->fme_first_err.csr ;
+   ccip_fme_lastgerr(pfme_dev).fme_next_err.csr  = ccip_fme_gerr(pfme_dev)->fme_next_err.csr ;
 
 }
 

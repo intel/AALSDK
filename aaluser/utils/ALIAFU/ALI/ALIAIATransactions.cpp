@@ -918,12 +918,16 @@ SetError::SetError(btUnsigned64bitInt cmd,struct CCIP_ERROR ccip_error ) :
    afumsg->cmd     = m_cmd;
    afumsg->size    = sizeof(struct ahm_req) ;
 
-   req->u.error_csr.error0  = ccip_error.error0;
-   req->u.error_csr.error1  = ccip_error.error1;
-   req->u.error_csr.error2  = ccip_error.error2;
+   req->u.error_csr.error0          = ccip_error.error0;
+   req->u.error_csr.pcie0_err       = ccip_error.pcie0_error;
+   req->u.error_csr.pcie1_err       = ccip_error.pcie1_error;
 
-   req->u.error_csr.first_error  = ccip_error.first_error;
-   req->u.error_csr.next_error  = ccip_error.next_error;
+   req->u.error_csr.first_error     = ccip_error.first_error;
+   req->u.error_csr.next_error      = ccip_error.next_error;
+
+   req->u.error_csr.ras_gerr        = ccip_error.ras_gerr;
+   req->u.error_csr.ras_berror      = ccip_error.ras_berror;
+   req->u.error_csr.ras_warnerror   = ccip_error.ras_warnerror;
 
   // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
