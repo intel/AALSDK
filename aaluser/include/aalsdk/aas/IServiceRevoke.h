@@ -55,7 +55,7 @@ BEGIN_NAMESPACE(AAL)
 ///   a resource fails or becomes unavailable the Service stack may no longer be usable.
 ///   In order to clean up gracefully a Release() must be called on the root Service. This
 ///   interface is implemented by the root Service.  The Service is expected to call
-//    Release() on itself.
+///   Release() on itself.
 class IServiceRevoke
 {
 public:
