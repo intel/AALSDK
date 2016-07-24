@@ -730,4 +730,9 @@ package ase_pkg;
 
 		   } sniff_code_t;
 
+   /*
+    * outoforder_wrf_channel Transaction checker block
+    */
+   // <TBD>
+   
 endpackage

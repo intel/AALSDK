@@ -281,7 +281,6 @@ void mqueue_destroy(char* mq_name_suffix)
   mq_path = ase_malloc (ASE_FILEPATH_LEN);
   if (mq_path != NULL)
     {
-      /* memset (mq_path, 0, ASE_FILEPATH_LEN); */
       sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
       ret = unlink ( mq_path );
       if (ret == -1)

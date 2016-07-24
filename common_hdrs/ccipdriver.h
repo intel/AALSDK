@@ -304,10 +304,13 @@ struct ahm_req
 
       struct {
         btUnsigned64bitInt       error0;           /* IN   */
-        btUnsigned64bitInt       error1;           /* IN   */
-        btUnsigned64bitInt       error2;           /* IN   */
+        btUnsigned64bitInt       pcie0_err;        /* IN   */
+        btUnsigned64bitInt       pcie1_err;        /* IN   */
         btUnsigned64bitInt       first_error;      /* IN   */
         btUnsigned64bitInt       next_error;       /* IN   */
+        btUnsigned64bitInt       ras_gerr;         /* IN   */
+        btUnsigned64bitInt       ras_berror;       /* IN   */
+        btUnsigned64bitInt       ras_warnerror;    /* IN   */
       } error_csr;
 
    } u;
@@ -509,20 +512,29 @@ struct ccipdrv_DeviceAttributes
 //=============================================================================
 struct  CCIP_ERROR
 {
-   btUnsigned64bitInt error0_mask;       // Error0  csr
-   btUnsigned64bitInt error0;            // Error0 mask csr
+   btUnsigned64bitInt error0_mask;           // Error0  csr
+   btUnsigned64bitInt error0;                // Error0 mask csr
 
-   btUnsigned64bitInt error1_mask;       // Error1  csr
-   btUnsigned64bitInt error1;            // Error1 mask csr
+   btUnsigned64bitInt pcie0_error_mask;      // PCIE0 Error  csr
+   btUnsigned64bitInt pcie0_error;           // PCIE0 Error mask csr
 
-   btUnsigned64bitInt error2_mask;       // Error2  csr
-   btUnsigned64bitInt error2;            // Error2 mask csr
+   btUnsigned64bitInt pcie1_error_mask;      // PCIE1 Error csr
+   btUnsigned64bitInt pcie1_error;           // PCIE1 Error mask csr
 
-   btUnsigned64bitInt first_error;      // First error csr
-   btUnsigned64bitInt next_error;       // Next error csr
+   btUnsigned64bitInt first_error;           // First error csr
+   btUnsigned64bitInt next_error;            // Next error csr
 
-   btUnsigned64bitInt malreq0;          // Port Malformed request 0
-   btUnsigned64bitInt malreq1;          // Port Malformed request 0
+   btUnsigned64bitInt malreq0;               // Port Malformed request 0
+   btUnsigned64bitInt malreq1;               // Port Malformed request 0
+
+   btUnsigned64bitInt ras_gerr_mask;         // RAS Green BS error Mask
+   btUnsigned64bitInt ras_gerr;              // RAS Green BS error
+
+   btUnsigned64bitInt ras_berror_mask;       // RAS blue bitstream error mask
+   btUnsigned64bitInt ras_berror;            // RAS blue bitstream error
+
+   btUnsigned64bitInt ras_warnerror_mask;    // RAS warning error mask
+   btUnsigned64bitInt ras_warnerror;         // RAS warning error
 };
 
 //=============================================================================
@@ -547,12 +559,13 @@ struct  CCIP_THERMAL_PWR
 //=============================================================================
 struct  PERFCOUNTER_EVENT
 {
-   char  name[50];
+   char  name[45];
    btUnsigned64bitInt value;
 };
 
 struct  CCIP_PERF_COUNTERS
 {
+   //Cache
    struct  PERFCOUNTER_EVENT num_counters;
    struct  PERFCOUNTER_EVENT version;
    struct  PERFCOUNTER_EVENT read_hit;
@@ -561,13 +574,21 @@ struct  CCIP_PERF_COUNTERS
    struct  PERFCOUNTER_EVENT write_miss;
    struct  PERFCOUNTER_EVENT evictions;
 
+   //Fabric
    struct  PERFCOUNTER_EVENT pcie0_read;
    struct  PERFCOUNTER_EVENT pcie0_write;
    struct  PERFCOUNTER_EVENT pcie1_read;
    struct  PERFCOUNTER_EVENT pcie1_write;
    struct  PERFCOUNTER_EVENT upi_read;
    struct  PERFCOUNTER_EVENT upi_write;
-   struct  PERFCOUNTER_EVENT vtd_counter;
+
+   // VTD
+   struct  PERFCOUNTER_EVENT AFU0_MemRead_Trans;
+   struct  PERFCOUNTER_EVENT AFU0_MemWrite_Trans;
+   struct  PERFCOUNTER_EVENT AFU0_DevTLBRead_Hit;
+   struct  PERFCOUNTER_EVENT AFU0_DevTLBWrite_Hit;
+
+
 };
 END_C_DECLS
 

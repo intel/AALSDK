@@ -746,6 +746,26 @@ void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
            printf("AALPERF_UPI_WRITE %llu \n",value);
     }
 
+    if (PerfMon.Has(AALPERF_VTD_AFU_MEMREAD_TRANS)) {
+           PerfMon.Get( AALPERF_VTD_AFU_MEMREAD_TRANS, &value);
+           printf("AALPERF_VTD_AFU_MEMREAD_TRANS %llu \n",value);
+    }
+
+    if (PerfMon.Has(AALPERF_VTD_AFU_MEMWRITE_TRANS)) {
+           PerfMon.Get( AALPERF_VTD_AFU_MEMWRITE_TRANS, &value);
+           printf("AALPERF_VTD_AFU_MEMWRITE_TRANS %llu \n",value);
+    }
+
+    if (PerfMon.Has(AALPERF_VTD_AFU_DEVTLBREAD_HIT)) {
+           PerfMon.Get( AALPERF_VTD_AFU_DEVTLBREAD_HIT, &value);
+           printf("AALPERF_VTD_AFU_MEMREAD_TRANS %llu \n",value);
+    }
+
+    if (PerfMon.Has(AALPERF_VTD_AFU_DEVTLBWRITE_HIT)) {
+           PerfMon.Get( AALPERF_VTD_AFU_DEVTLBWRITE_HIT, &value);
+           printf("AALPERF_VTD_AFU_DEVTLBWRITE_HIT %llu \n",value);
+    }
+
     MSG("\n \n ************* PERFORMANCE COUNTERS END ****************** \n");
 
     PerfMon.Empty();

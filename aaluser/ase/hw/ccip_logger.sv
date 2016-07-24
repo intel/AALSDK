@@ -47,6 +47,7 @@ module ccip_logger
    (
     // Configure enable
     input logic finish_logger,
+    input logic stdout_en,
     // Buffer message injection
     input logic log_timestamp_en,
     input logic log_string_en,
@@ -316,7 +317,7 @@ module ccip_logger
     */ 
    function void print_and_post_log(string formatted_string);
       begin
-	 if (cfg.enable_cl_view)
+	 if (stdout_en)
 	   $display(formatted_string);
 	 $fwrite(log_fd, formatted_string);	 
       end

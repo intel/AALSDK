@@ -341,6 +341,14 @@ void CHWALIPORT::pirntPortErrors(struct CCIP_ERROR *pError)
    NamedValueSet portErrornvs;
    struct CCIP_PORT_ERROR ccip_port_error   = {0};
 
+   // print CSR
+   std::cout << " Port Error CSR 0x: "<< std::hex << pError->error0 << std::endl;
+
+   std::cout << " Port Error Mask CSR 0x: "<<std::hex << pError->error0_mask << std::endl;
+
+   std::cout << " Port First Error CSR 0x: "<<std::hex << pError->first_error << std::endl;
+
+
    // Port Error
    portErrornvs.Empty();
    ccip_port_error.csr =  pError->error0;

@@ -372,8 +372,8 @@ btInt HelloALINLBApp::run()
       ::memset( m_DSMVirt, 0, m_DSMSize);
 
       // Initialize the source and destination buffers
-      ::memset( m_InputVirt,  0, m_InputSize);     // Input initialized to 0
-      ::memset( m_OutputVirt, 0, m_OutputSize);    // Output initialized to 0
+      ::memset( m_InputVirt,  0xAF, m_InputSize);  // Input initialized to AFter
+      ::memset( m_OutputVirt, 0xBE, m_OutputSize); // Output initialized to BEfore
 
       struct CacheLine {                           // Operate on cache lines
          btUnsigned32bitInt uint[16];

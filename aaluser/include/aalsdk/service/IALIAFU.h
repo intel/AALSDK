@@ -521,6 +521,12 @@ public:
    #define AALPERF_PCIE1_WRITE      "PCIe1 Write"
    #define AALPERF_UPI_READ         "UPI Read"
    #define AALPERF_UPI_WRITE        "UPI Write"
+
+   #define AALPERF_VTD_AFU_MEMREAD_TRANS            "VT-d AFU Memory Read Transaction"
+   #define AALPERF_VTD_AFU_MEMWRITE_TRANS           "VT-d AFU Memory Write Transaction"
+   #define AALPERF_VTD_AFU_DEVTLBREAD_HIT           "VT-d AFU DevTLB Read Hit"
+   #define AALPERF_VTD_AFU_DEVTLBWRITE_HIT          "VT-d AFU DevTLB Write Hit"
+
    ///
    /// @code
    /// INamedValueSet const *pResult = NULL;
@@ -872,6 +878,54 @@ public:
 class IALIFMEError: public IALIError
 {
 public:
+
+   // FME Error definitions
+   #define AAL_ERR_FME_FAB_UNDERFLOW              "Fabric FIFO underflow"
+   #define AAL_ERR_FME_FAB_OVERFLOW               "Fabric FIFO overflow"
+   #define AAL_ERR_FME_POSION_DETECT              "Poison Detected"
+   #define AAL_ERR_FME_PARIRY                     "Parity Error"
+
+   #define AAL_ERR_PCIE0_FORMAT                   "PCIe0 TLP Format/type error"
+   #define AAL_ERR_PCIE0_MWADDR                   "PCIe0 TLP MW Address error"
+   #define AAL_ERR_PCIE0_MWLEN                    "PCIe0 TLP MW Length error"
+   #define AAL_ERR_PCIE0_MRADDR                   "PCIe0 TLP MR Address error"
+   #define AAL_ERR_PCIE0_MRLEN                    "PCIe0 TLP MR Length error"
+   #define AAL_ERR_PCIE0_COMPTAG                  "PCIe0 TLP CPL TAP error"
+   #define AAL_ERR_PCIE0_COMPSTAT                 "PCIe0 TLP CPL Status error"
+   #define AAL_ERR_PCIE0_TIMEOUT                  "PCIe0 TLP CPL Timeout error"
+
+
+   #define AAL_ERR_PCIE1_FORMAT                   "PCIe1 TLP Format/type error"
+   #define AAL_ERR_PCIE1_MWADDR                   "PCIe1 TLP MW Address error"
+   #define AAL_ERR_PCIE1_MWLEN                    "PCIe1 TLP MW Length error"
+   #define AAL_ERR_PCIE1_MRADDR                   "PCIe1 TLP MR Address error"
+   #define AAL_ERR_PCIE1_MRLEN                    "PCIe1 TLP MR Length error"
+   #define AAL_ERR_PCIE1_COMPTAG                  "PCIe1 TLP CPL TAP error"
+   #define AAL_ERR_PCIE1_COMPSTAT                 "PCIe1 TLP CPL Status error"
+   #define AAL_ERR_PCIE1_TIMEOUT                  "PCIe1 TLP CPL Timeout error"
+
+   #define AAL_ERR_PCIE_PHYFUNC                   "Physical function error"
+   #define AAL_ERR_PCIE_VIRTFUNCR                 "Virtual function error"
+
+   #define AAL_ERR_RAS_THERMWARN0                 "Thermal threshold warning0"
+   #define AAL_ERR_RAS_THERMWARN1                 "Thermal threshold warning1"
+   #define AAL_ERR_RAS_PCIE                       "PCIE Fatal Error"
+   #define AAL_ERR_RAS_AFUFATAL                   "AFU Fatal error"
+   #define AAL_ERR_RAS_GBCRC                      "Green bitstream CRC Error"
+
+   #define AAL_ERR_RAS_KTILINK_FATAL              "KTI Link layer Fatal error"
+   #define AAL_ERR_RAS_TAGCCH_FATAL               "tag-n-cache Fatal error"
+   #define AAL_ERR_RAS_CCI_FATAL                  "CCI Fatal error"
+   #define AAL_ERR_RAS_KTIPROTO_FATAL             "KTI Protocal Fatal error"
+   #define AAL_ERR_RAS_DMA_FATAL                  "DMA Fatal error"
+   #define AAL_ERR_RAS_IOMMU_FATAL                "IOMMU Fatal error"
+   #define AAL_ERR_RAS_IOMMU_CATAS                "Catastrophic IOMMU Error"
+   #define AAL_ERR_RAS_CRC_CATAS                  "Catastrophic CRC Error"
+   #define AAL_ERR_RAS_THER_CATAS                 "Catastrophic Thermal Error"
+   #define AAL_ERR_RAS_GB_FATAL                   "Green bitstream fatal event Error"
+
+
+
    virtual ~IALIFMEError() {}
 
 }; // class IALIFMEError

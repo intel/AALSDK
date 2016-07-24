@@ -106,7 +106,7 @@
  * LAT_UNDEFINED   : Undefined latency
  * 
  */ 
-`define MMIO_LATENCY                1
+`define MMIO_LATENCY                15
 `define RDLINE_S_LATRANGE          8,16
 `define RDLINE_I_LATRANGE          8,16
 `define WRLINE_M_LATRANGE          4,7

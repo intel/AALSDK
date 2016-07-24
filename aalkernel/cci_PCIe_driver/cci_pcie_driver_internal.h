@@ -103,7 +103,8 @@ enum   cci_devtype{
    cci_dev_Port,
    cci_dev_UAFU,
    cci_dev_STAP,
-   cci_dev_PR
+   cci_dev_PR,
+   cci_dev_PWR
 };
 
 //=============================================================================
@@ -273,6 +274,7 @@ struct ccip_device
    int                        m_simulated;
 
    enum aal_bus_types_e       m_bustype;
+   btUnsigned16bitInt         m_socketnum;       // Socket number
    btUnsigned32bitInt         m_busNum;
    btUnsigned16bitInt         m_devicenum;      // device number
    btUnsigned16bitInt         m_functnum;       // function number
@@ -343,6 +345,8 @@ struct ccip_device
 #define ccip_dev_pcie_busnum(pdev)           ((pdev)->m_busNum)
 #define ccip_dev_pcie_devnum(pdev)           ((pdev)->m_devicenum)
 #define ccip_dev_pcie_fcnnum(pdev)           ((pdev)->m_functnum)
+#define ccip_dev_pcie_socketnum(pdev)        ((pdev)->m_socketnum)
+
 
 /// @brief   Writes 64 bit control and status registers.
 ///
@@ -395,8 +399,8 @@ ccidrv_sendevent( struct aaldev_ownerSession *,
 
 extern inline void GetCSR(btUnsigned64bitInt *ptr, bt32bitCSR *pcsrval);
 extern inline void SetCSR(btUnsigned64bitInt *ptr, bt32bitCSR *csrval);
-extern inline void Get64CSR(btUnsigned64bitInt *ptr, bt64bitCSR *pcsrval);
-extern inline void Set64CSR(btUnsigned64bitInt *ptr, bt64bitCSR *csrval);
+extern        void Get64CSR(btUnsigned64bitInt *ptr, bt64bitCSR *pcsrval);
+extern        void Set64CSR(btUnsigned64bitInt *ptr, bt64bitCSR *csrval);
 
 
 #endif // __AALKERNEL_CCI_PCIE_DRIVER_INTERNAL_H__

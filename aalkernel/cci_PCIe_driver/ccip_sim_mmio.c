@@ -90,6 +90,8 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    struct CCIP_FME_DFL_GERROR    fme_gerror;
    struct CCIP_FME_DFL_PR        fme_pr;
    struct CCIP_PORT_AFU_OFFSET   portoffset;
+   struct CCIP_FME_PCIE1_ERROR   pcie1error;
+   struct CCIP_FME_ERROR0        firsterror;
 
    int offset =0;
 
@@ -135,7 +137,7 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    fme_hdr.fab_capability.cache_assoc =0x0;
    fme_hdr.fab_capability.cache_size = 0x10;
    fme_hdr.fab_capability.address_width_bits =0x26;
-   fme_hdr.fab_capability.iommu_support =0x0;
+   fme_hdr.fab_capability.iommu_support =0x1;
    fme_hdr.fab_capability.qpi_link_avile =0x01;
    fme_hdr.fab_capability.pci0_link_avile =0x01;
    fme_hdr.fab_capability.pci1_link_avile =0x01;
@@ -296,20 +298,166 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    offset = 0;
    write_ccip_csr64(ptr,offset,fme_gerror.ccip_gerror_dflhdr.csr);
 
+
    // FME error mask
-   fme_gerror.fme_err.rsvd=0;
+   fme_gerror.fme_err_mask.fabFifo_underflow =0x1;
+   fme_gerror.fme_err_mask.fabFifo_overflow =0x1;
+   fme_gerror.fme_err_mask.poison_detected =0x1;
+   fme_gerror.fme_err_mask.parity_error =0x1;
+
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,fme_gerror.fme_err_mask.csr);
+
+   // FME error
+   fme_gerror.fme_err.fabFifo_underflow =0x1;
+   fme_gerror.fme_err.fabFifo_overflow =0x1;
+   fme_gerror.fme_err.poison_detected =0x1;
+   fme_gerror.fme_err.parity_error =0x1;
+
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_gerror.fme_err.csr);
 
-   // FME error
-   fme_gerror.pcie0_err.rsvd=0;
+   //PCIE0 error mask
+   fme_gerror.pcie0_err_mask.formattype_err = 0x1;
+   fme_gerror.pcie0_err_mask.MWAddr_err = 0x1;
+   fme_gerror.pcie0_err_mask.MWAddrLength_err = 0x1;
+   fme_gerror.pcie0_err_mask.MRAddr_err = 0x1;
+   fme_gerror.pcie0_err_mask.MRAddrLength_err = 0x1;
+   fme_gerror.pcie0_err_mask.cpl_tag_err = 0x1;
+   fme_gerror.pcie0_err_mask.cpl_status_err = 0x1;
+   fme_gerror.pcie0_err_mask.cpl_timeout_err = 0x1;
+
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,fme_gerror.pcie0_err_mask.csr);
+
+
+   //PCIE0 error
+   fme_gerror.pcie0_err.formattype_err = 0x1;
+   fme_gerror.pcie0_err.MWAddr_err = 0x1;
+   fme_gerror.pcie0_err.MWAddrLength_err = 0x1;
+   fme_gerror.pcie0_err.MRAddr_err = 0x1;
+   fme_gerror.pcie0_err.MRAddrLength_err = 0x1;
+   fme_gerror.pcie0_err.cpl_tag_err = 0x1;
+   fme_gerror.pcie0_err.cpl_status_err = 0x1;
+   fme_gerror.pcie0_err.cpl_timeout_err = 0x1;
+
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_gerror.pcie0_err.csr);
 
-   // FME First error
-   fme_gerror.pcie1_err.rsvd =0;
+   //PCIE1 error mask
+   fme_gerror.pcie1_err_mask.formattype_err = 0x1;
+   fme_gerror.pcie1_err_mask.MWAddr_err = 0x1;
+   fme_gerror.pcie1_err_mask.MWAddrLength_err = 0x1;
+   fme_gerror.pcie1_err_mask.MRAddr_err = 0x1;
+   fme_gerror.pcie1_err_mask.MRAddrLength_err = 0x1;
+   fme_gerror.pcie1_err_mask.cpl_tag_err = 0x1;
+   fme_gerror.pcie1_err_mask.cpl_status_err = 0x1;
+   fme_gerror.pcie1_err_mask.cpl_timeout_err = 0x1;
+
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,fme_gerror.pcie1_err_mask.csr);
+
+
+   //PCIE1 error
+   fme_gerror.pcie1_err.formattype_err = 0x1;
+   fme_gerror.pcie1_err.MWAddr_err = 0x1;
+   fme_gerror.pcie1_err.MWAddrLength_err = 0x1;
+   fme_gerror.pcie1_err.MRAddr_err = 0x1;
+   fme_gerror.pcie1_err.MRAddrLength_err = 0x1;
+   fme_gerror.pcie1_err.cpl_tag_err = 0x1;
+   fme_gerror.pcie1_err.cpl_status_err = 0x1;
+   fme_gerror.pcie1_err.cpl_timeout_err = 0x1;
+
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_gerror.pcie1_err.csr);
+
+
+   // FME First error
+
+   firsterror.fabFifo_underflow =0x1;
+   firsterror.fabFifo_overflow =0x1;
+   firsterror.poison_detected =0x1;
+
+   fme_gerror.fme_first_err.csr = firsterror.csr;
+   fme_gerror.fme_first_err.errReg_id =0x0;
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,fme_gerror.fme_first_err.csr);
+
+   // FME Next error
+   pcie1error.MWAddr_err = 0x1;
+   pcie1error.MWAddrLength_err = 0x1;
+   pcie1error.MRAddr_err = 0x1;
+   pcie1error.MRAddrLength_err = 0x1;
+   pcie1error.cpl_tag_err = 0x1;
+   pcie1error.cpl_status_err = 0x1;
+
+   fme_gerror.fme_next_err.csr = pcie1error.csr;
+   fme_gerror.fme_next_err.errReg_id =0x2;
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,fme_gerror.fme_next_err.csr);
+
+
+
+   // RAS Error maks
+   fme_gerror.ras_gerr_mask.therm_warn0 = 0x1;
+   fme_gerror.ras_gerr_mask.therm_warn1 = 0x1;
+   fme_gerror.ras_gerr_mask.pcie_error = 0x1;
+   fme_gerror.ras_gerr_mask.afufatal_error = 0x1;
+   fme_gerror.ras_gerr_mask.gb_crc_err = 0x1;
+
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,fme_gerror.ras_gerr_mask.csr);
+
+   // RAS Error
+   fme_gerror.ras_gerr.therm_warn0 = 0x1;
+   fme_gerror.ras_gerr.therm_warn1 = 0x1;
+   fme_gerror.ras_gerr.pcie_error = 0x1;
+   fme_gerror.ras_gerr.afufatal_error = 0x1;
+   fme_gerror.ras_gerr.gb_crc_err = 0x1;
+
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,fme_gerror.ras_gerr.csr);
+
+
+   // RAS Error Mask
+   fme_gerror.ras_berror_mask.ktilink_fatal_err = 0x1;
+   fme_gerror.ras_berror_mask.tagcch_fatal_err = 0x1;
+   fme_gerror.ras_berror_mask.cci_fatal_err = 0x1;
+   fme_gerror.ras_berror_mask.ktiprpto_fatal_err = 0x1;
+   fme_gerror.ras_berror_mask.dma_fatal_err = 0x1;
+   fme_gerror.ras_berror_mask.iommu_catast_err = 0x1;
+   fme_gerror.ras_berror_mask.crc_catast_err = 0x1;
+   fme_gerror.ras_berror_mask.therm_catast_err = 0x1;
+
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,fme_gerror.ras_berror_mask.csr);
+
+
+   // RAS Error
+   fme_gerror.ras_berror.ktilink_fatal_err = 0x1;
+   fme_gerror.ras_berror.tagcch_fatal_err = 0x1;
+   fme_gerror.ras_berror.cci_fatal_err = 0x1;
+   fme_gerror.ras_berror.ktiprpto_fatal_err = 0x1;
+   fme_gerror.ras_berror.dma_fatal_err = 0x1;
+   fme_gerror.ras_berror.iommu_catast_err = 0x1;
+   fme_gerror.ras_berror.crc_catast_err = 0x1;
+   fme_gerror.ras_berror.therm_catast_err = 0x1;
+
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,fme_gerror.ras_berror.csr);
+
+   // RAS warning Error Mask
+   fme_gerror.ras_warnerror_mask.event_warn_err= 0x1;
+
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,fme_gerror.ras_warnerror_mask.csr);
+
+
+   // RAS warning Error
+   fme_gerror.ras_warnerror.event_warn_err= 0x1;
+
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,fme_gerror.ras_warnerror.csr);
 
 
    // FME PR
@@ -845,9 +993,99 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "next_DFH_offset = %x \n",pfme_dev->m_pGerror->ccip_gerror_dflhdr.next_DFH_offset);
       PDEBUG( "End of List = %x \n",pfme_dev->m_pGerror->ccip_gerror_dflhdr.eol);
 
-      PDEBUG( "ccip_fme_error_mask rsvd = %x \n",( unsigned int)pfme_dev->m_pGerror->fme_err.rsvd);
-      PDEBUG( "ccip_fme_first_error rsvd = %x \n",( unsigned int)pfme_dev->m_pGerror->pcie0_err.rsvd);
-      PDEBUG( "ccip_fme_error rsvd = %x \n",( unsigned int)pfme_dev->m_pGerror->pcie1_err.rsvd);
+      PDEBUG( "FME Error fabFifo_underflow  = %x \n",pfme_dev->m_pGerror->fme_err.fabFifo_underflow);
+      PDEBUG( "FME Error fabFifo_overflow  = %x \n",pfme_dev->m_pGerror->fme_err.fabFifo_overflow);
+      PDEBUG( "FME Error poison_detected  = %x \n",pfme_dev->m_pGerror->fme_err.poison_detected);
+      PDEBUG( "FME Error parity_error  = %x \n",pfme_dev->m_pGerror->fme_err.parity_error);
+
+
+
+      PDEBUG( "FME Error mask  fabFifo_underflow  = %x \n",pfme_dev->m_pGerror->fme_err_mask.fabFifo_underflow);
+      PDEBUG( "FME Error mask fabFifo_overflow  = %x \n",pfme_dev->m_pGerror->fme_err_mask.fabFifo_overflow);
+      PDEBUG( "FME Error maskcpoison_detected  = %x \n",pfme_dev->m_pGerror->fme_err_mask.poison_detected);
+      PDEBUG( "FME Error mask parity_error  = %x \n",pfme_dev->m_pGerror->fme_err_mask.parity_error);
+
+
+
+      PDEBUG( "PCIe0 Error mask  formattype_err  = %x \n",pfme_dev->m_pGerror->pcie0_err_mask.formattype_err);
+      PDEBUG( "PCIe0 Error mask  MWAddr_err  = %x \n",pfme_dev->m_pGerror->pcie0_err_mask.MWAddr_err);
+      PDEBUG( "PCIe0 Error mask  MWAddrLength_err  = %x \n",pfme_dev->m_pGerror->pcie0_err_mask.MWAddrLength_err);
+      PDEBUG( "PCIe0 Error mask  MRAddr_err  = %x \n",pfme_dev->m_pGerror->pcie0_err_mask.MRAddr_err);
+      PDEBUG( "PCIe0 Error mask  MRAddrLength_err  = %x \n",pfme_dev->m_pGerror->pcie0_err_mask.MRAddrLength_err);
+      PDEBUG( "PCIe0 Error mask  cpl_tag_err  = %x \n",pfme_dev->m_pGerror->pcie0_err_mask.cpl_tag_err);
+      PDEBUG( "PCIe0 Error mask  cpl_status_err  = %x \n",pfme_dev->m_pGerror->pcie0_err_mask.cpl_status_err);
+      PDEBUG( "PCIe0 Error mask  formattype_err  = %x \n",pfme_dev->m_pGerror->pcie0_err_mask.cpl_timeout_err);
+
+
+      PDEBUG( "PCIe0 Error   formattype_err  = %x \n",pfme_dev->m_pGerror->pcie0_err.formattype_err);
+      PDEBUG( "PCIe0 Error   MWAddr_err  = %x \n",pfme_dev->m_pGerror->pcie0_err.MWAddr_err);
+      PDEBUG( "PCIe0 Error   MWAddrLength_err  = %x \n",pfme_dev->m_pGerror->pcie0_err.MWAddrLength_err);
+      PDEBUG( "PCIe0 Error   MRAddr_err  = %x \n",pfme_dev->m_pGerror->pcie0_err.MRAddr_err);
+      PDEBUG( "PCIe0 Error   MRAddrLength_err  = %x \n",pfme_dev->m_pGerror->pcie0_err.MRAddrLength_err);
+      PDEBUG( "PCIe0 Error   cpl_tag_err  = %x \n",pfme_dev->m_pGerror->pcie0_err.cpl_tag_err);
+      PDEBUG( "PCIe0 Error   cpl_status_err  = %x \n",pfme_dev->m_pGerror->pcie0_err.cpl_status_err);
+      PDEBUG( "PCIe0 Error   formattype_err  = %x \n",pfme_dev->m_pGerror->pcie0_err.cpl_timeout_err);
+
+
+
+      PDEBUG( "PCIe1 Error mask  formattype_err  = %x \n",pfme_dev->m_pGerror->pcie1_err_mask.formattype_err);
+      PDEBUG( "PCIe1 Error mask  MWAddr_err  = %x \n",pfme_dev->m_pGerror->pcie1_err_mask.MWAddr_err);
+      PDEBUG( "PCIe1 Error mask  MWAddrLength_err  = %x \n",pfme_dev->m_pGerror->pcie1_err_mask.MWAddrLength_err);
+      PDEBUG( "PCIe1 Error mask  MRAddr_err  = %x \n",pfme_dev->m_pGerror->pcie1_err_mask.MRAddr_err);
+      PDEBUG( "PCIe1 Error mask  MRAddrLength_err  = %x \n",pfme_dev->m_pGerror->pcie1_err_mask.MRAddrLength_err);
+      PDEBUG( "PCIe1 Error mask  cpl_tag_err  = %x \n",pfme_dev->m_pGerror->pcie1_err_mask.cpl_tag_err);
+      PDEBUG( "PCIe1 Error mask  cpl_status_err  = %x \n",pfme_dev->m_pGerror->pcie1_err_mask.cpl_status_err);
+      PDEBUG( "PCIe1 Error mask  formattype_err  = %x \n",pfme_dev->m_pGerror->pcie1_err_mask.cpl_timeout_err);
+
+
+      PDEBUG( "PCIe1 Error   formattype_err  = %x \n",pfme_dev->m_pGerror->pcie1_err.formattype_err);
+      PDEBUG( "PCIe1 Error   MWAddr_err  = %x \n",pfme_dev->m_pGerror->pcie1_err.MWAddr_err);
+      PDEBUG( "PCIe1 Error   MWAddrLength_err  = %x \n",pfme_dev->m_pGerror->pcie1_err.MWAddrLength_err);
+      PDEBUG( "PCIe1 Error   MRAddr_err  = %x \n",pfme_dev->m_pGerror->pcie1_err.MRAddr_err);
+      PDEBUG( "PCIe1 Error   MRAddrLength_err  = %x \n",pfme_dev->m_pGerror->pcie1_err.MRAddrLength_err);
+      PDEBUG( "PCIe1 Error   cpl_tag_err  = %x \n",pfme_dev->m_pGerror->pcie1_err.cpl_tag_err);
+      PDEBUG( "PCIe1 Error   cpl_status_err  = %x \n",pfme_dev->m_pGerror->pcie1_err.cpl_status_err);
+      PDEBUG( "PCIe1 Error   formattype_err  = %x \n",pfme_dev->m_pGerror->pcie1_err.cpl_timeout_err);
+
+
+      PDEBUG( "Green BS Error mask  therm_warn0  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.therm_warn0);
+      PDEBUG( "Green BS Error mask  therm_warn1  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.therm_warn1);
+      PDEBUG( "Green BS Error mask  pcie_error  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.pcie_error);
+      PDEBUG( "Green BS Error mask  afufatal_error  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.afufatal_error);
+      PDEBUG( "Green BS Error mask  gb_crc_err  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.gb_crc_err);
+
+
+      PDEBUG( "Green BS Error therm_warn0  = %x \n",pfme_dev->m_pGerror->ras_gerr.therm_warn0);
+      PDEBUG( "Green BS Error therm_warn1  = %x \n",pfme_dev->m_pGerror->ras_gerr.therm_warn1);
+      PDEBUG( "Green BS Error  pcie_error  = %x \n",pfme_dev->m_pGerror->ras_gerr.pcie_error);
+      PDEBUG( "Green BS Error  afufatal_error  = %x \n",pfme_dev->m_pGerror->ras_gerr.afufatal_error);
+      PDEBUG( "Green BS Error  gb_crc_err  = %x \n",pfme_dev->m_pGerror->ras_gerr.gb_crc_err);
+
+
+      PDEBUG( "blue BS Error mask  ktilink_fatal_err  = %x \n",pfme_dev->m_pGerror->ras_berror_mask.ktilink_fatal_err);
+      PDEBUG( "blue BS Error mask  tagcch_fatal_err  = %x \n",pfme_dev->m_pGerror->ras_berror_mask.tagcch_fatal_err);
+      PDEBUG( "blue BS Error mask  cci_fatal_err  = %x \n",pfme_dev->m_pGerror->ras_berror_mask.cci_fatal_err);
+      PDEBUG( "blue BS Error mask  ktiprpto_fatal_err  = %x \n",pfme_dev->m_pGerror->ras_berror_mask.ktiprpto_fatal_err);
+      PDEBUG( "blue BS Error mask  dma_fatal_err  = %x \n",pfme_dev->m_pGerror->ras_berror_mask.dma_fatal_err);
+      PDEBUG( "blue BS Error mask  iommu_catast_err  = %x \n",pfme_dev->m_pGerror->ras_berror_mask.iommu_catast_err);
+      PDEBUG( "blue BS Error mask  crc_catast_err  = %x \n",pfme_dev->m_pGerror->ras_berror_mask.crc_catast_err);
+      PDEBUG( "blue BS Error mask  therm_catast_err  = %x \n",pfme_dev->m_pGerror->ras_berror_mask.therm_catast_err);
+
+
+      PDEBUG( "blue BS Error   ktilink_fatal_err  = %x \n",pfme_dev->m_pGerror->ras_berror.ktilink_fatal_err);
+      PDEBUG( "blue BS Error   tagcch_fatal_err  = %x \n",pfme_dev->m_pGerror->ras_berror.tagcch_fatal_err);
+      PDEBUG( "blue BS Error   cci_fatal_err  = %x \n",pfme_dev->m_pGerror->ras_berror.cci_fatal_err);
+      PDEBUG( "blue BS Error   ktiprpto_fatal_err  = %x \n",pfme_dev->m_pGerror->ras_berror.ktiprpto_fatal_err);
+      PDEBUG( "blue BS Error   dma_fatal_err  = %x \n",pfme_dev->m_pGerror->ras_berror.dma_fatal_err);
+      PDEBUG( "blue BS Error   iommu_catast_err  = %x \n",pfme_dev->m_pGerror->ras_berror.iommu_catast_err);
+      PDEBUG( "blue BS Error   crc_catast_err  = %x \n",pfme_dev->m_pGerror->ras_berror.crc_catast_err);
+      PDEBUG( "blue BS Error   therm_catast_err  = %x \n",pfme_dev->m_pGerror->ras_berror.therm_catast_err);
+
+
+      PDEBUG( "RAS Warning mask  event_warn_err  = %x \n",pfme_dev->m_pGerror->ras_warnerror_mask.event_warn_err);
+      PDEBUG( "RAS Warning   event_warn_err  = %x \n",pfme_dev->m_pGerror->ras_warnerror.event_warn_err);
+
+
       PDEBUG( "FME   Global Error END \n \n");
 
    }
