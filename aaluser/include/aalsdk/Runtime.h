@@ -231,7 +231,7 @@ public:
    ///               objects to use the Runtime independently. Note that this pointer
    ///               references the singleton Runtime instance.
    /// @param[in] pClient is the Runtime interface pointer.
-   /// @return    void
+   /// @return    A pointer to IRuntime, a Runtime interface.
    virtual IRuntime *        getRuntimeProxy(IRuntimeClient *pClient)                           = 0;
 
 
@@ -244,7 +244,8 @@ public:
    virtual IRuntimeClient * getRuntimeClient()                                                  = 0;
 
    /// @brief     Returns the status of this Runtime.
-   /// @return    void
+   /// @retval    True if the internal state of the Runtime is OK.
+   /// @retval    False if the internal state of the Runtime is not OK.
    virtual btBool                       IsOK()                                                  = 0;
 
 protected:
