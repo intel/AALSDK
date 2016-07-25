@@ -223,7 +223,7 @@ void RuntimeClient::runtimeEvent(const IEvent &rEvent)
    MSG("Generic message handler (runtime)");
 }
 
-/// @brief Accessor for pointer to the IRuntime interface to the Runtime Client
+/// @brief Accessor for pointer to the IRuntime interface to the Runtime Client.
 ///
 /// This pointer is used to allocate the Service.
 /// @retval Pointer to the Runtime Interface.
@@ -242,10 +242,7 @@ class HelloAALApp: public CAASBase, public IServiceClient, public IHelloAALClien
 public:
    HelloAALApp(RuntimeClient * rtc);
    ~HelloAALApp();
-   /// @brief Called by the main part of the application,Returns 0 if Success
-   ///
-   /// Application Requests Service using Runtime Client passing a pointer to self.
-   /// Blocks calling thread from main() until the application is done. 
+
    int run();
 
    // <begin IHelloAALClient>
@@ -274,7 +271,9 @@ protected:
    int               m_Result;         // Returned result value; 0 if success
 };
 
-///  MyServiceClient Implementation
+/// @brief MyServiceClient Implementation.
+///
+/// @param rtc A pointer to the RuntimeClient creating the HellAALApp service.
 HelloAALApp::HelloAALApp(RuntimeClient *rtc) :
    m_pAALService(NULL),
    m_runtimClient(rtc),
@@ -290,6 +289,11 @@ HelloAALApp::~HelloAALApp()
    m_Sem.Destroy();
 }
 
+/// @brief Called by main(), the the application entry point.
+///
+/// The run() function requests a Service using Runtime Client and passing a pointer to self.
+/// Blocks calling thread from main() until the application is done.
+/// @retval 0 if successful.
 int HelloAALApp::run()
 {
 
