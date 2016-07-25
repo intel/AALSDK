@@ -73,6 +73,7 @@ public:
    ///        the release notification.
    ///
    /// ISingleAFUApp's internal semaphore is posted before the call returns.
+   /// @returns void
    void Stop();
 
    // <IRuntimeClient>
@@ -101,6 +102,11 @@ public:
    /// @note Subclasses must override to implement application-specific behavior.
    ///
    /// A pointer to the IRuntime is stored in m_pRuntime prior to this call.
+   ///
+   /// <B>Parameters:</B> [in]  A pointer to the Runtime.
+   ///
+   /// <B>Parameters:</B> [in]  A reference to the NVS.
+   /// @returns void
    virtual void OnRuntimeStarted(IRuntime *,
                                  const NamedValueSet &)        = 0;
 
@@ -108,6 +114,9 @@ public:
    /// @note Subclasses must override to implement application-specific behavior.
    ///
    /// ISingleAFUApp's internal semaphore is posted after this call.
+   ///
+   /// <B>Parameters:</B> [in]  A pointer to the Runtime.
+   /// @returns void
    virtual void OnRuntimeStopped(IRuntime *)           = 0;
 
    /// @brief Called in response to IRuntimeClient::runtimeStartFailed notification.
@@ -115,21 +124,35 @@ public:
    ///
    /// ISingleAFUApp's internal semaphore is posted after this call.
    /// m_bIsOK (inherited from CAASBase) is set to false after this call.
+   ///
+   /// <B>Parameters:</B> [in]  A reference to the Event.
+   /// @returns void
    virtual void OnRuntimeStartFailed(const IEvent &)           = 0;
 
    /// @brief Called in response to IRuntimeClient::runtimeAllocateServiceFailed notification.
    /// @note Subclasses must override to implement application-specific behavior.
    ///
    /// m_bIsOK (inherited from CAASBase) is set to false after this call.
+   ///
+   /// <B>Parameters:</B> [in]  A reference to the Event.
+   /// @returns void
    virtual void OnRuntimeAllocateServiceFailed(IEvent const & )     = 0;
 
    /// @brief Called in response to IRuntimeClient::runtimeAllocateServiceSucceeded notification.
    /// @note Subclasses must override to implement application-specific behavior.
+   ///
+   /// <B>Parameters:</B> [in]  A pointer to the Service IBase interface.
+   ///
+   /// <B>Parameters:</B> [in]  A reference to the Transaction ID.
+   /// @returns void
    virtual void OnRuntimeAllocateServiceSucceeded(IBase * ,
                                                   TransactionID const & ) = 0;
 
    /// @brief Called in response to IRuntimeClient::runtimeEvent notification.
    /// @note Subclasses must override to implement application-specific behavior.
+   ///
+   /// <B>Parameters:</B> [in]  A reference to the Event.
+   /// @returns void
    virtual void OnRuntimeEvent(const IEvent &)                 = 0;
 
    /// @brief Called in response to IServiceClient::serviceAllocated notification.
@@ -139,6 +162,11 @@ public:
    /// are cached in m_pAALService and m_pProprietary, respectively.
    ///
    /// ISingleAFUApp's internal semaphore is posted after this call.
+   ///
+   /// <B>Parameters:</B> [in]  A pointer to the Service IBase interface.
+   ///
+   /// <B>Parameters:</B> [in]  A reference to the Transaction ID.
+   /// @returns void
    virtual void OnServiceAllocated(IBase *,
                                    TransactionID const &)      = 0;
 
@@ -147,12 +175,18 @@ public:
    ///
    /// ISingleAFUApp's internal semaphore is posted after this call.
    /// m_bIsOK (inherited from CAASBase) is set to false after this call.
+   ///
+   /// <B>Parameters:</B> [in]  A reference to the Event.
+   /// @returns void
    virtual void OnServiceAllocateFailed(const IEvent &)        = 0;
 
    /// @brief Called in response to IServiceClient::serviceReleased notification.
    /// @note Subclasses must override to implement application-specific behavior.
    ///
    /// ISingleAFUApp's internal semaphore is posted after this call.
+   ///
+   /// <B>Parameters:</B> [in]  A reference to the Transaction ID.
+   /// @returns void
    virtual void OnServiceReleased(TransactionID const &)          = 0;
 
    /// @brief Called in response to IServiceClient::serviceReleaseFailed notification.
@@ -160,10 +194,16 @@ public:
    ///
    /// ISingleAFUApp's internal semaphore is posted after this call.
    /// m_bIsOK (inherited from CAASBase) is set to false after this call.
+   ///
+   /// <B>Parameters:</B> [in]  A reference to the Event.
+   /// @returns void
    virtual void OnServiceReleaseFailed(const IEvent &)        = 0;
 
    /// @brief Called in response to IServiceClient::serviceEvent notification.
    /// @note Subclasses must override to implement application-specific behavior.
+   ///
+   /// <B>Parameters:</B> [in]  A reference to the Event.
+   /// @returns void
    virtual void OnServiceEvent(const IEvent &)                 = 0;
 
    /// @brief Retrieve a pointer to the Proprietary interface of the allocated AFU.
@@ -179,6 +219,7 @@ public:
    operator IAALService * () { return m_pAALService;  }
 
    /// @brief Wait for ISingleAFUApp's semaphore to become signaled.
+   /// @returns void
    void Wait();
 protected:
    // @brief Signal (one count) ISingleAFUApp's semaphore.
