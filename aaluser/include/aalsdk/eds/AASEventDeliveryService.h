@@ -70,21 +70,36 @@ typedef enum EDSDispatchClass
 class AALRUNTIME_API IEventDispatcher
 {
 public:
-   /// IEventDispatcher Destructor.
+   // IEventDispatcher Destructor.
    virtual ~IEventDispatcher() {}
 
    /// Internal state check.
+   /// @retval True if the internal state of the Event Dispatcher is OK.
+   /// @retval Talse if the internal state of the Event Dispatcher is not OK.
    virtual btBool       IsOK()                      = 0;
    /// Queue an event with event handler to the Dispatcher.
+   /// @param pEventHandler A pointer to the destination of the event.
+   /// @param pEvent A pointer to the Event.
+   /// @retval True if the event was queued.
+   /// @retval Talse if the event was not queued.
    virtual btBool QueueEvent(btEventHandler pEventHandler,
                              CAALEvent     *pEvent) = 0;
    /// Queue a functor Event (deprecated)
+   /// @param target A pointer to the destination of the event.
+   /// @param pEvent A pointer to the Event.
+   /// @retval True if the event was queued.
+   /// @retval Talse if the event was not queued.
    virtual btBool QueueEvent(btObjectType   target,
                              CAALEvent     *pEvent) = 0;
-   /// Queue a generic Dispatchable funtor or event.
+   /// Queue a generic Dispatchable functor or event.
+   /// @param parm A pointer to the destination of the functor or event.
+   /// @param pDisp A pointer to the functor or event.
+   /// @retval True if the item was queued.
+   /// @retval Talse if the item was not queued.
    virtual btBool QueueEvent(btObjectType   parm,
                              IDispatchable *pDisp)  = 0;
    /// Release the resources held by the Event Dispatcher.
+   /// @returns void
    virtual void      Release()                      = 0;
 };
 
@@ -93,11 +108,18 @@ public:
 class AALRUNTIME_API IEventDeliveryService
 {
 public:
-   /// IEventDeliveryService Destructor.
+   // IEventDeliveryService Destructor.
    virtual ~IEventDeliveryService() {}
 
+   /// Starts the Event Delivery Service.
+   /// @returns void
    virtual void StartEventDelivery()                 = 0;
+   /// Stops the Event Delivery Service.
+   /// @returns void
    virtual void  StopEventDelivery()                 = 0;
+   /// Schedules an Event.
+   /// @retval True if the Event was scheduled.
+   /// @retval False if the Event was scheduled.
    virtual btBool     scheduleWork(IDispatchable * ) = 0;
 };
 
@@ -107,11 +129,18 @@ public:
 class AALRUNTIME_API IMessageDeliveryService
 {
 public:
-   /// IMessageDeliveryService Destructor.
+   // IMessageDeliveryService Destructor.
    virtual ~IMessageDeliveryService() {}
 
+   /// Starts the Message Delivery Service.
+   /// @returns void
    virtual void StartMessageDelivery()                 = 0;
+   /// Stops the Message Delivery Service.
+   /// @returns void
    virtual void  StopMessageDelivery()                 = 0;
+   /// Schedules a message.
+   /// @retval True if the message was scheduled.
+   /// @retval False if the message was scheduled.
    virtual btBool    scheduleMessage(IDispatchable * ) = 0;
 };
 
