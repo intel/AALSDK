@@ -521,7 +521,7 @@ protected:
 //=============================================================================
 /// IPCSvcsFact
 /// Template provides the implementation of the AAL Service
-///              factory for inter-proces (same node) service creation
+///              factory for inter-process (same node) service creation
 ///@param[in] I - Concrete class name of proxy
 ///@param[in] T - Transport - Remote Service only
 ///@param[in] M - Marshaller - Remote Service only
@@ -533,6 +533,14 @@ template <typename I,
           class U=NVSUnMarshaller> class IPCSvcsFact: public ISvcsFact
 {
 public:
+   /// @brief Create a Service object.
+   /// @param container    A pointer to the Service Host for the Service.
+   /// @param eventHandler A handler for events generated.
+   /// @param context      A context value passed to the Service.
+   /// @param rtid         A reference to the Transaction ID.
+   /// @param optArgs      A reference to an NVS describing optional arguments
+   ///                     to the Service.
+   /// @returns A pointer to the IBase interface of the Service object.
    IBase* CreateServiceObject(AALServiceModule    *container,
                               btEventHandler       eventHandler,
                               btApplicationContext context,
