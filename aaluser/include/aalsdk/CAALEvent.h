@@ -158,16 +158,16 @@ public:
 
 protected:
 
-   /// Sets an interface pointer on the object.
-   ///
-   /// @param[in]  Interface   The name of the interface to set..
-   /// @param[in]  pInterface  The interface pointer.
-   ///
-   /// Outputs interface pointer
+   // Sets an interface pointer on the object.
+   //
+   // @param[in]  Interface   The name of the interface to set..
+   // @param[in]  pInterface  The interface pointer.
+   //
+   // Outputs interface pointer
    EOBJECT SetInterface(btIID              Interface,
                         btGenericInterface pInterface);
 
-   /// Processes the transaction ID for Event Handling
+   // Processes the transaction ID for Event Handling
    virtual btBool ProcessEventTranID();
 
    // These are prohibited.
@@ -227,7 +227,16 @@ public:
                      btIID                SubClassID,
                      TransactionID const &rTranID);
 
+   /// @brief Event equality operator.  Defined as instance exact.
+   ///
+   /// <B>Parameters:</B> [in]  A reference to the event to compare.
+   /// @retval  True if the events are equal.
+   /// @retval  False if the events are not equal.
    virtual btBool operator == (const IEvent & ) const;
+   /// Clone an event.
+   ///
+   /// @retval  A pointer to the cloned event.
+   /// @retval  NULL if the clone operation failed.
    virtual IEvent *      Clone()                const;
 
    // <ITransactionEvent>
@@ -242,7 +251,7 @@ protected:
 
    virtual btBool ProcessEventTranID();
 
-   /// CTransactionEvent copy constructor.
+   // CTransactionEvent copy constructor.
    CTransactionEvent(const CTransactionEvent &other) :
       CAALEvent(other),
       m_TranID(other.m_TranID)
@@ -398,7 +407,7 @@ protected:
 
 // Concrete implementation of IReleaseRequestEvent.
 ///
-/// CReleaseRequestEvent serves as the base class for all Resource Release Request event response.
+/// CReleaseRequestEvent serves as the base class for all AFU Resource Release Request event response.
 class AASLIB_API CReleaseRequestEvent : public CAALEvent,
                                         public IReleaseRequestEvent
 {
@@ -408,7 +417,7 @@ public:
    /// The native sub-class id is set to iidReleaseRequestEvent.
    ///
    /// @param[in]  pObject          An IBase associated with this event.
-   /// @param[in]  Timeout          Resource Release timeout in milliseconds..
+   /// @param[in]  Timeout          AFU Resource Release timeout in milliseconds.
    /// @param[in]  Reason           Numeric reason code.
    /// @param[in]  Description      A textual description of the event.
    CReleaseRequestEvent(IBase               *pObject,
@@ -419,7 +428,7 @@ public:
    ///
    /// @param[in]  pObject          An IBase associated with this event.
    /// @param[in]  SubClassID       The native sub-class id for this event.
-   /// @param[in]  Timeout          Resource Release timeout in milliseconds.
+   /// @param[in]  Timeout          AFU Resource Release timeout in milliseconds.
    /// @param[in]  Reason           Numeric reason code.
    /// @param[in]  Description      A textual description of the event.
    CReleaseRequestEvent(IBase               *pObject,
@@ -429,8 +438,18 @@ public:
                         btcString            Description);
 
    // <IReleaseRequestEvent>
+
+   /// Get the CReleaseRequestEvent timeout.
+   ///
+   /// @return  The release request timeout.
    btUnsigned64bitInt  Timeout()      const;
+   /// Get the CReleaseRequestEvent reason.
+   ///
+   /// @return  The reason for the release request.
    ReleaseReason_e     Reason()       const;
+   /// Get the CReleaseRequestEvent description.
+   ///
+   /// @return  The description of the release request.
    btString            Description()  const;
    // </IReleaseRequestEvent>
 
@@ -438,7 +457,7 @@ public:
 
 protected:
 
-   /// CReleaseRequestEvent copy constructor.
+   // CReleaseRequestEvent copy constructor.
    CReleaseRequestEvent(const CReleaseRequestEvent &other) :
       CAALEvent(other),
       m_Reason(other.m_Reason),
