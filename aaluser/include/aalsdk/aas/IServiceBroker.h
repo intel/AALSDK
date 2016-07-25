@@ -62,6 +62,7 @@ public:
    ///@param[in] pServiceClientBase Pointer to the IBase interface of the Service Client for this Service.
    ///@param[in] rManifest Reference to the Manifest describing the Service to allocate.
    ///@param[in] rTranID Reference to the Transaction ID.
+   ///@returns void
    virtual void allocService(IRuntime            *pProxy,
                              IRuntimeClient      *pRuntimClient,
                              IBase               *pServiceClientBase,
