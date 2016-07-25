@@ -60,6 +60,8 @@ Runtime::Runtime() :
 ///
 /// Need to call start() after construction to actually get the
 ///   runtime initialized and functional.
+/// @param[in] pClient A pointer to the Runtime Client requesting the Runtime.
+/// @return       void
 //=============================================================================
 Runtime::Runtime(IRuntimeClient *pClient) :
 // : Runtime(pClient, true)  //C++11 only
@@ -70,8 +72,8 @@ Runtime::Runtime(IRuntimeClient *pClient) :
 }
 
 //=============================================================================
-/// Destructor releases all proxies created though this object and releases
-///   the Runtime Instance.
+// Destructor releases all proxies created though this object and releases
+//   the Runtime Instance.
 //=============================================================================
 Runtime::~Runtime()
 {
@@ -218,13 +220,13 @@ btBool Runtime::IsOK()
 }
 
 //=============================================================================
-/// Constructor of Runtime class.
-///
-/// Need to call start() after construction to actually get the
-///   runtime initialized and functional.
-/// @param[in] pClient A pointer to the Runtime Client requesting the Runtime.
-/// @param[in] bFirstTime 
-/// @return void
+// Constructor of Runtime class.
+//
+// Need to call start() after construction to actually get the
+//   runtime initialized and functional.
+// @param[in] pClient A pointer to the Runtime Client requesting the Runtime.
+// @param[in] bFirstTime 
+// @return void
 //=============================================================================
 Runtime::Runtime(IRuntimeClient *pClient, btBool bFirstTime) :
 // : Runtime(pClient, true)  //C++11 only
@@ -235,13 +237,13 @@ Runtime::Runtime(IRuntimeClient *pClient, btBool bFirstTime) :
 }
 
 //=============================================================================
-/// Initializer of Runtime class
-///
-/// Need to call start() after construction to actually get the
-///   runtime initialized and functional
-/// @param[in] pClient A pointer to the Runtime Client requesting the Runtime.
-/// @param[in] bFirstTime 
-/// @return void
+// Initializer of Runtime class
+//
+// Need to call start() after construction to actually get the
+//   runtime initialized and functional
+// @param[in] pClient A pointer to the Runtime Client requesting the Runtime.
+// @param[in] bFirstTime 
+// @return void
 //=============================================================================
 void Runtime::init(IRuntimeClient *pClient, btBool bFirstTime)
 {
