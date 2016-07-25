@@ -186,6 +186,8 @@ RuntimeClient::~RuntimeClient()
 /// as opposed to throwing exceptions or having to constantly check return codes.
 /// We implement this to check if the status of the service allocated.
 /// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
+/// @retval True if the internal state of the Runtime Client is OK.
+/// @retval False if the internal state of the Runtime Client is not OK.
 btBool RuntimeClient::isOK()
 {
    return m_isOK;
@@ -326,7 +328,9 @@ protected:
    btWSSize       m_AFUDSMSize;  ///< Length in bytes of DSM
 };
 
-///  Implementation
+///  Implementation.
+/// @param rtc A pointer to the RuntimeClient starting llApp.
+/// @return void
 llApp::llApp(RuntimeClient *rtc) :
    m_pAALService(NULL),
    m_runtimClient(rtc),
