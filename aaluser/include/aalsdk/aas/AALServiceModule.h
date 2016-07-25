@@ -265,10 +265,13 @@ public:
    virtual IBase * CreateServiceObject(AALServiceModule    *container,
                                        IRuntime            *pRuntime)     = 0;
 
-   // Used to destroy and uninitialized Service Object
+   /// Used to destroy and uninitialized Service Object.
+   ///
+   /// @param pServiceBase A pointer to the IBase interface of the Service.
+   /// @returns void
    virtual void   DestroyServiceObject(IBase               *pServiceBase) = 0;
 
-   /// Initialize an instance of a Service object.
+   /// Initializes the service and returns what the service returns.
    ///
    /// @param[in]  newService  The interface to the service.
    /// @param[in]  Client   The interface to receive the serviceAllocated call. The
@@ -295,7 +298,7 @@ public:
 class AASLIB_API IServiceModule
 {
 public:
-   /// IServiceModule Destructor.
+   // IServiceModule Destructor.
    virtual ~IServiceModule() {}
 
    /// Uses ISvcsFact to create the Service object. Note that success of this function
@@ -331,7 +334,7 @@ public:
 class AASLIB_API IServiceModuleCallback
 {
 public:
-   /// IServiceModuleCallback Destructor.
+   // IServiceModuleCallback Destructor.
    virtual ~IServiceModuleCallback() {}
 
    /// Callback invoked by the Service to indicate that it is released.
