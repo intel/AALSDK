@@ -249,9 +249,11 @@ public:
    virtual ~IALIMMIO() {}
 
    /// @brief Obtain the user virtual address of the mmapped MMIO region.
+   /// @returns The virtual address.
    virtual btVirtAddr   mmioGetAddress( void ) = 0;
 
-   /// @brief Obtain the user virtual address of the mmapped MMIO region.
+   /// @brief Obtain the length of the mmapped MMIO region.
+   /// @returns The length of the region.
    virtual btCSROffset  mmioGetLength( void ) = 0;
 
    /// @brief      Read an MMIO address (or register) as a 32-bit value.
@@ -294,7 +296,7 @@ public:
    /// @retval     False if the write was not successful.
    virtual btBool  mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value) = 0;
 
-   /// @brief      Request pointer to a device feature header (DFH).
+   /// @brief      Request a pointer to a device feature header (DFH).
    ///
    /// Will deposit in *pFeatureAddr the base address of the device feature
    /// MMIO space (aka the address of the respective feature header) for a
@@ -331,6 +333,7 @@ public:
                                           NamedValueSet       &rOutputArgs ) = 0;
 
    // overloaded version without rOutputArgs
+   /// @brief      Request a pointer to a device feature header (DFH).
    /// @note       Synchronous function; no TransactionID. Generally very fast.
    /// @param[out] pFeature    Where to place the address of the feature header.
    /// @param[in]  rInputArgs  Reference to arguments specifying which feature to search for.
@@ -339,6 +342,7 @@ public:
                                           NamedValueSet const &rInputArgs ) = 0;
 
    // version that returns an MMIO offset instead of an address
+   /// @brief      Request MMIO offset to a device feature header (DFH).
    /// @note       Synchronous function; no TransactionID. Generally very fast.
    /// @param[out] pFeatureOffset  Where to place the MMIO offset of the feature header.
    /// @param[in]  rInputArgs  Reference to arguments specifying which feature to search for.
@@ -349,6 +353,7 @@ public:
                                          NamedValueSet       &rOutputArgs ) = 0;
 
    // overloaded version without rOutputArgs
+   /// @brief      Request MMIO offset to a device feature header (DFH).
    /// @note       Synchronous function; no TransactionID. Generally very fast.
    /// @param[out] pFeatureOffset  Where to place the MMIO offest of the feature header.
    /// @param[in]  rInputArgs  Reference to arguments specifying which feature to search for.
@@ -379,7 +384,7 @@ public:
 ///            than N UMsg signals.
 /// @note   If you write a single value that ends up being multiple writes from the point
 ///            of the view of the processor, then the FPGA will probably see multiple writes,
-///            although it might not. An example of this would where where used memcpy()
+///            although it might not. An example of this would where memcpy() is used
 ///            to copy 64 bytes to the UMsg address. This might optimize to 4 pipelined
 ///            16-byte writes in a row. What the FPGA sees in such a situation is
 ///            non-deterministic.
