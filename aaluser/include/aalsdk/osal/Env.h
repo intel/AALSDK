@@ -79,7 +79,8 @@ public:
    /// Get the value of an environment variable.
    /// @param[in] var - The variable to query.
    /// @param[in] val - Reference variable to hold the value.
-   /// @returns true - success.
+   /// @retval true  - success.
+   /// @retval false - failure.
    // Comments:
    //=============================================================================
    btBool Get(std::string var, std::string &val);
@@ -90,7 +91,8 @@ public:
    /// @param[in] var - The variable to set.
    /// @param[in] val - The value to set it to.
    /// @param[in] overwrite - What to do if it already exists.
-   /// @returns true - success
+   /// @retval true  - success.
+   /// @retval false - failure.
    //==============================================================================
    btBool Set(std::string var, std::string val, btBool overwrite=true);
 
