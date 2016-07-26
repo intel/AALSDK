@@ -87,6 +87,9 @@ public:
 
    /// @brief Hook to allow the object to initialize.
    ///
+   /// This function is called by the factory AFTER construction and AFTER
+   /// _init(), insuring that base class initialization has occurred by the
+   /// time this is called.
    /// @param[in] pclientBase A pointer to the Service Client interface.
    /// @param[in] optArgs A reference to the optional arguments passed to allocService().
    /// @param[in] rtid A reference to the Transaction ID.
