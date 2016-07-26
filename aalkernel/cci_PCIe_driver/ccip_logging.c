@@ -278,6 +278,7 @@ void ccip_check_for_error(struct ccip_device *pccipdev)
    if( NULL != pccipdev->m_pfme_dev) {
       // logs fme errors
       ccip_log_fme_error(pccipdev ,pccipdev->m_pfme_dev);
+      ccip_log_fme_ras_error(pccipdev ,pccipdev->m_pfme_dev);
       ccip_log_fme_ap_state(pccipdev ,pccipdev->m_pfme_dev);
    }
 
@@ -418,6 +419,59 @@ void ccip_log_fme_error(struct ccip_device *pccipdev ,struct fme_device *pfme_de
 
    ccip_fme_lastgerr(pfme_dev).fme_first_err.csr = ccip_fme_gerr(pfme_dev)->fme_first_err.csr ;
    ccip_fme_lastgerr(pfme_dev).fme_next_err.csr  = ccip_fme_gerr(pfme_dev)->fme_next_err.csr ;
+
+}
+
+
+///============================================================================
+/// Name:    ccip_log_fme_ras_error
+/// @brief   logs fme RAS errors to kernel logger.
+///
+/// @param[in] pccipdev  ccip device pointer.
+/// @param[in] pfme_dev  fme device  pointer.
+/// @return    no return value
+///============================================================================
+void ccip_log_fme_ras_error(struct ccip_device *pccipdev ,struct fme_device *pfme_dev)
+{
+
+   // RAS Green bitstream Error
+   if((0x00 != ccip_fme_gerr(pfme_dev)->ras_gerr.csr) &&
+      (ccip_fme_lastgerr(pfme_dev).ras_gerr.csr != ccip_fme_gerr(pfme_dev)->ras_gerr.csr )) {
+
+      PERR(" RAS Green bitstream Error occurred:%s B:D.F = %x:%x.%x RAS GB Error CSR: 0x%llx \n",kosal_gettimestamp(),
+                                                                                                 ccip_dev_pcie_busnum(pccipdev),
+                                                                                                 ccip_dev_pcie_devnum(pccipdev),
+                                                                                                 ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                                 ccip_fme_gerr(pfme_dev)->ras_gerr.csr);
+   }
+
+   // RAS Blue bitstream Error
+   if((0x00 != ccip_fme_gerr(pfme_dev)->ras_berror.csr) &&
+      (ccip_fme_lastgerr(pfme_dev).ras_berror.csr != ccip_fme_gerr(pfme_dev)->ras_berror.csr )) {
+
+      PERR(" RAS Blue bitstream Error occurred:%s B:D.F = %x:%x.%x RAS BB Error CSR:  0x%llx \n",kosal_gettimestamp(),
+                                                                                                 ccip_dev_pcie_busnum(pccipdev),
+                                                                                                 ccip_dev_pcie_devnum(pccipdev),
+                                                                                                 ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                                 ccip_fme_gerr(pfme_dev)->ras_berror.csr);
+   }
+
+   // FME Error2
+   if((0x00 != ccip_fme_gerr(pfme_dev)->ras_warnerror.csr) &&
+      (ccip_fme_lastgerr(pfme_dev).ras_warnerror.csr != ccip_fme_gerr(pfme_dev)->ras_warnerror.csr )) {
+
+      PERR(" RAS warning Error occurred:%s B:D.F = %x:%x.%x RAS warning CSR:  0x%llx \n",kosal_gettimestamp(),
+                                                                                         ccip_dev_pcie_busnum(pccipdev),
+                                                                                         ccip_dev_pcie_devnum(pccipdev),
+                                                                                         ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                         ccip_fme_gerr(pfme_dev)->ras_warnerror.csr);
+   }
+
+
+
+   ccip_fme_lastgerr(pfme_dev).ras_gerr.csr = ccip_fme_gerr(pfme_dev)->ras_gerr.csr ;
+   ccip_fme_lastgerr(pfme_dev).ras_berror.csr = ccip_fme_gerr(pfme_dev)->ras_berror.csr;
+   ccip_fme_lastgerr(pfme_dev).ras_warnerror.csr = ccip_fme_gerr(pfme_dev)->ras_warnerror.csr ;
 
 }
 

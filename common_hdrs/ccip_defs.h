@@ -95,6 +95,9 @@ BEGIN_NAMESPACE(AAL)
 
 #define CCIP_UMSG_SIZE              (0x1000)
 
+// Clear Error CSRs
+#define  CLEAR_ALL_ERRORS 0xFFFFFFFFFFFFFFFF
+
 ///=================================================================
 /// Enumerations
 ///=================================================================
