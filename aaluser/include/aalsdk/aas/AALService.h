@@ -252,10 +252,12 @@ public:
    // ServiceBase Destructor.
    virtual ~ServiceBase();
 
-   /// @brief Hook for derived classes to perform any post-creation initialization.
+   /// @brief Hook for derived classes to perform any post-creation
+   ///        initialization.
    ///
-   /// This function is called by the factory AFTER _init(), insuring
-   /// that base class initialization has occurred by the time this is called.
+   /// This function is called by the factory AFTER construction and AFTER
+   /// _init(), insuring that base class initialization has occurred by the
+   ///  time this is called.
    /// @param[in]  pclientBase   Pointer to Interface of client of service.
    /// @param[in]  optArgs       Optional arguments.
    /// @param[in]  rtid          Reference to the TransactionID for routing event responses.
