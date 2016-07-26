@@ -69,6 +69,24 @@ class SigTapService : public AAL::ServiceBase,
 #endif // __AAL_WINDOWS__
 public:
    // <ServiceBase>
+
+   /// @brief Service Constructor.
+   ///
+   /// Macro defines the constructor for a loadable AAL service.
+   ///  The first argument is your class name, the second argument is the
+   ///  name of the Service base class this service is derived from. In this
+   ///  example we use ServiceBase as it is the class that provides the
+   ///  support for Software-only devices.  Hardware-supported services might
+   ///  use DeviceServiceBase instead.
+   ///
+   /// Note that initializers can be declared here but are preceded by a comma
+   ///  rather than a colon.
+   ///
+   /// The design pattern is that the constructor does minimal work. Here we are
+   ///  registering the interfaces the service implements. The default (Subclass)
+   ///  interface is ISampleAFUPing.  ServiceBase provides an init() method that
+   ///  can be used where more sophisticated initialization is required. The
+   ///  init() method is called by the factory AFTER construction but before use.
    DECLARE_AAL_SERVICE_CONSTRUCTOR(SigTapService, AAL::ServiceBase),
    m_ALIMMIO(NULL),
    m_mmio(NULL),
@@ -78,7 +96,14 @@ public:
       SetInterface(iidALI_STAP_Service, dynamic_cast<AAL::IALISignalTap *>(this));
    }
 
-   /// Initialize the Service.
+   /// @brief Hook to allow the object to initialize.
+   ///
+   /// This function is called by the factory AFTER construction and AFTER
+   /// _init(), insuring that base class initialization has occurred by the
+   /// time this is called.
+   ///
+   /// The init() method is called by the factory AFTER construction but before
+   /// use.
    /// @param pclientBase  A pointer to the Service Client IBase interface.
    /// @param optArgs      A reference to the NamedValueSet containing optional
    ///                     Service parameters.
