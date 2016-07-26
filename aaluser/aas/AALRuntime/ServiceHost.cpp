@@ -24,12 +24,12 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
+//     CREATED: Mar 22, 2014
+//      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
+//
 ///        @file: ServiceHost.cpp
 ///
-///     CREATED: Mar 22, 2014
-///      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
-///
-// /@brief:   Wrapper class for Service Host plug-ins
+/// @brief   Wrapper class for Service Host plug-ins
 /// @verbatim
 /// Accelerator Abstraction Layer
 ///
