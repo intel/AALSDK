@@ -26,7 +26,7 @@
 //****************************************************************************
 /// @file AALLoggerExtern.h
 /// @brief Provide extern declaration or static definition for a static
-///        instanced of the Logger.
+///        instance of the Logger.
 /// @ingroup Debugging
 /// @verbatim
 /// Accelerator Abstraction Layer
