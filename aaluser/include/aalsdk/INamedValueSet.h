@@ -73,7 +73,7 @@ typedef enum ENamedValues
 class AASLIB_API INamedValueSet
 {
 public:
-   /// INamedValueSet Destructor.
+   // INamedValueSet Destructor.
    virtual ~INamedValueSet() {}
 
    /// Add btBool, keyed by integer.
