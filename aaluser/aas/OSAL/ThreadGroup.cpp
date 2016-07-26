@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 /// @file ThreadGroup.cpp
-/// @brief Implementation of the ThreadGroup class
+/// @brief Implementation of the OSLThreadGroup class
 /// @ingroup OSAL
 /// @verbatim
 /// Accelerator Abstraction Layer
@@ -157,11 +157,13 @@ OSLThreadGroup::OSLThreadGroup(btUnsignedInt             uiMinThreads,
    WaitForAllWorkersToStart(AAL_INFINITE_WAIT);
 }
 
-/// @brief Destroys the Thread Pool causing threads to exit and releasing its resources.
+/// @brief Destroys the Thread Pool causing all threads in the pool to exit and
+///        release their resources.
 ///
 /// Wakes up all waiting threads and waits for all threads in the pool to exit.
 ///
-/// @param[in]     Timeout      - Time to wait for all threads in the group to exit (default = AAL_INFINITE_WAIT).
+/// @param[in]     Timeout      - Time to wait for all threads in the group to
+///                               exit (default = AAL_INFINITE_WAIT).
 /// @retval true   if all threads exited.
 /// @retval false  if not all threads exited.
 btBool OSLThreadGroup::Destroy(btTime Timeout)
