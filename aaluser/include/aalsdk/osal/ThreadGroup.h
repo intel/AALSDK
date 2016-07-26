@@ -172,7 +172,7 @@ public:
    /// @retval false  if the work queue cannot be drained.
    virtual btBool                  Drain()                     { return m_pState->Drain();           }
 
-   /// @brief  Stops all thread in the Thread Group.
+   /// @brief  Stops all threads in the Thread Group.
    /// @note   All work items in the Thread Group work queue will be removed but not executed.
    /// @return void
    virtual void                     Stop()                     { m_pState->Stop();                   }
