@@ -427,10 +427,9 @@ err:
    //=============================================================================
    /// @brief Gets a message from remote end.
    ///
-   ///Returns a pointer to message (NULL in case of error or EOF).
-   ///@param[in] *len pointer of where to return message length.
+   ///@param[in] *len A pointer to the location the message length will be stored.
    ///           Length of message (-1) in case of error, 0 means EOF (remote close).
-   ///@return The message string.
+   ///@return A pointer to the message (NULL in case of error or EOF).
    btcString getmsg(btWSSize *len)
    {
       // Get the length of the message as a string for portability
@@ -483,6 +482,11 @@ err:
    //          len  - length of message in octets
    // Returns: number of bytes sent (-1 if error)
    //=============================================================================
+   /// @brief Send a message to remote end.
+   ///
+   /// @param[in] pmsg A pointer to the message.
+   /// @param[in] len The length of the message in bytes.
+   /// @return The number of bytes sent (-1 if error).
    int putmsg(btcString pmsg, btWSSize len)
    {
       char lenstr[7]={0};
