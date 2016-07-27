@@ -99,7 +99,11 @@ public:
       m_tid(GetThreadID())
    {}
 
+   /// @brief Get the current thread's ID.
+   /// @return The Thread ID.
    btTID   getTID () { return m_tid; }
+   /// @brief Get the current thread's ID.
+   /// @return The Thread ID.
    operator btTID () { return m_tid; }
 private:
    btTID m_tid;
