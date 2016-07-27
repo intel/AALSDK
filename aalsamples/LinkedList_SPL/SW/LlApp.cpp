@@ -329,7 +329,7 @@ protected:
 };
 
 ///  Implementation.
-/// @param rtc A pointer to the RuntimeClient starting llApp.
+/// @param[in] rtc A pointer to the RuntimeClient starting llApp.
 /// @return void
 llApp::llApp(RuntimeClient *rtc) :
    m_pAALService(NULL),
