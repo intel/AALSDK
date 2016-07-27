@@ -124,7 +124,7 @@ public:
    /// @return The transaction ID.
    virtual TransactionID TranID() const                = 0;
    /// Set the TransactionID for this Transaction Event.
-   /// @param TranID A reference to the TransactionID to set into the Event.
+   /// @param[in] TranID A reference to the TransactionID to set into the Event.
    /// @return void
    virtual void SetTranID(TransactionID const &TranID) = 0;
 };
