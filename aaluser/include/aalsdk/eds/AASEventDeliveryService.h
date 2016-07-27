@@ -78,22 +78,22 @@ public:
    /// @retval Talse if the internal state of the Event Dispatcher is not OK.
    virtual btBool       IsOK()                      = 0;
    /// Queue an event with event handler to the Dispatcher.
-   /// @param pEventHandler A pointer to the destination of the event.
-   /// @param pEvent A pointer to the Event.
+   /// @param[in] pEventHandler A pointer to the destination of the event.
+   /// @param[in] pEvent A pointer to the Event.
    /// @retval True if the event was queued.
    /// @retval Talse if the event was not queued.
    virtual btBool QueueEvent(btEventHandler pEventHandler,
                              CAALEvent     *pEvent) = 0;
    /// Queue a functor Event (deprecated)
-   /// @param target A pointer to the destination of the event.
-   /// @param pEvent A pointer to the Event.
+   /// @param[in] target A pointer to the destination of the event.
+   /// @param[in] pEvent A pointer to the Event.
    /// @retval True if the event was queued.
    /// @retval Talse if the event was not queued.
    virtual btBool QueueEvent(btObjectType   target,
                              CAALEvent     *pEvent) = 0;
    /// Queue a generic Dispatchable functor or event.
-   /// @param parm A pointer to the destination of the functor or event.
-   /// @param pDisp A pointer to the functor or event.
+   /// @param[in] parm A pointer to the destination of the functor or event.
+   /// @param[in] pDisp A pointer to the functor or event.
    /// @retval True if the item was queued.
    /// @retval Talse if the item was not queued.
    virtual btBool QueueEvent(btObjectType   parm,
