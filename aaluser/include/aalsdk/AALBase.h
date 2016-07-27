@@ -157,7 +157,7 @@ T * dynamic_ptr(btIID Name, IEvent const &obj) {
 class AASLIB_API IAALService
 {
 public:
-   /// IAALService Destructor.
+   // IAALService Destructor.
    virtual ~IAALService() {}
 
    /// Shutdown the service and release its resources.
