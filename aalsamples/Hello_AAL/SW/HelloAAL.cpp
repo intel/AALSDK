@@ -273,7 +273,7 @@ protected:
 
 /// @brief MyServiceClient Implementation.
 ///
-/// @param rtc A pointer to the RuntimeClient creating the HellAALApp service.
+/// @param[in] rtc A pointer to the RuntimeClient creating the HellAALApp service.
 HelloAALApp::HelloAALApp(RuntimeClient *rtc) :
    m_pAALService(NULL),
    m_runtimClient(rtc),
