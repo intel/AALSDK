@@ -623,6 +623,7 @@ public:
    /// @retval ENamedValuesOK   On success.
    /// @retval Other ENamedValues value on failure.
    virtual ENamedValues Get(btStringKey Name, bt64bitIntArray *pValue) const         = 0;
+   /// Retrieve btUnsigned64bitIntArray by string key.
    ///
    /// @param[in]  Name         String key.
    /// @param[in]  pValue       Pointer to the unsigned 64-bit integer array to receive the NamedValueSet value.
@@ -815,7 +816,7 @@ public:
    //=============================================================================
    /// @brief Converts a char* + length into an NVS.
    ///
-   /// <B>Parameters:</B> [in]  Pointer to the character string to convert.
+   /// <B>Parameters:</B> [in]  Pointer to the character string to convert.\n
    /// <B>Parameters:</B> [in]  Length of the character string to convert.
    /// @retval ENamedValuesOK   On success.
    /// @retval Other ENamedValues value on failure.
