@@ -56,10 +56,10 @@ class AASLIB_API ServiceAllocated : public IDispatchable
 public:
    /// @brief ServiceAllocated constructor.
    ///
-   /// @param pSvcClient   A pointer to the Service Client interface.
-   /// @param pRTClient    A pointer to the Runtime Client interface.
-   /// @param pServiceBase A pointer to the IBase interface of the Service allocated.
-   /// @param rTranID      A reference to the Transaction ID.
+   /// @param[in] pSvcClient   A pointer to the Service Client interface.
+   /// @param[in] pRTClient    A pointer to the Runtime Client interface.
+   /// @param[in] pServiceBase A pointer to the IBase interface of the Service allocated.
+   /// @param[in] rTranID      A reference to the Transaction ID.
    /// @return void
    ServiceAllocated(IServiceClient      *pSvcClient,
                     IRuntimeClient      *pRTClient,
@@ -82,9 +82,9 @@ class AASLIB_API ServiceAllocateFailed : public IDispatchable
 public:
    /// @brief ServiceAllocateFailed constructor.
    ///
-   /// @param pSvcClient   A pointer to the Service Client interface.
-   /// @param pRTClient    A pointer to the Runtime Client interface.
-   /// @param pEvent       A pointer to the Event with information about the failure.
+   /// @param[in] pSvcClient   A pointer to the Service Client interface.
+   /// @param[in] pRTClient    A pointer to the Runtime Client interface.
+   /// @param[in] pEvent       A pointer to the Event with information about the failure.
    /// @returns void
    ServiceAllocateFailed(IServiceClient *pSvcClient,
                          IRuntimeClient *pRTClient,
@@ -106,8 +106,8 @@ class AASLIB_API DestroyServiceObject : public IDispatchable
 public:
    /// @brief DestroyServiceObject constructor.
    ///
-   /// @param pSvcsFact    A pointer to the Service Factory interface.
-   /// @param pService     A pointer to the IBase interface of the Service.
+   /// @param[in] pSvcsFact    A pointer to the Service Factory interface.
+   /// @param[in] pService     A pointer to the IBase interface of the Service.
    /// @returns void
    DestroyServiceObject(ISvcsFact *pSvcsFact,
                         IBase     *pService);
@@ -124,9 +124,9 @@ class AASLIB_API ServiceReleased : public IDispatchable
 public:
    /// @brief ServiceReleased constructor.
    ///
-   /// @param pSvcClient   A pointer to the Service Client interface.
-   /// @param pServiceBase A pointer to the IBase interface of the Service allocated.
-   /// @param rTranID      A reference to the Transaction ID.
+   /// @param[in] pSvcClient   A pointer to the Service Client interface.
+   /// @param[in] pServiceBase A pointer to the IBase interface of the Service allocated.
+   /// @param[in] rTranID      A reference to the Transaction ID.
    /// @returns void
    ServiceReleased(IServiceClient      *pSvcClient,
                    IBase               *pServiceBase,
@@ -144,8 +144,8 @@ class AASLIB_API ServiceReleaseFailed : public IDispatchable
 public:
    /// @brief ServiceReleaseFailed constructor.
    ///
-   /// @param pSvcClient   A pointer to the Service Client interface.
-   /// @param pEvent       A pointer to the Event with information about the failure.
+   /// @param[in] pSvcClient   A pointer to the Service Client interface.
+   /// @param[in] pEvent       A pointer to the Event with information about the failure.
    /// @returns void
    ServiceReleaseFailed(IServiceClient *pSvcClient,
                         const IEvent   *pEvent);
@@ -165,8 +165,8 @@ class AASLIB_API ServiceEvent : public IDispatchable
 public:
    /// @brief ServiceReleaseFailed constructor.
    ///
-   /// @param pSvcClient   A pointer to the Service Client interface.
-   /// @param pEvent       A pointer to the Event.
+   /// @param[in] pSvcClient   A pointer to the Service Client interface.
+   /// @param[in] pEvent       A pointer to the Event.
    /// @returns void
    ServiceEvent(IServiceClient *pSvcClient,
                 const IEvent   *pEvent);
@@ -190,8 +190,8 @@ class AASLIB_API RuntimeCreateOrGetProxyFailed : public IDispatchable
 public:
    /// @brief RuntimeCreateOrGetProxyFailed constructor.
    ///
-   /// @param pRTClient    A pointer to the Runtime Client interface.
-   /// @param pEvent       A pointer to the Event with information about the failure.
+   /// @param[in] pRTClient    A pointer to the Runtime Client interface.
+   /// @param[in] pEvent       A pointer to the Event with information about the failure.
    /// @returns void
    RuntimeCreateOrGetProxyFailed(IRuntimeClient *pRTClient,
                                  const IEvent   *pEvent);
@@ -212,9 +212,9 @@ class AASLIB_API RuntimeStarted : public IDispatchable
 public:
    /// @brief RuntimeStarted constructor.
    ///
-   /// @param pRTClient    A pointer to the Runtime Client interface.
-   /// @param pRT          A pointer to the Runtime interface.
-   /// @param rConfigParms A reference to the optional arguments used passed to the Service.
+   /// @param[in] pRTClient    A pointer to the Runtime Client interface.
+   /// @param[in] pRT          A pointer to the Runtime interface.
+   /// @param[in] rConfigParms A reference to the optional arguments used passed to the Service.
    /// @returns void
    RuntimeStarted(IRuntimeClient      *pRTClient,
                   IRuntime            *pRT,
@@ -235,8 +235,8 @@ class AASLIB_API RuntimeStartFailed : public IDispatchable
 public:
    /// @brief RuntimeStartFailed constructor.
    ///
-   /// @param pRTClient    A pointer to the Runtime Client interface.
-   /// @param pEvent       A pointer to the Event with information about the failure.
+   /// @param[in] pRTClient    A pointer to the Runtime Client interface.
+   /// @param[in] pEvent       A pointer to the Event with information about the failure.
    /// @returns void
    RuntimeStartFailed(IRuntimeClient *pRTClient,
                       const IEvent   *pEvent);
@@ -256,8 +256,8 @@ class AASLIB_API RuntimeStopped : public IDispatchable
 public:
    /// @brief RuntimeStopped constructor.
    ///
-   /// @param pRTClient    A pointer to the Runtime Client interface.
-   /// @param pRT          A pointer to the Runtime interface.
+   /// @param[in] pRTClient    A pointer to the Runtime Client interface.
+   /// @param[in] pRT          A pointer to the Runtime interface.
    /// @returns void
    RuntimeStopped(IRuntimeClient *pRTClient,
                   IRuntime       *pRT);
@@ -276,8 +276,8 @@ class AASLIB_API RuntimeStopFailed : public IDispatchable
 public:
    /// @brief RuntimeStopFailed constructor.
    ///
-   /// @param pRTClient    A pointer to the Runtime Client interface.
-   /// @param pEvent       A pointer to the Event with information about the failure.
+   /// @param[in] pRTClient    A pointer to the Runtime Client interface.
+   /// @param[in] pEvent       A pointer to the Event with information about the failure.
    /// @returns void
    RuntimeStopFailed(IRuntimeClient *pRTClient,
                      const IEvent   *pEvent);
@@ -298,9 +298,9 @@ class AASLIB_API RuntimeAllocateServiceSucceeded : public IDispatchable
 public:
    /// @brief RuntimeAllocateServiceSucceeded constructor.
    ///
-   /// @param pRTClient    A pointer to the Runtime Client interface.
-   /// @param pServiceBase A pointer to the IBase interface of the Service allocated.
-   /// @param rTranID      A reference to the Transaction ID.
+   /// @param[in] pRTClient    A pointer to the Runtime Client interface.
+   /// @param[in] pServiceBase A pointer to the IBase interface of the Service allocated.
+   /// @param[in] rTranID      A reference to the Transaction ID.
    /// @returns void
    RuntimeAllocateServiceSucceeded(IRuntimeClient      *pRTClient,
                                    IBase               *pServiceBase,
@@ -321,8 +321,8 @@ class AASLIB_API RuntimeAllocateServiceFailed : public IDispatchable
 public:
    /// @brief RuntimeAllocateServiceFailed constructor.
    ///
-   /// @param pRTClient    A pointer to the Runtime Client interface.
-   /// @param pEvent       A pointer to the Event with information about the failure.
+   /// @param[in] pRTClient    A pointer to the Runtime Client interface.
+   /// @param[in] pEvent       A pointer to the Event with information about the failure.
    /// @returns void
    RuntimeAllocateServiceFailed(IRuntimeClient *pRTClient,
                                 const IEvent   *pEvent);
@@ -342,8 +342,8 @@ class AASLIB_API RuntimeEvent : public IDispatchable
 public:
    /// @brief RuntimeEvent constructor.
    ///
-   /// @param pRTClient    A pointer to the Runtime Client interface.
-   /// @param pEvent       A pointer to the Event.
+   /// @param[in] pRTClient    A pointer to the Runtime Client interface.
+   /// @param[in] pEvent       A pointer to the Event.
    /// @returns void
    RuntimeEvent(IRuntimeClient *pRTClient,
                 const IEvent   *pEvent);
