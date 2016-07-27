@@ -150,7 +150,7 @@ public:
 class AASLIB_API IExceptionTransactionEvent : public ITransactionEvent
 {
 public:
-   // Retrieve the Exception id.
+   /// Retrieve the Exception id.
    /// @returns The Exception id.
    virtual btID ExceptionNumber() const = 0;
    /// Retrieve the Exception reason code.
