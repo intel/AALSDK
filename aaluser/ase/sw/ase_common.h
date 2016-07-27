@@ -228,7 +228,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
 {                                 // --------------------------------------------
   int index;                      // Tracking id                     | INTERNAL
   int valid;                      // Valid buffer indicator          | INTERNAL
-  int metadata;                   // MQ marshalling command          | INTERNAL
+  // int metadata;                   // MQ marshalling command          | INTERNAL
   char memname[ASE_FILENAME_LEN]; // Shared memory name              | INTERNAL
   uint32_t memsize;               // Memory size                     |   APP
   uint64_t vbase;                 // SW virtual address              |   APP

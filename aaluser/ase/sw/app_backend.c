@@ -1103,7 +1103,7 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   mem->valid = ASE_BUFFER_VALID;
 
   // Send an allocate command to DPI, metadata = ASE_MEM_ALLOC
-  mem->metadata = HDR_MEM_ALLOC_REQ;
+  // mem->metadata = HDR_MEM_ALLOC_REQ;
   mem->next = NULL;
 
   // Message queue must be enabled when using DPI (else debug purposes only)
@@ -1178,7 +1178,7 @@ void deallocate_buffer(struct buffer_t *mem)
   END_YELLOW_FONTCOLOR;
 
   // Send buffer with metadata = HDR_MEM_DEALLOC_REQ
-  mem->metadata = HDR_MEM_DEALLOC_REQ;
+  // mem->metadata = HDR_MEM_DEALLOC_REQ;
 
   // Send a one way message to request a deallocate
   ase_buffer_t_to_str(mem, tmp_msg);

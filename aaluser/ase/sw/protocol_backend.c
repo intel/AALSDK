@@ -529,8 +529,10 @@ int ase_listener()
       if (mqueue_recv(app2sim_alloc_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
 	{
 	  // ALLOC request received
-	  if(ase_buffer.metadata == HDR_MEM_ALLOC_REQ)
-	    {
+#if 0
+	  /* if(ase_buffer.metadata == HDR_MEM_ALLOC_REQ) */
+	  /*   { */
+#endif
 	      // Allocate action
 	      ase_alloc_action(&ase_buffer);
 	      ase_buffer.is_privmem = 0;
@@ -568,8 +570,9 @@ int ase_listener()
 
 	      // Inject buffer message
 	      buffer_msg_inject (1, logger_str );
-	    }
-
+#if 0
+	      //	    }
+#endif
 	  // Standard oneline message ---> Hides internal info
 	  ase_buffer_oneline(&ase_buffer);
 

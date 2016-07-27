@@ -180,7 +180,7 @@ void ase_alloc_action(struct buffer_t *mem)
 
       // Reply to MEM_ALLOC_REQ message with MEM_ALLOC_REPLY
       // Set metadata to reply mode
-      mem->metadata = HDR_MEM_ALLOC_REPLY;
+      // mem->metadata = HDR_MEM_ALLOC_REPLY;
   
       // Convert buffer_t to string
       mqueue_send(sim2app_alloc_tx, (char*)mem, ASE_MQ_MSGSIZE);
@@ -266,7 +266,7 @@ void ase_dealloc_action(struct buffer_t *buf, int mq_enable)
       shm_unlink(dealloc_ptr->memname);
       
       // Respond back
-      dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
+      // dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
       ll_remove_buffer(dealloc_ptr);
       memcpy(buf_str, dealloc_ptr, sizeof(struct buffer_t));
 
@@ -303,7 +303,7 @@ void ase_empty_buffer(struct buffer_t *buf)
 {
   buf->index = 0;
   buf->valid = ASE_BUFFER_INVALID;
-  buf->metadata = 0;
+  // buf->metadata = 0;
   memset(buf->memname, 0, ASE_FILENAME_LEN);
   buf->memsize = 0;
   buf->vbase = (uint64_t)NULL;
