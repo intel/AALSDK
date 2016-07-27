@@ -76,9 +76,11 @@ public:
    /// IEvent Destructor.
    virtual ~IEvent() {}
    /// Query interface for a given interface id.
+   /// @param[in] Interface The Interface ID to query.
    /// @returns An Interface.
    virtual btGenericInterface    Interface(btIID Interface)      const = 0;
    /// Determine whether this event contains the specified interface.
+   /// @param[in] Interface The Interface ID to find.
    /// @retval True if the Event has the Interface specified.
    /// @retval False if the Event does not have the Interface specified.
    virtual btBool                      Has(btIID Interface)      const = 0;
@@ -86,10 +88,12 @@ public:
    /// @returns An Interface ID.
    virtual btIID                SubClassID()                     const = 0;
    /// IEvent inequality.
+   /// @param[in] rother A reference to an IEvent to compare.
    /// @retval True if the two events are not equal.
    /// @retval False if the two events are equal.
    virtual btBool             operator != (const IEvent &rother) const = 0;
    /// IEvent equality.
+   /// @param[in] rother A reference to an IEvent to compare.
    /// @retval True if the two events are equal.
    /// @retval  if the two events are not equal.
    virtual btBool             operator == (const IEvent &rother) const = 0;
