@@ -63,7 +63,7 @@ public:
    /// @brief  Notification callback for IResConfigServce::Configure().
    ///
    /// Sent in response to failure of completion of Resource Configuration.
-   /// @param theEvent A reference to an Event containing details of the failure.
+   /// @param[in] theEvent A reference to an Event containing details of the failure.
    /// @returns void
    virtual void  configureFailed(const IEvent &theEvent) = 0;
 
