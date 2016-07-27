@@ -96,7 +96,7 @@ BEGIN_NAMESPACE(AAL)
 /// The ISvcsFact implementation is capable of creating multiple instances of the desired
 /// Service in the same process address space as the Factory itself.
 ///
-/// @param  I  The type of Service to be created. The type must be derived from ServiceBase.
+/// @param[in]  I  The type of Service to be created. The type must be derived from ServiceBase.
 template <typename I>
 class InProcSvcsFact : public ISvcsFact
 {
@@ -144,7 +144,7 @@ public:
 /// ISvcsFact implementation capable of creating exactly one instance of the desired Service
 /// in the same process address space as the Factory itself.
 ///
-/// @param  I  The type of Service to be created. The type must be derived from ServiceBase.
+/// @param[in]  I  The type of Service to be created. The type must be derived from ServiceBase.
 template <typename I>
 class InProcSingletonSvcsFact : public ISvcsFact
 {
