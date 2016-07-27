@@ -538,11 +538,11 @@ template <typename I,
 {
 public:
    /// @brief Create a Service object.
-   /// @param container    A pointer to the Service Host for the Service.
-   /// @param eventHandler A handler for events generated.
-   /// @param context      A context value passed to the Service.
-   /// @param rtid         A reference to the Transaction ID.
-   /// @param optArgs      A reference to an NVS describing optional arguments
+   /// @param[in] container    A pointer to the Service Host for the Service.
+   /// @param[in] eventHandler A handler for events generated.
+   /// @param[in] context      A context value passed to the Service.
+   /// @param[in] rtid         A reference to the Transaction ID.
+   /// @param[in] optArgs      A reference to an NVS describing optional arguments
    ///                     to the Service.
    /// @returns A pointer to the IBase interface of the Service object.
    IBase* CreateServiceObject(AALServiceModule    *container,
