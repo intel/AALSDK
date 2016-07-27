@@ -2224,7 +2224,7 @@ public:
    virtual ~CNamedValueSet() {}
 
    /// Assign NamedValueSet to another.
-   /// @param rOther A reference to the NamedValueSet to assign to this
+   /// @param[in] rOther A reference to the NamedValueSet to assign to this
    ///               NamedValueSet.
    CNamedValueSet & operator = (const CNamedValueSet &rOther)
    {
@@ -2245,7 +2245,7 @@ public:
    }
 
    /// CNamedValueSet Copy Constructor.
-   /// @param rOther A reference to the NamedValueSet to copy.
+   /// @param[in] rOther A reference to the NamedValueSet to copy.
    /// @return void
    CNamedValueSet(const CNamedValueSet &rOther)
    {
