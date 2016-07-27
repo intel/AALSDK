@@ -454,6 +454,11 @@ int ase_listener()
 		{
 		  printf("SIM-C : ASE running in daemon mode (see ase.cfg)\n");
 		  printf("        Reseting buffers ... Simulator RUNNING\n");
+		  while (glbl_dealloc_allowed != 1)
+		    {
+		      printf("Waiting for Session to complete\n");
+		      sleep(1);
+		    }		  
 		  ase_destroy();
 		  ase_reset_trig();
 		  BEGIN_GREEN_FONTCOLOR;
