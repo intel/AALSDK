@@ -75,7 +75,7 @@ class CSyncClient: public CAASBase,
                    public IServiceClient
 {
 public:
-   /// Default Constructor just gets memory initialized and registers interfaces
+   // Default Constructor just gets memory initialized and registers interfaces
    CSyncClient() :
          m_bIsOK(false),
          m_runTime(this),
@@ -88,7 +88,7 @@ public:
       m_Sem.Create(0, INT_MAX);
       m_bIsOK = true;
    }
-   /// Default Destructor
+   // Default Destructor
    ~CSyncClient()
    {
       m_Sem.Destroy();
