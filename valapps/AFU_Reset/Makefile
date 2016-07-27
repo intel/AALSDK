@@ -2,9 +2,9 @@
 
 # valapps/AFU_Reset/Makefile
 
-CPPFLAGS ?=
+CPPFLAGS ?=-I../appbase
 CXX      ?= g++
-LDFLAGS  ?=
+LDFLAGS  ?=-L../appbase
 
 ifneq (,$(ndebug))
 else
@@ -33,12 +33,12 @@ endif
 all: AFU_Reset
 
 AFU_Reset: main.o
-	$(CXX) -g -O2 -o AFU_Reset main.o $(LDFLAGS) -lOSAL -lAAS -laalrt
+	$(CXX) -g -O2 -o AFU_Reset main.o $(LDFLAGS) -lappbase -lOSAL -lAAS -laalrt
 
 main.o: main.cpp Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -g -O2 -c -o main.o main.cpp
 
 clean:
-	$(RM) AFU_Reset main.o
+	$(RM) DMA_Buffer main.o
 
 .PHONY:all clean

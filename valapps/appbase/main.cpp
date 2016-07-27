@@ -1,8 +1,8 @@
 //****************************************************************************
 #include <iostream>
 #include <string>
-#include <appbase.h>
-#include <appconstants.h>
+#include "appbase.h"
+#include "appconstants.h"
 
 class HelloALIResetApp: public appbase
 {
@@ -40,12 +40,15 @@ HelloALIResetApp::~HelloALIResetApp()
 
 }
 
-///             - Allocates the necessary buffers to be used by the Reset AFU algorithm
-///             - Executes the Reset algorithm
-///             - Cleans up.
+/// - Allocates the necessary buffers to be used by the Reset AFU algorithm
+/// - Executes the Reset algorithm
+/// - Cleans up.
 
 btInt HelloALIResetApp::run()
 {
+
+    btUnsigned32bitInt x;
+
     // Allocate the service
     requestService();
 
@@ -61,6 +64,27 @@ btInt HelloALIResetApp::run()
 
         // Initiate AFU Reset
         m_pALIResetService->afuReset();
+
+        x = 0x00001000;
+        printf("Write x = 0x%08x\n", x);
+        m_pALIMMIOService->mmioWrite32(0x104, (btUnsigned32bitInt)x);
+        SleepMicro(1000);
+
+        printf("Count up.\n");
+        m_pALIMMIOService->mmioWrite32(0x100, (btUnsigned32bitInt)1);
+        SleepMicro(3000);
+
+        x = 0;
+        m_pALIMMIOService->mmioRead32(0x104, &x);
+        printf("Read x = 0x%08x\n", x);
+
+        printf("Count down.\n");
+        m_pALIMMIOService->mmioWrite32(0x100, (btUnsigned32bitInt)2);
+        SleepMicro(3000);
+
+        m_pALIMMIOService->mmioRead32(0x104, &x);
+        printf("Read x = 0x%08x\n", x);
+        SleepMicro(3000);
 
     }
     appMSG("Done Running Test");
@@ -82,24 +106,10 @@ btInt HelloALIResetApp::run()
  */
 int main(int argc, char *argv[])
 {
-    btInt use_fpga = 0;
-    btInt opt;
-    string afu_id = "C000C966-0D82-4272-9AEF-FE5F84570612";
-
-    while ((opt = getopt(argc,argv,"c:d")) != EOF)
-        switch(opt)
-        {
-        case 'c': use_fpga = 1; cout <<" cci_flag is enabled."<<endl; break;
-        case '?': cerr<<"Usage is \n -c [value]: enables default AFU ID "<<endl;
-        default: cout<<endl; abort(); }
-
-    // Use proper AFU ID if FPGA board is available
-    if(use_fpga) afu_id = "A944F6E7-15D3-4D95-9452-15DBD47C76BD";
-
+    // pAALLogger()->AddToMask(LM_All, LOG_DEBUG);
     HelloALIResetApp theApp("HW",
-                            afu_id.c_str(),
-                            "Reset Test");
-    theApp.setRequestBuffers(false);
+                            "A944F6E7-15D3-4D95-9452-15DBD47C76BD",
+                            "Service");
 
     if(!theApp.isOK()){
         appERR("Runtime Failed to Start");
@@ -109,4 +119,5 @@ int main(int argc, char *argv[])
 
     appMSG("Done");
     return Result;
+
 }
