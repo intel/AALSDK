@@ -73,7 +73,7 @@ class IBase;
 class AASLIB_API IEvent
 {
 public:
-   /// IEvent Destructor.
+   // IEvent Destructor.
    virtual ~IEvent() {}
    /// Query interface for a given interface id.
    /// @param[in] Interface The Interface ID to query.
