@@ -225,16 +225,8 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    write_ccip_csr64(ptr,offset,fme_pm.ccip_fme_pm_dflhdr.csr);
 
 
-   // Power Management Threshold CSR
-   fme_pm.pm_thresholds.threshold1 =0x22 ;
-   fme_pm.pm_thresholds.threshold1 =0x1;
-   fme_pm.pm_thresholds.threshold3 =0x33;
-   fme_pm.pm_thresholds.threshold4 =0x1;
-   offset = offset + OFFSET;
-   write_ccip_csr64(ptr,offset,fme_pm.pm_thresholds.csr);
-
    // Power Management status
-   fme_pm.pm_status.pwr_consumed = 0x1;
+   fme_pm.pm_status.pwr_consumed = 0x299;
    fme_pm.pm_status.fpga_latency_report = 0x1;
 
    offset = offset + OFFSET;
@@ -938,14 +930,8 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "End of List = %x \n",pfme_dev->m_pPowermgmt->ccip_fme_pm_dflhdr.eol);
 
 
-      PDEBUG( "threshold1 = %x \n",pfme_dev->m_pPowermgmt->pm_thresholds.threshold1);
-      PDEBUG( "threshold1_sts = %x \n",pfme_dev->m_pPowermgmt->pm_thresholds.threshold2);
-      PDEBUG( "threshold2 = %x \n",pfme_dev->m_pPowermgmt->pm_thresholds.threshold3);
-      PDEBUG( "threshold2_sts = %x \n",pfme_dev->m_pPowermgmt->pm_thresholds.threshold4);
-
-
-      PDEBUG( "hw_set_field = %x \n",pfme_dev->m_pPowermgmt->pm_status.pwr_consumed);
-      PDEBUG( "max_clock_supply_i_rec = %d \n",pfme_dev->m_pPowermgmt->pm_status.fpga_latency_report);
+      PDEBUG( "pwr_consumed = %x \n",pfme_dev->m_pPowermgmt->pm_status.pwr_consumed);
+      PDEBUG( "fpga_latency_report = %d \n",pfme_dev->m_pPowermgmt->pm_status.fpga_latency_report);
 
 
       PDEBUG( "FME Power Feature  END \n \n");

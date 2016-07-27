@@ -795,7 +795,7 @@ bt32bitInt get_fme_power(struct fme_device       *pfme_dev,
 
    memset(pthermal_power,0,sizeof(struct CCIP_THERMAL_PWR));
 
-   pthermal_power->pwr_status    = 0;
+   pthermal_power->pwr_status    = ccip_fme_power(pfme_dev)->pm_status.csr;
 
    PTRACEOUT_INT(res);
    return res;

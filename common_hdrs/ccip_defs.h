@@ -718,7 +718,7 @@ struct CCIP_PM_STATUS {
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt pwr_consumed :17;        // power consumed
+         btUnsigned64bitInt pwr_consumed :18;        // power consumed
          btUnsigned64bitInt fpga_latency_report :1;  // FPGA Latency Tolerance Reporting (LTR)
          btUnsigned64bitInt rsvd3 :45;               // Reserved
       }; // end struct
@@ -728,23 +728,6 @@ struct CCIP_PM_STATUS {
 CASSERT(sizeof(struct CCIP_PM_STATUS) == (1*8));
 
 
-//Power Management Status
-struct CCIP_FME_THRESHOLDS {
-
-   union {
-      btUnsigned64bitInt csr;
-      struct {
-         btUnsigned64bitInt threshold1 :10;   // threshold1
-         btUnsigned64bitInt threshold2 :10;   // threshold2
-         btUnsigned64bitInt threshold3 :10;   // threshold3
-         btUnsigned64bitInt threshold4 :10;   // threshold4
-         btUnsigned64bitInt rsvd3 :24;        // Reserved
-      }; // end struct
-   }; // end union
-
-} ; // end struct CCIP_FME_THRESHOLDS
-CASSERT(sizeof(struct CCIP_FME_THRESHOLDS) == (1*8));
-
 struct CCIP_FME_DFL_PM {
 
    // FME Power Management Feature header
@@ -753,11 +736,9 @@ struct CCIP_FME_DFL_PM {
    // PM Status
    struct CCIP_PM_STATUS            pm_status;
 
-   // PM thresholds
-   struct CCIP_FME_THRESHOLDS       pm_thresholds;
-
+  
 }; // end struct CCIP_PM_MAXVR
-CASSERT(sizeof(struct CCIP_FME_DFL_PM) == (8* 3));
+CASSERT(sizeof(struct CCIP_FME_DFL_PM) == (8* 2));
 
 ///============================================================================
 /// Name: CCIP_FME_DFL_FPMON
