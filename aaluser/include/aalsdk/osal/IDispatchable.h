@@ -76,7 +76,7 @@ public:
    ///
    /// Create a group with a single dispatchable item.
    ///
-   /// @param p0 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p0 A pointer to an IDispatchable, something to be dispatched.
    DispatchableGroup(IDispatchable *p0)
    {
       ASSERT(NULL != p0);
@@ -86,8 +86,8 @@ public:
    ///
    /// Create a group with 2 dispatchable items.
    ///
-   /// @param p0 A pointer to an IDispatchable, something to be dispatched.
-   /// @param p1 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p0 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p1 A pointer to an IDispatchable, something to be dispatched.
    DispatchableGroup(IDispatchable *p0,
                      IDispatchable *p1)
    {
@@ -100,9 +100,9 @@ public:
    ///
    /// Create a group with 3 dispatchable items.
    ///
-   /// @param p0 A pointer to an IDispatchable, something to be dispatched.
-   /// @param p1 A pointer to an IDispatchable, something to be dispatched.
-   /// @param p2 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p0 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p1 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p2 A pointer to an IDispatchable, something to be dispatched.
    DispatchableGroup(IDispatchable *p0,
                      IDispatchable *p1,
                      IDispatchable *p2)
@@ -118,10 +118,10 @@ public:
    ///
    /// Create a group with 4 dispatchable items.
    ///
-   /// @param p0 A pointer to an IDispatchable, something to be dispatched.
-   /// @param p1 A pointer to an IDispatchable, something to be dispatched.
-   /// @param p2 A pointer to an IDispatchable, something to be dispatched.
-   /// @param p3 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p0 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p1 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p2 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p3 A pointer to an IDispatchable, something to be dispatched.
    DispatchableGroup(IDispatchable *p0,
                      IDispatchable *p1,
                      IDispatchable *p2,
@@ -140,11 +140,11 @@ public:
    ///
    /// Create a group with 5 dispatchable items.
    ///
-   /// @param p0 A pointer to an IDispatchable, something to be dispatched.
-   /// @param p1 A pointer to an IDispatchable, something to be dispatched.
-   /// @param p2 A pointer to an IDispatchable, something to be dispatched.
-   /// @param p3 A pointer to an IDispatchable, something to be dispatched.
-   /// @param p4 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p0 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p1 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p2 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p3 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p4 A pointer to an IDispatchable, something to be dispatched.
    DispatchableGroup(IDispatchable *p0,
                      IDispatchable *p1,
                      IDispatchable *p2,
