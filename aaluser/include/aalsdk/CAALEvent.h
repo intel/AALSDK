@@ -379,7 +379,7 @@ protected:
 
    virtual btBool ProcessEventTranID();
 
-   /// CExceptionTransactionEvent copy constructor.
+   // CExceptionTransactionEvent copy constructor.
    CExceptionTransactionEvent(const CExceptionTransactionEvent &other) :
       CAALEvent(other),
       m_TranID(other.m_TranID),
