@@ -104,10 +104,10 @@ public:
    ///
    /// The init() method is called by the factory AFTER construction but before
    /// use.
-   /// @param pclientBase  A pointer to the Service Client IBase interface.
-   /// @param optArgs      A reference to the NamedValueSet containing optional
+   /// @param[in] pclientBase  A pointer to the Service Client IBase interface.
+   /// @param[in] optArgs      A reference to the NamedValueSet containing optional
    ///                     Service parameters.
-   /// @param rtid         A reference to the Transaction ID.
+   /// @param[in] rtid         A reference to the Transaction ID.
    /// @retval             True if the initialization is successful.
    /// @retval             False if the initialization fails.
    virtual AAL::btBool init( AAL::IBase               *pclientBase,
@@ -115,8 +115,8 @@ public:
                              AAL::TransactionID const &rtid);
 
    /// Release the Service.
-   /// @param TranID       A reference to the Transaction ID.
-   /// @param timeout      The maximum time to wait for the operation to complete.
+   /// @param[in] TranID       A reference to the Transaction ID.
+   /// @param[in] timeout      The maximum time to wait for the operation to complete.
    /// @retval             True if the initialization is successful.
    /// @retval             False if the initialization fails.
    virtual AAL::btBool Release(AAL::TransactionID const &TranID, AAL::btTime timeout=AAL_INFINITE_WAIT);
@@ -131,30 +131,30 @@ public:
    // <IServiceClient>
 
    /// Callback used to notify that the Service was allocated successfully.
-   /// @param pServiceBase A pointer to the IBase interface of the Service.
-   /// @param rTranID      A reference to the Transaction ID.
+   /// @param[in] pServiceBase A pointer to the IBase interface of the Service.
+   /// @param[in] rTranID      A reference to the Transaction ID.
    /// @return             void
    virtual void serviceAllocated(AAL::IBase               *pServiceBase,
                                  AAL::TransactionID const &rTranID = AAL::TransactionID());
    /// Callback used to notify that the Service allocation failed.
-   /// @param rEvent       A reference to the Event with information about the failure.
+   /// @param[in] rEvent       A reference to the Event with information about the failure.
    /// @return             void
    virtual void serviceAllocateFailed(const AAL::IEvent &rEvent);
 
    /// Callback used to notify that the Service was Released successfully.
-   /// @param rTranID      A reference to the Transaction ID.
+   /// @param[in] rTranID      A reference to the Transaction ID.
    /// @return             void
    virtual void serviceReleased(AAL::TransactionID const &rTranID = AAL::TransactionID());
 
    virtual void serviceReleaseRequest(IBase *pServiceBase, const AAL::IEvent &rEvent){};  // Ignored TODO better implementation
 
    /// Callback used to notify that the Service Release failed.
-   /// @param rEvent       A reference to the Event with information about the failure.
+   /// @param[in] rEvent       A reference to the Event with information about the failure.
    /// @return             void
    virtual void serviceReleaseFailed(const AAL::IEvent &rEvent);
 
    /// Callback used to notify that an Event occurred.
-   /// @param rEvent       A reference to the Event.
+   /// @param[in] rEvent       A reference to the Event.
    /// @return             void
    virtual void serviceEvent(const AAL::IEvent &rEvent);
 
