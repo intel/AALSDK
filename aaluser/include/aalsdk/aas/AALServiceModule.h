@@ -267,7 +267,7 @@ public:
 
    /// Used to destroy and uninitialized Service Object.
    ///
-   /// @param pServiceBase A pointer to the IBase interface of the Service.
+   /// @param[in] pServiceBase A pointer to the IBase interface of the Service.
    /// @returns void
    virtual void   DestroyServiceObject(IBase               *pServiceBase) = 0;
 
