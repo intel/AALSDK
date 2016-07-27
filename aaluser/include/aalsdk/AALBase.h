@@ -84,24 +84,24 @@ public:
    virtual ~IBase() {}
    /// @brief Query interface for a given interface id.
    ///
-   /// @param Interface The interface ID.
+   /// @param[in] Interface The interface ID.
    /// @returns An interface.
    virtual btGenericInterface Interface(btIID Interface)     const = 0;
    /// @brief Determine whether this object contains the specified interface.
    ///
-   /// @param Interface The interface ID.
+   /// @param[in] Interface The interface ID.
    /// @retval True if the interface exists.
    /// @retval False if the interface does not exist.
    virtual btBool                   Has(btIID Interface)     const = 0;
    /// @brief IBase inequality.
    ///
-   /// @param rother A reference to another Interface to compare.
+   /// @param[in] rother A reference to another Interface to compare.
    /// @retval True if the Interfaces are not equal.
    /// @retval False if the Interfaces are equal.
    virtual btBool          operator != (IBase const &rother) const = 0;
    /// @brief IBase equality.
    ///
-   /// @param rother A reference to another Interface to compare.
+   /// @param[in] rother A reference to another Interface to compare.
    /// @retval True if the Interfaces are equal.
    /// @retval False if the Interfaces are not equal.
    virtual btBool          operator == (IBase const &rother) const = 0;
