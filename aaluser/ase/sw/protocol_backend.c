@@ -280,7 +280,7 @@ void sw_reset_response ()
 /*
  * Count error flag ping/pong
  */
-int count_error_flag = 0;
+volatile int count_error_flag;
 void count_error_flag_pong(int flag)
 {
   count_error_flag = flag;
@@ -350,6 +350,7 @@ void initialize_fme_dfh (struct buffer_t *buf)
 
   FUNC_CALL_EXIT;
 }
+
 
 // Update FME DFH after UMAS becomes known
 void update_fme_dfh(struct buffer_t *umas)
@@ -496,7 +497,8 @@ int ase_listener()
 	      // Check for simulator sanity -- if transaction counts dont match
 	      // Kill the simulation ASAP -- DEBUG feature only
             #ifdef ASE_DEBUG
-	      if (count_error_flag_ping() == 1)
+	      count_error_flag_ping();
+	      if (count_error_flag != 0)
 		{
 		  BEGIN_RED_FONTCOLOR;
 		  printf("SIM-C : ** ERROR ** Transaction counts do not match, something got lost\n");

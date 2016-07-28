@@ -251,7 +251,7 @@ void *intr_request_watcher()
 void send_swreset()
 {
   BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  Issuing Soft Reset... \n");
+  printf("\n  [APP]  Issuing Soft Reset... \n");
   END_YELLOW_FONTCOLOR;
   while ( count_mmio_tid_used() != 0 )
     {

@@ -374,8 +374,22 @@ module ccip_emulator
    // Ready PID
    int 	 ase_ready_pid;
 
-   // Finish logger command   
+   // Finish logger command
    logic finish_trigger = 0;
+
+   
+   /*
+    * Credit control system
+    */
+   int glbl_dealloc_credit;
+   int glbl_dealloc_credit_q;
+
+   // Individual credit counts
+   int rd_credit;
+   int wr_credit;
+   int mmiowr_credit;
+   int mmiord_credit;
+   int umsg_credit;
 
 
    /*
@@ -384,26 +398,28 @@ module ccip_emulator
     */
    task ase_reset_trig();
       begin
+	 wait (glbl_dealloc_credit == 0);
+	 @(posedge clk);
 	 ase_reset = 1;
 	 run_clocks(20);
 	 ase_reset = 0;
 	 run_clocks(20);
       end
    endtask // ase_reset_trig
-   
+
 
    /*
     * Issue Simulation Finish trigger
-    */  
+    */
    task issue_finish_trig();
       begin
 	 finish_trigger = 1;
 	 @(posedge clk);
 	 finish_trigger = 0;
-	 @(posedge clk);	 
+	 @(posedge clk);
       end
    endtask // issue_finish_trig
-   
+
 
    /*
     * Multi-instance multi-user +CONFIG,+SCRIPT instrumentation
@@ -434,21 +450,6 @@ module ccip_emulator
    initial $value$plusargs("CONFIG=%S", config_filepath);
    initial $value$plusargs("SCRIPT=%S", script_filepath);
 `endif
-
-
-
-   /*
-    * Credit control system
-    */
-   int glbl_dealloc_credit;
-   int glbl_dealloc_credit_q;
-
-   // Individual credit counts
-   int rd_credit;
-   int wr_credit;
-   int mmiowr_credit;
-   int mmiord_credit;
-   int umsg_credit;
 
 
    /*
@@ -608,14 +609,14 @@ module ccip_emulator
    logic 	  usrClk;
    logic 	  usrClkDiv2 = 0;
    int 		  usrClk_delay = 3200;
-      
-   // Function: Update usrclk_delay 
+
+   // Function: Update usrclk_delay
    function void update_usrclk_delay(int delay);
       begin
 	 usrClk_delay = delay;
       end
    endfunction
-   
+
    // User clock process
    initial begin : usrclk_proc
       begin
@@ -627,7 +628,7 @@ module ccip_emulator
       end
    end
 
-   
+
    // Div2 output
    always @(posedge usrClk) begin : usrclkdiv2_proc
       usrClkDiv2 = ~usrClkDiv2;
@@ -728,14 +729,14 @@ module ccip_emulator
 
    // MMIO dispatch unit
    task mmio_dispatch (int initialize, mmio_t mmio_pkt);
-      CfgHdr_t hdr;      
+      CfgHdr_t hdr;
       begin
 	 if (initialize) begin
 	    cwlp_wrvalid       = 0;
 	    cwlp_rdvalid       = 0;
 	    cwlp_header        = 0;
 	    cwlp_data          = 0;
-	    mmio_dispatch_lock = 0;	    
+	    mmio_dispatch_lock = 0;
 	 end
 	 else begin
 	    while(mmio_dispatch_lock != 0);
@@ -763,9 +764,9 @@ module ccip_emulator
 	       cwlp_wrvalid = 1;
 	       cwlp_rdvalid = 0;
 	       mmio_pkt.resp_en = 1;
-	    end // if (mmio_pkt.write_en == MMIO_WRITE_REQ)	    
+	    end // if (mmio_pkt.write_en == MMIO_WRITE_REQ)
 	    else if (mmio_pkt.write_en == MMIO_READ_REQ) begin
-	       cwlp_data    = 0; 
+	       cwlp_data    = 0;
 	       cwlp_header  = logic_cast_CfgHdr_t'(hdr);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 1;
@@ -1317,10 +1318,10 @@ module ccip_emulator
 	 cfg.ase_num_tests            = cfg_in.ase_num_tests            ;
 	 cfg.enable_reuse_seed        = cfg_in.enable_reuse_seed        ;
 	 cfg.enable_cl_view           = cfg_in.enable_cl_view           ;
-	 cfg.usr_tps                  = cfg_in.usr_tps                  ;	 
+	 cfg.usr_tps                  = cfg_in.usr_tps                  ;
 	 cfg.phys_memory_available_gb = cfg_in.phys_memory_available_gb ;
 	 // Set UsrClk
-	 update_usrclk_delay( cfg.usr_tps );	 
+	 update_usrclk_delay( cfg.usr_tps );
       end
    endtask
 
@@ -1355,7 +1356,7 @@ module ccip_emulator
 `define incr_cnt(condition, counter_val)\
    if (condition == 1) counter_val <= counter_val + 1
 
-				      
+
    /*
     * Transaction counts
     */
@@ -1523,7 +1524,7 @@ module ccip_emulator
    // Ping to get error flag
    task count_error_flag_ping();
       begin
-	 count_error_flag_pong(count_error_flag);
+	 count_error_flag_pong(glbl_dealloc_credit);
       end
    endtask
 
@@ -1661,19 +1662,19 @@ module ccip_emulator
 
    // Hazard checker signals
    ase_haz_if haz_if;
-      
+
    // ase_haz_pkt rdhaz_in;
-   // ase_haz_pkt rdhaz_out;   
+   // ase_haz_pkt rdhaz_out;
    // TxHdr_t                       rdhaz_hdr_in;
    // TxHdr_t                       rdhaz_hdr_out;
    // logic 			 rdhaz_hdr_in_vld;
-   // logic 			 rdhaz_hdr_out_vld;  
+   // logic 			 rdhaz_hdr_out_vld;
    // TxHdr_t                       wrhaz_hdr_in;
    // TxHdr_t                       wrhaz_hdr_out;
    // logic 			 wrhaz_hdr_in_vld;
    // logic 			 wrhaz_hdr_out_vld;
-   
-   
+
+
    /*
     * CAFU->ASE CH0 (TX0)
     * Formed as {TxHdr_t}
@@ -1858,16 +1859,16 @@ module ccip_emulator
    assign pack_hdr       = pp_wrrsp_hdr;
    assign pack_hdr_valid = pp_wrrsp_write;
  `else
-   // Compile time error goes here ?? 
- `endif   
+   // Compile time error goes here ??
+ `endif
 `endif
-   
+
    // Packing state machine
    always @(posedge clk) begin
       if (ase_reset) begin
 	 pack_state  <= PassThru_Pack1CL;
 	 wrrsp_write <= 0;
-	 wrrsp_hdr_in <= RxHdr_t'(0);	 
+	 wrrsp_hdr_in <= RxHdr_t'(0);
       end
       else begin
 	 case (pack_state)
@@ -2255,7 +2256,7 @@ module ccip_emulator
    // Inactivity management - Sense first transaction
    always @(posedge clk) begin : any_valid_proc
       if (ase_reset) begin
-	 any_valid <= 0;	 
+	 any_valid <= 0;
       end
       else begin
 	 // any_valid <= C0RxMmioRdValid |
@@ -2271,14 +2272,14 @@ module ccip_emulator
 		      pck_cp2af_sRx.c1.rspValid    |
 		      pck_af2cp_sTx.c0.valid       |
 		      pck_af2cp_sTx.c1.valid       |
-		      pck_af2cp_sTx.c2.mmioRdValid;	 
+		      pck_af2cp_sTx.c2.mmioRdValid;
       end
    end
-      
+
    // First transaction seen
    always @(posedge clk) begin : first_txn_watcher
       if (ase_reset) begin
-	 first_transaction_seen <= 0;	 
+	 first_transaction_seen <= 0;
       end
       else if ( ~first_transaction_seen && any_valid ) begin
 	 first_transaction_seen <= 1;
@@ -2644,7 +2645,7 @@ module ccip_emulator
 
    // Simkill progress
    task simkill();
-      string print_str;      
+      string print_str;
       begin
 	 simkill_started = 1;
 	 $display("SIM-SV: Simulation kill command received...");
@@ -2657,17 +2658,17 @@ module ccip_emulator
 	 $display("  MMIORdRsp %d | ", ase_tx2_mmiordrsp_cnt );
 	 $display("  UMsgHint  %d | ", ase_rx0_umsghint_cnt  );
 	 $display("  UMsgData  %d | ", ase_rx0_umsgdata_cnt  );
-	 $display("  RdReq     %d | %8d %8d %8d %8d | %8d %8d %8d", 
+	 $display("  RdReq     %d | %8d %8d %8d %8d | %8d %8d %8d",
 		  ase_tx0_rdvalid_cnt, rdreq_vc_cnt.va, rdreq_vc_cnt.vl0, rdreq_vc_cnt.vh0, rdreq_vc_cnt.vh1, rdreq_mcl_cnt.mcl0, rdreq_mcl_cnt.mcl1, rdreq_mcl_cnt.mcl3);
-	 $display("  RdResp    %d | %8d %8d %8d %8d | ",               
+	 $display("  RdResp    %d | %8d %8d %8d %8d | ",
 		  ase_rx0_rdvalid_cnt, rdrsp_vc_cnt.va, rdrsp_vc_cnt.vl0, rdrsp_vc_cnt.vh0, rdrsp_vc_cnt.vh1);
-	 $display("  WrReq     %d | %8d %8d %8d %8d | %8d %8d %8d", 
+	 $display("  WrReq     %d | %8d %8d %8d %8d | %8d %8d %8d",
 		  ase_tx1_wrvalid_cnt, wrreq_vc_cnt.va, wrreq_vc_cnt.vl0, wrreq_vc_cnt.vh0, wrreq_vc_cnt.vh1, wrreq_mcl_cnt.mcl0, wrreq_mcl_cnt.mcl1, wrreq_mcl_cnt.mcl3);
-	 $display("  WrResp    %d | %8d %8d %8d %8d | %8d %8d %8d", 
+	 $display("  WrResp    %d | %8d %8d %8d %8d | %8d %8d %8d",
 		  ase_rx1_wrvalid_cnt, wrrsp_vc_cnt.va, wrrsp_vc_cnt.vl0, wrrsp_vc_cnt.vh0, wrrsp_vc_cnt.vh1, wrrsp_mcl_cnt.mcl0, wrrsp_mcl_cnt.mcl1, wrrsp_mcl_cnt.mcl3);
-	 $display("  WrFence   %d | %8d %8d %8d %8d | ",               
+	 $display("  WrFence   %d | %8d %8d %8d %8d | ",
 		  ase_tx1_wrfence_cnt, wrfreq_vc_cnt.va, wrfreq_vc_cnt.vl0, wrfreq_vc_cnt.vh0, wrfreq_vc_cnt.vh1);
-	 $display("  WrFenRsp  %d | %8d %8d %8d %8d | ",               
+	 $display("  WrFenRsp  %d | %8d %8d %8d %8d | ",
 		  ase_rx1_wrfence_cnt, wrfrsp_vc_cnt.va, wrfrsp_vc_cnt.vl0, wrfrsp_vc_cnt.vh0, wrfrsp_vc_cnt.vh1);
 	 `END_YELLOW_FONTCOLOR;
 
@@ -2703,7 +2704,7 @@ module ccip_emulator
 `endif
 	 // Finish command issue
 	 // issue_finish_trig();
-	 
+
 	 // Command to close logfd
 	 $finish;
       end
