@@ -89,7 +89,7 @@ using namespace AAL;
 #ifndef MB
 # define MB(x)                     ((x) * 1024 * 1024)
 #endif // MB
-#define LPBK1_BUFFER_SIZE        CL(1)
+#define LPBK1_BUFFER_SIZE        MB(2)
 
 #define LPBK1_DSM_SIZE           MB(4)
 #define CSR_SRC_ADDR             0x0120
