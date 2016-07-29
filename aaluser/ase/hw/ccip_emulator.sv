@@ -116,6 +116,12 @@ module ccip_emulator
    logic 			      cf2as_ch0_realfull;
    logic 			      cf2as_ch1_realfull;
 
+   /*
+    * Reset lockdown flag
+    * - Stop taking any more requests if ase_reset was requested
+    */ 
+   logic reset_lockdown = 0;
+   
 
    /*
     * Local valid/debug breakout signals
@@ -293,8 +299,8 @@ module ccip_emulator
       C2TxData                     <= pck_af2cp_sTx.c2.data;
       C2TxMmioRdValid              <= pck_af2cp_sTx.c2.mmioRdValid;
       // Almost full signals
-      pck_cp2af_sRx.c0TxAlmFull    <= C0TxAlmFull;
-      pck_cp2af_sRx.c1TxAlmFull    <= C1TxAlmFull;
+      pck_cp2af_sRx.c0TxAlmFull    <= C0TxAlmFull | reset_lockdown;
+      pck_cp2af_sRx.c1TxAlmFull    <= C1TxAlmFull | reset_lockdown;
    end
 
 
@@ -391,19 +397,20 @@ module ccip_emulator
    int mmiord_credit;
    int umsg_credit;
 
-
    /*
     * ASE Simulator reset
     * - Use sparingly, only for initialization and reset between session_init(s)
     */
    task ase_reset_trig();
       begin
+	 reset_lockdown = 1;	 
 	 wait (glbl_dealloc_credit == 0);
 	 @(posedge clk);
 	 ase_reset = 1;
 	 run_clocks(20);
 	 ase_reset = 0;
 	 run_clocks(20);
+	 reset_lockdown = 0;	 
       end
    endtask // ase_reset_trig
 
@@ -1699,7 +1706,6 @@ module ccip_emulator
       .hdr_in		( C0TxHdr ),
       .data_in		( {CCIP_DATA_WIDTH{1'b0}} ),
       .write_en		( C0TxValid ),
-      // .write_en		( C0TxValid && isReadRequest(C0TxHdr) ),
       .txhdr_out	( cf2as_latbuf_tx0hdr ),
       .rxhdr_out        ( cf2as_latbuf_rx0hdr ),
       .data_out		(  ),
@@ -1780,7 +1786,6 @@ module ccip_emulator
       .hdr_in		( C1TxHdr ),
       .data_in		( C1TxData ),
       .write_en		( C1TxValid ),
-      // .write_en		( C1TxValid && isWriteRequest(C1TxHdr) ),
       .txhdr_out	( cf2as_latbuf_tx1hdr ),
       .rxhdr_out        ( cf2as_latbuf_rx1hdr ),
       .data_out		( cf2as_latbuf_tx1data ),
