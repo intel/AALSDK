@@ -93,7 +93,7 @@ using namespace AAL;
 // LPBK1_BUFFER_SIZE is size in cachelines that are copied
 #define LPBK1_BUFFER_SIZE        CL(1)
 // LPBK1_BUFFER_ALLOCATION_SIZE is the amount of space that needs to
-//   be allocated due an optimization of the NLB AFU to operate on
+//   be allocated due to an optimization of the NLB AFU to operate on
 //   2 MiB buffer boundaries. Note that the way to get 2 MiB alignment
 //   is to allocate 2 MiB.
 // NOTE:
