@@ -89,10 +89,11 @@
 #define CCI_UMSG_SIZE       ( 0x5000 )                    /// Size of uMsg space
 
 // PCI device IDs
-#define PCIe_DEVICE_ID_RCiEP0    0xBCBD ///< Primary port with FIU
-#define PCIe_DEVICE_ID_RCiEP1    0xBCBE ///< Null device for data transport
-#define PCIe_DEVICE_ID_RCiEP2    0xBCBC ///< QPI or UPI EPt
-
+#define PCIe_DEVICE_ID_RCiEP0        0xBCBD ///< Primary port with FIU
+#define PCIe_DEVICE_ID_RCiEP1        0xBCBE ///< Null device for data transport
+#define PCIe_DEVICE_ID_RCiEP2        0xBCBC ///< QPI or UPI EPt
+#define PCIe_DEVICE_ID_RCiEP0_SKX_P  0xBCC0 ///< Primary PF device on SKX-P
+#define PCIe_DEVICE_ID_VF_SKX_P      0xBCC1 ///< VF device on SKX-P
 
 //=============================================================================
 // Prototypes

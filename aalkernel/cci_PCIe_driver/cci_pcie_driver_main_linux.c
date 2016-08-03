@@ -235,10 +235,12 @@ void ccidrv_exitUMAPI(void);
 /// cci_pci_id_tbl - identify PCI devices supported by this driver
 ///=================================================================
 static struct pci_device_id cci_pcie_id_tbl[] = {
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP0   ), .driver_data = (kernel_ulong_t)cci_enumerate_device },
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_VF   ),     .driver_data = (kernel_ulong_t)cci_enumerate_vf_device },
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP1),    .driver_data = (kernel_ulong_t)0 },
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP2),    .driver_data = (kernel_ulong_t)0},
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP0),          .driver_data = (kernel_ulong_t)cci_enumerate_device },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_VF),              .driver_data = (kernel_ulong_t)cci_enumerate_vf_device },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP1),          .driver_data = (kernel_ulong_t)0 },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP2),          .driver_data = (kernel_ulong_t)0 },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP0_SKX_P),    .driver_data = (kernel_ulong_t)cci_enumerate_device },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_VF_SKX_P),        .driver_data = (kernel_ulong_t)cci_enumerate_vf_device },
    { 0, }
 };
 CASSERT(sizeof(void *) == sizeof(kernel_ulong_t));
