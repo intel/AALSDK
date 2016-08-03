@@ -123,6 +123,7 @@
 
 // User clock default
 #define DEFAULT_USR_CLK_MHZ        312.500
+#define DEFAULT_USR_CLK_TPS        (int)( 1E+12/(DEFAULT_USR_CLK_MHZ*pow(1000,2)) );
 
 
 /* *******************************************************************************

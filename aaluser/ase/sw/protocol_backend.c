@@ -1093,7 +1093,7 @@ void ase_config_parse(char *filename)
   cfg->ase_num_tests = 1;
   cfg->enable_reuse_seed = 0;
   cfg->enable_cl_view = 1;
-  cfg->usr_tps = 3333;
+  cfg->usr_tps = DEFAULT_USR_CLK_TPS;
   cfg->phys_memory_available_gb = 256;
 
   // Find ase.cfg OR not
@@ -1133,12 +1133,12 @@ void ase_config_parse(char *filename)
 		      printf("SIM-C : User Clock Frequency cannot be 0.000 MHz\n");
 		      printf("        Reverting to %f MHz\n", DEFAULT_USR_CLK_MHZ);
 		      f_usrclk = DEFAULT_USR_CLK_MHZ;
-		      cfg->usr_tps = 3200;
+		      cfg->usr_tps = DEFAULT_USR_CLK_TPS;
 		      END_RED_FONTCOLOR;
 		    }
 		  else if (f_usrclk == DEFAULT_USR_CLK_MHZ) 
 		    {
-		      cfg->usr_tps = 3200;
+		      cfg->usr_tps = DEFAULT_USR_CLK_TPS;
 		    }
 		  else 
 		    {
