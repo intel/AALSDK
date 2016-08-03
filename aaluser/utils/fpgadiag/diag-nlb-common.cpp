@@ -380,6 +380,16 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
          flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER);
       }
 
+   } else if ( (0 == strcmp("--device-number", option)) || (0 == strcmp("--dn", option)) ) {
+      nlbcl->devnum = strtoul(value, &endptr, 0);
+      if ( value + strlen(value) != endptr ) {
+         nlbcl->devnum = nlbcl->defaults.devnum;
+         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER);
+         printf("Invalid value for --device-number : %s. Defaulting to %u.\n", value, nlbcl->devnum);
+      } else {
+         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER);
+      }
+
    } else {
       printf("Invalid option: %s\n", option);
       flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
