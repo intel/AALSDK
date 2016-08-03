@@ -116,9 +116,6 @@ void ipc_init()
   ase_workdir_path = (char*) ase_malloc(ASE_FILEPATH_LEN);
   ase_eval_session_directory();
   
-  // Malloc mq_array
-  // mq_array = (struct ipc_t *)ase_malloc(ASE_MQ_INSTANCES * sizeof(struct ipc_t) );
-
   // Initialize named pipe array
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
     {

@@ -442,11 +442,11 @@ int ase_listener()
 	    }
 	  else if ( memcmp(portctrl_cmd, "ASE_SIMKILL", 11) == 0)
 	    {
-            #ifdef ASE_DEBUG
+#ifdef ASE_DEBUG
 	      BEGIN_YELLOW_FONTCOLOR;
 	      printf("SIM-C : ASE_SIMKILL requested, processing options... \n");
 	      END_YELLOW_FONTCOLOR;
-            #endif
+#endif
 	      // ------------------------------------------------------------- //
 	      // Update regression counter
 	      glbl_test_cmplt_cnt = glbl_test_cmplt_cnt + 1;
@@ -496,7 +496,7 @@ int ase_listener()
 
 	      // Check for simulator sanity -- if transaction counts dont match
 	      // Kill the simulation ASAP -- DEBUG feature only
-            #ifdef ASE_DEBUG
+#ifdef ASE_DEBUG
 	      count_error_flag_ping();
 	      if (count_error_flag != 0)
 		{
@@ -507,7 +507,7 @@ int ase_listener()
 		  ase_perror_teardown();
 		  start_simkill_countdown();
 		}
-            #endif
+#endif
 
 	      // Send portctrl_rsp message
 	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
@@ -535,51 +535,44 @@ int ase_listener()
       ase_empty_buffer(&ase_buffer);
       if (mqueue_recv(app2sim_alloc_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
 	{
-	  // ALLOC request received
-#if 0
-	  /* if(ase_buffer.metadata == HDR_MEM_ALLOC_REQ) */
-	  /*   { */
-#endif
-	      // Allocate action
-	      ase_alloc_action(&ase_buffer);
-	      ase_buffer.is_privmem = 0;
-	      if (ase_buffer.index == 0)
-		{
-		  ase_buffer.is_mmiomap = 1;
-		}
-	      else
-		{
-		  ase_buffer.is_mmiomap = 0;
-		}
+	  // Allocate action
+	  ase_alloc_action(&ase_buffer);
+	  ase_buffer.is_privmem = 0;
+	  if (ase_buffer.index == 0)
+	    {
+	      ase_buffer.is_mmiomap = 1;
+	    }
+	  else
+	    {
+	      ase_buffer.is_mmiomap = 0;
+	    }
 
-	      // Format workspace info string
-	      memset (logger_str, 0, ASE_LOGGER_LEN);
-	      if (ase_buffer.is_mmiomap)
-		{
-		  sprintf(logger_str + strlen(logger_str), "MMIO map Allocated ");
-		  initialize_fme_dfh(&ase_buffer);
-		}
-	      else if (ase_buffer.is_umas)
-		{
-		  sprintf(logger_str + strlen(logger_str), "UMAS Allocated ");
-		  update_fme_dfh(&ase_buffer);
-		}
-	      else
-		{
-		  sprintf(logger_str + strlen(logger_str), "Buffer %d Allocated ", ase_buffer.index);
-		}
-	      sprintf(logger_str + strlen(logger_str), " (located /dev/shm/%s) =>\n", ase_buffer.memname);
-	      sprintf(logger_str + strlen(logger_str), "\t\tHost App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
-	      sprintf(logger_str + strlen(logger_str), "\t\tHW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
-	      sprintf(logger_str + strlen(logger_str), "\t\tHW CacheAligned Addr   = %p\n", (void*)(ase_buffer.fake_paddr >> 6));
-	      sprintf(logger_str + strlen(logger_str), "\t\tWorkspace Size (bytes) = %d\n", ase_buffer.memsize);
-	      sprintf(logger_str + strlen(logger_str), "\n");
+	  // Format workspace info string
+	  memset (logger_str, 0, ASE_LOGGER_LEN);
+	  if (ase_buffer.is_mmiomap)
+	    {
+	      sprintf(logger_str + strlen(logger_str), "MMIO map Allocated ");
+	      initialize_fme_dfh(&ase_buffer);
+	    }
+	  else if (ase_buffer.is_umas)
+	    {
+	      sprintf(logger_str + strlen(logger_str), "UMAS Allocated ");
+	      update_fme_dfh(&ase_buffer);
+	    }
+	  else
+	    {
+	      sprintf(logger_str + strlen(logger_str), "Buffer %d Allocated ", ase_buffer.index);
+	    }
+	  sprintf(logger_str + strlen(logger_str), " (located /dev/shm/%s) =>\n", ase_buffer.memname);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHost App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHW CacheAligned Addr   = %p\n", (void*)(ase_buffer.fake_paddr >> 6));
+	  sprintf(logger_str + strlen(logger_str), "\t\tWorkspace Size (bytes) = %d\n", ase_buffer.memsize);
+	  sprintf(logger_str + strlen(logger_str), "\n");
 
-	      // Inject buffer message
-	      buffer_msg_inject (1, logger_str );
-#if 0
-	      //	    }
-#endif
+	  // Inject buffer message
+	  buffer_msg_inject (1, logger_str );
+
 	  // Standard oneline message ---> Hides internal info
 	  ase_buffer_oneline(&ase_buffer);
 
@@ -595,46 +588,40 @@ int ase_listener()
 	    }
 
 	  // Debug only
-        #ifdef ASE_DEBUG
+#ifdef ASE_DEBUG
 	  BEGIN_YELLOW_FONTCOLOR;
 	  ase_buffer_info(&ase_buffer);
 	  END_YELLOW_FONTCOLOR;
-        #endif
+#endif
 	}
 
       // ------------------------------------------------------------------------------- //
       ase_empty_buffer(&ase_buffer);
-#if 0
-      if (glbl_dealloc_allowed)
+      if (mqueue_recv(app2sim_dealloc_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
 	{
+	  // Format workspace info string
+	  memset (logger_str, 0, ASE_LOGGER_LEN);
+	  sprintf(logger_str + strlen(logger_str), "\nBuffer %d Deallocated =>\n", ase_buffer.index);
+	  sprintf(logger_str + strlen(logger_str), "\n");
+
+	  // Deallocate action
+	  ase_dealloc_action(&ase_buffer, 1);
+
+	  // Inject buffer message
+	  buffer_msg_inject (1, logger_str );
+
+	  // Standard oneline message ---> Hides internal info
+	  ase_buffer.valid = ASE_BUFFER_INVALID;
+	  ase_buffer_oneline(&ase_buffer);
+
+	  // Debug only
+#ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  ase_buffer_info(&ase_buffer);
+	  END_YELLOW_FONTCOLOR;
 #endif
-	  if (mqueue_recv(app2sim_dealloc_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
-	    {
-	      // Format workspace info string
-	      memset (logger_str, 0, ASE_LOGGER_LEN);
-	      sprintf(logger_str + strlen(logger_str), "\nBuffer %d Deallocated =>\n", ase_buffer.index);
-	      sprintf(logger_str + strlen(logger_str), "\n");
-
-	      // Deallocate action
-	      ase_dealloc_action(&ase_buffer, 1);
-
-	      // Inject buffer message
-	      buffer_msg_inject (1, logger_str );
-
-	      // Standard oneline message ---> Hides internal info
-	      ase_buffer.valid = ASE_BUFFER_INVALID;
-	      ase_buffer_oneline(&ase_buffer);
-
-	      // Debug only
-            #ifdef ASE_DEBUG
-	      BEGIN_YELLOW_FONTCOLOR;
-	      ase_buffer_info(&ase_buffer);
-	      END_YELLOW_FONTCOLOR;
-            #endif
-	    }
-#if 0
 	}
-#endif
+
       // ------------------------------------------------------------------------------- //
       /*
        * MMIO request listener
@@ -677,12 +664,12 @@ int ase_listener()
     }
   else
     {
-    #ifdef ASE_DEBUG
+#ifdef ASE_DEBUG
       BEGIN_RED_FONTCOLOR;
       printf("  [DEBUG]  Simulator is in Lockdown mode, Simkill in progress\n");
       sleep(1);
       END_RED_FONTCOLOR;
-    #endif
+#endif
     }
 
 
@@ -783,17 +770,7 @@ int ase_init()
 	{
 	  printf("SIM-C : Removed sniffer log file from previous run\n");
 	}
-      /* else */
-      /* 	{ */
-      /* 	  perror("SIM-C : Couldn't unlink protocol checker log file !\n"); */
-      /* 	} */
     }
-/* #ifdef ASE_DEBUG */
-/*   else */
-/*     { */
-/*       perror("SIM-C : Couldn't access protocol checker log file !\n"); */
-/*     } */
-/* #endif */
   END_YELLOW_FONTCOLOR;
 
   /*
@@ -858,7 +835,7 @@ int ase_init()
   if (cfg->enable_reuse_seed)
     {
       ase_addr_seed = ase_read_seed ();
-     }
+    }
   else
     {
       ase_addr_seed = time(NULL);
