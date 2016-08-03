@@ -390,6 +390,16 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
          flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER);
       }
 
+   } else if ( (0 == strcmp("--function-number", option)) || (0 == strcmp("--dn", option)) ) {
+      nlbcl->funnum = strtoul(value, &endptr, 0);
+      if ( value + strlen(value) != endptr ) {
+         nlbcl->funnum = nlbcl->defaults.funnum;
+         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER);
+         printf("Invalid value for --function-number : %s. Defaulting to %u.\n", value, nlbcl->funnum);
+      } else {
+         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER);
+      }
+
    } else {
       printf("Invalid option: %s\n", option);
       flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);

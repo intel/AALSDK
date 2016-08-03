@@ -233,7 +233,8 @@ struct NLBCmdLine gCmdLine =
    std::string(DEFAULT_TEST_MODE),
    0,
    DEFAULT_BUS_NUMBER,
-   DEFAULT_DEVICE_NUMBER
+   DEFAULT_DEVICE_NUMBER,
+   DEFAULT_FUNCTION_NUMBER
 };
 
 END_C_DECLS
@@ -389,6 +390,10 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
            if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER)) {
               cout << "Using PCIe device 0x" << hex << uint_type(gCmdLine.devnum) << endl;
               ConfigRecord.Add(keyRegDeviceNumber, uint_type(gCmdLine.devnum));
+           }
+           if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER)) {
+              cout << "Using PCIe function 0x" << hex << uint_type(gCmdLine.funnum) << endl;
+              ConfigRecord.Add(keyRegfuntionNumber, uint_type(gCmdLine.funnum));
            }
 
   	   if(0 == strcmp(TestMode().c_str(), "TestMode_read") ||
