@@ -76,6 +76,7 @@
 #include "cci_pcie_driver_internal.h"
 #include "aalsdk/kernel/ccipdriver.h"
 #include "aalsdk/kernel/ccip_defs.h"
+#include "ccip_pr.h"
 
 BEGIN_NAMESPACE(AAL)
 
@@ -107,6 +108,10 @@ struct fme_device
    struct CCIP_FME_DFL_GERROR   m_lastGerror;
    struct CCIP_FME_DFL_THERM    m_lastThermmgmt;
 
+
+   struct pr_program_context    *m_pr_program_context;
+   struct cci_aal_device        *m_power_aaldev;
+
 }; // end struct fme_device
 
 #define ccip_fme_dev_board_type(pdev)         ((pdev)->m_boardtype)
@@ -136,6 +141,8 @@ struct fme_device
 
 #define ccip_dev_fme_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
 #define ccip_dev_fme_psem(pdev)                  (&(pdev)->m_sem)
+
+#define ccip_dev_fme_pwraal_dev(pdev)            ((pdev)->m_power_aaldev)
 
 /// @brief   Get the FPGA Management Engine Device Object.
 ///

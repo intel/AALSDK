@@ -140,13 +140,7 @@ struct cci_aal_device {
    int                        m_protocolID;
 
    // For background tasks handling
-   kosal_work_queue           m_workq_deactivate;
-
-   kosal_work_queue           m_workq_prconifg;
-
-   kosal_work_queue           m_workq_revokeafu;
-
-   kosal_work_queue           m_workq_revokesigtap;
+   kosal_work_queue           m_workq_reconf;
 
    // AFU MMIO Space
    btVirtAddr                 m_kvp_afu_mmio;   // kv address of MMIO space
@@ -238,11 +232,8 @@ struct cci_aal_device {
 #define cci_aaldev_psem(pdev)                  (&(pdev)->m_sem)
 #define cci_dev_pr_sem(pdev)                (&(pdev)->m_pr_sem)
 
+#define cci_aaldev_workq_reconf(pdev)            ((pdev)->m_workq_reconf )
 
-#define cci_aaldev_workq_deactivate(pdev)                ((pdev)->m_workq_deactivate )
-#define cci_aaldev_workq_prcconfigure(pdev)              ((pdev)->m_workq_prconifg )
-#define cci_aaldev_workq_revokeafu(pdev)                 ((pdev)->m_workq_revokeafu )
-#define cci_aaldev_workq_revokesigtap(pdev)              ((pdev)->m_workq_revokesigtap )
 
 ///============================================================================
 /// Name: ccip_device
@@ -376,6 +367,7 @@ struct port_device;
 struct ccip_device * create_ccidevice(void);
 void  destroy_ccidevice(struct ccip_device *pccidev);
 extern btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device *);
+extern  btBool cci_create_AAL_power_Device(struct ccip_device *);
 btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *,
                                                    btUnsigned32bitInt);
 extern struct cci_aal_device* cci_create_aal_device(void);

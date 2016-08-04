@@ -27,21 +27,31 @@
 ##  Accelerator Abstraction Layer Library Software Developer Kit (SDK)
 ##
 ##  Content:
-##     utils/Makefile.am
+##     utils/ALIAFU/ALI/Makefile.am
 ##  Author:
-##     Tim Whisonant, Intel Corporation
+##      Intel Corporation
 ##  History:
-##     06/16/2015    TSW   Initial version
+##     05/02/2016    TSW   Initial version
 ##******************************************************************************
-SUBDIRS=\
-aalscan \
-fpgadiag \
-data_model \
-ALIAFU/ASEALIAFU \
-ALIAFU/HWALIAFU \
-ALIAFU/SWSimALIAFU \
-ALIAFU/ALI \
-PowerManager/PwrMgrService \
-PowerManager/PwrMgrApp \
-scripts
+lib_LTLIBRARIES=libPwrMgr.la
 
+libPwrMgr_la_SOURCES=\
+PwrMgr.cpp \
+PwrMgr.h \
+PwrMgrTransactions.cpp \
+PwrMgrTransactions.h  
+
+libPwrMgr_la_CPPFLAGS=\
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
+
+libPwrMgr_la_LDFLAGS=\
+-module \
+-version-info $(ALI_VERSION_CURRENT):$(ALI_VERSION_REVISION):$(ALI_VERSION_AGE)
+
+libPwrMgr_la_LIBADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la \
+$(top_builddir)/aas/AALRuntime/libaalrt.la \
+$(top_builddir)/aas/AIAService/libaia.la \
+$(top_builddir)/ase/sw/libASE.la
