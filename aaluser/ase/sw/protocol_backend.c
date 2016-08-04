@@ -483,7 +483,7 @@ int ase_listener()
 		{
 		  if (cfg->ase_num_tests == glbl_test_cmplt_cnt)
 		    {
-		      printf("SIM-C : ASE completed %d tests (see ase.cfg)... Simulator will EXIT\n", cfg->ase_num_tests);
+		      printf("SIM-C : ASE completed %d tests (see supplied ASE config file)... Simulator will EXIT\n", cfg->ase_num_tests);
 		      run_clocks (500);
 		      ase_perror_teardown();
 		      start_simkill_countdown();
@@ -714,7 +714,8 @@ int ase_init()
   FUNC_CALL_ENTRY;
 
   // Set stdout bufsize to empty immediately
-  setvbuf(stdout, NULL, _IONBF, 0);
+  // setvbuf(stdout, NULL, _IONBF, 0);
+  setbuf(stdout, NULL);
 
   // Set self_destruct flag = 0, SIMulator is not in lockdown
   self_destruct_in_progress = 0;

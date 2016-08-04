@@ -1412,8 +1412,8 @@ void *umsg_watcher()
  * ASE_SIMKILL <dummy number>       | (X)
  *
  */
-// void __attribute__((optimize("O0"))) ase_portctrl(const char *ctrl_msg)
-void ase_portctrl(const char *ctrl_msg)
+void __attribute__((optimize("O0"))) ase_portctrl(const char *ctrl_msg)
+// void ase_portctrl(const char *ctrl_msg)
 {
   char dummy_rxstr[ASE_MQ_MSGSIZE];
   memset(dummy_rxstr, 0, ASE_MQ_MSGSIZE);
