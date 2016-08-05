@@ -839,7 +839,8 @@ module ccip_sniffer
 	   default:
 	     begin
 		// c1tx_txn_ctr <= 2'b00;
-		exp_c1state <= Exp_1CL_WrFence;
+		c1tx_1to3_flag <= 0;
+		exp_c1state    <= Exp_1CL_WrFence;
 	     end
 
 	 endcase
@@ -870,6 +871,11 @@ module ccip_sniffer
       if (c1tx_1to3_flag && ccip_tx.c1.valid && (ccip_tx.c1.hdr.vc_sel != base_c1vc)) begin
 	 decode_error_code(0, SNIFF_C1TX_UNEXP_VCSEL);
       end
+      // ----------------------------------------- //
+      // MDATA modification check
+      if (c1tx_1to3_flag && ccip_tx.c1.valid && (ccip_tx.c1.hdr.mdata != base_c1mdata)) begin
+	 decode_error_code(0, SNIFF_C1TX_UNEXP_MDATA);
+      end      
       // ----------------------------------------- //
       // Request Type modification check
       if (c1tx_1to3_flag && ccip_tx.c1.valid && (ccip_tx.c1.hdr.req_type != base_c1reqtype)) begin

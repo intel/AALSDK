@@ -397,13 +397,39 @@ module ccip_emulator
    int mmiord_credit;
    int umsg_credit;
 
+   logic [ASE_RSPFIFO_COUNT_WIDTH:0] rdrsp_fifo_cnt;
+   logic [ASE_RSPFIFO_COUNT_WIDTH:0] wrrsp_fifo_cnt;
+   
+   /*
+    * CH0 and CH1 latbuf
+    */ 
+   // cf2as_latbuf_ch0 signals
+   TxHdr_t                       cf2as_latbuf_tx0hdr;
+   RxHdr_t                       cf2as_latbuf_rx0hdr;
+   logic                         cf2as_latbuf_ch0_empty;
+   logic                         cf2as_latbuf_ch0_read;
+   int 				 cf2as_latbuf_ch0_count;
+
+   // cf2as_latbuf_ch1 signals
+   logic [CCIP_DATA_WIDTH-1:0]   cf2as_latbuf_tx1data;
+   TxHdr_t                       cf2as_latbuf_tx1hdr;
+   RxHdr_t                       cf2as_latbuf_rx1hdr;
+   logic 		         cf2as_latbuf_ch1_empty;
+   logic 		         cf2as_latbuf_ch1_read;
+   int 				 cf2as_latbuf_ch1_count;
+   logic 			 cf2as_latbuf_ch1_valid;
+
+   // Hazard checker signals
+   ase_haz_if haz_if;
+
+   
    /*
     * ASE Simulator reset
     * - Use sparingly, only for initialization and reset between session_init(s)
     */
    task ase_reset_trig();
       begin
-	 reset_lockdown = 1;	 
+	 reset_lockdown = 1;
 	 wait (glbl_dealloc_credit == 0);
 	 @(posedge clk);
 	 ase_reset = 1;
@@ -835,7 +861,8 @@ module ccip_emulator
    logic 			      mmioresp_valid;
    logic 			      mmioresp_full;
    logic 			      mmioresp_empty;
-
+   logic [3:0] 			      mmioresp_count;
+   
    // Response staging FIFO
    ase_svfifo
      #(
@@ -855,7 +882,7 @@ module ccip_emulator
       .alm_full   ( mmioresp_full ),
       .full       (  ),
       .empty      ( mmioresp_empty ),
-      .count      (  ),
+      .count      ( mmioresp_count ),
       .overflow   (  ),
       .underflow  (  )
       );
@@ -1649,38 +1676,6 @@ module ccip_emulator
       end
    endfunction
 
-   // cf2as_latbuf_ch0 signals
-   // logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx0hdr_vec;
-   TxHdr_t                       cf2as_latbuf_tx0hdr;
-   RxHdr_t                       cf2as_latbuf_rx0hdr;
-   logic                         cf2as_latbuf_ch0_empty;
-   logic                         cf2as_latbuf_ch0_read;
-   int 				 cf2as_latbuf_ch0_count;
-
-   // cf2as_latbuf_ch1 signals
-   // logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx1hdr_vec;
-   logic [CCIP_DATA_WIDTH-1:0]   cf2as_latbuf_tx1data;
-   TxHdr_t                       cf2as_latbuf_tx1hdr;
-   RxHdr_t                       cf2as_latbuf_rx1hdr;
-   logic 		         cf2as_latbuf_ch1_empty;
-   logic 		         cf2as_latbuf_ch1_read;
-   int 				 cf2as_latbuf_ch1_count;
-   logic 			 cf2as_latbuf_ch1_valid;
-
-   // Hazard checker signals
-   ase_haz_if haz_if;
-
-   // ase_haz_pkt rdhaz_in;
-   // ase_haz_pkt rdhaz_out;
-   // TxHdr_t                       rdhaz_hdr_in;
-   // TxHdr_t                       rdhaz_hdr_out;
-   // logic 			 rdhaz_hdr_in_vld;
-   // logic 			 rdhaz_hdr_out_vld;
-   // TxHdr_t                       wrhaz_hdr_in;
-   // TxHdr_t                       wrhaz_hdr_out;
-   // logic 			 wrhaz_hdr_in_vld;
-   // logic 			 wrhaz_hdr_out_vld;
-
 
    /*
     * CAFU->ASE CH0 (TX0)
@@ -2053,8 +2048,8 @@ module ccip_emulator
    ase_svfifo
      #(
        .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH ),
-       .DEPTH_BASE2    ( 8 ),
-       .ALMFULL_THRESH ( 250 )
+       .DEPTH_BASE2    ( ASE_RSPFIFO_COUNT_WIDTH ),
+       .ALMFULL_THRESH ( ASE_RSPFIFO_ALMFULL_THRESH )
        )
    rdrsp_fifo
      (
@@ -2068,7 +2063,7 @@ module ccip_emulator
       .alm_full        ( rdrsp_full ),
       .full            (),
       .empty           ( rdrsp_empty ),
-      .count           (),
+      .count           ( rdrsp_fifo_cnt ),
       .overflow        (),
       .underflow       ()
       );
@@ -2082,8 +2077,8 @@ module ccip_emulator
    ase_svfifo
      #(
        .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH ),
-       .DEPTH_BASE2    ( 7 ),
-       .ALMFULL_THRESH ( 120 )
+       .DEPTH_BASE2    ( ASE_RSPFIFO_COUNT_WIDTH ),
+       .ALMFULL_THRESH ( ASE_RSPFIFO_ALMFULL_THRESH )
        )
    wrrsp_fifo
      (
@@ -2097,7 +2092,7 @@ module ccip_emulator
       .alm_full        ( wrrsp_full ),
       .full            (),
       .empty           ( wrrsp_empty ),
-      .count           (),
+      .count           ( wrrsp_fifo_cnt ),
       .overflow        (),
       .underflow       ()
       );
@@ -2264,13 +2259,6 @@ module ccip_emulator
 	 any_valid <= 0;
       end
       else begin
-	 // any_valid <= C0RxMmioRdValid |
-	 // 	      C0RxMmioWrValid |
-	 // 	      C0RxRspValid |
-	 // 	      C1RxRspValid |
-	 // 	      C0TxRdValid |
-	 // 	      C1TxWrValid |
-	 // 	      C2TxMmioRdValid;
 	 any_valid <= pck_cp2af_sRx.c0.rspValid    |
 		      pck_cp2af_sRx.c0.mmioRdValid |
 		      pck_cp2af_sRx.c0.mmioWrValid |
@@ -2777,7 +2765,7 @@ module ccip_emulator
 
    // Global dealloc flag enable
    always @(posedge clk) begin
-      glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit;
+      glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit + mmioreq_count + rdrsp_fifo_cnt + wrrsp_fifo_cnt ;
    end
 
    // Register for changes

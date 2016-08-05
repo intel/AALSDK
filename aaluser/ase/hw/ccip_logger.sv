@@ -319,7 +319,8 @@ module ccip_logger
       begin
 	 if (stdout_en)
 	   $display(formatted_string);
-	 $fwrite(log_fd, formatted_string);	 
+	 $fwrite(log_fd, formatted_string);
+	 $fflush();	 
       end
    endfunction // print_and_post_log
    

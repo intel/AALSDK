@@ -269,6 +269,11 @@ package ase_pkg;
    // Latency buffer TID width
    parameter LATBUF_TID_WIDTH        = 32;
 
+   // ASE Response FIFO specifics
+   parameter ASE_RSPFIFO_DEPTH           = 256;
+   parameter ASE_RSPFIFO_COUNT_WIDTH     = $clog2(ASE_RSPFIFO_DEPTH);
+   parameter ASE_RSPFIFO_ALMFULL_THRESH  = ASE_RSPFIFO_DEPTH - 10;   
+   
 
    /*
     * CCI Transaction packet
@@ -690,7 +695,7 @@ package ase_pkg;
    // parameter SNIFF_CODE_WIDTH = 5;
    parameter SNIFF_VECTOR_WIDTH = 32;
  // 2**SNIFF_CODE_WIDTH;
-      
+
    // Error code indices
    typedef enum   {
 		   SNIFF_NO_ERROR                = 0,
@@ -733,6 +738,12 @@ package ase_pkg;
    /*
     * outoforder_wrf_channel Transaction checker block
     */
-   // <TBD>
-   
+ `ifdef ASE_DEBUG
+   typedef struct packed {
+      logic [LATBUF_TID_WIDTH-1:0] tid;
+      logic 			   txhdr_valid;
+      TxHdr_t                      txhdr;
+      } ccip_txn_t;
+ `endif
+
 endpackage
