@@ -1,0 +1,28 @@
+#!/bin/bash
+
+PEEK="./pcipeek.py"
+
+# Find PF device
+
+# Try 8086:bcbd
+if lspci | grep "Intel.*bcbd"; then
+   BDF=$(lspci | grep "Intel.*bcbd" | sed "s/\([0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}\.[0-9a-fA-F]\).*/\1/")
+   echo "Found BDX-P PF device at ${BDF}"
+
+# Try 8086:bcc0
+elif lspci | grep "Intel.*bcc0"; then
+   BDF=$(lspci | grep "Intel.*bcc0" | sed "s/\([0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}\.[0-9a-fA-F]\).*/\1/")
+   echo "Found SKX-P PF device at ${BDF}"
+else
+   echo "No Xeon+FPGA PF found."
+   exit 1
+fi
+
+PF_PORT_RES="/sys/bus/pci/devices/0000:${BDF}/resource2"
+
+# read AFU_ID
+AFU_ID_L_RAW=$(${PEEK} "${PF_PORT_RES}" 0x40008 | sed "s/0x\([0-9a-fA-F]\{4\}\)\([0-9a-fA-F]\{12\}\)/\1-\2/")
+AFU_ID_H_RAW=$(${PEEK} "${PF_PORT_RES}" 0x40010 | sed "s/0x\([0-9a-fA-F]\{8\}\)\([0-9a-fA-F]\{4\}\)\([0-9a-fA-F]\{4\}\)/\1-\2-\3/")
+
+echo "AFU_ID in PF PORT0: ${AFU_ID_H_RAW}-${AFU_ID_L_RAW}"
+
