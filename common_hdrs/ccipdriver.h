@@ -121,7 +121,10 @@ typedef enum
    uid_errnumPRPowerMgrTimeout,                  // 40
    uid_errnumPRPowerMgrCoreIdleFail,             // 41
    uid_errnumNoPRPowerMgrDemon,                  // 42
-   uid_errnumSigtapRevokeTimeout                 // 43
+   uid_errnumSigtapRevokeTimeout,                // 43
+   uid_errnumBadSocket,                          // 44
+   uid_errnumRdMsrCmdFail,                       // 45
+   uid_errnumFPGAPowerRequestTooLarge            // 46
 
 
 

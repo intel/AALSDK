@@ -479,9 +479,59 @@ void CHWALIPORT::readPortError( struct CCIP_PORT_ERROR port_error,
       rResult.Add(AAL_ERR_PORT_TX_CH2_FIFO_OVERFLOW,true);
    }
 
+   if(port_error.unexp_mmio_resp) {
+      rResult.Add(AAL_ERR_PORT_UNEXP_MMIORESP,true);
+   }
+
    if(port_error.num_pending_req_overflow) {
       rResult.Add(AAL_ERR_PORT_NUM_PENDREQ_OVERFLOW,true);
    }
+
+
+   if(port_error.llpr_smrr_err) {
+      rResult.Add(AAL_ERR_PORT_LLPR_SMRR,true);
+   }
+
+   if(port_error.llpr_smrr2_err) {
+      rResult.Add(AAL_ERR_PORT_LLPR_SMRR2,true);
+   }
+
+   if(port_error.llpr_mesg_err) {
+      rResult.Add(AAL_ERR_PORT_LLPR_MSG,true);
+   }
+
+   if(port_error.genport_range_err) {
+      rResult.Add(AAL_ERR_PORT_GENPORT_RANGE,true);
+   }
+
+   if(port_error.legrange_low_err) {
+      rResult.Add(AAL_ERR_PORT_LEGRANGE_LOW,true);
+   }
+
+   if(port_error.legrange_hight_err) {
+      rResult.Add(AAL_ERR_PORT_LEGRANGE_HIGH,true);
+   }
+
+   if(port_error.vgmem_range_err) {
+      rResult.Add(AAL_ERR_PORT_VGAMEM_RANGE,true);
+   }
+
+   if(port_error.page_fault_err) {
+      rResult.Add(AAL_ERR_PORT_PAGEFAULT,true);
+   }
+
+   if(port_error.pmr_err) {
+      rResult.Add(AAL_ERR_PORT_PMRERROR,true);
+   }
+
+   if(port_error.ap6_event) {
+      rResult.Add(AAL_ERR_PORT_AP6EVENT,true);
+   }
+
+   if(port_error.vfflr_accesseror) {
+      rResult.Add(AAL_ERR_PORT_VFFLR_ACCESS,true);
+   }
+
 }
 
 //
@@ -499,36 +549,36 @@ void CHWALIPORT::writePortError(struct CCIP_PORT_ERROR *pPort_Error,const INamed
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH0_REQ_CL_LEN3)) {
-       pPort_Error->tx_ch0_req_cl_len3 =0x1;
-    }
+      pPort_Error->tx_ch0_req_cl_len3 =0x1;
+   }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH0_REQ_CL_LEN2)) {
-       pPort_Error->tx_ch0_req_cl_len2=0x1;
-    }
+      pPort_Error->tx_ch0_req_cl_len2=0x1;
+   }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH0_REQ_CL_LEN4)) {
-       pPort_Error->tx_ch0_req_cl_len4=0x1;
-    }
+      pPort_Error->tx_ch0_req_cl_len4=0x1;
+   }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_OVERFLOW)) {
-       pPort_Error->tx_ch1_overflow=0x1;
-    }
+      pPort_Error->tx_ch1_overflow=0x1;
+   }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_REQ_CL_LEN3)) {
-       pPort_Error->tx_ch1_req_cl_len3=0x1;
-    }
+      pPort_Error->tx_ch1_req_cl_len3=0x1;
+   }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_REQ_CL_LEN2)) {
-       pPort_Error->tx_ch1_req_cl_len2=0x1;
-    }
+      pPort_Error->tx_ch1_req_cl_len2=0x1;
+   }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_REQ_CL_LEN4)) {
-       pPort_Error->tx_ch1_req_cl_len4=0x1;
-    }
+      pPort_Error->tx_ch1_req_cl_len4=0x1;
+   }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_DATAPYL_OVERRUN)) {
-       pPort_Error->tx_ch1_datapayload_overrun=0x1;
-    }
+      pPort_Error->tx_ch1_datapayload_overrun=0x1;
+   }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_INCORR_ADDR)) {
        pPort_Error->tx_ch1_incorr_addr=0x1;
@@ -536,23 +586,75 @@ void CHWALIPORT::writePortError(struct CCIP_PORT_ERROR *pPort_Error,const INamed
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_SOP_DETECTED)) {
        pPort_Error->tx_ch1_sop_detcted=0x1;
-    }
+   }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_ATOMIC_REQ)) {
-       pPort_Error->tx_ch1_atomic_req=0x1;
-    }
+      pPort_Error->tx_ch1_atomic_req=0x1;
+   }
 
    if(rInputArgs.Has(AAL_ERR_PORT_MMIOREAD_TIMEOUT)) {
-       pPort_Error->mmioread_timeout=0x1;
-    }
+      pPort_Error->mmioread_timeout=0x1;
+   }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH2_FIFO_OVERFLOW)) {
-       pPort_Error->tx_ch2_fifo_overflow=0x1;
-    }
+      pPort_Error->tx_ch2_fifo_overflow=0x1;
+   }
 
    if(rInputArgs.Has(AAL_ERR_PORT_NUM_PENDREQ_OVERFLOW)) {
-       pPort_Error->num_pending_req_overflow=0x1;
-    }
+      pPort_Error->num_pending_req_overflow=0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PORT_UNEXP_MMIORESP)) {
+      pPort_Error->unexp_mmio_resp=0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PORT_LLPR_SMRR)) {
+      pPort_Error->llpr_smrr_err=0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PORT_LLPR_SMRR2)) {
+      pPort_Error->llpr_smrr2_err=0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PORT_LLPR_MSG)) {
+      pPort_Error->llpr_mesg_err=0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PORT_GENPORT_RANGE)) {
+      pPort_Error->genport_range_err=0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PORT_LEGRANGE_LOW)) {
+      pPort_Error->legrange_low_err=0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PORT_LEGRANGE_HIGH)) {
+      pPort_Error->legrange_hight_err=0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PORT_VGAMEM_RANGE)) {
+      pPort_Error->vgmem_range_err=0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PORT_PAGEFAULT)) {
+      pPort_Error->page_fault_err=0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PORT_PMRERROR)) {
+      pPort_Error->pmr_err=0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PORT_PAGEFAULT)) {
+      pPort_Error->page_fault_err=0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PORT_AP6EVENT)) {
+      pPort_Error->ap6_event=0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PORT_VFFLR_ACCESS)) {
+      pPort_Error->vfflr_accesseror=0x1;
+   }
 
 }
 
