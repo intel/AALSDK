@@ -38,25 +38,16 @@
 ##       leaving in the code but not attempting to build (SPL will not build)
 ## NOTE: Removed CCI-S support, but difference between Hello_CCI_NLB and
 ##       Hello_ALI_NLB is useful, so leaving Hello_CCI_NLB in place for now.
-SUBDIRS=\
-Hello_AAL_Service/SW \
-Hello_AAL/SW \
-Hello_ALI_NLB/SW \
-Hello_ALI_HSSI/SW \
-ALI_Multi_AFU_with_PerfMon/SW \
-Temp_Power_Monitor/SW \
-MMLink/SW \
-ALI_Configure_AFU/SW \
-Error_Monitor/SW \
-PCIe_ErrMon/SW
+## Changing this to auto-detect and build if Makefile exists in each subdir.
+SUBDIRS := $(shell find . -name Makefile|sed 's^./^^;s/Makefile//')
 
-#Removed SUBDIRS
-#SUBDIRS=\
-#Hello_CCI_NLB/SW \
-#Hello_SPL_LB/SW \
-#Sudoku_SPL/SW \
-#LinkedList_SPL/SW
-
+#Removed SUBDIRS go below
+SUBDIRS :=$(filter-out \
+Hello_CCI_NLB/SW/ \
+Hello_SPL_LB/SW/ \
+Sudoku_SPL/SW/ \
+LinkedList_SPL/SW/, \
+$(SUBDIRS))
 
 
 MFLAGS  =
@@ -81,6 +72,7 @@ MFLAGS += DESTDIR=$(DESTDIR)
 endif
 
 all clean:
+	echo SUBDIRS is $(SUBDIRS)
 	@for d in ${SUBDIRS} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done
 
 .PHONY: all clean

@@ -1,0 +1,3 @@
+get_port_feature()
+port_afu_quiesce_and_halt()
+port_afu_Enable()

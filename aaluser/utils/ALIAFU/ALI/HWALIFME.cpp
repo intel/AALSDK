@@ -120,6 +120,12 @@ btBool CHWALIFME::performanceCountersGet ( INamedValueSet*  const  pResult,
    pResult->Add(pPref->upi_read.name,pPref->upi_read.value);
    pResult->Add(pPref->upi_write.name,pPref->upi_write.value);
 
+   pResult->Add(pPref->AFU0_MemRead_Trans.name,pPref->AFU0_MemRead_Trans.value);
+   pResult->Add(pPref->AFU0_MemWrite_Trans.name,pPref->AFU0_MemWrite_Trans.value);
+   pResult->Add(pPref->AFU0_DevTLBRead_Hit.name,pPref->AFU0_DevTLBRead_Hit.value);
+   pResult->Add(pPref->AFU0_DevTLBWrite_Hit.name,pPref->AFU0_DevTLBWrite_Hit.value);
+
+
    return true;
 }
 
@@ -1007,24 +1013,24 @@ btBool CHWALIFME::thermalGetValues( INamedValueSet &rResult)
 
    temp_threshold.csr = pthermal_pwr->tmp_threshold  ;
 
-   if(temp_threshold.thshold1_status  ) {
+   if(0x1 == temp_threshold.thshold1_status  ) {
       rResult.Add(AALTEMP_THRESHOLD1,temp_threshold.tmp_thshold1);
    }
 
-   if(temp_threshold.thshold2_status  ) {
+   if(0x1 == temp_threshold.thshold2_status  ) {
       rResult.Add(AALTEMP_THRESHOLD2,temp_threshold.tmp_thshold2);
    }
 
    rResult.Add(AALTEMP_THERM_TRIP,temp_threshold.therm_trip_thshold);
 
-   if((temp_threshold.thshold1_status) &&
-      (temp_threshold.thshold_policy == 0) ) {
+   if((0x1 == temp_threshold.thshold1_status) &&
+      (0x0 == temp_threshold.thshold_policy ) ) {
          rResult.Add(AALTEMP_THSHLD_STATUS1_AP1,true);
    }
 
-   if((temp_threshold.thshold1_status) &&
-      (temp_threshold.thshold_policy == 1) ) {
-         rResult.Add(AALTEMP_THSHLD_STATUS1_AP2,temp_threshold.tmp_thshold2);
+   if((0x1 == temp_threshold.thshold1_status) &&
+      (0x1 == temp_threshold.thshold_policy ) ) {
+         rResult.Add(AALTEMP_THSHLD_STATUS1_AP2,true);
    }
 
    if(temp_threshold.thshold2_status) {

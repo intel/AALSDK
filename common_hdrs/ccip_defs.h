@@ -95,6 +95,9 @@ BEGIN_NAMESPACE(AAL)
 
 #define CCIP_UMSG_SIZE              (0x1000)
 
+// Clear Error CSRs
+#define  CLEAR_ALL_ERRORS 0xFFFFFFFFFFFFFFFF
+
 ///=================================================================
 /// Enumerations
 ///=================================================================
@@ -172,6 +175,18 @@ enum e_Fabric_Event_Code {
    Fabric_PCIe1_Write = 0x3,
    Fabric_UPI_Read = 0x4,
    Fabric_UPI_Write = 0x5
+};
+
+// VT-D event codes
+enum e_vtd_Event_Code {
+   AFU0_MemRead_Trans        = 0x0,
+   AFU1_MemRead_Trans        = 0x1,
+   AFU0_MemWrite_Trans       = 0x2,
+   AFU1_MemWrite_Trans       = 0x3,
+   AFU0_DevTLBRead_Hit       = 0x4,
+   AFU1_DevTLBRead_Hit       = 0x5,
+   AFU0_DevTLBWrite_Hit      = 0x6,
+   AFU1_DevTLBWrite_Hit      = 0x7,
 };
 
 /// CCI-P port id
@@ -703,7 +718,7 @@ struct CCIP_PM_STATUS {
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt pwr_consumed :17;        // power consumed
+         btUnsigned64bitInt pwr_consumed :18;        // power consumed
          btUnsigned64bitInt fpga_latency_report :1;  // FPGA Latency Tolerance Reporting (LTR)
          btUnsigned64bitInt rsvd3 :45;               // Reserved
       }; // end struct
@@ -713,34 +728,35 @@ struct CCIP_PM_STATUS {
 CASSERT(sizeof(struct CCIP_PM_STATUS) == (1*8));
 
 
-//Power Management Status
-struct CCIP_FME_THRESHOLDS {
+//Power Management AP Thresholds
+struct CCIP_PM_AP_THRESHOLDS {
 
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt threshold1 :10;   // threshold1
-         btUnsigned64bitInt threshold2 :10;   // threshold2
-         btUnsigned64bitInt threshold3 :10;   // threshold3
-         btUnsigned64bitInt threshold4 :10;   // threshold4
-         btUnsigned64bitInt rsvd3 :24;        // Reserved
+         btUnsigned64bitInt threshold1 :10;           //Threshold 1
+         btUnsigned64bitInt threshold2 :10;           //Threshold 2
+         btUnsigned64bitInt threshold3 :10;           //Threshold 3
+         btUnsigned64bitInt threshold4 :10;           //Threshold 4
+         btUnsigned64bitInt rsvd :24;                 // Reserved
       }; // end struct
    }; // end union
 
-} ; // end struct CCIP_FME_THRESHOLDS
-CASSERT(sizeof(struct CCIP_FME_THRESHOLDS) == (1*8));
+} ; // end struct CCIP_PM_AP_THRESHOLDS
+CASSERT(sizeof(struct CCIP_PM_AP_THRESHOLDS) == (1*8));
+
 
 struct CCIP_FME_DFL_PM {
 
    // FME Power Management Feature header
-   struct CCIP_DFH                  ccip_fme_pm_dflhdr;
+   struct CCIP_DFH                      ccip_fme_pm_dflhdr;
 
    // PM Status
-   struct CCIP_PM_STATUS            pm_status;
+   struct CCIP_PM_STATUS                pm_status;
 
-   // PM thresholds
-   struct CCIP_FME_THRESHOLDS       pm_thresholds;
-
+   // PM AP thresholds
+   struct CCIP_PM_AP_THRESHOLDS         pm_ap_thresholds;
+  
 }; // end struct CCIP_PM_MAXVR
 CASSERT(sizeof(struct CCIP_FME_DFL_PM) == (8* 3));
 
@@ -1025,6 +1041,22 @@ struct CCIP_FME_RAS_WARNERROR {
 }; // end struct CCIP_FME_RAS_WARNERROR
 CASSERT(sizeof(struct CCIP_FME_RAS_WARNERROR) == (1 *8));
 
+
+struct CCIP_FME_RAS_ERROR_INJ {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt catast_error :1;                  // sets this bit to enact a Catastrophic error
+         btUnsigned64bitInt fatal_error :1;                   // sets this bit to enact a Fatal error
+         btUnsigned64bitInt warning_error :1;                 // sets this bit to enact a Warning error
+         btUnsigned64bitInt rsvd :61;                         // Reserved
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_FME_RAS_ERROR_INJ
+CASSERT(sizeof(struct CCIP_FME_RAS_ERROR_INJ) == (1 *8));
+
 ///============================================================================
 /// Name: CCIP_FME_DFL_GERROR
 /// @brief   FPGA Management Engine Performance Global Error Feature
@@ -1079,8 +1111,11 @@ struct CCIP_FME_DFL_GERROR {
    // FME RAS warning error
    struct CCIP_FME_RAS_WARNERROR          ras_warnerror;
 
+   // FME RAS error injection
+   struct CCIP_FME_RAS_ERROR_INJ          ras_error_inj;
+
 }; //end CCIP_FME_GERROR_feature
-CASSERT(sizeof(struct CCIP_FME_DFL_GERROR) ==(15* 8));
+CASSERT(sizeof(struct CCIP_FME_DFL_GERROR) ==(16* 8));
 
 ///============================================================================
 /// Name: CCIP_FME_DFL_PR
@@ -1285,9 +1320,9 @@ struct CCIP_PORT_HDR {
          btUnsigned64bitInt csr;
          struct {
             btUnsigned64bitInt port_sftreset_control :1;       // port soft reset control
-            btUnsigned64bitInt port_freeze :1;                 //  Port Freeze
-            btUnsigned64bitInt afu_latny_rep :1;               // AFU Latency Tolerance Reorting
             btUnsigned64bitInt rsvd1 :1;                       // Reserved
+            btUnsigned64bitInt afu_latny_rep :1;               // AFU Latency Tolerance Reorting
+            btUnsigned64bitInt rsvd2 :1;                       // Reserved
             btUnsigned64bitInt ccip_outstanding_request :1;    // NO outstanding CCI-P requests, set to 1
             btUnsigned64bitInt rsvd :59;                       // Reserved
          }; // end struct
@@ -1300,7 +1335,8 @@ struct CCIP_PORT_HDR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt rsvd1 :8;                 // Reserved
+            btUnsigned64bitInt port_freeze :1;           // Port freeze
+            btUnsigned64bitInt rsvd1 :7;                 // Reserved
             btUnsigned64bitInt afu_pwr_state :4;         // Reports AFU Power state
             btUnsigned64bitInt rsvd :48;                 // Reserved
          }; // end struct
@@ -1308,18 +1344,8 @@ struct CCIP_PORT_HDR {
 
    }ccip_port_status; // end struct CCIP_PORT_STATUS
 
-
-   // Port status
-   struct CCIP_AFU_PWR_BUDGET {
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt afu_pwr_budget :64;          // AFU power budget
-         }; // end struct
-      }; // end union
-
-   }ccip_afu_pwr_budget; // end struct CCIP_AFU_PWR_BUDGET
-
+   // Reserved
+   btUnsigned64bitInt port_rsvd1_hdr;
 
    struct CCIP_USER_CLK_FREQ user_clk_freq_cmd0;
    struct CCIP_USER_CLK_FREQ user_clk_freq_cmd1;
@@ -1367,21 +1393,24 @@ struct CCIP_PORT_ERROR {
 
             btUnsigned64bitInt mmioread_timeout :1;            // MMIO Read Timeout in AFU
             btUnsigned64bitInt tx_ch2_fifo_overflow :1;        // Tx Channel2 : FIFO overflow
+            btUnsigned64bitInt unexp_mmio_resp :1;             // MMIO read is not matching pending request
 
-            btUnsigned64bitInt rsvd2 :6;                       // Reserved
+            btUnsigned64bitInt rsvd2 :5;                       // Reserved
 
             btUnsigned64bitInt num_pending_req_overflow :1;    // Number of pending Requests: counter overflow
-            btUnsigned64bitInt llpr_smrr_err :1;               // Number of pending Requests: counter overflow
-            btUnsigned64bitInt llpr_smrr2_err :1;              // Number of pending Requests: counter overflow
-            btUnsigned64bitInt llpr_mesg_err :1;               // Number of pending Requests: counter overflow
-            btUnsigned64bitInt genport_range_err :1;           // Number of pending Requests: counter overflow
-            btUnsigned64bitInt legrange_low_err :1;            // Number of pending Requests: counter overflow
-            btUnsigned64bitInt legrange_hight_err :1;          // Number of pending Requests: counter overflow
-            btUnsigned64bitInt vgmem_range_err :1;             // Number of pending Requests: counter overflow
-            btUnsigned64bitInt page_fault_err :1;              // Number of pending Requests: counter overflow
-            btUnsigned64bitInt pmr_err :1;                     // Number of pending Requests: counter overflow
+            btUnsigned64bitInt llpr_smrr_err :1;               // Request with Address violating SMM Range
+            btUnsigned64bitInt llpr_smrr2_err :1;              // Request with Address violating second SMM Range
+            btUnsigned64bitInt llpr_mesg_err :1;               // Request with Address violating ME Stolen message
+            btUnsigned64bitInt genport_range_err :1;           // Request with Address violating Generic protect range
+            btUnsigned64bitInt legrange_low_err :1;            // Request with Address violating Legacy Range low
+            btUnsigned64bitInt legrange_hight_err :1;          // Request with Address violating Legacy Range High
+            btUnsigned64bitInt vgmem_range_err :1;             // Request with Address violating VGA memory range
+            btUnsigned64bitInt page_fault_err :1;              // Page fault
+            btUnsigned64bitInt pmr_err :1;                     // PMR Error
+            btUnsigned64bitInt ap6_event :1;                   // AP6 event
+            btUnsigned64bitInt vfflr_accesseror:1;             // VF FLR detected on Port with PF access control.
 
-            btUnsigned64bitInt rsvd3 :14;                      // Reserved
+            btUnsigned64bitInt rsvd3 :12;                      // Reserved
          }; // end struct
       }; // end union
 
@@ -1451,7 +1480,8 @@ struct CCIP_PORT_DFL_UMSG {
             btUnsigned64bitInt no_umsg_alloc_port :8;    // number of umsg allocated to this port
             btUnsigned64bitInt status_umsg_engine :1;    // enable umsg engine for this ort 1-enable 0-disable
             btUnsigned64bitInt umsg_init_status :1;      // usmg initialization status
-            btUnsigned64bitInt rsvd :54;                 // Reserved
+            btUnsigned64bitInt umsg_trans_error :1;      // IOMMU not able to translate of the umsg base address
+            btUnsigned64bitInt rsvd :53;                 // Reserved
          }; // end struct
       }; // end union
 

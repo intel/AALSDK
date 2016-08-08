@@ -41,6 +41,7 @@ AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     	[1],[1],[1])
 AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    	[1],[1],[1])
 AALSDK_LTLIB_VERSION([SWSIMALIAFU],  [libSWSimALIAFU],  	[1],[1],[1])
 AALSDK_LTLIB_VERSION([ALI],          [libALI],          	[1],[1],[1])
+AALSDK_LTLIB_VERSION([PWRMGR],       [libPwrMgr],           [1],[1],[1])
 
 AALSDK_LTLIB_VERSION([SWVALMOD],     [libswvalmod],      [3],[2],[1])
 AALSDK_LTLIB_VERSION([SWVALSVCMOD],  [libswvalsvcmod],   [6],[5],[4])
@@ -150,6 +151,7 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/service/HWALIAFUService.h
                  include/aalsdk/service/ASEALIAFUService.h
                  include/aalsdk/service/SWSimALIAFUService.h
+                 include/aalsdk/service/PwrMgrService.h
                  include/aalsdk/service/ALIService.h])
 
 AC_CONFIG_LINKS([include/aalsdk/ase/ase_common.h:ase/sw/ase_common.h])
@@ -172,6 +174,8 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/ALIAFU/ASEALIAFU/Makefile
                  utils/ALIAFU/SWSimALIAFU/Makefile
                  utils/ALIAFU/ALI/Makefile
+                 utils/PowerManager/PwrMgrService/Makefile
+                 utils/PowerManager/PwrMgrApp/Makefile
                  utils/scripts/Makefile])
 
                  

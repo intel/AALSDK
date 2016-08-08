@@ -105,6 +105,11 @@ struct NLBDefaults
    const char     *wvh1;
    const char     *wvr;
 
+   const char     *wrfva;
+   const char     *wrfvl0;
+   const char     *wrfvh0;
+   const char     *wrfvh1;
+
    const char     *awp;
 
    const char     *st;
@@ -218,6 +223,11 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_WRITE_VH0         (u64_type)0x10000000000000 /* --wvh0         Data transferred on PCIe0  channel for writes         */
 #define NLB_CMD_FLAG_WRITE_VH1         (u64_type)0x20000000000000 /* --wvh1         Data transferred on PCIe1  channel for writes         */
 #define NLB_CMD_FLAG_WRITE_VR          (u64_type)0x40000000000000 /* --wvr          Data transferred on randomly chosen channel for writes*/
+
+#define NLB_CMD_FLAG_WRFENCE_VA        (u64_type)0x80000000000000  /* --wrfva       Distribute data among QPI, PCIe0 and PCIe1 channels   		*/
+#define NLB_CMD_FLAG_WRFENCE_VL0       (u64_type)0x100000000000000 /* --wrfvl0      Data transferred on QPI channel for write fence       		*/
+#define NLB_CMD_FLAG_WRFENCE_VH0       (u64_type)0x200000000000000 /* --wrfvh0      Data transferred on PCIe0  channel for write fence          */
+#define NLB_CMD_FLAG_WRFENCE_VH1       (u64_type)0x400000000000000 /* --wrfvh1      Data transferred on PCIe1  channel for write fence          */
 
 #define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   		/* --0 */
 #define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  		/* --1 */

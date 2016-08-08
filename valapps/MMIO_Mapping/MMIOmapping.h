@@ -47,14 +47,14 @@
 #include <aalsdk/service/IALIAFU.h>
 
 
-//#include <string.h>
+#include <string.h>
 
 //****************************************************************************
 // UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
 //    DEFAULT is to use Software Simulation.
 //****************************************************************************
 //#define  HWAFU
-#define  ASEAFU
+//#define  ASEAFU
 
 using namespace std;
 using namespace AAL;
@@ -85,7 +85,7 @@ using namespace AAL;
 #ifndef MB
 # define MB(x)                     ((x) * 1024 * 1024)
 #endif // MB
-#define LPBK1_BUFFER_SIZE        CL(1)
+#define LPBK1_BUFFER_SIZE        MB(2)
 #define MMIO_SIZE                (256 * 1024) //(32 bit hdr data * 2^16) is the size of WHOLE AFU MMMIO region
 #define MMIO_Start_Address       0x00
 #define SAS_HW_MMIO_SIZE         (256 * 1024)
@@ -117,16 +117,21 @@ class MMIOMapping: public CAASBase, public IRuntimeClient, public IServiceClient
 public:
 
 	MMIOMapping();
+	MMIOMapping(btString strPlatform);
    ~MMIOMapping();
 
-   btInt run();    						///< Return 0 if success
-   btInt runMMIOWholeRegion32();		///< return 0 if success
-   btInt runMMIOWholeRegion64();        ///< return 0 if success
-   btInt runInvalidMMIORegion();        ///< return 0 if success
-   btInt runMMIOLength();               ///< return 0 if success
-   btInt runDFHFeature();               ///< return 0 if success
-   btInt runCorruptDFH();               ///< return 0 if success
-   btInt runMMIOStress();               ///< return 0 if success
+   btInt  run(btString strPlatform, btInt testNum); ///< Return 0 if success
+   btInt  MMIOWholeRegion32();		 				///< return 0 if success
+   btInt  MMIOWholeRegion64();        				///< return 0 if success
+   btInt  InvalidMMIORegion();        				///< return 0 if success
+   btInt  MMIOLength();               				///< return 0 if success
+   btInt  DFHFeature();               				///< return 0 if success
+   btInt  CorruptDFH();               				///< return 0 if success
+   btInt  MMIOStress();               				///< return 0 if success
+   btInt  testMMIOWriteOneCacheLine();              //write 1 cache line to MMIO
+
+   //display usage function
+   void usage();
 
    // <begin IServiceClient interface>
    void serviceAllocated(IBase *pServiceBase,
@@ -183,8 +188,8 @@ protected:
    btPhysAddr     m_OutputPhys;     ///< Output workspace physical address.
    btWSSize       m_OutputSize;     ///< Output workspace size in bytes.
 
-   //test case number
-   btInt 		  m_TestNum;       /// test case number selected by user
+   //run time environment flag
+   btString       m_strPlatform;       /// test platform selected by user
 
    //get service routine for internal use only
    btBool _getALIMMIOService();
@@ -195,6 +200,10 @@ protected:
    //Verify Feature Type in the List
    btBool _verifyFeatureType(btUnsigned32bitInt featureType,
                               btUnsigned32bitInt featureID);
+
+   //write 1 cache line to MMIO
+   btBool _testMMIOWriteOneCacheLine();
+
 };
 
 

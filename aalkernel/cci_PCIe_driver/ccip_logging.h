@@ -166,6 +166,15 @@ void ccip_log_fme_ap_state(struct ccip_device *pccipdev,
 void ccip_log_fme_error(struct ccip_device *pccipdev,
                         struct fme_device *pfme_dev);
 
+/// Name:    ccip_log_fme_ras_error
+/// @brief   logs fme RAS errors to kernel logger.
+///
+/// @param[in] pccipdev  ccip device pointer.
+/// @param[in] pfme_dev  fme device  pointer.
+/// @return    no return value
+void ccip_log_fme_ras_error(struct ccip_device *pccipdev ,
+                           struct fme_device *pfme_dev);
+
 /// Name:    ccip_log_port_error
 /// @brief   logs port errors to kernel logger.
 ///

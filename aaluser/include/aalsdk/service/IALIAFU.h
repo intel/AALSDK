@@ -176,7 +176,16 @@ typedef enum
    ali_errnumPRIPProtocal,                       // 35
    ali_errnumPRFIFO,                             // 36
    ali_errnumAFUActivationFail,                  // 37
-   ali_errnumPRDeviceBusy                        // 38
+   ali_errnumPRDeviceBusy,                       // 38
+   ali_errnumPRSecureLoad,                       // 39
+   ali_errnumPRPowerMgrTimeout,                  // 40
+   ali_errnumPRPowerMgrCoreIdleFail,             // 41
+   ali_errnumNoPRPowerMgrDemon,                  // 42
+   ali_errnumSigtapRevokeTimeout,                // 43
+   ali_errnumBadSocket,                          // 44
+   ali_errnumRdMsrCmdFail,                       // 45
+   ali_errnumFPGAPowerRequestTooLarge            // 46
+
 } ali_errnum_e;
 
 
@@ -521,6 +530,12 @@ public:
    #define AALPERF_PCIE1_WRITE      "PCIe1 Write"
    #define AALPERF_UPI_READ         "UPI Read"
    #define AALPERF_UPI_WRITE        "UPI Write"
+
+   #define AALPERF_VTD_AFU_MEMREAD_TRANS            "VT-d AFU Memory Read Transaction"
+   #define AALPERF_VTD_AFU_MEMWRITE_TRANS           "VT-d AFU Memory Write Transaction"
+   #define AALPERF_VTD_AFU_DEVTLBREAD_HIT           "VT-d AFU DevTLB Read Hit"
+   #define AALPERF_VTD_AFU_DEVTLBWRITE_HIT          "VT-d AFU DevTLB Write Hit"
+
    ///
    /// @code
    /// INamedValueSet const *pResult = NULL;
@@ -958,36 +973,24 @@ public:
 
    #define AAL_ERR_PORT_MMIOREAD_TIMEOUT          "MMIO Read Timeout in AFU"
    #define AAL_ERR_PORT_TX_CH2_FIFO_OVERFLOW      "Tx Channel2: FIFO overflow"
+   #define AAL_ERR_PORT_UNEXP_MMIORESP            "MMIO read response received, with no matching pending request"
    #define AAL_ERR_PORT_NUM_PENDREQ_OVERFLOW      "Number of pending Requests: counter overflow"
+
+   #define AAL_ERR_PORT_LLPR_SMRR                 "Request with Address violating SMM Range"
+   #define AAL_ERR_PORT_LLPR_SMRR2                "Request with Address violating second SMM Range"
+   #define AAL_ERR_PORT_LLPR_MSG                  "Request with Address violating ME Stolen message"
+   #define AAL_ERR_PORT_GENPORT_RANGE             "Request with Address violating Generic protect range"
+   #define AAL_ERR_PORT_LEGRANGE_LOW              "Request with Address violating Legacy Range Low"
+   #define AAL_ERR_PORT_LEGRANGE_HIGH             "Request with Address violating Legacy Range High"
+   #define AAL_ERR_PORT_VGAMEM_RANGE              "Request with Address violating VGA memory range"
+   #define AAL_ERR_PORT_PAGEFAULT                 "Page fault"
+   #define AAL_ERR_PORT_PMRERROR                  "PMR Error"
+   #define AAL_ERR_PORT_AP6EVENT                  "AP6 Event"
+   #define AAL_ERR_PORT_VFFLR_ACCESS              "VF FLR detected on Port with PF access control"
+
    #define AAL_ERR_PORT_MALFORMED_REQ_0           "Port malformed request0"
    #define AAL_ERR_PORT_MALFORMED_REQ_1           "Port malformed request1"
 
-
-   enum e_Port_Error {
-      e_port_OK,                                    ///< No Port Errors
-      e_tx_ch0_overflow = 0x1,                      ///< Tx Channel0: Overflow
-      e_tx_ch0_invalidReq = 0x2,                    ///< Tx Channel0: Invalid request encoding
-      e_tx_ch0_Req_cl_len3 = 0x4,                   ///< Tx Channel0: Request with cl_len3
-      e_tx_ch0_Req_cl_len2 = 0x8,                   ///< Tx Channel0: Request with cl_len2
-      e_tx_ch0_Req_cl_len4 = 0x16,                  ///< Tx Channel0: Request with cl_len4
-
-      e_tx_ch1_overflow = 0x800,                    ///< Tx Channel1: Overflow
-      e_tx_ch1_invalidReq = 0x1000,                 ///< Tx Channel1: Invalid request encoding
-      e_tx_ch1_Req_cl_len3 =  0x2000,               ///< Tx Channel1: Request with cl_len3
-      e_tx_ch1_Req_cl_len2 = 0x4000,                ///< Tx Channel1: Request with cl_len2
-      e_tx_ch1_Req_cl_len4 = 0x8000,                ///< Tx Channel1: Request with cl_len4
-
-      e_tx_ch1_insuff_datapayload = 0x10000,        ///< Tx Channel1: Insufficient data payload
-      e_tx_ch1_dataype_overrun = 0x20000,           ///< Tx Channel1: Data payload overrun
-      e_tx_ch1_incorrect_address = 0x40000,         ///< Tx Channel1: Incorrect address
-      e_tx_ch1_sop_detected = 0x80000,              ///< Tx Channel1: NON-Zero SOP Detected
-      e_tx_ch1_atomic_req = 0x100000,               ///< "Tx Channel1: Illegal VC_SEL, atomic request VLO
-
-      e_mmioread_timeout = 0x100000000,             ///< MMIO Read Timeout in AFU
-      e_tx_ch2_fifo_overflow = 0x200000000,         ///< Tx Channel2: FIFO overflow
-      e_num_pending_overflow = 0x10000000000        ///< Number of pending Requests: counter overflow
-
-   };
 
    virtual ~IALIPortError() {}
 

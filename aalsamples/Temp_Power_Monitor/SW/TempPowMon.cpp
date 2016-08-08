@@ -106,10 +106,10 @@ public:
    ///
    /// Application Requests Service using Runtime Client passing a pointer to self.
    /// Blocks calling thread from [Main} untill application is done.
-   btInt run(btBool bClear); //Return 0 if success
+   btInt run(); //Return 0 if success
 
    void   getTemp();
-   btBool getPower(btBool bClear);
+   btBool getPower();
 
    btBool isOK()  {return m_bIsOK;}
 
@@ -151,9 +151,10 @@ public:
 protected:
    IBase            *m_pAALService;    // The generic AAL Service interface for the AFU.
    Runtime           m_Runtime;
-   IALIMMIO         *m_pALIMMIOService;
    CSemaphore        m_Sem;            // For synchronizing with the AAL runtime.
    btInt             m_Result;         // Returned result value; 0 if success
+   IALITemperature  *m_pALITemperature ;
+   IALIPower        *m_pALIPower ;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -164,8 +165,9 @@ protected:
 TempPowMonApp::TempPowMonApp() :
    m_pAALService(NULL),
    m_Runtime(this),
-   m_pALIMMIOService(NULL),
-   m_Result(0)
+   m_Result(0),
+   m_pALITemperature(NULL),
+   m_pALIPower(NULL)
 {
     // Publish our interfaces
     SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
@@ -196,194 +198,74 @@ TempPowMonApp::~TempPowMonApp()
 
 void TempPowMonApp::getTemp()
 {
-   // Temperature Sensor Read values
-   struct CCIP_TEMP_RDSSENSOR_FMT1 {
+   NamedValueSet temp;
+   btUnsignedInt count       = 0;
+   btUnsigned64bitInt value  = 0;
 
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned32bitInt low;
-            btUnsigned32bitInt high;
-         };
-         struct {
-            btUnsigned64bitInt tmp_reading :7; // Reads out FPGA temperature in celsius.
-            btUnsigned64bitInt rsvd2 :1;
-            btUnsigned64bitInt tmp_reading_seq_num :16; // Temperature reading sequence number
-            btUnsigned64bitInt tmp_reading_valid :1; // Temperature reading is valid
-            btUnsigned64bitInt rsvd1 :7;
-            btUnsigned64bitInt dbg_mode :8; //Debug mode
-            btUnsigned64bitInt rsvd :24;
-         }; // end struct
-      } ; // end union
-   }ccip_tmp_rdssensor_fm1; // end struct CCIP_TMP_RDSSENSOR_FMT1
+   m_pALITemperature->thermalGetValues(temp);
 
-   ccip_tmp_rdssensor_fm1.csr = 0;
-   m_pALIMMIOService->mmioRead32(TMP_RDSENSOR, &ccip_tmp_rdssensor_fm1.low);
+   if (temp.Has(AALTEMP_THRESHOLD1)) {
+      temp.Get( AALTEMP_THRESHOLD1, &value);
+      printf("Temperature Threshold1: %llu C \n",value);
+   }
 
-   cout << "--Temperature Sequence Number = " <<
-      ccip_tmp_rdssensor_fm1.tmp_reading_seq_num << " \n";
+   if (temp.Has(AALTEMP_THRESHOLD2)) {
+      temp.Get( AALTEMP_THRESHOLD2, &value);
+      printf("Temperature Threshold2: %llu C \n",value);
+   }
 
-   cout << "Temperature = " <<
-      ccip_tmp_rdssensor_fm1.tmp_reading << " Degrees Celsius.\n";
+   if (temp.Has(AALTEMP_THERM_TRIP)) {
+      temp.Get( AALTEMP_THERM_TRIP, &value);
+      printf("Thermal Trip Threshold: %llu C \n",value);
+   }
+
+   if (temp.Has(AALTEMP_THSHLD_STATUS1_AP1)) {
+       btStringKey type;
+       temp.Get(AALTEMP_THSHLD_STATUS1_AP1,&type);
+       std::cout  << "Threshold AP1 Policy set \n"<<type << std::endl;
+   }
+
+   if (temp.Has(AALTEMP_THSHLD_STATUS1_AP2)) {
+       btStringKey type;
+       temp.Get(AALTEMP_THSHLD_STATUS1_AP2,&type);
+       std::cout  << "Threshold AP2 Policy set \n"<<type << std::endl;
+   }
+
+   if (temp.Has(AALTEMP_THSHLD_STATUS1_AP6)) {
+       btStringKey type;
+       temp.Get(AALTEMP_THSHLD_STATUS1_AP6,&type);
+       std::cout << "Threshold AP6 Policy set \n"<<type << std::endl;
+   }
+
+   if (temp.Has(AALTEMP_READING_SEQNUM)) {
+      temp.Get( AALTEMP_READING_SEQNUM, &value);
+      printf("Thermal Sequence number:%llu \n",value);
+   }
+
+   if (temp.Has(AALTEMP_FPGA_TEMP_SENSOR1)) {
+      temp.Get( AALTEMP_FPGA_TEMP_SENSOR1, &value);
+      printf("Temperature reading:%llu C \n",value);
+   }
 
 }
 
-btBool TempPowMonApp::getPower(btBool bClear)
+btBool TempPowMonApp::getPower()
 {
-   const btFloat      CORE_AMP_UNITS=0.09765625;
-   const btFloat      CORE_VOLTAGE=0.95;
-   btInt              AmpsValue;
-   btFloat            AmpsAdjusted;
-   btFloat            Power;
-   btBool             bReturn = true;
-   btUnsigned64bitInt SequenceNumber = 0;
+   NamedValueSet power;
+   btUnsignedInt count       = 0;
+   btUnsigned64bitInt value  = 0;
 
-   struct CCIP_PM_RDVR {
-      // #define PM_RDVR      0x2010
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt clock_buffer_supply_i_valid :1; // clock buffer supply current valid
-            btUnsigned64bitInt core_supply_i_valid :1;         // core supply current valid
-            btUnsigned64bitInt trans_supply_i_valid :1;        // transceiver supply current valid
-            btUnsigned64bitInt fpga_supply_i_valid :1;         // fpga 1.8v supply current valid
-            btUnsigned64bitInt volt_regulator_readmods :1;     // Voltage regulator read modes
-            btUnsigned64bitInt rsvd :3;
-            btUnsigned64bitInt clock_buffer_supply_i_value :8; // clock buffer supply current value
-            btUnsigned64bitInt core_supply_i_value :16;        // core supply current value
-            btUnsigned64bitInt trans_supply_i_value :8;        // transceiver supply current value
-            btUnsigned64bitInt fpga_supply_i_value :8;         // fpga supply current value
-            btUnsigned64bitInt sequence_number :16;            // read sample sequence number
-         }; // end struct
-      }; // end union
-   } ccip_pm_rdvr; // end struct CCIP_PM_RDVR
+   m_pALIPower->powerGetValues(power);
 
-   // Now deal with Max current values
-   struct CCIP_PM_MAXVR {
-      // #define PM_MAXVR     0x2018
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt hw_set_field :1; //Hardware set field
-            btUnsigned64bitInt rsvd :7;
-            btUnsigned64bitInt max_clock_supply_i_rec :8;  // Maximum clock buffer supply current recorded
-            btUnsigned64bitInt max_core_supply_i_rec  :16; // Maximum core  supply current recorded
-            btUnsigned64bitInt max_trans_supply_i_rec :8;  // Maximum Transceiver  supply current recorded
-            btUnsigned64bitInt max_fpga_supply_i_rec  :8;  // Maximum FPGA  supply current recorded
-            btUnsigned64bitInt rsvd1 :16;
-         }; // end struct
-      }; // end union
-   }ccip_pm_mrdvr; // end struct CCIP_PM_MAXVR
-
-   // get current sequence number
-   m_pALIMMIOService->mmioRead64(PM_RDVR, &ccip_pm_rdvr.csr);
-   SequenceNumber = ccip_pm_rdvr.sequence_number;
-
-   // Clear the max values?
-   if( bClear ) {
-      // set hw reset to 1 to put into reset
-      m_pALIMMIOService->mmioRead64(PM_MAXVR, &ccip_pm_mrdvr.csr);
-      ccip_pm_mrdvr.hw_set_field = 1;
-      m_pALIMMIOService->mmioWrite64(PM_MAXVR, ccip_pm_mrdvr.csr);
-
-      // wait a bit and re-read sequence number
-      SleepMilli(1); // insurance, should not be needed, remove for faster execution
-      m_pALIMMIOService->mmioRead64(PM_RDVR, &ccip_pm_rdvr.csr);
-      SequenceNumber = ccip_pm_rdvr.sequence_number;
-
-      // set hw reset to 0 to re-enable
-      m_pALIMMIOService->mmioRead64(PM_MAXVR, &ccip_pm_mrdvr.csr);
-      ccip_pm_mrdvr.hw_set_field = 0;
-      m_pALIMMIOService->mmioWrite64(PM_MAXVR, ccip_pm_mrdvr.csr);
-
-      // Wait for sequence number to change, or error out
-      btUnsigned64bitInt NewSequenceNumber = SequenceNumber;
-      btUnsigned64bitInt count = 0;
-      do {
-         SleepMilli(1); // insurance, remove to speed up processing
-         // read new Sequence number
-         m_pALIMMIOService->mmioRead64(PM_RDVR, &ccip_pm_rdvr.csr);
-         NewSequenceNumber = ccip_pm_rdvr.sequence_number;
-         ++count;
-      } while ( count < 10 && SequenceNumber == NewSequenceNumber);
-
-      // Did Sequence number increment? If so, that is good
-      bReturn = (SequenceNumber != NewSequenceNumber);
-      SequenceNumber = NewSequenceNumber;
-
-      cout << "Clear of Max values requested: result is " << bReturn << endl;
-   } // bClear
-
-   ///////////////////////////////////////////////////////////
-   // Read regular values
-   m_pALIMMIOService->mmioRead64(PM_RDVR, &ccip_pm_rdvr.csr);
-   ccip_pm_rdvr.volt_regulator_readmods = 0; // turn on all 4 read channels
-   m_pALIMMIOService->mmioWrite64(PM_RDVR, ccip_pm_rdvr.csr);
-   SleepMilli(1);   // Wait a bit
-
-   m_pALIMMIOService->mmioRead64(PM_RDVR, &ccip_pm_rdvr.csr);
-
-   // Print Sequence #
-   cout << "--Power Sequence Number = " <<
-      ccip_pm_rdvr.sequence_number << endl;
-
-   // Print Core Amps and power
-   if (ccip_pm_rdvr.core_supply_i_valid) {
-      AmpsValue = static_cast< btInt >(ccip_pm_rdvr.core_supply_i_value);
-      AmpsAdjusted = AmpsValue * CORE_AMP_UNITS ;
-      Power = AmpsAdjusted * CORE_VOLTAGE;
-      cout << "Core Reading Is Valid: " << AmpsAdjusted << " Amps. " <<
-         Power << " Estimated Watts at nominal " <<
-         CORE_VOLTAGE << " Volts." <<
-         endl;
-
-   } else {
-      cout << "Core Reading Not Valid" << endl;
+   if (power.Has(AALPOWER_CONSUMPTION)) {
+      power.Get( AALPOWER_CONSUMPTION, &value);
+      printf("Power Consumption Value %lld Watts\n",value);
    }
-
-   // Print transceiver amps
-   if (ccip_pm_rdvr.trans_supply_i_valid) {
-      cout << "Xcvr Reading Is Valid: " <<
-         ccip_pm_rdvr.trans_supply_i_value << " Unknown Units." <<
-         endl;
-
-   } else {
-      cout << "Xcvr Reading Not Valid" << endl;
-   }
-
-   // Print 1.8V amps
-   if (ccip_pm_rdvr.fpga_supply_i_valid) {
-      cout << "1.8V Reading Is Valid: " <<
-         ccip_pm_rdvr.fpga_supply_i_value << " Unknown Units." <<
-         endl;
-
-   } else {
-      cout << "1.8V Reading Not Valid" << endl;
-   }
-
-   ///////////////////////////////////////////////////////////////
-
-   m_pALIMMIOService->mmioRead64(PM_MAXVR, &ccip_pm_mrdvr.csr);
-
-   // Print Max Core Amps and power
-   AmpsValue = static_cast< btInt >(ccip_pm_mrdvr.max_core_supply_i_rec);
-   AmpsAdjusted = AmpsValue * CORE_AMP_UNITS ;
-   Power = AmpsAdjusted * CORE_VOLTAGE;
-   cout << "Core Maximum  Reading: " << AmpsAdjusted << " Amps. " <<
-      Power << " Estimated Watts at nominal " <<
-      CORE_VOLTAGE << " Volts." <<
-      endl;
-   cout << "Xcvr Maximum  Reading: " <<
-      ccip_pm_mrdvr.max_trans_supply_i_rec << " Unknown Units." <<
-      endl;
-   cout << "1.8V Maximum  Reading: " <<
-      ccip_pm_mrdvr.max_fpga_supply_i_rec << " Unknown Units." <<
-      endl;
 
 } // TempPowMonApp::getPower
 
 
-btInt TempPowMonApp::run(btBool bClear)
+btInt TempPowMonApp::run()
 {
 
    btBool bPowerReturnValue;
@@ -414,9 +296,11 @@ btInt TempPowMonApp::run(btBool bClear)
       goto done_0;
    }
 
+   // get Temperature
     getTemp();
-    bPowerReturnValue = getPower( bClear );
-    if (!bPowerReturnValue) ++m_Result;   // record error
+
+    // get Power
+    getPower();
 
     // Clean-up and return
     // Release() the Service through the Services IAALService::Release() method
@@ -439,12 +323,21 @@ void TempPowMonApp::serviceAllocated(IBase *pServiceBase,
    m_pAALService = pServiceBase;
    ASSERT(NULL != m_pAALService);
 
-   m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
-
-   ASSERT(NULL != m_pALIMMIOService);
-   if ( NULL == m_pALIMMIOService ) {
+  
+   m_pALIPower = dynamic_ptr<IALIPower>(iidALI_POWER_Service, pServiceBase);
+   ASSERT(NULL != m_pALIPower);
+   if ( NULL == m_pALIPower ) {
+      m_bIsOK = false;
       return;
    }
+
+   m_pALITemperature = dynamic_ptr<IALITemperature>(iidALI_TEMP_Service, pServiceBase);
+   ASSERT(NULL != m_pALITemperature);
+   if ( NULL == m_pALITemperature ) {
+      m_bIsOK = false;
+      return;
+   }
+
    m_Sem.Post(1);
 }
 
@@ -560,14 +453,9 @@ int main(int argc, char *argv[])
 
    TempPowMonApp         theApp;
    int result = 0;
-   btBool bClear = false;
-
-   if( argc>1 ) { // process command line arg of "-c"
-      if (0 == strcmp (argv[1], "-c")) bClear = true;
-   }
 
    if(theApp.IsOK()){
-      result = theApp.run( bClear );
+      result = theApp.run();
    }else{
       MSG("App failed to initialize");
    }

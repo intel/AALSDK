@@ -116,7 +116,15 @@ typedef enum
    uid_errnumPRIPProtocal,                       // 35
    uid_errnumPRFIFO,                             // 36
    uid_errnumAFUActivationFail,                  // 37
-   uid_errnumPRDeviceBusy                        // 38
+   uid_errnumPRDeviceBusy,                       // 38
+   uid_errnumPRSecureLoad,                       // 39
+   uid_errnumPRPowerMgrTimeout,                  // 40
+   uid_errnumPRPowerMgrCoreIdleFail,             // 41
+   uid_errnumNoPRPowerMgrDemon,                  // 42
+   uid_errnumSigtapRevokeTimeout,                // 43
+   uid_errnumBadSocket,                          // 44
+   uid_errnumRdMsrCmdFail,                       // 45
+   uid_errnumFPGAPowerRequestTooLarge            // 46
 
 
 
@@ -153,6 +161,8 @@ typedef enum
    rspid_AFU_PR_Release_Request_Event,    // Event from PR to request the Service release
    rspid_AFU_PR_Revoke_Event,             // Event from PR to Revoke AFU
 
+   rspid_PR_Power_Request_Event,          // Event to Power Manger Demon
+
    rspid_PIP_Event,                       // Event from PIP
 
    rspid_WSM_Response,                    // Event from Workspace manager
@@ -187,7 +197,8 @@ typedef enum
    ccipdrv_getPortError,
    ccipdrv_SetPortErrorMask,
    ccipdrv_ClearPortError,
-   ccipdrv_ClearAllPortErrors
+   ccipdrv_ClearAllPortErrors,
+   ccipdrv_PwrMgrResponse
 
 } ccipdrv_afuCmdID_e;
 
@@ -302,6 +313,12 @@ struct ahm_req
         btUnsigned64bitInt       reconfAction;    /* IN   */
       } pr_config;
 
+      // Power Manager
+      struct {
+        btInt                    pr_pwrmgmt_status;       /* IN   */
+      } pr_pwrmgmt;
+
+      // Error
       struct {
         btUnsigned64bitInt       error0;           /* IN   */
         btUnsigned64bitInt       pcie0_err;        /* IN   */
@@ -375,6 +392,7 @@ typedef enum
    uid_afurespInitializeComplete,
    uid_afurespFreeComplete,
    uid_afurespUndefinedRequest,
+   uid_afurespPwrMgrResponce,
    uid_afurespFirstUserResponse = 0xf000
 } uid_afurespID_e;
 
@@ -398,6 +416,22 @@ struct aalui_PREvent {
    btUnsigned64bitInt         reconfTimeout;
 };
 
+//=============================================================================
+// Name: aalui_PwrMgrReconfEvent
+// Description: Partial reconfiguration release request event.
+//=============================================================================
+//=============================================================================
+struct aalui_PwrMgrReconfEvent {
+   btUnsigned32bitInt         m_respID;
+   btUnsigned64bitInt         m_evtData;
+   stTransactionID_t          m_tranID;
+
+   btInt                      m_SocketID;
+   btInt                      m_BusID;
+   btInt                      m_DeviceID;
+   btInt                      m_FunctionID;
+   btInt                      m_Reconf_PwrRequired;
+};
 
 //=============================================================================
 // Name: aalui_Shutdown
@@ -559,12 +593,13 @@ struct  CCIP_THERMAL_PWR
 //=============================================================================
 struct  PERFCOUNTER_EVENT
 {
-   char  name[50];
+   char  name[45];
    btUnsigned64bitInt value;
 };
 
 struct  CCIP_PERF_COUNTERS
 {
+   //Cache
    struct  PERFCOUNTER_EVENT num_counters;
    struct  PERFCOUNTER_EVENT version;
    struct  PERFCOUNTER_EVENT read_hit;
@@ -573,13 +608,21 @@ struct  CCIP_PERF_COUNTERS
    struct  PERFCOUNTER_EVENT write_miss;
    struct  PERFCOUNTER_EVENT evictions;
 
+   //Fabric
    struct  PERFCOUNTER_EVENT pcie0_read;
    struct  PERFCOUNTER_EVENT pcie0_write;
    struct  PERFCOUNTER_EVENT pcie1_read;
    struct  PERFCOUNTER_EVENT pcie1_write;
    struct  PERFCOUNTER_EVENT upi_read;
    struct  PERFCOUNTER_EVENT upi_write;
-   struct  PERFCOUNTER_EVENT vtd_counter;
+
+   // VTD
+   struct  PERFCOUNTER_EVENT AFU0_MemRead_Trans;
+   struct  PERFCOUNTER_EVENT AFU0_MemWrite_Trans;
+   struct  PERFCOUNTER_EVENT AFU0_DevTLBRead_Hit;
+   struct  PERFCOUNTER_EVENT AFU0_DevTLBWrite_Hit;
+
+
 };
 END_C_DECLS
 

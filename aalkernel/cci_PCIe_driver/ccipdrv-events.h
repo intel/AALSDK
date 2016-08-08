@@ -609,6 +609,54 @@ struct uidrv_event_unbindcmplt
    stTransactionID_t            m_tranID;
    void                        *m_context;
 };
+static inline
+struct ccipdrv_event_afu_response_event *
+ccipdrv_event_afu_aysnc_reconf_pwr_create(uid_afurespID_e    respID,
+                                          btObjectType       devhandle,
+                                          btObjectType       context,
+                                          btInt socketID,
+                                          btInt busID,
+                                          btInt deviceID,
+                                          btInt functionID,
+                                          btFloat Reconf_PwrRequired,
+                                          stTransactionID_t tranID,
+                                          uid_errnum_e       eno)
+{
+#if   defined( __AAL_WINDOWS__ )
+   UNREFERENCED_PARAMETER(action);
+#endif
+   struct aalui_PwrMgrReconfEvent *response = NULL;
+   struct ccipdrv_event_afu_response_event *This =
+      (struct ccipdrv_event_afu_response_event *)kosal_kzmalloc( sizeof(struct ccipdrv_event_afu_response_event) + sizeof(struct aalui_PwrMgrReconfEvent));
+
+   if ( NULL == This ) {
+      return NULL;
+   }
+
+   This->m_devhandle  = devhandle;
+   This->m_errnum     = eno;
+   This->m_context    = context;
+
+   // Point at the payload
+   response = (struct aalui_PwrMgrReconfEvent*)This->m_payload;
+
+   response->m_respID               = respID;
+   response->m_evtData              = 0;
+   response->m_SocketID             = socketID;
+   response->m_DeviceID             = deviceID;
+   response->m_BusID                = busID;
+   response->m_FunctionID           = functionID;
+   response->m_Reconf_PwrRequired   = Reconf_PwrRequired;
+   response->m_tranID               = tranID;
+
+   AALQ_QID(This)  = rspid_PR_Power_Request_Event;
+   AALQ_QLEN(This) = sizeof(struct aalui_PwrMgrReconfEvent );
+
+   // Initialize the queue item
+   kosal_list_init(&AALQ_QUEUE(This));
+
+   return This;
+}
 
 //=============================================================================
 // Name: uidrv_event_Unbindcmplt_create

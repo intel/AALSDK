@@ -89,7 +89,16 @@ using namespace AAL;
 #ifndef MB
 # define MB(x)                     ((x) * 1024 * 1024)
 #endif // MB
+
+// LPBK1_BUFFER_SIZE is size in cachelines that are copied
 #define LPBK1_BUFFER_SIZE        CL(1)
+// LPBK1_BUFFER_ALLOCATION_SIZE is the amount of space that needs to
+//   be allocated due to an optimization of the NLB AFU to operate on
+//   2 MiB buffer boundaries. Note that the way to get 2 MiB alignment
+//   is to allocate 2 MiB.
+// NOTE:
+//   2 MiB alignment is not a general requirement -- it is NLB-specific
+#define LPBK1_BUFFER_ALLOCATION_SIZE MB(2)
 
 #define LPBK1_DSM_SIZE           MB(4)
 #define CSR_SRC_ADDR             0x0120
@@ -329,7 +338,7 @@ btInt HelloALINLBApp::run()
    }
 
    // Repeat for the Input and Output Buffers
-   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_InputVirt)){
+   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_ALLOCATION_SIZE, &m_InputVirt)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -344,7 +353,7 @@ btInt HelloALINLBApp::run()
       goto done_3;
    }
 
-   if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_OutputVirt)){
+   if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_ALLOCATION_SIZE, &m_OutputVirt)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -372,8 +381,8 @@ btInt HelloALINLBApp::run()
       ::memset( m_DSMVirt, 0, m_DSMSize);
 
       // Initialize the source and destination buffers
-      ::memset( m_InputVirt,  0, m_InputSize);     // Input initialized to 0
-      ::memset( m_OutputVirt, 0, m_OutputSize);    // Output initialized to 0
+      ::memset( m_InputVirt,  0xAF, m_InputSize);  // Input initialized to AFter
+      ::memset( m_OutputVirt, 0xBE, m_OutputSize); // Output initialized to BEfore
 
       struct CacheLine {                           // Operate on cache lines
          btUnsigned32bitInt uint[16];

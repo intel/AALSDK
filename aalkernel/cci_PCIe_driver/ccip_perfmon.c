@@ -101,15 +101,21 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
    pPerf->version.value = PERF_MONITOR_VERSION;
    pPerf->num_counters.value = PERF_MONITOR_COUNT;
 
-   // freeze
+   // freeze Cache
    ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.freeze = 0x1;
 
    Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr);
 
-   // freeze
+   // freeze Fabric
    ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.freeze = 0x1;
 
    Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr);
+
+   // Freeze VTD
+   ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.freeze = 0x1;
+
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.csr);
+
 
    //Cache_Read_Hit
    update_cache_event_counters(Cache_Read_Hit,pfme_dev,pPerf);
@@ -144,12 +150,34 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
    //UPI Write
    update_fabric_event_counters(Fabric_UPI_Write,pfme_dev,pPerf);
 
-   //un freeze
+   if( 0x1 == ccip_fme_hdr(pfme_dev)->fab_capability.iommu_support ) {
+
+      //AFU0 Memory Read Transaction count
+      update_vtd_event_counters(AFU0_MemRead_Trans,pfme_dev,pPerf);
+
+      //AFU0 Memory Write Transaction count
+      update_vtd_event_counters(AFU0_MemWrite_Trans,pfme_dev,pPerf);
+
+      //AFU0  DevTLB  Read Hit count
+      update_vtd_event_counters(AFU0_DevTLBRead_Hit,pfme_dev,pPerf);
+
+      //AFU0 DevTLB Write Hit count
+      update_vtd_event_counters(AFU0_DevTLBWrite_Hit,pfme_dev,pPerf);
+
+   }
+
+   //un Freeze VTD
+   ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.freeze = 0x0;
+
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.csr);
+
+
+   //un freeze fabric
    ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.freeze = 0x0;
 
    Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr);
 
-   //un freeze
+   //un freeze cache
    ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.freeze = 0x0;
 
    Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr);
@@ -177,7 +205,7 @@ bt32bitInt update_fabric_event_counters(bt32bitInt event_code ,
 {
    bt32bitInt res       = 0;
    bt32bitInt counter   = 0;
-   btTime delay         = 10;
+   btTime delay         = PERFMON_POLLING_SLEEP;
 
    PTRACEIN;
 
@@ -275,7 +303,7 @@ bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
    bt32bitInt res           = 0;
    bt32bitInt counter       = 0;
    btUnsigned64bitInt total = 0;
-   btTime delay             = 10;
+   btTime delay             = PERFMON_POLLING_SLEEP;
 
    PTRACEIN;
 
@@ -355,6 +383,95 @@ ERR:
 }
 
 ///============================================================================
+/// Name:    update_vtd_event_counters
+/// @brief   get VT-D performance counters
+///
+/// @param[in] event_code VTD event code.
+/// @param[in] pfme_dev fme device pointer.
+/// @param[in] pPerf performance counters pointer
+/// @return    error code
+/// @return    0 = success
+///============================================================================
+
+bt32bitInt update_vtd_event_counters(bt32bitInt event_code,
+                                     struct fme_device *pfme_dev,
+                                     struct CCIP_PERF_COUNTERS* pPerf)
+
+{
+   bt32bitInt res           = 0;
+   bt32bitInt counter       = 0;
+   btTime delay             = PERFMON_POLLING_SLEEP;
+   btUnsigned64bitInt total = 0;
+
+   PTRACEIN;
+
+   ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.vtd_evtcode = event_code;
+
+   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.csr);
+
+   while (event_code != ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctr.event_code)   {
+
+      Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctr.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctr.csr);
+      counter++;
+
+      // Sleep
+      kosal_udelay(delay);
+
+      if (counter > CACHE_EVENT_COUNTER_MAX_TRY)   {
+         PERR("Max Try \n");
+         res = 1;
+         goto ERR;
+      }
+
+   } // end while
+
+   total = ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctr.vtd_counter ;
+
+   switch (event_code)
+   {
+
+    case  AFU0_MemRead_Trans:
+    {
+       pPerf->AFU0_MemRead_Trans.value= total;
+    }
+    break;
+
+    case  AFU0_MemWrite_Trans:
+    {
+       pPerf->AFU0_MemWrite_Trans.value = total;
+    }
+    break;
+
+    case  AFU0_DevTLBRead_Hit:
+    {
+       pPerf->AFU0_DevTLBRead_Hit.value = total;
+    }
+    break;
+
+    case  AFU0_DevTLBWrite_Hit:
+    {
+       pPerf->AFU0_MemWrite_Trans.value= total;
+    }
+    break;
+
+    default:
+    {
+       // Error
+       PERR("Invalid VTD Event code  \n");
+       res= -EINVAL;
+    }
+    break;
+
+   }
+
+   PTRACEOUT_INT(res);
+   return res;
+ERR:
+   PTRACEOUT_INT(res);
+   return  res;
+}
+
+///============================================================================
 /// Name:    get_perfmon_counters
 /// @brief   get  performance counters
 ///
@@ -396,6 +513,12 @@ bt32bitInt get_perfmon_counters(struct fme_device* pfme_dev,
 
    strncpy(pPerfCounter->upi_read.name ,FABRIC_UPI_READ,sizeof(FABRIC_UPI_READ));
    strncpy(pPerfCounter->upi_write.name ,FABRIC_UPI_WRITE,sizeof(FABRIC_UPI_WRITE));
+
+   strncpy(pPerfCounter->AFU0_MemRead_Trans.name ,VTD_AFU_MEMREAD_TRANS,sizeof(VTD_AFU_MEMREAD_TRANS));
+   strncpy(pPerfCounter->AFU0_MemWrite_Trans.name ,VTD_AFU_MEMWRITE_TRANS,sizeof(VTD_AFU_MEMWRITE_TRANS));
+
+   strncpy(pPerfCounter->AFU0_DevTLBRead_Hit.name ,VTD_AFU_DEVTLBREAD_HIT,sizeof(VTD_AFU_DEVTLBREAD_HIT));
+   strncpy(pPerfCounter->AFU0_DevTLBWrite_Hit.name ,VTD_AFU_DEVTLBWRITE_HIT,sizeof(VTD_AFU_DEVTLBWRITE_HIT));
 
    pPerfCounter->num_counters.value=PERF_MONITOR_COUNT;
    pPerfCounter->num_counters.value=PERF_MONITOR_VERSION;

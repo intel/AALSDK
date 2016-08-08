@@ -439,11 +439,11 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
           PVERBOSE("ccipdrv_portClearAllError \n");
 
           // Clear ALL Port errors
-          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr = 0x0;
-          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_first_error.csr = 0x0;
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr          = CLEAR_ALL_ERRORS;
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_first_error.csr    = CLEAR_ALL_ERRORS;
 
-          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_malformed_req_0.csr = 0x0;
-          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_malformed_req_1.csr = 0x0;
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_malformed_req_0.csr = CLEAR_ALL_ERRORS;
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_malformed_req_1.csr = CLEAR_ALL_ERRORS;
 
           Message->m_errcode = uid_errnumOK;
 
