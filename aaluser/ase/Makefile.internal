@@ -56,6 +56,7 @@ ASE_COVERAGE ?= 0
 ifeq ($(ASE_COVERAGE),1)
 ASE_PROFILE_ENABLE ?= 1
 ASE_LCOV_ENABLE ?= 1
+COV_DIR=$(ASE_SRCDIR)/coverage/
 endif
 
 # Enable Altera gates library
@@ -90,7 +91,7 @@ MENT_COMMAND = $(shell command -v vsim)
 
 ## C Compiler options
 CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -D SIMULATOR=$(SIMULATOR)
-CC_OPT+= -Wall 
+CC_OPT+= -Wall
 ifeq ($(ASE_DEBUG), 1)
   CC_OPT+= -D ASE_DEBUG=1
 endif
@@ -167,7 +168,8 @@ ifeq ($(ASE_DEBUG), 1)
 endif
 ifeq ($(ASE_PROFILE_ENABLE), 1)
   SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
-  SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
+  SNPS_VCS_OPT+= -cm_dir $(COV_DIR)/vcs_coverage -cm_name ase_cov
+  SNPS_VCS_OPT+= -cm cond+fsm+branch -cm_tgl mda
   SNPS_VCS_OPT+= -cm_hier $(ASEVAL_GIT)/ase_coverage.cfg
   SNPS_VCS_OPT+= -simprofile +prof
 endif
@@ -188,7 +190,7 @@ endif
 MENT_VCOM_OPT = -nologo -work $(WORK)
 
 ## VLOG compile
-# MENT_VLOG_OPT = -64 
+# MENT_VLOG_OPT = -64
 MENT_VLOG_OPT+= -nologo +librescan -work $(WORK) +define+$(SIMULATOR)
 MENT_VLOG_OPT+= -dpiheader work/dpiheader.h
 MENT_VLOG_OPT+= +incdir+$(ASE_INCDIR)+$(DUT_INCDIR)+$(WORK)
@@ -210,8 +212,8 @@ ifdef GLS_SIM
 endif
 
 ## VSIM elaboration, and run options
-# MENT_VSIM_OPT = -64 
-MENT_VSIM_OPT+= -c -l run.log -dpioutoftheblue 1 
+# MENT_VSIM_OPT = -64
+MENT_VSIM_OPT+= -c -l run.log -dpioutoftheblue 1
 MENT_VSIM_OPT+= -sv_lib $(ASE_SHOBJ_NAME) -do $(ASE_SRCDIR)/vsim_run.tcl
 ifeq ($(ASE_DEBUG), 1)
   MENT_VLOG_OPT+= -hazards
@@ -532,17 +534,17 @@ scan-build:
 
 # Coverage
 coverage:
-	cd $(WORK) ; lcov --base-directory . --directory . --capture --output-file ase_libs.info ; genhtml -o lcov_coverage/ ase_libs.info ; cd -
-	cd $(WORK) ; urg -full64 -dir ase_simv.vdb ; cd -
+	cd $(COV_DIR) ; lcov --base-directory $(WORK) --directory $(WORK) --capture --output-file ase_libs.info ; genhtml -o $(COV_DIR)/lcov_coverage/ ase_libs.info ; cd -
+	cd $(COV_DIR) ; urg -full64 -dir $(COV_DIR)/vcs_coverage.vdb ; cd -
 
 # GUI call for coverage
 cov_gui: coverage_gui
 
 coverage_gui:
-	firefox ./$(WORK)/urgReport/dashboard.html &
-	firefox ./$(WORK)/lcov_coverage/index.html &
-	firefox ./$(WORK)/profileReport.html &
-	dve -dir work/ase_simv.vdb/ -full64 &
+	firefox  $(COV_DIR)/urgReport/dashboard.html &
+	firefox  $(COV_DIR)/lcov_coverage/index.html &
+	firefox  $(COV_DIR)/profileReport.html &
+	dve -dir $(COV_DIR)/vcs_coverage.vdb/ -full64 &
 
 # Valgrind run
 valgrind_run:

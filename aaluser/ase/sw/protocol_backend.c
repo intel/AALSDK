@@ -52,7 +52,7 @@ char umsg_mode_msg[ASE_LOGGER_LEN];
 int session_empty;
 
 // MMIO Respons lock
-pthread_mutex_t mmio_resp_lock;
+// pthread_mutex_t mmio_resp_lock;
 
 // User clock frequency
 float f_usrclk;
@@ -247,7 +247,7 @@ void mmio_response (struct mmio_t *mmio_pkt)
   FUNC_CALL_ENTRY;
 
   // Lock channel
-  pthread_mutex_lock (&mmio_resp_lock);
+  // pthread_mutex_lock (&mmio_resp_lock);
   
 #ifdef ASE_DEBUG
   print_mmiopkt(fp_memaccess_log, "MMIO Got ", mmio_pkt);
@@ -257,7 +257,7 @@ void mmio_response (struct mmio_t *mmio_pkt)
   mqueue_send(sim2app_mmiorsp_tx, (char*)mmio_pkt, sizeof(mmio_t));
 
   // Unlock channel
-  pthread_mutex_unlock (&mmio_resp_lock);
+  // pthread_mutex_unlock (&mmio_resp_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -739,13 +739,13 @@ int ase_init()
   printf("SIM-C : PID of simulator is %d\n", ase_pid);
 
   // Lock initializations
-  if ( pthread_mutex_init(&mmio_resp_lock, NULL) != 0 )
-    {
-      BEGIN_RED_FONTCOLOR;
-      printf("SIM-C : MMIO Response lock initialization failed, EXIT\n");
-      END_RED_FONTCOLOR;
-      start_simkill_countdown();
-    }
+  /* if ( pthread_mutex_init(&mmio_resp_lock, NULL) != 0 ) */
+  /*   { */
+  /*     BEGIN_RED_FONTCOLOR; */
+  /*     printf("SIM-C : MMIO Response lock initialization failed, EXIT\n"); */
+  /*     END_RED_FONTCOLOR; */
+  /*     start_simkill_countdown(); */
+  /*   } */
 
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
@@ -954,8 +954,8 @@ void start_simkill_countdown()
 
   // free(mq_array);
   // Destroy mutex 
-  pthread_mutex_unlock (&mmio_resp_lock);
-  pthread_mutex_destroy (&mmio_resp_lock);
+  // pthread_mutex_unlock (&mmio_resp_lock);
+  // pthread_mutex_destroy (&mmio_resp_lock);
 
   // Destroy all open shared memory regions
   printf("SIM-C : Unlinking Shared memory regions.... \n");

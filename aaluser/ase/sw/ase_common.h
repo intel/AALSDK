@@ -51,7 +51,6 @@
 #include <mqueue.h>        
 #include <errno.h>         
 #include <signal.h>        
-#include <pthread.h>       
 #include <sys/resource.h>  
 #include <sys/time.h>      
 #include <math.h>
@@ -64,6 +63,10 @@
 #include <stdbool.h>
 #include <sys/wait.h>
 
+#ifndef SIM_SIDE
+#include <pthread.h>       
+#endif
+
 #ifdef SIM_SIDE 
 #include "svdpi.h"
 #endif
@@ -71,9 +74,6 @@
 #ifndef SIM_SIDE
 #define APP_SIDE
 #endif
-
-// ASE Debug switch
-// #define ASE_DEBUG
 
 /*
  * ASE Unique ID Check
