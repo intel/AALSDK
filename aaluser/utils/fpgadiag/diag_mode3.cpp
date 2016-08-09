@@ -123,7 +123,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
 
    //Set the stride value
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_STRIDED_ACS)){
-      csr_type num_strides = (1 == cmd.strided_acs) ? 0 : ((cmd.multicls * (cmd.strided_acs - 1)) - 1 );
+      csr_type num_strides = (1 == cmd.strided_acs) ? 0 : (cmd.multicls * (cmd.strided_acs - 1));
       m_pALIMMIOService->mmioWrite32(CSR_STRIDED_ACS, num_strides);
    }
 
