@@ -87,7 +87,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
          return 1;
       }
 
-      if ( 0 != CacheCooldown(pOutputUsrVirt, m_pMyApp->InputPhys(), m_pMyApp->InputSize(), cmd) ) {
+      if ( 0 != CacheCooldown(pOutputUsrVirt, m_pMyApp->InputPhys(), (1024 * CL(1)), cmd) ) {
          ERR("Cool FPGA cache failed. Exiting test.");
          return 1;
       }

@@ -1068,7 +1068,10 @@ btInt INLB::ResetHandshake()
 btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize CoolSize, const NLBCmdLine &cmd)
 {
    btInt res = 0;
-   const btInt StopTimeoutMillis = 250;
+   btInt StopTimeoutMillis = 250;
+   if ( cmd.AFUTarget == ALIAFU_NVS_VAL_TARGET_ASE){
+   	   StopTimeoutMillis = StopTimeoutMillis * 100000;
+   }
    btInt MaxPoll = StopTimeoutMillis;
 
    const btUnsigned32bitInt CoolOffData = 0xc001c001;
