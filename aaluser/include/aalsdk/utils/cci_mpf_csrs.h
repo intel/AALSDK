@@ -26,7 +26,7 @@
 //****************************************************************************
 /// @file cci_mpf_csrs.h
 /// @brief
-/// @ingroup
+/// @ingroup Utils
 /// @verbatim
 /// Accelerator Abstraction Layer Sample Application
 ///

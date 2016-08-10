@@ -65,17 +65,18 @@ using namespace AAL;
 class IHelloAALClient
 {
 public:
-   /// @brief Callback Client Interface for IHelloAALClient
+   /// @brief Callback Client Interface for IHelloAALClient.
    ///
-   /// Called by the Service when asked to so by the client of the Service.
+   /// Called by the Service when asked to do so by the client of the Service.
    /// @param[in]  rTranID   For messages sent back to the caller.
+   /// @return void
    virtual void HelloApp(TransactionID const &rTranID) = 0;
 };
 
 /// IHelloAALService interface ID.
 #define iidSampleHelloAAL __INTC_IID(INTC_sysSampleAFU,0x0001)
 
-/// Example of a custom interface for a Service
+/// @brief Example of a custom interface for a Service
 class IHelloAALService
 {
 public:
@@ -85,10 +86,11 @@ public:
    ///
    /// @param[in]  sMessage  A message to be received by this AFU.
    /// @param[in]  rTranID   For messages sent back to the caller.
+   /// @return void
    virtual void Hello(btcString            sMessage,
                       TransactionID const &rTranID) = 0;
 
-   /// ISampleAFUPing Destructor
+   // IHelloAALService Destructor
    virtual ~IHelloAALService() {}
 };
 

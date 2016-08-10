@@ -93,10 +93,10 @@ BEGIN_NAMESPACE(AAL)
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
-/// ISvcsFact implementation capable of creating multiple instances of the desired Service
-/// in the same process address space as the Factory itself.
+/// The ISvcsFact implementation is capable of creating multiple instances of the desired
+/// Service in the same process address space as the Factory itself.
 ///
-/// @param  I  The type of Service to be created. The type must be derived from ServiceBase.
+/// @param[in]  I  The type of Service to be created. The type must be derived from ServiceBase.
 template <typename I>
 class InProcSvcsFact : public ISvcsFact
 {
@@ -113,7 +113,7 @@ public:
       return dynamic_cast<IBase*>(pService);
    }
 
-  /// @Initilizes the service and returns what the service gives
+  // Initializes the service and returns what the service gives
    btBool InitializeService(IBase               *newService,
                             IBase               *Client,
                             TransactionID const &rtid,
@@ -144,7 +144,7 @@ public:
 /// ISvcsFact implementation capable of creating exactly one instance of the desired Service
 /// in the same process address space as the Factory itself.
 ///
-/// @param  I  The type of Service to be created. The type must be derived from ServiceBase.
+/// @param[in]  I  The type of Service to be created. The type must be derived from ServiceBase.
 template <typename I>
 class InProcSingletonSvcsFact : public ISvcsFact
 {
@@ -166,7 +166,7 @@ public:
        // Service MUST be derived from IBase
        return dynamic_cast<IBase*>(m_pService);
     }
-   /// @Initilizes the service and returns what the service gives
+   // Initializes the service and returns what the service gives
    btBool InitializeService(IBase               *newService,
                             IBase               *Client,
                             TransactionID const &rtid,

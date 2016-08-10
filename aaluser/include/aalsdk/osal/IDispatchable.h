@@ -61,6 +61,8 @@ class OSAL_API IDispatchable
 public:
    /// @brief  Where the work happens. The function performed here can be virtually anything.
    /// Most often used to schedule a callback.
+   ///
+   /// @returns void
    virtual void operator() () = 0;
 
    virtual ~IDispatchable() {}
@@ -70,11 +72,22 @@ public:
 class OSAL_API DispatchableGroup : public IDispatchable
 {
 public:
+   /// @brief DispatchableGroup constructor.
+   ///
+   /// Create a group with a single dispatchable item.
+   ///
+   /// @param[in] p0 A pointer to an IDispatchable, something to be dispatched.
    DispatchableGroup(IDispatchable *p0)
    {
       ASSERT(NULL != p0);
       m_DispList.push_back(p0);
    }
+   /// @brief DispatchableGroup constructor.
+   ///
+   /// Create a group with 2 dispatchable items.
+   ///
+   /// @param[in] p0 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p1 A pointer to an IDispatchable, something to be dispatched.
    DispatchableGroup(IDispatchable *p0,
                      IDispatchable *p1)
    {
@@ -83,6 +96,13 @@ public:
       ASSERT(NULL != p1);
       m_DispList.push_back(p1);
    }
+   /// @brief DispatchableGroup constructor.
+   ///
+   /// Create a group with 3 dispatchable items.
+   ///
+   /// @param[in] p0 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p1 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p2 A pointer to an IDispatchable, something to be dispatched.
    DispatchableGroup(IDispatchable *p0,
                      IDispatchable *p1,
                      IDispatchable *p2)
@@ -94,6 +114,14 @@ public:
       ASSERT(NULL != p2);
       m_DispList.push_back(p2);
    }
+   /// @brief DispatchableGroup constructor.
+   ///
+   /// Create a group with 4 dispatchable items.
+   ///
+   /// @param[in] p0 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p1 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p2 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p3 A pointer to an IDispatchable, something to be dispatched.
    DispatchableGroup(IDispatchable *p0,
                      IDispatchable *p1,
                      IDispatchable *p2,
@@ -108,6 +136,15 @@ public:
       ASSERT(NULL != p3);
       m_DispList.push_back(p3);
    }
+   /// @brief DispatchableGroup constructor.
+   ///
+   /// Create a group with 5 dispatchable items.
+   ///
+   /// @param[in] p0 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p1 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p2 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p3 A pointer to an IDispatchable, something to be dispatched.
+   /// @param[in] p4 A pointer to an IDispatchable, something to be dispatched.
    DispatchableGroup(IDispatchable *p0,
                      IDispatchable *p1,
                      IDispatchable *p2,

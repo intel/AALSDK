@@ -34,7 +34,7 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 9/15/2015      JG       Initial version
+/// 9/15/2015      JG       Initial version@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_AIASERVICE_ALIAFUPROXY_H__
 #define __AALSDK_AIASERVICE_ALIAFUPROXY_H__

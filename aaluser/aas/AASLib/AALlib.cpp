@@ -237,13 +237,13 @@ AAS_END_MOD()
 ///  the canonical interfaces required of a Service. In addition the ServiceBase provides convenient member
 ///  functions that enable the developer access to useful data and Platform Services.
 
-         /// @defgroup ServiceBase
+         /// @defgroup ServiceBase ServiceBase Class Reference
          /// @ingroup UserModeServiceSDK
 
-         /// @defgroup DeviceServiceBase
+         /// @defgroup DeviceServiceBase DeviceServiceBase Class Reference
          /// @ingroup UserModeServiceSDK
 
-         /// @defgroup InProcFactory
+         /// @defgroup InProcFactory InProcFactory Class Reference
          /// @brief Responsible for instantiating an in-process Service instance
          ///
 /// The AAL Service is comprised of a Service Library which implements the
@@ -267,7 +267,7 @@ AAS_END_MOD()
 ///  service, performing canonical behavior for the service.
          /// @ingroup UserModeServiceSDK
 
-   /// @defgroup Dispatchable
+   /// @defgroup Dispatchable Dispatchable Class Reference
    /// @brief Used to schedule work. E.g.,to schedule a callback.
    ///
    /// The Message Delivery Service is more than the name implies.  Its purpose is to queue and schedule the
@@ -283,24 +283,24 @@ AAS_END_MOD()
 /// @defgroup SysServices System Services
 /// @ingroup Services
 
-         /// @defgroup ServiceBroker
+         /// @defgroup ServiceBroker ServiceBroker Class Reference
          /// @ingroup SysServices
          ///AAL implements a Factory design pattern to abstract the instantiation of Services from the application.
          ///The AAL Service Broker provides the interface used to request a Service. The Service Broker interacts with
          ///the Registrar to determine how a Service is to be instantiated.
 
-         /// @defgroup MDS
+         /// @defgroup MDS MDS
          /// @ingroup SysServices
          /// The Message Delivery Service (MDS) is a mandatory core service. MDS is used for scheduling callbacks,
          /// AAL Events to objects and can even be used to schedule work items in the form of functors.
 
-         /// @defgroup Registrar
+         /// @defgroup Registrar Registrar
          /// @ingroup SysServices
 
          /// @defgroup ResMgr Resource Manager
          /// @ingroup SysServices
 
-         /// @defgroup uAIA
+         /// @defgroup uAIA uAIA
          /// @ingroup SysServices
 
    /// @defgroup Utils Utilities
@@ -362,62 +362,6 @@ AAS_END_MOD()
 // Main (outline) page /////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 /**
-@mainpage
-
-<ul>
-  <li>@ref AALCore "AALSDK Core User-Mode Framework"</li>
-    <ul>
-      <li>@ref BasicTypes "Basic Data Types"</li>
-      <li>@ref OSAL       "OS Abstraction Layer"</li>
-      <li>@ref CommonBase "Common Base Class"</li>
-      <li>@ref Runtime    "Runtime Objects"</li>
-      <li>@ref AALRUNTIME  "AAL Run Time Framework"</li>
-      <li>@ref Events     "Event Infrastructure"</li>
-        <ul>
-          <li>@ref SysEvents "System Events"</li>
-        </ul>
-      <li>@ref UserModeServiceSDK   "User Mode Service SDK"</li>
-        <ul>
-          <li>@ref ServiceBase           "Service Base"</li>
-          <li>@ref DeviceServiceBase     "Device Service Base"</li>
-          <li>@ref InProcFactory         "In-process Service Factories"</li>
-          <li>@ref Dispatchable          "Dispatchable - Scheduleable Objects"</li>
-          <li>@ref AFU                   "Accelerator Function Unit (AFU)"</li>
-            <ul>
-              <li>@ref IALIAFU  "ALI Service Interface"</li>
-            </ul>
-       </ul>
-     <li>@ref SysServices          "System Services"</li>
-         <ul>
-           <li>@ref ServiceBroker  "Service Broker"</li>
-           <li>@ref MDS            "Message Delivery"</li>
-           <li>@ref Registrar      "Registrar"</li>
-           <li>@ref ResMgr         "Resource Manager"</li>
-         </ul>
-      <li>@ref Utils "Utilities"</li>
-        <ul>
-          <li>@ref AASUtils     "AAS Utilities"</li>
-          <li>@ref RMUtils      "Resource Manager Utilities"</li>
-          <li>@ref SingleAFUApp "ISingleAFUApp - AAL application template"</li>
-          <li>@ref CSyncClient  "CSyncClient - synchronous AAL application base class"</li>
-        </ul>
-  <li>@ref Debugging "Internal Debugging Facilities"</li>
-  <li>@ref UtilityAFUs "AALSDK Utility AFUs"</li>
-    <ul>
-      <li>@ref ALIAFU      "ALIAFU"</li>
-      <ul>
-        <li>@ref HWALIAFU     "HWALIAFU"</li>
-        <li>@ref ASEALIAFU    "ASEALIAFU"</li>
-        <li>@ref SWSimALIAFU  "SWSimALIAFU"</li>
-      </ul>
-    </ul>
-  <li>@ref UtilApps "AALSDK Utility Applications"</li>
-    <ul>
-      <li>@ref aalscan    "aalscan - Scan for AALSDK Service Modules"</li>
-      <li>@ref data_model "data_model - Show the C/C++ data model for the current compiler"</li>
-      <li>@ref fpgadiag "fpgadiag - Run diagnostics on the system with a provided bitstream"</li>
-      </ul>
-</ul>
 
 
 @verbatim
@@ -482,7 +426,7 @@ AAS_END_MOD()
    Designers must not rely on the absence or characteristics of any
    features or instructions marked "reserved" or "undefined." Intel
    reserves these for future definition and shall have no responsibility
-   whatsoever for conflicts or incompat- ibilities arising from future
+   whatsoever for conflicts or incompatibilities arising from future
    changes to them.
      
    The software described in this document may contain software defects

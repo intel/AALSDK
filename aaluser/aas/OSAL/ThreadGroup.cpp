@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 /// @file ThreadGroup.cpp
-/// @brief Implementation of the ThreadGroup class
+/// @brief Implementation of the OSLThreadGroup class
 /// @ingroup OSAL
 /// @verbatim
 /// Accelerator Abstraction Layer
@@ -83,6 +83,21 @@ BEGIN_NAMESPACE(AAL)
 //                 the threads are created.
 //               - A count-up semaphore is use to wait for workers to start
 //=============================================================================
+/// OSLThreadGroup Constructor
+/// @note     Setting uiMinThreads == uiMaxThreads != 0 results in a static thread pool.
+///           The algorithm summary:
+///               - The work queue is initialized empty.
+///               - The work queueu semaphore is initialized to zero
+///                 for all threads to start.
+///               - The number of worker threads is determined and
+///                 the threads are created.
+///               - A count-up semaphore is used to wait for workers to start.
+///
+/// @param[in]    uiMinThreads - Minimum number of threads to use (default = 0 = auto).
+/// @param[in]    uiMaxThreads - Maximum threads (default = 0 = auto).
+/// @param[in]    nPriority    - Thread priority (default = OSLThread::THREADPRIORITY_NORMAL).
+/// @param[in]    JoinTimeout  - Timeout waiting for thread to exit (default = AAL_INFINITE_WAIT).
+/// @return void
 OSLThreadGroup::OSLThreadGroup(btUnsignedInt             uiMinThreads,
                                btUnsignedInt             uiMaxThreads,
                                OSLThread::ThreadPriority nPriority,
@@ -142,6 +157,15 @@ OSLThreadGroup::OSLThreadGroup(btUnsignedInt             uiMinThreads,
    WaitForAllWorkersToStart(AAL_INFINITE_WAIT);
 }
 
+/// @brief Destroys the Thread Pool causing all threads in the pool to exit and
+///        release their resources.
+///
+/// Wakes up all waiting threads and waits for all threads in the pool to exit.
+///
+/// @param[in]     Timeout      - Time to wait for all threads in the group to
+///                               exit (default = AAL_INFINITE_WAIT).
+/// @retval true   if all threads exited.
+/// @retval false  if not all threads exited.
 btBool OSLThreadGroup::Destroy(btTime Timeout)
 {
    {

@@ -34,7 +34,7 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-//  8/21/2015      JG       Initial vesions
+///  8/21/2015     JG       Initial vesions
 ///                @endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H

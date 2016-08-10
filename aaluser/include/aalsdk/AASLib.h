@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 /// @file AASLib.h
-/// @brief 
+/// @brief Convenience header.  Includes all headers for AASLib
 /// @ingroup AALCore
 /// @verbatim
 /// Accelerator Abstraction Layer
