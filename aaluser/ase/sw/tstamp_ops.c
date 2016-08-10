@@ -65,11 +65,8 @@ void put_timestamp()
   FUNC_CALL_ENTRY;
 
   FILE *fp = (FILE *)NULL;
-
-  /* char tstamp_path[ASE_FILEPATH_LEN]; */
-  /* memset(tstamp_path, 0, ASE_FILEPATH_LEN); */
-
   char *tstamp_path;
+
   tstamp_path = (char*) ase_malloc(ASE_FILEPATH_LEN);
 
   snprintf(tstamp_path, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);

@@ -249,7 +249,6 @@ CLANG_OPT+= \
 	-enable-checker  alpha.core.BoolAssignment \
 	-enable-checker  alpha.core.CallAndMessageUnInitRefArg \
 	-enable-checker  alpha.core.CastSize \
-	-enable-checker  alpha.core.CastToStruct \
 	-enable-checker  alpha.core.DynamicTypeChecker \
 	-enable-checker  alpha.core.FixedAddr \
 	-enable-checker  alpha.core.IdenticalExpr \
@@ -258,7 +257,6 @@ CLANG_OPT+= \
 	-enable-checker  alpha.core.SizeofPtr \
 	-enable-checker  alpha.core.TestAfterDivZero \
 	-enable-checker  alpha.cplusplus.VirtualCall \
-	-enable-checker  alpha.deadcode.UnreachableCode \
 	-enable-checker  alpha.osx.cocoa.Dealloc \
 	-enable-checker  alpha.osx.cocoa.DirectIvarAssignment \
 	-enable-checker  alpha.osx.cocoa.DirectIvarAssignmentForAnnotatedFunctions \
@@ -347,6 +345,8 @@ CLANG_OPT+= \
 	-enable-checker  unix.cstring.BadSizeArg \
 	-enable-checker  unix.cstring.NullArg \
 
+#	-enable-checker  alpha.deadcode.UnreachableCode \
+	-enable-checker  alpha.core.CastToStruct \
 
 #########################################################################
 #                            Build Targets                              #

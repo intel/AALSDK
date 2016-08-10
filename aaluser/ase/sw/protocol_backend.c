@@ -1067,7 +1067,7 @@ void ase_config_parse(char *filename)
 
   // Default values
   cfg->ase_mode = ASE_MODE_DAEMON_NO_SIMKILL;
-  cfg->ase_timeout = 500;
+  cfg->ase_timeout = 50000;
   cfg->ase_num_tests = 1;
   cfg->enable_reuse_seed = 0;
   cfg->enable_cl_view = 1;
@@ -1201,10 +1201,10 @@ void ase_config_parse(char *filename)
       // FILE does not exist
       printf("SIM-C : %s not found, using default values\n", ASE_CONFIG_FILE);
     }
-  END_YELLOW_FONTCOLOR;
+  // END_YELLOW_FONTCOLOR;
 
   // ASE mode
-  BEGIN_YELLOW_FONTCOLOR;
+  // BEGIN_YELLOW_FONTCOLOR;
   printf("        ASE mode                   ... ");
   switch (cfg->ase_mode)
     {
@@ -1213,43 +1213,43 @@ void ase_config_parse(char *filename)
     case ASE_MODE_DAEMON_SW_SIMKILL : printf("Server-Client mode with SW SIMKILL (long runs)\n") ; break ;
     case ASE_MODE_REGRESSION        : printf("ASE Regression mode\n") ; break ;
     }
-  END_YELLOW_FONTCOLOR;
+  // END_YELLOW_FONTCOLOR;
 
   // Inactivity
-  BEGIN_YELLOW_FONTCOLOR;
+  // BEGIN_YELLOW_FONTCOLOR;
   if (cfg->ase_mode == ASE_MODE_DAEMON_SIMKILL)
     printf("        Inactivity kill-switch     ... ENABLED after %d clocks \n", cfg->ase_timeout);
   else
     printf("        Inactivity kill-switch     ... DISABLED \n");
-  END_YELLOW_FONTCOLOR;
+  // END_YELLOW_FONTCOLOR;
 
   // Reuse seed
-  BEGIN_YELLOW_FONTCOLOR;
+  // BEGIN_YELLOW_FONTCOLOR;
   if (cfg->enable_reuse_seed != 0)
     printf("        Reuse simulation seed      ... ENABLED \n");
   else
     printf("        Reuse simulation seed      ... DISABLED \n");
-  END_YELLOW_FONTCOLOR;
+  // END_YELLOW_FONTCOLOR;
 
   // CL view
-  BEGIN_YELLOW_FONTCOLOR;
+  // BEGIN_YELLOW_FONTCOLOR;
   if (cfg->enable_cl_view != 0)
     printf("        ASE Transaction view       ... ENABLED\n");
   else
     printf("        ASE Transaction view       ... DISABLED\n");
-  END_YELLOW_FONTCOLOR;
+  // END_YELLOW_FONTCOLOR;
 
   // User clock frequency
-  BEGIN_YELLOW_FONTCOLOR;
+  // BEGIN_YELLOW_FONTCOLOR;
   printf("        User Clock Frequency       ... %.6f MHz, T_uclk = %d ps \n", f_usrclk, cfg->usr_tps);
   if (f_usrclk != DEFAULT_USR_CLK_MHZ)
     {
       printf("        ** NOTE **: User Clock Frequency was changed from default %f MHz !\n", DEFAULT_USR_CLK_MHZ);
     }
-  END_YELLOW_FONTCOLOR;
+  // END_YELLOW_FONTCOLOR;
 
   // GBs of physical memory available
-  BEGIN_YELLOW_FONTCOLOR;
+  // BEGIN_YELLOW_FONTCOLOR;
   printf("        Amount of physical memory  ... %d GB\n", cfg->phys_memory_available_gb);
   END_YELLOW_FONTCOLOR;
 
