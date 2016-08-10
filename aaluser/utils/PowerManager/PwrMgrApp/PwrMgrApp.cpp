@@ -431,6 +431,10 @@ btInt PwrMgrApp::CoreIdler(btInt &FPIWatts, btInt &socket)
    i = CPU_COUNT_S(sizeof(cpu_set_t), &idle_set);
    printf("Cpu Count: %d \n",i);
 
+   if (sched_getaffinity(1, sizeof(current_set), &current_set) == -1){
+      printf("sched_getaffinity failure for pid: 1\n");
+   }
+
    for (i = 0; i < split_point; i++) {
       if (socket == 0) {
             CPU_CLR(i, &current_set);
