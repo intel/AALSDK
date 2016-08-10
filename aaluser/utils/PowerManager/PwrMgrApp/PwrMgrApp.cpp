@@ -450,7 +450,7 @@ btInt PwrMgrApp::CoreIdler(btInt &FPIWatts, btInt &socket)
    }
 
    if (sched_getaffinity(2, sizeof(current_set), &current_set) == -1){
-      printf("sched_getaffinity failure for pid: 1\n");
+      printf("sched_getaffinity failure for pid: 2\n");
    }
 
    for (i = 0; i < split_point; i++) {
