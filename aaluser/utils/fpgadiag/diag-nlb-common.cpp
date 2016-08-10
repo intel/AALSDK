@@ -60,10 +60,12 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_SUPPRESSHDR);
    } else if ( 0 == strcmp("--no-bw", option) ) {
       flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_BANDWIDTH);
-   } else if ( 0 == strcmp("--wt", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WT);
-   } else if ( 0 == strcmp("--wb", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WB);
+   } else if ((0 == strcmp("--wrline-I", option)) || (0 == strcmp("--wli", option))) {
+      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_I);
+   } else if ((0 == strcmp("--wrline-M", option)) || (0 == strcmp("--wlm", option))) {
+      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_M);
+   } else if ((0 == strcmp("--wrpush-I", option)) || (0 == strcmp("--wpi", option))) {
+      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRPUSH_I);
    } else if ( 0 == strcmp("--pwr", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_PWR);
    } else if ( 0 == strcmp("--cont", option) ) {
@@ -625,19 +627,26 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
         0 == strcasecmp(test.c_str(), "TRPUT") ||
         0 == strcasecmp(test.c_str(), "SW") ) {
 
-      fprintf(fp, "      <WRITES>    = --wt,                           write-through cache behavior,                   ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WT) ) {
+      fprintf(fp, "      <WRITES>    = --wrline-I	       OR --wli,    write-through cache behavior,                   ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_I) ) {
          fprintf(fp, "on\n");
       } else {
-         fprintf(fp, "Default=%s\n", nlbcl->defaults.wt);
+         fprintf(fp, "Default=%s\n", nlbcl->defaults.wli);
       }
 
-      fprintf(fp, "                    --wb,                           write-back cache behavior,                      ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WB) ) {
+      fprintf(fp, "                    --wrline-M	       OR --wlm,    write-back cache behavior,                      ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_M) ) {
          fprintf(fp, "on\n");
       } else {
-         fprintf(fp, "Default=%s\n", nlbcl->defaults.wb);
+         fprintf(fp, "Default=%s\n", nlbcl->defaults.wlm);
       }
+
+      fprintf(fp, "                    --wrpush-I	       OR --wpi,    write-push cache behavior,                      ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_I) ) {
+		 fprintf(fp, "on\n");
+	  } else {
+		 fprintf(fp, "Default=%s\n", nlbcl->defaults.wpi);
+	  }
    }
 
    if ( 0 == strcasecmp(test.c_str(), "SW") ) {
@@ -1121,22 +1130,24 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
 
    // --wt, --wb, --pwr
 
-   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WB|NLB_CMD_FLAG_WT) ) {
-      os << "--wb and --wt are mutually exclusive." << endl;
+   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_M|NLB_CMD_FLAG_WRLINE_I) ||
+	    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_M|NLB_CMD_FLAG_WRPUSH_I) ||
+	    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRPUSH_I|NLB_CMD_FLAG_WRLINE_I) ) {
+      os << "--wrline-I, --wrline-M and --wrpush-I are mutually exclusive." << endl;
       return false;
    }
 
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WB|NLB_CMD_FLAG_PWR) ||
-        flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_WT) ) {
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_M|NLB_CMD_FLAG_WRPUSH_I) ||
+        flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_I) ) {
       // force --wb on; force --wt off.
 
-      flag_setf(cmd.cmdflags, NLB_CMD_FLAG_WB);
-      flag_clrf(cmd.cmdflags, NLB_CMD_FLAG_WT);
+      flag_setf(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_M);
+      flag_clrf(cmd.cmdflags, NLB_CMD_FLAG_WRPUSH_I);
    } else {
       // force --wb off; force --wt on.
 
-      flag_clrf(cmd.cmdflags, NLB_CMD_FLAG_WB);
-      flag_setf(cmd.cmdflags, NLB_CMD_FLAG_WT);
+      flag_clrf(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_M);
+      flag_setf(cmd.cmdflags, NLB_CMD_FLAG_WRPUSH_I);
    }
 
    // --warm-fpga-cache and --cool-fpga-cache
