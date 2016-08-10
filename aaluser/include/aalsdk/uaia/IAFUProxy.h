@@ -34,7 +34,7 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 8/28/2015      JG       Initial version
+/// 8/28/2015      JG       Initial version@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_IAFUPROXY_H__
 #define __AALSDK_IAFUPROXY_H__

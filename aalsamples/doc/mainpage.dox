@@ -25,8 +25,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 
-/// @defgroup SampleAFUs AALSDK Sample AFUs
-/// @brief Sample AALSDK Accelerator Function Units.
+/// @defgroup SampleAFUs AALSDK Sample Services
+/// @brief Sample AALSDK Services.
 
    /// @defgroup hello_service Hello Service
    /// @ingroup SampleAFUs
@@ -73,12 +73,40 @@
 
 /**
 @mainpage
-
 <ul>
-  <li>@ref SampleAFUs "AALSDK Sample Accelerator Function Units"</li>
+  <li>@subpage AALSDKSamplesPage</li>
+  <li>@subpage WritingAALApplicationsPage</li>
+  <li>@subpage WritingAALServicesPage</li>
+  <li>@subpage AFULinkInterfacePage</li>
+  <li>@subpage ServicesInterfacePage</li>
+  <li>@subpage OSALPage</li>
+</ul>
+**/
+
+/**
+@page AALSDKSamplesPage AALSDK Samples - Services and Applications
+<h3>
+  The AALSDK Samples are provided in order to demonstrate basic techniques
+  and API usage.  They are not release quality code - often intentionally
+  limiting error checking, tracing, and debugging facilities in order to not
+  distract the reader from the core idea being demonstrated.
+</h3>
+<h4>
+  AALSDK Sample Service demonstrate the implementation of accelerator
+  functionality in software only.  Services can be important tools to
+  effectively manage timely provision of accelerator resources to applications.
+</h4>
+<ul>
+  <li>@ref SampleAFUs "AALSDK Sample Services"</li>
     <ul>
       <li>@ref hello_service "Hello_AAL_Service - Hello Service"</li>
     </ul>
+</ul>
+<h4>
+  AALSDK Sample Applications demonstrate the interaction with accelerator
+  hardware to perform a variety of computational tasks.
+</h4>
+<ul>
   <li>@ref Samples "AALSDK Sample Applications"</li>
     <ul>
       <li>@ref HelloAAL     "Hello_AAL - Hello AFU Sample Application"</li>
@@ -87,13 +115,165 @@
       <li>@ref SudokuSample "Sudoku_SPL - Sudoku on SPL"</li>
       <li>@ref LinkedListSample "LinkedList_SPL - Linked List using SVM of SPL"</li>
     </ul>
-  <li>@ref Sampleout "AALSDK Sample Application outputs"</li>
+</ul>
+**/
+
+/**
+@page WritingAALApplicationsPage Writing AAL Applications
+<h3>
+  The links on this page lead to all the documents needed to write AAL
+  Applications.
+</h3>
+<h4>
+  It is recommended that the AALSDK user explore these links in order because
+  the topics build on one another.
+</h4>
+<ul>
+  <li>@ref AALCore "AALSDK Core User-Mode Framework"</li>
     <ul>
-      <li>@ref HelloAALout "Hello_AAL_OUTPUT "</li>
-      <li>@ref HelloCCINLBout "Hello_CCI_NLB_OUTPUT "</li>
-      <li>@ref HelloSPLLBout "Hello_SPL_LB_OUTPUT "</li>
+      <li>@ref BasicTypes "Basic Data Types"</li>
+      <li>@ref OSAL       "OS Abstraction Layer"</li>
+      <li>@ref CommonBase "Common Base Class"</li>
+      <li>@ref Runtime    "Runtime Objects"</li>
+      <li>@ref AALRUNTIME  "AAL Run Time Framework"</li>
+      <li>@ref Events     "Event Infrastructure"</li>
+        <ul>
+          <li>@ref SysEvents "System Events"</li>
+        </ul>
+      <li>@ref SysServices          "System Services"</li>
+         <ul>
+           <li>@ref ServiceBroker  "Service Broker"</li>
+           <li>@ref MDS            "Message Delivery"</li>
+           <li>@ref Registrar      "Registrar"</li>
+           <li>@ref ResMgr         "Resource Manager"</li>
+         </ul>
+      <li>@ref Utils "Utilities"</li>
+        <ul>
+          <li>@ref AASUtils     "AAS Utilities"</li>
+          <li>@ref RMUtils      "Resource Manager Utilities"</li>
+          <li>@ref SingleAFUApp "ISingleAFUApp - AAL application template"</li>
+        </ul>
     </ul>
-</ul> 
+</ul>
+**/
+
+/**
+@page WritingAALServicesPage Writing AAL Services
+<h3>
+  The links on this page lead to all the documents needed to write AAL Services.
+</h3>
+<h4>
+  It is recommended that the AALSDK user explore these links in order because
+  the topics build on one another.
+</h4>
+<ul>
+  <li>@ref AALCore "AALSDK Core User-Mode Framework"</li>
+    <ul>
+      <li>@ref BasicTypes "Basic Data Types"</li>
+      <li>@ref OSAL       "OS Abstraction Layer"</li>
+      <li>@ref CommonBase "Common Base Class"</li>
+      <li>@ref Runtime    "Runtime Objects"</li>
+      <li>@ref AALRUNTIME  "AAL Run Time Framework"</li>
+      <li>@ref Events     "Event Infrastructure"</li>
+        <ul>
+          <li>@ref SysEvents "System Events"</li>
+        </ul>
+      <li>@ref UserModeServiceSDK   "User Mode Service SDK"</li>
+        <ul>
+          <li>@ref ServiceBase           "Service Base"</li>
+          <li>@ref DeviceServiceBase     "Device Service Base"</li>
+          <li>@ref InProcFactory         "In-process Service Factories"</li>
+          <li>@ref Dispatchable          "Dispatchable - Scheduleable Objects"</li>
+          <li>@ref AFU                   "Accelerator Function Unit (AFU)"</li>
+            <ul>
+              <li>@ref IALIAFU  "ALI Service Interface"</li>
+            </ul>
+       </ul>
+     <li>@ref SysServices          "System Services"</li>
+         <ul>
+           <li>@ref ServiceBroker  "Service Broker"</li>
+           <li>@ref MDS            "Message Delivery"</li>
+           <li>@ref Registrar      "Registrar"</li>
+           <li>@ref ResMgr         "Resource Manager"</li>
+         </ul>
+      <li>@ref Utils "Utilities"</li>
+        <ul>
+          <li>@ref AASUtils     "AAS Utilities"</li>
+          <li>@ref RMUtils      "Resource Manager Utilities"</li>
+          <li>@ref SingleAFUApp "ISingleAFUApp - AAL application template"</li>
+          <li>@ref CSyncClient  "CSyncClient - synchronous AAL application base class"</li>
+        </ul>
+    </ul>
+  <li>@ref Debugging "Internal Debugging Facilities"</li>
+  <li>@ref UtilityAFUs "AALSDK Utility AFUs"</li>
+    <ul>
+      <li>@ref ALIAFU      "ALIAFU"</li>
+      <ul>
+        <li>@ref HWALIAFU     "HWALIAFU"</li>
+        <li>@ref ASEALIAFU    "ASEALIAFU"</li>
+        <li>@ref SWSimALIAFU  "SWSimALIAFU"</li>
+      </ul>
+    </ul>
+  <li>@ref UtilApps "AALSDK Utility Applications"</li>
+    <ul>
+      <li>@ref aalscan    "aalscan - Scan for AALSDK Service Modules"</li>
+      <li>@ref data_model "data_model - Show the C/C++ data model for the current compiler"</li>
+    </ul>
+</ul>
+**/
+
+/**
+@page AFULinkInterfacePage AFU Link Interface
+<h3>
+  The AFU Link Interface allows the AALSDK user to interact with an AFU.
+  It is critical for developing AAL Applications.
+</h3>
+<h4>
+  This AFU Link Interface reference documents the classes used to locate,
+  open and communicate with an AFU.
+</h4>
+<ul>
+  <li>@ref IALIAFU  "ALI Service Interface"</li>
+</ul>
+**/
+
+/**
+@page ServicesInterfacePage Services Interface
+<h3>
+  The Services Interface that is available to an application to interact with
+  with a Service.
+</h3>
+<h4>
+  These Service Interface references document the classes used to create,
+  monitor and control AAL Services.
+</h4>
+<ul>
+  <li>@ref ServiceBase           "Service Base"</li>
+  <li>@ref DeviceServiceBase     "Device Service Base"</li>
+  <li>@ref InProcFactory         "In-process Service Factories"</li>
+  <li>@ref Dispatchable          "Dispatchable - Scheduleable Objects"</li>
+</ul>
+**/
+
+/**
+@page OSALPage Operating System Abstraction Layer (OSAL)
+<h3>
+  The Operating System Abstraction Layer (OSAL) provides key functions and 
+  facilities for synchronization and manipulating simple data structures.
+  They are designed to insulate the AALSDK user from varying implementations
+  on different operating systems.  To do this they are exposed as a single
+  API that is compiled and linked to the appropriate object code for the
+  target operating system.  This simplifies AAL Service and Application code.
+</h3>
+<h4>
+  The OSAL reference documents the OSAL functions and facilities
+  available to the AALSDK user.
+</h4>
+<ul>
+  <li>@ref OSAL       "OS Abstraction Layer"</li>
+</ul>
+**/
+
 @verbatim
    INFORMATION IN THIS DOCUMENT IS PROVIDED IN  CONNECTION  WITH  INTEL(R)
    PRODUCTS. NO LICENSE, EXPRESS OR IMPLIED, BY ESTOPPEL OR  OTHERWISE, TO
@@ -209,6 +389,6 @@ POSSIBILITY OF SUCH DAMAGE.@endverbatim
 
 This document contains information on products in the design phase of
 development.
-*/
+**/
 
 

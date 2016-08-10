@@ -97,6 +97,7 @@ public:
    ///
    /// @param[in]  User  A User-Defined data item, not touched by IThreadGroup.
    virtual void              UserDefined(btObjectType )   = 0;
+
    /// Retrieve the User-Defined pointer associated with this IThreadGroup object.
    ///
    /// @return The User-Defined pointer, or NULL if none was set.
@@ -116,12 +117,16 @@ protected:
 // Interface: public
 // Comments: 
 //=============================================================================
+
 /// @brief Thread pooled functor scheduler
 class OSAL_API OSLThreadGroup : public IThreadGroup,
                                 public CriticalSection
 {
 public:
-   ///  Default Min thread is to let the TG decide. Max < min then Max == Min
+   ///  If uiMinThreads is the default 0, the Thread Group will determine the minimum
+   ///  number of threads in the group.
+   ///
+   ///  If uiMaxThreads < uiMinThreads then uiMaxThreads is set to uiMinThreads.
    OSLThreadGroup(btUnsignedInt             uiMinThreads=0,
                   btUnsignedInt             uiMaxThreads=0,
                   OSLThread::ThreadPriority nPriority=OSLThread::THREADPRIORITY_NORMAL,
@@ -130,16 +135,66 @@ public:
    virtual ~OSLThreadGroup();
 
    // <IThreadGroup>
+
+   /// @brief  Returns whether or not the state of the Thread Group is OK.
+   /// @retval true  if the Thread Group has been properly initialized.
+   /// @retval false if the Thread Group was not properly initialized, or is being destroyed.
    virtual btBool                   IsOK() const               { return NULL != m_pState;            }
+
+   /// @brief  Returns the number of threads in the Thread Group.
+   /// @note   The number returned is a snapshot.  The number of threads can change between the time
+   ///         GetNumThreads() gets the number and the time it is returned to the caller.
+   /// @return The number of threads.
    virtual btUnsignedInt   GetNumThreads() const               { return m_pState->GetNumThreads();   }
+
+   /// @brief  Returns the number of work items on the Thread Group work queue.
+   /// @note   The number returned is a snapshot.  The number of work items can change between the time
+   ///         GetNumWorkItems() gets the number and the time it is returned to the caller.
+   /// @return The number of threads.
    virtual btUnsignedInt GetNumWorkItems() const               { return m_pState->GetNumWorkItems(); }
+
+   /// @brief  Adds the work item to the Thread Group work queue.
+   /// @param[in] pDisp     - Pointer to the work item to be added to the work queue.
+   /// @retval true  if the work item has been added to the Thread Group work queue.
+   /// @retval false if the work item has NOT been added to the Thread Group work queue.
    virtual btBool                    Add(IDispatchable *pDisp) { return m_pState->Add(pDisp);        }
+
+   /// @brief  Wait for all threads in the Thread Group to exit.
+   /// @note   All items on the Thread Group work queue are processed.
+   /// @param[in] timeout   - Maximum time to wait for the threads to exit.
+   /// @retval true   if all threads exited.
+   /// @retval false  if not all threads exited.
    virtual btBool                   Join(btTime timeout)       { return m_pState->Join(timeout);     }
+
+   /// @brief  Synchronously execute all work items currently in the Thread Group work queue.
+   /// @note   All work items in the Thread Group work queue will be executed before Drain() returns.
+   /// @retval true   if no items remain on the work queue.
+   /// @retval false  if the work queue cannot be drained.
    virtual btBool                  Drain()                     { return m_pState->Drain();           }
+
+   /// @brief  Stops all threads in the Thread Group.
+   /// @note   All work items in the Thread Group work queue will be removed but not executed.
+   /// @return void
    virtual void                     Stop()                     { m_pState->Stop();                   }
+
+   /// @brief  Restarts threads in the Thread Group.
+   /// @note   Adjusts the Thread Group work queue semaphore to ensure threads will execute the work items.
+   /// @retval true   if threads are restarted or enough threads are already running to execute the work
+   ///                items on the queue.
+   /// @retval false  if the Thread Group is not in a running state.
    virtual btBool                  Start()                     { return m_pState->Start();           }
+
    virtual btBool                Destroy(btTime Timeout);
+
+   /// @brief  Associate a pointer to a User-Defined object with the Thread Group.
+   /// @note   The Thread Group does not access or alter the User-Defined object.
+   /// @return void
    virtual void              UserDefined(btObjectType User)    { m_pState->UserDefined(User);        }
+
+   /// @brief  Retrieve the pointer to a User-Defined object that was associated with this Thread Group
+   ///         by calling UserDefined(btObjectType).
+   /// @retval Pointer to an object.
+   /// @retval NULL if no User-Defined object is associated with this Thread Group.
    virtual btObjectType      UserDefined() const               { return m_pState->UserDefined();     }
    // </IThreadGroup>
 
@@ -152,10 +207,10 @@ protected:
 
 private:
    //
-   /// Object that holds state and semaphores for the
-   ///  thread group. This object "lives" outside the
-   ///  ThreadGroup object so that Threads may continue to
-   /// clean-up even if the ThreadGroup proper has been destroyed.
+   // Object that holds state and semaphores for the
+   //  thread group. This object "lives" outside the
+   //  ThreadGroup object so that Threads may continue to
+   // clean-up even if the ThreadGroup proper has been destroyed.
    class ThrGrpState : public IThreadGroup,
                        public CriticalSection
    {
@@ -259,7 +314,7 @@ private:
 
       protected:
 
-         /// Functor that signals completion of a call to OSLThreadGroup::Drain().
+         // Functor that signals completion of a call to OSLThreadGroup::Drain().
          class NestedBarrierPostD : public IDispatchable
          {
          public:
@@ -326,7 +381,11 @@ private:
       friend class OSLThreadGroup;
    };
 
-   /// lpParms is a ThrGrpState.
+   // @brief ExecProc is the body of a worker thread.
+   //
+   // @param[in] pThread The pointer to the Thread that will execute the function.
+   // @param[in] lpParms The ThrGrpState of the Thread Group the worker thread will be part of.
+   // @return void
    static void ExecProc(OSLThread *pThread, void *lpParms);
 
    btBool       m_bDestroyed;
@@ -334,20 +393,34 @@ private:
    ThrGrpState *m_pState;
 };
 
-/// Create an OSLThreadGroup whose sole purpose is to dispatch pDisp.
+/// @brief Create an OSLThreadGroup whose sole purpose is to dispatch the work item pDisp.
 ///
 /// Waits for the thread group to dispatch pDisp and then destroys the thread group before returning.
+/// @param[in] pDisp       - Work item to execute.
+/// @param[in] MinThrs     - Minimum number of threads to create in the Thread Group (default = 0).
+/// @param[in] MaxThrs     - Maximum number of threads to create in the Thread Group (default = 0).
+/// @param[in] ThrPriority - Thread priority of created threads (default = OSLThread::THREADPRIORITY_NORMAL).
+/// @param[in] JoinTimeout - Maximum time to wait for the thread(s) to exit when destroying the Thread Group (default = AAL_INFINITE_WAIT).
+/// @retval true   if the work item was executed.
+/// @retval false  if the work item could not be executed.
 OSAL_API btBool   FireAndWait( IDispatchable            *pDisp,
                                btUnsignedInt             MinThrs=0,
                                btUnsignedInt             MaxThrs=0,
                                OSLThread::ThreadPriority ThrPriority=OSLThread::THREADPRIORITY_NORMAL,
                                btTime                    JoinTimeout=AAL_INFINITE_WAIT);
 
-/// Create an OSLThreadGroup whose sole purpose is to dispatch pDisp.
+/// @brief Create an OSLThreadGroup whose sole purpose is to dispatch pDisp.
 ///
 /// pDisp is not guaranteed to have dispatched prior to returning from this function.
 /// An OSLThread is created to ensure that the thread group is destroyed and its memory reclaimed
 ///  upon dispatching pDisp. The thread self-destructs after reclaiming the thread group resources.
+/// @param[in] pDisp       - Work item to execute.
+/// @param[in] MinThrs     - Minimum number of threads to create in the Thread Group (default = 0).
+/// @param[in] MaxThrs     - Maximum number of threads to create in the Thread Group (default = 0).
+/// @param[in] ThrPriority - Thread priority of created threads (default = OSLThread::THREADPRIORITY_NORMAL).
+/// @param[in] JoinTimeout - Maximum time to wait for the thread(s) to exit when destroying the Thread Group (default = AAL_INFINITE_WAIT).
+/// @retval true   if the work item was executed.
+/// @retval false  if the work item could not be executed.
 OSAL_API btBool FireAndForget( IDispatchable            *pDisp,
                                btUnsignedInt             MinThrs=0,
                                btUnsignedInt             MaxThrs=0,

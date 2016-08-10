@@ -46,8 +46,6 @@
 
 BEGIN_NAMESPACE(AAL)
 
-/// Find the first bit set, scanning low to high.
-/// @param[in] value is input bitmask
 OSAL_API unsigned long FindLowestBitSet64(btUnsigned64bitInt value);
 
 END_NAMESPACE(AAL)

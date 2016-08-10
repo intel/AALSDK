@@ -60,7 +60,7 @@ BEGIN_NAMESPACE(AAL)
 class OSAL_API CriticalSection
 {
 public:
-   /// CriticalSection Default Constructor.
+   // CriticalSection Default Constructor.
    CriticalSection()
 #ifdef __AAL_LINUX__
    : m_Lock(CriticalSection::sm_MutexInitializer)
@@ -71,7 +71,7 @@ public:
 #endif // __AAL_WINDOWS__
    }
 
-   /// CriticalSection Destructor.
+   // CriticalSection Destructor.
    virtual ~CriticalSection()
    {
 #if   defined( __AAL_WINDOWS__ )
@@ -83,7 +83,7 @@ public:
 
 protected:
 
-   /// Obtain the critical section. (blocking)
+   // Obtain the critical section (blocking).
    void Lock()
    {
 #if   defined( __AAL_WINDOWS__ )
@@ -107,7 +107,7 @@ protected:
 #endif // OS
    }
 
-   /// Release the critical section.
+   // Release the critical section.
    void Unlock()
    {
 #if   defined( __AAL_WINDOWS__ )
@@ -175,7 +175,7 @@ public:
       m_p->Lock();
    }
 
-   /// _AutoLock Destructor.
+   // _AutoLock Destructor.
    virtual ~_AutoLock()
    {
       ASSERT(NULL != m_p);

@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 //****************************************************************************
-/// @file IMPFSERVICE.h
+/// @file IMPF.h
 /// @brief IMPFService.
 /// @ingroup vtp_service
 /// @verbatim

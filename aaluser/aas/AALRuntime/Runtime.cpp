@@ -56,10 +56,12 @@ Runtime::Runtime() :
 {/*empty*/}
 
 //=============================================================================
-/// Constructor of Runtime class
+/// Constructor of Runtime class.
 ///
 /// Need to call start() after construction to actually get the
-///   runtime initialized and functional
+///   runtime initialized and functional.
+/// @param[in] pClient A pointer to the Runtime Client requesting the Runtime.
+/// @return       void
 //=============================================================================
 Runtime::Runtime(IRuntimeClient *pClient) :
 // : Runtime(pClient, true)  //C++11 only
@@ -70,8 +72,8 @@ Runtime::Runtime(IRuntimeClient *pClient) :
 }
 
 //=============================================================================
-/// Destructor releases all proxies created though this object and releases
-///   the Runtime Instance
+// Destructor releases all proxies created though this object and releases
+//   the Runtime Instance.
 //=============================================================================
 Runtime::~Runtime()
 {
@@ -82,10 +84,9 @@ Runtime::~Runtime()
 }
 
 //=============================================================================
-/// Starts the AAL Runtime implementation after initial construction
+/// Starts the AAL Runtime implementation after initial construction.
 ///
-/// @param[in]    pClient        Pointer to the Runtime's client object (IBase).
-/// @param[in]    rConfigParms   Configuration parameter NVS
+/// @param[in]    rConfigParms   Configuration parameter NVS.
 /// @return       True if successful. Possible to fail, e.g. the pClient does
 ///                  not contain an IRuntimeClient to call back. But more
 ///                  typically start() results in a call back to IRuntimeClient
@@ -102,8 +103,8 @@ btBool Runtime::start(const NamedValueSet &rConfigParms)
 }
 
 //=============================================================================
-/// Stop the runtime
-/// @return       void
+/// Stop the runtime.
+/// @return       void.
 //=============================================================================
 void Runtime::stop()
 {
@@ -114,13 +115,11 @@ void Runtime::stop()
 }
 
 //=============================================================================
-/// Allocate a service
+/// Allocate a service.
 ///
-/// @param[in]    pClient        IBase of owner, containing an IServiceClient
-/// @param[in]    rManifest      Optional manifest defining the service
-/// @param[in]    rTranID        Optional transactionID
-/// @param[in]    mode           Option mode whether to notify just the service
-///                                 or also the runtime client
+/// @param[in]    pClient        IBase of owner, containing an IServiceClient.
+/// @param[in]    rManifest      Optional manifest defining the service.
+/// @param[in]    rTranID        Optional transactionID.
 /// @return       void
 //=============================================================================
 void Runtime::allocService(IBase               *pClient,
@@ -134,10 +133,10 @@ void Runtime::allocService(IBase               *pClient,
 }
 
 //=============================================================================
-/// Schedule a Dispatchable object for dispatch (i.e. delivery to its target function)
+/// Schedule a Dispatchable object for dispatch (i.e. delivery to its target function).
 ///
-/// @param[in]    pdispatchable  Dispatchable object
-/// @return       void
+/// @param[in]    pdispatchable  Dispatchable object.
+/// @return       void.
 //=============================================================================
 btBool Runtime::schedDispatchable(IDispatchable *pdispatchable)
 {
@@ -149,10 +148,10 @@ btBool Runtime::schedDispatchable(IDispatchable *pdispatchable)
 }
 
 //=============================================================================
-/// Get a new pointer to the Runtime
+/// Get a new pointer to the Runtime.
 ///
-/// @param[in]    pClient - Pointer to client for Proxy
-/// @return       void
+/// @param[in]    pClient - Pointer to client for Proxy.
+/// @return       A pointer to a runtime interface IRuntime.
 //=============================================================================
 IRuntime * Runtime::getRuntimeProxy(IRuntimeClient *pClient)
 {
@@ -175,10 +174,9 @@ IRuntime * Runtime::getRuntimeProxy(IRuntimeClient *pClient)
 }
 
 //=============================================================================
-/// Get a new pointer to the Runtime
+/// Get a new pointer to the Runtime.
 ///
-/// @param[in]    pRuntime - Pointer to Proxy to release
-/// @return       true - Success
+/// @return       true - Success.
 //=============================================================================
 btBool Runtime::releaseRuntimeProxy()
 {
@@ -222,10 +220,13 @@ btBool Runtime::IsOK()
 }
 
 //=============================================================================
-/// Constructor of Runtime class
-///
-/// Need to call start() after construction to actually get the
-///   runtime initialized and functional
+// Constructor of Runtime class.
+//
+// Need to call start() after construction to actually get the
+//   runtime initialized and functional.
+// @param[in] pClient A pointer to the Runtime Client requesting the Runtime.
+// @param[in] bFirstTime 
+// @return void
 //=============================================================================
 Runtime::Runtime(IRuntimeClient *pClient, btBool bFirstTime) :
 // : Runtime(pClient, true)  //C++11 only
@@ -236,10 +237,13 @@ Runtime::Runtime(IRuntimeClient *pClient, btBool bFirstTime) :
 }
 
 //=============================================================================
-/// Initializer of Runtime class
-///
-/// Need to call start() after construction to actually get the
-///   runtime initialized and functional
+// Initializer of Runtime class
+//
+// Need to call start() after construction to actually get the
+//   runtime initialized and functional
+// @param[in] pClient A pointer to the Runtime Client requesting the Runtime.
+// @param[in] bFirstTime 
+// @return void
 //=============================================================================
 void Runtime::init(IRuntimeClient *pClient, btBool bFirstTime)
 {
