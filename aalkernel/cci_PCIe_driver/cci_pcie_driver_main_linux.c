@@ -452,11 +452,14 @@ static int cci_pci_sriov_configure(struct pci_dev *pcidev, int num_vfs)
 {
 
    if (num_vfs == 0){
-      PINFO("SRIOV Disabled on this device\n");
       pci_disable_sriov(pcidev);
+      PINFO("SRIOV disabled on this device\n");
    }else{
-      PINFO("SRIOV Enabled on this device for %d VF%s\n",num_vfs, (num_vfs >1 ? "s" : ""));
-      pci_enable_sriov(pcidev, num_vfs);
+      if (0 == pci_enable_sriov(pcidev, num_vfs)){
+         PINFO("SRIOV Enabled on this device for %d VF%s\n",num_vfs, (num_vfs >1 ? "s" : ""));
+      }else{
+         PINFO("Failed to enable SRIOV");
+      }
    }
    return 0;
 }
@@ -905,13 +908,13 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       ccip_portdev_maxVFs(pccipdev) = i;     // Can't have more VFs than ports for now
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
-      if( 0 != pci_sriov_set_totalvfs(pcidev, ccip_portdev_maxVFs(pccipdev))){
+/*      if( 0 != pci_sriov_set_totalvfs(pcidev, ccip_portdev_maxVFs(pccipdev))){
          ccip_portdev_maxVFs(pccipdev) = 0;
          PINFO("Device not does not support SRIOV.");
       }else if(0 != pci_enable_sriov(pcidev,ccip_portdev_maxVFs(pccipdev) )){
          PERR("Failed to enable SRIOV\n");
          ccip_portdev_maxVFs(pccipdev) = 0;
-      }
+      }*/
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0) */
 
    }
