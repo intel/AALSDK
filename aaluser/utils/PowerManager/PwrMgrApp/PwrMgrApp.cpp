@@ -321,11 +321,11 @@ btInt PwrMgrApp::CoreIdler(btInt &FPIWatts, btInt &socket)
    long double AvailableWatts  = 0;
    long double FpgaWatts       = 0;
 
-   char MaxThreadValStr[20]    = "";
-   char data[1024]             = "";
-   char data1[1024]            = "";
-   char command610[40]         = "";
-   char command606[40]         = "";
+   char MaxThreadValStr[20]    = {0};
+   char data[1024]             = {0};
+   char data1[1024]            = {0};
+   char command610[40]         = {0};
+   char command606[40]         = {0};
    char *endptr                = NULL;
 
    cpu_set_t idle_set, current_set, full_mask_set;
