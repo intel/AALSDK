@@ -151,7 +151,7 @@ void backtrace_handler(int sig)
   trace_depth = backtrace(bt_addr, 16);
   bt_messages = backtrace_symbols(bt_addr, trace_depth);
   printf("\n[bt] Execution Backtrace:\n");
-  for (ii=1; ii < trace_depth ; ++ii)
+  for (ii=1; ii < trace_depth ; ii++)
     {
       printf("[bt] #%d %s\n", ii, bt_messages[ii]);
       snprintf(sys_cmd, 256, "addr2line %p -e %s", bt_addr[ii], __progname);

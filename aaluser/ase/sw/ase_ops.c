@@ -279,6 +279,7 @@ char* ase_malloc (size_t size)
   if (buffer == NULL)
     {
       ase_error_report ("malloc", errno, ASE_OS_MALLOC_ERR);
+      free (buffer);
     #ifdef SIM_SIDE
       printf("SIM-C : Malloc failed\n");
       start_simkill_countdown();
@@ -344,6 +345,11 @@ void ase_write_lock_file()
 	  BEGIN_RED_FONTCOLOR;
 	  printf("SIM-C : **ERROR** => Hostname could not be calculated, Exiting\n");
 	  END_RED_FONTCOLOR;
+
+	  // Close file
+	  fclose(fp_ase_ready);
+	  
+	  // Issue Simkill
 	  start_simkill_countdown();
 	}
 
@@ -358,10 +364,12 @@ void ase_write_lock_file()
       ////////////////////////////////////////////
       // Close file
       fclose(fp_ase_ready);
+      free (ase_hostname);
 
       // Notice on stdout
       printf("SIM-C : ASE lock file .ase_ready.pid written in work directory\n");
     }
+
 
   FUNC_CALL_EXIT;
 }
@@ -407,7 +415,7 @@ int ase_read_lock_file(const char *workdir)
       exit(1);
     #endif
     }
-  
+
   // Calculate ready file path
   exp_ready_filepath = ase_malloc(ASE_FILEPATH_LEN);
   snprintf(exp_ready_filepath, ASE_FILEPATH_LEN, "%s/%s", workdir, ASE_READY_FILENAME);
@@ -489,9 +497,9 @@ int ase_read_lock_file(const char *workdir)
 	  // Check here
 	  if (strcmp(curr_hostname, readback_hostname) != 0)
 	    {
-	      BEGIN_RED_FONTCOLOR;	      
+	      BEGIN_RED_FONTCOLOR;
 	      printf("** ERROR ** => Hostname specified in ASE lock file (%s) is different as current hostname (%s)\n", readback_hostname, curr_hostname);
-	      printf("** ERROR ** => Ensure that ASE Simulator and AAL application are running on the same host !\n");	      
+	      printf("** ERROR ** => Ensure that ASE Simulator and AAL application are running on the same host !\n");
 	      END_RED_FONTCOLOR;
 	    #ifdef SIM_SIDE
 	      start_simkill_countdown();
@@ -500,11 +508,11 @@ int ase_read_lock_file(const char *workdir)
 	    #endif
 	    }
 	  else
-	    {      
+	    {
 	      // If readback_uid (Readback unique ID from lock file) doesnt match ase_common.h
 	      curr_uid = ase_malloc(ASE_FILENAME_LEN);
 	      strncpy(curr_uid, ASE_UNIQUE_ID, ASE_FILENAME_LEN);
-	      
+
 	      // Check
 	      if (strcmp(curr_uid, readback_uid) != 0)
 		{
@@ -520,8 +528,18 @@ int ase_read_lock_file(const char *workdir)
 		  exit(1);
             #endif
 		}
+	      
+	      // Free curr_uid
+	      free (curr_uid);	      
 	    }
-	}      
+	}
+
+      // Free all buffers
+      free (line);
+      free (readback_hostname);
+      free (curr_hostname);
+      free (readback_workdir_path);
+      free (readback_uid);
     }
   else // File does not exist
     {
@@ -533,6 +551,9 @@ int ase_read_lock_file(const char *workdir)
       END_RED_FONTCOLOR;
     }
 
+  // Free expected filepath buffer
+  free (exp_ready_filepath);
+
   // Return PID of Simulator instance
   return readback_pid;
 }
@@ -543,21 +564,19 @@ int ase_read_lock_file(const char *workdir)
  */
 void print_mmiopkt(FILE *fp, char *activity, struct mmio_t *pkt)
 {
-  FUNC_CALL_ENTRY; 
+  FUNC_CALL_ENTRY;
 
   char mmio_action_type[20];
   memset(mmio_action_type, 0, 20);
-  
-  snprintf(mmio_action_type, 20, 
-	  "MMIO-%s-%d-%s", 
+
+  snprintf(mmio_action_type, 20,
+	  "MMIO-%s-%d-%s",
 	  (pkt->write_en == MMIO_WRITE_REQ ? "Write" : "Read"),
 	  pkt->width,
-	  (pkt->resp_en == 0 ? "Req " : "Resp") ); 
-  
-  fprintf(fp, "%s\t%03x\t%s\t%x\t%llx\n", activity, 
+	  (pkt->resp_en == 0 ? "Req " : "Resp") );
+
+  fprintf(fp, "%s\t%03x\t%s\t%x\t%llx\n", activity,
 	  pkt->tid, mmio_action_type, pkt->addr, pkt->qword[0]);
 
   FUNC_CALL_EXIT;
 }
-
-
