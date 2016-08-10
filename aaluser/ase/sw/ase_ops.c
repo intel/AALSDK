@@ -319,7 +319,7 @@ void ase_write_lock_file()
 
   // Create a filepath string
   ase_ready_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  sprintf(ase_ready_filepath, "%s/%s", ase_workdir_path, ASE_READY_FILENAME);
+  snprintf(ase_ready_filepath, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, ASE_READY_FILENAME);
 
   // Open file
   fp_ase_ready = fopen(ase_ready_filepath, "w");
@@ -410,7 +410,7 @@ int ase_read_lock_file(const char *workdir)
   
   // Calculate ready file path
   exp_ready_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  sprintf(exp_ready_filepath, "%s/%s", workdir, ASE_READY_FILENAME);
+  snprintf(exp_ready_filepath, ASE_FILEPATH_LEN, "%s/%s", workdir, ASE_READY_FILENAME);
 
   // Check if file exists
   if (access(exp_ready_filepath, F_OK) != -1)  // File exists
@@ -548,7 +548,7 @@ void print_mmiopkt(FILE *fp, char *activity, struct mmio_t *pkt)
   char mmio_action_type[20];
   memset(mmio_action_type, 0, 20);
   
-  sprintf(mmio_action_type, 
+  snprintf(mmio_action_type, 20, 
 	  "MMIO-%s-%d-%s", 
 	  (pkt->write_en == MMIO_WRITE_REQ ? "Write" : "Read"),
 	  pkt->width,

@@ -273,7 +273,7 @@ void send_simkill()
   // Simkill
   char ase_simkill_msg[ASE_MQ_MSGSIZE];
   memset(ase_simkill_msg, 0, ASE_MQ_MSGSIZE);
-  sprintf(ase_simkill_msg, "ASE_SIMKILL 0");
+  snprintf(ase_simkill_msg, ASE_MQ_MSGSIZE, "ASE_SIMKILL 0");
   ase_portctrl(ase_simkill_msg);
 
   BEGIN_YELLOW_FONTCOLOR;
@@ -416,7 +416,7 @@ void session_init()
       // Send portctrl command to start a session
       char session_ctrlcmd[ASE_MQ_MSGSIZE];
       memset(session_ctrlcmd, 0, ASE_MQ_MSGSIZE);
-      sprintf(session_ctrlcmd, "ASE_INIT %d", getpid());
+      snprintf(session_ctrlcmd, ASE_MQ_MSGSIZE, "ASE_INIT %d", getpid());
       ase_portctrl(session_ctrlcmd);
 
       // Wait till session file is created
@@ -578,7 +578,7 @@ void session_deinit()
       // Send SIMKILL
       char session_ctrlcmd[ASE_MQ_MSGSIZE];
       memset(session_ctrlcmd, 0, ASE_MQ_MSGSIZE);
-      sprintf(session_ctrlcmd, "ASE_SIMKILL 0");
+      snprintf(session_ctrlcmd, ASE_MQ_MSGSIZE, "ASE_SIMKILL 0");
       ase_portctrl(session_ctrlcmd);
 
 #ifdef ASE_DEBUG
@@ -1034,15 +1034,15 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   memset(mem->memname, 0, sizeof(mem->memname));
   if(mem->is_mmiomap == 1)
     {
-      sprintf(mem->memname, "/mmio.%s", tstamp_string);
+      snprintf(mem->memname, ASE_FILENAME_LEN, "/mmio.%s", tstamp_string);
     }
   else if (mem->is_umas == 1)
     {
-      sprintf(mem->memname, "/umas.%s", tstamp_string);
+      snprintf(mem->memname, ASE_FILENAME_LEN, "/umas.%s", tstamp_string);
     }
   else
     {
-      sprintf(mem->memname, "/buf%d.%s", userbuf_index_count, tstamp_string);
+      snprintf(mem->memname, ASE_FILENAME_LEN, "/buf%d.%s", userbuf_index_count, tstamp_string);
       userbuf_index_count++;
     }
 
@@ -1332,7 +1332,7 @@ void umsg_set_attribute(uint32_t hint_mask)
   
   // Cast message
   umsg_attrib_cmd = ase_malloc(ASE_MQ_MSGSIZE);
-  sprintf(umsg_attrib_cmd, "UMSG_MODE %d", hint_mask);
+  snprintf(umsg_attrib_cmd, ASE_MQ_MSGSIZE, "UMSG_MODE %d", hint_mask);
 
   // Send transaction
   ase_portctrl(umsg_attrib_cmd);
@@ -1415,13 +1415,18 @@ void *umsg_watcher()
 void __attribute__((optimize("O0"))) ase_portctrl(const char *ctrl_msg)
 // void ase_portctrl(const char *ctrl_msg)
 {
-  char dummy_rxstr[ASE_MQ_MSGSIZE];
-  memset(dummy_rxstr, 0, ASE_MQ_MSGSIZE);
+  // char dummy_rxstr[ASE_MQ_MSGSIZE];
+  // memset(dummy_rxstr, 0, ASE_MQ_MSGSIZE);
+  char *dummy_rxstr;
+  dummy_rxstr = (char*)ase_malloc(ASE_MQ_MSGSIZE);
 
   // Send message
   mqueue_send(app2sim_portctrl_req_tx, ctrl_msg, ASE_MQ_MSGSIZE);
 
   // Receive message
   mqueue_recv(sim2app_portctrl_rsp_rx, dummy_rxstr, ASE_MQ_MSGSIZE);
+
+  // Release memory
+  free(dummy_rxstr);
 }
 

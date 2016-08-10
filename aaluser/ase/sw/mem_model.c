@@ -316,7 +316,7 @@ void ase_destroy()
 
 #ifdef ASE_DEBUG
   char str[256];
-  sprintf(str, "ASE destroy called");
+  snprintf(str, 256, "ASE destroy called");
   buffer_msg_inject(1, str);
 #endif  
 

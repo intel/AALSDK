@@ -121,9 +121,9 @@ void backtrace_handler(int sig)
   memset(app_or_sim, 0, sizeof(app_or_sim));
 
 #ifdef SIM_SIDE
-  sprintf(app_or_sim, "Simulator ");
+  snprintf(app_or_sim, 16, "Simulator ");
 #else
-  sprintf(app_or_sim, "Application ");
+  snprintf(app_or_sim, 16, "Application ");
 #endif
 
   // Identify SIG received
@@ -154,7 +154,7 @@ void backtrace_handler(int sig)
   for (ii=1; ii < trace_depth ; ++ii)
     {
       printf("[bt] #%d %s\n", ii, bt_messages[ii]);
-      sprintf(sys_cmd,"addr2line %p -e %s", bt_addr[ii], __progname);
+      snprintf(sys_cmd, 256, "addr2line %p -e %s", bt_addr[ii], __progname);
       cmd_ret = system(sys_cmd);
       // man page for system asks users to check for SIGINT/SIGQUIT
       if (WIFSIGNALED(cmd_ret) && ((WTERMSIG(cmd_ret) == SIGINT)||(WTERMSIG(cmd_ret) == SIGQUIT)))

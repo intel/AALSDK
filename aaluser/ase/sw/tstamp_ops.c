@@ -72,7 +72,7 @@ void put_timestamp()
   char *tstamp_path;
   tstamp_path = (char*) ase_malloc(ASE_FILEPATH_LEN);
 
-  sprintf(tstamp_path, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
+  snprintf(tstamp_path, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
   fp = fopen(tstamp_path, "wb");
   if (fp == NULL)
@@ -119,8 +119,7 @@ char* get_timestamp(int dont_kill)
   tstamp_filepath = (char*)ase_malloc(ASE_FILEPATH_LEN);
 
   // Generate tstamp_filepath
-  // memset(tstamp_filepath, 0, ASE_FILEPATH_LEN);
-  sprintf(tstamp_filepath, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
+  snprintf(tstamp_filepath, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
 #ifdef ASE_DEBUG
   printf("  [DEBUG] tstamp_filepath = %s\n", tstamp_filepath);
@@ -191,7 +190,7 @@ char* get_timestamp(int dont_kill)
 void poll_for_session_id()
 {
   char tstamp_filepath[ASE_FILEPATH_LEN];
-  sprintf(tstamp_filepath, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
+  snprintf(tstamp_filepath, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
   printf("  [APP]  Waiting till session ID is created by ASE ... ");
 

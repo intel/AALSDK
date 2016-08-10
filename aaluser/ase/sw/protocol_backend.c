@@ -419,7 +419,7 @@ int ase_listener()
 	    {
 	      // Umsg mode setting here
 	      glbl_umsgmode = portctrl_value & 0xFFFFFFFF;
-	      sprintf(umsg_mode_msg, "UMSG Mode mask set to 0x%x", glbl_umsgmode);
+	      snprintf(umsg_mode_msg, ASE_LOGGER_LEN, "UMSG Mode mask set to 0x%x", glbl_umsgmode);
 	      printf("SIM-C : %s\n", umsg_mode_msg);
 	      buffer_msg_inject(1, umsg_mode_msg);
 
@@ -432,7 +432,7 @@ int ase_listener()
 	      // Generate new timestamp
 	      put_timestamp();
 	      tstamp_filepath = ase_malloc(ASE_FILEPATH_LEN);
-	      sprintf(tstamp_filepath, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
+	      snprintf(tstamp_filepath, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 	      // Print timestamp
 	      printf("SIM-C : Session ID => %s\n", get_timestamp(0) );
 	      session_empty = 0;
@@ -551,24 +551,24 @@ int ase_listener()
 	  memset (logger_str, 0, ASE_LOGGER_LEN);
 	  if (ase_buffer.is_mmiomap)
 	    {
-	      sprintf(logger_str + strlen(logger_str), "MMIO map Allocated ");
+	      snprintf(logger_str + strlen(logger_str), ASE_LOGGER_LEN, "MMIO map Allocated ");
 	      initialize_fme_dfh(&ase_buffer);
 	    }
 	  else if (ase_buffer.is_umas)
 	    {
-	      sprintf(logger_str + strlen(logger_str), "UMAS Allocated ");
+	      snprintf(logger_str + strlen(logger_str), ASE_LOGGER_LEN, "UMAS Allocated ");
 	      update_fme_dfh(&ase_buffer);
 	    }
 	  else
 	    {
-	      sprintf(logger_str + strlen(logger_str), "Buffer %d Allocated ", ase_buffer.index);
+	      snprintf(logger_str + strlen(logger_str), ASE_LOGGER_LEN, "Buffer %d Allocated ", ase_buffer.index);
 	    }
-	  sprintf(logger_str + strlen(logger_str), " (located /dev/shm/%s) =>\n", ase_buffer.memname);
-	  sprintf(logger_str + strlen(logger_str), "\t\tHost App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
-	  sprintf(logger_str + strlen(logger_str), "\t\tHW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
-	  sprintf(logger_str + strlen(logger_str), "\t\tHW CacheAligned Addr   = %p\n", (void*)(ase_buffer.fake_paddr >> 6));
-	  sprintf(logger_str + strlen(logger_str), "\t\tWorkspace Size (bytes) = %d\n", ase_buffer.memsize);
-	  sprintf(logger_str + strlen(logger_str), "\n");
+	  snprintf(logger_str + strlen(logger_str), ASE_LOGGER_LEN, " (located /dev/shm/%s) =>\n", ase_buffer.memname);
+	  snprintf(logger_str + strlen(logger_str), ASE_LOGGER_LEN, "\t\tHost App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
+	  snprintf(logger_str + strlen(logger_str), ASE_LOGGER_LEN, "\t\tHW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
+	  snprintf(logger_str + strlen(logger_str), ASE_LOGGER_LEN, "\t\tHW CacheAligned Addr   = %p\n", (void*)(ase_buffer.fake_paddr >> 6));
+	  snprintf(logger_str + strlen(logger_str), ASE_LOGGER_LEN, "\t\tWorkspace Size (bytes) = %d\n", ase_buffer.memsize);
+	  snprintf(logger_str + strlen(logger_str), ASE_LOGGER_LEN, "\n");
 
 	  // Inject buffer message
 	  buffer_msg_inject (1, logger_str );
@@ -601,8 +601,8 @@ int ase_listener()
 	{
 	  // Format workspace info string
 	  memset (logger_str, 0, ASE_LOGGER_LEN);
-	  sprintf(logger_str + strlen(logger_str), "\nBuffer %d Deallocated =>\n", ase_buffer.index);
-	  sprintf(logger_str + strlen(logger_str), "\n");
+	  snprintf(logger_str + strlen(logger_str), ASE_LOGGER_LEN, "\nBuffer %d Deallocated =>\n", ase_buffer.index);
+	  snprintf(logger_str + strlen(logger_str), ASE_LOGGER_LEN, "\n");
 
 	  // Deallocate action
 	  ase_dealloc_action(&ase_buffer, 1);
@@ -761,7 +761,7 @@ int ase_init()
 
   // Sniffer file stat path
   ccip_sniffer_file_statpath = ase_malloc(ASE_FILEPATH_LEN);
-  sprintf(ccip_sniffer_file_statpath, "%s/ccip_warning_and_errors.txt", ase_workdir_path);
+  snprintf(ccip_sniffer_file_statpath, ASE_FILEPATH_LEN, "%s/ccip_warning_and_errors.txt", ase_workdir_path);
 
   // Remove existing error log files from previous run
   BEGIN_YELLOW_FONTCOLOR;
@@ -897,7 +897,7 @@ int ase_ready()
       printf("Starting ase_regress.sh script...\n");
       if ( (sv2c_script_filepath != NULL) && (strlen(sv2c_script_filepath)!= 0) )
 	{
-	  sprintf(app_run_cmd, "%s &", sv2c_script_filepath);
+	  snprintf(app_run_cmd, ASE_FILEPATH_LEN, "%s &", sv2c_script_filepath);
 	}
       else
 	{
@@ -1049,7 +1049,7 @@ void ase_config_parse(char *filename)
     {
       if ( (strlen(sv2c_config_filepath) != 0) && (sv2c_config_filepath!=(char*)NULL))
 	{
-	  sprintf(ase_cfg_filepath, "%s", sv2c_config_filepath);
+	  snprintf(ase_cfg_filepath, 256, "%s", sv2c_config_filepath);
 	}
     }
 

@@ -122,7 +122,7 @@ void ipc_init()
       // Set name
       strncpy(mq_array[ipc_iter].name, mq_name_arr[ipc_iter], ASE_MQ_NAME_LEN);
       // Compute path
-      sprintf(mq_array[ipc_iter].path, "%s/%s", ase_workdir_path, mq_array[ipc_iter].name);
+      snprintf(mq_array[ipc_iter].path, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, mq_array[ipc_iter].name);
       // Set permission flag
       mq_array[ipc_iter].perm_flag = get_smq_perm_flag(mq_name_arr[ipc_iter]);
       if (mq_array[ipc_iter].perm_flag == -1)
@@ -160,7 +160,7 @@ void mqueue_create(char* mq_name_suffix)
   int ret;
 
   mq_path = ase_malloc (ASE_FILEPATH_LEN);
-  sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
+  snprintf(mq_path, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, mq_name_suffix);
 
   ret = mkfifo(mq_path, S_IRUSR|S_IWUSR );
   if (ret == -1)
@@ -199,7 +199,7 @@ int mqueue_open(char *mq_name, int perm_flag)
   char *mq_path;
 
   mq_path = ase_malloc (ASE_FILEPATH_LEN);
-  sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name);
+  snprintf(mq_path, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, mq_name);
 
   // Dummy function to open WRITE only MQs
   // Named pipe requires non-blocking write-only move on from here
@@ -278,7 +278,7 @@ void mqueue_destroy(char* mq_name_suffix)
   mq_path = ase_malloc (ASE_FILEPATH_LEN);
   if (mq_path != NULL)
     {
-      sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
+      snprintf(mq_path, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, mq_name_suffix);
       ret = unlink ( mq_path );
       if (ret == -1)
 	{

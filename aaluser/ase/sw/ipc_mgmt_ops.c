@@ -46,7 +46,7 @@ void create_ipc_listfile()
 
   ipclist_filepath = ase_malloc(ASE_FILEPATH_LEN);
   
-  sprintf(ipclist_filepath, "%s/%s", ase_workdir_path, IPC_LOCAL_FILENAME);
+  snprintf(ipclist_filepath, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, IPC_LOCAL_FILENAME);
 
   // local_ipc_fp = fopen(IPC_LOCAL_FILENAME, "w");
   local_ipc_fp = fopen(ipclist_filepath, "w");
