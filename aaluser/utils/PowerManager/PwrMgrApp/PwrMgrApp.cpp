@@ -47,8 +47,8 @@
 #include <sched.h>
 
 
-#define  PWR_MSR610                      "/usr/sbin/rdmsr -c0 -p 0 0x610"
-#define  PWR_MSR606                      "/usr/sbin/rdmsr -c0 -p 0 0x606"
+#define  PWR_MSR610                      "/usr/sbin/rdmsr -c0 -p %d 0x610"
+#define  PWR_MSR606                      "/usr/sbin/rdmsr -c0 -p %d 0x606"
 #define  SKX_CPU_SPLIT_POINT             48
 
 void PwrMgrApp::serviceAllocated(AAL::IBase               *pServiceBase,
@@ -342,8 +342,8 @@ btInt PwrMgrApp::CoreIdler(btInt &FPIWatts, btInt &socket)
 
    // set msr commands based on socket and split_point
    if (socket == 0) {
-      sprintf(command610, PWR_MSR610);
-      sprintf(command606, PWR_MSR606);
+      sprintf(command610, PWR_MSR610,0);
+      sprintf(command606, PWR_MSR606,0);
    } else {
       sprintf(command610, PWR_MSR610, split_point);
       sprintf(command606, PWR_MSR606, split_point);
