@@ -1137,7 +1137,7 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
       return false;
    }
 
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_M|NLB_CMD_FLAG_WRPUSH_I) ||
+/*   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_M|NLB_CMD_FLAG_WRPUSH_I) ||
         flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_I) ) {
       // force --wb on; force --wt off.
 
@@ -1149,7 +1149,7 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
       flag_clrf(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_M);
       flag_setf(cmd.cmdflags, NLB_CMD_FLAG_WRPUSH_I);
    }
-
+*/
    // --warm-fpga-cache and --cool-fpga-cache
    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE|NLB_CMD_FLAG_COOL_FPGA_CACHE) ) {
       os << "--warm-fpga-cache and --cool-fpga-cache are mutually exclusive." << endl;
