@@ -289,7 +289,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
        if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, (NumCacheLines * CL(1))) != 0 ){
           cerr << "Data mismatch in Input and Output buffers.\n";
            ++res;
-           break;
+//           break;
        }
 
        //Checking for num_clocks underflow.
