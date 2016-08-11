@@ -348,8 +348,7 @@ btInt PwrMgrService::CoreIdler(btInt &FPIWatts, btInt &socket)
    cpu_set_t idle_set, current_set, full_mask_set;
 
    // Fail if socket not equal to 0 or 1
-   if (socket != 0 ) {
-      if (socket != 1)
+   if (socket != 0 && socket != 1) {
          ERR("Bad Socket ID");
          return ali_errnumBadSocket;
    }
@@ -358,7 +357,7 @@ btInt PwrMgrService::CoreIdler(btInt &FPIWatts, btInt &socket)
    for (i = 0; i < 40; i++) {
      command610[i] = 0;
      command606[i] = 0;
-   } 
+   }
 
    split_point = SKX_CPU_SPLIT_POINT; // force split temporarily, BUGBUG
 
