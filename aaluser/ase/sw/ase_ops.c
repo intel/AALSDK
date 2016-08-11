@@ -468,21 +468,27 @@ int ase_read_lock_file(const char *workdir)
 	      remove_tabs (value);
 	      remove_newline(value);
 	      // Line 1/2/3/4 check
-	      if ( strcmp (parameter, "pid") == 0)
+	      if ( strncmp (parameter, "pid", 4) == 0)
 		{
 		  readback_pid = atoi(value);
 		}
-	      else if ( strcmp (parameter, "host") == 0)
+	      else if ( strncmp (parameter, "host", 5) == 0)
 		{
 		  strncpy(readback_hostname, value, ASE_FILENAME_LEN);\
 		}
-	      else if ( strcmp (parameter, "dir") == 0)
+	      else if ( strncmp (parameter, "dir", 4) == 0)
 		{
 		  strncpy(readback_workdir_path, value, ASE_FILEPATH_LEN);
 		}
-	      else if ( strcmp (parameter, "uid") == 0)
+	      else if ( strncmp (parameter, "uid", 4) == 0)
 		{
 		  strncpy(readback_uid, value, ASE_FILEPATH_LEN);
+		}
+	      else 
+		{
+		  BEGIN_RED_FONTCOLOR;
+		  printf("** ERROR **: Session parameter could not be deciphered !\n");
+		  END_RED_FONTCOLOR;
 		}
 	    }
 	  fclose(fp_exp_ready);
@@ -500,7 +506,7 @@ int ase_read_lock_file(const char *workdir)
 	  else
 	    {
 	      // Check here
-	      if (strcmp(curr_hostname, readback_hostname) != 0)
+	      if (strncmp(curr_hostname, readback_hostname, ASE_FILENAME_LEN) != 0)
 		{
 		  BEGIN_RED_FONTCOLOR;
 		  printf("** ERROR ** => Hostname specified in ASE lock file (%s) is different as current hostname (%s)\n", readback_hostname, curr_hostname);
@@ -519,7 +525,7 @@ int ase_read_lock_file(const char *workdir)
 		  strncpy(curr_uid, ASE_UNIQUE_ID, ASE_FILENAME_LEN);
 
 		  // Check
-		  if (strcmp(curr_uid, readback_uid) != 0)
+		  if (strncmp(curr_uid, readback_uid, ASE_FILENAME_LEN) != 0)
 		    {
 		      BEGIN_RED_FONTCOLOR;
 		      printf("** ERROR ** => Application UID does not match known release UID\n");

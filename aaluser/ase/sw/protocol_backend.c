@@ -1092,17 +1092,17 @@ void ase_config_parse(char *filename)
 	  if ( (line[0] != '#') && (line[0] != '\0') )
 	    {
 	      parameter = strtok(line, "=\n");
-	      if (strcmp (parameter,"ASE_MODE") == 0)
+	      if (strncmp (parameter,"ASE_MODE", 20) == 0)
 	      	cfg->ase_mode = atoi(strtok(NULL, ""));
-	      else if (strcmp (parameter,"ASE_TIMEOUT") == 0)
+	      else if (strncmp (parameter,"ASE_TIMEOUT", 20) == 0)
 	      	cfg->ase_timeout = atoi(strtok(NULL, ""));
-	      else if (strcmp (parameter,"ASE_NUM_TESTS") == 0)
+	      else if (strncmp (parameter,"ASE_NUM_TESTS", 20) == 0)
 	      	cfg->ase_num_tests =  atoi(strtok(NULL, ""));
-	      else if (strcmp (parameter, "ENABLE_REUSE_SEED") == 0)
+	      else if (strncmp (parameter, "ENABLE_REUSE_SEED", 20) == 0)
 		cfg->enable_reuse_seed =  atoi(strtok(NULL, ""));
-	      else if (strcmp (parameter,"ENABLE_CL_VIEW") == 0)
+	      else if (strncmp (parameter,"ENABLE_CL_VIEW", 20) == 0)
 		cfg->enable_cl_view =  atoi(strtok(NULL, ""));
-	      else if (strcmp (parameter, "USR_CLK_MHZ") == 0)
+	      else if (strncmp (parameter, "USR_CLK_MHZ", 20) == 0)
 		{
 		  f_usrclk = atof(strtok(NULL, ""));
 		  if (f_usrclk == 0.000000) 
@@ -1135,7 +1135,7 @@ void ase_config_parse(char *filename)
 			}
 		    }
 		}
-	      else if (strcmp(parameter,"PHYS_MEMORY_AVAILABLE_GB") == 0)
+	      else if (strncmp(parameter,"PHYS_MEMORY_AVAILABLE_GB", 32) == 0)
 		{
 		  value = atoi(strtok(NULL, ""));
 		  if (value < 0)

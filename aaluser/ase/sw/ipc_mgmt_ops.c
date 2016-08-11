@@ -117,7 +117,7 @@ void final_ipc_cleanup()
       if (feof(local_ipc_fp))
       	break;
 
-      if (strcmp (ipc_type, "MQ") == 0)
+      if (strncmp (ipc_type, "MQ", 4) == 0)
       	{
         #ifdef ASE_DEBUG
       	  printf("        Removing MQ  %s ... ", ipc_name);
@@ -135,7 +135,7 @@ void final_ipc_cleanup()
             #endif
       	    }
       	}
-      else if (strcmp (ipc_type, "SHM") == 0)
+      else if (strncmp (ipc_type, "SHM", 4) == 0)
       	{
         #ifdef ASE_DEBUG
       	  printf("        Removing SHM %s ... ", ipc_name);
