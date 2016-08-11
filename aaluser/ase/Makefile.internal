@@ -52,11 +52,11 @@ ASE_DEBUG ?= 1
 ASE_DISABLE_LOGGER = 0
 
 # Coverage settings (lcov in SW and VCS-CM in HW)
-ASE_COVERAGE ?= 0
+ASE_COVERAGE ?= 1
+COV_DIR=$(ASE_BASEDIR)/coverage/
 ifeq ($(ASE_COVERAGE),1)
 ASE_PROFILE_ENABLE ?= 1
 ASE_LCOV_ENABLE ?= 1
-COV_DIR=$(ASE_SRCDIR)/coverage/
 endif
 
 # Enable Altera gates library
@@ -77,6 +77,9 @@ ASE_WORKDIR = $(ASE_SRCDIR)/$(WORK)
 ASE_CONFIG ?= $(ASE_SRCDIR)/ase.cfg
 ASE_SCRIPT ?= $(ASE_SRCDIR)/ase_regress.sh
 
+# SafeStringLib
+SAFECLIB =
+# $(ASE_SRCDIR)/../../../safestringlib/build/safestringlib.so
 
 #########################################################################
 #                          Default options                              #
@@ -90,8 +93,9 @@ SNPS_COMMAND = $(shell command -v vcs)
 MENT_COMMAND = $(shell command -v vsim)
 
 ## C Compiler options
-CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -D SIMULATOR=$(SIMULATOR)
-CC_OPT+= -Wall
+CC_OPT = -g  -m64 -fPIC -D SIM_SIDE=1 -D SIMULATOR=$(SIMULATOR)
+# CC_OPT+= -std=c11
+CC_OPT+= -Wall -fstack-protector-all
 ifeq ($(ASE_DEBUG), 1)
   CC_OPT+= -D ASE_DEBUG=1
 endif
@@ -179,7 +183,7 @@ endif
 VCS_SIM_OPT = -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
 VCS_SIM_OPT+= -l run.log
 ifeq ($(ASE_PROFILE_ENABLE), 1)
-  VCS_SIM_OPT+= -cm line+cond+fsm+tgl+branch+assert
+  VCS_SIM_OPT+= -cm cond+fsm+branch
 endif
 
 
@@ -235,73 +239,114 @@ VALGRIND_OPTS+= --undef-value-errors=yes
 #########################################################################
 #                          Clang settings                               #
 #########################################################################
-CLANG_VERSION=3.6
+CLANG_VERSION=3.8
 
 CLANG_OPT = -v -v -v -k -analyze-headers --use-cc=gcc -stats
 CLANG_OPT+= -maxloop 100
 CLANG_OPT+= -o $(PWD)/scanbuild/
-CLANG_OPT+= --use-analyzer=/usr/bin/clang-3.6
+CLANG_OPT+= --use-analyzer=/usr/bin/clang-$(CLANG_VERSION)
 CLANG_OPT+= \
-	-enable-checker alpha.core.BoolAssignment \
-	-enable-checker alpha.core.CastSize \
-	-enable-checker alpha.core.CastToStruct \
-	-enable-checker alpha.core.FixedAddr \
-	-enable-checker alpha.core.IdenticalExpr \
-	-enable-checker alpha.core.PointerArithm \
-	-enable-checker alpha.core.PointerSub \
-	-enable-checker alpha.core.SizeofPtr \
-	-enable-checker alpha.cplusplus.VirtualCall \
-	-enable-checker alpha.deadcode.UnreachableCode \
-	-enable-checker alpha.osx.cocoa.Dealloc \
-	-enable-checker alpha.osx.cocoa.DirectIvarAssignment \
-	-enable-checker alpha.osx.cocoa.DirectIvarAssignmentForAnnotatedFunctions \
-	-enable-checker alpha.osx.cocoa.InstanceVariableInvalidation \
-	-enable-checker alpha.osx.cocoa.MissingInvalidationMethod \
-	-enable-checker alpha.security.ArrayBound \
-	-enable-checker alpha.security.ArrayBoundV2 \
-	-enable-checker alpha.security.MallocOverflow \
-	-enable-checker alpha.security.ReturnPtrRange \
-	-enable-checker alpha.unix.Chroot \
-	-enable-checker alpha.unix.MallocWithAnnotations \
-	-enable-checker alpha.unix.PthreadLock \
-	-enable-checker alpha.unix.SimpleStream \
-	-enable-checker alpha.unix.Stream \
-	-enable-checker alpha.unix.cstring.BufferOverlap \
-	-enable-checker alpha.unix.cstring.NotNullTerminated \
-	-enable-checker alpha.unix.cstring.OutOfBounds \
-	-enable-checker debug.ConfigDumper \
-	-enable-checker debug.DumpDominators \
-	-enable-checker debug.DumpLiveVars \
-	-enable-checker debug.DumpTraversal \
-	-enable-checker debug.ExprInspection \
-	-enable-checker debug.Stats \
-	-enable-checker debug.ViewExplodedGraph \
-	-enable-checker llvm.Conventions \
-	-enable-checker osx.API \
-	-enable-checker osx.SecKeychainAPI \
-	-enable-checker osx.cocoa.AtSync \
-	-enable-checker osx.cocoa.ClassRelease \
-	-enable-checker osx.cocoa.IncompatibleMethodTypes \
-	-enable-checker osx.cocoa.Loops \
-	-enable-checker osx.cocoa.NSAutoreleasePool \
-	-enable-checker osx.cocoa.NSError \
-	-enable-checker osx.cocoa.NilArg \
-	-enable-checker osx.cocoa.NonNilReturnValue \
-	-enable-checker osx.cocoa.RetainCount \
-	-enable-checker osx.cocoa.SelfInit \
-	-enable-checker osx.cocoa.UnusedIvars \
-	-enable-checker osx.cocoa.VariadicMethodTypes \
-	-enable-checker osx.coreFoundation.CFError \
-	-enable-checker osx.coreFoundation.CFNumber \
-	-enable-checker osx.coreFoundation.CFRetainRelease \
-	-enable-checker osx.coreFoundation.containers.OutOfBounds \
-	-enable-checker osx.coreFoundation.containers.PointerSizedValues \
-	-enable-checker security.FloatLoopCounter \
-	-enable-checker security.insecureAPI.rand \
-	-enable-checker security.insecureAPI.strcpy \
-	-enable-checker debug.TaintTest \
-	-enable-checker alpha.security.taint.TaintPropagation \
+	-enable-checker  alpha.core.BoolAssignment \
+	-enable-checker  alpha.core.CallAndMessageUnInitRefArg \
+	-enable-checker  alpha.core.CastSize \
+	-enable-checker  alpha.core.DynamicTypeChecker \
+	-enable-checker  alpha.core.FixedAddr \
+	-enable-checker  alpha.core.IdenticalExpr \
+	-enable-checker  alpha.core.PointerArithm \
+	-enable-checker  alpha.core.PointerSub \
+	-enable-checker  alpha.core.SizeofPtr \
+	-enable-checker  alpha.core.TestAfterDivZero \
+	-enable-checker  alpha.cplusplus.VirtualCall \
+	-enable-checker  alpha.osx.cocoa.Dealloc \
+	-enable-checker  alpha.osx.cocoa.DirectIvarAssignment \
+	-enable-checker  alpha.osx.cocoa.DirectIvarAssignmentForAnnotatedFunctions \
+	-enable-checker  alpha.osx.cocoa.InstanceVariableInvalidation \
+	-enable-checker  alpha.osx.cocoa.MissingInvalidationMethod \
+	-enable-checker  alpha.osx.cocoa.localizability.PluralMisuseChecker \
+	-enable-checker  alpha.security.ArrayBound \
+	-enable-checker  alpha.security.ArrayBoundV2 \
+	-enable-checker  alpha.security.MallocOverflow \
+	-enable-checker  alpha.security.ReturnPtrRange \
+	-enable-checker  alpha.security.taint.TaintPropagation \
+	-enable-checker  alpha.unix.Chroot \
+	-enable-checker  alpha.unix.PthreadLock \
+	-enable-checker  alpha.unix.SimpleStream \
+	-enable-checker  alpha.unix.Stream \
+	-enable-checker  alpha.unix.cstring.BufferOverlap \
+	-enable-checker  alpha.unix.cstring.NotNullTerminated \
+	-enable-checker  alpha.unix.cstring.OutOfBounds \
+	-enable-checker  core.CallAndMessage \
+	-enable-checker  core.DivideZero \
+	-enable-checker  core.DynamicTypePropagation \
+	-enable-checker  core.NonNullParamChecker \
+	-enable-checker  core.NullDereference \
+	-enable-checker  core.StackAddressEscape \
+	-enable-checker  core.UndefinedBinaryOperatorResult \
+	-enable-checker  core.VLASize \
+	-enable-checker  core.builtin.BuiltinFunctions \
+	-enable-checker  core.builtin.NoReturnFunctions \
+	-enable-checker  core.uninitialized.ArraySubscript \
+	-enable-checker  core.uninitialized.Assign \
+	-enable-checker  core.uninitialized.Branch \
+	-enable-checker  core.uninitialized.CapturedBlockVariable \
+	-enable-checker  core.uninitialized.UndefReturn \
+	-enable-checker  cplusplus.NewDelete \
+	-enable-checker  cplusplus.NewDeleteLeaks \
+	-enable-checker  deadcode.DeadStores \
+	-enable-checker  debug.ExprInspection \
+	-enable-checker  debug.Stats \
+	-enable-checker  debug.TaintTest \
+	-enable-checker  debug.ViewCFG \
+	-enable-checker  debug.ViewExplodedGraph \
+	-enable-checker  llvm.Conventions \
+	-enable-checker  nullability.NullPassedToNonnull \
+	-enable-checker  nullability.NullReturnedFromNonnull \
+	-enable-checker  nullability.NullableDereferenced \
+	-enable-checker  nullability.NullablePassedToNonnull \
+	-enable-checker  nullability.NullablePassedToNonnull \
+	-enable-checker  optin.osx.cocoa.localizability.EmptyLocalizationContextChecker \
+	-enable-checker  optin.osx.cocoa.localizability.NonLocalizedStringChecker \
+	-enable-checker  optin.performance.Padding \
+	-enable-checker  osx.API \
+	-enable-checker  osx.SecKeychainAPI \
+	-enable-checker  osx.cocoa.AtSync \
+	-enable-checker  osx.cocoa.ClassRelease \
+	-enable-checker  osx.cocoa.IncompatibleMethodTypes \
+	-enable-checker  osx.cocoa.Loops \
+	-enable-checker  osx.cocoa.MissingSuperCall \
+	-enable-checker  osx.cocoa.NSAutoreleasePool \
+	-enable-checker  osx.cocoa.NSError \
+	-enable-checker  osx.cocoa.NilArg \
+	-enable-checker  osx.cocoa.NonNilReturnValue \
+	-enable-checker  osx.cocoa.ObjCGenerics \
+	-enable-checker  osx.cocoa.RetainCount \
+	-enable-checker  osx.cocoa.SelfInit \
+	-enable-checker  osx.cocoa.UnusedIvars \
+	-enable-checker  osx.cocoa.VariadicMethodTypes \
+	-enable-checker  osx.coreFoundation.CFError \
+	-enable-checker  osx.coreFoundation.CFNumber \
+	-enable-checker  osx.coreFoundation.CFRetainRelease \
+	-enable-checker  osx.coreFoundation.containers.OutOfBounds \
+	-enable-checker  osx.coreFoundation.containers.PointerSizedValues \
+	-enable-checker  security.FloatLoopCounter \
+	-enable-checker  security.insecureAPI.UncheckedReturn \
+	-enable-checker  security.insecureAPI.getpw \
+	-enable-checker  security.insecureAPI.gets \
+	-enable-checker  security.insecureAPI.mkstemp \
+	-enable-checker  security.insecureAPI.mktemp \
+	-enable-checker  security.insecureAPI.rand \
+	-enable-checker  security.insecureAPI.strcpy \
+	-enable-checker  security.insecureAPI.vfork \
+	-enable-checker  unix.API \
+	-enable-checker  unix.Malloc \
+	-enable-checker  unix.MallocSizeof \
+	-enable-checker  unix.MismatchedDeallocator \
+	-enable-checker  unix.Vfork \
+	-enable-checker  unix.cstring.BadSizeArg \
+	-enable-checker  unix.cstring.NullArg \
 
+#	-enable-checker  alpha.deadcode.UnreachableCode \
+	-enable-checker  alpha.core.CastToStruct \
 
 #########################################################################
 #                            Build Targets                              #
@@ -443,7 +488,7 @@ ifdef DUT_VLOG_SRC_LIST
 	vlogan $(SNPS_VLOGAN_OPT) -f $(DUT_VLOG_SRC_LIST) -l vlogan-afu.log
 endif
 ifeq ($(CC), gcc)
-	vcs $(SNPS_VCS_OPT) $(ASE_TOP) $(WORK)/$(ASE_SHOBJ_SO) $(ASE_LD_SWITCHES)
+	vcs $(SNPS_VCS_OPT) $(ASE_TOP) $(WORK)/$(ASE_SHOBJ_SO) $(SAFECLIB) $(ASE_LD_SWITCHES)
 endif
 
 
@@ -493,7 +538,8 @@ else
   endif
 endif
 ifeq ($(ASE_COVERAGE), 1)
-	make coverage
+	cd $(COV_DIR) ; lcov --base-directory $(COV_DIR) --directory $(ASE_WORKDIR) --capture --output-file $(COV_DIR)/ase_libs.info ; genhtml $(COV_DIR)/ase_libs.info --output-directory $(COV_DIR)/lcov_coverage ; cd -
+	cd $(COV_DIR) ; urg -full64 -dir $(COV_DIR)/vcs_coverage.vdb ; cd -
 endif
 
 # Open Wave file
@@ -530,12 +576,7 @@ distclean: header clean
 scan-build:
 	rm -rf scanbuild
 	mkdir -p scanbuild
-	scan-build-3.6 $(CLANG_OPT) make sw_build | tee scan-build.log
-
-# Coverage
-coverage:
-	cd $(COV_DIR) ; lcov --base-directory $(WORK) --directory $(WORK) --capture --output-file ase_libs.info ; genhtml -o $(COV_DIR)/lcov_coverage/ ase_libs.info ; cd -
-	cd $(COV_DIR) ; urg -full64 -dir $(COV_DIR)/vcs_coverage.vdb ; cd -
+	scan-build-$(CLANG_VERSION) $(CLANG_OPT) make sw_build | tee scan-build.log
 
 # GUI call for coverage
 cov_gui: coverage_gui
