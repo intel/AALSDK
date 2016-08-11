@@ -54,7 +54,6 @@
 using namespace std;
 using namespace AAL;
 
-#define HWAFU
 
 
 #ifdef MSG
@@ -67,19 +66,12 @@ using namespace AAL;
 #define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
 
 
-class PwrMgrApp : public CAASBase,
-                  public IRuntimeClient,
-                  public IPwrMgr_Client,
-                  public AAL::IServiceClient
+class PwrMgrRuntime : public CAASBase,
+                      public IRuntimeClient
 {
 public:
-   PwrMgrApp();
-
-   btInt Run();    ///< Return 0 if success
+   PwrMgrRuntime();
    btInt Errors() const { return m_Errors; }
-   btInt AllocateService();
-   btInt FreeService();
-
 
    // <IRuntimeClient>
    void   runtimeCreateOrGetProxyFailed(IEvent const        &rEvent);
@@ -93,6 +85,26 @@ public:
                                         TransactionID const &rTranID);
    void                    runtimeEvent(const IEvent        &rEvent);
    // </IRuntimeClient>
+   Runtime* getRuntime() { return &m_Runtime;}
+   void runtimeStop();
+
+protected:
+   Runtime              m_Runtime;       ///< AAL Runtime
+   btInt                m_Errors;        ///< Returned result value; 0 if success
+   CSemaphore           m_Sem;           ///< For synchronizing with the AAL runtime.
+};
+
+
+class PwrMgrService : public CAASBase,
+                      public IPwrMgr_Client,
+                      public IServiceClient
+{
+public:
+   PwrMgrService(Runtime *pRuntime);
+
+   btInt Errors() const { return m_Errors; }
+   btInt AllocateService();
+   btInt FreeService();
 
 
    // <IServiceClient>
@@ -106,17 +118,18 @@ public:
    void          serviceEvent(const AAL::IEvent        &rEvent);
    // </IServiceClient>
 
+   // <IPwrMgr_Client>
    void reconfPowerRequest( TransactionID &rTranID,IEvent const &rEvent ,INamedValueSet &rInputArgs);
+   // </IPwrMgr_Client>
 
    btInt CoreIdler(btInt &FPIWatts, btInt &socket);
 
 
 protected:
-
-   Runtime              m_Runtime;       ///< AAL Runtime
-   btInt                m_Errors;        ///< Returned result value; 0 if success
-   CSemaphore           m_Sem;           ///< For synchronizing with the AAL runtime.
-   IBase               *m_pPwrMgrService;
+   Runtime             *m_pRuntime;        /// AAL Runtime
+   btInt                m_Errors;          ///< Returned result value; 0 if success
+   CSemaphore           m_Sem;             ///< For synchronizing with the AAL runtime.
+   IBase               *m_pPwrMgrService;  /// Power manger Service pointer
 };
 
 #endif // __PWRMGER_APP_H__
