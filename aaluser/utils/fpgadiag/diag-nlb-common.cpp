@@ -390,7 +390,7 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
          flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER);
       }
 
-   } else if ( (0 == strcmp("--function-number", option)) || (0 == strcmp("--dn", option)) ) {
+   } else if ( (0 == strcmp("--function-number", option)) || (0 == strcmp("--fn", option)) ) {
       nlbcl->funnum = strtoul(value, &endptr, 0);
       if ( value + strlen(value) != endptr ) {
          nlbcl->funnum = nlbcl->defaults.funnum;
