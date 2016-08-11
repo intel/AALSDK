@@ -54,6 +54,6 @@ appbuffer.o: appbase.cpp appbase.h appconstants.cpp appbuffer.cpp Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -lOSAL -lAAS -laalrt appbuffer.cpp -o appbuffer.o
 
 clean:
-	$(RM) libappbase.so libappbase.so.0 libappbase.so.0.0.0 appbase.o appconstants.o appbuffer.o
+	$(RM) libappbase.so libappbase.so.0 libappbase.so.0.0.0 appbase.o appconstants.o appbuffer.o libappbase.a
 
 .PHONY: all clean
