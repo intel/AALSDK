@@ -337,6 +337,11 @@ btInt PwrMgrApp::CoreIdler(btInt &FPIWatts, btInt &socket)
          return ali_errnumBadSocket;
    }
 
+   // zero array before building commands.
+   for (i = 0; i < 40; i++) {
+     command610[i] = 0;
+     command606[i] = 0;
+   } 
 
    split_point = SKX_CPU_SPLIT_POINT; // force split temporarily, BUGBUG
 
