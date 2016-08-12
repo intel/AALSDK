@@ -2,9 +2,9 @@
 
 # valapps/DMA_Buffer/Makefile
 
-CPPFLAGS ?=
+CPPFLAGS ?=-I../appbase
 CXX      ?= g++
-LDFLAGS  ?=
+LDFLAGS  ?=-L../appbase
 
 ifneq (,$(ndebug))
 else
@@ -33,8 +33,7 @@ endif
 all: DMA_Buffer
 
 DMA_Buffer: main.o
-	$(CXX) -g -O2 -o DMA_Buffer main.o $(LDFLAGS) -lOSAL -lAAS -laalrt
-
+	$(CXX) -g -O2 -o DMA_Buffer main.o $(LDFLAGS) -lappbase -lOSAL -lAAS -laalrt
 main.o: main.cpp Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -g -O2 -c -o main.o main.cpp
 

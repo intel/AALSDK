@@ -289,6 +289,12 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
          goto ERR;
       }
 
+
+      // Instantiate allocatable objects
+      if(!cci_create_AAL_power_Device(pccipdev)){
+         goto ERR;
+      }
+
       // print FME MMIO
       print_sim_fme_device(ccip_dev_to_fme_dev(pccipdev));
 

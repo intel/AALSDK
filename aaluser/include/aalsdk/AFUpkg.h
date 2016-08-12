@@ -72,6 +72,14 @@ class UAIA_API CAFUAllocateWorkSpaceTransactionEvent : public CTransactionEvent,
                                                        public IAFUAllocateWorkSpaceTransactionEvent
 {
 public:
+   /// @brief CAFUAllocateWorkSpaceTransactionEvent Constructor.
+   ///
+   /// @param[in] pObject          A pointer to an IBase interface.
+   /// @param[in] WorkSpaceID      The Workspace ID.
+   /// @param[in] WorkSpaceAddress The virtual address of the Workspace.
+   /// @param[in] WorkSpaceSize    The size of the Workspace.
+   /// @param[in] TransID          A reference to the Transaction ID.
+   /// @return void
    CAFUAllocateWorkSpaceTransactionEvent(IBase               *pObject,
                                          btWSID               WorkSpaceID,
                                          btVirtAddr           WorkSpaceAddress,
@@ -79,8 +87,14 @@ public:
                                          TransactionID const &TransID);
    virtual ~CAFUAllocateWorkSpaceTransactionEvent();
 
+   /// @brief Get the Workspace ID from the Event.
+   /// @return The Workspace ID.
    btWSID     WorkSpaceID()      { return m_WorkSpaceID;      }
+   /// @brief Get the virtual address of the Workspace from the Event.
+   /// @return The virtual address of the Workspace ID.
    btVirtAddr WorkSpaceAddress() { return m_WorkSpaceAddress; }
+   /// @brief Get the size of the Workspace from the Event.
+   /// @return The size of the Workspace ID.
    btWSSize   WorkSpaceSize()    { return m_WorkSpaceSize;    }
 
 protected:
@@ -98,6 +112,14 @@ protected:
 class UAIA_API CAFUAllocateWorkSpaceExceptionTransactionEvent : public CExceptionTransactionEvent
 {
 public:
+   /// @brief CAFUAllocateWorkSpaceExceptionTransactionEvent Constructor.
+   ///
+   /// @param[in] pObject          A pointer to an IBase interface.
+   /// @param[in] TranID           A reference to the Transaction ID.
+   /// @param[in] ExceptionNumber  The number of the exception that occurred.
+   /// @param[in] Reason           The reason code.
+   /// @param[in] Description      The string describing the exception.
+   /// @return void
    CAFUAllocateWorkSpaceExceptionTransactionEvent(IBase               *pObject,
                                                   TransactionID const &TranID,
                                                   btID                 ExceptionNumber,
@@ -115,10 +137,18 @@ public:
 class UAIA_API CAFUFreeWorkSpaceTransactionEvent : public CTransactionEvent, public IAFUFreeWorkSpaceTransactionEvent
 {
 public:
+   /// @brief CAFUFreeWorkSpaceTransactionEvent Constructor.
+   ///
+   /// @param[in] pObject          A pointer to an IBase interface.
+   /// @param[in] WorkSpaceID      A reference to the Transaction ID.
+   /// @param[in] TransID          A reference to the Transaction ID.
+   /// @return void
    CAFUFreeWorkSpaceTransactionEvent(IBase               *pObject,
                                      btWSID               WorkSpaceID,
                                      TransactionID const &TransID);
    virtual ~CAFUFreeWorkSpaceTransactionEvent();
+   /// @brief Get the Workspace ID from the Event.
+   /// @return The Workspace ID.
    btWSID WorkSpaceID() { return m_WorkSpaceID; }
 
 protected:
@@ -133,6 +163,14 @@ protected:
 class UAIA_API CAFUFreeWorkSpaceExceptionTransactionEvent : public CExceptionTransactionEvent
 {
 public:
+   /// @brief CAFUFreeWorkSpaceExceptionTransactionEvent Constructor.
+   ///
+   /// @param[in] pObject          A pointer to an IBase interface.
+   /// @param[in] TranID           A reference to the Transaction ID.
+   /// @param[in] ExceptionNumber  The number of the exception that occurred.
+   /// @param[in] Reason           The reason code.
+   /// @param[in] Description      The string describing the exception.
+   /// @return void
    CAFUFreeWorkSpaceExceptionTransactionEvent(IBase               *pObject,
                                               TransactionID const &TranID,
                                               btID                 ExceptionNumber,
@@ -150,6 +188,11 @@ public:
 class UAIA_API CAFUProcessMessageTransactionEvent : public CTransactionEvent
 {
 public:
+   /// @brief CAFUProcessMessageTransactionEvent Constructor.
+   ///
+   /// @param[in] pObject          A pointer to an IBase interface.
+   /// @param[in] TranID           The Transaction ID.
+   /// @return void
    CAFUProcessMessageTransactionEvent(IBase        *pObject,
                                       TransactionID TranID);
 
@@ -168,6 +211,14 @@ protected:
 class UAIA_API CAFUProcessMessageTransactionExceptionEvent : public CExceptionTransactionEvent
 {
 public:
+   /// @brief CAFUProcessMessageTransactionExceptionEvent Constructor.
+   ///
+   /// @param[in] pObject          A pointer to an IBase interface.
+   /// @param[in] TranID           The Transaction ID.
+   /// @param[in] ExceptionNumber  The number of the exception that occurred.
+   /// @param[in] Reason           The reason code.
+   /// @param[in] Description      The string describing the exception.
+   /// @return void
    CAFUProcessMessageTransactionExceptionEvent(IBase        *pObject,
                                                TransactionID TranID,
                                                btID          ExceptionNumber,
@@ -193,12 +244,22 @@ class UAIA_API IAFUFactory
 public:
    virtual ~IAFUFactory();
 
+   /// @brief Create a Service.
+   ///
+   /// @param[in] nvsManifest      A reference to the NVS defining the Service.
+   /// @param[in] theEventHandler  The Service Event Handler.
+   /// @param[in] TranID           A reference to the Transaction ID.
+   /// @param[in] AppContext       The application supplied context.
+   /// @return void
    virtual void  Create(NamedValueSet const &nvsManifest,
                         btEventHandler       theEventHandler,
                         TransactionID const &TranID,
                         btApplicationContext AppContext = NULL) = 0;
 
-   //Mutator for setting the Service Container
+   /// @brief Mutator for setting the Service Container
+   ///
+   /// @param[in] pServiceContainer  A pointer to the Service Container.
+   /// @return void
    virtual void ServiceContainer(CAASServiceContainer *pServiceContainer) = 0;
 };
 

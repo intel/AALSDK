@@ -41,5 +41,7 @@ ALIAFU/ASEALIAFU \
 ALIAFU/HWALIAFU \
 ALIAFU/SWSimALIAFU \
 ALIAFU/ALI \
+PowerManager/PwrMgrService \
+PowerManager/PwrMgrApp \
 scripts
 

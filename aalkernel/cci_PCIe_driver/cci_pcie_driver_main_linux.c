@@ -126,7 +126,10 @@ module_param    (sim, ulong, S_IRUGO);
 // DRV_NAME is defined in mem-int.h
 //=============================================================================
 
-btUnsignedInt debug = PTRACE_FLAG
+btUnsignedInt debug = 0
+#if 0
+/* Type and Level selection flags */
+   | PTRACE_FLAG
    | PVERBOSE_FLAG
    | PDEBUG_FLAG
    | PINFO_FLAG
@@ -139,7 +142,7 @@ btUnsignedInt debug = PTRACE_FLAG
    | CCIPCIE_DBG_MMAP
    | CCIPCIE_DBG_CMD
    | CCIPCIE_DBG_CFG
-
+#endif
 ;
 
 /******************************************************************************
@@ -235,10 +238,12 @@ void ccidrv_exitUMAPI(void);
 /// cci_pci_id_tbl - identify PCI devices supported by this driver
 ///=================================================================
 static struct pci_device_id cci_pcie_id_tbl[] = {
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP0   ), .driver_data = (kernel_ulong_t)cci_enumerate_device },
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_VF   ),     .driver_data = (kernel_ulong_t)cci_enumerate_vf_device },
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP1),    .driver_data = (kernel_ulong_t)0 },
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP2),    .driver_data = (kernel_ulong_t)0},
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP0),          .driver_data = (kernel_ulong_t)cci_enumerate_device },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_VF),              .driver_data = (kernel_ulong_t)cci_enumerate_vf_device },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP1),          .driver_data = (kernel_ulong_t)0 },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP2),          .driver_data = (kernel_ulong_t)0 },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP0_SKX_P),    .driver_data = (kernel_ulong_t)cci_enumerate_device },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_VF_SKX_P),        .driver_data = (kernel_ulong_t)cci_enumerate_vf_device },
    { 0, }
 };
 CASSERT(sizeof(void *) == sizeof(kernel_ulong_t));
@@ -762,10 +767,13 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
    }
 
    // Save the Bus:Device:Function of PCIe device
-   ccip_dev_pcie_bustype(pccipdev)  = aal_bustype_PCIe;
-   ccip_dev_pcie_busnum(pccipdev)   = pcidev->bus->number;
-   ccip_dev_pcie_devnum(pccipdev)   = PCI_SLOT(pcidev->devfn);
-   ccip_dev_pcie_fcnnum(pccipdev)   = PCI_FUNC(pcidev->devfn);
+   ccip_dev_pcie_bustype(pccipdev)      = aal_bustype_PCIe;
+   ccip_dev_pcie_busnum(pccipdev)       = pcidev->bus->number;
+   ccip_dev_pcie_devnum(pccipdev)       = PCI_SLOT(pcidev->devfn);
+   ccip_dev_pcie_fcnnum(pccipdev)       = PCI_FUNC(pcidev->devfn);
+   //ccip_dev_pcie_socketnum(pccipdev)    = dev_to_node(&pcidev->dev);
+
+   //PINFO(" Socket ID = %x   \n",dev_to_node(&pcidev->dev));
 
    // Enumerate the device
    //  Instantiate internal objects. Objects that represent

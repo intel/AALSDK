@@ -95,6 +95,7 @@ ccip_port.c \
 ccip_afu.c \
 ccip_stap.c \
 ccip_pr.c \
+ccip_pr.h \
 ccip_perfmon.c \
 ccip_perfmon_linux.c \
 ccip_fme_mmap_linux.c \
@@ -102,7 +103,9 @@ ccip_perfmon.h \
 ccip_logging.h \
 ccip_logging.c \
 ccip_logging_linux.h \
-ccip_logging_linux.c 
+ccip_logging_linux.c  \
+ccip_pwr.c \
+ccip_pwr.h 
 
 
 kbuild/@CCIPCIEDRV_DRV_NAME@.ko: kbuild/Module.symvers

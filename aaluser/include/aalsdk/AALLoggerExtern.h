@@ -26,7 +26,7 @@
 //****************************************************************************
 /// @file AALLoggerExtern.h
 /// @brief Provide extern declaration or static definition for a static
-///        instanced of the Logger.
+///        instance of the Logger.
 /// @ingroup Debugging
 /// @verbatim
 /// Accelerator Abstraction Layer
@@ -66,14 +66,14 @@
  * theLogger, a CLogger instance, and a reference to it via the
  * ILogger interface, rLogger.
  *
- * Preface the #include with:
- *    #define AAL_LOGGER_INSTANCE
+ * Preface the \#include with:
+ *    \#define AAL_LOGGER_INSTANCE
  * in a single compilation unit in order to declare the objects for
  * use globally through the objects linked to that compilation unit.
 */
 
 /**
- * To enable Logging at compile-time, #define AAL_LOG_LEVEL to one of the
+ * To enable Logging at compile-time, \#define AAL_LOG_LEVEL to one of the
  * syslog levels, e.g. one of:
  *    LOG_EMERG   0  system is unusable
  *    LOG_ALERT   1  action must be taken immediately
@@ -88,7 +88,7 @@
  *    numerical value) will have code generated that will allow them to be
  *    printed if the run-time level is sufficiently high.
  *
- * To turn all Logging OFF at compile-time, #undef AAL_LOG_LEVEL
+ * To turn all Logging OFF at compile-time, \#undef AAL_LOG_LEVEL
  */
 
 /*

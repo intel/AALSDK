@@ -72,8 +72,9 @@ struct NLBDefaults
    const char     *nobw;
    const char     *tabular;
    const char     *suppresshdr;
-   const char     *wt;
-   const char     *wb;
+   const char     *wli;
+   const char     *wlm;
+   const char     *wpi;
    const char     *rds;
    const char     *rdi;
   // const char     *rdo;
@@ -167,13 +168,13 @@ struct NLBCmdLine
 
 #define NLB_CMD_FLAG_BEGINCL      		(u64_type)0x00000800  /* --begin X         (number of cache lines)                        */
 #define NLB_CMD_FLAG_ENDCL        		(u64_type)0x00001000  /* --end X           (number of cache lines)                        */
-#define NLB_CMD_FLAG_WT           		(u64_type)0x00002000  /* --wt              (write-through caching)                        */
-#define NLB_CMD_FLAG_WB           		(u64_type)0x00004000  /* --wb              (write-back caching)                           */
+#define NLB_CMD_FLAG_WRLINE_I      		(u64_type)0x00002000  /* --wli             (write-through caching)                        */
+#define NLB_CMD_FLAG_WRLINE_M      		(u64_type)0x00004000  /* --wlm             (write-back caching)                           */
 #define NLB_CMD_FLAG_PWR          		(u64_type)0x00008000  /* --pwr             (posted writes)                                */
 #define NLB_CMD_FLAG_CONT         		(u64_type)0x00010000  /* --cont            (continuous mode)                              */
 //#define NLB_CMD_FLAG_TONSEC       		(u64_type)0x00020000  /* --timeout-nsec X  (nanosecond timeout for continuous mode)       */
 #define NLB_CMD_FLAG_TOUSEC       		(u64_type)0x00040000  /* --timeout-usec X  (microsecond timeout for continuous mode)      */
-#define NLB_CMD_FLAG_TOMSEC       		(u64_type)0x00080000  /* --timeout-msec X  (millisecond timeout for continuous mode)      */
+#define NLB_CMD_FLAG_TOMSEC        		(u64_type)0x00080000  /* --timeout-msec X  (millisecond timeout for continuous mode)      */
 #define NLB_CMD_FLAG_TOSEC        		(u64_type)0x00100000  /* --timeout-sec  X  (second timeout for continuous mode)           */
 #define NLB_CMD_FLAG_TOMIN        		(u64_type)0x00200000  /* --timeout-min  X  (minute timeout for continuous mode)           */
 #define NLB_CMD_FLAG_TOHOUR       		(u64_type)0x00400000  /* --timeout-hour X  (hour timeout for continuous mode)             */
@@ -201,33 +202,35 @@ struct NLBCmdLine
 
 #define NLB_CMD_FLAG_COOL_CPU_CACHE 	(u64_type)0x1000000000 		/* --cool-cpu-cache  Cool CPU Cache							           	  */
 
-#define NLB_CMD_FLAG_READ_VA    			(u64_type)0x2000000000 		/* --rva	      		Distribute data among QPI, PCIe0 and PCIe1 channels  */
+#define NLB_CMD_FLAG_READ_VA    		(u64_type)0x2000000000 		/* --rva	          Distribute data among QPI, PCIe0 and PCIe1 channels  */
 #define NLB_CMD_FLAG_READ_VL0		   	(u64_type)0x4000000000 		/* --rvl0		      Data transferred on QPI channel for reads		        */
 #define NLB_CMD_FLAG_READ_VH0	   		(u64_type)0x8000000000 		/* --rvh0		      Data transferred on PCIe0  channel for reads		     */
-#define NLB_CMD_FLAG_READ_VH1   			(u64_type)0x10000000000		/* --rvh1		      Data transferred on PCIe1  channel for reads  	     */
-#define NLB_CMD_FLAG_READ_VR           (u64_type)0x20000000000    /* --rvr             Data transferred on randomly chosen channel for reads*/
+#define NLB_CMD_FLAG_READ_VH1   		(u64_type)0x10000000000		/* --rvh1		      Data transferred on PCIe1  channel for reads  	     */
+#define NLB_CMD_FLAG_READ_VR            (u64_type)0x20000000000     /* --rvr              Data transferred on randomly chosen channel for reads*/
 
-#define NLB_CMD_FLAG_MULTICL           (u64_type)0x40000000000		/* --multi-cl X  	 (number of cache lines)        					  */
+#define NLB_CMD_FLAG_MULTICL            (u64_type)0x40000000000		/* --multi-cl X  	 (number of cache lines)        					  */
 
 #define NLB_CMD_FLAG_ST		            (u64_type)0x80000000000		/*  --shared-token   (Sub-mode for atomic tests) 					  */
 #define NLB_CMD_FLAG_UT		            (u64_type)0x100000000000	/*  --seperate-token (Sub-mode for atomic tests) 					  */
-#define NLB_CMD_FLAG_HQW	            (u64_type)0x200000000000	/*  --hardware-qw  	(QWord number on the Hardware thread) 	     */
-#define NLB_CMD_FLAG_SQW	            (u64_type)0x400000000000	/*  --software-qw    (QWord number on the Software thread)		  */
+#define NLB_CMD_FLAG_HQW	            (u64_type)0x200000000000	/*  --hardware-qw  	 (QWord number on the Hardware thread) 	     */
+#define NLB_CMD_FLAG_SQW	            (u64_type)0x400000000000	/*  --software-qw    (QWord number on the Software thread)		 */
 #define NLB_CMD_FLAG_CX		            (u64_type)0x800000000000	/*  --cmp-xchg       (Number of Cmp-Xchg operations)				  */
 
-#define NLB_CMD_FLAG_ALT_WR_PRN        (u64_type)0x1000000000000  /* --alt-wr-pattern  (Alternate write patterns)                  */
-#define NLB_CMD_FLAG_STRIDED_ACS       (u64_type)0x2000000000000  /* --strided-access  (non-unit strides in NLB)                   */
+#define NLB_CMD_FLAG_ALT_WR_PRN         (u64_type)0x1000000000000   /* --alt-wr-pattern  (Alternate write patterns)                  */
+#define NLB_CMD_FLAG_STRIDED_ACS        (u64_type)0x2000000000000   /* --strided-access  (non-unit strides in NLB)                   */
 
-#define NLB_CMD_FLAG_WRITE_VA          (u64_type)0x4000000000000  /* --wva          Distribute data among QPI, PCIe0 and PCIe1 channels   */
-#define NLB_CMD_FLAG_WRITE_VL0         (u64_type)0x8000000000000  /* --wvl0         Data transferred on QPI channel for writes            */
-#define NLB_CMD_FLAG_WRITE_VH0         (u64_type)0x10000000000000 /* --wvh0         Data transferred on PCIe0  channel for writes         */
-#define NLB_CMD_FLAG_WRITE_VH1         (u64_type)0x20000000000000 /* --wvh1         Data transferred on PCIe1  channel for writes         */
-#define NLB_CMD_FLAG_WRITE_VR          (u64_type)0x40000000000000 /* --wvr          Data transferred on randomly chosen channel for writes*/
+#define NLB_CMD_FLAG_WRITE_VA           (u64_type)0x4000000000000   /* --wva          Distribute data among QPI, PCIe0 and PCIe1 channels   */
+#define NLB_CMD_FLAG_WRITE_VL0          (u64_type)0x8000000000000   /* --wvl0         Data transferred on QPI channel for writes            */
+#define NLB_CMD_FLAG_WRITE_VH0          (u64_type)0x10000000000000  /* --wvh0         Data transferred on PCIe0  channel for writes         */
+#define NLB_CMD_FLAG_WRITE_VH1          (u64_type)0x20000000000000  /* --wvh1         Data transferred on PCIe1  channel for writes         */
+#define NLB_CMD_FLAG_WRITE_VR           (u64_type)0x40000000000000  /* --wvr          Data transferred on randomly chosen channel for writes*/
 
-#define NLB_CMD_FLAG_WRFENCE_VA        (u64_type)0x80000000000000  /* --wrfva       Distribute data among QPI, PCIe0 and PCIe1 channels   		*/
-#define NLB_CMD_FLAG_WRFENCE_VL0       (u64_type)0x100000000000000 /* --wrfvl0      Data transferred on QPI channel for write fence       		*/
-#define NLB_CMD_FLAG_WRFENCE_VH0       (u64_type)0x200000000000000 /* --wrfvh0      Data transferred on PCIe0  channel for write fence          */
-#define NLB_CMD_FLAG_WRFENCE_VH1       (u64_type)0x400000000000000 /* --wrfvh1      Data transferred on PCIe1  channel for write fence          */
+#define NLB_CMD_FLAG_WRFENCE_VA         (u64_type)0x80000000000000  /* --wrfva        Distribute data among QPI, PCIe0 and PCIe1 channels   		*/
+#define NLB_CMD_FLAG_WRFENCE_VL0        (u64_type)0x100000000000000 /* --wrfvl0       Data transferred on QPI channel for write fence       		*/
+#define NLB_CMD_FLAG_WRFENCE_VH0        (u64_type)0x200000000000000 /* --wrfvh0       Data transferred on PCIe0  channel for write fence          */
+#define NLB_CMD_FLAG_WRFENCE_VH1        (u64_type)0x400000000000000 /* --wrfvh1       Data transferred on PCIe1  channel for write fence          */
+
+#define NLB_CMD_FLAG_WRPUSH_I       	(u64_type)0x800000000000000 /* --wpi      	  WritePush_I caching          */
 
 #define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   		/* --0 */
 #define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  		/* --1 */

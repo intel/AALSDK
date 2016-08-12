@@ -150,6 +150,9 @@ int Timer::Compare(const Timer &other) const
 #endif // __AAL_LINUX__
 }
 
+/// Convert this Timer value to seconds.
+/// @param[in] d A reference to the double that will receive the number of seconds.
+/// @return void
 void Timer::AsSeconds(double &d) const
 {
 #if   defined( __AAL_WINDOWS__ )
@@ -163,6 +166,9 @@ void Timer::AsSeconds(double &d) const
 #endif // OS
 }
 
+/// Convert this Timer value to milliseconds.
+/// @param[in] d A reference to the double that will receive the number of milliseconds.
+/// @return void
 void Timer::AsMilliSeconds(double &d) const
 {
 #if   defined( __AAL_WINDOWS__ )
@@ -176,6 +182,9 @@ void Timer::AsMilliSeconds(double &d) const
 #endif // OS
 }
 
+/// Convert this Timer value to microseconds.
+/// @param[in] d A reference to the double that will receive the number of microseconds.
+/// @return void
 void Timer::AsMicroSeconds(double &d) const
 {
 #if   defined( __AAL_WINDOWS__ )
@@ -189,6 +198,9 @@ void Timer::AsMicroSeconds(double &d) const
 #endif // OS
 }
 
+/// Convert this Timer value to nanoseconds.
+/// @param[in] d A reference to the double that will receive the number of nanoseconds.
+/// @return void
 void Timer::AsNanoSeconds(double &d) const
 {
 #if   defined( __AAL_WINDOWS__ )
@@ -201,6 +213,9 @@ void Timer::AsNanoSeconds(double &d) const
 #endif // OS
 }
 
+/// Convert this Timer value to seconds.
+/// @param[in] u A reference to the unsigned 64-bit integer that will receive the number of seconds.
+/// @return void
 void Timer::AsSeconds(btUnsigned64bitInt &u) const
 {
 #if   defined( __AAL_WINDOWS__ )
@@ -213,6 +228,9 @@ void Timer::AsSeconds(btUnsigned64bitInt &u) const
 #endif // OS
 }
 
+/// Convert this Timer value to milliseconds.
+/// @param[in] u A reference to the unsigned 64-bit integer that will receive the number of milliseconds.
+/// @return void
 void Timer::AsMilliSeconds(btUnsigned64bitInt &u) const
 {
 #if   defined( __AAL_WINDOWS__ )
@@ -226,6 +244,9 @@ void Timer::AsMilliSeconds(btUnsigned64bitInt &u) const
 #endif // OS
 }
 
+/// Convert this Timer value to microseconds.
+/// @param[in] u A reference to the unsigned 64-bit integer that will receive the number of microseconds.
+/// @return void
 void Timer::AsMicroSeconds(btUnsigned64bitInt &u) const
 {
 #if   defined( __AAL_WINDOWS__ )
@@ -239,6 +260,9 @@ void Timer::AsMicroSeconds(btUnsigned64bitInt &u) const
 #endif // OS
 }
 
+/// Convert this Timer value to nanoseconds.
+/// @param[in] u A reference to the unsigned 64-bit integer that will receive the number of nanoseconds.
+/// @return void
 void Timer::AsNanoSeconds(btUnsigned64bitInt &u) const
 {
 #if   defined( __AAL_WINDOWS__ )
@@ -251,6 +275,8 @@ void Timer::AsNanoSeconds(btUnsigned64bitInt &u) const
 #endif // OS
 }
 
+/// Convert this Timer value to a string in "h Hours m Minutes s Seconds m Milliseconds i Microseconds n Nanoseconds" format.
+/// @retval A standard string.
 std::string Timer::NormalizedUnits() const
 {
 #if   defined( __AAL_WINDOWS__ )
@@ -346,6 +372,14 @@ std::string Timer::NormalizedUnits() const
 #endif // OS
 }
 
+/// Generate a string in "n Timeunits" format to display this Timer value.
+/// Timeunits is the largest time unit that allows the Timer value to be
+/// expressed as an integer >= 1.
+/// @param[in] i An optional reference to a 64-bit integer to store the
+///              converted time value (default = NULL).
+/// @param[in] d An optional reference to a double to store the converted
+///              time value (default = NULL).
+/// @retval A standard string representing the Normalized Timer value.
 std::string Timer::Normalized(btUnsigned64bitInt *i, double *d) const
 {
    double             x = 0.0;

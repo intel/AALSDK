@@ -225,16 +225,8 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    write_ccip_csr64(ptr,offset,fme_pm.ccip_fme_pm_dflhdr.csr);
 
 
-   // Power Management Threshold CSR
-   fme_pm.pm_thresholds.threshold1 =0x22 ;
-   fme_pm.pm_thresholds.threshold1 =0x1;
-   fme_pm.pm_thresholds.threshold3 =0x33;
-   fme_pm.pm_thresholds.threshold4 =0x1;
-   offset = offset + OFFSET;
-   write_ccip_csr64(ptr,offset,fme_pm.pm_thresholds.csr);
-
    // Power Management status
-   fme_pm.pm_status.pwr_consumed = 0x1;
+   fme_pm.pm_status.pwr_consumed = 0x299;
    fme_pm.pm_status.fpga_latency_report = 0x1;
 
    offset = offset + OFFSET;
@@ -572,7 +564,6 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    // Port control csr
    port_hdr.ccip_port_control.ccip_outstanding_request =0x1;
    port_hdr.ccip_port_control.afu_latny_rep =0x1;
-   port_hdr.ccip_port_control.port_freeze =0x1;
    port_hdr.ccip_port_control.port_sftreset_control =0x1;
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset, port_hdr.ccip_port_control.csr);
@@ -632,7 +623,7 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    port_err.ccip_port_error.tx_ch0_req_cl_len3 =0x1;
    port_err.ccip_port_error.tx_ch0_req_cl_len2 =0x1;
    port_err.ccip_port_error.tx_ch0_req_cl_len4 =0x1;
-   port_err.ccip_port_error.rsvd =0x1;
+
 
    port_err.ccip_port_error.tx_ch1_overflow =0x1;
    port_err.ccip_port_error.tx_ch1_invalidreq =0x1;
@@ -645,13 +636,25 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    port_err.ccip_port_error.tx_ch1_incorr_addr =0x1;
    port_err.ccip_port_error.tx_ch1_sop_detcted =0x1;
    port_err.ccip_port_error.tx_ch1_atomic_req =0x1;
-   port_err.ccip_port_error.rsvd1 =0x1;
+
 
    port_err.ccip_port_error.mmioread_timeout =0x1;
    port_err.ccip_port_error.tx_ch2_fifo_overflow =0x1;
-   port_err.ccip_port_error.rsvd2 =0x1;
+
+   port_err.ccip_port_error.unexp_mmio_resp =0x1;
    port_err.ccip_port_error.num_pending_req_overflow =0x1;
-   port_err.ccip_port_error.rsvd3 =0x1;
+
+   port_err.ccip_port_error.llpr_smrr_err = 0x1;
+   port_err.ccip_port_error.llpr_smrr2_err = 0x1;
+   port_err.ccip_port_error.llpr_mesg_err = 0x1;
+   port_err.ccip_port_error.genport_range_err = 0x1;
+   port_err.ccip_port_error.legrange_low_err = 0x1;
+   port_err.ccip_port_error.legrange_hight_err = 0x1;
+   port_err.ccip_port_error.vgmem_range_err = 0x1;
+   port_err.ccip_port_error.page_fault_err = 0x1;
+   port_err.ccip_port_error.pmr_err = 0x1;
+   port_err.ccip_port_error.ap6_event = 0x1;
+   port_err.ccip_port_error.vfflr_accesseror = 0x1;
 
    write_ccip_csr64(ptr,offset, port_err.ccip_port_error.csr);
 
@@ -662,7 +665,7 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    port_err.ccip_port_first_error.tx_ch0_req_cl_len3 =0x1;
    port_err.ccip_port_first_error.tx_ch0_req_cl_len2 =0x1;
    port_err.ccip_port_first_error.tx_ch0_req_cl_len4 =0x1;
-   port_err.ccip_port_first_error.rsvd =0x1;
+
 
    port_err.ccip_port_first_error.tx_ch1_overflow =0x1;
    port_err.ccip_port_first_error.tx_ch1_invalidreq =0x1;
@@ -675,13 +678,25 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    port_err.ccip_port_first_error.tx_ch1_incorr_addr =0x1;
    port_err.ccip_port_first_error.tx_ch1_sop_detcted =0x1;
    port_err.ccip_port_first_error.tx_ch1_atomic_req =0x1;
-   port_err.ccip_port_first_error.rsvd1 =0x1;
+
 
    port_err.ccip_port_first_error.mmioread_timeout =0x1;
    port_err.ccip_port_first_error.tx_ch2_fifo_overflow =0x1;
-   port_err.ccip_port_first_error.rsvd2 =0x1;
+   port_err.ccip_port_first_error.unexp_mmio_resp =0x1;
    port_err.ccip_port_first_error.num_pending_req_overflow =0x1;
-   port_err.ccip_port_first_error.rsvd3 =0x1;
+
+   port_err.ccip_port_first_error.llpr_smrr_err = 0x1;
+   port_err.ccip_port_first_error.llpr_smrr2_err = 0x1;
+   port_err.ccip_port_first_error.llpr_mesg_err = 0x1;
+   port_err.ccip_port_first_error.genport_range_err = 0x1;
+   port_err.ccip_port_first_error.legrange_low_err = 0x1;
+   port_err.ccip_port_first_error.legrange_hight_err = 0x1;
+   port_err.ccip_port_first_error.vgmem_range_err = 0x1;
+   port_err.ccip_port_first_error.page_fault_err = 0x1;
+   port_err.ccip_port_first_error.pmr_err = 0x1;
+   port_err.ccip_port_first_error.ap6_event = 0x1;
+   port_err.ccip_port_first_error.vfflr_accesseror = 0x1;
+
    write_ccip_csr64(ptr,offset, port_err.ccip_port_first_error.csr);
 
    // port malformed request csr
@@ -938,14 +953,8 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "End of List = %x \n",pfme_dev->m_pPowermgmt->ccip_fme_pm_dflhdr.eol);
 
 
-      PDEBUG( "threshold1 = %x \n",pfme_dev->m_pPowermgmt->pm_thresholds.threshold1);
-      PDEBUG( "threshold1_sts = %x \n",pfme_dev->m_pPowermgmt->pm_thresholds.threshold2);
-      PDEBUG( "threshold2 = %x \n",pfme_dev->m_pPowermgmt->pm_thresholds.threshold3);
-      PDEBUG( "threshold2_sts = %x \n",pfme_dev->m_pPowermgmt->pm_thresholds.threshold4);
-
-
-      PDEBUG( "hw_set_field = %x \n",pfme_dev->m_pPowermgmt->pm_status.pwr_consumed);
-      PDEBUG( "max_clock_supply_i_rec = %d \n",pfme_dev->m_pPowermgmt->pm_status.fpga_latency_report);
+      PDEBUG( "pwr_consumed = %x \n",pfme_dev->m_pPowermgmt->pm_status.pwr_consumed);
+      PDEBUG( "fpga_latency_report = %d \n",pfme_dev->m_pPowermgmt->pm_status.fpga_latency_report);
 
 
       PDEBUG( "FME Power Feature  END \n \n");
@@ -1174,7 +1183,6 @@ int print_sim_port_device(struct port_device *pport_dev)
 
       PDEBUG( "ccip_outstanding_request= %x \n",pport_dev->m_pport_hdr->ccip_port_control.ccip_outstanding_request);
       PDEBUG( "afu_latny_rep= %x \n",pport_dev->m_pport_hdr->ccip_port_control.afu_latny_rep);
-      PDEBUG( "port_freeze= %x \n",pport_dev->m_pport_hdr->ccip_port_control.port_freeze);
       PDEBUG( "port_sftreset_control= %x \n",pport_dev->m_pport_hdr->ccip_port_control.port_sftreset_control);
 
       PDEBUG( "afu_pwr_state= %x \n",pport_dev->m_pport_hdr->ccip_port_status.afu_pwr_state);
@@ -1217,6 +1225,21 @@ int print_sim_port_device(struct port_device *pport_dev)
       PDEBUG( "Port Error mmioread_timeout = %x \n",pport_dev->m_pport_err->ccip_port_error.mmioread_timeout);
       PDEBUG( "Port Error tx_ch2_fifo_overflow = %x \n",pport_dev->m_pport_err->ccip_port_error.tx_ch2_fifo_overflow);
       PDEBUG( "Port Error num_pending_req_overflow = %x \n",pport_dev->m_pport_err->ccip_port_error.num_pending_req_overflow);
+
+      PDEBUG( "Port Error unexp_mmio_resp = %x \n",pport_dev->m_pport_err->ccip_port_error.unexp_mmio_resp);
+
+      PDEBUG( "Port Error llpr_smrr_err = %x \n",pport_dev->m_pport_err->ccip_port_error.llpr_smrr_err);
+      PDEBUG( "Port Error llpr_smrr2_err = %x \n",pport_dev->m_pport_err->ccip_port_error.llpr_smrr2_err);
+      PDEBUG( "Port Error llpr_mesg_err = %x \n",pport_dev->m_pport_err->ccip_port_error.llpr_mesg_err);
+      PDEBUG( "Port Error genport_range_err = %x \n",pport_dev->m_pport_err->ccip_port_error.genport_range_err);
+      PDEBUG( "Port Error legrange_low_err = %x \n",pport_dev->m_pport_err->ccip_port_error.legrange_low_err);
+      PDEBUG( "Port Error legrange_hight_err = %x \n",pport_dev->m_pport_err->ccip_port_error.legrange_hight_err);
+      PDEBUG( "Port Error vgmem_range_err = %x \n",pport_dev->m_pport_err->ccip_port_error.vgmem_range_err);
+
+      PDEBUG( "Port Error page_fault_err = %x \n",pport_dev->m_pport_err->ccip_port_error.page_fault_err);
+      PDEBUG( "Port Error pmr_err = %x \n",pport_dev->m_pport_err->ccip_port_error.pmr_err);
+      PDEBUG( "Port Error ap6_event = %x \n",pport_dev->m_pport_err->ccip_port_error.ap6_event);
+      PDEBUG( "Port Error vfflr_accesseror = %x \n",pport_dev->m_pport_err->ccip_port_error.vfflr_accesseror);
 
 
       PDEBUG( "Port First Error tx_ch0_overflow = %x \n",pport_dev->m_pport_err->ccip_port_first_error.tx_ch0_overflow);

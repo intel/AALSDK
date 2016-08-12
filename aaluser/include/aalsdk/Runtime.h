@@ -208,15 +208,15 @@ public:
    /// @return    true = success.  IRuntime client also receives callback.
    virtual btBool                      start(const NamedValueSet &rconfigParms)                 = 0;
 
-   /// @brief     Stops the Runtime. releases any resources and shutsdown all
+   /// @brief     Stops the Runtime. Releases any resources and shuts down all
    ///               Services.
    /// @return    void
    virtual void                         stop()                                                  = 0;
 
-   /// @brief     Allocates a Service
-   /// @param[in] pClient - IBase of client object.
-   ///            rManifest - reference to a Manifest describing teh Service desired
-   ///            rTranID - Transaction ID
+   /// @brief     Allocates a Service.
+   /// @param[in] pClient   - A pointer to the IBase of the client object.
+   /// @param[in] rManifest - A reference to a Manifest describing the Service desired.
+   /// @param[in] rTranID   - A reference to the Transaction ID.
    /// @return    void
    virtual void                 allocService(IBase                *pClient,
                                              NamedValueSet const  &rManifest,
@@ -230,22 +230,22 @@ public:
    /// @brief     Returns a unique pointer to the Runtime. This enables subordinate
    ///               objects to use the Runtime independently. Note that this pointer
    ///               references the singleton Runtime instance.
-   /// @param[in] rEvent will be an event that can be parsed to determine
-   ///               what occurred.
-   /// @return    void
+   /// @param[in] pClient is the Runtime interface pointer.
+   /// @return    A pointer to IRuntime, a Runtime interface.
    virtual IRuntime *        getRuntimeProxy(IRuntimeClient *pClient)                           = 0;
 
 
    /// @brief     Releases pointer to the Runtime acquired from getRuntimeProxy.
-   /// @return    true - success;
+   /// @return    true - success.
    virtual btBool        releaseRuntimeProxy()                                                  = 0;
 
    /// @brief     Gets the pointer to the Runtime interface attached to this Proxy.
    /// @return    Client Pointer
    virtual IRuntimeClient * getRuntimeClient()                                                  = 0;
 
-   /// @brief     Returns status of Runtime
-   /// @return    void
+   /// @brief     Returns the status of this Runtime.
+   /// @retval    True if the internal state of the Runtime is OK.
+   /// @retval    False if the internal state of the Runtime is not OK.
    virtual btBool                       IsOK()                                                  = 0;
 
 protected:

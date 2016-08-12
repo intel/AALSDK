@@ -355,30 +355,30 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
            PVERBOSE("ras_warnerror:%llx \n",preq->ahmreq.u.error_csr.ras_warnerror);
 
            if(0 != preq->ahmreq.u.error_csr.error0 )   {
-              ccip_fme_gerr(cci_aaldev_pfme(pdev))->fme_err.csr     = preq->ahmreq.u.error_csr.error0;
+              ccip_fme_gerr(cci_aaldev_pfme(pdev))->fme_err.csr      = preq->ahmreq.u.error_csr.error0;
            }
 
            if(0 != preq->ahmreq.u.error_csr.pcie0_err )   {
-              ccip_fme_gerr(cci_aaldev_pfme(pdev))->pcie0_err.csr   = preq->ahmreq.u.error_csr.pcie0_err;
+              ccip_fme_gerr(cci_aaldev_pfme(pdev))->pcie0_err.csr     = preq->ahmreq.u.error_csr.pcie0_err;
            }
            if(0 != preq->ahmreq.u.error_csr.pcie1_err )   {
-              ccip_fme_gerr(cci_aaldev_pfme(pdev))->pcie1_err.csr   = preq->ahmreq.u.error_csr.pcie1_err;
+              ccip_fme_gerr(cci_aaldev_pfme(pdev))->pcie1_err.csr      = preq->ahmreq.u.error_csr.pcie1_err;
            }
 
            if(0 != preq->ahmreq.u.error_csr.first_error )   {
-              ccip_fme_gerr(cci_aaldev_pfme(pdev))->fme_first_err.csr = preq->ahmreq.u.error_csr.first_error;
+              ccip_fme_gerr(cci_aaldev_pfme(pdev))->fme_first_err.csr   = preq->ahmreq.u.error_csr.first_error;
            }
 
            if(0 != preq->ahmreq.u.error_csr.next_error )   {
-              ccip_fme_gerr(cci_aaldev_pfme(pdev))->fme_next_err.csr  = preq->ahmreq.u.error_csr.next_error;
+              ccip_fme_gerr(cci_aaldev_pfme(pdev))->fme_next_err.csr    = preq->ahmreq.u.error_csr.next_error;
            }
 
            if(0 != preq->ahmreq.u.error_csr.ras_gerr )   {
-              ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_gerr.csr        = preq->ahmreq.u.error_csr.ras_gerr;
+              ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_gerr.csr         = preq->ahmreq.u.error_csr.ras_gerr;
            }
 
            if(0 != preq->ahmreq.u.error_csr.ras_berror )   {
-              ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_berror.csr   = preq->ahmreq.u.error_csr.ras_berror;
+              ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_berror.csr      = preq->ahmreq.u.error_csr.ras_berror;
            }
 
            if(0 != preq->ahmreq.u.error_csr.ras_warnerror )   {
@@ -394,21 +394,21 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
            PVERBOSE("ccipdrv_ClearAllFMEError \n");
 
-           ccip_fme_gerr(cci_aaldev_pfme(pdev))->fme_err.csr              = 0x0;
-           ccip_fme_gerr(cci_aaldev_pfme(pdev))->pcie0_err.csr            = 0x0;
-           ccip_fme_gerr(cci_aaldev_pfme(pdev))->pcie0_err.csr            = 0x0;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->fme_err.csr              = CLEAR_ALL_ERRORS;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->pcie0_err.csr            = CLEAR_ALL_ERRORS;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->pcie0_err.csr            = CLEAR_ALL_ERRORS;
 
-           ccip_fme_gerr(cci_aaldev_pfme(pdev))->fme_first_err.csr        = 0x0;
-           ccip_fme_gerr(cci_aaldev_pfme(pdev))->fme_next_err.csr         = 0x0;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->fme_first_err.csr        = CLEAR_ALL_ERRORS;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->fme_next_err.csr         = CLEAR_ALL_ERRORS;
 
-           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_gerr.csr             = 0x0;
-           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_gerr_mask.csr        = 0x0;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_gerr.csr             = CLEAR_ALL_ERRORS;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_gerr_mask.csr        = CLEAR_ALL_ERRORS;
 
-           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_berror.csr           = 0x0;
-           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_berror_mask.csr      = 0x0;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_berror.csr           = CLEAR_ALL_ERRORS;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_berror_mask.csr      = CLEAR_ALL_ERRORS;
 
-           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_warnerror.csr        = 0x0;
-           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_warnerror_mask.csr   = 0x0;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_warnerror.csr        = CLEAR_ALL_ERRORS;
+           ccip_fme_gerr(cci_aaldev_pfme(pdev))->ras_warnerror_mask.csr   = CLEAR_ALL_ERRORS;
 
            //Success Event
            Message->m_errcode = uid_errnumOK;
@@ -795,7 +795,7 @@ bt32bitInt get_fme_power(struct fme_device       *pfme_dev,
 
    memset(pthermal_power,0,sizeof(struct CCIP_THERMAL_PWR));
 
-   pthermal_power->pwr_status    = 0;
+   pthermal_power->pwr_status    = ccip_fme_power(pfme_dev)->pm_status.csr;
 
    PTRACEOUT_INT(res);
    return res;

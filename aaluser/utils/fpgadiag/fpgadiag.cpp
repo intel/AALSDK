@@ -64,6 +64,33 @@
 
 USING_NAMESPACE(AAL)
 
+// uncomment line below to use old (BDX-P) NLB AFU_IDs
+//#define USE_BDX_NLB
+
+#ifdef USE_BDX_NLB
+// ---------- BDX-P AFU_IDs -----------
+# ifndef NLB_MODE0_AFU_ID
+#  define NLB_MODE0_AFU_ID "C000C966-0D82-4272-9AEF-FE5F84570612"
+# endif
+# ifndef NLB_MODE3_AFU_ID
+#  define NLB_MODE3_AFU_ID "751E795F-7DA4-4CC6-8309-935132BCA9B6"
+# endif
+# ifndef NLB_MODE7_AFU_ID
+#  define NLB_MODE7_AFU_ID "A944F6E7-15D3-4D95-9452-15DBD47C76BD"
+# endif
+#else
+// ---------- SKX-P AFU_IDs -----------
+# ifndef NLB_MODE0_AFU_ID
+#  define NLB_MODE0_AFU_ID "D8424DC4-A4A3-C413-F89E-433683F9040B"
+# endif
+# ifndef NLB_MODE3_AFU_ID
+#  define NLB_MODE3_AFU_ID "F7DF405C-BD7A-CF72-22F1-44B0B93ACD18"
+# endif
+# ifndef NLB_MODE7_AFU_ID
+#  define NLB_MODE7_AFU_ID "7BAF4DEA-A57C-E91E-168A-455D9BDA88A3"
+# endif
+#endif
+
 #ifdef INFO
 # undef INFO
 #endif // INFO
@@ -141,8 +168,9 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_NOBW,
       DEFAULT_TABULAR,
       DEFAULT_SUPPRESSHDR,
-      DEFAULT_WT,
-      DEFAULT_WB,
+      DEFAULT_WLI,
+      DEFAULT_WLM,
+      DEFAULT_WPI,
       DEFAULT_RDS,
       DEFAULT_RDI,
       DEFAULT_CONT,
@@ -357,18 +385,18 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
 		  0 == strcmp(TestMode().c_str(), "TestMode_write") ||
 		  0 == strcmp(TestMode().c_str(), "TestMode_trput")){
 
-  		   ConfigRecord.Add(keyRegAFU_ID,"F7DF405C-BD7A-CF72-22F1-44B0B93ACD18");
-  		   Manifest.Add(keyRegAFU_ID,"F7DF405C-BD7A-CF72-22F1-44B0B93ACD18");
+  		   ConfigRecord.Add(keyRegAFU_ID, NLB_MODE3_AFU_ID);
+  		   Manifest.Add(keyRegAFU_ID, NLB_MODE3_AFU_ID);
 
   	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_lpbk1")){
 
-  		   ConfigRecord.Add(keyRegAFU_ID,"D8424DC4-A4A3-C413-F89E-433683F9040B");
-  		   Manifest.Add(keyRegAFU_ID,"D8424DC4-A4A3-C413-F89E-433683F9040B");
+  		   ConfigRecord.Add(keyRegAFU_ID, NLB_MODE0_AFU_ID);
+  		   Manifest.Add(keyRegAFU_ID, NLB_MODE0_AFU_ID);
 
   	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_sw")){
 
- 		   ConfigRecord.Add(keyRegAFU_ID,"7BAF4DEA-A57C-E91E-168A-455D9BDA88A3");
- 		   Manifest.Add(keyRegAFU_ID,"7BAF4DEA-A57C-E91E-168A-455D9BDA88A3");
+ 		   ConfigRecord.Add(keyRegAFU_ID, NLB_MODE7_AFU_ID);
+ 		   Manifest.Add(keyRegAFU_ID, NLB_MODE7_AFU_ID);
 
   	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_atomic")){
 
@@ -1041,7 +1069,10 @@ btInt INLB::ResetHandshake()
 btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize CoolSize, const NLBCmdLine &cmd)
 {
    btInt res = 0;
-   const btInt StopTimeoutMillis = 250;
+   btInt StopTimeoutMillis = 250;
+   if ( cmd.AFUTarget == ALIAFU_NVS_VAL_TARGET_ASE){
+   	   StopTimeoutMillis = StopTimeoutMillis * 100000;
+   }
    btInt MaxPoll = StopTimeoutMillis;
 
    const btUnsigned32bitInt CoolOffData = 0xc001c001;

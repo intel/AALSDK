@@ -62,22 +62,56 @@ private:
    unsigned int             m_MaxAllocations;
    btBool                   m_fUnlimitedAllocations;   // True if the number of allocations is unlimited
 public:
+   /// @brief Constructor using event passed from RMS.
+   /// @param[in] pConfigUpdate A pointer to an event detailing the
+   ///                          characteristics of a device that has been added
+   ///                          to the RMS.
+   /// @return void
    InstRec(aalrms_configUpDateEvent* pConfigUpdate);
    // Default copy constructor and assignment are okay
    virtual ~InstRec();
    // Worker routines
+   /// @brief Check if an Instance of an object is available - the number of
+   ///        allocations is fewer than the maximum or the maximum is
+   ///        unlimited.
+   /// @retval True if there is room for another reference on the instance.
+   /// @retval False if there is NOT room for another reference on the instance.
    btBool                            IsAvailable() const;
+   /// @brief Increment the allocation count if possible.
+   /// @retval True if the allocation count was incremented.
+   /// @retval False if the allocation count could not be incremented.
    btBool                   IncrementAllocations();
+   /// @brief Decrement the allocation count if possible.
+   /// @retval True if the allocation count was decremented.
+   /// @retval False if the allocation count could not be decremented.
    btBool                   DecrementAllocations();
    // Accessors
+   /// @brief Access the ConfigUpdate event in the Instance Record
+   /// @return A reference to the event.
    const aalrms_configUpDateEvent & ConfigStruct() const { return m_ConfigUpdate;          }
+   /// @brief Access the InstanceIndex in the Instance Record
+   /// @return The Instance Index - bus type, bus number, device number, and sub-device number.
    btNumberKey                     InstanceIndex() const { return m_InstanceIndex;         }
+   /// @brief Access the number of allocations from the Instance Record
+   /// @return The number of times this instance record has been allocated.
    unsigned int                   NumAllocations() const { return m_NumAllocations;        }
+   /// @brief Access the maxium number of allocations from the Instance Record
+   /// @return The maximum number of times this instance record can been allocated.
    unsigned int                   MaxAllocations() const { return m_MaxAllocations;        }
+   /// @brief Access the unlimited allocations flag from the Instance Record
+   /// @retval True if unlimited allocations are allowed.
+   /// @retval False if unlimited allocations are NOT allowed.
    btBool                  fUnlimitedAllocations() const { return m_fUnlimitedAllocations; }
    // Mutators
+   /// @brief Replace the ConfigUpdate event in the Instance Record
+   /// @retval True if ConfigUpdate was replaced.
+   /// @retval False if ConfigUpdate was NOT replaced.
    btBool                          ReplaceStruct(const aalrms_configUpDateEvent *pConfigUpdate);
+   /// @brief Set the Instance Index (the device identifier) in the Instance Record
+   /// @return The new Instance Index.
    btNumberKey                     InstanceIndex(btNumberKey i) { m_InstanceIndex  = i; return i; }
+   /// @brief Set the maximum number of allocations in the Instance Record
+   /// @return The new maximum number of allocations.
    unsigned int                   MaxAllocations(int i)         { m_MaxAllocations = i; return i; }
 private:
    InstRec(); // Disallow default constructor
@@ -98,16 +132,40 @@ public:
 public:
          InstRecMap();
 virtual ~InstRecMap();
+   /// @brief Add an Instance Record to the Map.
+   /// @retval True if the record was added.
+   /// @param[in] instRec A pointer to the Instance Record to add to the Map.
+   /// @retval False if the record was NOT added.
    btBool  Add(const InstRec &instRec);
+   /// @brief Check if a particular key is in the Map.
+   /// @retval True if the key is in the Map.
+   /// @retval False if the key is NOT in the Map.
    btBool  Has(btNumberKey );
+   /// @brief Get an Instance Record from the Map, by key.
+   /// @param[in] key The IndexInstance to search for.
+   /// @param[in, out] ppcInstRec A pointer to a pointer that will receive the
+   ///                            pointer to the Instance Record.
+   /// @retval True if the Instance Record is found.
+   /// @retval False if the Instance Record is NOT found.
    btBool  Get(btNumberKey key, pInstRec_t *ppcInstRec);
+   /// @brief Delete an Instance Record from the Map, by key.
+   /// <B>Parameters:</B> [in]  The IndexInstance of the Instance Record to delete.
+   /// @return void
    void Delete(btNumberKey );
 };
 
+/// @brief InstanceRecord serializer.
+/// <B>Parameters:</B> [in]  A reference to the stream.
+/// @param[in] InstRec  A reference to the InstanceRecord to stream.
+/// @return void
 std::ostream & operator << (std::ostream & , const InstRec & );
 
 END_NAMESPACE(AAL)
 
+/// @brief InstanceRecord serializer.
+/// <B>Parameters:</B> [in]  A reference to the stream.
+/// @param[in] InstRec  A reference to the InstanceRecord to stream.
+/// @return void
 std::ostream & operator << (std::ostream & , const AAL::InstRec & );
 
 #endif // __AALSDK_RM_INSTANCERECORD_H__

@@ -49,9 +49,9 @@
 class AASLIB_API CCountedObject
 {
 public:
-   /// CCountedObject Default Constructor.
+   // CCountedObject Default Constructor.
    CCountedObject();
-   /// CCountedObject Destructor.
+   // CCountedObject Destructor.
    virtual ~CCountedObject();
 
    /// Increment this object's reference count by one.

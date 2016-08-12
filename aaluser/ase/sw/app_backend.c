@@ -251,7 +251,7 @@ void *intr_request_watcher()
 void send_swreset()
 {
   BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  Issuing Soft Reset... \n");
+  printf("\n  [APP]  Issuing Soft Reset... \n");
   END_YELLOW_FONTCOLOR;
   while ( count_mmio_tid_used() != 0 )
     {
@@ -1103,7 +1103,7 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   mem->valid = ASE_BUFFER_VALID;
 
   // Send an allocate command to DPI, metadata = ASE_MEM_ALLOC
-  mem->metadata = HDR_MEM_ALLOC_REQ;
+  // mem->metadata = HDR_MEM_ALLOC_REQ;
   mem->next = NULL;
 
   // Message queue must be enabled when using DPI (else debug purposes only)
@@ -1178,7 +1178,7 @@ void deallocate_buffer(struct buffer_t *mem)
   END_YELLOW_FONTCOLOR;
 
   // Send buffer with metadata = HDR_MEM_DEALLOC_REQ
-  mem->metadata = HDR_MEM_DEALLOC_REQ;
+  // mem->metadata = HDR_MEM_DEALLOC_REQ;
 
   // Send a one way message to request a deallocate
   ase_buffer_t_to_str(mem, tmp_msg);
@@ -1412,8 +1412,8 @@ void *umsg_watcher()
  * ASE_SIMKILL <dummy number>       | (X)
  *
  */
-// void __attribute__((optimize("O0"))) ase_portctrl(const char *ctrl_msg)
-void ase_portctrl(const char *ctrl_msg)
+void __attribute__((optimize("O0"))) ase_portctrl(const char *ctrl_msg)
+// void ase_portctrl(const char *ctrl_msg)
 {
   char dummy_rxstr[ASE_MQ_MSGSIZE];
   memset(dummy_rxstr, 0, ASE_MQ_MSGSIZE);

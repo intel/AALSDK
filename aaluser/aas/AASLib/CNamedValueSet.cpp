@@ -2232,12 +2232,14 @@ private:
    TNamedValueSet<std::string> m_sNVS;  // Note that the interface is btStringKey, which is const char*
 
 public:
-   /// CNamedValueSet Default Constructor.
+   // CNamedValueSet Default Constructor.
    CNamedValueSet() {}
-   /// CNamedValueSet Destructor.
+   // CNamedValueSet Destructor.
    virtual ~CNamedValueSet() {}
 
-   /// Assign Named Value Set to another.
+   /// Assign NamedValueSet to another.
+   /// @param[in] rOther A reference to the NamedValueSet to assign to this
+   ///               NamedValueSet.
    CNamedValueSet & operator = (const CNamedValueSet &rOther)
    {
       if ( &rOther != this ) {   //Don't duplicate yourself
@@ -2257,6 +2259,8 @@ public:
    }
 
    /// CNamedValueSet Copy Constructor.
+   /// @param[in] rOther A reference to the NamedValueSet to copy.
+   /// @return void
    CNamedValueSet(const CNamedValueSet &rOther)
    {
       AutoLock(this);

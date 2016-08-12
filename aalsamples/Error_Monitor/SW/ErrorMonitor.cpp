@@ -82,18 +82,6 @@ using namespace AAL;
 # define EVENT_CASE(x) case x :
 #endif
 
-// FME Error CSR Offset
-#define FME_ERR_MASK      0x4008
-#define FME_ERR           0x4010
-#define FME_FIRST_ERR     0x4018
-
-// PORT Error CSR Offset
-#define PORT_ERR_MASK     0x1008
-#define PORT_ERR          0x1010
-#define PORT_FIRST_ERR    0x1018
-#define PORT_MALFORM0     0x1020
-#define PORT_MALFORM1     0x1028
-
 #define FOUND_ERR  1
 
 // FME GUID
@@ -132,8 +120,8 @@ public:
 
    // Clears FME and Port Errors
    void clearErrors();
-   // prints Port Errors
-   void printPortError(btUnsigned64bitInt port_error_csr);
+   // prints all Errors
+   void printAllErrors();
 
    btBool isOK()  {return m_bIsOK;}
 
@@ -184,6 +172,8 @@ protected:
    IALIMMIO         *m_pPortMMIOService;
    CSemaphore        m_Sem;            // For synchronizing with the AAL runtime.
    btInt             m_Result;         // Returned result value; 0 if success
+   IALIFMEError     *m_pALIFMEError;
+   IALIPortError    *m_pALIPortError;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -197,7 +187,9 @@ ErrorMonApp::ErrorMonApp() :
    m_Runtime(this),
    m_pFMEMMIOService(NULL),
    m_pPortMMIOService(NULL),
-   m_Result(0)
+   m_Result(0),
+   m_pALIFMEError(NULL),
+   m_pALIPortError(NULL)
 {
     // Publish our interfaces
     SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
@@ -228,233 +220,129 @@ ErrorMonApp::~ErrorMonApp()
 
 void ErrorMonApp::clearErrors()
 {
-   btUnsigned64bitInt csr = 0xFFFFFFFFFFFFFFFF;
 
-   // Clear FME Errors CSR
-   m_pFMEMMIOService->mmioWrite64(FME_ERR, csr);
-   m_pFMEMMIOService->mmioWrite64(FME_FIRST_ERR, csr);
-
-   // Clear Port Errors CSR
-   m_pPortMMIOService->mmioWrite64(PORT_ERR, csr);
-   m_pPortMMIOService->mmioWrite64(PORT_FIRST_ERR, csr);
+   m_pALIFMEError->errorClearAll();
+   m_pALIPortError->errorClearAll();
 }
 
 void ErrorMonApp::getFMEPortErrorMask()
 {
-   btUnsigned64bitInt mask_csr = 0x0;
 
-   // Read FME Error Mask CSR
-   m_pPortMMIOService->mmioRead64(FME_ERR_MASK, &mask_csr);
-   if(0x0 != mask_csr) {
-      cout << endl<<"FME mask CSR:0x"<< hex << mask_csr << endl;
+   NamedValueSet Error;
+   btUnsignedInt count = 0;
+   m_pALIFMEError->errorGetMask(Error);
+
+   Error.GetNumNames(&count);
+   for(int i=0;i<count ;i++) {
+      btStringKey type;
+      Error.GetName(i,&type);
+      std::cout << "FME Error Mask: " << type <<"  Set"<< std::endl;
    }
 
-   // Read PORT Error Mask CSR
-   m_pPortMMIOService->mmioRead64(PORT_ERR_MASK, &mask_csr);
-   if(0x0 != mask_csr) {
-      cout << endl<<"Port mask CSR:0x"<< hex << mask_csr << endl;
+   Error.Empty();
+
+   m_pALIPortError->errorGetMask(Error);
+   Error.GetNumNames(&count);
+   for(int i=0;i<count ;i++) {
+      btStringKey type;
+      Error.GetName(i,&type);
+      std::cout << "Port Error Mask: " << type <<"  Set"<< std::endl;
    }
 
 }
 
 btInt ErrorMonApp::getFMEError()
 {
-   btUnsigned64bitInt fme_csr = 0x0;
-   int res                    = 0;
-
-   // Read FME Error CSR
-   m_pFMEMMIOService->mmioRead64(FME_ERR, &fme_csr);
-
-   if(0x0 == fme_csr) {
-      cout << endl << "No FME Errors Found " << endl;
-   } else  {
-      cout  << endl <<"==== FME ERRORS ====" <<endl;
-      cout << "FME Error CSR:0x"<< hex << fme_csr << endl;
-      res =FOUND_ERR;
+  
+   NamedValueSet fmeError;
+   btUnsignedInt count   = 0;
+   btInt res             = 0;
+   if( false == m_pALIFMEError->errorGet(fmeError)) {
+      return FOUND_ERR;
    }
 
-   // Read FME First Error CSR
-   fme_csr=0x0;
-   m_pFMEMMIOService->mmioRead64(FME_FIRST_ERR, &fme_csr);
-
-   if(0x0 == fme_csr) {
-      cout << endl << "No FME First Errors Found "<< endl;
-   } else  {
-      cout << endl <<"==== FME FIST ERRORS ====" << endl;
-      cout << "FME First Error CSR:0x"<< hex << fme_csr << endl;
-      res =FOUND_ERR;
+   fmeError.GetNumNames(&count);
+   for(int i=0;i<count ;i++) {
+      btStringKey type;
+      fmeError.GetName(i,&type);
+      std::cout << "FME Error : " << type <<"  Set"<< std::endl;
    }
+
+   fmeError.Empty();
+
+   if( false == m_pALIFMEError->errorGetOrder(fmeError)) {
+       return FOUND_ERR;
+    }
+
+   fmeError.GetNumNames(&count);
+   for(int i=0;i<count ;i++) {
+      btStringKey type;
+      fmeError.GetName(i,&type);
+      std::cout << "Error : " << type <<"  Set"<< std::endl;
+   }
+
    return res ;
 }
 
 btInt ErrorMonApp::getPortError()
 {
-   btUnsigned64bitInt port_error_csr = 0x0;
-   int res                     = 0;
 
-   // Read PORT  Error CSR
-   m_pPortMMIOService->mmioRead64(PORT_ERR, &port_error_csr);
-
-   if(0x0 == port_error_csr) {
-      cout << endl<<"No Port Errors Found "<< endl;
-   } else {
-      cout << "==== PORT ERRORS ===="<< endl;
-      cout << "Port Error CSR:0x"<< hex << port_error_csr << endl;
-      printPortError(port_error_csr);
-      res =FOUND_ERR;
+   NamedValueSet portError;
+   btUnsignedInt count       = 0;
+   btInt res                 = 0;
+   btUnsigned64bitInt value  = 0;
+   if( false == m_pALIPortError->errorGet(portError)) {
+      return FOUND_ERR;
    }
 
-   // Read PORT Fist Error CSR
-   port_error_csr=0x0;
-   m_pPortMMIOService->mmioRead64(PORT_FIRST_ERR, &port_error_csr);
-   if(0x0 == port_error_csr) {
-      cout << endl << "No Port First Errors Found "<< endl;
-   } else {
-      cout  << endl <<"==== PORT FIRST  ERRORS ====" << endl;
-      cout << "Port First Error CSR:0x"<< hex << port_error_csr << endl;
-      printPortError(port_error_csr);
-      res =FOUND_ERR;
+   portError.GetNumNames(&count);
+   for(int i=0;i<count ;i++) {
+      btStringKey type;
+      portError.GetName(i,&type);
+      std::cout << "Port Error : " << type <<"  Set"<< std::endl;
    }
 
-   // Print both MALFORMED REQ0 or REQ1 CSRs if any PORT_ERROR detects
-   port_error_csr=0x0;
-   m_pPortMMIOService->mmioRead64(PORT_ERR, &port_error_csr);
-   if(0x0 != port_error_csr) {
+   portError.Empty();
 
-      // Read Port malformed Request0 Error CSR
-      port_error_csr=0x0;
-      m_pPortMMIOService->mmioRead64(PORT_MALFORM0, &port_error_csr);
+   if( false == m_pALIPortError->errorGetOrder(portError)) {
+       return FOUND_ERR;
+    }
 
-      if(0x0 != port_error_csr) {
-         cout <<  endl<<"==== PORT MALFORMED REQ 0 ===="<< endl;
-         cout << "Port malformed request0 Error CSR:0x"<< hex << port_error_csr << endl;
-         res =FOUND_ERR;
-      }
+   portError.GetNumNames(&count);
+   for(int i=0;i<count ;i++) {
+      btStringKey type;
+      portError.GetName(i,&type);
+      std::cout << "Port First Error : " << type <<"  Set"<< std::endl;
+   }
 
-      // Read Port malformed Request1 Error CSR
-      port_error_csr =0x0;
-      m_pPortMMIOService->mmioRead64(PORT_MALFORM1, &port_error_csr);
-      if(0x0 != port_error_csr) {
-         cout << endl <<"==== PORT MALFORMED REQ 1 ===="<< endl;
-         cout << "Port malformed request1 Error CSR:0x"<< hex << port_error_csr << endl;
-         res =FOUND_ERR;
-      }
+   portError.Empty();
 
-   } // end of if
-   return res ;
+   if( false == m_pALIPortError->errorGetPortMalformedReq(portError)) {
+       return FOUND_ERR;
+    }
+
+   if (portError.Has(AAL_ERR_PORT_MALFORMED_REQ_0)) {
+      portError.Get( AAL_ERR_PORT_MALFORMED_REQ_0, &value);
+      printf("Port malformed request0 %llu \n",value);
+   }
+
+   if (portError.Has(AAL_ERR_PORT_MALFORMED_REQ_1)) {
+      portError.Get( AAL_ERR_PORT_MALFORMED_REQ_1, &value);
+      printf("Port malformed request1 %llu \n",value);
+   }
+
+   return res;
+
 }
 
-void ErrorMonApp::printPortError(btUnsigned64bitInt port_error_csr)
+void ErrorMonApp::printAllErrors()
 {
 
-   struct CCIP_PORT_ERROR {
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt tx_ch0_overflow :1;       //Tx Channel0 : Overflow
-            btUnsigned64bitInt tx_ch0_invalidreq :1;     //Tx Channel0 : Invalid request encoding
-            btUnsigned64bitInt tx_ch0_req_cl_len3 :1;    //Tx Channel0 : Request with cl_len=3
-            btUnsigned64bitInt tx_ch0_req_cl_len2 :1;    //Tx Channel0 : Request with cl_len=2
-            btUnsigned64bitInt tx_ch0_req_cl_len4 :1;    //Tx Channel0 : Request with cl_len=4
+   cout <<"FME Errors"<<endl;
+   m_pALIFMEError->printAllErrors();
 
-            btUnsigned64bitInt rsvd :11;
-
-            btUnsigned64bitInt tx_ch1_overflow :1;       //Tx Channel1 : Overflow
-            btUnsigned64bitInt tx_ch1_invalidreq :1;     //Tx Channel1 : Invalid request encoding
-            btUnsigned64bitInt tx_ch1_req_cl_len3 :1;    //Tx Channel1 : Request with cl_len=3
-            btUnsigned64bitInt tx_ch1_req_cl_len2 :1;    //Tx Channel1 : Request with cl_len=2
-            btUnsigned64bitInt tx_ch1_req_cl_len4 :1;    //Tx Channel1 : Request with cl_len=4
-
-
-            btUnsigned64bitInt tx_ch1_insuff_datapayload :1; //Tx Channel1 : Insufficient data payload
-            btUnsigned64bitInt tx_ch1_datapayload_overrun:1; //Tx Channel1 : Data payload overrun
-            btUnsigned64bitInt tx_ch1_incorr_addr  :1;       //Tx Channel1 : Incorrect address
-            btUnsigned64bitInt tx_ch1_sop_detcted  :1;       //Tx Channel1 : NON-Zero SOP Detected
-            btUnsigned64bitInt tx_ch1_atomic_req  :1;        //Tx Channel1 : Illegal VC_SEL, atomic request VLO
-            btUnsigned64bitInt rsvd1 :6;
-
-            btUnsigned64bitInt mmioread_timeout :1;         // MMIO Read Timeout in AFU
-            btUnsigned64bitInt tx_ch2_fifo_overflow :1;     //Tx Channel2 : FIFO overflow
-
-            btUnsigned64bitInt rsvd2 :6;
-
-            btUnsigned64bitInt num_pending_req_overflow :1; //Number of pending Requests: counter overflow
-
-            btUnsigned64bitInt rsvd3 :23;
-         }; // end struct
-      }; // end union
-
-   }ccip_port_error; // end struct CCIP_PORT_ERROR
-
-   ccip_port_error.csr=port_error_csr;
-
-   if(ccip_port_error.tx_ch0_overflow) {
-      cout << "Tx Channel0 Overflow Set "<< endl;
-   }
-   if(ccip_port_error.tx_ch0_invalidreq) {
-      cout << "Tx Channel0 Invalid request encoding Set " << endl;
-   }
-   if(ccip_port_error.tx_ch0_req_cl_len3) {
-      cout << "Tx Channel0 Request with cl_len3 Set "<< endl;
-   }
-   if(ccip_port_error.tx_ch0_req_cl_len2) {
-      cout << "Tx Channel0 Request with cl_len2 Set "<< endl;
-   }
-   if(ccip_port_error.tx_ch0_req_cl_len4) {
-      cout << "Tx Channel0 Request with cl_len4 Set "<< endl;
-   }
-   if(ccip_port_error.tx_ch1_overflow) {
-      cout << "Tx Channel1 Overflow Set "<< endl;
-   }
-   if(ccip_port_error.tx_ch1_invalidreq) {
-      cout << "Tx Channel1 Invalid request encoding Set " << endl;
-   }
-   if(ccip_port_error.tx_ch1_req_cl_len3) {
-      cout << "Tx Channel1 Request with cl_len3 Set "<< endl;
-   }
-   if(ccip_port_error.tx_ch1_req_cl_len2) {
-      cout << "Tx Channel1 Request with cl_len2 Set " << endl;
-   }
-   if(ccip_port_error.tx_ch1_req_cl_len4) {
-      cout << "Tx Channel1 Request with cl_len4 Set "<< endl;
-   }
-   if(ccip_port_error.tx_ch1_insuff_datapayload) {
-      cout << "Tx Channel1 Insufficient data payload Set "<< endl;
-   }
-   if(ccip_port_error.tx_ch1_datapayload_overrun) {
-      cout << "Tx Channel1 Data payload overrun Set " << endl;
-   }
-   if(ccip_port_error.tx_ch1_incorr_addr) {
-      cout << "Tx Channel1 Incorrect address Set "<< endl;
-   }
-   if(ccip_port_error.tx_ch1_sop_detcted) {
-      cout << "Tx Channel1 NON-Zero SOP Detected Set " << endl;
-   }
-   if(ccip_port_error.tx_ch1_atomic_req) {
-      cout << "Tx Channel1 Atomic request VLO Set " << endl;
-   }
-   if(ccip_port_error.mmioread_timeout) {
-      cout << "MMIO Read Timed out in AFU Set " << endl;
-   }
-   if(ccip_port_error.tx_ch2_fifo_overflow) {
-      cout << "Tx Channel2 : FIFO overflow Set " << endl;
-   }
-   if(ccip_port_error.num_pending_req_overflow) {
-      cout << "Number of pending Requests counter overflow Set " << endl;
-   }
-
-   if(ccip_port_error.rsvd) {
-      cout << "Reserved bit 15:5 Set " << endl;
-   }
-   if(ccip_port_error.rsvd1) {
-      cout << "Reserved bit 31:26 Set " << endl;
-   }
-   if(ccip_port_error.rsvd2) {
-      cout << "Reserved bit 39:34 Set " << endl;
-   }
-   if(ccip_port_error.rsvd3) {
-      cout << "Reserved bit 41:63 Set " << endl;
-   }
+   cout <<"Port Errors"<<endl;
+   m_pALIPortError->printAllErrors();
 
 }
 
@@ -522,15 +410,17 @@ btInt ErrorMonApp::run(btBool bClear)
 
    getFMEPortErrorMask();
 
-   // Prints FME Errors
+   // Prints Port Errors
    res = getPortError();
    if(0 != res)
        ++m_Result;   // record error
 
-   // Prints PORT Errors
+   // Prints FME Errors
    res = getFMEError();
    if(0 != res)
       ++m_Result;   // record error
+
+   printAllErrors();
 
    // Clean-up and return
    // Release() the Service through the Services IAALService::Release() method
@@ -574,6 +464,15 @@ void ErrorMonApp::serviceAllocated(IBase *pServiceBase,
          return;
       }
 
+
+      m_pALIFMEError = dynamic_ptr<IALIFMEError>(iidALI_FMEERR_Service, pServiceBase);
+      ASSERT(NULL != m_pALIFMEError);
+      if ( NULL == m_pALIFMEError ) {
+         m_bIsOK = false;
+         return;
+      }
+
+
    } else if(rTranID.ID() == ErrorMonApp::PORT)  {
       //PORT Resource  Allocation
       m_pPortService = pServiceBase;
@@ -586,6 +485,13 @@ void ErrorMonApp::serviceAllocated(IBase *pServiceBase,
       m_pPortMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
       ASSERT(NULL != m_pPortMMIOService);
       if ( NULL == m_pPortMMIOService ) {
+         m_bIsOK = false;
+         return;
+      }
+
+      m_pALIPortError = dynamic_ptr<IALIPortError>(iidALI_PORTERR_Service, pServiceBase);
+      ASSERT(NULL != m_pALIPortError);
+      if ( NULL == m_pALIPortError ) {
          m_bIsOK = false;
          return;
       }

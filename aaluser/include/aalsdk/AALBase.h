@@ -80,17 +80,35 @@ BEGIN_NAMESPACE(AAL)
 class AASLIB_API IBase
 {
 public:
-   /// IBase Destructor.
+   // IBase Destructor.
    virtual ~IBase() {}
-   /// Query interface for a given interface id.
+   /// @brief Query interface for a given interface id.
+   ///
+   /// @param[in] Interface The interface ID.
+   /// @returns An interface.
    virtual btGenericInterface Interface(btIID Interface)     const = 0;
-   /// Determine whether this object contains the specified interface.
+   /// @brief Determine whether this object contains the specified interface.
+   ///
+   /// @param[in] Interface The interface ID.
+   /// @retval True if the interface exists.
+   /// @retval False if the interface does not exist.
    virtual btBool                   Has(btIID Interface)     const = 0;
-   /// IBase inequality.
+   /// @brief IBase inequality.
+   ///
+   /// @param[in] rother A reference to another Interface to compare.
+   /// @retval True if the Interfaces are not equal.
+   /// @retval False if the Interfaces are equal.
    virtual btBool          operator != (IBase const &rother) const = 0;
-   /// IBase equality.
+   /// @brief IBase equality.
+   ///
+   /// @param[in] rother A reference to another Interface to compare.
+   /// @retval True if the Interfaces are equal.
+   /// @retval False if the Interfaces are not equal.
    virtual btBool          operator == (IBase const &rother) const = 0;
-   /// Internal state check.
+   /// @brief Internal state check.
+   ///
+   /// @retval True if internal state of the Interface is OK.
+   /// @retval False if internal state of the Interface is not OK.
    virtual btBool                  IsOK()                    const = 0;
 };
 
@@ -139,7 +157,7 @@ T * dynamic_ptr(btIID Name, IEvent const &obj) {
 class AASLIB_API IAALService
 {
 public:
-   /// IAALService Destructor.
+   // IAALService Destructor.
    virtual ~IAALService() {}
 
    /// Shutdown the service and release its resources.

@@ -151,7 +151,9 @@ include/aalsdk/service/IALIAFU.h \
 include/aalsdk/service/ALIService.h \
 include/aalsdk/service/HWALIAFUService.h \
 include/aalsdk/service/ASEALIAFUService.h \
-include/aalsdk/service/SWSimALIAFUService.h
+include/aalsdk/service/SWSimALIAFUService.h \
+include/aalsdk/service/PwrMgrService.h \
+include/aalsdk/service/IPwrMgr.h 
 
 uaiahdrs_HEADERS=\
 include/aalsdk/uaia/AIA.h \
@@ -218,7 +220,8 @@ SERVICE_EXTRA=\
 include/aalsdk/service/HWALIAFUService.h.in \
 include/aalsdk/service/ASEALIAFUService.h.in \
 include/aalsdk/service/SWSimALIAFUService.h.in \
-include/aalsdk/service/ALIService.h.in
+include/aalsdk/service/ALIService.h.in \
+include/aalsdk/service/PwrMgrService.h.in
 
 UAIA_EXTRA=\
 include/aalsdk/uaia/AIAService.h.in 

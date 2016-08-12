@@ -89,7 +89,16 @@ using namespace AAL;
 #ifndef MB
 # define MB(x)                     ((x) * 1024 * 1024)
 #endif // MB
+
+// LPBK1_BUFFER_SIZE is size in cachelines that are copied
 #define LPBK1_BUFFER_SIZE        CL(1)
+// LPBK1_BUFFER_ALLOCATION_SIZE is the amount of space that needs to
+//   be allocated due to an optimization of the NLB AFU to operate on
+//   2 MiB buffer boundaries. Note that the way to get 2 MiB alignment
+//   is to allocate 2 MiB.
+// NOTE:
+//   2 MiB alignment is not a general requirement -- it is NLB-specific
+#define LPBK1_BUFFER_ALLOCATION_SIZE MB(2)
 
 #define LPBK1_DSM_SIZE           MB(4)
 #define CSR_SRC_ADDR             0x0120
@@ -106,9 +115,12 @@ using namespace AAL;
 /// @{
 
 
+///////////////////////////////////////////////////////////////////////////////
+///
 /// @brief   Since this is a simple application, our App class implements both the IRuntimeClient and IServiceClient
 ///           interfaces.  Since some of the methods will be redundant for a single object, they will be ignored.
 ///
+///////////////////////////////////////////////////////////////////////////////
 class HelloALINLBApp: public CAASBase, public IRuntimeClient, public IServiceClient
 {
 public:
@@ -176,13 +188,12 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 ///
-///  Implementation
+/// @brief   Implementation
+///          Constructor registers this objects client interfaces and starts
+///          the AAL Runtime. The member m_bisOK is used to indicate an error.
 ///
 ///////////////////////////////////////////////////////////////////////////////
 
-/// @brief   Constructor registers this objects client interfaces and starts
-///          the AAL Runtime. The member m_bisOK is used to indicate an error.
-///
 HelloALINLBApp::HelloALINLBApp() :
    m_Runtime(this),
    m_pAALService(NULL),
@@ -329,7 +340,7 @@ btInt HelloALINLBApp::run()
    }
 
    // Repeat for the Input and Output Buffers
-   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_InputVirt)){
+   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_ALLOCATION_SIZE, &m_InputVirt)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -344,7 +355,7 @@ btInt HelloALINLBApp::run()
       goto done_3;
    }
 
-   if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_OutputVirt)){
+   if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_ALLOCATION_SIZE, &m_OutputVirt)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;

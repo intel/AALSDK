@@ -176,7 +176,16 @@ typedef enum
    ali_errnumPRIPProtocal,                       // 35
    ali_errnumPRFIFO,                             // 36
    ali_errnumAFUActivationFail,                  // 37
-   ali_errnumPRDeviceBusy                        // 38
+   ali_errnumPRDeviceBusy,                       // 38
+   ali_errnumPRSecureLoad,                       // 39
+   ali_errnumPRPowerMgrTimeout,                  // 40
+   ali_errnumPRPowerMgrCoreIdleFail,             // 41
+   ali_errnumNoPRPowerMgrDemon,                  // 42
+   ali_errnumSigtapRevokeTimeout,                // 43
+   ali_errnumBadSocket,                          // 44
+   ali_errnumRdMsrCmdFail,                       // 45
+   ali_errnumFPGAPowerRequestTooLarge            // 46
+
 } ali_errnum_e;
 
 
@@ -213,11 +222,11 @@ typedef enum
 /// Key for selecting an AFU delegate.
 // TODO: consolidate naming scheme for NVS keys and datatypes
 #define ALIAFU_NVS_KEY_TARGET "ALIAFUTarget"
-/// Value - selects ASECCIAFU
+/// Key for selecting ASECCIAFU
 # define ALIAFU_NVS_VAL_TARGET_ASE   "ALIAFUTarget_ASE"
-/// Value - selects HWCCIAFU
+/// Key for selecting HWCCIAFU
 # define ALIAFU_NVS_VAL_TARGET_FPGA  "ALIAFUTarget_FPGA"
-/// Value - selects SWSimCCIAFU
+/// Key for selecting SWSimCCIAFU
 # define ALIAFU_NVS_VAL_TARGET_SWSIM "ALIAFUTarget_SWSim"
 
 
@@ -236,56 +245,67 @@ typedef enum
 //-----------------------------------------------------------------------------
 // IALIMMIO interface.
 //-----------------------------------------------------------------------------
-/// @brief  Provide access to the MMIO region exposed by the AFU to the Application.
+/// @brief  Provide the Application access to the MMIO region exposed by the AFU.
 /// @note   There is no client for this Service Interface because all of its methods
 ///            are synchronous (and fast)
 /// @note   This service interface is obtained from an IBase via iidALI_MMIO_Service
 /// @code
 ///         m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
 /// @endcode
-///
 class IALIMMIO
 {
 public:
    virtual ~IALIMMIO() {}
 
    /// @brief Obtain the user virtual address of the mmapped MMIO region.
+   /// @returns The virtual address.
    virtual btVirtAddr   mmioGetAddress( void ) = 0;
 
-   /// @brief Obtain the user virtual address of the mmapped MMIO region.
+   /// @brief Obtain the length of the mmapped MMIO region.
+   /// @returns The length of the region.
    virtual btCSROffset  mmioGetLength( void ) = 0;
 
-   /// Convenience functions for those who organize an MMIO space as a set of Registers
-
    /// @brief      Read an MMIO address (or register) as a 32-bit value.
+   ///
+   /// Convenience function for those who organize an MMIO space as a set of Registers.
    /// @note       Synchronous function; no TransactionID. Generally very fast.
    /// @param[in]  Offset Byte offset into the MMIO region at which to read.
-   /// @param[out] pValue Where to place value read.
-   /// @return     True if the read was successful.
+   /// @param[out] pValue Where to place the value read.
+   /// @retval     True if the read was successful.
+   /// @retval     False if the read was not successful.
    virtual btBool  mmioRead32( const btCSROffset Offset, btUnsigned32bitInt * const pValue) = 0;
 
    /// @brief      Write an MMIO address (or register) as a 32-bit value.
+   ///
+   /// Convenience function for those who organize an MMIO space as a set of Registers.
    /// @note       Synchronous function; no TransactionID. Generally very fast.
    /// @param[in]  Offset Byte offset into the MMIO region at which to write.
    /// @param[in]  Value  Value to write.
-   /// @return     True if the write was successful.
+   /// @retval     True if the write was successful.
+   /// @retval     False if the write was not successful.
    virtual btBool  mmioWrite32( const btCSROffset Offset, const btUnsigned32bitInt Value) = 0;
 
    /// @brief      Read an MMIO address (or register) as a 64-bit value.
+   ///
+   /// Convenience function for those who organize an MMIO space as a set of Registers.
    /// @note       Synchronous function; no TransactionID. Generally very fast.
    /// @param[in]  Offset Byte offset into the MMIO region at which to read.
    /// @param[out] pValue Where to place value read.
-   /// @return     True if the read was successful.
+   /// @retval     True if the read was successful.
+   /// @retval     False if the read was not successful.
    virtual btBool  mmioRead64( const btCSROffset Offset, btUnsigned64bitInt * const pValue) = 0;
 
    /// @brief      Write an MMIO address (or register) as a 64-bit value.
+   ///
+   /// Convenience function for those who organize an MMIO space as a set of Registers.
    /// @note       Synchronous function; no TransactionID. Generally very fast.
    /// @param[in]  Offset Byte offset into the MMIO region at which to write.
    /// @param[in]  Value  Value to write.
-   /// @return     True if the write was successful.
+   /// @retval     True if the write was successful.
+   /// @retval     False if the write was not successful.
    virtual btBool  mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value) = 0;
 
-   /// @brief      Request pointer to a device feature header (DFH).
+   /// @brief      Request a pointer to a device feature header (DFH).
    ///
    /// Will deposit in *pFeatureAddr the base address of the device feature
    /// MMIO space (aka the address of the respective feature header) for a
@@ -313,21 +333,40 @@ public:
    ///
    /// @note       Synchronous function; no TransactionID. Generally very fast.
    /// @param[out] pFeature    Where to place the address of the feature header.
-   /// @param[in]  rInputArgs  Arguments specifying which feature to search for.
-   /// @param[out] rOutputArgs Additional properties of the returned feature.
+   /// @param[in]  rInputArgs  Reference to arguments specifying which feature to search for.
+   /// @param[out] rOutputArgs Reference to additional properties of the returned feature.
    /// @return     True if requested feature was found in DFH space.
    // TODO: do we want this to return a valid pointer, or an offset to be used with the above functions?
    virtual btBool  mmioGetFeatureAddress( btVirtAddr          *pFeature,
                                           NamedValueSet const &rInputArgs,
                                           NamedValueSet       &rOutputArgs ) = 0;
+
    // overloaded version without rOutputArgs
+   /// @brief      Request a pointer to a device feature header (DFH).
+   /// @note       Synchronous function; no TransactionID. Generally very fast.
+   /// @param[out] pFeature    Where to place the address of the feature header.
+   /// @param[in]  rInputArgs  Reference to arguments specifying which feature to search for.
+   /// @return     True if requested feature was found in DFH space.
    virtual btBool  mmioGetFeatureAddress( btVirtAddr          *pFeature,
                                           NamedValueSet const &rInputArgs ) = 0;
+
    // version that returns an MMIO offset instead of an address
+   /// @brief      Request MMIO offset to a device feature header (DFH).
+   /// @note       Synchronous function; no TransactionID. Generally very fast.
+   /// @param[out] pFeatureOffset  Where to place the MMIO offset of the feature header.
+   /// @param[in]  rInputArgs  Reference to arguments specifying which feature to search for.
+   /// @param[out] rOutputArgs Reference to additional properties of the returned feature.
+   /// @return     True if requested feature was found in DFH space.
    virtual btBool  mmioGetFeatureOffset( btCSROffset        *pFeatureOffset,
                                          NamedValueSet const &rInputArgs,
                                          NamedValueSet       &rOutputArgs ) = 0;
+
    // overloaded version without rOutputArgs
+   /// @brief      Request MMIO offset to a device feature header (DFH).
+   /// @note       Synchronous function; no TransactionID. Generally very fast.
+   /// @param[out] pFeatureOffset  Where to place the MMIO offest of the feature header.
+   /// @param[in]  rInputArgs  Reference to arguments specifying which feature to search for.
+   /// @return     True if requested feature was found in DFH space.
    virtual btBool  mmioGetFeatureOffset( btCSROffset        *pFeatureOffset,
                                          NamedValueSet const &rInputArgs ) = 0;
 
@@ -336,12 +375,14 @@ public:
 
 }; // class IALIMMIO
 
+/// Key for selecting the UMsg-Hint-Mask-Key.
+#define UMSG_HINT_MASK_KEY "UMSG_HINT_MASK_KEY"
 
 //-----------------------------------------------------------------------------
 // IALIUMsg interface.
 //-----------------------------------------------------------------------------
 /// @brief  Provide access to the UMsg region(s) exposed by the AFU to the Application.
-/// @note   This service interface is obtained from an IBase via iidALI_UMSG_Service
+/// @note   This service interface is obtained from an IBase via iidALI_UMSG_Service.
 /// @note   Once you have a pointer from umsgGetAddress(), you can write anything
 ///            to it, for up to 64-bytes, in any manner whatsoever. E.g. if you want
 ///            to atomically write a 16-byte value, you can do so using an SSE
@@ -352,61 +393,58 @@ public:
 ///            than N UMsg signals.
 /// @note   If you write a single value that ends up being multiple writes from the point
 ///            of the view of the processor, then the FPGA will probably see multiple writes,
-///            although it might not. An example of this would where where used memcpy()
+///            although it might not. An example of this would where memcpy() is used
 ///            to copy 64 bytes to the UMsg address. This might optimize to 4 pipelined
 ///            16-byte writes in a row. What the FPGA sees in such a situation is
 ///            non-deterministic.
 /// @code
 ///         m_pALIUMsgService = dynamic_ptr<IALIUMsg>(iidALI_UMSG_Service, pServiceBase);
 /// @endcode
-///
-
-#define UMSG_HINT_MASK_KEY "UMSG_HINT_MASK_KEY"
 class IALIUMsg
 {
 public:
    virtual ~IALIUMsg() {}
 
-   /// @brief     Obtain the number of UMsgs available to this AFU
-   /// @note      Synchronous
+   /// @brief     Obtain the number of UMsgs available to this AFU.
+   /// @note      Synchronous.
    /// @return    The number of UMsgs available to the AFU.
    virtual btUnsignedInt umsgGetNumber( void ) = 0;
 
    /// @brief     Obtain the user virtual address of a particular UMsg.
-   /// @note      Synchronous
-   /// @param[in] Index of UMsg. Index starts from 0 and runs to umsgGetNumber()-1
-   /// @return    The virtual address of the cache line which, if written, sends a UMsg
+   /// @note      Synchronous.
+   /// @param[in] UMsgNumber Index of UMsg. Index starts from 0 and runs to umsgGetNumber()-1.
+   /// @return    The virtual address of the cache line which, if written, sends a UMsg.
    virtual btVirtAddr    umsgGetAddress( const btUnsignedInt UMsgNumber ) = 0;
 
-   /// @brief     Convenience function to write 64-bit entity to UMsg.
+   /// @brief     Convenience function to write a 64-bit entity to UMsg.
    /// @note      This is the only uMsg triggering method supported by ASE, so
    ///               use it for ASE compatibility.
    /// @note      This is intended to be fast, so there is no check. Passing a bad
    ///               address will probably result in a GPF.
-   /// @param[in] pUMsg is pointer returned from umgGetAddress
-   /// @param[in] Value is 64-bit value to write
-   /// @return    The virtual address of the cache line which, if written, sends a UMsg
+   /// @param[in] pUMsg is the pointer returned from umsgGetAddress().
+   /// @param[in] Value is a 64-bit value to write.
+   /// @return    The virtual address of the cache line which, if written, sends a UMsg.
    virtual void    umsgTrigger64( const btVirtAddr pUMsg,
                                   const btUnsigned64bitInt Value ) = 0;
 
    /// @brief  Set attributes associated with the UMsg region and/or
    ///            individual UMsgs, depending on the arguments.
-   /// @param[in] nvsArgs Defines the bitmask that will be set. Each bit
+   /// @param[in] nvsArgs defines the bitmask that will be set. Each bit
    ///	          in the mask corresponds to a UMsg. If set, then the UMsg has
-   ///            hint as well as data.
+   ///            hint information as well as data.
    /// @note   Placeholder for now. Arguments TBD. E.g., for hint information.
    ///            Expectation is that hints will be defined for allocService
    ///            and used there, as well as here. This is only needed for changes.
-   /// @note   #define UMSG_HINT_MASK_KEY       "UMsg-Hint-Mask-Key"
-   ///         #define UMSG_HINT_MASK_DATATYPE  btUnsigned64bitInt
+   /// @note   \#define UMSG_HINT_MASK_KEY       "UMsg-Hint-Mask-Key".
+   ///         \#define UMSG_HINT_MASK_DATATYPE  btUnsigned64bitInt.
    ///         Value of bit mask is:
    ///            1 for hint, 0 for not.
    ///            Bit 0 = UMsg[0]
    ///            Bit 1 = UMsg[1]
    ///            etc.
    /// @note   Implication of synchronous is that the UMsg Device Feature Area
-   ///            must be mapped in to user space.
-   /// @return True of worked. At this point, no reason it would every fail.
+   ///            must be mapped into user space.
+   /// @retval True if successful. At this point, no reason it would ever fail.
    virtual bool umsgSetAttributes( NamedValueSet const &nvsArgs) = 0;
 
 }; // class IALIUMsg
@@ -415,13 +453,12 @@ public:
 //-----------------------------------------------------------------------------
 // IALIBuffer interface.
 //-----------------------------------------------------------------------------
-/// @brief  Buffer Allocation Service Interface of IALI
+/// @brief  Buffer Allocation Service Interface of IALI.
 ///
-/// @note   This service interface is obtained from an IBase via iidALI_BUFF_Service
+/// @note   This service interface is obtained from an IBase via iidALI_BUFF_Service.
 /// @code
 ///         m_pALIBufferService = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
 /// @endcode
-///
 class IALIBuffer
 {
 public:
@@ -430,18 +467,31 @@ public:
    /// @brief Allocate a Workspace.
    ///
    /// @param[in]  Length       Requested length, in bytes.
-   /// @param[out] Bufferptr    Buffer Pointer.
-   /// @param[in]  rInputArgs   Reference to optional input arguments if needed.
-   /// @param[out] rOutputArgs  Reference to optional return arguments if needed.
-
+   /// @param[out] pBufferptr    Buffer Pointer.
    ///
-   /// On success, the workspace parameters are notified via IALIBUFFER::bufferAllocated.
-   /// On failure, an error notification is sent via IALIBUFFER::bufferAllocateFailed.
+   /// @return On success, ali_errnumOK.
+   /// @return On failure, ali_errnumSystem.
    virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr ) = 0;
+   /// @brief Allocate a Workspace using additional input arguments.
+   ///
+   /// @param[in]  Length       Requested length, in bytes.
+   /// @param[out] pBufferptr    Buffer Pointer.
+   /// @param[in]  rInputArgs   Reference to optional input arguments if needed.
+   /// @return On success, ali_errnumOK.
+   /// @return On failure, ali_errnumSystem.
    virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr,
                                              NamedValueSet const &rInputArgs ) = 0;
+   /// @brief Allocate a Workspace using additional input arguments and accepting
+   ///        return arguments.
+   ///
+   /// @param[in]  Length       Requested length, in bytes.
+   /// @param[out] pBufferptr    Buffer Pointer.
+   /// @param[in]  rInputArgs   Reference to optional input arguments if needed.
+   /// @param[out] rOutputArgs  Reference to optional return arguments if needed.
+   /// @return On success, ali_errnumOK.
+   /// @return On failure, ali_errnumSystem.
    virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr,
                                              NamedValueSet const &rInputArgs,
@@ -452,10 +502,9 @@ public:
    /// The provided workspace Address must have been acquired previously by IALIBUFFER::bufferAllocate.
    ///
    /// @param[in]  Address  User virtual address of the workspace.
-   /// @param[in]  TranID   Returned in the notification event.
    ///
-   /// On success, a notification is sent via IALIBUFFER::bufferFreed.
-   /// On failure, an error notification is sent via IALIBUFFER::bufferFreeFailed.
+   /// @return On success, ali_errnumOK.
+   /// @return On failure, ali_errnumBadParameter or ali_errnumSystem.
    virtual AAL::ali_errnum_e bufferFree( btVirtAddr           Address) = 0;
 
    /// @brief Retrieve the location at which the AFU can access the passed in virtual address.
@@ -480,9 +529,9 @@ public:
 //-----------------------------------------------------------------------------
 // IALIPerf interface.
 //-----------------------------------------------------------------------------
-/// @brief  Obtain Global Performance Data (not AFU-specific) (synchronous)
+/// @brief  Obtain Global Performance Data (not AFU-specific) (synchronous).
 ///
-/// @note   This service interface is obtained from an IBase via iidALI_PERF_Service
+/// @note   This service interface is obtained from an IBase via iidALI_PERF_Service.
 /// @code
 ///         m_pALIPerfService = dynamic_ptr<IALIPerf>(iidALI_PERF_Service, pServiceBase);
 /// @endcode
@@ -492,21 +541,6 @@ class IALIPerf
 public:
    virtual ~IALIPerf() {}
 
-   /// @brief Request the Global Performance Data.
-   ///
-   /// The global performance counters relate to the traffic of all AFUs.
-   /// They are 64-bit wrapping counters, and are read-only. Thus, one can
-   ///    take a snapshot, perform an action, take another snapshot, subtract
-   ///    one from the other (taking into account a possible wrap), and thereby
-   ///    obtain the values associated with that operation (or operations if
-   ///    across multiple AFUs).
-   /// @note One needs to ensure that the operations being measured would not cause
-   ///    a 64-bit wrap.
-   ///
-   /// @param[out]  ppResult  Returns the Performance Counter Values defined below.
-   ///                           NULL if a problem.
-   /// @param[in]   pOptArgs  Pointer to Optional Arguments if needed. Defaults to NULL.
-   ///
    #define AALPERF_DATATYPE         btUnsigned64bitInt
    #define AALPERF_VERSION          "version"           // Start with Version 0
    #define AALPERF_READ_HIT         "Read_Hit"
@@ -527,6 +561,18 @@ public:
    #define AALPERF_VTD_AFU_DEVTLBREAD_HIT           "VT-d AFU DevTLB Read Hit"
    #define AALPERF_VTD_AFU_DEVTLBWRITE_HIT          "VT-d AFU DevTLB Write Hit"
 
+   /// @brief Request the Global Performance Data.
+   ///
+   /// The global performance counters relate to the traffic of all AFUs.
+   /// They are 64-bit wrapping counters, and are read-only. Thus, one can
+   ///    take a snapshot, perform an action, take another snapshot, subtract
+   ///    one from the other (taking into account a possible wrap), and thereby
+   ///    obtain the values associated with that operation (or operations if
+   ///    across multiple AFUs).
+   /// @note One needs to ensure that the operations being measured would not cause
+   ///    a 64-bit wrap.
+   /// @param[out]  pResult  Returns the Performance Counter Values defined below.
+   ///                           NULL if a problem.
    ///
    /// @code
    /// INamedValueSet const *pResult = NULL;
@@ -535,8 +581,20 @@ public:
    ///    // retrieve results
    /// }
    /// @endcode
-
    virtual btBool performanceCountersGet ( INamedValueSet * const  pResult ) = 0;
+   /// @brief Request the Global Performance Data.
+   ///
+   /// The global performance counters relate to the traffic of all AFUs.
+   /// They are 64-bit wrapping counters, and are read-only. Thus, one can
+   ///    take a snapshot, perform an action, take another snapshot, subtract
+   ///    one from the other (taking into account a possible wrap), and thereby
+   ///    obtain the values associated with that operation (or operations if
+   ///    across multiple AFUs).
+   /// @note One needs to ensure that the operations being measured would not cause
+   ///    a 64-bit wrap.
+   /// @param[out]  pResult  Returns the Performance Counter Values defined below.
+   ///                           NULL if a problem.
+   /// @param[in]   pOptArgs  Pointer to Optional Arguments if needed. Defaults to NULL.
    virtual btBool performanceCountersGet ( INamedValueSet * const  pResult,
                                            NamedValueSet    const &pOptArgs ) = 0;
 }; // class IALIPerf
@@ -544,25 +602,25 @@ public:
 //-----------------------------------------------------------------------------
 // IALIReset interface.
 //-----------------------------------------------------------------------------
-/// @brief  Reset the AFU Link Interface to this AFU (synchronous)
+/// @brief  Reset the AFU Link Interface to this AFU (synchronous).
 ///
-/// @note   This service interface is obtained from an IBase via iidALI_RSET_Service
+/// @note   This service interface is obtained from an IBase via iidALI_RSET_Service.
 /// @code
 ///         m_pALIResetService = dynamic_ptr<IALIReset>(iidALI_RSET_Service, pServiceBase);
 /// @endcode
-///
 class IALIReset
 {
 public:
    virtual ~IALIReset() {}
 
+   /// @brief       Definitions of errors returned  when resetting an AFU.
    enum e_Reset {
       e_OK,                      ///< Everything is okay
       e_Internal,                ///< Internal failure
       e_Error_Quiesce_Timeout    ///< Could not disable completely, issued reset anyway
    };
 
-   /// @brief Initiate a Reset.
+   /// @brief Initiate an AFU Reset.
    ///
    /// Only the Link to this AFU will be reset.
    /// By resetting the link, all outstanding transactions will be quiesced, the
@@ -573,13 +631,38 @@ public:
    /// Quiesce is destructive, e.g. outstanding transactions are lost. So state must
    ///    be Reset afterwards.
    ///
-   /// @param[in]  rInputArgs      Pointer to Optional Arguments if ever needed. Defaults to NULL.
-   /// @return     e_Reset         e_OK if succeeded, other values if a problem.
-   ///             e_Error_Quiesce_Timeout indicates that the link did not quiesce within
-   ///                             the provided timeout. (Currently no way to set timeout).
-   ///
+   /// @retval     e_Reset::e_OK if succeessful.
+   /// @retval     e_Reset::e_Error_Quiesce_Timeout indicates that the link did not quiesce
+   ///                        within the provided timeout. (Currently no way to set timeout).
+   /// @retval     e_Reset::e_Internal if any problem other than a timeout occurred.
    virtual e_Reset afuQuiesceAndHalt( void ) = 0;
+
+   /// @brief Initiate an AFU Reset.
+   ///
+   /// Only the Link to this AFU will be reset.
+   /// By resetting the link, all outstanding transactions will be quiesced, the
+   ///    processing of memory transactions will be disabled,
+   ///    the AFU will be sent a Reset signal.
+   /// There is a positive affirmation of Quiesce in the form of number of outstanding
+   ///    transactions going to 0.
+   /// Quiesce is destructive, e.g. outstanding transactions are lost. So state must
+   ///    be Reset afterwards.
+   ///
+   /// @param[in]  rInputArgs      Reference to Optional Arguments if ever needed. Defaults to NULL.
+   /// @retval     e_Reset::e_OK if succeessful.
+   /// @retval     e_Reset::e_Error_Quiesce_Timeout indicates that the link did not quiesce
+   ///                        within the provided timeout. (Currently no way to set timeout).
+   /// @retval     e_Reset::e_Internal if any problem other than a timeout occurred.
    virtual e_Reset afuQuiesceAndHalt( NamedValueSet const &rInputArgs ) = 0;
+
+   /// @brief Re-enable the AFU after a Reset.
+   ///
+   /// Only the Link to this AFU will be enabled.
+   /// It is an error to do anything other than strictly alternate afuQuiesceAndHalt()
+   ///    and afuReEnable().
+   ///
+   /// @retval     e_Reset::e_OK if succeeded. No errors expected.
+   virtual e_Reset afuEnable( void ) = 0;
 
    /// @brief Re-enable the AFU after a Reset.
    ///
@@ -588,44 +671,56 @@ public:
    ///    and afuReEnable.
    ///
    /// @param[in]  rInputArgs  Pointer to Optional Arguments if ever needed. Defaults to NULL.
-   /// @return     e_Reset     e_OK if succeeded. No errors expected.
-   ///
-   virtual e_Reset afuEnable( void ) = 0;
+   /// @retval     e_Reset::e_OK if successful. No errors expected.
    virtual e_Reset afuEnable( NamedValueSet const &rInputArgs) = 0;
 
    /// @brief Request a complete Reset. Convenience function combining other two.
    ///
    /// The Link to this AFU will be reset.
-   /// By resetting the link, all outstanding transactions will quiesced, the
-   ///    processing of memory transactions will be disabled,
-   ///    the AFU will be sent a Reset signal,
-   ///    and transactions will be re-enabled.
+   /// By resetting the link:
+   ///    - All outstanding transactions will quiesced.
+   ///    - The processing of memory transactions will be disabled.
+   ///    - The AFU will be sent a Reset signal.
+   ///    - Transactions will be re-enabled.
+   ///
+   /// @retval     e_Reset::e_OK if successful.
+   /// @retval     e_Reset::e_Error_Quiesce_Timeout indicates that the link did not quiesce within
+   ///                                     the provided timeout. (Currently no way to set timeout).
+   /// @retval     e_Reset::e_Internal if any problem other than a timeout occurred.
+   virtual e_Reset afuReset( void ) = 0;
+
+   /// @brief Request a complete Reset. Convenience function combining other two.
+   ///
+   /// The Link to this AFU will be reset.
+   /// By resetting the link:
+   ///    - All outstanding transactions will quiesced.
+   ///    - The processing of memory transactions will be disabled.
+   ///    - The AFU will be sent a Reset signal.
+   ///    - Transactions will be re-enabled.
    ///
    /// @param[in]  rInputArgs              Pointer to Optional Arguments if ever needed. Defaults to NULL.
-   /// @return     e_Reset                 e_OK if succeeded, other values if a problem.
-   ///             e_Error_Quiesce_Timeout indicates that the link did not quiesce within
+   /// @retval     e_Reset::e_OK if successful.
+   /// @retval     e_Reset::e_Error_Quiesce_Timeout indicates that the link did not quiesce within
    ///                                     the provided timeout. (Currently no way to set timeout).
-   ///
-   virtual e_Reset afuReset( void ) = 0;
+   /// @retval     e_Reset::e_Internal if any problem other than a timeout occurred.
    virtual e_Reset afuReset( NamedValueSet const &rInputArgs ) = 0;
 }; // class IALIReset
 
 
-/// NOTE: this will be a service that is not typically exported by the ALI Service. Rather,
+/// NOTE: This will be a service that is not typically exported by the ALI Service. Rather,
 ///       it will be allocated by requesting a PR_ID (an AFU_ID associated with a PR),
 ///       along with if necessary additional meta information such as bus:function:number of
 ///       the PCIe device.
-
+//
 //-----------------------------------------------------------------------------
 // IALIReconfigure interface.
 //-----------------------------------------------------------------------------
-/// @brief  Provide Reconfiguration Services (asynchronous and controlled by driver)
+/// @brief  Provides Reconfiguration Services (asynchronous and controlled by driver)
 ///
 /// @note   This service interface is obtained from an IBase via iidALI_CONF_Service
 /// @code
 ///         m_pALIReconfigureService = dynamic_ptr<IALIReconfigure>(iidALI_CONF_Service, pServiceBase);
 /// @endcode
-///
 class IALIReconfigure
 {
 public:
@@ -662,29 +757,31 @@ public:
 
    /// @brief Deactivate an AFU in preparation for it being reconfigured.
    ///
-   /// Basically, if there is an AFU currently instantiated and connected to an
+   /// If there is an AFU currently instantiated and connected to an
    ///    application, then this will send an exception to the application indicating
    ///    that it should release the AFU. There can be a timeout option that specifies
    ///    that if the application does not Release within a particular time, then
    ///    the AFU will be yanked. Then, a CleanIt!(tm) AFU will be loaded to clear
    ///    out all the gates and clear the FPGA memory banks.
    ///
-   /// @param[in]  rInputArgs Pointer to input Arguments.
-   /// @return     void. Callback in IALIReconfigureClient.
-   ///
+   /// @param[in]  rTranID Reference to the transaction ID.
+   /// @param[in]  rInputArgs Reference to input Arguments.
+   /// @return     void. Calls a Callback in IALIReconfigureClient to notify the
+   ///             caller of the result of the call to reconfDeactivate().
    virtual void reconfDeactivate( TransactionID const &rTranID,
                                   NamedValueSet const &rInputArgs ) = 0;
 
-   /// @brief Configure an AFU.
+   /// @brief Reconfigure an AFU.
    ///
    /// Download the defined bitstream to the PR region. Initially, the bitstream
    ///    is a file name. Later, it might be a goal record, and that is why the
    ///    parameter is an NVS. It is also possible in the NVS to specify a PR number
    ///    if that is relevant, e.g. for the PF driver.
    ///
-   /// @param[in]  rInputArgs Pointer to input Arguments.
-   /// @return     void. Callback in IALIReconfigureClient.
-   ///
+   /// @param[in]  rTranID Reference to the transaction ID.
+   /// @param[in]  rInputArgs Reference to input Arguments.
+   /// @return     void. Calls a Callback in IALIReconfigureClient to notify the
+   ///             caller of the result of the call to reconfConfigure().
    virtual void reconfConfigure( TransactionID const &rTranID,
                                  NamedValueSet const &rInputArgs ) = 0;
 
@@ -694,9 +791,10 @@ public:
    ///    the AFU configuration information, e.g. AFU_ID, so that the associated
    ///    service can be loaded and the whole shebang returned to the application.
    ///
-   /// @param[in]  rInputArgs Pointer to input Arguments.
-   /// @return     void. Callback in IALIReconfigureClient.
-   ///
+   /// @param[in]  rTranID Reference to the transaction ID.
+   /// @param[in]  rInputArgs Reference to input Arguments.
+   /// @return     void. Calls a Callback in IALIReconfigureClient to notify the
+   ///             caller of the result of the call to reconfActivate().
    virtual void reconfActivate( TransactionID const &rTranID,
                                 NamedValueSet const &rInputArgs ) = 0;
 
@@ -706,62 +804,60 @@ public:
 //-----------------------------------------------------------------------------
 // IALIReconfigure_Client service client interface.
 //-----------------------------------------------------------------------------
-/// @brief  Reconfiguration Callback
+/// @brief  Reconfiguration Callbacks.
+/// These callbacks are the mechanism that methods in IALIReconfigure use to notify
+/// applications of the results of attempts to reconfigure the AFU.
 ///
 /// @note   This interface is implemented by the client and set in the IBase
 ///         of the client object as an iidALI_CONF_Service_Client.
 /// @code
 ///         SetInterface(iidALI_CONF_Service_Client, dynamic_cast<IALIReconfigure_Client *>(this));
 /// @endcode
-///
 class IALIReconfigure_Client
 {
 public:
    virtual ~IALIReconfigure_Client() {}
 
-   /// @brief Deactivate succeeded callback.
+   /// @brief Notification callback for reconfDeactivate() succeeded.
    ///
-   /// @param[in]  rTranID Transaction from original reconfDeactivate call.
-   /// @return     void.
-   ///
+   /// @param[in]  rTranID Reference to the Transaction ID from the original reconfDeactivate call.
+   /// @return     void
    virtual void deactivateSucceeded( TransactionID const &rTranID ) = 0;
 
    /// @brief Notification callback for deactivate failed.
    ///
-   /// Sent in response to a failed reconfDeactivate.
+   /// Sent in response to a failed reconfDeactivate().
    ///
-   /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
-   ///
+   /// @param[in]  rEvent  A reference to an IExceptionTransactionEvent describing the failure.
+   /// @return     void
    virtual void deactivateFailed( IEvent const &rEvent ) = 0;
 
-   /// @brief Configuration successful.
+   /// @brief Notification callback for reconfConfigure() succeeded.
    ///
-   /// @param[in]  rTranID Transaction from original reconfConfigure call.
-   /// @return     void.
-   ///
+   /// @param[in]  rTranID Reference to the Transaction ID from the original reconfConfigure call.
+   /// @return     void
    virtual void configureSucceeded( TransactionID const &rTranID ) = 0;
 
-   /// @brief Notification callback for deactivate failed.
+   /// @brief Notification callback for configure failed.
    ///
-   /// Sent in response to a failed reconfConfigure.
+   /// Sent in response to a failed reconfConfigure().
    ///
-   /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
-   ///
+   /// @param[in]  rEvent  A reference to an IExceptionTransactionEvent describing the failure.
+   /// @return     void
    virtual void configureFailed( IEvent const &rEvent ) = 0;
 
-   /// @brief Activate succeeded callback.
+   /// @brief Notification callback for reconfActivate() succeeded.
    ///
-   /// @param[in]  rTranID Transaction from original reconfActivate call.
-   /// @return     void.
-   ///
+   /// @param[in]  rTranID Reference to the Transaction ID from the original reconfActivate() call.
+   /// @return     void
    virtual void activateSucceeded( TransactionID const &rTranID ) = 0;
 
-   /// @brief Notification callback for  activate failure.
+   /// @brief Notification callback for reconfActivate() failed.
    ///
-   /// Sent in response to a failed reconfActivated.
+   /// Sent in response to a failed reconfActivate().
    ///
-   /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
-   ///
+   /// @param[in]  rEvent  A reference to an IExceptionTransactionEvent describing the failure.
+   /// @return     void
    virtual void activateFailed( IEvent const &rEvent ) = 0;
 
 }; // class IALIReconfigure_Client
@@ -770,18 +866,17 @@ public:
 //-----------------------------------------------------------------------------
 // IALISignalTap interface.
 //-----------------------------------------------------------------------------
-/// @brief  Access Signal Tap PCIe mmio space
+/// @brief  Access Signal Tap PCIe mmio space.
 ///
 /// @note This will be a service that is not typically exported by the ALI Service. Rather,
 ///       it will be allocated by requesting the STAP_ID (an AFU_ID associated with a Signal Tap)
 ///       along with if necessary additional meta information such as bus:function:number of
 ///       the PCIe device.
 ///
-/// @note   This service interface is obtained from an IBase via iidALI_STAP_Service
+/// @note   This service interface is obtained from an IBase via iidALI_STAP_Service.
 /// @code
 ///         m_pALISignalTapService = dynamic_ptr<IALISignalTap>(iidALI_STAP_Service, pServiceBase);
 /// @endcode
-///
 class IALISignalTap
 {
 public:
@@ -789,7 +884,8 @@ public:
 
    /// @brief  Obtain an mmio map for the Signal Tap region.
    ///
-   /// @return User mode pointer to region if succeeds, NULL otherwise.
+   /// @retval User mode pointer to the mmio region if successful.
+   /// @retval NULL if not successful.
    ///
    virtual btVirtAddr stpGetAddress( void ) = 0;
 
@@ -799,69 +895,61 @@ public:
 //-----------------------------------------------------------------------------
 // IALIError interface.
 //-----------------------------------------------------------------------------
-/// @brief  Obtains  error values set by fpga (synchronous)
-///
-/// @note   This service interface for errors
-/// @code
-///
-/// @endcode
-///
+/// @brief  Obtains error values set by an FPGA (synchronous).
 class IALIError
 {
 public:
    virtual ~IALIError() {}
 
-   /// @brief       Obtains errors.
-   /// @note        Synchronous
-   /// @param[out]  rResult  Returns errors set by fpga
+   /// @brief       Obtains errors from FPGA.
+   /// @note        Synchronous.
+   /// @param[out]  rResult  Returned errors set by FPGA.
    ///                       NULL if a problem.
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
+   /// @retval      True if the errors are read successfully.
+   /// @retval      False if the errors are not retrieved.
    virtual btBool errorGet( INamedValueSet &rResult ) = 0;
 
 
-   /// @brief       Obtains first errors.
-   /// @note        Synchronous
-   /// @param[out]  rResult  Returns first errors set by fpga
+   /// @brief       Obtains first error from FPGA.
+   /// @note        Synchronous.
+   /// @param[out]  rResult  Returned first error set by FPGA.
    ///                       NULL if a problem.
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
+   /// @retval      True if the error are read successfully.
+   /// @retval      False if the error is not retrieved.
    virtual btBool errorGetOrder( INamedValueSet &rResult ) = 0;
 
-   /// @brief       Obtains error mask.
-   /// @note        Synchronous
-   /// @param[out]  rResult  Returns  errors masks
+   /// @brief       Obtains error mask from FPGA.
+   /// @note        Synchronous.
+   /// @param[out]  rResult  Returned error mask.
    ///                       NULL if a problem.
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
+   /// @retval      True if the error mask is read successfully.
+   /// @retval      False if the error mask is not retrieved.
    virtual btBool errorGetMask( INamedValueSet &rResult ) = 0;
 
-   /// @brief       sets error mask.
-   /// @note        Synchronous
-   /// @param[in]   rInputArgs  Sets error mask
-   ///                       NULL if a problem.
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
+   /// @brief       Sets error mask on FPGA.
+   /// @note        Synchronous.
+   /// @param[in]   rInputArgs  Error mask to set.
+   /// @retval      True if the error mask is set successfully.
+   /// @retval      False if the error mask is not set.
    virtual btBool errorSetMask(const INamedValueSet &rInputArgs) = 0;
 
-   /// @brief       clears errors.
-   /// @note        Synchronous
-   /// @param[in]   rInputArgs  Clears errors
-   ///                       NULL if a problem.
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
+   /// @brief       Clears error from FPGA.
+   /// @note        Synchronous.
+   /// @param[in]   rInputArgs  Error to clear.
+   /// @retval      True if the error is cleared.
+   /// @retval      False if the error is not cleared.
    virtual btBool errorClear( const INamedValueSet &rInputArgs) = 0;
 
-   /// @brief       Clears all errors.
-   /// @note        Synchronous
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
+   /// @brief       Clears all errors from FPGA.
+   /// @note        Synchronous.
+   /// @retval      True if the errors are cleared.
+   /// @retval      False if the errors are not cleared.
    virtual btBool errorClearAll() = 0;
 
-   /// @brief       print all errors.
-   /// @note        Synchronous
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
+   /// @brief       Prints all errors from FPGA.
+   /// @note        Synchronous.
+   /// @retval      True if the errors are printed.
+   /// @retval      False if the errors are not printed.
    virtual btBool printAllErrors() = 0;
 
 }; // class IALIError
@@ -869,12 +957,12 @@ public:
 //-----------------------------------------------------------------------------
 // IALIFMEError interface.
 //-----------------------------------------------------------------------------
-/// @brief  Obtains fme error values   (synchronous)
+/// @brief  Obtains FME error values   (synchronous).
 ///
-/// @note   This service interface is obtained from an IBase via iidALI_FMEERR_Service
+/// @note   This service interface is obtained from an IBase via iidALI_FMEERR_Service.
 /// @code
 ///         m_pALIFMEErrService = dynamic_ptr<IALIFMEError>(iidALI_FMEERR_Service, pServiceBase);
-///
+/// @endcode
 class IALIFMEError: public IALIError
 {
 public:
@@ -934,12 +1022,12 @@ public:
 //-----------------------------------------------------------------------------
 // IALIPortError interface.
 //-----------------------------------------------------------------------------
-/// @brief  Obtains Port errors values (synchronous)
+/// @brief  Obtains Port error values (synchronous).
 ///
-/// @note   This service interface is obtained from an IBase via iidALI_PORTERR_Service
+/// @note   This service interface is obtained from an IBase via iidALI_PORTERR_Service.
 /// @code
 ///         m_pALIPortErrService = dynamic_ptr<IALIPower>(iidALI_PORTERR_Service, pServiceBase);
-///
+/// @endcode
 class IALIPortError : public IALIError
 {
 public:
@@ -964,45 +1052,33 @@ public:
 
    #define AAL_ERR_PORT_MMIOREAD_TIMEOUT          "MMIO Read Timeout in AFU"
    #define AAL_ERR_PORT_TX_CH2_FIFO_OVERFLOW      "Tx Channel2: FIFO overflow"
+   #define AAL_ERR_PORT_UNEXP_MMIORESP            "MMIO read response received, with no matching pending request"
    #define AAL_ERR_PORT_NUM_PENDREQ_OVERFLOW      "Number of pending Requests: counter overflow"
+
+   #define AAL_ERR_PORT_LLPR_SMRR                 "Request with Address violating SMM Range"
+   #define AAL_ERR_PORT_LLPR_SMRR2                "Request with Address violating second SMM Range"
+   #define AAL_ERR_PORT_LLPR_MSG                  "Request with Address violating ME Stolen message"
+   #define AAL_ERR_PORT_GENPORT_RANGE             "Request with Address violating Generic protect range"
+   #define AAL_ERR_PORT_LEGRANGE_LOW              "Request with Address violating Legacy Range Low"
+   #define AAL_ERR_PORT_LEGRANGE_HIGH             "Request with Address violating Legacy Range High"
+   #define AAL_ERR_PORT_VGAMEM_RANGE              "Request with Address violating VGA memory range"
+   #define AAL_ERR_PORT_PAGEFAULT                 "Page fault"
+   #define AAL_ERR_PORT_PMRERROR                  "PMR Error"
+   #define AAL_ERR_PORT_AP6EVENT                  "AP6 Event"
+   #define AAL_ERR_PORT_VFFLR_ACCESS              "VF FLR detected on Port with PF access control"
+
    #define AAL_ERR_PORT_MALFORMED_REQ_0           "Port malformed request0"
    #define AAL_ERR_PORT_MALFORMED_REQ_1           "Port malformed request1"
 
 
-   enum e_Port_Error {
-      e_port_OK,                                    ///< No Port Errors
-      e_tx_ch0_overflow = 0x1,                      ///< Tx Channel0: Overflow
-      e_tx_ch0_invalidReq = 0x2,                    ///< Tx Channel0: Invalid request encoding
-      e_tx_ch0_Req_cl_len3 = 0x4,                   ///< Tx Channel0: Request with cl_len3
-      e_tx_ch0_Req_cl_len2 = 0x8,                   ///< Tx Channel0: Request with cl_len2
-      e_tx_ch0_Req_cl_len4 = 0x16,                  ///< Tx Channel0: Request with cl_len4
-
-      e_tx_ch1_overflow = 0x800,                    ///< Tx Channel1: Overflow
-      e_tx_ch1_invalidReq = 0x1000,                 ///< Tx Channel1: Invalid request encoding
-      e_tx_ch1_Req_cl_len3 =  0x2000,               ///< Tx Channel1: Request with cl_len3
-      e_tx_ch1_Req_cl_len2 = 0x4000,                ///< Tx Channel1: Request with cl_len2
-      e_tx_ch1_Req_cl_len4 = 0x8000,                ///< Tx Channel1: Request with cl_len4
-
-      e_tx_ch1_insuff_datapayload = 0x10000,        ///< Tx Channel1: Insufficient data payload
-      e_tx_ch1_dataype_overrun = 0x20000,           ///< Tx Channel1: Data payload overrun
-      e_tx_ch1_incorrect_address = 0x40000,         ///< Tx Channel1: Incorrect address
-      e_tx_ch1_sop_detected = 0x80000,              ///< Tx Channel1: NON-Zero SOP Detected
-      e_tx_ch1_atomic_req = 0x100000,               ///< "Tx Channel1: Illegal VC_SEL, atomic request VLO
-
-      e_mmioread_timeout = 0x100000000,             ///< MMIO Read Timeout in AFU
-      e_tx_ch2_fifo_overflow = 0x200000000,         ///< Tx Channel2: FIFO overflow
-      e_num_pending_overflow = 0x10000000000        ///< Number of pending Requests: counter overflow
-
-   };
-
    virtual ~IALIPortError() {}
 
    /// @brief       Obtains port malformed request value.
-   /// @note        Synchronous
-   /// @param[out]  rResult  Returns port malformed request value
+   /// @note        Synchronous.
+   /// @param[out]  rResult  Returned port malformed request value.
    ///                       NULL if a problem.
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
+   /// @retval      True if the read succeeded.
+   /// @retval      False if the read failed.
    virtual btBool errorGetPortMalformedReq( INamedValueSet &rResult ) = 0;
 
 }; // class IALIPortError
@@ -1011,9 +1087,9 @@ public:
 //-----------------------------------------------------------------------------
 // IALITemperature interface.
 //-----------------------------------------------------------------------------
-/// @brief  Obtains Temperature and threshold values  (not AFU-specific) (synchronous)
+/// @brief  Obtains Temperature and Threshold values  (not AFU-specific) (synchronous).
 ///
-/// @note   This service interface is obtained from an IBase via iidALI_TEMP_Service
+/// @note   This service interface is obtained from an IBase via iidALI_TEMP_Service.
 /// @code
 ///         m_pALITempService = dynamic_ptr<IALIPower>(iidALI_TEMP_Service, pServiceBase);
 /// @endcode
@@ -1044,11 +1120,11 @@ public:
    #define AALTEMP_THSHLD_POLICY6            "AP6_STATE"
 
    /// @brief       Obtains threshold status and Trip value.
-   /// @note        Synchronous
-   /// @param[out]  rResult  Returns threshold status and Trip value
+   /// @note        Synchronous.
+   /// @param[out]  rResult  Returned threshold status and Trip value.
    ///                       NULL if a problem.
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
+   /// @retval      True if the read succeeded.
+   /// @retval      False if the read failed.
    virtual btBool thermalGetValues(INamedValueSet &rResult ) = 0;
 
 }; // class IALITemperature
@@ -1057,9 +1133,9 @@ public:
 //-----------------------------------------------------------------------------
 // IALIPower interface.
 //-----------------------------------------------------------------------------
-/// @brief  Obtains fpga power   (not AFU-specific) (synchronous)
+/// @brief  Obtains FPGA power   (not AFU-specific) (synchronous).
 ///
-/// @note   This service interface is obtained from an IBase via iidALI_POWER_Service
+/// @note   This service interface is obtained from an IBase via iidALI_POWER_Service.
 /// @code
 ///         m_pALIPowerService = dynamic_ptr<IALIPower>(iidALI_POWER_Service, pServiceBase);
 /// @endcode
@@ -1073,12 +1149,12 @@ public:
    #define AALPOWER_DATATYPE            btUnsigned64bitInt
    #define AALPOWER_CONSUMPTION        "Power Consumption Value"
 
-   /// @brief       Obtains Power consumption of fpga.
-   /// @note        Synchronous
-   /// @param[out]  rResult  Returns the power consumption Value .
+   /// @brief       Obtains Power consumption of FPGA.
+   /// @note        Synchronous.
+   /// @param[out]  rResult  Returned power consumption value.
    ///                       NULL if a problem.
-   /// @return      True if the read was successful.
-   ///              False if the read was failed
+   /// @retval      True if the read succeeded.
+   /// @retval      False if the read failed.
    virtual btBool powerGetValues(INamedValueSet &rResult ) = 0;
 
 }; // class IALIPower

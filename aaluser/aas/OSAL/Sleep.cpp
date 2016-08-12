@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 /// @file Sleep.cpp
-/// @brief Time related functions
+/// @brief Sleep related functions
 /// @ingroup OSAL
 /// @verbatim
 /// Accelerator Abstraction Layer
