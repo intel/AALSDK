@@ -398,9 +398,9 @@ err:
    // Description: Disconnect remote party and destroy channel
    // Inputs optArgs - named ValueSet contains connection arguments
    //=============================================================================
-   /// @brief Disconnect remote party and destroy channel
+   /// @brief Disconnect remote party and destroy channel.
    ///
-   ///@param[in] optArgs named ValueSet contains connection arguments
+   /// @retval True.
    btBool disconnect(void)
    {
 
@@ -425,11 +425,11 @@ err:
    // Outputs: length of message (-1) in case of error, 0 means EOF (remote close)
    // Returns: pointer to message (NULL in case of error or EOF)
    //=============================================================================
-   /// @brief Gets a message from remote end
+   /// @brief Gets a message from remote end.
    ///
-   ///Returns a pointer to message (NULL in case of error or EOF)
-   ///@param[in] *len pointer of where to return message length
-   ///@param[out] length of message (-1) in case of error, 0 means EOF (remote close)
+   ///@param[in] *len A pointer to the location the message length will be stored.
+   ///           Length of message (-1) in case of error, 0 means EOF (remote close).
+   ///@return A pointer to the message (NULL in case of error or EOF).
    btcString getmsg(btWSSize *len)
    {
       // Get the length of the message as a string for portability
@@ -482,6 +482,11 @@ err:
    //          len  - length of message in octets
    // Returns: number of bytes sent (-1 if error)
    //=============================================================================
+   /// @brief Send a message to remote end.
+   ///
+   /// @param[in] pmsg A pointer to the message.
+   /// @param[in] len The length of the message in bytes.
+   /// @return The number of bytes sent (-1 if error).
    int putmsg(btcString pmsg, btWSSize len)
    {
       char lenstr[7]={0};
@@ -520,7 +525,7 @@ protected:
 //=============================================================================
 /// IPCSvcsFact
 /// Template provides the implementation of the AAL Service
-///              factory for inter-proces (same node) service creation
+///              factory for inter-process (same node) service creation
 ///@param[in] I - Concrete class name of proxy
 ///@param[in] T - Transport - Remote Service only
 ///@param[in] M - Marshaller - Remote Service only
@@ -532,6 +537,14 @@ template <typename I,
           class U=NVSUnMarshaller> class IPCSvcsFact: public ISvcsFact
 {
 public:
+   /// @brief Create a Service object.
+   /// @param[in] container    A pointer to the Service Host for the Service.
+   /// @param[in] eventHandler A handler for events generated.
+   /// @param[in] context      A context value passed to the Service.
+   /// @param[in] rtid         A reference to the Transaction ID.
+   /// @param[in] optArgs      A reference to an NVS describing optional arguments
+   ///                     to the Service.
+   /// @returns A pointer to the IBase interface of the Service object.
    IBase* CreateServiceObject(AALServiceModule    *container,
                               btEventHandler       eventHandler,
                               btApplicationContext context,

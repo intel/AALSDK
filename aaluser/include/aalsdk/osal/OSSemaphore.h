@@ -72,17 +72,18 @@ BEGIN_NAMESPACE(AAL)
 
 /// Interface abstraction for Semaphores.
 ///
-/// The Semaphore is Created with an initial and maximum count value.
-/// Calls to Post() increments the value, failing if the maximum
-/// value would be exceeded.  Calls to Wait() block if the current
-/// value is zero. The Wait() unblocks when the value becomes
-/// positive, decrementing the value on the way out. Reset() allows the
-/// Semaphore to be reset to a value (less that or equal to MaxCount).
+/// The Semaphore is Created with initial count and maximum count values.
+/// Calls to Post() increments the count value, failing if the maximum
+/// value would be exceeded.  Calls to Wait() block if the 
+/// count value is zero. The Wait() unblocks when the count value becomes
+/// positive, decrementing the count value on the way out. Reset() allows the
+/// Semaphore count value to be reset to a value less than or equal to the
+/// maximum count value.
 ///
 /// The CSemaphore class implements a count down feature as well as
 /// a count up feature.
 ///
-/// To use the count down feature the user initializes the Semaphore
+/// To use the count down feature the user initializes the Semaphore count
 /// with a positive value (typically equal to the number of resources
 /// being controlled).  Calls to Wait() will not block until the total
 /// number of Wait() calls equals the Semaphore count. So an initial
@@ -92,7 +93,7 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// The count up feature is used to have a thread block until a certain
 /// number of "Events" (i.e. Post()s ) have occurred.  To use this
-/// feature the Semaphore is set to a negative value.  The maximum
+/// feature the Semaphore count is set to a negative value.  The maximum
 /// value will default to 1 if not set otherwise. Calls to Wait()
 /// will block until the number of events have occurred.
 ///
@@ -106,10 +107,10 @@ BEGIN_NAMESPACE(AAL)
 class OSAL_API CSemaphore : private CriticalSection
 {
 public:
-   /// CSemaphore Constructor.
+   // CSemaphore Constructor.
    CSemaphore();
 
-   /// CSemaphore Destructor.
+   // CSemaphore Destructor.
    virtual ~CSemaphore();
 
    /// Initialize the Semaphore object before its first use.
@@ -129,21 +130,25 @@ public:
    /// @retval  false  Semaphore not initialized or an error occurred during destruction.
    btBool Destroy();
 
-   /// Get the current value of the Semaphore counts to nCount.
+   /// Set the current value of the Semaphore count to nCount.
    ///
+   /// @param[in] nCount The value to set the current count.
    /// @retval  true   The count was set to nCount.
    /// @retval  false  Semaphore not initialized or nCount > max count.
    btBool Reset(btInt nCount = 0);
 
-   /// Get the current value of the Semaphore count to nCount.
+   /// Get the Semaphore current count to rCurCount and the maximum count
+   /// to rMaxCount.
    ///
-   /// @param[out]  rCurCount    Current count value.
-   /// @param[pit]  rMaxCount    Maximum value.
+   /// @param[out]  rCurCount    Location to store Current count value.
+   /// @param[out]  rMaxCount    Location to store Maximum count value.
    ///
-   /// @retval The count.
+   /// @retval true  The current counts were retrieved.
+   /// @retval false  The current counts could not be retrieved.
    btBool CurrCounts(btInt &rCurCount, btInt &rMaxCount);
 
-   /// If the current count + nCount is less than or equal to the max count, then increment by nCount.
+   /// If the current count + nCount is less than or equal to the max count, then
+   /// increment the current count by nCount.
    ///
    /// @retval  true   The count was incremented by nCount.
    /// @retval  false  Semaphore not initialized or current count + nCount > max count.
@@ -170,18 +175,23 @@ public:
    /// @retval  true   The count became greater than 0 before the Timeout expired.
    /// @retval  false  Semaphore not initialized or ( Timeout expired and count not greater than 0 ).
    btBool Wait(btTime Timeout);
+
    /// Wait for the Semaphore count to become greater than 0, then decrement the count by one.
    ///
+   /// @retval  true  The sempahore count became greater than 0 and then was decremented.
    /// @retval  false  Semaphore not initialized.
    btBool Wait();
 
    /// Associate a User-Defined pointer with this CSemaphore object.
    ///
-   /// @param[in]  User  A User-Defined data item, not touched by CSemaphore.
+   /// @param[in]  User  A pointer to a User-Defined data item, not touched by CSemaphore.
+   /// @return void
    void UserDefined(btObjectType User);
+
    /// Retrieve the User-Defined pointer associated with this CSemaphore object.
    ///
-   /// @return The User-Defined pointer, or NULL if none was set.
+   /// @retval A pointer to the User-Defined data item.
+   /// @retval NULL if the User-Defined data item pointer was not set.
    btObjectType UserDefined() const;
 
 private:

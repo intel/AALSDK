@@ -126,7 +126,10 @@ module_param    (sim, ulong, S_IRUGO);
 // DRV_NAME is defined in mem-int.h
 //=============================================================================
 
-btUnsignedInt debug = PTRACE_FLAG
+btUnsignedInt debug = 0
+#if 0
+/* Type and Level selection flags */
+   | PTRACE_FLAG
    | PVERBOSE_FLAG
    | PDEBUG_FLAG
    | PINFO_FLAG
@@ -139,7 +142,7 @@ btUnsignedInt debug = PTRACE_FLAG
    | CCIPCIE_DBG_MMAP
    | CCIPCIE_DBG_CMD
    | CCIPCIE_DBG_CFG
-
+#endif
 ;
 
 /******************************************************************************

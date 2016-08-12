@@ -127,20 +127,11 @@ public:
     RuntimeClient();
    ~RuntimeClient();
 
-   /// @brief Synchronous wrapper for stopping the Runtime.
    void end();
-   /// @brief Accessor for pointer to IRuntime stored in Runtime Client
-   ///
-   /// This pointer is used to allocate Service. 
+
    IRuntime* getRuntime();
 
-   /// @brief Checks that the object is in an internally consistent state
-   ///
-   /// The general paradigm in AAL is for an object to track its internal state for subsequent query,
-   /// as opposed to throwing exceptions or having to constantly check return codes.
-   /// We implement this to check if the status of the service allocated.
-   /// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
-  btBool isOK();
+   btBool isOK();
 
    // <begin IRuntimeClient interface>
    void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
@@ -172,11 +163,7 @@ protected:
    CSemaphore       m_Sem;       // For synchronizing with the AAL runtime.
 };
 
-///////////////////////////////////////////////////////////////////////////////
-///
-///  MyRuntimeClient Implementation
-///
-///////////////////////////////////////////////////////////////////////////////
+//  MyRuntimeClient Implementation
 RuntimeClient::RuntimeClient() :
     m_Runtime(this),        // Instantiate the AAL Runtime
     m_pRuntime(NULL),
@@ -210,6 +197,14 @@ RuntimeClient::~RuntimeClient()
     m_Sem.Destroy();
 }
 
+/// @brief Checks that the object is in an internally consistent state
+///
+/// The general paradigm in AAL is for an object to track its internal state for subsequent query,
+/// as opposed to throwing exceptions or having to constantly check return codes.
+/// We implement this to check if the status of the service allocated.
+/// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
+/// @retval True if the internal state is consistent.
+/// @retval False if not.
 btBool RuntimeClient::isOK()
 {
    return m_isOK;
@@ -230,6 +225,8 @@ void RuntimeClient::runtimeStarted(IRuntime            *pRuntime,
     m_Sem.Post(1);
  }
 
+/// @brief Synchronous wrapper for stopping the Runtime.
+/// @return void
 void RuntimeClient::end()
 {
    m_Runtime.stop();
@@ -272,6 +269,9 @@ void RuntimeClient::runtimeEvent(const IEvent &rEvent)
     MSG("Generic message handler (runtime)");
 }
 
+/// @brief Accessor for pointer to IRuntime stored in Runtime Client
+///
+/// @return A pointer to a Runtime Interface used to allocate Service.
 IRuntime * RuntimeClient::getRuntime()
 {
    return m_pRuntime;
@@ -285,7 +285,7 @@ IRuntime * RuntimeClient::getRuntime()
 class HelloCCINLBApp: public CAASBase, public IServiceClient, public ICCIClient
 {
 public:
-   enum WorkspaceType   ///<Type of Workspace being allocated
+   enum WorkspaceType   /// Type of Workspace being allocated
    {
       WKSPC_DSM, ///< Device Status Memory
       WKSPC_IN,  ///< Input workspace
@@ -295,7 +295,11 @@ public:
    HelloCCINLBApp(RuntimeClient * rtc);
    ~HelloCCINLBApp();
 
-   btInt run();    ///< Return 0 if success
+   /// @brief The body of application.
+   /// 
+   /// @retval 0 if successful.
+   /// @retval non-zero on failure.
+   btInt run();    //< Return 0 if success
 
    // <ICCIClient>
    virtual void OnWorkspaceAllocated(TransactionID const &TranID,
@@ -343,11 +347,10 @@ protected:
    btWSSize       m_OutputSize;     ///< Output workspace size in bytes.
 };
 
-///////////////////////////////////////////////////////////////////////////////
-///
 ///  Implementation
 ///
-///////////////////////////////////////////////////////////////////////////////
+/// @param[in] rtc A pointer to the Runtime Client.
+/// @return void
 HelloCCINLBApp::HelloCCINLBApp(RuntimeClient *rtc) :
    m_pAALService(NULL),
    m_runtimeClient(rtc),
@@ -509,6 +512,12 @@ btInt HelloCCINLBApp::run()
 // We must implement the IServiceClient interface (IServiceClient.h):
 
 // <begin IServiceClient interface>
+
+/// @brief Callback called after a Service has been successfully
+///        allocated.
+/// @param[out] pServiceBase A pointer to the Service interface.
+/// @param[out] rTranID A reference to the TransactionID.
+/// @return void
 void HelloCCINLBApp::serviceAllocated(IBase *pServiceBase,
                                       TransactionID const &rTranID)
 {
@@ -531,6 +540,10 @@ void HelloCCINLBApp::serviceAllocated(IBase *pServiceBase,
 
 }
 
+/// @brief Callback called after a Service allocation failed.
+/// @param[out] rEvent A reference to an IEvent containing information
+///              about the failure.
+/// @return void
 void HelloCCINLBApp::serviceAllocateFailed(const IEvent &rEvent)
 {
    ERR("Failed to allocate a Service");
@@ -540,13 +553,23 @@ void HelloCCINLBApp::serviceAllocateFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
- void HelloCCINLBApp::serviceReleased(TransactionID const &rTranID)
+/// @brief Callback called after a Service has been successfully
+///        released.
+///
+/// <B>Parameters:</B> \n[out]  rTranID A reference to the TransactionID.
+/// @return void
+void HelloCCINLBApp::serviceReleased(TransactionID const &rTranID)
 {
     MSG("Service Released");
    // Unblock Main()
    m_Sem.Post(1);
 }
 
+/// @brief Callback called after a Service release failed.
+///
+/// <B>Parameters:</B> \n[out]  rEvent A reference to an IEvent containing
+///                          information about the failure.
+/// @return void
  void HelloCCINLBApp::serviceReleaseFailed(const IEvent        &rEvent)
  {
     ERR("Failed to release a Service");
@@ -555,7 +578,23 @@ void HelloCCINLBApp::serviceAllocateFailed(const IEvent &rEvent)
  }
 
 // <ICCIClient>
-void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
+
+/// @brief A Client callback called after a Workspace is allocated.
+///
+/// HelloCCINLBApp Client implementation of ISPLClient::OnWorkspaceAllocated().
+///
+/// This is how the client is supplied with the data required to
+/// utilize the Workspace - its address and size. This callback is
+/// the only mechanism for the client to notified when a Workspace
+/// has been allocated and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @param[out] WkspcVirt The virtual address of the Workspace.
+/// @param[out] WkspcPhys The physical address of the Workspace.
+/// @param[out] WkspcSize The size of the Workspace.
+/// @return void
+ void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
                                           btVirtAddr           WkspcVirt,
                                           btPhysAddr           WkspcPhys,
                                           btWSSize             WkspcSize)
@@ -598,7 +637,18 @@ void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
    }
 }
 
-void HelloCCINLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
+/// @brief A Client callback called after a Workspace allocation failed.
+///
+/// HelloCCINLBApp Client implementation of ISPLClient::OnWorkspaceAllocateFailed().
+///
+/// This callback is the only mechanism for the client to be notified that
+/// a Workspace allocation has failed and must be implemented for the client
+/// to receive these notifications.
+///
+/// @param[out] rEvent A reference to the IEvent containing details about
+///             the failure.
+/// @return void
+ void HelloCCINLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
 {
    ERR("OnWorkspaceAllocateFailed");
    PrintExceptionDescription(rEvent);
@@ -607,7 +657,17 @@ void HelloCCINLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
-void HelloCCINLBApp::OnWorkspaceFreed(TransactionID const &TranID)
+/// @brief A Client callback called after a Workspace is freed.
+///
+/// HelloCCINLBApp Client implementation of ISPLClient::OnWorkspaceFreed().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Workspace has been freed and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @return void
+ void HelloCCINLBApp::OnWorkspaceFreed(TransactionID const &TranID)
 {
    MSG("OnWorkspaceFreed");
    if(++m_wsfreed == 3){
@@ -617,6 +677,18 @@ void HelloCCINLBApp::OnWorkspaceFreed(TransactionID const &TranID)
 
 }
 
+/// @brief A Client callback called after an attempt to free a Workspace
+///        failed.
+///
+/// HelloCCINLBApp Client implementation of ISPLClient::OnWorkspaceFreeFailed().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// an attempt to free a Workspace has failed and must be implemented for the
+/// client to receive these notifications.
+///
+/// @param[out] rEvent A reference to the IEvent containing details about
+///             the failure.
+/// @return void
 void HelloCCINLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
 {
    ERR("OnWorkspaceAllocateFailed");
@@ -626,7 +698,14 @@ void HelloCCINLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
 }
 
 
- void HelloCCINLBApp::serviceEvent(const IEvent &rEvent)
+/// @brief Callback called to send unsolicited or unusual events.
+///
+/// HelloCCINLBApp Client implementation of ISPLClient::serviceEvent().
+///
+/// @param[out] rEvent A reference to an IEvent containing information
+///              about the event.
+/// @return void
+void HelloCCINLBApp::serviceEvent(const IEvent &rEvent)
 {
    ERR("unexpected event 0x" << hex << rEvent.SubClassID());
 }

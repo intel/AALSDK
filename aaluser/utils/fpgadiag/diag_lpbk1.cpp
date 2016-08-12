@@ -115,9 +115,12 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 	  cfg |= (csr_type)NLB_TEST_MODE_CONT;
    }
 
-   // Check for write through mode and add to CSR_CFG
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WT)){
-	  cfg |= (csr_type)NLB_TEST_MODE_WT;
+   // Check for write-through or write-push mode and add to CSR_CFG
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRPUSH_I)){
+	  cfg |= (csr_type)NLB_TEST_MODE_WRPUSH_I;
+   }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_I)){
+	  cfg |= (csr_type)NLB_TEST_MODE_WRLINE_I;
    }
 
    // Set the read flags.
@@ -289,7 +292,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
        if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, (NumCacheLines * CL(1))) != 0 ){
           cerr << "Data mismatch in Input and Output buffers.\n";
            ++res;
-           break;
+//           break;
        }
 
        //Checking for num_clocks underflow.

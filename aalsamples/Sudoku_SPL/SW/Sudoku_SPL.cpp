@@ -149,19 +149,9 @@ public:
 	RuntimeClient();
 	   ~RuntimeClient();
 
-	   /// @brief Synchronous wrapper for stopping the Runtime.
 	   void end();
-	   /// @brief Accessor for pointer to IRuntime stored in Runtime Client
-	   ///
-	   /// This pointer is used to allocate Service.
 	   IRuntime* getRuntime();
 
-	   /// @brief Checks that the object is in an internally consistent state
-	   ///
-	   /// The general paradigm in AAL is for an object to track its internal state for subsequent query,
-	   /// as opposed to throwing exceptions or having to constantly check return codes.
-	   /// We implement this to check if the status of the service allocated.
-	   /// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
 	   btBool isOK();
 
    // <begin IRuntimeClient interface>
@@ -194,11 +184,7 @@ protected:
    CSemaphore       m_Sem;       // For synchronizing with the AAL runtime.
 };
 
-///////////////////////////////////////////////////////////////////////////////
-///
 ///  MyRuntimeClient Implementation
-///
-///////////////////////////////////////////////////////////////////////////////
 RuntimeClient::RuntimeClient() :
     m_Runtime(this),        // Instantiate the AAL Runtime
     m_pRuntime(NULL),
@@ -229,6 +215,14 @@ RuntimeClient::~RuntimeClient()
     m_Sem.Destroy();
 }
 
+/// @brief Checks that the object is in an internally consistent state
+///
+/// The general paradigm in AAL is for an object to track its internal state for subsequent query,
+/// as opposed to throwing exceptions or having to constantly check return codes.
+/// We implement this to check if the status of the service allocated.
+/// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
+/// @return True if the internal state of the Runtime Client is OK.
+/// @return False if the internal state of the Runtime Client is not OK.
 btBool RuntimeClient::isOK()
 {
    return m_isOK;
@@ -250,6 +244,9 @@ void RuntimeClient::runtimeStarted(IRuntime *pRuntime,
    m_Sem.Post(1);
 }
 
+/// @brief Synchronous wrapper for stopping the Runtime.
+///
+/// @return void
 void RuntimeClient::end()
 {
    m_Runtime.stop();
@@ -293,6 +290,9 @@ void RuntimeClient::runtimeEvent(const IEvent &rEvent)
    MSG("Generic message handler (runtime)");
 }
 
+/// @brief Accessor for pointer to IRuntime stored in Runtime Client
+///
+/// @return A pointer to the IRuntime.
 IRuntime * RuntimeClient::getRuntime()
 {
    return m_pRuntime;
@@ -309,10 +309,6 @@ public:
 
    Sudoku(RuntimeClient * rtc, char *puzName);
    ~Sudoku();
-   /// @brief Called by the main part of the application,Returns 0 if Success
-   ///
-   /// Application Requests Service using Runtime Client passing a pointer to self.
-   /// Blocks calling thread from [Main} untill application is done.
 
    btInt run();
 
@@ -353,12 +349,9 @@ public:
    // <end IServiceClient interface>
 
    /* SW implementation of a sudoku solver */
-   /// @ brief prints the Sudoku board
    static void print_board(uint32_t *board);
    static int32_t sudoku_norec(uint32_t *board, uint32_t *os);
-   /// @brief checks if the Puzzle is solved
    static int32_t check_correct(uint32_t *board, uint32_t *unsolved_pieces);
-   /// @brief logic to solve the puzzzle
    static int32_t solve(uint32_t *board, uint32_t *os);
    protected:
 
@@ -383,6 +376,9 @@ public:
 /* DBS: for sudoku */
 
 
+/// @brief Prints the Sudoku board.
+/// @param[in] board A pointer the board.
+/// @return void
 void Sudoku::print_board(uint32_t *board)
 {
    int32_t i, j;
@@ -399,6 +395,12 @@ void Sudoku::print_board(uint32_t *board)
    printf("\n");
 }
 
+/// @brief Checks if the Puzzle is solved.
+///
+/// @param[in] board A pointer the board.
+/// @param[in] unsolved_pieces A pointer to the board containining unsolved squares.
+/// @retval True if the board is correct, the puzzle is solved.
+/// @retval False if the board is not correct.
 int32_t Sudoku::check_correct(uint32_t *board, uint32_t *unsolved_pieces)
 {
    int32_t i, j;
@@ -502,6 +504,10 @@ inline uint32_t one_set(uint32_t x)
    return ((~m) + 1) & x;
 }
 
+/// @brief Logic to solve the puzzle.
+/// @param[in] board A pointer the board.
+/// @param[in] os A pointer to the board to store interim results.
+/// @returns 0.
 int32_t Sudoku::solve(uint32_t *board, uint32_t *os)
 {
    int32_t i, j, idx;
@@ -594,6 +600,10 @@ int32_t Sudoku::solve(uint32_t *board, uint32_t *os)
    return 0;
 }
 
+/// @brief Solve a puzzle.
+/// @param[in] board A pointer the board.
+/// @param[in] os A pointer to the board to store interim results.
+/// @returns 1.
 int32_t Sudoku::sudoku_norec(uint32_t *board, uint32_t *os)
 {
    int32_t rc;
@@ -667,11 +677,7 @@ int32_t Sudoku::sudoku_norec(uint32_t *board, uint32_t *os)
 }
 
 
-///////////////////////////////////////////////////////////////////////////////
-///
 ///  Implementation
-///
-///////////////////////////////////////////////////////////////////////////////
 Sudoku::Sudoku(RuntimeClient *rtc, char *puzName) :
    m_puzName(puzName),
    m_pAALService(NULL),
@@ -694,6 +700,11 @@ Sudoku::~Sudoku()
    m_Sem.Destroy();
 }
 
+/// @brief Called by the main part of the application
+///
+/// Application Requests Service using Runtime Client passing a pointer to self.
+/// Blocks calling thread from [Main} untill application is done.
+/// @retval 0 if Successful.
 btInt Sudoku::run()
 {
    cout <<"======================="<<endl;
@@ -916,6 +927,11 @@ btInt Sudoku::run()
 // We must implement the IServiceClient interface (IServiceClient.h):
 
 // <begin IServiceClient interface>
+
+/// @brief Callback called after a Service allocation succeeded.
+/// @param[out] pServiceBase A pointer to Service.
+/// @param[out] rTranID A reference to the TransactionID.
+/// @return void
 void Sudoku::serviceAllocated(IBase               *pServiceBase,
                               TransactionID const &rTranID)
 {
@@ -945,6 +961,10 @@ void Sudoku::serviceAllocated(IBase               *pServiceBase,
 
 }
 
+/// @brief Callback called after a Service allocation failed.
+/// @param[out] rEvent A reference to an IEvent containing information
+///             about the failure.
+/// @return void
 void Sudoku::serviceAllocateFailed(const IEvent &rEvent)
 {
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
@@ -954,12 +974,22 @@ void Sudoku::serviceAllocateFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
+/// @brief Callback called after a Service release failed.
+///
+/// @param[out] rEvent A reference to an IEvent containing information
+///             about the failure.
+/// @return void
 void Sudoku::serviceReleaseFailed(const IEvent        &rEvent)
 {
    MSG("Failed to Release a Service");
    m_Sem.Post(1);
 }
 
+/// @brief Callback called after a Service has been successfully
+///        released.
+///
+/// <B>Parameters:</B> \n[out]  rTranID A reference to the TransactionID.
+/// @return void
 void Sudoku::serviceReleased(TransactionID const &rTranID)
 {
    MSG("Service Released");
@@ -967,6 +997,22 @@ void Sudoku::serviceReleased(TransactionID const &rTranID)
 }
 
 // <ISPLClient>
+
+/// @brief A Client callback called after a Workspace is allocated.
+///
+/// Sudoku Client implementation of ISPLClient::OnWorkspaceAllocated().
+///
+/// This is how the client is supplied with the data required to
+/// utilize the Workspace - its address and size. This callback is
+/// the only mechanism for the client to notified when a Workspace
+/// has been allocated and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @param[out] WkspcVirt The virtual address of the Workspace.
+/// @param[out] WkspcPhys The physical address of the Workspace.
+/// @param[out] WkspcSize The size of the Workspace.
+/// @return void
 void Sudoku::OnWorkspaceAllocated(TransactionID const &TranID,
                                   btVirtAddr           WkspcVirt,
                                   btPhysAddr           WkspcPhys,
@@ -981,6 +1027,17 @@ void Sudoku::OnWorkspaceAllocated(TransactionID const &TranID,
    m_Sem.Post(1);
 }
 
+/// @brief A Client callback called after a Workspace allocation failed.
+///
+/// Sudoku Client implementation of ISPLClient::OnWorkspaceAllocateFailed().
+///
+/// This callback is the only mechanism for the client to be notified that
+/// a Workspace allocation has failed and must be implemented for the client
+/// to receive these notifications.
+///
+/// @param[out] rEvent A reference to the IEvent containing details about
+///             the failure.
+/// @return void
 void Sudoku::OnWorkspaceAllocateFailed(const IEvent &rEvent)
 {
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
@@ -990,6 +1047,16 @@ void Sudoku::OnWorkspaceAllocateFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
+/// @brief A Client callback called after a Workspace is freed.
+///
+/// Sudoku Client implementation of ISPLClient::OnWorkspaceFreed().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Workspace has been freed and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @return void
 void Sudoku::OnWorkspaceFreed(TransactionID const &TranID)
 {
    ERR("OnWorkspaceFreed");
@@ -997,6 +1064,18 @@ void Sudoku::OnWorkspaceFreed(TransactionID const &TranID)
    (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
 }
 
+/// @brief A Client callback called after an attempt to free a Workspace
+///        failed.
+///
+/// Sudoku Client implementation of ISPLClient::OnWorkspaceFreeFailed().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// an attempt to free a Workspace has failed and must be implemented for the
+/// client to receive these notifications.
+///
+/// @param[out] rEvent A reference to the IEvent containing details about
+///             the failure.
+/// @return void
 void Sudoku::OnWorkspaceFreeFailed(const IEvent &rEvent)
 {
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
@@ -1006,7 +1085,18 @@ void Sudoku::OnWorkspaceFreeFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
-/// CMyApp Client implementation of ISPLClient::OnTransactionStarted
+/// @brief A Client callback called after a Transaction is started.
+///
+/// Sudoku Client implementation of ISPLClient::OnTransactionStarted().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Transaction has started and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @param[out] AFUDSMVirt The virtual address of the Device Status Memory.
+/// @param[out] AFUDSMSize The size of the Device Status Memory.
+/// @return void
 void Sudoku::OnTransactionStarted( TransactionID const &TranID,
                                    btVirtAddr           AFUDSMVirt,
                                    btWSSize             AFUDSMSize)
@@ -1016,13 +1106,34 @@ void Sudoku::OnTransactionStarted( TransactionID const &TranID,
    m_AFUDSMSize =  AFUDSMSize;
    m_Sem.Post(1);
 }
-/// CMyApp Client implementation of ISPLClient::OnContextWorkspaceSet
+
+/// @brief A Client callback called after a Context Workspace is set.
+///
+/// Sudoku Client implementation of ISPLClient::OnContextWorkspaceSet().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Context Workspace is set and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @return void
 void Sudoku::OnContextWorkspaceSet( TransactionID const &TranID)
 {
    INFO("Context Set");
    m_Sem.Post(1);
 }
-/// CMyApp Client implementation of ISPLClient::OnTransactionFailed
+
+/// @brief A Client callback called after a Transaction failed.
+///
+/// Sudoku Client implementation of ISPLClient::OnTransactionFailed().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Transaction failed and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] rEvent A reference to the IEvent containing details about
+///             the failure.
+/// @return void
 void Sudoku::OnTransactionFailed( const IEvent &rEvent)
 {
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
@@ -1035,7 +1146,17 @@ void Sudoku::OnTransactionFailed( const IEvent &rEvent)
    ERR("Transaction Failed");
    m_Sem.Post(1);
 }
-/// CMyApp Client implementation of ISPLClient::OnTransactionComplete
+
+/// @brief A Client callback called after a Transaction is completed.
+///
+/// Sudoku Client implementation of ISPLClient::OnTransactionComplete().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Transaction has completed and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @return void
 void Sudoku::OnTransactionComplete( TransactionID const &TranID)
 {
    m_AFUDSMVirt = NULL;
@@ -1043,7 +1164,17 @@ void Sudoku::OnTransactionComplete( TransactionID const &TranID)
    INFO("Transaction Complete");
    m_Sem.Post(1);
 }
-/// CMyApp Client implementation of ISPLClient::OnTransactionStopped
+
+/// @brief A Client callback called after a Transaction is stopped.
+///
+/// Sudoku Client implementation of ISPLClient::OnTransactionStopped().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Transaction has been stopped and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @return void
 void Sudoku::OnTransactionStopped( TransactionID const &TranID)
 {
    m_AFUDSMVirt = NULL;
@@ -1051,6 +1182,14 @@ void Sudoku::OnTransactionStopped( TransactionID const &TranID)
    INFO("Transaction Stopped");
    m_Sem.Post(1);
 }
+
+/// @brief Callback called to send unsolicited or unusual events.
+///
+/// Sudoku Client implementation of ISPLClient::serviceEvent().
+///
+/// @param[out] rEvent A reference to an IEvent containing information
+///              about the event.
+/// @return void
 void Sudoku::serviceEvent(const IEvent &rEvent)
 {
    ERR("unexpected event 0x" << hex << rEvent.SubClassID());

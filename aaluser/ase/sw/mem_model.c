@@ -49,14 +49,7 @@ void ase_perror_teardown()
 
   self_destruct_in_progress = 1;
 
-  /* if (!self_destruct_in_progress) */
-  /*   {       */
-  // Deallocate entire linked list
-  ase_destroy();
-  
-  // Unlink all opened message queues
-  // ase_mqueue_teardown();
-  /* } */
+  ase_destroy(); 
 
   FUNC_CALL_EXIT;
 }
@@ -180,7 +173,7 @@ void ase_alloc_action(struct buffer_t *mem)
 
       // Reply to MEM_ALLOC_REQ message with MEM_ALLOC_REPLY
       // Set metadata to reply mode
-      mem->metadata = HDR_MEM_ALLOC_REPLY;
+      // mem->metadata = HDR_MEM_ALLOC_REPLY;
   
       // Convert buffer_t to string
       mqueue_send(sim2app_alloc_tx, (char*)mem, ASE_MQ_MSGSIZE);
@@ -211,15 +204,11 @@ void ase_alloc_action(struct buffer_t *mem)
 	    {
 	      fprintf(fp_pagetable_log, 
 		      "Index\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
-	      // "Index\tfd_app\tfd_ase\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
 	    }
-      
+	  
 	  fprintf(fp_pagetable_log, 
-		  /* "%d\t%d\t%d\t%p\t%p\t%x\t%s\t\t%p\n", */
 		  "%d\t%p\t%p\t%x\t%s\t\t%p\n",
 		  mem->index,
-		  /* mem->fd_app, */
-		  /* mem->fd_ase, */
 		  (void*)mem->vbase, 
 		  (void*)mem->pbase,
 		  mem->memsize,
@@ -266,7 +255,7 @@ void ase_dealloc_action(struct buffer_t *buf, int mq_enable)
       shm_unlink(dealloc_ptr->memname);
       
       // Respond back
-      dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
+      // dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
       ll_remove_buffer(dealloc_ptr);
       memcpy(buf_str, dealloc_ptr, sizeof(struct buffer_t));
 
@@ -303,7 +292,6 @@ void ase_empty_buffer(struct buffer_t *buf)
 {
   buf->index = 0;
   buf->valid = ASE_BUFFER_INVALID;
-  buf->metadata = 0;
   memset(buf->memname, 0, ASE_FILENAME_LEN);
   buf->memsize = 0;
   buf->vbase = (uint64_t)NULL;
@@ -333,7 +321,6 @@ void ase_destroy()
 #endif  
 
   struct buffer_t *ptr;
-  // ptr = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
 
   ptr = head;
   if (head != NULL)

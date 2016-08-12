@@ -51,7 +51,6 @@
 #include <mqueue.h>        
 #include <errno.h>         
 #include <signal.h>        
-#include <pthread.h>       
 #include <sys/resource.h>  
 #include <sys/time.h>      
 #include <math.h>
@@ -64,6 +63,10 @@
 #include <stdbool.h>
 #include <sys/wait.h>
 
+#ifndef SIM_SIDE
+#include <pthread.h>       
+#endif
+
 #ifdef SIM_SIDE 
 #include "svdpi.h"
 #endif
@@ -72,13 +75,10 @@
 #define APP_SIDE
 #endif
 
-// ASE Debug switch
-// #define ASE_DEBUG
-
 /*
  * ASE Unique ID Check
  */
-#define ASE_UNIQUE_ID "SR-5.0.2-Beta-450f051"
+#define ASE_UNIQUE_ID "SR-5.0.2-Beta-22ef304"
 
 
 /*
@@ -123,6 +123,7 @@
 
 // User clock default
 #define DEFAULT_USR_CLK_MHZ        312.500
+#define DEFAULT_USR_CLK_TPS        (int)( 1E+12/(DEFAULT_USR_CLK_MHZ*pow(1000,2)) );
 
 
 /* *******************************************************************************
@@ -228,7 +229,6 @@ struct buffer_t                   //  Descriptiion                    Computed b
 {                                 // --------------------------------------------
   int index;                      // Tracking id                     | INTERNAL
   int valid;                      // Valid buffer indicator          | INTERNAL
-  int metadata;                   // MQ marshalling command          | INTERNAL
   char memname[ASE_FILENAME_LEN]; // Shared memory name              | INTERNAL
   uint32_t memsize;               // Memory size                     |   APP
   uint64_t vbase;                 // SW virtual address              |   APP
@@ -500,15 +500,6 @@ struct ipc_t mq_array[ASE_MQ_INSTANCES];
 // Leaving this setting ON automatically scrubs memory (sets 0s)
 // Read shm_dbg_memtest() and ase_dbg_memtest()
 // #define ASE_MEMTEST_ENABLE
-
-
-// ------------------------------------------------------------------
-// DANGEROUS/BUGGY statements - uncomment prudently (OPEN ISSUES)
-// These statements have screwed data structures during testing
-// WARNING: Uncomment only if you want to debug these statements.
-// ------------------------------------------------------------------
-// free(void*) : Free a memory block, "*** glibc detected ***"
-//#define ENABLE_FREE_STATEMENT
 
 
 // ------------------------------------------------------------------

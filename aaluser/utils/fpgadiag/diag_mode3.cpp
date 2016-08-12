@@ -87,7 +87,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
          return 1;
       }
 
-      if ( 0 != CacheCooldown(pOutputUsrVirt, m_pMyApp->InputPhys(), m_pMyApp->InputSize(), cmd) ) {
+      if ( 0 != CacheCooldown(pOutputUsrVirt, m_pMyApp->InputPhys(), (1024 * CL(1)), cmd) ) {
          ERR("Cool FPGA cache failed. Exiting test.");
          return 1;
       }
@@ -123,7 +123,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
 
    //Set the stride value
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_STRIDED_ACS)){
-      csr_type num_strides = (1 == cmd.strided_acs) ? 0 : ((cmd.multicls * (cmd.strided_acs - 1)) - 1 );
+      csr_type num_strides = (1 == cmd.strided_acs) ? 0 : (cmd.multicls * (cmd.strided_acs - 1));
       m_pALIMMIOService->mmioWrite32(CSR_STRIDED_ACS, num_strides);
    }
 
@@ -144,8 +144,11 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
 	  cfg |= (csr_type)NLB_TEST_MODE_CONT;
    }
 
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WT)){
-	  cfg |= (csr_type)NLB_TEST_MODE_WT;
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRPUSH_I)){
+	   cfg |= (csr_type)NLB_TEST_MODE_WRPUSH_I;
+   }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_I)){
+	  cfg |= (csr_type)NLB_TEST_MODE_WRLINE_I;
    }
 
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI)){

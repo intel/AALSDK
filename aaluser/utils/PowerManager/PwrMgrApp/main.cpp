@@ -57,20 +57,52 @@
 
 #include "PwrMgrApp.h"
 
-PwrMgrApp   *g_PwrMgrApp;
+#define MAX_NUM_SOCKETS  2
+
+PwrMgrRuntime * g_PwrMgrRuntime                   = NULL;
+PwrMgrService * g_PwrMgrService[MAX_NUM_SOCKETS]  = {0};
+
+
+
+void Release_PwrMgrservice()
+{
+   for(int i=0;i< MAX_NUM_SOCKETS;i++) {
+
+      if( NULL != g_PwrMgrService[i]) {
+            g_PwrMgrService[i]->FreeService();
+           delete g_PwrMgrService[i];
+           g_PwrMgrService[i] = NULL;
+        }
+
+   }
+
+   if( NULL != g_PwrMgrRuntime) {
+      g_PwrMgrRuntime->runtimeStop();
+      delete g_PwrMgrRuntime;
+      g_PwrMgrRuntime = NULL;
+   }
+}
+
 
 void signal_handler(int signo, siginfo_t *info, void *ctx)
 {
-   ERR("  Power Manger APP signal_handler ");
-   if( NULL != g_PwrMgrApp) {
-      g_PwrMgrApp->FreeService();
-      delete g_PwrMgrApp;
-      g_PwrMgrApp = NULL;
-   }
+   ERR("  Power Manger APP signal_handler Enter ");
+
+   Release_PwrMgrservice();
+
+   ERR("  Power Manger APP signal_handler Exit ");
    exit(0);
 }
 
 
+//=============================================================================
+// Name: main
+// Description: Entry point to the application / demon
+// Inputs: none
+// Outputs: none
+// Comments: Main initializes the system. The rest of the example is implemented
+//           in the object theApp.
+//=============================================================================
 int main(int argc, char *argv[])
 {
 
@@ -88,38 +120,63 @@ int main(int argc, char *argv[])
    sigaction(SIGHUP, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
-   g_PwrMgrApp = new (nothrow) PwrMgrApp();
+   g_PwrMgrRuntime = new (nothrow) PwrMgrRuntime();
 
-   if( NULL == g_PwrMgrApp ){
-      ERR(" App Failed to allocate Power Mgr APP");
+   if( NULL == g_PwrMgrRuntime ){
+      ERR(" Power Manger Failed to  memory for AAL Runtime");
       exit(1);
    }
 
-   if(g_PwrMgrApp->IsOK()){
-      result = g_PwrMgrApp->AllocateService();
-   }else{
-      MSG("App failed to initialize");
-     goto ERROR;
-   }
-   MSG("Demon Starts");
+   // Runtime started
+   if(g_PwrMgrRuntime->IsOK()){
 
-  //  TBD
+      for(int i=0;i< MAX_NUM_SOCKETS;i++) {
+
+         // Allocate Power manager service
+         g_PwrMgrService[i] = new (nothrow) PwrMgrService(g_PwrMgrRuntime->getRuntime());
+         if( NULL != g_PwrMgrService[i] ) {
+
+            // Allocate power manager service
+            g_PwrMgrService[i]->AllocateService();
+            if(!g_PwrMgrService[i]->IsOK()) {
+               ERR(" App Failed to allocate Power Mgr Service");
+               delete g_PwrMgrService[i];
+               g_PwrMgrService[i] = NULL;
+            }
+
+            std::cout << "AlLocated Power Manager Service for Socket:" << i<<  std::endl;
+
+         } else {
+            ERR("Power Manger Failed to  memory for AAL Power Manger service");
+         }
+
+      } // end of for
+
+   } else {
+      ERR(" Power Manger Failed to Allocate AAL Runtime");
+      goto ERROR;
+   } // end of if
+
+
+   MSG("Power manger Demon Starts");
+
+   //  TBD
+   // Waits for signal form driver
    while(true)
    {
 
    }
 
-   // free Service
-   g_PwrMgrApp->FreeService();
-   MSG("Done");
+   MSG("Power manger Demon Ends");
+   Release_PwrMgrservice();
+
+   return result ;
 
 ERROR:
-   if( g_PwrMgrApp) {
-      delete g_PwrMgrApp;
-      g_PwrMgrApp = NULL;
-   }
 
-   exit(0);
+   Release_PwrMgrservice();
+
+   exit(1);
 }
 
 

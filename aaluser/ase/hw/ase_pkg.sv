@@ -269,6 +269,11 @@ package ase_pkg;
    // Latency buffer TID width
    parameter LATBUF_TID_WIDTH        = 32;
 
+   // ASE Response FIFO specifics
+   parameter ASE_RSPFIFO_DEPTH           = 256;
+   parameter ASE_RSPFIFO_COUNT_WIDTH     = $clog2(ASE_RSPFIFO_DEPTH);
+   parameter ASE_RSPFIFO_ALMFULL_THRESH  = ASE_RSPFIFO_DEPTH - 10;   
+   
 
    /*
     * CCI Transaction packet
@@ -687,52 +692,58 @@ package ase_pkg;
    /*
     * ASE protocol sniff codes
     */
-   parameter SNIFF_CODE_WIDTH = 8;
-   parameter SNIFF_VECTOR_WIDTH = 2**SNIFF_CODE_WIDTH;
-      
+   // parameter SNIFF_CODE_WIDTH = 5;
+   parameter SNIFF_VECTOR_WIDTH = 32;
+ // 2**SNIFF_CODE_WIDTH;
+
    // Error code indices
    typedef enum   {
-		   SNIFF_NO_ERROR                = 32'h00,
-		   // ------------ C0TX ------------ //
-		   SNIFF_C0TX_INVALID_REQTYPE    = 32'h40,
-		   SNIFF_C0TX_OVERFLOW           = 32'h41,
-		   SNIFF_C0TX_ADDRALIGN_2_ERROR  = 32'h42,
-		   SNIFF_C0TX_ADDRALIGN_4_ERROR  = 32'h43,
-		   SNIFF_C0TX_RESET_IGNORED_WARN = 32'h44,
-		   SNIFF_C0TX_XZ_FOUND_WARN      = 32'h45,
-		   SNIFF_C0TX_3CL_REQUEST        = 32'h4E,
-		   SNIFF_C0TX_ADDR_ZERO_WARN     = 32'h51,
-		   // ------------ C1TX -------------- //
-		   SNIFF_C1TX_INVALID_REQTYPE    = 32'h80,
-		   SNIFF_C1TX_OVERFLOW           = 32'h81,
-		   SNIFF_C1TX_ADDRALIGN_2_ERROR  = 32'h82,
-		   SNIFF_C1TX_ADDRALIGN_4_ERROR  = 32'h83,
-		   SNIFF_C1TX_RESET_IGNORED_WARN = 32'h84,
-		   SNIFF_C1TX_XZ_FOUND_WARN      = 32'h85,
-		   SNIFF_C1TX_UNEXP_VCSEL        = 32'h86,
-		   SNIFF_C1TX_UNEXP_MDATA        = 32'h87,
-		   SNIFF_C1TX_UNEXP_ADDR         = 32'h88,
-		   SNIFF_C1TX_UNEXP_CLLEN        = 32'h89,
-		   SNIFF_C1TX_UNEXP_REQTYPE      = 32'h8A,
-		   SNIFF_C1TX_PAYLOAD_OVERRUN    = 32'h8B,
-		   SNIFF_C1TX_PAYLOAD_UNDERRUN   = 32'h8C,
-		   SNIFF_C1TX_SOP_NOT_SET        = 32'h8D,
-		   SNIFF_C1TX_SOP_SET_MCL1TO3    = 32'h8E,
-		   SNIFF_C1TX_3CL_REQUEST        = 32'h8F,
-		   SNIFF_C1TX_WRFENCE_IN_MCL1TO3 = 32'h90,
-		   SNIFF_C1TX_ADDR_ZERO_WARN     = 32'h91,
+		   SNIFF_NO_ERROR                = 0,
 		   // ------------ C2TX -------------- //
-		   MMIO_RDRSP_TIMEOUT            = 32'hC0,
-		   // MMIO_RDRSP_TID_MISMATCH       = 32'hC1,
-		   MMIO_RDRSP_UNSOLICITED        = 32'hC2,
-		   MMIO_RDRSP_RESET_IGNORED_WARN = 32'hC4,
-		   MMIO_RDRSP_XZ_FOUND_WARN      = 32'hC5
-
+		   MMIO_RDRSP_TIMEOUT            = 1,
+		   MMIO_RDRSP_UNSOLICITED        = 2,
+		   MMIO_RDRSP_RESET_IGNORED_WARN = 3,
+		   MMIO_RDRSP_XZ_FOUND_WARN      = 4,
+		   // ------------ C0TX ------------ //
+		   SNIFF_C0TX_INVALID_REQTYPE    = 5,
+		   SNIFF_C0TX_OVERFLOW           = 6,
+		   SNIFF_C0TX_ADDRALIGN_2_ERROR  = 7,
+		   SNIFF_C0TX_ADDRALIGN_4_ERROR  = 8,
+		   SNIFF_C0TX_RESET_IGNORED_WARN = 9,
+		   SNIFF_C0TX_XZ_FOUND_WARN      = 10,
+		   SNIFF_C0TX_3CL_REQUEST        = 11,
+		   SNIFF_C0TX_ADDR_ZERO_WARN     = 12,
+		   // ------------ C1TX -------------- //
+		   SNIFF_C1TX_INVALID_REQTYPE    = 13,
+		   SNIFF_C1TX_OVERFLOW           = 14,
+		   SNIFF_C1TX_ADDRALIGN_2_ERROR  = 15,
+		   SNIFF_C1TX_ADDRALIGN_4_ERROR  = 16,
+		   SNIFF_C1TX_RESET_IGNORED_WARN = 17,
+		   SNIFF_C1TX_XZ_FOUND_WARN      = 18,
+		   SNIFF_C1TX_UNEXP_VCSEL        = 19,
+		   SNIFF_C1TX_UNEXP_MDATA        = 20,
+		   SNIFF_C1TX_UNEXP_ADDR         = 21,
+		   SNIFF_C1TX_UNEXP_CLLEN        = 22,
+		   SNIFF_C1TX_UNEXP_REQTYPE      = 23,
+		   SNIFF_C1TX_PAYLOAD_OVERRUN    = 24,
+		   SNIFF_C1TX_PAYLOAD_UNDERRUN   = 25,
+		   SNIFF_C1TX_SOP_NOT_SET        = 26,
+		   SNIFF_C1TX_SOP_SET_MCL1TO3    = 27,
+		   SNIFF_C1TX_3CL_REQUEST        = 28,
+		   SNIFF_C1TX_WRFENCE_IN_MCL1TO3 = 29,
+		   SNIFF_C1TX_ADDR_ZERO_WARN     = 30
+		   // --------------------------------- //
 		   } sniff_code_t;
 
    /*
     * outoforder_wrf_channel Transaction checker block
     */
-   // <TBD>
-   
+ `ifdef ASE_DEBUG
+   typedef struct packed {
+      logic [LATBUF_TID_WIDTH-1:0] tid;
+      logic 			   txhdr_valid;
+      TxHdr_t                      txhdr;
+      } ccip_txn_t;
+ `endif
+
 endpackage

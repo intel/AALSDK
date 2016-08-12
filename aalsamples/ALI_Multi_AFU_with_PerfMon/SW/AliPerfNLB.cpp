@@ -249,7 +249,6 @@ HelloALINLBApp::HelloALINLBApp() :
 }
 
 /// @brief   Destructor
-///
 HelloALINLBApp::~HelloALINLBApp()
 {
    m_Sem.Destroy();

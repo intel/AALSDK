@@ -54,15 +54,23 @@ BEGIN_NAMESPACE(AAL)
 class OSAL_API DynLinkLibrary
 {
 public:
-   /// DynLinkLibrary Constructor.
-   DynLinkLibrary(const std::string &LibraryName);
-   /// DynLinkLibrary Destructor.
-   virtual ~DynLinkLibrary();
-   /// Gets the address of the named symbol.
+   /// @brief DynLinkLibrary Constructor.
    ///
-   /// @retval  NULL  On failure.
+   /// @param[in] LibraryName A pointer to the name of the library.
+   /// @return void
+   DynLinkLibrary(const std::string &LibraryName);
+   // DynLinkLibrary Destructor.
+   virtual ~DynLinkLibrary();
+   /// @brief Gets the address of the named symbol.
+   ///
+   /// @param[in] SymbolName A pointer to the name of the symbol.
+   /// @return  The address in the library of the symbol.
+   /// @return  NULL on failure.
    void * GetSymAddress(const std::string &SymbolName);
-   /// Internal state check.
+   /// @brief Check internal state.
+   ///
+   /// @retval true  The DynLinkLibrary instance is OK.
+   /// @retval false The instance failed to initialize or the library failed to load.
    btBool IsOK() { return NULL != m_hDLL; }
 
 private:

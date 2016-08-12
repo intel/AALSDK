@@ -89,7 +89,8 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
                                     struct CCIP_PERF_COUNTERS* pPerf)
 {
   
-   bt32bitInt res =0;
+   bt32bitInt res                   = 0;
+   volatile struct fme_device *pfme = pfme_dev;
 
    PTRACEIN;
 
@@ -102,19 +103,13 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
    pPerf->num_counters.value = PERF_MONITOR_COUNT;
 
    // freeze Cache
-   ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.freeze = 0x1;
-
-   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr);
+   ccip_fme_perf(pfme)->ccip_fpmon_ch_ctl.freeze = 0x1;
 
    // freeze Fabric
-   ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.freeze = 0x1;
-
-   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr);
+   ccip_fme_perf(pfme)->ccip_fpmon_fab_ctl.freeze = 0x1;
 
    // Freeze VTD
-   ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.freeze = 0x1;
-
-   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.csr);
+   ccip_fme_perf(pfme)->ccip_fpmon_vtd_ctl.freeze = 0x1;
 
 
    //Cache_Read_Hit
@@ -167,21 +162,14 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
    }
 
    //un Freeze VTD
-   ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.freeze = 0x0;
-
-   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.csr);
-
+   ccip_fme_perf(pfme)->ccip_fpmon_vtd_ctl.freeze = 0x0;
 
    //un freeze fabric
-   ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.freeze = 0x0;
-
-   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr);
+   ccip_fme_perf(pfme)->ccip_fpmon_fab_ctl.freeze = 0x0;
 
    //un freeze cache
-   ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.freeze = 0x0;
+   ccip_fme_perf(pfme)->ccip_fpmon_ch_ctl.freeze = 0x0;
 
-   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr);
- 
    PTRACEOUT_INT(res);
    return res;
 ERR:
@@ -203,18 +191,17 @@ bt32bitInt update_fabric_event_counters(bt32bitInt event_code ,
                                        struct fme_device *pfme_dev,
                                        struct CCIP_PERF_COUNTERS* pPerf)
 {
-   bt32bitInt res       = 0;
-   bt32bitInt counter   = 0;
-   btTime delay         = PERFMON_POLLING_SLEEP;
+   bt32bitInt res                   = 0;
+   bt32bitInt counter               = 0;
+   btTime delay                     = PERFMON_POLLING_SLEEP;
+   volatile struct fme_device *pfme = pfme_dev;
 
    PTRACEIN;
 
-   ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.fabric_evt_code =event_code;
-   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.csr);
+   ccip_fme_perf(pfme)->ccip_fpmon_fab_ctl.fabric_evt_code =event_code;
 
-   while (event_code != ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.event_code)  {
+   while (event_code != ccip_fme_perf(pfme)->ccip_fpmon_fab_ctr.event_code)  {
 
-      Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.csr);
       counter++;
 
       // Sleep
@@ -228,56 +215,100 @@ bt32bitInt update_fabric_event_counters(bt32bitInt event_code ,
 
    } // end while
 
-   Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.csr);
    switch (event_code)
    {
 
       case  Fabric_PCIe0_Read:
       {
-       pPerf->pcie0_read.value= ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.fabric_counter;
+         pPerf->pcie0_read.value= ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.fabric_counter;
       }
       break;
 
       case  Fabric_PCIe0_Write:
       {
-       pPerf->pcie0_write.value= ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.fabric_counter;
+         pPerf->pcie0_write.value = ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.fabric_counter;
       }
       break;
 
       case  Fabric_PCIe1_Read:
       {
-       pPerf->pcie1_read.value= ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.fabric_counter;
+         pPerf->pcie1_read.value = ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.fabric_counter;
       }
       break;
 
 
       case  Fabric_PCIe1_Write:
       {
-       pPerf->pcie1_write.value= ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.fabric_counter;
+         pPerf->pcie1_write.value = ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.fabric_counter;
       }
       break;
 
       case  Fabric_UPI_Read:
       {
-       pPerf->upi_read.value= ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.fabric_counter;
+         pPerf->upi_read.value = ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.fabric_counter;
       }
       break;
 
       case  Fabric_UPI_Write:
       {
-       pPerf->upi_write.value= ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.fabric_counter;
+         pPerf->upi_write.value = ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.fabric_counter;
       }
       break;
 
       default:
       {
-       // Error
-       PERR("Invalid Cache Event code  \n");
-       res= -EINVAL;
+         // Error
+         PERR("Invalid Cache Event code  \n");
+         res= -EINVAL;
       }
       break;
 
-      }
+   }
+
+   PTRACEOUT_INT(res);
+   return res;
+ERR:
+   PTRACEOUT_INT(res);
+   return  res;
+
+}
+
+///============================================================================
+/// Name: read_cache_event_counters
+/// @brief reads cache Performance counters
+///
+/// @param[in] event_code - cache counters code.
+/// @param[in] pfme_dev - fme device pointer
+/// @param[in] countervalue - counter value.
+/// @return    0 = success
+///============================================================================
+bt32bitInt read_cache_event_counters(bt32bitInt event_code ,
+                                     struct fme_device *pfme_dev,
+                                     btUnsigned64bitInt* countervalue)
+{
+   bt32bitInt res                   = 0;
+   btTime delay                     = PERFMON_POLLING_SLEEP;
+   bt32bitInt counter               = 0;
+   volatile struct fme_device *pfme = pfme_dev;
+   PTRACEIN;
+
+   ccip_fme_perf(pfme)->ccip_fpmon_ch_ctl.cache_event = event_code;
+
+   while (event_code != ccip_fme_perf(pfme)->ccip_fpmon_ch_ctr_0.event_code)   {
+
+     counter++;
+     // Sleep
+     kosal_udelay(delay);
+
+     if (counter > CACHE_EVENT_COUNTER_MAX_TRY)   {
+        PERR("Max Try \n");
+        res = 1;
+        goto ERR;
+     }
+
+   } // end while
+
+   *countervalue= ccip_fme_perf(pfme)->ccip_fpmon_ch_ctr_0.cache_counter + ccip_fme_perf(pfme)->ccip_fpmon_ch_ctr_1.cache_counter;
 
    PTRACEOUT_INT(res);
    return res;
@@ -300,77 +331,111 @@ bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
                                        struct fme_device *pfme_dev,
                                        struct CCIP_PERF_COUNTERS* pPerf)
 {
-   bt32bitInt res           = 0;
-   bt32bitInt counter       = 0;
-   btUnsigned64bitInt total = 0;
-   btTime delay             = PERFMON_POLLING_SLEEP;
+   bt32bitInt res                   = 0;
+   btUnsigned64bitInt total         = 0;
+   btUnsigned64bitInt evictions     = 0;
+   volatile struct fme_device *pfme = pfme_dev;
 
    PTRACEIN;
-
-   ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.cache_event =event_code;
-   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.csr);
-
-   while (event_code != ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.event_code)   {
-
-      Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.csr);
-      counter++;
-
-      // Sleep
-      kosal_udelay(delay);
-
-      if (counter > CACHE_EVENT_COUNTER_MAX_TRY)   {
-         PERR("Max Try \n");
-         res = 1;
-         goto ERR;
-      }
-
-   } // end while
-
-   Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.csr);
-   Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_1.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_1.csr);
-
-   total= ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.cache_counter + ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_1.cache_counter;
 
    switch (event_code)
    {
 
-    case  Cache_Read_Hit:
-    {
-      pPerf->read_hit.value= total;
-    }
-    break;
+      case  Cache_Read_Hit:
+      {
+         // Select RD Channel
+         ccip_fme_perf(pfme)->ccip_fpmon_ch_ctl.cci_chsel = 0x0;
 
-    case  Cache_Write_Hit:
-    {
-      pPerf->write_hit.value = total;
-    }
-    break;
+         // Read Cache Hit Counters
+         res = read_cache_event_counters(event_code,pfme_dev,&total);
+         if (0 != res) {
+            goto ERR;
+         }
 
-    case  Cache_Read_Miss:
-    {
-      pPerf->read_miss.value = total;
-    }
-    break;
+         pPerf->read_hit.value = total;
+      }
+      break;
 
-    case  Cache_Write_Miss:
-    {
-      pPerf->write_miss.value= total;
-    }
-    break;
+      case  Cache_Write_Hit:
+      {
+         // Select WR Channel
+         ccip_fme_perf(pfme)->ccip_fpmon_ch_ctl.cci_chsel = 0x1;
 
-    case  Cache_Evictions:
-    {
-      pPerf->evictions.value= total;
-    }
-    break;
+         // Write Cache Hit Counters
+         res = read_cache_event_counters(event_code,pfme_dev,&total);
+         if (0 != res) {
+            goto ERR;
+         }
 
-    default:
-    {
-       // Error
-       PERR("Invalid Cache Event code  \n");
-       res= -EINVAL;
-    }
-    break;
+         pPerf->write_hit.value = total;
+      }
+      break;
+
+      case  Cache_Read_Miss:
+      {
+         // Select RD Channel
+         ccip_fme_perf(pfme)->ccip_fpmon_ch_ctl.cci_chsel = 0x0;
+
+         // Read Cache Miss Counters
+         res = read_cache_event_counters(event_code,pfme_dev,&total);
+         if (0 != res) {
+            goto ERR;
+         }
+         pPerf->read_miss.value = total;
+      }
+      break;
+
+      case  Cache_Write_Miss:
+      {
+         // Select WR Channel
+         ccip_fme_perf(pfme)->ccip_fpmon_ch_ctl.cci_chsel = 0x1;
+
+         // Write Cache Miss Counters
+         res = read_cache_event_counters(event_code,pfme_dev,&total);
+         if (0 != res) {
+            goto ERR;
+         }
+         pPerf->write_miss.value = total;
+      }
+      break;
+
+      case  Cache_Evictions:
+      {
+
+         // Select RD Channel
+         ccip_fme_perf(pfme)->ccip_fpmon_ch_ctl.cci_chsel = 0x0;
+
+         // Cache Evictions Counters
+         res = read_cache_event_counters(event_code,pfme_dev,&evictions);
+         if (0 != res) {
+            goto ERR;
+         }
+
+         total       = evictions ;
+         evictions   = 0;
+
+         // Select WR Channel
+         ccip_fme_perf(pfme)->ccip_fpmon_ch_ctl.cci_chsel = 0x1;
+
+         // Cache Evictions Counters
+         res = read_cache_event_counters(event_code,pfme_dev,&evictions);
+         if (0 != res) {
+            goto ERR;
+         }
+
+         total = total + evictions;
+
+         pPerf->evictions.value = total;
+      }
+      break;
+
+      default:
+      {
+         // Error
+         PERR("Invalid Cache Event code  \n");
+         res= -EINVAL;
+      }
+      break;
 
    }
 
@@ -398,22 +463,19 @@ bt32bitInt update_vtd_event_counters(bt32bitInt event_code,
                                      struct CCIP_PERF_COUNTERS* pPerf)
 
 {
-   bt32bitInt res           = 0;
-   bt32bitInt counter       = 0;
-   btTime delay             = PERFMON_POLLING_SLEEP;
-   btUnsigned64bitInt total = 0;
+   bt32bitInt res                   = 0;
+   bt32bitInt counter               = 0;
+   btTime delay                     = PERFMON_POLLING_SLEEP;
+   btUnsigned64bitInt total         = 0;
+   volatile struct fme_device *pfme = pfme_dev;
 
    PTRACEIN;
 
-   ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.vtd_evtcode = event_code;
+   ccip_fme_perf(pfme)->ccip_fpmon_vtd_ctl.vtd_evtcode = event_code;
 
-   Set64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctl.csr);
+   while (event_code != ccip_fme_perf(pfme)->ccip_fpmon_vtd_ctr.event_code)   {
 
-   while (event_code != ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctr.event_code)   {
-
-      Get64CSR(&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctr.csr,&ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctr.csr);
       counter++;
-
       // Sleep
       kosal_udelay(delay);
 
@@ -425,44 +487,44 @@ bt32bitInt update_vtd_event_counters(bt32bitInt event_code,
 
    } // end while
 
-   total = ccip_fme_perf(pfme_dev)->ccip_fpmon_vtd_ctr.vtd_counter ;
+   total = ccip_fme_perf(pfme)->ccip_fpmon_vtd_ctr.vtd_counter ;
 
    switch (event_code)
    {
 
-    case  AFU0_MemRead_Trans:
-    {
-       pPerf->AFU0_MemRead_Trans.value= total;
-    }
-    break;
+      case  AFU0_MemRead_Trans:
+      {
+         pPerf->AFU0_MemRead_Trans.value= total;
+      }
+      break;
 
-    case  AFU0_MemWrite_Trans:
-    {
-       pPerf->AFU0_MemWrite_Trans.value = total;
-    }
-    break;
+      case  AFU0_MemWrite_Trans:
+      {
+         pPerf->AFU0_MemWrite_Trans.value = total;
+      }
+      break;
 
-    case  AFU0_DevTLBRead_Hit:
-    {
-       pPerf->AFU0_DevTLBRead_Hit.value = total;
-    }
-    break;
+      case  AFU0_DevTLBRead_Hit:
+      {
+         pPerf->AFU0_DevTLBRead_Hit.value = total;
+      }
+      break;
 
-    case  AFU0_DevTLBWrite_Hit:
-    {
-       pPerf->AFU0_MemWrite_Trans.value= total;
-    }
-    break;
+      case  AFU0_DevTLBWrite_Hit:
+      {
+         pPerf->AFU0_MemWrite_Trans.value= total;
+      }
+      break;
 
-    default:
-    {
-       // Error
-       PERR("Invalid VTD Event code  \n");
-       res= -EINVAL;
-    }
-    break;
+      default:
+      {
+         // Error
+         PERR("Invalid VTD Event code  \n");
+         res= -EINVAL;
+      }
+      break;
 
-   }
+   } // end of switch
 
    PTRACEOUT_INT(res);
    return res;

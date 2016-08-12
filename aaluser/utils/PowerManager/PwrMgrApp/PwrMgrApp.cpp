@@ -46,32 +46,131 @@
 #include <math.h>
 #include <sched.h>
 
-void PwrMgrApp::serviceAllocated(AAL::IBase               *pServiceBase,
-                                 AAL::TransactionID const &rTranID)
+
+#define  PWR_MSR610                      "/usr/sbin/rdmsr -c0 -p %d 0x610"
+#define  PWR_MSR606                      "/usr/sbin/rdmsr -c0 -p %d 0x606"
+#define  SKX_CPU_SPLIT_POINT             48
+
+
+PwrMgrRuntime::PwrMgrRuntime() :
+               m_Runtime(this),
+               m_Errors(0)
+{
+   // Register our Client side interfaces so that the Service can acquire them.
+   //   SetInterface() is inherited from CAASBase
+   SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
+
+   // Initialize our internal semaphore
+   m_Sem.Create(0, 1);
+
+   // Start the AAL Runtime, setting any startup options via a NamedValueSet
+
+   // Using Hardware Services requires the Remote Resource Manager Broker Service
+   //  Note that this could also be accomplished by setting the environment variable
+   //   AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
+   NamedValueSet configArgs;
+   NamedValueSet configRecord;
+
+   // Specify that the remote resource manager is to be used.
+   configRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+   configArgs.Add(AALRUNTIME_CONFIG_RECORD, &configRecord);
+
+   // Start the Runtime and wait for the callback by sitting on the semaphore.
+   //   the runtimeStarted() or runtimeStartFailed() callbacks should set m_Errors appropriately.
+   if ( !m_Runtime.start(configArgs) ) {
+      ++m_Errors;
+      return;
+   }
+
+   m_Sem.Wait();
+}
+
+void PwrMgrRuntime::runtimeStop()
+{
+   MSG("Runtime Stop");
+   m_Runtime.stop();
+   m_Sem.Wait();
+}
+
+void PwrMgrRuntime::runtimeCreateOrGetProxyFailed(IEvent const &rEvent)
+{
+   ++m_Errors;
+   ERR("didn't expect runtimeCreateOrGetProxyFailed()");
+}
+
+void PwrMgrRuntime::runtimeStarted(IRuntime            *pRuntime,
+                                           const NamedValueSet &rConfigParms)
+{
+   MSG("Runtime Started");
+   m_Sem.Post(1);
+}
+
+void PwrMgrRuntime::runtimeStopped(IRuntime *pRuntime)
+{
+   MSG("Runtime Stopped");
+   m_Sem.Post(1);
+}
+
+void PwrMgrRuntime::runtimeStartFailed(const IEvent &rEvent)
+{
+   ++m_Errors;
+   ERR("didn't expect runtimeStartFailed()");
+   PrintExceptionDescription(rEvent);
+   m_Sem.Post(1);
+}
+
+void PwrMgrRuntime::runtimeStopFailed(const IEvent &rEvent)
+{
+   ++m_Errors;
+   ERR("didn't expect runtimeStopFailed()");
+   PrintExceptionDescription(rEvent);
+   m_Sem.Post(1);
+}
+
+void PwrMgrRuntime::runtimeAllocateServiceFailed(IEvent const &rEvent)
+{
+   ++m_Errors;
+   ERR("didn't expect runtimeAllocateServiceFailed()");
+   PrintExceptionDescription(rEvent);
+}
+
+void PwrMgrRuntime::runtimeAllocateServiceSucceeded(IBase               *pClient,
+                                                            TransactionID const &rTranID)
+{
+   MSG("Runtime Allocate Service Succeeded");
+}
+
+void PwrMgrRuntime::runtimeEvent(const IEvent &rEvent)
+{
+   ++m_Errors;
+   ERR("runtimeEvent(): received unexpected event 0x" << std::hex << rEvent.SubClassID() << std::dec);
+}
+
+
+
+void PwrMgrService::serviceAllocated(AAL::IBase               *pServiceBase,
+                                     AAL::TransactionID const &rTranID)
 {
    // Save the IBase for the Service. Through it we can get any other
    //  interface implemented by the Service
    m_pPwrMgrService = pServiceBase;
    ASSERT(NULL != m_pPwrMgrService);
    if ( NULL == m_pPwrMgrService ) {
-      ++m_Errors;
       ERR("returned  service was NULL");
       m_Sem.Post(1);
       return;
    }
-
-   MSG(" Service Allocated");
    m_Sem.Post(1);
 }
 
-void PwrMgrApp::serviceAllocateFailed(const AAL::IEvent &rEvent)
+void PwrMgrService::serviceAllocateFailed(const AAL::IEvent &rEvent)
 {
    ++m_Errors;
    ERR("Failed to allocate  Service");
    m_Sem.Post(1);
 }
 
-void PwrMgrApp::serviceReleased(AAL::TransactionID const &rTranID)
+void PwrMgrService::serviceReleased(AAL::TransactionID const &rTranID)
 {
    MSG(" Service Released");
    if ( rTranID.Context() != (AAL::btApplicationContext)1 ) {
@@ -81,7 +180,7 @@ void PwrMgrApp::serviceReleased(AAL::TransactionID const &rTranID)
    m_pPwrMgrService = NULL;
 }
 
-void PwrMgrApp::serviceReleaseRequest(AAL::IBase        *pServiceBase,
+void PwrMgrService::serviceReleaseRequest(AAL::IBase        *pServiceBase,
                                       const AAL::IEvent &rEvent)
 {
    ++m_Errors;
@@ -97,21 +196,21 @@ void PwrMgrApp::serviceReleaseRequest(AAL::IBase        *pServiceBase,
    }
 }
 
-void PwrMgrApp::serviceReleaseFailed(const AAL::IEvent &rEvent)
+void PwrMgrService::serviceReleaseFailed(const AAL::IEvent &rEvent)
 {
    ++m_Errors;
    ERR( " didn't expect serviceReleaseFailed()");
    m_Sem.Post(1);
 }
 
-void PwrMgrApp::serviceEvent(const AAL::IEvent &rEvent)
+void PwrMgrService::serviceEvent(const AAL::IEvent &rEvent)
 {
    ++m_Errors;
    ERR( " serviceEvent(): received unexpected event 0x" << std::hex << rEvent.SubClassID() << std::dec);
 }
 
 
-btInt PwrMgrApp::AllocateService()
+btInt PwrMgrService::AllocateService()
 {
 
    SetInterface(iidServiceClient, dynamic_cast<AAL::IServiceClient *>(this));
@@ -135,97 +234,21 @@ btInt PwrMgrApp::AllocateService()
    //   If allocation fails the serviceAllocateFailed() should set m_Errors appropriately.
 
    // We are the service client.
-   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest);
-   m_Sem.Wait();
-
-}
-
-
-PwrMgrApp::PwrMgrApp() :
-              m_Runtime(this),
-              m_Errors(0)
-{
-   // Register our Client side interfaces so that the Service can acquire them.
-   //   SetInterface() is inherited from CAASBase
-   SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
-
-   // Initialize our internal semaphore
-   m_Sem.Create(0, 1);
-
-   NamedValueSet configArgs;
-   NamedValueSet configRecord;
-
-#if defined( HWAFU )
-   // Specify that the remote resource manager is to be used.
-   configRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-   configArgs.Add(AALRUNTIME_CONFIG_RECORD, &configRecord);
-#endif
-
-   // Start the Runtime and wait for the callback by sitting on the semaphore.
-   //   the runtimeStarted() or runtimeStartFailed() callbacks should set m_Errors appropriately.
-   if ( !m_Runtime.start(configArgs) ) {
-      ++m_Errors;
-      return;
+   if(NULL != m_pRuntime) {
+      m_pRuntime->allocService(dynamic_cast<IBase *>(this), Manifest);
+      m_Sem.Wait();
    }
-
-   m_Sem.Wait();
 }
 
-void PwrMgrApp::runtimeCreateOrGetProxyFailed(IEvent const &rEvent)
+PwrMgrService::PwrMgrService(Runtime *pRuntime) :
+               m_pRuntime(pRuntime),
+               m_Errors(0)
 {
-   ++m_Errors;
-   ERR("didn't expect runtimeCreateOrGetProxyFailed()");
+   // Initialize our internal semaphore
+      m_Sem.Create(0, 1);
 }
 
-void PwrMgrApp::runtimeStarted(IRuntime            *pRuntime,
-                                           const NamedValueSet &rConfigParms)
-{
-   MSG("Runtime Started");
-   m_Sem.Post(1);
-}
-
-void PwrMgrApp::runtimeStopped(IRuntime *pRuntime)
-{
-   MSG("Runtime Stopped");
-   m_Sem.Post(1);
-}
-
-void PwrMgrApp::runtimeStartFailed(const IEvent &rEvent)
-{
-   ++m_Errors;
-   ERR("didn't expect runtimeStartFailed()");
-   PrintExceptionDescription(rEvent);
-   m_Sem.Post(1);
-}
-
-void PwrMgrApp::runtimeStopFailed(const IEvent &rEvent)
-{
-   ++m_Errors;
-   ERR("didn't expect runtimeStopFailed()");
-   PrintExceptionDescription(rEvent);
-   m_Sem.Post(1);
-}
-
-void PwrMgrApp::runtimeAllocateServiceFailed(IEvent const &rEvent)
-{
-   ++m_Errors;
-   ERR("didn't expect runtimeAllocateServiceFailed()");
-   PrintExceptionDescription(rEvent);
-}
-
-void PwrMgrApp::runtimeAllocateServiceSucceeded(IBase               *pClient,
-                                                TransactionID const &rTranID)
-{
-   MSG("Runtime Allocate Service Succeeded");
-}
-
-void PwrMgrApp::runtimeEvent(const IEvent &rEvent)
-{
-   ++m_Errors;
-   ERR("runtimeEvent(): received unexpected event 0x" << std::hex << rEvent.SubClassID() << std::dec);
-}
-
-btInt PwrMgrApp::FreeService()
+btInt PwrMgrService::FreeService()
 {
    if ( NULL != m_pPwrMgrService ) {
       MSG("Freeing  Service");
@@ -233,12 +256,13 @@ btInt PwrMgrApp::FreeService()
       AAL::IAALService *pIAALService = dynamic_ptr<AAL::IAALService>(iidService, m_pPwrMgrService);
       ASSERT(NULL != pIAALService);
       pIAALService->Release(AAL::TransactionID());
+      m_Sem.Wait();
    } else {
-      m_Sem.Post(1);
+      //m_Sem.Post(1);
    }
 }
 
-void PwrMgrApp::reconfPowerRequest( TransactionID &rTranID,IEvent const &rEvent ,INamedValueSet &rInputArgs)
+void PwrMgrService::reconfPowerRequest( TransactionID &rTranID,IEvent const &rEvent ,INamedValueSet &rInputArgs)
 {
    MSG("reconfPowerEvent Triggered");
 
@@ -276,9 +300,7 @@ void PwrMgrApp::reconfPowerRequest( TransactionID &rTranID,IEvent const &rEvent 
       printf("PWRMGR_PRPWRRQUIRED %d \n",Wattsvalue);
    }
 
-   // res = CoreIdler( Wattsvalue,socketID);
-   //SleepSec(50);
-
+   res = CoreIdler( Wattsvalue,socketID);
    printf("res= %d \n",res);
 
    IPwrMgr *pALIPwrMgr = dynamic_ptr<IPwrMgr>(iid_PWRMGR_Service, m_pPwrMgrService);
@@ -295,186 +317,215 @@ void PwrMgrApp::reconfPowerRequest( TransactionID &rTranID,IEvent const &rEvent 
 }
 
 
-btInt PwrMgrApp::CoreIdler(btInt &FPIWatts, btInt &socket)
+btInt PwrMgrService::CoreIdler(btInt &FPIWatts, btInt &socket)
 {
-  FILE *fp, *fp2;
-  char data[1024];
-  char data1[1024];
-  int64_t PackPwrLimit1;
-  int64_t PowerUnitValue;
-  char *endptr;
-  int ret_val;
 
-  int64_t PackagePowerUnit;
-  long double TotalWatts;
-  long double AvailableWatts;
-  int64_t CoreCount;
-  int64_t MaxThreadVal;
-  long double FpgaWatts;
-  char MaxThreadValStr[20];
+   FILE *fp                    = NULL;
 
-  int i, pid, max_pid_index, split_point;
-  cpu_set_t idle_set, current_set, full_mask_set;
-  char command610[40];
-  char command606[40];
+   int64_t PackPwrLimit1       = 0;
+   int64_t PowerUnitValue      = 0;
+   int64_t PackagePowerUnit    = 0;
+   int64_t CoreCount           = 0;
+   int64_t MaxThreadVal        = 0;
 
-  // fail if socket not equal to 0 or 1
-  if (socket != 0 ) {
-    if (socket != 1) return 0;
-  }
-  // zero out command arrays.
-  for (i = 0; i < 40; i++){
-    command610[i] = 0;
-    command606[i] = 0;
-  }
+   int ret_val                 = 0;
+   int split_point             = 0;
+   int max_pid_index           = 0;
+   int pid                     = 0;
+   int i                       = 0;
 
-  split_point = 28; // force split temporarily
+   long double TotalWatts      = 0;
+   long double AvailableWatts  = 0;
+   long double FpgaWatts       = 0;
 
-  // set msr commands based on socket and split_point
+   char MaxThreadValStr[20]    = {0};
+   char data[1024]             = {0};
+   char data1[1024]            = {0};
+   char command610[40]         = {0};
+   char command606[40]         = {0};
+   char *endptr                = NULL;
 
-  if (socket == 0) {
-    sprintf(command610, "/usr/sbin/rdmsr -c0 -p 0 0x610");
-    sprintf(command606, "/usr/sbin/rdmsr -c0 -p 0 0x606");
-  } else {
-    sprintf(command610, "/usr/sbin/rdmsr -c0 -p %d 0x610", split_point);
-    sprintf(command606, "/usr/sbin/rdmsr -c0 -p %d 0x606", split_point);
-  }
+   cpu_set_t idle_set, current_set, full_mask_set;
 
+   // Fail if socket not equal to 0 or 1
+   if (socket != 0 && socket != 1) {
+         ERR("Bad Socket ID");
+         return ali_errnumBadSocket;
+   }
 
-  FpgaWatts = (double) FPIWatts;
-//
-// Begin MSR retrieval.
-//
-//  fp = popen("/usr/sbin/rdmsr -c0 -p 0 0x610", "r");
-  fp = popen(command610, "r");
-  if (fp == NULL) {
-    printf("Failed to run command\n");
-    exit(0);
-  }
+   // zero array before building commands.
+   for (i = 0; i < 40; i++) {
+     command610[i] = 0;
+     command606[i] = 0;
+   }
 
-  while (fgets(data, sizeof(data)-1, fp) != NULL) {
-    printf("%s", data);
-  }
-  PackPwrLimit1 = strtoll(&data[2], &endptr, 16);
-  printf("Power Limit converted: %lx \n", PackPwrLimit1);
-  ret_val = pclose(fp);
+   split_point = SKX_CPU_SPLIT_POINT; // force split temporarily, BUGBUG
 
-  PackPwrLimit1 = PackPwrLimit1 & 0x07fff;
+   // set msr commands based on socket and split_point
+   if (socket == 0) {
+      sprintf(command610, PWR_MSR610,0);
+      sprintf(command606, PWR_MSR606,0);
+   } else {
+      sprintf(command610, PWR_MSR610, split_point);
+      sprintf(command606, PWR_MSR606, split_point);
+   }
 
-  //  fp = popen("/usr/sbin/rdmsr -c0 -p 0 0x606", "r");
-  fp = popen(command606, "r");
-  while (fgets(data, sizeof(data)-1, fp) != NULL) {
-    printf("%s", data);
-  }
-  PackagePowerUnit = strtoll(&data[2], &endptr, 16);
-  printf("Package Power Unit Value converted: %lx \n", PackagePowerUnit);
-  ret_val = pclose(fp);
-//
-// MSR retrvial complete
-// Calculate power budget.
-//
+    FpgaWatts = (double) FPIWatts;
+  //
+   // Begin MSR retrieval.
+   //
+   //  fp = popen("/usr/sbin/rdmsr -c0 -p 0 0x610", "r");
+   fp = popen(command610, "r");
+   if (NULL == fp) {
+      ERR("Failed to open MSR 610 ");
+      return(ali_errnumRdMsrCmdFail);
+   }
 
-  PowerUnitValue = PackagePowerUnit & 0x0f;
-  PowerUnitValue = pow(2, PowerUnitValue);
-  printf("Divisor of Raw Limit1:%lx\n", PowerUnitValue);
-  TotalWatts = ((double)PackPwrLimit1)/((double)PowerUnitValue);
-  printf("Total Watts: %Lf \n", TotalWatts);
-  if ((TotalWatts - 5 ) <= FpgaWatts) return (0);
-  AvailableWatts = TotalWatts - (double)FpgaWatts;
-  printf("Available Watts: %Lf\n", AvailableWatts);
-  CoreCount = (int64_t) AvailableWatts / (int64_t) 5;
-  printf("Core Count: %ld\n", CoreCount);
-  MaxThreadVal = CoreCount * 2;
-// ---  //MaxThreadVal = MaxThreadVal - 1;
-  snprintf(MaxThreadValStr, 20, "%ld", MaxThreadVal);
-  printf("Max Thread String Value: %s \n",MaxThreadValStr);
+   while (fgets(data, sizeof(data)-1, fp) != NULL) {
+      printf("%s", data);
+   }
 
-  CPU_ZERO(&idle_set);
+   PackPwrLimit1 = strtoll(&data[2], &endptr, 16);
+   printf("Power Limit converted: %lx \n", PackPwrLimit1);
+   ret_val = pclose(fp);
 
-  if (socket == 1) {
-    for (i = 0; i < MaxThreadVal; i++) {
-      CPU_SET(i + split_point, &idle_set);
-    }
-  } else {
-      if (socket == 0) {
-        for (i = 0; i < MaxThreadVal; i++) {
-          CPU_SET(i, &idle_set);
-        }
-      } else {
-          printf("Socket input must be 0 or 1\n");
+   PackPwrLimit1 = PackPwrLimit1 & 0x07fff;
+
+    //  fp = popen("/usr/sbin/rdmsr -c0 -p 0 0x606", "r");
+   fp = popen(command606, "r");
+   if (NULL == fp) {
+      printf("Failed to run command\n");
+      ERR("Failed to open MSR 606 ");
+      return(ali_errnumRdMsrCmdFail);
+   }
+   while (fgets(data, sizeof(data)-1, fp) != NULL) {
+      printf("%s", data);
+   }
+
+   PackagePowerUnit = strtoll(&data[2], &endptr, 16);
+   printf("Package Power Unit Value converted: %lx \n", PackagePowerUnit);
+   ret_val = pclose(fp);
+
+   //
+   // MSR retrvial complete
+   // Calculate power budget.
+   //
+
+   PowerUnitValue = PackagePowerUnit & 0x0f;
+   PowerUnitValue = pow(2, PowerUnitValue);
+   printf("Divisor of Raw Limit1:%lx\n", PowerUnitValue);
+   TotalWatts = ((double)PackPwrLimit1)/((double)PowerUnitValue);
+   printf("Total Watts: %Lf \n", TotalWatts);
+
+   //
+   // Check that at least one core will be present.
+   //
+   if ((TotalWatts - 5 ) <= FpgaWatts)  {
+      ERR("Invalid PR Power Value");
+      return (ali_errnumFPGAPowerRequestTooLarge);
+   }
+   AvailableWatts = TotalWatts - (double)FpgaWatts;
+   printf("Available Watts: %Lf\n", AvailableWatts);
+   CoreCount = (int64_t) AvailableWatts / (int64_t) 5;
+   printf("Core Count: %ld\n", CoreCount);
+   MaxThreadVal = CoreCount * 2;
+   // ---  //MaxThreadVal = MaxThreadVal - 1;
+   snprintf(MaxThreadValStr, 20, "%ld", MaxThreadVal);
+   printf("Max Thread String Value: %s \n",MaxThreadValStr);
+
+   CPU_ZERO(&idle_set);
+
+   if (socket == 1) {
+      for (i = 0; i < MaxThreadVal; i++) {
+            CPU_SET(i + split_point, &idle_set);
       }
-  }
-
-  i = CPU_COUNT_S(sizeof(cpu_set_t), &idle_set);
-  printf("Cpu Count: %d \n",i);
-
-  for (i = 0; i < split_point; i++) {
-    if (socket == 0) {
-      CPU_CLR(i, &current_set);
-    } else {
-      CPU_CLR(i + split_point, &current_set);
-    }
-  }
-
-  CPU_OR(&full_mask_set, &current_set, &idle_set);
-
-  if (sched_setaffinity(1, sizeof(full_mask_set), &full_mask_set) == -1){
-    printf("sched_setaffnity failure for pid: 1\n");
-  }
-
-  if (sched_getaffinity(2, sizeof(current_set), &current_set) == -1){
-    printf("sched_getaffinity failure for pid: 1\n");
-  }
-
-  for (i = 0; i < split_point; i++) {
-    if (socket == 0) {
-      CPU_CLR(i, &current_set);
-    } else {
-      CPU_CLR(i + split_point, &current_set);
-    }
-  }
-
-  CPU_OR(&full_mask_set, &current_set, &idle_set);
-
-  if (sched_setaffinity(2, sizeof(full_mask_set), &full_mask_set) == -1){
-    printf("sched_setaffnity failure for pid: 2\n");
-  }
-//--//
-//--// "User Mode Code"
-//--// Find max pid number
-  fp2 = fopen("/proc/sys/kernel/pid_max", "r");
-  for (i = 0; i < 20; i++) {
-    data1[i] = fgetc(fp2);
-    if  (feof(fp2)) {
-      data1[i] = 0;
-      break;
-    }
-  }
-  max_pid_index = strtol(&data1[0], &endptr, 10);
-  ret_val = fclose(fp2);
-
-//--//
-//--//  Set affinity for all possible pids to mask in cpuset.
-//--//
-  for (pid = 3; pid < max_pid_index; pid++) {
-
-    if (sched_getaffinity(pid, sizeof(current_set), &current_set) == -1){
-      //printf("sched_getaffinity failure for pid: 1\n");
-      continue;
-    }
-    for (i = 0; i < split_point; i++) {
+   } else {
       if (socket == 0) {
-        CPU_CLR(i, &current_set);
-      } else {
-        CPU_CLR(i + split_point, &current_set);
+            for (i = 0; i < MaxThreadVal; i++) {
+               CPU_SET(i, &idle_set);
+            }
+   } else {
+         printf("Socket input must be 0 or 1\n");
       }
-    }
+   }
 
-    CPU_OR(&full_mask_set, &current_set, &idle_set);
+   i = CPU_COUNT_S(sizeof(cpu_set_t), &idle_set);
+   printf("Cpu Count: %d \n",i);
 
-    if (sched_setaffinity(pid, sizeof(full_mask_set), &full_mask_set) == -1){
-//--//      printf("schedaffnity failure pid: %d\r", i);
-    }
-  }
-  return 1;
+   if (sched_getaffinity(1, sizeof(current_set), &current_set) == -1){
+      printf("sched_getaffinity failure for pid: 1\n");
+   }
+
+   for (i = 0; i < split_point; i++) {
+      if (socket == 0) {
+            CPU_CLR(i, &current_set);
+   } else {
+            CPU_CLR(i + split_point, &current_set);
+      }
+   }
+
+   CPU_OR(&full_mask_set, &current_set, &idle_set);
+
+   if (sched_setaffinity(1, sizeof(full_mask_set), &full_mask_set) == -1){
+      printf("sched_setaffnity failure for pid: 1\n");
+   }
+
+   if (sched_getaffinity(2, sizeof(current_set), &current_set) == -1){
+      printf("sched_getaffinity failure for pid: 2\n");
+   }
+
+   for (i = 0; i < split_point; i++) {
+      if (socket == 0) {
+         CPU_CLR(i, &current_set);
+      } else {
+         CPU_CLR(i + split_point, &current_set);
+      }
+   }
+
+   CPU_OR(&full_mask_set, &current_set, &idle_set);
+
+   if (sched_setaffinity(2, sizeof(full_mask_set), &full_mask_set) == -1){
+      printf("sched_setaffnity failure for pid: 2\n");
+   }
+
+   //--//
+   //--// "User Mode Code"
+   //--// Find max pid number
+   fp = fopen("/proc/sys/kernel/pid_max", "r");
+   for (i = 0; i < 20; i++) {
+      data1[i] = fgetc(fp);
+      if  (feof(fp)) {
+         data1[i] = 0;
+         break;
+      }
+   }
+   max_pid_index = strtol(&data1[0], &endptr, 10);
+   ret_val = fclose(fp);
+
+   //--//
+   //--//  Set affinity for all possible pids to mask in cpuset.
+   //--//
+   for (pid = 3; pid < max_pid_index; pid++) {
+
+      if (sched_getaffinity(pid, sizeof(current_set), &current_set) == -1){
+         //printf("sched_getaffinity failure for pid: 1\n");
+         continue;
+      }
+
+      for (i = 0; i < split_point; i++) {
+         if (socket == 0) {
+            CPU_CLR(i, &current_set);
+         } else {
+            CPU_CLR(i + split_point, &current_set);
+         }
+      }
+
+      CPU_OR(&full_mask_set, &current_set, &idle_set);
+
+   if (sched_setaffinity(pid, sizeof(full_mask_set), &full_mask_set) == -1){
+      //--//      printf("schedaffnity failure pid: %d\r", i);
+      }
+   }
+   return 0;
+
 }

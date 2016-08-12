@@ -94,19 +94,10 @@ public:
    RuntimeClient();
    ~RuntimeClient();
 
-   /// @brief Synchronous wrapper for stopping the Runtime.
    void end();
-   /// @brief Accessor for pointer to IRuntime stored in Runtime Client
-   ///
-   /// This pointer is used to allocate Service. 
+
    IRuntime* getRuntime();
 
-   /// @brief Checks that the object is in an internally consistent state
-   ///
-   /// The general paradigm in AAL is for an object to track its internal state for subsequent query,
-   /// as opposed to throwing exceptions or having to constantly check return codes.
-   /// We implement this to check if the status of the service allocated.
-   /// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
    btBool isOK();
 
    // <begin IRuntimeClient interface>
@@ -136,11 +127,7 @@ protected:
    CSemaphore       m_Sem;       // For synchronizing with the AAL runtime.
 };
 
-///////////////////////////////////////////////////////////////////////////////
-///
 ///  MyRuntimeClient Implementation
-///
-///////////////////////////////////////////////////////////////////////////////
 RuntimeClient::RuntimeClient() :
    m_Runtime(this),        // Instantiate the AAL Runtime
    m_pRuntime(NULL),
@@ -161,6 +148,14 @@ RuntimeClient::~RuntimeClient()
    m_Sem.Destroy();
 }
 
+/// @brief Checks that the object is in an internally consistent state
+///
+/// The general paradigm in AAL is for an object to track its internal state for subsequent query,
+/// as opposed to throwing exceptions or having to constantly check return codes.
+/// We implement this to check if the status of the service allocated.
+/// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
+/// @retval True if the status of the Runtime Client is OK.
+/// @retval False if the status of the Runtime Client is not OK.
 btBool RuntimeClient::isOK()
 {
    return m_isOK;
@@ -182,6 +177,8 @@ void RuntimeClient::runtimeStarted(IRuntime *pRuntime,
    m_Sem.Post(1);
 }
 
+/// @brief Synchronous wrapper for stopping the Runtime.
+/// @return void
 void RuntimeClient::end()
 {
    m_Runtime.stop();
@@ -226,6 +223,10 @@ void RuntimeClient::runtimeEvent(const IEvent &rEvent)
    MSG("Generic message handler (runtime)");
 }
 
+/// @brief Accessor for pointer to the IRuntime interface to the Runtime Client.
+///
+/// This pointer is used to allocate the Service.
+/// @retval Pointer to the Runtime Interface.
 IRuntime * RuntimeClient::getRuntime()
 {
    return m_pRuntime;
@@ -241,10 +242,7 @@ class HelloAALApp: public CAASBase, public IServiceClient, public IHelloAALClien
 public:
    HelloAALApp(RuntimeClient * rtc);
    ~HelloAALApp();
-   /// @brief Called by the main part of the application,Returns 0 if Success
-   ///
-   /// Application Requests Service using Runtime Client passing a pointer to self.
-   /// Blocks calling thread from [Main} untill application is done. 
+
    int run();
 
    // <begin IHelloAALClient>
@@ -273,11 +271,9 @@ protected:
    int               m_Result;         // Returned result value; 0 if success
 };
 
-///////////////////////////////////////////////////////////////////////////////
+/// @brief MyServiceClient Implementation.
 ///
-///  MyServiceClient Implementation
-///
-///////////////////////////////////////////////////////////////////////////////
+/// @param[in] rtc A pointer to the RuntimeClient creating the HellAALApp service.
 HelloAALApp::HelloAALApp(RuntimeClient *rtc) :
    m_pAALService(NULL),
    m_runtimClient(rtc),
@@ -293,6 +289,11 @@ HelloAALApp::~HelloAALApp()
    m_Sem.Destroy();
 }
 
+/// @brief Called by main(), the the application entry point.
+///
+/// The run() function requests a Service using Runtime Client and passing a pointer to self.
+/// Blocks calling thread from main() until the application is done.
+/// @retval 0 if successful.
 int HelloAALApp::run()
 {
 

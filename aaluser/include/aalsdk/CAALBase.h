@@ -93,9 +93,9 @@ class AASLIB_API CAASBase : public    IBase,
                             protected CriticalSection
 {
 public:
-   /// CAASBase constructor.
+   // CAASBase constructor.
    CAASBase();
-   /// CAASBase Destructor.
+   // CAASBase Destructor.
    virtual ~CAASBase();
 
    // <IBase>
