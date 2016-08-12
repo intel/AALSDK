@@ -64,7 +64,8 @@ typedef enum ENamedValues
    ENamedValuesOutOfMemory,
    ENamedValuesEndOfFile,
    ENamedValuesInvalidReadToNull,
-   ENamedValuesZeroSizedArray
+   ENamedValuesZeroSizedArray,
+   ENamedValuesNullPointerArgument,
 } ENamedValues;
 
 #ifdef __cplusplus
