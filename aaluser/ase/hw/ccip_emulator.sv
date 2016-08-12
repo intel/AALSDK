@@ -2419,84 +2419,6 @@ module ccip_emulator
       );
 
 
-
-   // Stream-checker for ASE
-// `ifdef ASE_DEBUG
-//    // Generate checker index
-//    function automatic int generate_checkarray_index(logic [15:0] mdata, int clnum);
-//       int ret;
-//       begin
-// 	 ret =  int'( {2'b00,clnum[1:0],mdata[15:0]} );
-// 	 return ret;
-//       end
-//    endfunction
-
-//    // Read response checking
-//    longint unsigned read_check_array[*];
-//    always @(posedge clk) begin : read_array_checkproc
-//       if ( C0TxValid && isReadRequest(C0RxHdr)) begin
-// 	 for(int ii = 0; ii <= C0TxHdr.len ; ii = ii + 1) begin
-// 	    read_check_array[ generate_checkarray_index(C0TxHdr.mdata, ii) ] = C0TxHdr.addr + ii;
-// 	 end
-//       end
-//       if (C0RxRspValid && isReadResponse(C0RxHdr)) begin
-// 	 if (read_check_array.exists( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum))) begin
-// 	    read_check_array.delete( generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
-// 	 end
-// 	 // else begin
-// 	 //    `BEGIN_RED_FONTCOLOR;
-// 	 //    $display("** ERROR ** => %d | RdResp %05x does not match check array", $time, generate_checkarray_index(C0RxHdr.mdata, C0RxHdr.clnum) );
-// 	 //    `END_RED_FONTCOLOR;
-// 	 // end
-//       end
-//    end
-
-//    // Write response checking
-//    longint unsigned write_check_array[*];
-//    always @(posedge clk) begin : write_array_checkproc
-//       if (C1TxValid && isWriteRequest(C1TxHdr) ) begin
-// 	 write_check_array[ generate_checkarray_index(C1TxHdr.mdata,C1TxHdr.len) ] = C1TxHdr.addr;
-//       end
-//       if (C1RxRspValid && (C1RxHdr.resptype == ASE_WR_RSP)) begin
-// 	 if (isVHxResponse(C1RxHdr)) begin
-// 	    if (C0RxHdr.format) begin
-// 	       for(int ii = 0; ii <= C1RxHdr.clnum ; ii = ii + 1) begin
-// 		  if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,ii))) begin
-// 		     write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,ii) );
-// 		  end
-// 		  // else begin
-// 		  //    `BEGIN_RED_FONTCOLOR;
-// 		  //    $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,ii));
-// 		  //    `END_RED_FONTCOLOR;
-// 		  // end
-// 	       end
-// 	    end // if (C0RxHdr.format)
-// 	    else begin
-// 	       if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum))) begin
-// 		  write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
-// 	       end
-// 	       // else begin
-// 	       // 	  `BEGIN_RED_FONTCOLOR;
-// 	       // 	  $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
-// 	       // 	  `END_RED_FONTCOLOR;
-// 	       // end
-// 	    end
-// 	 end
-// 	 else if (isVL0Response(C1RxHdr)) begin
-// 	    if (write_check_array.exists( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum))) begin
-// 	       write_check_array.delete( generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
-// 	    end
-// 	    // else begin
-// 	    //    `BEGIN_RED_FONTCOLOR;
-// 	    //    $display("** ERROR ** => %d | WrResp %05x does not match check array", $time, generate_checkarray_index(C1RxHdr.mdata,C1RxHdr.clnum) );
-// 	    //    `END_RED_FONTCOLOR;
-// 	    // end
-// 	 end
-//       end
-//    end
-// `endif
-
-
    /*
     * CCI Logger module
     */
@@ -2679,20 +2601,13 @@ module ccip_emulator
 	   $display("\tWrFence : Response counts dont match request count !!");
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
-	 // `BEGIN_YELLOW_FONTCOLOR;
-	 // $display("-------------------------------------------------");
-	 // $display("Read Transaction checker =>");
-	 // print_assoc_array(rdtxn_array);
-	 // $display("Write Transaction checker =>");
-	 // print_assoc_array(wrtxn_array);
-	 // $display("WrFence Transaction checker =>");
-	 // $display(wrf_array);
-	 // $display("-------------------------------------------------");
-	 // $display("cf2as_latbuf_ch0 contents =>");
-	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.check_array);
-	 // $display("cf2as_latbuf_ch1 contents =>");
-	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.check_array);
-	 // $display("-------------------------------------------------");
+	 `BEGIN_YELLOW_FONTCOLOR;
+	 $display("-------------------------------------------------");
+	 $display("cf2as_latbuf_ch0 contents =>");
+	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.check_hdr_array);
+	 $display("cf2as_latbuf_ch1 contents =>");
+	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.check_hdr_array);
+	 $display("-------------------------------------------------");
 	 `END_YELLOW_FONTCOLOR;
 `endif
 	 // Finish command issue

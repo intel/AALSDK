@@ -740,9 +740,8 @@ package ase_pkg;
     */
  `ifdef ASE_DEBUG
    typedef struct packed {
-      logic [LATBUF_TID_WIDTH-1:0] tid;
-      logic 			   txhdr_valid;
-      TxHdr_t                      txhdr;
+      logic [0:3] 		   rxout_valid;
+      ccip_vc_t                    virt_channel;
       } ccip_txn_t;
  `endif
 
