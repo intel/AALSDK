@@ -42,7 +42,7 @@
 # WHEN:          WHO:     WHAT:
 # 8/09/2016      EL       Initial version.
 #****************************************************************************
-import mmap, sys, binascii
+import mmap, sys, struct
 
 MAPSIZE = mmap.PAGESIZE
 MAPMASK = MAPSIZE-1
@@ -59,12 +59,11 @@ if __name__ == "__main__":
    offset = address & MAPMASK
 
    # mmap PCI resource
-   with open(sys.argv[1], "wb", 0) as f:
+   with open(sys.argv[1], "r+b", 0) as f:
       mm = mmap.mmap(f.fileno(), MAPSIZE, mmap.MAP_SHARED, mmap.PROT_WRITE, 0, base)
 
       # write data (64 bit)
-      data = binascii.unhexlify(data_param)
-      data_be = data[::-1]
+      data = struct.pack("<Q", data_param)
       mm[offset:offset+8] = data[0:8]
 
       # close mapping
