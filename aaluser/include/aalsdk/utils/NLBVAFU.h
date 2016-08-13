@@ -92,15 +92,15 @@ BEGIN_NAMESPACE(AAL)
 #define CSR_CTL                   	0x0138
 #define CSR_CFG                   	0x0140
 #define CSR_CFG_H                  	0x0144
-#define CSR_UMSG_BASE				   0x03F4
-#define CSR_UMSG_MODE				   0x03F8
-#define CSR_CIRBSTAT				      0x0278
-#define CSR_SW_NOTICE				   0x0158
+#define CSR_UMSG_BASE				0x03F4
+#define CSR_UMSG_MODE				0x03F8
+#define CSR_CIRBSTAT				0x0278
+#define CSR_SW_NOTICE				0x0158
 #define CSR_STRIDED_ACS             0x0178
 
 #   define NLB_TEST_MODE_LPBK1    	0x000
-#   define NLB_TEST_MODE_WB       	0x000
-#   define NLB_TEST_MODE_WT       	0x001
+#   define NLB_TEST_MODE_WRLINE_M  	0x000	//Write-back
+#   define NLB_TEST_MODE_WRLINE_I  	0x001	//Write-through
 #   define NLB_TEST_MODE_CONT     	0x002
 #   define NLB_TEST_MODE_READ     	0x004
 #   define NLB_TEST_MODE_WRITE    	0x008
@@ -120,19 +120,19 @@ BEGIN_NAMESPACE(AAL)
 #	define NLB_TEST_MODE_READ_VL0	  0x1000
 #	define NLB_TEST_MODE_READ_VH0	  0x2000
 #	define NLB_TEST_MODE_READ_VH1	  0x3000
-#  define NLB_TEST_MODE_READ_VR       0x4000
-#  define NLB_TEST_MODE_ALT_WR_PRN    0x8000
+#   define NLB_TEST_MODE_READ_VR      0x4000
+#   define NLB_TEST_MODE_ALT_WR_PRN   0x8000
 #   define NLB_TEST_MODE_MCL2         0x0020
 #   define NLB_TEST_MODE_MCL4         0x0060
-#   define NLB_TEST_MODE_ST           0x10000
-#  define NLB_TEST_MODE_WRITE_VL0     0x20000
-#  define NLB_TEST_MODE_WRITE_VH0     0x40000
-#  define NLB_TEST_MODE_WRITE_VH1     0x60000
-#  define NLB_TEST_MODE_WRITE_VR      0x80000
-#  define NLB_TEST_MODE_WRFENCE_VA    0x0
-#  define NLB_TEST_MODE_WRFENCE_VL0   0x40000000
-#  define NLB_TEST_MODE_WRFENCE_VH0   0x80000000
-#  define NLB_TEST_MODE_WRFENCE_VH1   0xc0000000
+#   define NLB_TEST_MODE_WRPUSH_I     0x10000
+#   define NLB_TEST_MODE_WRITE_VL0    0x20000
+#   define NLB_TEST_MODE_WRITE_VH0    0x40000
+#   define NLB_TEST_MODE_WRITE_VH1    0x60000
+#   define NLB_TEST_MODE_WRITE_VR     0x80000
+#   define NLB_TEST_MODE_WRFENCE_VA   0x0
+#   define NLB_TEST_MODE_WRFENCE_VL0  0x40000000
+#   define NLB_TEST_MODE_WRFENCE_VH0  0x80000000
+#   define NLB_TEST_MODE_WRFENCE_VH1  0xc0000000
 
 
 #define TEST_MODE_CSR_HQW		 	0x000E0000

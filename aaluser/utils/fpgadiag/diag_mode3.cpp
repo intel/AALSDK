@@ -144,8 +144,11 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
 	  cfg |= (csr_type)NLB_TEST_MODE_CONT;
    }
 
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WT)){
-	  cfg |= (csr_type)NLB_TEST_MODE_WT;
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRPUSH_I)){
+	   cfg |= (csr_type)NLB_TEST_MODE_WRPUSH_I;
+   }
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_I)){
+	  cfg |= (csr_type)NLB_TEST_MODE_WRLINE_I;
    }
 
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI)){
