@@ -108,21 +108,21 @@ MODULE_LICENSE    (DRV_LICENSE);
 // Argument:
 //      sim: Instantiate simualted AFUs
 //       Value: Number of AFUs to instantiate
-//      vf: Activate SR-IOV
-//       Value: Number of VFs to activate (currently max 1)
+//      sriov: Activate SR-IOV
+//       Value: 1 - activate
 //
 // Typical usage:
 //    sudo insmod ccidrv           # Normal load. PCIe enumeration enabled
 //    sudo insmod ccidrv sim=4     # Instantiate 4 simulated AFUs
-//    sudo insmod ccidrv vf=1      # Activate SR-IOV with 1 VF
+//    sudo insmod ccidrv sriov=1   # Activate SR-IOV
 
 unsigned long  sim = 0;
 MODULE_PARM_DESC(sim, "Simulation: #=Number of simulated AFUs to instantiate");
 module_param    (sim, ulong, S_IRUGO);
 
-unsigned long  vf = 0;
-MODULE_PARM_DESC(vf, "SR-IOV: #=Number of VFS to activate");
-module_param    (vf, ulong, S_IRUGO);
+unsigned long  sriov = 0;
+MODULE_PARM_DESC(sriov, "SR-IOV");
+module_param    (sriov, ulong, S_IRUGO);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -927,16 +927,16 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       ccip_portdev_maxVFs(pccipdev) = i;     // Can't have more VFs than ports for now
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
-      if (vf != 0) {
+      if (sriov != 0) {
          // FIXME Hack to enable SR-IOV to enable poweron
-         // If started with vf module parameter, we'll activate a VF and
+         // If started with sriov module parameter, we'll activate a VF and
          // transfer ownership of the AFU. At that point, the AFU will already
          // have been enumerated, so the PF still thinks it has an AFU (and
          // anyone binding to the PF driver will see it), though it is no
          // longer reachable. THIS NEEDS TO BE FIXED! Ideally by deactivating
          // the AFU, moving it over to the VF, and re-enumerating the PF port.
          // FIXME: Assuming there is only one port
-         int num_vfs = 1; // num_vfs = vf
+         int num_vfs = 1;
          if (0 == pci_enable_sriov(pcidev, num_vfs)){
             // get FME device
             volatile struct fme_device *pfmedev;
