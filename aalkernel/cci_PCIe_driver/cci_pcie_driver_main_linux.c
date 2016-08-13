@@ -771,9 +771,6 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
    ccip_dev_pcie_busnum(pccipdev)       = pcidev->bus->number;
    ccip_dev_pcie_devnum(pccipdev)       = PCI_SLOT(pcidev->devfn);
    ccip_dev_pcie_fcnnum(pccipdev)       = PCI_FUNC(pcidev->devfn);
-   //ccip_dev_pcie_socketnum(pccipdev)    = dev_to_node(&pcidev->dev);
-
-   //PINFO(" Socket ID = %x   \n",dev_to_node(&pcidev->dev));
 
    // Enumerate the device
    //  Instantiate internal objects. Objects that represent
@@ -795,6 +792,10 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          res = -ENOMEM;
          goto ERR;
       }
+
+      ccip_dev_pcie_socketnum(pccipdev) = ccip_dev_to_fme_dev(pccipdev)->m_pHDR->fab_capability.socket_id ;
+      PINFO(" Socket Num = %x   \n",ccip_dev_pcie_socketnum(pccipdev));
+
 
       // Instantiate AAL allocatable objects including AFUs if present
       if(!cci_fme_dev_create_AAL_allocatable_objects(pccipdev)){

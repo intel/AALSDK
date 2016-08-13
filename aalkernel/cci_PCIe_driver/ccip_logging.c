@@ -508,18 +508,22 @@ void ccip_log_port_error(struct ccip_device *pccipdev ,struct port_device *pport
                                                                                       ccip_port_err(pport_dev)->ccip_port_first_error.csr);
    }
 
-   // Port malformed request
-   if((0x00 != ( ccip_port_err(pport_dev)->ccip_port_malformed_req_0.csr) + ( ccip_port_err(pport_dev)->ccip_port_malformed_req_1.csr)) &&
-      ((ccip_port_lasterr(pport_dev).ccip_port_malformed_req_0.csr  + ccip_port_lasterr(pport_dev).ccip_port_malformed_req_1.csr ) !=
-        ccip_port_err(pport_dev)->ccip_port_malformed_req_0.csr + ccip_port_err(pport_dev)->ccip_port_malformed_req_1.csr ))  {
+   if( 0x00 != ccip_port_err(pport_dev)->ccip_port_error.csr)  {
 
-      PERR(" PORT Error occurred;%s B:D.F = %x:%x.%x PORT Malfromed req lsb CSR:0x%llx  msb CSR:0x%llx \n",kosal_gettimestamp(),
-                                                                                                           ccip_dev_pcie_busnum(pccipdev),
-                                                                                                           ccip_dev_pcie_devnum(pccipdev),
-                                                                                                           ccip_dev_pcie_fcnnum(pccipdev),
-                                                                                                           ccip_port_err(pport_dev)->ccip_port_malformed_req_0.csr ,
-                                                                                                           ccip_port_err(pport_dev)->ccip_port_malformed_req_1.csr);
+      // Port malformed request
+      if((0x00 != ( ccip_port_err(pport_dev)->ccip_port_malformed_req_0.csr) + ( ccip_port_err(pport_dev)->ccip_port_malformed_req_1.csr)) &&
+         ((ccip_port_lasterr(pport_dev).ccip_port_malformed_req_0.csr  + ccip_port_lasterr(pport_dev).ccip_port_malformed_req_1.csr ) !=
+           ccip_port_err(pport_dev)->ccip_port_malformed_req_0.csr + ccip_port_err(pport_dev)->ccip_port_malformed_req_1.csr ))  {
 
+         PERR(" PORT Error occurred;%s B:D.F = %x:%x.%x PORT Malfromed req lsb CSR:0x%llx  msb CSR:0x%llx \n",kosal_gettimestamp(),
+                                                                                                              ccip_dev_pcie_busnum(pccipdev),
+                                                                                                              ccip_dev_pcie_devnum(pccipdev),
+                                                                                                              ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                                              ccip_port_err(pport_dev)->ccip_port_malformed_req_0.csr ,
+                                                                                                              ccip_port_err(pport_dev)->ccip_port_malformed_req_1.csr);
+
+
+      }
 
    }
 
