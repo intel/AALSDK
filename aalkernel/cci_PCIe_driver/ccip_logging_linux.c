@@ -143,10 +143,8 @@ bt32bitInt create_logging_timervalue_sysfs(struct device_driver *pdriver)
        goto ERR;
     }
 
-   driver_create_file(pdriver,&driver_attr_logging_timer);
+   res = driver_create_file( pdriver, &driver_attr_logging_timer );
 
-   PTRACEOUT_INT(res);
-   return res;
 ERR:
    PTRACEOUT_INT(res);
    return  res;

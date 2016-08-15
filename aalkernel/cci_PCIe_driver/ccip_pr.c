@@ -599,6 +599,11 @@ void program_afu_callback(struct kosal_work_object * pwork)
    struct CCIP_FME_DFL_PR   *pr_dev           = NULL;
    struct pr_program_context *ppr_program_ctx = NULL;
 
+   struct CCIP_FME_PR_CONTROL pr_control_local;
+   struct CCIP_FME_PR_STATUS  pr_status_local;
+   struct CCIP_FME_PR_ERROR  pr_err_local;
+
+
    PTRACEIN;
 
    ppr_program_ctx = (struct pr_program_context*) kosal_get_object_containing( pwork, struct pr_program_context, m_workobject );
@@ -636,12 +641,12 @@ void program_afu_callback(struct kosal_work_object * pwork)
    // ---------------------------------------------------------------------------
    PVERBOSE("Setting up PR access mode to FME initiated PR \n");
 
-   Get64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_dev->ccip_fme_pr_control.csr);
+   Get64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_control_local.csr);
 
    // Disable PORT PR access ,SW use the FME to PR
-   pr_dev->ccip_fme_pr_control.enable_pr_port_access=0x0;
+   pr_control_local.enable_pr_port_access = 0x0;
 
-   Set64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_dev->ccip_fme_pr_control.csr);
+   Set64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_control_local.csr);
 
    // Step 1 - Check FME_PR_STATUS[27:24] == 4'h0
    // -------------------------------------------
@@ -651,7 +656,7 @@ void program_afu_callback(struct kosal_work_object * pwork)
    totaldelay=0;
    do {
 
-      Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_dev->ccip_fme_pr_status.csr);
+      Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_status_local.csr);
        // Sleep
       kosal_udelay(delay);
 
@@ -665,18 +670,18 @@ void program_afu_callback(struct kosal_work_object * pwork)
          goto ERR;
       }
 
-   } while( CCIP_PORT_PR_Idle != pr_dev->ccip_fme_pr_status.pr_host_status);
+   } while( CCIP_PORT_PR_Idle != pr_status_local.pr_host_status);
 
    PVERBOSE("HW is ready for PR \n");
 
-
+   Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_status_local.csr);
    // Step 2 - Check FME_PR_STATUS[16] for any previous PR errors
    // --------------------------------------------------------------
    // FME_PR_STATUS[16] is PR PASS or FAIL bit. Different from SAS.
    // FME_PR_STATUS[16] is RO from SW point of view.
    PVERBOSE("Checking for errors in previous PR operation");
 
-   if(0x1 == pr_dev->ccip_fme_pr_status.pr_status)  {
+   if(0x1 == pr_status_local.pr_status)  {
 
       // Step 3 - Clear FME_PR_ERROR[5:0] - if needed based on Step - 2
       // -----------------------------------------------------------------
@@ -686,56 +691,62 @@ void program_afu_callback(struct kosal_work_object * pwork)
       // TODO: This step is different from SAS flow. Update SAS
       // NOTE: Error Logging and propagation might change based on SKX RAS
 
-      if(0x1 == pr_dev->ccip_fme_pr_err.PR_operation_err ) {
-         pr_dev->ccip_fme_pr_err.PR_operation_err =0x1;
+      Get64CSR(&pr_dev->ccip_fme_pr_err.csr,&pr_err_local.csr);
+
+      if(0x1 == pr_err_local.PR_operation_err ) {
+         pr_err_local.PR_operation_err =0x1;
          PERR(" PR Previous PR Operation Error  Detected \n");
       }
 
-      if(0x1 == pr_dev->ccip_fme_pr_err.PR_CRC_err ) {
-         pr_dev->ccip_fme_pr_err.PR_CRC_err =0x1;
+      if(0x1 == pr_err_local.PR_CRC_err ) {
+         pr_err_local.PR_CRC_err =0x1;
          PERR(" PR Previous CRC Error Detected \n");
       }
 
-      if(0x1 == pr_dev->ccip_fme_pr_err.PR_bitstream_err ) {
-         pr_dev->ccip_fme_pr_err.PR_bitstream_err =0x1;
+      if(0x1 == pr_err_local.PR_bitstream_err ) {
+         pr_err_local.PR_bitstream_err =0x1;
          PERR(" PR Previous InCompatiable bitstream Error  Detected \n");
       }
 
-      if(0x1 == pr_dev->ccip_fme_pr_err.PR_IP_err ) {
-         pr_dev->ccip_fme_pr_err.PR_IP_err =0x1;
+      if(0x1 == pr_err_local.PR_IP_err ) {
+         pr_err_local.PR_IP_err =0x1;
          PERR(" PR Previous IP Protocol Error Detected \n");
       }
 
-      if(0x1 == pr_dev->ccip_fme_pr_err.PR_FIFIO_err ) {
-         pr_dev->ccip_fme_pr_err.PR_FIFIO_err =0x1;
+      if(0x1 == pr_err_local.PR_FIFIO_err ) {
+         pr_err_local.PR_FIFIO_err =0x1;
          PERR(" PR  Previous FIFO Overflow Error Detected \n");
       }
 
-      if(0x1 == pr_dev->ccip_fme_pr_err.PR_timeout_err ) {
-         pr_dev->ccip_fme_pr_err.PR_timeout_err =0x1;
+      if(0x1 == pr_err_local.PR_timeout_err ) {
+         pr_err_local.PR_timeout_err =0x1;
          PERR(" PR Previous Timeout  Error Detected \n");
       }
 
-      if(0x1 == pr_dev->ccip_fme_pr_err.PR_secure_load_err ) {
-         pr_dev->ccip_fme_pr_err.PR_secure_load_err =0x1;
+      if(0x1 == pr_err_local.PR_secure_load_err ) {
+         pr_err_local.PR_secure_load_err =0x1;
          PERR(" PR Previous Secure Load  Error Detected \n");
       }
       PVERBOSE("Previous PR errors cleared \n ");
+
+      Set64CSR(&pr_dev->ccip_fme_pr_err.csr,&pr_err_local.csr);
 
    } else
    {
       PVERBOSE("NO Previous PR errors \n ");
    }
 
-   Set64CSR(&pr_dev->ccip_fme_pr_err.csr,&pr_dev->ccip_fme_pr_err.csr);
+
  
    // Step 4 - Write PR Region ID to FME_PR_CONTROL[9:8]
    // --------------------------------------------------
    // NOTE: For BDX-P only 1 AFU is supported in HW. So, CSR_FME_PR_CONTROL[9:8] should always be 0
    // This will change for SKX
 
+   Get64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_control_local.csr);
+
    // set PR Region ID
-   pr_dev->ccip_fme_pr_control.pr_regionid=0x0;
+   pr_control_local.pr_regionid = 0x0;
 
 
    // Step 5 - Initiate PR - Write 1 to FME_PR_CONTROL[12]
@@ -743,16 +754,17 @@ void program_afu_callback(struct kosal_work_object * pwork)
    // SW can only initiate PR. HW will auto clear this bit upon failure or success or timeout
    PDEBUG("Initiate PR");
    // PR Start Request
-   pr_dev->ccip_fme_pr_control.pr_start_req=0x1;
+   pr_control_local.pr_start_req = 0x1;
 
-   Set64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_dev->ccip_fme_pr_control.csr);
+   Set64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_control_local.csr);
 
    // Step 6 - Check available credits: FME_PR_STATUS[8:0] for PR data push and push Data to FME_PR_DATA[31:0]
    // -------------------------------------------------------------------------------------------------------
    // For instance,
    // if FME_PR_STATUS[8:0] read yields 511, SW can perform 511 32-bit writes from rbf file to FME_PR_DATA[31:0] and check credits again
 
-   PR_FIFO_credits = pr_dev->ccip_fme_pr_status.pr_credit;
+   Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_status_local.csr);
+   PR_FIFO_credits = pr_status_local.pr_credit;
    byteRead = (btUnsigned32bitInt  *)kptr;
    PDEBUG("Pushing Data from rbf to HW \n");
 
@@ -762,8 +774,8 @@ void program_afu_callback(struct kosal_work_object * pwork)
       if (PR_FIFO_credits <= 1)  {
          do {
 
-             Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_dev->ccip_fme_pr_status.csr);
-             PR_FIFO_credits = pr_dev->ccip_fme_pr_status.pr_credit;
+             Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_status_local.csr);
+             PR_FIFO_credits = pr_status_local.pr_credit;
 
              // counter increment
              counter ++;
@@ -798,7 +810,11 @@ void program_afu_callback(struct kosal_work_object * pwork)
    // Hardware will auto clear this bit upon PR completion
    // TODO: This step is currently not defined in SAS. Update SAS
 
-   pr_dev->ccip_fme_pr_control.pr_push_complete=0x1;
+   Get64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_control_local.csr);
+
+   pr_control_local.pr_push_complete = 0x1;
+
+   Set64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_control_local.csr);
 
    PVERBOSE("Green bitstream push complete \n");
 
@@ -814,7 +830,7 @@ void program_afu_callback(struct kosal_work_object * pwork)
    totaldelay=0;
    do {
 
-      Get64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_dev->ccip_fme_pr_control.csr);
+      Get64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_control_local.csr);
       kosal_udelay(delay);
 
       // total delay
@@ -826,7 +842,7 @@ void program_afu_callback(struct kosal_work_object * pwork)
          errnum=uid_errnumPRTimeout;
          goto ERR;
       }
-   } while(0x0 != pr_dev->ccip_fme_pr_control.pr_start_req);
+   } while(0x0 != pr_control_local.pr_start_req);
 
    PVERBOSE("PR operation complete, checking Status \n");
 
@@ -839,47 +855,49 @@ void program_afu_callback(struct kosal_work_object * pwork)
    // TODO: This step is different from SAS. Update SAS
    // NOTE: Error Register updating/ clearing may change based on SKX RAS requirement
 
-   Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_dev->ccip_fme_pr_status.csr);
+   Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_status_local.csr);
 
-   if(0x1 == pr_dev->ccip_fme_pr_status.pr_status)  {
+   if(0x1 == pr_status_local.pr_status)  {
 
-      if(0x1 == pr_dev->ccip_fme_pr_err.PR_operation_err ) {
+      Get64CSR(&pr_dev->ccip_fme_pr_err.csr,&pr_err_local.csr);
+
+      if(0x1 == pr_err_local.PR_operation_err ) {
          PERR(" PR PR Operation Error  Detected \n");
          errnum=uid_errnumPROperation;
          goto ERR;
       }
 
-      if(0x1 == pr_dev->ccip_fme_pr_err.PR_CRC_err ) {
+      if(0x1 == pr_err_local.PR_CRC_err ) {
          PERR(" PR CRC Error Detected \n");
          errnum=uid_errnumPRCRC;
          goto ERR;
       }
 
-      if(0x1 == pr_dev->ccip_fme_pr_err.PR_bitstream_err ) {
+      if(0x1 == pr_err_local.PR_bitstream_err ) {
          PERR(" PR Incomparable bitstream Error  Detected \n");
          errnum=uid_errnumPRIncompatibleBitstream;
          goto ERR;
       }
 
-      if(0x1 == pr_dev->ccip_fme_pr_err.PR_IP_err ) {
+      if(0x1 == pr_err_local.PR_IP_err ) {
          PERR(" PR IP Protocol Error Detected \n");
          errnum=uid_errnumPRIPProtocal;
          goto ERR;
       }
 
-      if(0x1 == pr_dev->ccip_fme_pr_err.PR_FIFIO_err ) {
+      if(0x1 == pr_err_local.PR_FIFIO_err ) {
          PERR(" PR  FIFO Overflow Error Detected \n");
          errnum=uid_errnumPRFIFO;
          goto ERR;
       }
 
-      if(0x1 == pr_dev->ccip_fme_pr_err.PR_timeout_err ) {
+      if(0x1 == pr_err_local.PR_timeout_err ) {
          PERR(" PR Timeout  Error Detected \n");
          errnum=uid_errnumPRTimeout;
          goto ERR;
       }
 
-      if(0x1 == pr_dev->ccip_fme_pr_err.PR_secure_load_err ) {
+      if(0x1 == pr_err_local.PR_secure_load_err ) {
          PERR(" PR Secure Load  Error Detected \n");
          errnum=uid_errnumPRSecureLoad;
          goto ERR;

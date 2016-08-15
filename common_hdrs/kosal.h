@@ -113,6 +113,11 @@ typedef void * kosal_ownermodule;
 
 #endif
 
+// Generic number of elements in an array macro
+#if !defined(NUM_ELEMENTS)
+#  define NUM_ELEMENTS(array) (sizeof(array)/sizeof(array[0]))
+#endif
+
 
 #ifdef __cplusplus
 # define KOSAL_INT       AAL::btInt
@@ -494,11 +499,11 @@ unsigned debug = 0
 //=============================================================================
 //=============================================================================
 
-#define PWARN(_fmt, ...)  ( kosal_printk_level(KERN_WARNING, "w:" _fmt, ##__VA_ARGS__), 1 )
-#define PERR(_fmt, ...)   ( kosal_printk_level(KERN_ERR,     "e:" _fmt, ##__VA_ARGS__), 1 )
-#define PCRIT(_fmt, ...)  ( kosal_printk_level(KERN_CRIT,    "c:" _fmt, ##__VA_ARGS__), 1 )
-#define PALERT(_fmt, ...) ( kosal_printk_level(KERN_ALERT,   "a:" _fmt, ##__VA_ARGS__), 1 )
-#define PEMERG(_fmt, ...) ( kosal_printk_level(KERN_EMERG,   "E:" _fmt, ##__VA_ARGS__), 1 )
+#define PWARN(_fmt, ...)  ( kosal_printk_level(KERN_WARNING, "w:" _fmt, ##__VA_ARGS__) )
+#define PERR(_fmt, ...)   ( kosal_printk_level(KERN_ERR,     "e:" _fmt, ##__VA_ARGS__) )
+#define PCRIT(_fmt, ...)  ( kosal_printk_level(KERN_CRIT,    "c:" _fmt, ##__VA_ARGS__) )
+#define PALERT(_fmt, ...) ( kosal_printk_level(KERN_ALERT,   "a:" _fmt, ##__VA_ARGS__) )
+#define PEMERG(_fmt, ...) ( kosal_printk_level(KERN_EMERG,   "E:" _fmt, ##__VA_ARGS__) )
 
 //=============================================================================
 //=============================================================================
