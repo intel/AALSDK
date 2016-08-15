@@ -60,9 +60,9 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_SUPPRESSHDR);
    } else if ( 0 == strcmp("--no-bw", option) ) {
       flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_BANDWIDTH);
-   } else if ((0 == strcmp("--wrline-I", option)) || (0 == strcmp("--wli", option))) {
+   } else if ((0 == strcmp("--wrline-I", option)) || (0 == strcmp("--wli", option)) || (0 == strcmp("--wt", option))) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_I);
-   } else if ((0 == strcmp("--wrline-M", option)) || (0 == strcmp("--wlm", option))) {
+   } else if ((0 == strcmp("--wrline-M", option)) || (0 == strcmp("--wlm", option)) || (0 == strcmp("--wb", option))) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_M);
    } else if ((0 == strcmp("--wrpush-I", option)) || (0 == strcmp("--wpi", option))) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRPUSH_I);
