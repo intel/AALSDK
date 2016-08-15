@@ -895,7 +895,7 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
    }
 
    // Print list of ports
-   for ( i=0;i<5;i++)
+   for ( i=0 ; i<NUM_ELEMENTS(pfme_dev->m_pHDR->port_offsets) ; i++)
    {
       PDEBUG( "i = %d \n",i);
       if(0 != pfme_dev->m_pHDR->port_offsets[i].port_imp)

@@ -113,6 +113,11 @@ typedef void * kosal_ownermodule;
 
 #endif
 
+// Generic number of elements in an array macro
+#if !defined(NUM_ELEMENTS)
+#  define NUM_ELEMENTS(array) (sizeof(array)/sizeof(array[0]))
+#endif
+
 
 #ifdef __cplusplus
 # define KOSAL_INT       AAL::btInt
