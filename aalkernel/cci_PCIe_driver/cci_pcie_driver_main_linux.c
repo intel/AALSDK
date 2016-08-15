@@ -109,19 +109,19 @@ MODULE_LICENSE    (DRV_LICENSE);
 //      sim: Instantiate simualted AFUs
 //       Value: Number of AFUs to instantiate
 //      sriov: Activate SR-IOV
-//       Value: 1 - activate
+//       Value: Number of VFs to enable (can't exceed number of PORTs)
 //
 // Typical usage:
 //    sudo insmod ccidrv           # Normal load. PCIe enumeration enabled
 //    sudo insmod ccidrv sim=4     # Instantiate 4 simulated AFUs
-//    sudo insmod ccidrv sriov=1   # Activate SR-IOV
+//    sudo insmod ccidrv sriov=1   # Activate SR-IOV with 1 VF
 
 unsigned long  sim = 0;
 MODULE_PARM_DESC(sim, "Simulation: #=Number of simulated AFUs to instantiate");
 module_param    (sim, ulong, S_IRUGO);
 
 unsigned long  sriov = 0;
-MODULE_PARM_DESC(sriov, "SR-IOV");
+MODULE_PARM_DESC(sriov, "SR-IOV: #=Number of VFs to activate");
 module_param    (sriov, ulong, S_IRUGO);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -935,22 +935,26 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          // anyone binding to the PF driver will see it), though it is no
          // longer reachable. THIS NEEDS TO BE FIXED! Ideally by deactivating
          // the AFU, moving it over to the VF, and re-enumerating the PF port.
-         // FIXME: Assuming there is only one port
-         int num_vfs = 1;
-         if (0 == pci_enable_sriov(pcidev, num_vfs)){
+         if (sriov > ccip_portdev_maxVFs(pccipdev)) {
+            sriov = ccip_portdev_maxVFs(pccipdev);
+            PINFO("Asked for more VFs than PORTs, setting to number of PORTs (%ld).\n", sriov);
+         }
+         if (0 == pci_enable_sriov(pcidev, sriov)){
             // get FME device
             volatile struct fme_device *pfmedev;
             struct CCIP_PORT_AFU_OFFSET port_offset;
             pfmedev = ccip_dev_to_fme_dev(pccipdev);
             if (NULL != pfmedev) {
-               // transfer ownership of AFU in PORT0 to VF
-               port_offset.csr = pfmedev->m_pHDR->port_offsets[0].csr;
-               port_offset.afu_access_control = 0x1;
-               pfmedev->m_pHDR->port_offsets[0].csr = port_offset.csr;
+               for (i = 0; i < sriov; i++) {
+                  // transfer ownership of AFU in PORTi to VF
+                  port_offset.csr = pfmedev->m_pHDR->port_offsets[i].csr;
+                  port_offset.afu_access_control = 0x1;
+                  pfmedev->m_pHDR->port_offsets[i].csr = port_offset.csr;
+               }
             } else {
                PINFO("No FME device, can't transfer ownership of VF.");
             }
-            PINFO("SRIOV Enabled on this device for %d VF%s\n", num_vfs, (num_vfs > 1 ? "s" : ""));
+            PINFO("SRIOV Enabled on this device for %ld VF%s\n", sriov, (sriov > 1 ? "s" : ""));
          }else{
             PINFO("Failed to enable SRIOV");
          }
