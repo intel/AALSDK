@@ -25,7 +25,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 /// @file AALServiceModule.cpp
-/// @brief AALServiceModule implementation.  The AAL Service Module is an
+/// @brief AALServiceModule implementation.
+///        The AAL Service Module is an
 ///        object embedded in the Service Library that:
 ///        - Implements interface to outside for Service Construction
 ///        - Keeps track of all Services constructed through it.

@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file AALRESourceManager.cpp
+/// @file CRESourceManager.cpp
 /// @brief Implementation of the Remote Resource Manager Service
 /// @ingroup ResMgr
 /// @verbatim

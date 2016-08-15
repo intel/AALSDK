@@ -58,10 +58,13 @@ public:
    /// Sent in response to a successful completion of the Resource Configuration)
    ///
    /// @param[in]  TranID      The transaction ID provided in the call to ISPLAFU::StartTransactionContext.
+   /// @returns void
    virtual void  configureComplete(TransactionID const &TranID) = 0;
    /// @brief  Notification callback for IResConfigServce::Configure().
    ///
    /// Sent in response to failure of completion of Resource Configuration.
+   /// @param[in] theEvent A reference to an Event containing details of the failure.
+   /// @returns void
    virtual void  configureFailed(const IEvent &theEvent) = 0;
 
 };

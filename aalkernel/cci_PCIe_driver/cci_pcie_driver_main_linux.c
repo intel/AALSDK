@@ -108,14 +108,21 @@ MODULE_LICENSE    (DRV_LICENSE);
 // Argument:
 //      sim: Instantiate simualted AFUs
 //       Value: Number of AFUs to instantiate
+//      sriov: Activate SR-IOV
+//       Value: Number of VFs to enable (can't exceed number of PORTs)
 //
 // Typical usage:
 //    sudo insmod ccidrv           # Normal load. PCIe enumeration enabled
 //    sudo insmod ccidrv sim=4     # Instantiate 4 simulated AFUs
+//    sudo insmod ccidrv sriov=1   # Activate SR-IOV with 1 VF
 
 unsigned long  sim = 0;
 MODULE_PARM_DESC(sim, "Simulation: #=Number of simulated AFUs to instantiate");
 module_param    (sim, ulong, S_IRUGO);
+
+unsigned long  sriov = 0;
+MODULE_PARM_DESC(sriov, "SR-IOV: #=Number of VFs to activate");
+module_param    (sriov, ulong, S_IRUGO);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -126,7 +133,10 @@ module_param    (sim, ulong, S_IRUGO);
 // DRV_NAME is defined in mem-int.h
 //=============================================================================
 
-btUnsignedInt debug = PTRACE_FLAG
+btUnsignedInt debug = 0
+#if 0
+/* Type and Level selection flags */
+   | PTRACE_FLAG
    | PVERBOSE_FLAG
    | PDEBUG_FLAG
    | PINFO_FLAG
@@ -139,7 +149,7 @@ btUnsignedInt debug = PTRACE_FLAG
    | CCIPCIE_DBG_MMAP
    | CCIPCIE_DBG_CMD
    | CCIPCIE_DBG_CFG
-
+#endif
 ;
 
 /******************************************************************************
@@ -448,14 +458,29 @@ cci_pci_probe( struct pci_dev             *pcidev,
 static int cci_pci_sriov_configure(struct pci_dev *pcidev, int num_vfs)
 {
 
+   // for now, we do not support configuring sr_iov through sysfs, because it
+   // requires more complex deactivation and handover of AFUs between PF and
+   // VF. Instead, VF capability is configured via a load parameter (vf).
+   /*
    if (num_vfs == 0){
-      PINFO("SRIOV Disabled on this device\n");
+      // transfer AFU ownership back to PF
+      // TODO
+      // disable SR-IOV
       pci_disable_sriov(pcidev);
+      PINFO("SRIOV disabled on this device\n");
    }else{
-      PINFO("SRIOV Enabled on this device for %d VF%s\n",num_vfs, (num_vfs >1 ? "s" : ""));
-      pci_enable_sriov(pcidev, num_vfs);
+      // enable SR-IOV
+      if (0 == pci_enable_sriov(pcidev, num_vfs)){
+         PINFO("SRIOV Enabled on this device for %d VF%s\n",num_vfs, (num_vfs >1 ? "s" : ""));
+         // transfer AFU ownership to VF
+         // TODO
+      }else{
+         PINFO("Failed to enable SRIOV");
+      }
    }
    return 0;
+   */
+   return 1;
 }
 
 //=============================================================================
@@ -768,9 +793,6 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
    ccip_dev_pcie_busnum(pccipdev)       = pcidev->bus->number;
    ccip_dev_pcie_devnum(pccipdev)       = PCI_SLOT(pcidev->devfn);
    ccip_dev_pcie_fcnnum(pccipdev)       = PCI_FUNC(pcidev->devfn);
-   //ccip_dev_pcie_socketnum(pccipdev)    = dev_to_node(&pcidev->dev);
-
-   //PINFO(" Socket ID = %x   \n",dev_to_node(&pcidev->dev));
 
    // Enumerate the device
    //  Instantiate internal objects. Objects that represent
@@ -792,6 +814,10 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          res = -ENOMEM;
          goto ERR;
       }
+
+      ccip_dev_pcie_socketnum(pccipdev) = ccip_dev_to_fme_dev(pccipdev)->m_pHDR->fab_capability.socket_id ;
+      PINFO(" Socket Num = %x   \n",ccip_dev_pcie_socketnum(pccipdev));
+
 
       // Instantiate AAL allocatable objects including AFUs if present
       if(!cci_fme_dev_create_AAL_allocatable_objects(pccipdev)){
@@ -902,12 +928,37 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       ccip_portdev_maxVFs(pccipdev) = i;     // Can't have more VFs than ports for now
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
-      if( 0 != pci_sriov_set_totalvfs(pcidev, ccip_portdev_maxVFs(pccipdev))){
-         ccip_portdev_maxVFs(pccipdev) = 0;
-         PINFO("Device not does not support SRIOV.");
-      }else if(0 != pci_enable_sriov(pcidev,ccip_portdev_maxVFs(pccipdev) )){
-         PERR("Failed to enable SRIOV\n");
-         ccip_portdev_maxVFs(pccipdev) = 0;
+      if (sriov != 0) {
+         // FIXME Hack to enable SR-IOV to enable poweron
+         // If started with sriov module parameter, we'll activate a VF and
+         // transfer ownership of the AFU. At that point, the AFU will already
+         // have been enumerated, so the PF still thinks it has an AFU (and
+         // anyone binding to the PF driver will see it), though it is no
+         // longer reachable. THIS NEEDS TO BE FIXED! Ideally by deactivating
+         // the AFU, moving it over to the VF, and re-enumerating the PF port.
+         if (sriov > ccip_portdev_maxVFs(pccipdev)) {
+            sriov = ccip_portdev_maxVFs(pccipdev);
+            PINFO("Asked for more VFs than PORTs, setting to number of PORTs (%ld).\n", sriov);
+         }
+         if (0 == pci_enable_sriov(pcidev, sriov)){
+            // get FME device
+            volatile struct fme_device *pfmedev;
+            struct CCIP_PORT_AFU_OFFSET port_offset;
+            pfmedev = ccip_dev_to_fme_dev(pccipdev);
+            if (NULL != pfmedev) {
+               for (i = 0; i < sriov; i++) {
+                  // transfer ownership of AFU in PORTi to VF
+                  port_offset.csr = pfmedev->m_pHDR->port_offsets[i].csr;
+                  port_offset.afu_access_control = 0x1;
+                  pfmedev->m_pHDR->port_offsets[i].csr = port_offset.csr;
+               }
+            } else {
+               PINFO("No FME device, can't transfer ownership of VF.");
+            }
+            PINFO("SRIOV Enabled on this device for %ld VF%s\n", sriov, (sriov > 1 ? "s" : ""));
+         }else{
+            PINFO("Failed to enable SRIOV");
+         }
       }
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0) */
 

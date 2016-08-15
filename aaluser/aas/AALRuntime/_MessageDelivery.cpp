@@ -39,7 +39,7 @@
 /// 06/25/2015     JG       Removed RT from name
 /// 07/01/02015    JG       Removed the Service attributes and made it into
 ///                         normal IBase object. This simplified boot and
-///                         cleanup endverbatim
+///                         cleanup @endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>

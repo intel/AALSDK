@@ -117,21 +117,9 @@ public:
     RuntimeClient();
    ~RuntimeClient();
 
-   /// @brief Synchronous wrapper for stopping the Runtime.
    void end();
-   /// @brief Accessor for pointer to IRuntime stored in Runtime Client
-   ///
-   /// This pointer is used to allocate Service. 
    IRuntime* getRuntime();
-
-   /// @brief Checks that the object is in an internally consistent state
-   ///
-   /// The general paradigm in AAL is for an object to track its internal state for subsequent query,
-   /// as opposed to throwing exceptions or having to constantly check return codes.
-   /// We implement this to check if the status of the service allocated.
-   /// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
   btBool isOK();
-
 
    // <begin IRuntimeClient interface>
    void runtimeCreateOrGetProxyFailed(IEvent const &rEvent); 
@@ -161,11 +149,7 @@ protected:
    CSemaphore       m_Sem;       ///< For synchronizing with the AAL runtime.
 };
 
-///////////////////////////////////////////////////////////////////////////////
-///
-///  MyRuntimeClient Implementation
-///
-///////////////////////////////////////////////////////////////////////////////
+//  MyRuntimeClient Implementation
 RuntimeClient::RuntimeClient() :
     m_Runtime(this),        // Instantiate the AAL Runtime
     m_pRuntime(NULL),
@@ -199,6 +183,12 @@ RuntimeClient::~RuntimeClient()
     m_Sem.Destroy();
 }
 
+/// @brief Checks that the object is in an internally consistent state
+///
+/// The general paradigm in AAL is for an object to track its internal state for subsequent query,
+/// as opposed to throwing exceptions or having to constantly check return codes.
+/// We implement this to check if the status of the service allocated.
+/// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
 btBool RuntimeClient::isOK()
 {
    return m_isOK;
@@ -213,6 +203,8 @@ void RuntimeClient::runtimeStarted(IRuntime *pRuntime,
    m_Sem.Post(1);
 }
 
+/// @brief Synchronous wrapper for stopping the Runtime.
+/// @return void
 void RuntimeClient::end()
 {
    m_Runtime.stop();
@@ -264,6 +256,9 @@ void RuntimeClient::runtimeEvent(const IEvent &rEvent)
    MSG("Generic message handler (runtime)");
 }
 
+/// @brief Accessor for pointer to IRuntime stored in Runtime Client
+///
+/// @return A pointer to aRuntime Interface used to allocate Service.
 IRuntime * RuntimeClient::getRuntime()
 {
    return m_pRuntime;
@@ -280,16 +275,11 @@ public:
 
    HelloSPLLBApp(RuntimeClient * rtc);
    ~HelloSPLLBApp();
-   /// @brief Called by the main part of the application,Returns 0 if Success   
-   ///
-   /// Application Requests Service using Runtime Client passing a pointer to self.  
-   /// Blocks calling thread from [Main} untill application is done.    
+
    btInt run();
-  /// @brief This function displays Expected and Found Cachelines
    void Show2CLs(void *pCLExpected,
                  void *pCLFound,
                  ostringstream &oss);
-   /// @brief This function prints the cachelines 
    void _DumpCL(void *pCL,
                 ostringstream &oss);
 
@@ -344,11 +334,9 @@ protected:
    btWSSize       m_AFUDSMSize;     ///< Length in bytes of DSM
 };
 
-///////////////////////////////////////////////////////////////////////////////
-///
-///  Implementation
-///
-///////////////////////////////////////////////////////////////////////////////
+/// @brief Implementation
+/// @param[in] rtc A pointer to the Runtime Client.
+/// @return void
 HelloSPLLBApp::HelloSPLLBApp(RuntimeClient *rtc) :
    m_pAALService(NULL),
    m_runtimClient(rtc),
@@ -370,6 +358,11 @@ HelloSPLLBApp::~HelloSPLLBApp()
    m_Sem.Destroy();
 }
 
+/// @brief Called by the main part of the application.
+///
+/// Application Requests Service using Runtime Client passing a pointer to self.
+/// Blocks calling thread from [Main] until application is done.
+/// @retval 0 if Successful.
 btInt HelloSPLLBApp::run()
 {
    cout <<"======================="<<endl;
@@ -621,6 +614,22 @@ void HelloSPLLBApp::serviceReleaseFailed(const IEvent &rEvent)
 }
 
  // <ISPLClient>
+
+/// @brief A Client callback called after a Workspace is allocated.
+///
+/// HelloSPLLBApp Client implementation of ISPLClient::OnWorkspaceAllocated().
+///
+/// This is how the client is supplied with the data required to
+/// utilize the Workspace - its address and size. This callback is
+/// the only mechanism for the client to notified when a Workspace
+/// has been allocated and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @param[out] WkspcVirt The virtual address of the Workspace.
+/// @param[out] WkspcPhys The physical address of the Workspace.
+/// @param[out] WkspcSize The size of the Workspace.
+/// @return void
 void HelloSPLLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
                                           btVirtAddr           WkspcVirt,
                                           btPhysAddr           WkspcPhys,
@@ -635,6 +644,17 @@ void HelloSPLLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
    m_Sem.Post(1);
 }
 
+/// @brief A Client callback called after a Workspace allocation failed.
+///
+/// HelloSPLLBApp Client implementation of ISPLClient::OnWorkspaceAllocateFailed().
+///
+/// This callback is the only mechanism for the client to be notified that
+/// a Workspace allocation has failed and must be implemented for the client
+/// to receive these notifications.
+///
+/// @param[out] rEvent A reference to the IEvent containing details about
+///             the failure.
+/// @return void
 void HelloSPLLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
 {
    ERR("OnWorkspaceAllocateFailed");
@@ -643,6 +663,16 @@ void HelloSPLLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
+/// @brief A Client callback called after a Workspace is freed.
+///
+/// HelloSPLLBApp Client implementation of ISPLClient::OnWorkspaceFreed().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Workspace has been freed and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @return void
 void HelloSPLLBApp::OnWorkspaceFreed(TransactionID const &TranID)
 {
    MSG("OnWorkspaceFreed");
@@ -650,6 +680,18 @@ void HelloSPLLBApp::OnWorkspaceFreed(TransactionID const &TranID)
    (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
 }
 
+/// @brief A Client callback called after an attempt to free a Workspace
+///        failed.
+///
+/// HelloSPLLBApp Client implementation of ISPLClient::OnWorkspaceFreeFailed().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// an attempt to free a Workspace has failed and must be implemented for the
+/// client to receive these notifications.
+///
+/// @param[out] rEvent A reference to the IEvent containing details about
+///             the failure.
+/// @return void
 void HelloSPLLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
 {
    ERR("OnWorkspaceAllocateFailed");
@@ -658,7 +700,18 @@ void HelloSPLLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
-/// CMyApp Client implementation of ISPLClient::OnTransactionStarted
+/// @brief A Client callback called after a Transaction is started.
+///
+/// HelloSPLLBApp Client implementation of ISPLClient::OnTransactionStarted().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Transaction has started and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @param[out] AFUDSMVirt The virtual address of the Device Status Memory.
+/// @param[out] AFUDSMSize The size of the Device Status Memory.
+/// @return void
 void HelloSPLLBApp::OnTransactionStarted( TransactionID const &TranID,
                                    btVirtAddr           AFUDSMVirt,
                                    btWSSize             AFUDSMSize)
@@ -668,13 +721,34 @@ void HelloSPLLBApp::OnTransactionStarted( TransactionID const &TranID,
    m_AFUDSMSize =  AFUDSMSize;
    m_Sem.Post(1);
 }
-/// CMyApp Client implementation of ISPLClient::OnContextWorkspaceSet
+
+/// @brief A Client callback called after a Context Workspace is set.
+///
+/// HelloSPLLBApp Client implementation of ISPLClient::OnContextWorkspaceSet().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Context Workspace is set and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @return void
 void HelloSPLLBApp::OnContextWorkspaceSet( TransactionID const &TranID)
 {
    MSG("Context Set");
    m_Sem.Post(1);
 }
-/// CMyApp Client implementation of ISPLClient::OnTransactionFailed
+
+/// @brief A Client callback called after a Transaction failed.
+///
+/// HelloSPLLBApp Client implementation of ISPLClient::OnTransactionFailed().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Transaction failed and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] rEvent A reference to the IEvent containing details about
+///             the failure.
+/// @return void
 void HelloSPLLBApp::OnTransactionFailed( const IEvent &rEvent)
 {
    ERR("Runtime AllocateService failed");
@@ -686,7 +760,17 @@ void HelloSPLLBApp::OnTransactionFailed( const IEvent &rEvent)
    ERR("Transaction Failed");
    m_Sem.Post(1);
 }
-/// CMyApp Client implementation of ISPLClient::OnTransactionComplete
+
+/// @brief A Client callback called after a Transaction is completed.
+///
+/// HelloSPLLBApp Client implementation of ISPLClient::OnTransactionComplete().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Transaction has completed and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @return void
 void HelloSPLLBApp::OnTransactionComplete( TransactionID const &TranID)
 {
    m_AFUDSMVirt = NULL;
@@ -694,7 +778,17 @@ void HelloSPLLBApp::OnTransactionComplete( TransactionID const &TranID)
    MSG("Transaction Complete");
    m_Sem.Post(1);
 }
-/// CMyApp Client implementation of ISPLClient::OnTransactionStopped
+
+/// @brief A Client callback called after a Transaction is stopped.
+///
+/// HelloSPLLBApp Client implementation of ISPLClient::OnTransactionStopped().
+///
+/// This callback is the only mechanism for the client to be notified when
+/// a Transaction has been stopped and must be implemented for the client to
+/// receive these notifications.
+///
+/// @param[out] TranID A reference to the TransactionID.
+/// @return void
 void HelloSPLLBApp::OnTransactionStopped( TransactionID const &TranID)
 {
    m_AFUDSMVirt = NULL;
@@ -702,12 +796,27 @@ void HelloSPLLBApp::OnTransactionStopped( TransactionID const &TranID)
    MSG("Transaction Stopped");
    m_Sem.Post(1);
 }
+
+/// @brief Callback called to send unsolicited or unusual events.
+///
+/// HelloSPLLBApp Client implementation of ISPLClient::serviceEvent().
+///
+/// @param[out] rEvent A reference to an IEvent containing information
+///              about the event.
+/// @return void
 void HelloSPLLBApp::serviceEvent(const IEvent &rEvent)
 {
    ERR("unexpected event 0x" << hex << rEvent.SubClassID());
 }
 // <end IServiceClient interface>
 
+/// @brief This function displays Expected and Found Cachelines.
+///
+/// @param[in] pCLExpected A pointer to cache-line expected.
+/// @param[in] pCLFound A pointer to found cache line.
+/// @param[in] oss A reference to a string stream the cache lines
+///                 will be added to.
+/// @return void
 void HelloSPLLBApp::Show2CLs(void          *pCLExpected, // pointer to cache-line expected
                              void          *pCLFound,    // pointer to found cache line
                              ostringstream &oss)         // add it to this ostringstream
@@ -719,7 +828,13 @@ void HelloSPLLBApp::Show2CLs(void          *pCLExpected, // pointer to cache-lin
    _DumpCL(pCLFound, oss);
 }  // _DumpCL
 
- void HelloSPLLBApp::_DumpCL( void         *pCL,  // pointer to cache-line to print
+   /// @brief This function prints the cachelines.
+   ///
+   /// @param[in] pCL A pointer to the cache line to print.
+   /// @param[in] oss A reference to a string stream the cache line
+   ///                 will be added to.
+   /// @return void
+void HelloSPLLBApp::_DumpCL( void         *pCL,  // pointer to cache-line to print
                               ostringstream &oss)  // add it to this ostringstream
  {
     oss << std::hex << std::setfill('0') << std::uppercase;

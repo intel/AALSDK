@@ -60,36 +60,39 @@ public:
 
    //=============================================================================
    // GetObj
-   /// Get instance of the Environment class
-   /// @returns pointer to instance of Environment class
+   /// Get an instance of the Environment class.
+   /// @returns A pointer to an instance of Environment class.
    // Comments:
    //=============================================================================
    static Environment * GetObj();
 
    //=============================================================================
    // ReleaseObj
-   /// Release instance of the Environment class
+   /// Release instance of the Environment class.
+   /// @return void
    // Comments:
    //=============================================================================
    static void ReleaseObj();
 
    //=============================================================================
    // Get
-   /// Get the value of a variable
-   /// @param[in] var - variable to query
-   /// @param[in] val - reference variable to get the value
-   /// @returns true - success.
+   /// Get the value of an environment variable.
+   /// @param[in] var - The variable to query.
+   /// @param[in] val - Reference variable to hold the value.
+   /// @retval true  - success.
+   /// @retval false - failure.
    // Comments:
    //=============================================================================
    btBool Get(std::string var, std::string &val);
 
    //=============================================================================
    //  Set
-   ///  Set the value of a variable
-   /// @param[in] var - variable to query
-   /// @param[in] val - value to set it to
-   /// @param[in] overwrite - what to do if it already exists
-   /// @returns true - success
+   ///  Set the value of an environment variable.
+   /// @param[in] var - The variable to set.
+   /// @param[in] val - The value to set it to.
+   /// @param[in] overwrite - What to do if it already exists.
+   /// @retval true  - success.
+   /// @retval false - failure.
    //==============================================================================
    btBool Set(std::string var, std::string val, btBool overwrite=true);
 

@@ -53,14 +53,27 @@ BEGIN_C_DECLS
 /// @{
 
 /// Put the calling thread to sleep for the specified time in seconds.
+/// @param[in] secs The number of seconds the thread will sleep.
+/// @return void
 void OSAL_API SleepSec(unsigned long secs);
-/// Put the calling thread to sleep for the specified time in milliseconds.
+
+// Put the calling thread to sleep for the specified time in milliseconds.
+/// @param[in] msecs The number of milliseconds the thread will sleep.
+/// @return void
 void OSAL_API SleepMilli(unsigned long msecs);
+
 /// Put the calling thread to sleep for the specified time in microseconds.
+/// @param[in] usecs The number of microseconds the thread will sleep.
+/// @return void
+
 void OSAL_API SleepMicro(unsigned long usecs);
 /// Put the calling thread to sleep for the specified time in nanoseconds.
+/// @param[in] nsecs The number of nanoseconds the thread will sleep.
+/// @return void
+
 void OSAL_API SleepNano(unsigned long nsecs);
 /// Yield the CPU.
+/// @return void
 void OSAL_API SleepZero(void);
 
 /// @}

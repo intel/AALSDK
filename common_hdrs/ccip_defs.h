@@ -1137,82 +1137,91 @@ struct CCIP_FME_PR_KEY {
 }; // end struct CCIP_FME_PR_KEY
 CASSERT(sizeof(struct CCIP_FME_PR_KEY) == (1 *8));
 
+//Partial Reconfiguration control  CSR
+struct CCIP_FME_PR_CONTROL {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt enable_pr_port_access :1;          // Enable PR Port access
+         btUnsigned64bitInt rsvd3 :7;                          // Reserved
+         btUnsigned64bitInt pr_regionid :2;                    // PR Region ID
+         btUnsigned64bitInt rsvd1 :2;                          // Reserved
+         btUnsigned64bitInt pr_start_req :1;                   // PR Start Request
+         btUnsigned64bitInt pr_push_complete :1;               // PR Data push complete
+         btUnsigned64bitInt pr_kind :1;                        // PR Data push complete
+         btUnsigned64bitInt rsvd :49;                          // Reserved
+      }; // end struct
+   }; //end union
+}; // end struct CCIP_FME_PR_CONTROL
+CASSERT(sizeof(struct CCIP_FME_PR_CONTROL) == (1 *8));
+
+//Partial Reconfiguration Status  CSR
+struct CCIP_FME_PR_STATUS {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt pr_credit :9;                // PR Credits
+         btUnsigned64bitInt rsvd2 :7;                    // Reserved
+         btUnsigned64bitInt pr_status :1;                // PR status
+         btUnsigned64bitInt rsvd :3;                     // Reserved
+         btUnsigned64bitInt pr_contoller_status :3;      // Altra PR Controller Block status
+         btUnsigned64bitInt rsvd1 :1;                    // Reserved
+         btUnsigned64bitInt pr_host_status :4;           // PR Host status
+         btUnsigned64bitInt rsvd3 :36;                   // Reserved
+      }; // end struct
+   }; // end union
+};// end struct CCIP_FME_PR_STATUS
+CASSERT(sizeof(struct CCIP_FME_PR_STATUS) == (1 *8));
+
+//Partial Reconfiguration data  CSR
+struct CCIP_FME_PR_DATA {
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt pr_data_raw :32;             // PR data from the raw binary file
+         btUnsigned64bitInt rsvd :32;                    // Reserved
+      }; // end struct
+   }; // end union
+}; // end struct CCIP_FME_PR_DATA
+CASSERT(sizeof(struct CCIP_FME_PR_DATA) == (1 *8));
+
+
+//Partial Reconfiguration data  CSR
+ struct CCIP_FME_PR_ERROR {
+    union {
+       btUnsigned64bitInt csr;
+       struct {
+          btUnsigned64bitInt PR_operation_err :1;           // Previous errors detected by PR Host
+          btUnsigned64bitInt PR_CRC_err :1;                 // CRC errors detected
+          btUnsigned64bitInt PR_bitstream_err :1;           // InCompatible errors detected
+          btUnsigned64bitInt PR_IP_err :1;                  // PR protocol error
+          btUnsigned64bitInt PR_FIFIO_err :1;               // PR FIFO error
+          btUnsigned64bitInt PR_timeout_err :1;             // PR Timeout error
+          btUnsigned64bitInt PR_secure_load_err :1;         // PR Security error
+          btUnsigned64bitInt rsvd : 57;                     // Reserved
+       }; // end struct
+    }; // end union
+ }; // end struct CCIP_FME_PR_ERROR
+ CASSERT(sizeof(struct CCIP_FME_PR_ERROR) == (1 *8));
+
 struct CCIP_FME_DFL_PR {
 
    // FME PR device feature header
-   struct CCIP_DFH ccip_pr_dflhdr;
+   struct CCIP_DFH                 ccip_pr_dflhdr;
 
    //Partial Reconfiguration control  CSR
-   struct CCIP_FME_PR_CONTROL {
-
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt enable_pr_port_access :1;          // Enable PR Port access
-            btUnsigned64bitInt rsvd3 :7;                          // Reserved
-            btUnsigned64bitInt pr_regionid :2;                    // PR Region ID
-            btUnsigned64bitInt rsvd1 :2;                          // Reserved
-            btUnsigned64bitInt pr_start_req :1;                   // PR Start Request
-            btUnsigned64bitInt pr_push_complete :1;               // PR Data push complete
-            btUnsigned64bitInt pr_kind :1;                        // PR Data push complete
-            btUnsigned64bitInt rsvd :49;                          // Reserved
-         }; // end struct
-      }; //end union
-
-
-   }ccip_fme_pr_control; // end struct CCIP_FME_PR_CONTROL
+   struct CCIP_FME_PR_CONTROL      ccip_fme_pr_control;
 
    //Partial Reconfiguration Status  CSR
-   struct CCIP_FME_PR_STATUS {
-
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt pr_credit :9;                // PR Credits
-            btUnsigned64bitInt rsvd2 :7;                    // Reserved
-            btUnsigned64bitInt pr_status :1;                // PR status
-            btUnsigned64bitInt rsvd :3;                     // Reserved
-            btUnsigned64bitInt pr_contoller_status :3;      // Altra PR Controller Block status
-            btUnsigned64bitInt rsvd1 :1;                    // Reserved
-            btUnsigned64bitInt pr_host_status :4;           // PR Host status
-            btUnsigned64bitInt rsvd3 :36;                   // Reserved
-         }; // end struct
-      }; // end union
-
-
-   }ccip_fme_pr_status; // end struct CCIP_FME_PR_STATUS
+   struct CCIP_FME_PR_STATUS       ccip_fme_pr_status;
 
    //Partial Reconfiguration data  CSR
-   struct CCIP_FME_PR_DATA {
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt pr_data_raw :32;             // PR data from the raw binary file
-            btUnsigned64bitInt rsvd :32;                    // Reserved
-         }; // end struct
-      }; // end union
-
-
-   }ccip_fme_pr_data; // end struct CCIP_FME_PR_DATA
+   struct CCIP_FME_PR_DATA         ccip_fme_pr_data;
 
    //Partial Reconfiguration data  CSR
-   struct CCIP_FME_PR_ERROR {
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt PR_operation_err :1;           // Previous errors detected by PR Host
-            btUnsigned64bitInt PR_CRC_err :1;                 // CRC errors detected
-            btUnsigned64bitInt PR_bitstream_err :1;           // InCompatible errors detected
-            btUnsigned64bitInt PR_IP_err :1;                  // PR protocol error
-            btUnsigned64bitInt PR_FIFIO_err :1;               // PR FIFO error
-            btUnsigned64bitInt PR_timeout_err :1;             // PR Timeout error
-            btUnsigned64bitInt PR_secure_load_err :1;         // PR Security error
-            btUnsigned64bitInt rsvd : 57;                     // Reserved
-         }; // end struct
-      }; // end union
-
-
-   }ccip_fme_pr_err; // end struct CCIP_FME_PR_ERROR
+   struct CCIP_FME_PR_ERROR        ccip_fme_pr_err;
 
    // FME PR Publish HASH
    struct CCIP_FME_PR_KEY fme_pr_pub_harsh0 ;

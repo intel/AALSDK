@@ -24,10 +24,10 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// file AALMAFU.h
-/// brief IMAFU and related events.
-/// ingroup MAFU
-/// verbatim
+/// @file AALMAFU.h
+/// @brief IMAFU and related events.
+/// @ingroup MAFU
+/// @verbatim
 /// Accelerator Abstraction Layer
 ///
 /// AUTHOR: Joseph Grecco, Intel Corporation.
@@ -37,7 +37,7 @@
 /// WHEN:          WHO:     WHAT:
 /// 09/22/2008     JG/HM    Initial version started
 /// 01/04/2009     HM       Updated Copyright
-/// 02/14/2012     JG       Added AFUIDH and L to deviceid in CreateAFU Request endverbatim
+/// 02/14/2012     JG       Added AFUIDH and L to deviceid in CreateAFU Request @endverbatim
 //****************************************************************************
 #ifndef __AALSDK_AALMAFU_H__
 #define __AALSDK_AALMAFU_H__

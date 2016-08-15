@@ -389,6 +389,8 @@ __storagecls AAL::bt32bitInt AAL_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::btUnsigne
       AAL_MOD_DEFAULT_IMPL(arg, __verstr, __vercur, __verrev, __verage);
 
 /// @brief Completes the Module entry point and default command implementations.
+///
+/// Paired with AAL_BEGIN_MOD when defining a Module entry point.
 # define AAL_END_MOD()                                                                         \
       default : res = -1; break;                                                               \
    }                                                                                           \
@@ -457,6 +459,8 @@ __storagecls AAL::bt32bitInt AAL_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::btUnsigne
       AAL_SVC_MOD_DEFAULT_IMPL(__svcfactory, arg, __verstr, __vercur, __verrev, __verage);
 
 /// @brief Completes the Service Module entry point and default command implementations.
+///
+/// Paired with AAL_BEGIN_SVC_MOD when defining a Service Module entry point.
 # define AAL_END_SVC_MOD()                                                                                  \
       default : res = -1; break;                                                                            \
    }                                                                                                        \
@@ -468,7 +472,7 @@ __storagecls AAL::bt32bitInt AAL_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::btUnsigne
 
 
 
-////////////////////////////////////////////////////////////////////////////////
+/// @brief Declare an AAL Built-In Service Module entry point.
 # define AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__x )  __##__x##BuiltInAALSvcMod
 
 //=============================================================================
@@ -480,6 +484,7 @@ __storagecls AAL::bt32bitInt AAL_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::btUnsigne
 //=============================================================================
 #ifdef __cplusplus
 
+/// @brief Declare an AAL Module entry point.
 # define AAL_DECLARE_BUILTIN_MOD(__rtnamesym, __storagecls)                                                              \
 extern "C" {                                                                                                             \
 extern __storagecls AAL::bt32bitInt AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::btUnsigned32bitInt , AAL::btAny ); \
@@ -509,6 +514,7 @@ extern __storagecls bt32bitInt AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__rtnamesym)(btUn
 // Comments: AAL_BEGIN_SVC_MOD is used for Service modules and includes the
 //           command to access the Service Factory.
 //=============================================================================
+/// @brief Instantiates a built-in Service Module entry point and default command implementations.
 # define AAL_BEGIN_BUILTIN_SVC_MOD(__svcfactory, __rtnamesym, __storagecls, __verstr, __vercur, __verrev, __verage) \
 extern "C" {                                                                                                        \
 __storagecls AAL::bt32bitInt AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::btUnsigned32bitInt cmd,              \
@@ -522,7 +528,7 @@ __storagecls AAL::bt32bitInt AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::b
       AAL_SVC_MOD_DEFAULT_IMPL(__svcfactory, arg, __verstr, __vercur, __verrev, __verage);
 
 
-/// Completes the built-in Service Module entry point and default command implementations.
+/// @brief Completes the built-in Service Module entry point and default command implementations.
 # define AAL_END_BUILTIN_SVC_MOD()                                                                                  \
       default : res = -1; break;                                                                                    \
    }                                                                                                                \
@@ -554,6 +560,7 @@ typedef struct OSAL_API _OSServiceModule
 ///
 /// @param[out]  p          Address of the OSServiceModule to initialize.
 /// @param[in]   root_name  The module root name of the desired Service Module.
+/// @return void
 void OSAL_API OSServiceModuleInit(OSServiceModule *p, BTCSTR root_name);
 
 /// @brief Open (load) the Service Module described by p and resolve its entry point.

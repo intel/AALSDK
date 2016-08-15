@@ -107,8 +107,8 @@ public:
 
    /// @brief     Called by a Service object to indicate that it wants to be released.
    ///               The event provides some addditonal information about the request
-   /// @param[in] pServiceBase is pointer to IBase of Servcie to release.
-   ///            rEvent is reference to an informational event.
+   /// @param[in] pServiceBase is pointer to IBase of Service to release.
+   /// @param[in] rEvent is a reference to an informational event.
    /// @return    void
    virtual void serviceReleaseRequest(IBase *pServiceBase,
                                       const IEvent &rEvent)                    = 0;

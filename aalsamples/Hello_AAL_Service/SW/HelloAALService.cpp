@@ -115,9 +115,6 @@ AAL_END_SVC_MOD()
 /////////////////////////////////////////////////////////////////////////////
 
 
-/// @addtogroup hello_service
-/// @{
-
 //=============================================================================
 // Name: init()
 // Description: Initialize the Service
@@ -148,8 +145,8 @@ btBool HelloAALService::init( IBase *pclientBase,
 }
 
 //=============================================================================
-// Name: Ping
-// Description: Ping method send 5 replies
+// Name: Hello
+// Description: Hello method send a reply
 // Interface: public
 // Inputs: Message - Message to send
 //         pTranID
@@ -184,7 +181,5 @@ void HelloAppDispatchable::operator() ()
    m_pSvcClient->HelloApp(m_TranID);
    delete this;
 }
-
-/// @}
 
 

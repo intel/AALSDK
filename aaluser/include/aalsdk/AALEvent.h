@@ -73,24 +73,41 @@ class IBase;
 class AASLIB_API IEvent
 {
 public:
-   /// IEvent Destructor.
+   // IEvent Destructor.
    virtual ~IEvent() {}
    /// Query interface for a given interface id.
+   /// @param[in] Interface The Interface ID to query.
+   /// @returns An Interface.
    virtual btGenericInterface    Interface(btIID Interface)      const = 0;
    /// Determine whether this event contains the specified interface.
+   /// @param[in] Interface The Interface ID to find.
+   /// @retval True if the Event has the Interface specified.
+   /// @retval False if the Event does not have the Interface specified.
    virtual btBool                      Has(btIID Interface)      const = 0;
    /// Retrieve the native subclass id.
+   /// @returns An Interface ID.
    virtual btIID                SubClassID()                     const = 0;
    /// IEvent inequality.
+   /// @param[in] rother A reference to an IEvent to compare.
+   /// @retval True if the two events are not equal.
+   /// @retval False if the two events are equal.
    virtual btBool             operator != (const IEvent &rother) const = 0;
    /// IEvent equality.
+   /// @param[in] rother A reference to an IEvent to compare.
+   /// @retval True if the two events are equal.
+   /// @retval  if the two events are not equal.
    virtual btBool             operator == (const IEvent &rother) const = 0;
    /// Conversion to IBase &.
+   /// @returns A reference to an IBase Interface.
    virtual IBase &                  Object()                     const = 0;
    /// Conversion to IBase *.
+   /// @returns A pointer to an IBase Interface.
    virtual IBase *                 pObject()                     const = 0;
    /// Internal state check.
+   /// @retval True if the internal state of the Event is OK.
+   /// @retval False if the internal state of the Event is not OK.
    virtual btBool                     IsOK()                     const = 0;
+   /// Clone an event.
    /// @return An identical copy of this event object.
    virtual IEvent *                  Clone()                     const = 0;
 protected:
@@ -101,11 +118,14 @@ protected:
 class AASLIB_API ITransactionEvent
 {
 public:
-   /// ITransactionEvent Destructor.
+   // ITransactionEvent Destructor.
    virtual ~ITransactionEvent() {}
    /// Retrieve the TransactionID associated with this Transaction Event.
+   /// @return The transaction ID.
    virtual TransactionID TranID() const                = 0;
    /// Set the TransactionID for this Transaction Event.
+   /// @param[in] TranID A reference to the TransactionID to set into the Event.
+   /// @return void
    virtual void SetTranID(TransactionID const &TranID) = 0;
 };
 
@@ -113,13 +133,16 @@ public:
 class AASLIB_API IExceptionEvent
 {
 public:
-   /// IExceptionEvent Destructor.
+   // IExceptionEvent Destructor.
    virtual ~IExceptionEvent() {}
    /// Retrieve the Exception id.
+   /// @returns The Exception id.
    virtual btID ExceptionNumber() const = 0;
    /// Retrieve the Exception reason code.
+   /// @returns The Exception reason code.
    virtual btID          Reason() const = 0;
    /// Retrieve a string description of the Exception.
+   /// @returns The description of the Exception.
    virtual btString Description() const = 0;
 };
 
@@ -128,10 +151,13 @@ class AASLIB_API IExceptionTransactionEvent : public ITransactionEvent
 {
 public:
    /// Retrieve the Exception id.
+   /// @returns The Exception id.
    virtual btID ExceptionNumber() const = 0;
    /// Retrieve the Exception reason code.
+   /// @returns The Exception reason code.
    virtual btID          Reason() const = 0;
    /// Retrieve a string description of the Exception.
+   /// @returns The description of the Exception.
    virtual btString Description() const = 0;
 };
 
@@ -144,9 +170,10 @@ public:
 class AASLIB_API IApplicationEvent
 {
 public:
-   /// IApplicationEvent Destructor.
+   // IApplicationEvent Destructor.
    virtual ~IApplicationEvent() {}
    /// Retrieve the parameters associated with this Application-specific event.
+   /// @returns A reference to a NamedValueSet containing the parameters.
    virtual NamedValueSet & Parms() = 0;
 };
 
@@ -154,15 +181,19 @@ public:
 class AASLIB_API IApplicationExceptionEvent
 {
 public:
-   /// IApplicationExceptionEvent Destructor.
+   // IApplicationExceptionEvent Destructor.
    virtual ~IApplicationExceptionEvent() {}
    /// Retrieve the Exception id.
+   /// @returns The Exception ID.
    virtual btID ExceptionNumber() const = 0;
    /// Retrieve the Exception reason code.
+   /// @returns The Exception ID.
    virtual btID          Reason() const = 0;
    /// Retrieve a string description of the Exception.
+   /// @returns The description in a string.
    virtual btString Description() const = 0;
    /// Retrieve the parameters associated with this Application-specific Exception Event.
+   /// @returns A reference to a NamedValueSet containing the parameters.
    virtual NamedValueSet & Parm()       = 0;
 };
 
@@ -175,7 +206,7 @@ public:
 class AASLIB_API IReleaseRequestEvent
 {
 public:
-   /// IReleaseRequestEvent Destructor.
+   // IReleaseRequestEvent Destructor.
    virtual ~IReleaseRequestEvent() {};
 
    /// AFU Release reason types
@@ -184,12 +215,15 @@ public:
    };
 
    /// Retrieve AFU Release timeout in milliseconds .
+   /// @returns The AFU resource release timeout.
    virtual btUnsigned64bitInt Timeout() const= 0;
 
    /// Retrieve Resource Release  Exception reason code.
+   /// @returns The reason code.
    virtual ReleaseReason_e Reason()     const= 0;
 
    /// Retrieve a string description of the Resource Release Request event.
+   /// @returns The event description.
    virtual btString Description()       const = 0;
 };
 

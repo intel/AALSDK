@@ -1,21 +1,20 @@
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
 
-SUBDIRS=\
-appbase \
-vallib \
-MMIO_Mapping \
-UMsg_Allocation \
-DMA_Buffer \
-Read_Perf_Counters \
-AFU_Reset \
-Signal_Tap \
-Partial_Reconfig/PR_SingleApp \
-Partial_Reconfig/PR_TwoApp/nlb_app \
-Partial_Reconfig/PR_TwoApp/pr_app \
-RAS \
-Power_Thermal \
-Error
 
+## These subdirectories must be built first
+SUBDIRS1=\
+appbase/ \
+vallib/
+
+## Automagically include ALL sub-directories that have a Makefile (Thanks TBD!)
+SUBDIRS2 := $(shell find . -name Makefile|sed 's^./^^;s/Makefile//')
+
+## Removed SUBDIRS2 go below. Notice the final comma.
+## Need to remove those in SUBDIRS1
+## If you add a directory that you do not want built, add it here.
+SUBDIRS2 :=$(filter-out \
+${SUBDIRS1} \
+, $(SUBDIRS2))
 
 MFLAGS  =
 ifneq (,$(ndebug))
@@ -39,7 +38,8 @@ MFLAGS += DESTDIR=$(DESTDIR)
 endif
 
 all clean:
-	@for d in ${SUBDIRS} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done
+#	@echo  ${SUBDIRS1} ${SUBDIRS2}
+	@for d in ${SUBDIRS1} ${SUBDIRS2} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done
 
 .PHONY: all clean
 
