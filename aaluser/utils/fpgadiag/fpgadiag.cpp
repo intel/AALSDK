@@ -877,7 +877,7 @@ int main(int argc, char *argv[])
    		// Run NLB test, which performs sw data verification.
    		CNLBLpbk1 nlb_lpbk1(&myapp);
 
-   		cout << " * Data Copy - LPBK1" << flush;
+   		cout << " * Data Copy - LPBK1" << endl << flush;
    		res = nlb_lpbk1.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
@@ -892,7 +892,7 @@ int main(int argc, char *argv[])
    		// Run NLB read test.
 	      CNLBMode3 nlb_read(&myapp);
 
-   		cout << " * Read Bandwidth from Memory - READ" << flush;
+   		cout << " * Read Bandwidth from Memory - READ" << endl << flush;
    		res = nlb_read.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
@@ -907,7 +907,7 @@ int main(int argc, char *argv[])
    		// Run NLB write test.
 	      CNLBMode3 nlb_write(&myapp);
 
-   		cout << " * Write Bandwidth from Memory - WRITE" << flush;
+   		cout << " * Write Bandwidth from Memory - WRITE" << endl << flush;
    		res = nlb_write.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
@@ -922,7 +922,7 @@ int main(int argc, char *argv[])
    		// Run NLB  trput test.
 	      CNLBMode3 nlb_trput(&myapp);
 
-   		cout << " * Simultaneous Read/Write Bandwidth - TRPUT" << flush;
+   		cout << " * Simultaneous Read/Write Bandwidth - TRPUT" << endl << flush;
    		res = nlb_trput.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
@@ -938,7 +938,7 @@ int main(int argc, char *argv[])
    	   // * report bandwidth in GiB/s
    	   CNLBSW nlb_sw(&myapp);
 
-   	   cout << " * SW test " << flush;
+   	   cout << " * SW test " << endl << flush;
    	   res = nlb_sw.RunTest(gCmdLine);
    	   totalres += res;
    	   if ( 0 == res ) {
@@ -955,7 +955,7 @@ int main(int argc, char *argv[])
 	   	   // * report bandwidth in GiB/s
 	   	   CNLBAtomic nlb_atomic(&myapp);
 
-	   	   cout << " * Atomic test " << flush;
+	   	   cout << " * Atomic test " << endl << flush;
 	   	   res = nlb_atomic.RunTest(gCmdLine);
 	   	   totalres += res;
 	   	   if ( 0 == res ) {

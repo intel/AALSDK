@@ -384,4 +384,9 @@ void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
         << setw(12) << GetPerfMonitor(UPI_WRITE)      << ' '
         << endl << endl;
 
+
+   if(pAFUDSM->num_reads < cls)
+   {
+	   ERR("WARNING: Test did NOT run for the requested number of CLs");
+   }
 }
