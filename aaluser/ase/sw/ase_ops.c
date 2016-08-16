@@ -326,7 +326,7 @@ void ase_write_lock_file()
   
   // Open file
   fp_ase_ready = fopen(ase_ready_filepath, "w");
-  if (fp_ase_ready == NULL)
+  if (fp_ase_ready == (FILE*)NULL)
     {
       BEGIN_RED_FONTCOLOR;
       printf("SIM-C : **ERROR** => ASE lock file could not be written, Exiting\n");

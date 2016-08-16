@@ -52,7 +52,7 @@ ASE_DEBUG ?= 1
 ASE_DISABLE_LOGGER = 0
 
 # Coverage settings (lcov in SW and VCS-CM in HW)
-ASE_COVERAGE ?= 1
+ASE_COVERAGE ?= 0
 COV_DIR=$(ASE_BASEDIR)/coverage/
 ifeq ($(ASE_COVERAGE),1)
 ASE_PROFILE_ENABLE ?= 1
@@ -257,12 +257,6 @@ CLANG_OPT+= \
 	-enable-checker  alpha.core.SizeofPtr \
 	-enable-checker  alpha.core.TestAfterDivZero \
 	-enable-checker  alpha.cplusplus.VirtualCall \
-	-enable-checker  alpha.osx.cocoa.Dealloc \
-	-enable-checker  alpha.osx.cocoa.DirectIvarAssignment \
-	-enable-checker  alpha.osx.cocoa.DirectIvarAssignmentForAnnotatedFunctions \
-	-enable-checker  alpha.osx.cocoa.InstanceVariableInvalidation \
-	-enable-checker  alpha.osx.cocoa.MissingInvalidationMethod \
-	-enable-checker  alpha.osx.cocoa.localizability.PluralMisuseChecker \
 	-enable-checker  alpha.security.ArrayBound \
 	-enable-checker  alpha.security.ArrayBoundV2 \
 	-enable-checker  alpha.security.MallocOverflow \
@@ -304,9 +298,34 @@ CLANG_OPT+= \
 	-enable-checker  nullability.NullableDereferenced \
 	-enable-checker  nullability.NullablePassedToNonnull \
 	-enable-checker  nullability.NullablePassedToNonnull \
+	-enable-checker  optin.performance.Padding \
+	-enable-checker  security.FloatLoopCounter \
+	-enable-checker  security.insecureAPI.UncheckedReturn \
+	-enable-checker  security.insecureAPI.getpw \
+	-enable-checker  security.insecureAPI.gets \
+	-enable-checker  security.insecureAPI.mkstemp \
+	-enable-checker  security.insecureAPI.mktemp \
+	-enable-checker  security.insecureAPI.rand \
+	-enable-checker  security.insecureAPI.strcpy \
+	-enable-checker  security.insecureAPI.vfork \
+	-enable-checker  unix.API \
+	-enable-checker  unix.Malloc \
+	-enable-checker  unix.MallocSizeof \
+	-enable-checker  unix.MismatchedDeallocator \
+	-enable-checker  unix.Vfork \
+	-enable-checker  unix.cstring.BadSizeArg \
+	-enable-checker  unix.cstring.NullArg \
+
+#	-enable-checker  alpha.deadcode.UnreachableCode \
+	-enable-checker  alpha.core.CastToStruct \
+	-enable-checker  alpha.osx.cocoa.Dealloc \
+	-enable-checker  alpha.osx.cocoa.DirectIvarAssignment \
+	-enable-checker  alpha.osx.cocoa.DirectIvarAssignmentForAnnotatedFunctions \
+	-enable-checker  alpha.osx.cocoa.InstanceVariableInvalidation \
+	-enable-checker  alpha.osx.cocoa.MissingInvalidationMethod \
+	-enable-checker  alpha.osx.cocoa.localizability.PluralMisuseChecker \
 	-enable-checker  optin.osx.cocoa.localizability.EmptyLocalizationContextChecker \
 	-enable-checker  optin.osx.cocoa.localizability.NonLocalizedStringChecker \
-	-enable-checker  optin.performance.Padding \
 	-enable-checker  osx.API \
 	-enable-checker  osx.SecKeychainAPI \
 	-enable-checker  osx.cocoa.AtSync \
@@ -328,25 +347,7 @@ CLANG_OPT+= \
 	-enable-checker  osx.coreFoundation.CFRetainRelease \
 	-enable-checker  osx.coreFoundation.containers.OutOfBounds \
 	-enable-checker  osx.coreFoundation.containers.PointerSizedValues \
-	-enable-checker  security.FloatLoopCounter \
-	-enable-checker  security.insecureAPI.UncheckedReturn \
-	-enable-checker  security.insecureAPI.getpw \
-	-enable-checker  security.insecureAPI.gets \
-	-enable-checker  security.insecureAPI.mkstemp \
-	-enable-checker  security.insecureAPI.mktemp \
-	-enable-checker  security.insecureAPI.rand \
-	-enable-checker  security.insecureAPI.strcpy \
-	-enable-checker  security.insecureAPI.vfork \
-	-enable-checker  unix.API \
-	-enable-checker  unix.Malloc \
-	-enable-checker  unix.MallocSizeof \
-	-enable-checker  unix.MismatchedDeallocator \
-	-enable-checker  unix.Vfork \
-	-enable-checker  unix.cstring.BadSizeArg \
-	-enable-checker  unix.cstring.NullArg \
 
-#	-enable-checker  alpha.deadcode.UnreachableCode \
-	-enable-checker  alpha.core.CastToStruct \
 
 #########################################################################
 #                            Build Targets                              #
@@ -572,11 +573,23 @@ distclean: header clean
 #########################################################################
 #                            Internal only                              #
 #########################################################################
+NLB_CSRC = $(ASEVAL_GIT)/apps/nlb_lpbk1_test.c
+NLB_CSRC+= ${ASE_SRCDIR}/sw/tstamp_ops.c
+NLB_CSRC+= ${ASE_SRCDIR}/sw/ase_ops.c 
+NLB_CSRC+= ${ASE_SRCDIR}/sw/app_backend.c 
+NLB_CSRC+= ${ASE_SRCDIR}/sw/mqueue_ops.c 
+NLB_CSRC+= ${ASE_SRCDIR}/sw/error_report.c 
+
+# NLB peek-poke build
+nlb-build:
+	gcc -g -o nlb_test.out $(NLB_CSRC) -lrt -lm -lpthread -I $(ASE_SRCDIR)/sw/
+
 # Source scan-build
 scan-build:
 	rm -rf scanbuild
 	mkdir -p scanbuild
-	scan-build-$(CLANG_VERSION) $(CLANG_OPT) make sw_build | tee scan-build.log
+	scan-build-$(CLANG_VERSION) $(CLANG_OPT) make sw_build | tee scan-build-sim.log
+#	scan-build-$(CLANG_VERSION) $(CLANG_OPT) make nlb-build | tee scan-build-app.log
 
 # GUI call for coverage
 cov_gui: coverage_gui

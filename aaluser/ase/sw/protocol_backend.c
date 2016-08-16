@@ -1055,7 +1055,7 @@ void ase_config_parse(char *filename)
 
   // Allocate space to store ASE config
   cfg = (struct ase_cfg_t *)ase_malloc( sizeof(struct ase_cfg_t) );
-  if (cfg == NULL)
+  if (cfg == (struct ase_cfg_t *)NULL)
     {
       BEGIN_RED_FONTCOLOR;
       printf("SIM-C : ASE config structure could not be allocated... EXITING\n");
@@ -1063,201 +1063,193 @@ void ase_config_parse(char *filename)
       ase_error_report("malloc", errno, ASE_OS_MALLOC_ERR);
       start_simkill_countdown();
     }
-  line = ase_malloc(sizeof(char) * 80);
-
-  // Default values
-  cfg->ase_mode = ASE_MODE_DAEMON_NO_SIMKILL;
-  cfg->ase_timeout = 50000;
-  cfg->ase_num_tests = 1;
-  cfg->enable_reuse_seed = 0;
-  cfg->enable_cl_view = 1;
-  cfg->usr_tps = DEFAULT_USR_CLK_TPS;
-  cfg->phys_memory_available_gb = 256;
-
-  // Find ase.cfg OR not
-  if ( access (ase_cfg_filepath, F_OK) != -1 )
+  else
     {
-      // FILE exists, overwrite
-      printf("SIM-C : Reading %s configuration file\n", ASE_CONFIG_FILE);
-      fp = fopen(ase_cfg_filepath, "r");
 
-      // Parse file line by line
-      while (getline(&line, &len, fp) != -1)
+      // Allocate memory to store a line
+      line = ase_malloc(sizeof(char) * 80);
+
+      // Default values
+      cfg->ase_mode = ASE_MODE_DAEMON_NO_SIMKILL;
+      cfg->ase_timeout = 50000;
+      cfg->ase_num_tests = 1;
+      cfg->enable_reuse_seed = 0;
+      cfg->enable_cl_view = 1;
+      cfg->usr_tps = DEFAULT_USR_CLK_TPS;
+      cfg->phys_memory_available_gb = 256;
+
+      // Find ase.cfg OR not
+      if ( access (ase_cfg_filepath, F_OK) != -1 )
 	{
-	  // Remove all invalid characters
-	  remove_spaces (line);
-	  remove_tabs (line);
-	  remove_newline (line);
-	  // Ignore strings begining with '#' OR NULL (compound NOR)
-	  if ( (line[0] != '#') && (line[0] != '\0') )
+	  // FILE exists, overwrite
+	  printf("SIM-C : Reading %s configuration file\n", ASE_CONFIG_FILE);
+	  fp = fopen(ase_cfg_filepath, "r");
+
+	  // Parse file line by line
+	  while (getline(&line, &len, fp) != -1)
 	    {
-	      parameter = strtok(line, "=\n");
-	      if (strncmp (parameter,"ASE_MODE", 20) == 0)
-	      	cfg->ase_mode = atoi(strtok(NULL, ""));
-	      else if (strncmp (parameter,"ASE_TIMEOUT", 20) == 0)
-	      	cfg->ase_timeout = atoi(strtok(NULL, ""));
-	      else if (strncmp (parameter,"ASE_NUM_TESTS", 20) == 0)
-	      	cfg->ase_num_tests =  atoi(strtok(NULL, ""));
-	      else if (strncmp (parameter, "ENABLE_REUSE_SEED", 20) == 0)
-		cfg->enable_reuse_seed =  atoi(strtok(NULL, ""));
-	      else if (strncmp (parameter,"ENABLE_CL_VIEW", 20) == 0)
-		cfg->enable_cl_view =  atoi(strtok(NULL, ""));
-	      else if (strncmp (parameter, "USR_CLK_MHZ", 20) == 0)
+	      // Remove all invalid characters
+	      remove_spaces (line);
+	      remove_tabs (line);
+	      remove_newline (line);
+	      // Ignore strings begining with '#' OR NULL (compound NOR)
+	      if ( (line[0] != '#') && (line[0] != '\0') )
 		{
-		  f_usrclk = atof(strtok(NULL, ""));
-		  if (f_usrclk == 0.000000) 
+		  parameter = strtok(line, "=\n");
+		  if (strncmp (parameter,"ASE_MODE", 20) == 0)
+		    cfg->ase_mode = atoi(strtok(NULL, ""));
+		  else if (strncmp (parameter,"ASE_TIMEOUT", 20) == 0)
+		    cfg->ase_timeout = atoi(strtok(NULL, ""));
+		  else if (strncmp (parameter,"ASE_NUM_TESTS", 20) == 0)
+		    cfg->ase_num_tests =  atoi(strtok(NULL, ""));
+		  else if (strncmp (parameter, "ENABLE_REUSE_SEED", 20) == 0)
+		    cfg->enable_reuse_seed =  atoi(strtok(NULL, ""));
+		  else if (strncmp (parameter,"ENABLE_CL_VIEW", 20) == 0)
+		    cfg->enable_cl_view =  atoi(strtok(NULL, ""));
+		  else if (strncmp (parameter, "USR_CLK_MHZ", 20) == 0)
 		    {
-		      BEGIN_RED_FONTCOLOR;
-		      printf("SIM-C : User Clock Frequency cannot be 0.000 MHz\n");
-		      printf("        Reverting to %f MHz\n", DEFAULT_USR_CLK_MHZ);
-		      f_usrclk = DEFAULT_USR_CLK_MHZ;
-		      cfg->usr_tps = DEFAULT_USR_CLK_TPS;
-		      END_RED_FONTCOLOR;
-		    }
-		  else if (f_usrclk == DEFAULT_USR_CLK_MHZ) 
-		    {
-		      cfg->usr_tps = DEFAULT_USR_CLK_TPS;
-		    }
-		  else 
-		    {
-		      cfg->usr_tps = (int)( 1E+12/(f_usrclk*pow(1000,2)) );
-#ifdef ASE_DEBUG
-		      BEGIN_YELLOW_FONTCOLOR;
-		      printf("  [DEBUG]  usr_tps = %d\n", cfg->usr_tps); 
-		      END_YELLOW_FONTCOLOR;
-#endif
-		      if (f_usrclk != DEFAULT_USR_CLK_MHZ)
+		      f_usrclk = atof(strtok(NULL, ""));
+		      if (f_usrclk == 0.000000) 
 			{
 			  BEGIN_RED_FONTCOLOR;
-			  printf("SIM-C : User clock Frequency was modified from %f to %f MHz\n", DEFAULT_USR_CLK_MHZ, f_usrclk);
-			  printf("        **WARNING** Modifying User Clock is not supported in-system !\n");
+			  printf("SIM-C : User Clock Frequency cannot be 0.000 MHz\n");
+			  printf("        Reverting to %f MHz\n", DEFAULT_USR_CLK_MHZ);
+			  f_usrclk = DEFAULT_USR_CLK_MHZ;
+			  cfg->usr_tps = DEFAULT_USR_CLK_TPS;
 			  END_RED_FONTCOLOR;
 			}
+		      else if (f_usrclk == DEFAULT_USR_CLK_MHZ) 
+			{
+			  cfg->usr_tps = DEFAULT_USR_CLK_TPS;
+			}
+		      else 
+			{
+			  cfg->usr_tps = (int)( 1E+12/(f_usrclk*pow(1000,2)) );
+#ifdef ASE_DEBUG
+			  BEGIN_YELLOW_FONTCOLOR;
+			  printf("  [DEBUG]  usr_tps = %d\n", cfg->usr_tps); 
+			  END_YELLOW_FONTCOLOR;
+#endif
+			  if (f_usrclk != DEFAULT_USR_CLK_MHZ)
+			    {
+			      BEGIN_RED_FONTCOLOR;
+			      printf("SIM-C : User clock Frequency was modified from %f to %f MHz\n", DEFAULT_USR_CLK_MHZ, f_usrclk);
+			      printf("        **WARNING** Modifying User Clock is not supported in-system !\n");
+			      END_RED_FONTCOLOR;
+			    }
+			}
 		    }
-		}
-	      else if (strncmp(parameter,"PHYS_MEMORY_AVAILABLE_GB", 32) == 0)
-		{
-		  value = atoi(strtok(NULL, ""));
-		  if (value < 0)
+		  else if (strncmp(parameter,"PHYS_MEMORY_AVAILABLE_GB", 32) == 0)
 		    {
-		      BEGIN_RED_FONTCOLOR;
-		      printf("SIM-C : Physical memory size is negative in %s\n", ASE_CONFIG_FILE);
-		      printf("        Reverting to default 256 GB\n");
-		      END_RED_FONTCOLOR;
+		      value = atoi(strtok(NULL, ""));
+		      if (value < 0)
+			{
+			  BEGIN_RED_FONTCOLOR;
+			  printf("SIM-C : Physical memory size is negative in %s\n", ASE_CONFIG_FILE);
+			  printf("        Reverting to default 256 GB\n");
+			  END_RED_FONTCOLOR;
+			}
+		      else
+			{
+			  cfg->phys_memory_available_gb = value;
+			}
 		    }
 		  else
-		    {
-		      cfg->phys_memory_available_gb = value;
-		    }
+		    printf("SIM-C : In config file %s, Parameter type %s is unidentified \n", ASE_CONFIG_FILE, parameter);
 		}
-	      else
-	      	printf("SIM-C : In config file %s, Parameter type %s is unidentified \n", ASE_CONFIG_FILE, parameter);
 	    }
-	}
 
-      // ASE mode control
-      BEGIN_YELLOW_FONTCOLOR;
+	  // ASE mode control
+	  BEGIN_YELLOW_FONTCOLOR;
+	  switch (cfg->ase_mode)
+	    {
+	      // Classic Server client mode
+	    case ASE_MODE_DAEMON_NO_SIMKILL:
+	      printf("SIM-C : ASE was started in Mode 1 (Server-Client without SIMKILL)\n");
+	      cfg->ase_timeout = 0;
+	      cfg->ase_num_tests = 0;
+	      break;
+
+	      // Server Client mode with SIMKILL
+	    case ASE_MODE_DAEMON_SIMKILL:
+	      printf("SIM-C : ASE was started in Mode 2 (Server-Client with SIMKILL)\n");
+	      cfg->ase_num_tests = 0;
+	      break;
+
+	      // Long runtime mode (SW kills SIM)
+	    case ASE_MODE_DAEMON_SW_SIMKILL:
+	      printf("SIM-C : ASE was started in Mode 3 (Server-Client with Sw SIMKILL (long runs)\n");
+	      cfg->ase_timeout = 0;
+	      cfg->ase_num_tests = 0;
+	      break;
+
+	      // Regression mode (lets an SH file with
+	    case ASE_MODE_REGRESSION:
+	      printf("SIM-C : ASE was started in Mode 4 (Regression mode)\n");
+	      cfg->ase_timeout = 0;
+	      break;
+
+	      // Illegal modes
+	    default:
+	      printf("SIM-C : ASE mode could not be identified, will revert to ASE_MODE = 1 (Server client w/o SIMKILL)\n");
+	      cfg->ase_mode = ASE_MODE_DAEMON_NO_SIMKILL;
+	      cfg->ase_timeout = 0;
+	      cfg->ase_num_tests = 0;
+	    }
+
+	  // Close file
+	  fclose(fp);
+	}
+      else
+	{
+	  // FILE does not exist
+	  printf("SIM-C : %s not found, using default values\n", ASE_CONFIG_FILE);
+	}
+  
+      // Mode configuration
+      printf("        ASE mode                   ... ");
       switch (cfg->ase_mode)
 	{
-	  // Classic Server client mode
-	case ASE_MODE_DAEMON_NO_SIMKILL:
-	  printf("SIM-C : ASE was started in Mode 1 (Server-Client without SIMKILL)\n");
-	  cfg->ase_timeout = 0;
-	  cfg->ase_num_tests = 0;
-	  break;
-
-	  // Server Client mode with SIMKILL
-	case ASE_MODE_DAEMON_SIMKILL:
-	  printf("SIM-C : ASE was started in Mode 2 (Server-Client with SIMKILL)\n");
-	  cfg->ase_num_tests = 0;
-	  break;
-
-	  // Long runtime mode (SW kills SIM)
-	case ASE_MODE_DAEMON_SW_SIMKILL:
-	  printf("SIM-C : ASE was started in Mode 3 (Server-Client with Sw SIMKILL (long runs)\n");
-	  cfg->ase_timeout = 0;
-	  cfg->ase_num_tests = 0;
-	  break;
-
-	  // Regression mode (lets an SH file with
-	case ASE_MODE_REGRESSION:
-	  printf("SIM-C : ASE was started in Mode 4 (Regression mode)\n");
-	  cfg->ase_timeout = 0;
-	  break;
-
-	  // Illegal modes
-	default:
-	  printf("SIM-C : ASE mode could not be identified, will revert to ASE_MODE = 1 (Server client w/o SIMKILL)\n");
-	  cfg->ase_mode = ASE_MODE_DAEMON_NO_SIMKILL;
-	  cfg->ase_timeout = 0;
-	  cfg->ase_num_tests = 0;
+	case ASE_MODE_DAEMON_NO_SIMKILL : printf("Server-Client mode without SIMKILL\n") ; break ;
+	case ASE_MODE_DAEMON_SIMKILL    : printf("Server-Client mode with SIMKILL\n") ; break ;
+	case ASE_MODE_DAEMON_SW_SIMKILL : printf("Server-Client mode with SW SIMKILL (long runs)\n") ; break ;
+	case ASE_MODE_REGRESSION        : printf("ASE Regression mode\n") ; break ;
 	}
 
-      // Close file
-      fclose(fp);
-    }
-  else
-    {
-      // FILE does not exist
-      printf("SIM-C : %s not found, using default values\n", ASE_CONFIG_FILE);
-    }
-  // END_YELLOW_FONTCOLOR;
+      // Inactivity
+      if (cfg->ase_mode == ASE_MODE_DAEMON_SIMKILL)
+	printf("        Inactivity kill-switch     ... ENABLED after %d clocks \n", cfg->ase_timeout);
+      else
+	printf("        Inactivity kill-switch     ... DISABLED \n");
 
-  // ASE mode
-  // BEGIN_YELLOW_FONTCOLOR;
-  printf("        ASE mode                   ... ");
-  switch (cfg->ase_mode)
-    {
-    case ASE_MODE_DAEMON_NO_SIMKILL : printf("Server-Client mode without SIMKILL\n") ; break ;
-    case ASE_MODE_DAEMON_SIMKILL    : printf("Server-Client mode with SIMKILL\n") ; break ;
-    case ASE_MODE_DAEMON_SW_SIMKILL : printf("Server-Client mode with SW SIMKILL (long runs)\n") ; break ;
-    case ASE_MODE_REGRESSION        : printf("ASE Regression mode\n") ; break ;
-    }
-  // END_YELLOW_FONTCOLOR;
+      // Reuse seed
+      if (cfg->enable_reuse_seed != 0)
+	printf("        Reuse simulation seed      ... ENABLED \n");
+      else
+	printf("        Reuse simulation seed      ... DISABLED \n");
 
-  // Inactivity
-  // BEGIN_YELLOW_FONTCOLOR;
-  if (cfg->ase_mode == ASE_MODE_DAEMON_SIMKILL)
-    printf("        Inactivity kill-switch     ... ENABLED after %d clocks \n", cfg->ase_timeout);
-  else
-    printf("        Inactivity kill-switch     ... DISABLED \n");
-  // END_YELLOW_FONTCOLOR;
+      // CL view
+      if (cfg->enable_cl_view != 0)
+	printf("        ASE Transaction view       ... ENABLED\n");
+      else
+	printf("        ASE Transaction view       ... DISABLED\n");
 
-  // Reuse seed
-  // BEGIN_YELLOW_FONTCOLOR;
-  if (cfg->enable_reuse_seed != 0)
-    printf("        Reuse simulation seed      ... ENABLED \n");
-  else
-    printf("        Reuse simulation seed      ... DISABLED \n");
-  // END_YELLOW_FONTCOLOR;
+      // User clock frequency
+      printf("        User Clock Frequency       ... %.6f MHz, T_uclk = %d ps \n", f_usrclk, cfg->usr_tps);
+      if (f_usrclk != DEFAULT_USR_CLK_MHZ)
+	{
+	  printf("        ** NOTE **: User Clock Frequency was changed from default %f MHz !\n", DEFAULT_USR_CLK_MHZ);
+	}
 
-  // CL view
-  // BEGIN_YELLOW_FONTCOLOR;
-  if (cfg->enable_cl_view != 0)
-    printf("        ASE Transaction view       ... ENABLED\n");
-  else
-    printf("        ASE Transaction view       ... DISABLED\n");
-  // END_YELLOW_FONTCOLOR;
+      // GBs of physical memory available
+      printf("        Amount of physical memory  ... %d GB\n", cfg->phys_memory_available_gb);
+      END_YELLOW_FONTCOLOR;
 
-  // User clock frequency
-  // BEGIN_YELLOW_FONTCOLOR;
-  printf("        User Clock Frequency       ... %.6f MHz, T_uclk = %d ps \n", f_usrclk, cfg->usr_tps);
-  if (f_usrclk != DEFAULT_USR_CLK_MHZ)
-    {
-      printf("        ** NOTE **: User Clock Frequency was changed from default %f MHz !\n", DEFAULT_USR_CLK_MHZ);
-    }
-  // END_YELLOW_FONTCOLOR;
-
-  // GBs of physical memory available
-  // BEGIN_YELLOW_FONTCOLOR;
-  printf("        Amount of physical memory  ... %d GB\n", cfg->phys_memory_available_gb);
-  END_YELLOW_FONTCOLOR;
-
-
-  // Transfer data to hardware (for simulation only)
+      // Transfer data to hardware (for simulation only)
 #ifdef SIM_SIDE
-  ase_config_dex(cfg);
+      ase_config_dex(cfg);
 #endif
+    }
 
   FUNC_CALL_EXIT;
 }
