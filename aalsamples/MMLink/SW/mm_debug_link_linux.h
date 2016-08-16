@@ -48,6 +48,7 @@
 
 #include <aalsdk/AAL.h>
 #include <unistd.h>
+#include "time.h"
 
 #include "mm_debug_link_interface.h"
 
@@ -62,9 +63,18 @@ private:
   size_t m_buf_end;
   int m_write_fifo_capacity;
   btVirtAddr map_base;
+  bool m_write_before_any_read_rfifo_level;
+  clock_t m_last_read_rfifo_level_empty_time;
+  clock_t m_read_rfifo_level_empty_interval;
 
 public:
-  mm_debug_link_linux() { m_fd = -1; m_buf_end = 0; m_write_fifo_capacity = 0;}
+  mm_debug_link_linux() { 
+    m_fd = -1; 
+    m_buf_end = 0; 
+    m_write_fifo_capacity = 0;
+    m_write_before_any_read_rfifo_level = false;
+    m_last_read_rfifo_level_empty_time = 0;
+    m_read_rfifo_level_empty_interval = 1;}
   int open(btVirtAddr stpAddr);
   void* read_mmr(btCSROffset target, int access_type);
   void write_mmr(off_t target, int access_type, unsigned int write_val);
@@ -76,7 +86,7 @@ public:
   void reset(bool val);
   void enable(int channel, bool state);
   int get_fd(void) { return m_fd; }
-
+  bool can_read_data(void);
   char *buf(void) { return m_buf; }
   bool is_empty(void) { return m_buf_end == 0; }
   bool flush_request(void);
