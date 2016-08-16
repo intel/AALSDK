@@ -177,6 +177,9 @@ void mqueue_create(char* mq_name_suffix)
   fflush(local_ipc_fp);
 #endif
 
+  // Free memories
+  free(mq_path);
+
   FUNC_CALL_EXIT;
 }
 
@@ -239,6 +242,9 @@ int mqueue_open(char *mq_name, int perm_flag)
 
   FUNC_CALL_EXIT;
 
+  // Free temp variables
+  free(mq_path);
+
   return mq;
 }
 
@@ -289,6 +295,9 @@ void mqueue_destroy(char* mq_name_suffix)
     {
       printf("Could not remove MQ, please clean by removing work directory\n");
     }
+
+  // Free memory
+  free(mq_path);
 
   FUNC_CALL_EXIT;
 }

@@ -619,6 +619,9 @@ void session_deinit()
       printf("%'llu nsec \n", runtime_nsec);
       setlocale(LC_NUMERIC, oldLocale);
 
+      // Free memories
+      free (ase_workdir_path);
+
       END_YELLOW_FONTCOLOR;      
     }
   else

@@ -947,15 +947,11 @@ void start_simkill_countdown()
   mqueue_close(app2sim_dealloc_rx);
   mqueue_close(sim2app_dealloc_tx);
   mqueue_close(sim2app_portctrl_rsp_tx);
+  mqueue_close(sim2app_intr_request_tx);
 
   int ipc_iter;
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
     mqueue_destroy(mq_array[ipc_iter].name);
-
-  // free(mq_array);
-  // Destroy mutex 
-  // pthread_mutex_unlock (&mmio_resp_lock);
-  // pthread_mutex_destroy (&mmio_resp_lock);
 
   // Destroy all open shared memory regions
   printf("SIM-C : Unlinking Shared memory regions.... \n");
@@ -1018,6 +1014,11 @@ void start_simkill_countdown()
 
   // Set scope
   svSetScope(scope);
+
+  // Free memories
+  free(ase_workdir_path);
+  free(cfg);
+  free(ase_ready_filepath);
 
   // Issue Simulation kill
   simkill();
@@ -1249,7 +1250,13 @@ void ase_config_parse(char *filename)
 #ifdef SIM_SIDE
       ase_config_dex(cfg);
 #endif
+      
+      // free memory
+      free(line);
     }
+
+  // Free cfg filepath
+  free(ase_cfg_filepath);
 
   FUNC_CALL_EXIT;
 }

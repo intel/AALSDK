@@ -144,7 +144,7 @@
 char *ase_workdir_path;
 
 // Run location
-char *ase_run_path;
+// char *ase_run_path;
 
 // Timestamp IPC file
 #define TSTAMP_FILENAME ".ase_timestamp"

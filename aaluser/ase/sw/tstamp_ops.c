@@ -174,9 +174,11 @@ char* get_timestamp(int dont_kill)
         #endif
 	}
     }
+  
+  free(tstamp_str);
+  free(tstamp_filepath);
 
   FUNC_CALL_EXIT;
-
   return tstamp_str;
 }
 

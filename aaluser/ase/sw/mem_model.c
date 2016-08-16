@@ -237,7 +237,6 @@ void ase_dealloc_action(struct buffer_t *buf, int mq_enable)
   // Traversal pointer
   struct buffer_t *dealloc_ptr;
   dealloc_ptr = (struct buffer_t *) ase_malloc(sizeof(struct buffer_t));
-  /* memset(dealloc_ptr, 0, sizeof(struct buffer_t)); */
 
   // Search buffer and Invalidate
   dealloc_ptr = ll_search_buffer(buf->index);
@@ -255,7 +254,6 @@ void ase_dealloc_action(struct buffer_t *buf, int mq_enable)
       shm_unlink(dealloc_ptr->memname);
       
       // Respond back
-      // dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
       ll_remove_buffer(dealloc_ptr);
       memcpy(buf_str, dealloc_ptr, sizeof(struct buffer_t));
 
@@ -270,9 +268,7 @@ void ase_dealloc_action(struct buffer_t *buf, int mq_enable)
       ll_traverse_print();
       END_YELLOW_FONTCOLOR;
     #endif
-
-      // Remove fd
-      //close(dealloc_ptr->fd_ase);
+      
     }
   else
     {
@@ -280,6 +276,9 @@ void ase_dealloc_action(struct buffer_t *buf, int mq_enable)
       printf("SIM-C : NULL deallocation request received ... ignoring.\n");
       END_YELLOW_FONTCOLOR;
     }
+
+  // Free dealloc_ptr
+  free(dealloc_ptr);
 
   FUNC_CALL_EXIT;
 }
@@ -328,7 +327,6 @@ void ase_destroy()
       while (ptr != (struct buffer_t*)NULL)
 	{
 	  ase_dealloc_action(ptr, 0);
-	  // ll_remove_buffer(ptr);
 	  ptr = ptr->next;
 	}
     }

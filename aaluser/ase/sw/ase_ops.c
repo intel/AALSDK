@@ -217,7 +217,6 @@ void ase_eval_session_directory()
 {
   FUNC_CALL_ENTRY;
 
-  // workdir_path = ase_malloc (ASE_FILEPATH_LEN);
   ase_workdir_path = ase_malloc (ASE_FILEPATH_LEN);
 
   // Evaluate location of simulator or own location
@@ -258,7 +257,7 @@ void ase_eval_session_directory()
       else
 	{
 	  closedir(ase_dir);
-	}
+	}      
     }
 #endif
 }
