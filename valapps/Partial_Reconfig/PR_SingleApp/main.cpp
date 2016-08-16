@@ -75,10 +75,10 @@ using namespace AAL;
 
 
 BEGIN_C_DECLS
-struct ALIConfigCommandLine configCmdLine = { 0,"",1,0,0 };
+struct ALIConfigCommandLine configCmdLine = { 0,"","",1,1,0,0 };
 
 AALCLP_DECLARE_GCS_COMPLIANT(stdout,
-                             "aliconfafu",
+                             "Partial_Reconfig",
                              "0",
                              "",
                              help_msg_callback,
@@ -238,8 +238,8 @@ btBool PRTest::allocRecongService()
       ERR("--- Failed to Allocate Reconfigure Service --- ");
       return false;
    }
-   //strcpy(configCmdLine.bitstream_file,BitStreamFile);
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   //strcpy(configCmdLine.bitstream_file1,BitStreamFile);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
 
    m_reconfAFU.reconfConfigure();
    if(false == m_reconfAFU.IsOK() ) {
@@ -256,28 +256,89 @@ btBool PRTest::runTests()
       ERR("--- Failed to allocate Reconf Service  --- ");
       return false;
    }
-   cout << endl<< "-------- START TEST CASES  ---------" << endl<<  endl;
+ 
+   cout << "----INPUT ARGUEMENTS  ---- "  << endl;
+   cout << "configCmdLine.bitstream_file1: " << configCmdLine.bitstream_file1 << endl;
+   cout << "configCmdLine.bitstream_file2: " << configCmdLine.bitstream_file2 << endl;
+   cout << "testcasenum: " << configCmdLine.testcasenum << endl;
 
-   sw_pr_01a();
-   sw_pr_02();
-   sw_pr_03();
-   sw_pr_04a();
-   sw_pr_05a();
-   sw_pr_06a();
-   sw_pr_07a();
+   cout << endl << "-------- START TEST CASES  ---------" << endl << endl;
 
-   sw_pr_08();
-   sw_pr_09();
-   sw_pr_10();
-   sw_pr_11();
-   sw_pr_12();
+   switch(configCmdLine.testcasenum){
+      case 1: {
+         sw_pr_01a();
+         break;
+      }
+      case 2: {
+         sw_pr_02();
+         break;
+      }
+      case 3: {
+         sw_pr_03();
+         break;
+      }
+      case 4: {
+         sw_pr_04a();
+         break;
+      }
+      case 5: {
+         sw_pr_05a();
+         break;
+      }
+      case 6: {
+         sw_pr_06a();
+         break;
+      }
+      case 7: {
+         sw_pr_07a();;
+         break;
+      }
+      case 8 : {
+        sw_pr_08();;
+         break;
+      }
+      case 9 : {
+         sw_pr_09();
+         break;
+      }
+      case 10: {
+         sw_pr_10();
+         break;
+      }
+      case 11: {
+         sw_pr_11();
+         break;
+      }
+      case 12: {
+         sw_pr_12();
+         break;
+      }
+      // All test cases
+      case 0: {
+         sw_pr_01a();
+         sw_pr_02();
+         sw_pr_03();
+         sw_pr_04a();
+         sw_pr_05a();
+         sw_pr_06a();
+         sw_pr_07a();
+         sw_pr_08();
+         sw_pr_09();
+         sw_pr_10();
+         sw_pr_11();
+         sw_pr_12();
+         break;
+      }
+
+      default:
+         std::cout<<"Please type: ./Partial_Reconfig  to display help menu ! "<<endl;
+   }
 
    cout << endl<< "-------- END TEST CASES  ---------" << endl<<  endl;
 
    m_reconfAFU.FreePRService();
    return true;
 }
-
 
 void PRTest::sw_pr_01a()
 {
@@ -288,27 +349,13 @@ void PRTest::sw_pr_01a()
    // run NLB/fpgadiag to demonstrate that one works, as well.
 
    TEST_CASE("-------- sw_pr_01a START ---------");
-
-   // Allocate NLB and run
-   m_ALINLB.AllocateNLBService(&m_Runtime);
-   if(false == m_ALINLB.IsOK()) {
-      ++m_Errors;
-      ERR("sw_pr_01a: ALLOC HElloNLB Service FAIL ");
-      return ;
-   }
-
-   m_ALINLB.run();
-   if(false == m_ALINLB.IsOK()) {
-      ++m_Errors;
-      ERR("sw_pr_01a: Hello NLB RUN FAIL");
-      goto done_1;
-   }
-
-   m_ALINLB.FreeNLBService();
-
+   char* envpath = NULL;
+   int res       = 0;
+   std::string path ;
+   envpath = getenv("LD_LIBRARY_PATH");
 
    // Reconfigure bitstream
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfConfigure();
    if(false == m_reconfAFU.IsOK() ) {
       ++m_Errors;
@@ -316,30 +363,67 @@ void PRTest::sw_pr_01a()
       return ;
    }
 
-   // Allocate NLB and run
-   m_ALINLB.AllocateNLBService(&m_Runtime);
-   if(false == m_ALINLB.IsOK()) {
+   TEST_CASE("-------- Reconfigurted Mode0 bitstream---------");
+
+   path.append("cd  ");
+   path.append(envpath);
+   path.append("; cd ../bin; ./fpgadiag --mode=lpbk1");
+   //cout << endl << "Mode0 Bitstream Path" <<path << endl;
+
+   res = system(path.c_str());
+   if ( -1 == res ) {
       ++m_Errors;
-      ERR("sw_pr_01a: ALLOC HElloNLB Service FAIL");
+      ERR("sw_pr_01a: Mode0  FAILED to RUN");
+   }
+
+   TEST_CASE("-------- Reconfigurted Mode3 bitstream---------");
+
+   // Reconfigure bitstream
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file2,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.reconfConfigure();
+   if(false == m_reconfAFU.IsOK() ) {
+      ++m_Errors;
+      ERR("sw_pr_01a: Reconf FAIL");
       return ;
    }
 
-   m_ALINLB.run();
-   if(false == m_ALINLB.IsOK()) {
+   path.clear();
+   path.append("cd ");
+   path.append(envpath);
+   path.append("; cd ../bin; ./fpgadiag --mode=read");
+   //cout << endl << "Mode3 Bitstream Path" <<path << endl;
+
+   res = system(path.c_str());
+   if ( -1 == res ) {
       ++m_Errors;
-      ERR("sw_pr_01a: Hello NLB RUN FAIL");
-      goto done_1;
+      ERR("sw_pr_01a: Mode3 Read FAILED to RUN");
    }
 
-   m_ALINLB.FreeNLBService();
+   path.clear();
+   path.append("cd ");
+   path.append(envpath);
+   path.append("; cd ../bin; ./fpgadiag  --mode=write");
+   //cout << endl << "Mode7 Bitstream Path" <<path << endl;
+
+   res = system(path.c_str());
+   if ( -1 == res ) {
+      ++m_Errors;
+      ERR("sw_pr_01a: Mode3 Write FAILED to RUN");
+   }
+
+
+   // Reconfigure bitstream
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1, 1000, AALCONF_RECONF_ACTION_HONOR_OWNER_ID, false);
+   m_reconfAFU.reconfConfigure();
+   if (false == m_reconfAFU.IsOK()) {
+      ++m_Errors;
+      ERR("sw_pr_01a: Reconf FAIL");
+      return;
+   }
 
    TEST_CASE("-------- sw_pr_01a PASS ---------");
 
    return ;
-
-done_1:
-   m_ALINLB.FreeNLBService();
-
 }
 
 void PRTest::sw_pr_02()
@@ -351,7 +435,7 @@ void PRTest::sw_pr_02()
    TEST_CASE("-------- sw_pr_02 START  ---------");
 
    // Reconfigure bitstream
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.setIsOk(true);
    m_reconfAFU.reconfDeactivate();
    if(false == m_reconfAFU.IsOK() ) {
@@ -383,7 +467,7 @@ void PRTest::sw_pr_03()
    TEST_CASE("-------- sw_pr_03 START ---------");
 
    // Reconfigure bitstream
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfActivate();
    m_reconfAFU.setIsOk(true);
 
@@ -428,7 +512,7 @@ void PRTest::sw_pr_04a()
 
    SleepSec(1);
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfDeactivate();
    if(false == m_reconfAFU.IsOK() ) {
       ++m_Errors;
@@ -473,7 +557,7 @@ void PRTest::sw_pr_05a()
 
    SleepSec(1);
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,10,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,10,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfDeactivate();
    if(( true == m_reconfAFU.IsOK() ) &&
       (m_reconfAFU.getErrnum() != ali_errnumDeActiveTimeout) ){
@@ -523,7 +607,7 @@ void PRTest::sw_pr_06a()
 
 
    SleepSec(1);
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,5,AALCONF_RECONF_ACTION_HONOR_REQUEST_ID,false);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_REQUEST_ID,false);
    m_reconfAFU.reconfDeactivate();
    if(false == m_reconfAFU.IsOK() ) {
       ++m_Errors;
@@ -554,8 +638,6 @@ void PRTest::sw_pr_07a()
    m_reconfAFU.setIsOk(true);
    SleepSec(1);
 
-   TEST_CASE("--------  sw_pr_07a START  1 ---------");
-
    m_ALINLB.AllocateNLBService(&m_Runtime);
    if(false == m_ALINLB.IsOK() ) {
       ++m_Errors;
@@ -564,17 +646,14 @@ void PRTest::sw_pr_07a()
    }
 
    SleepSec(1);
-   TEST_CASE("--------  sw_pr_07a START  2 ---------");
    m_ALINLB.setReleaseService(false);
    OSLThread *t = new OSLThread( AllocatesNLBService::NLBThread,
                                  OSLThread::THREADPRIORITY_NORMAL,
                                  &m_ALINLB);
    SleepSec(1);
 
-   TEST_CASE("--------  sw_pr_07a START  3 ---------");
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,5,AALCONF_RECONF_ACTION_HONOR_REQUEST_ID,false);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_REQUEST_ID,false);
    m_reconfAFU.reconfDeactivate();
-   TEST_CASE("--------  sw_pr_07a START  4 ---------");
    if(false == m_reconfAFU.IsOK() ) {
       ++m_Errors;
       ERR("sw_pr_07a: ALLOC NLB Service FAIL ");
@@ -623,7 +702,7 @@ void PRTest::sw_pr_09()
 
    TEST_CASE("--------  sw_pr_09 START ---------");
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfDeactivate();
    m_reconfAFU.reconfActivate();
    if(true == m_reconfAFU.IsOK() ) {
@@ -656,7 +735,7 @@ void PRTest::sw_pr_10()
 
    TEST_CASE("--------  sw_pr_10 START ---------");
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,true);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,true);
 
    m_reconfAFU.reconfConfigure();
    if(false == m_reconfAFU.IsOK() ) {
@@ -706,7 +785,7 @@ void PRTest::sw_pr_11()
 
    SleepSec(1);
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfDeactivate();
    m_ALINLB.setReleaseService(false);
    m_reconfAFU.setIsOk(true);
@@ -755,7 +834,7 @@ void PRTest::sw_pr_12()
 
    TEST_CASE("--------  sw_pr_12 START ---------");
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
 
    m_reconfAFU.reconfConfigure();
    if(false == m_reconfAFU.IsOK() ) {
@@ -781,7 +860,7 @@ void PRTest::sw_pr_12()
 
    SleepSec(1);
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfDeactivate();
    m_ALINLB.setReleaseService(false);
    m_reconfAFU.setIsOk(true);

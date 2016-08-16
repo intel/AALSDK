@@ -87,7 +87,9 @@ struct  ALIConfigCommandLine
    #define ALICONIFG_CMD_FLAG_HELP      0x00000001
    #define ALICONIFG_CMD_FLAG_VERSION   0x00000002
    #define ALICONIFG_CMD_PARSE_ERROR    0x00000003
-   char    bitstream_file[200];
+   char    bitstream_file1[200];
+   char    bitstream_file2[200];
+   int     testcasenum;
    int     reconftimeout;
    int     reconfAction;
    bool    reactivateDisabled;

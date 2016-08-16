@@ -104,7 +104,7 @@ int aliconigafu_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *op
       flag_setf(cl->flags, ALICONIFG_CMD_FLAG_HELP);
    } else if ( 0 == strcmp("--version", option) ) {
       flag_setf(cl->flags, ALICONIFG_CMD_FLAG_VERSION);
-   }else  if(0 != strcmp("--bitstream=", option))  {
+   }else  if(0 != strcmp("--bitstream1=", option))  {
       printf("Invalid option  : %s\n", option);
       flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
 
@@ -116,17 +116,34 @@ int aliconigafu_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *op
    return 0;
 }
 
-
 int aliconigafu_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char *value)
 {
    struct ALIConfigCommandLine *pcmdline     = (struct ALIConfigCommandLine *)user;
 
    // Bitstream file name
-   if ( 0 == strcmp("--bitstream", option)) {
-      strcpy(pcmdline->bitstream_file ,value);
+   if ( 0 == strcmp("--bitstream1", option)) {
+      strcpy(pcmdline->bitstream_file1 ,value);
       return 0;
    }
 
+   // Bitstream file name
+   if ( 0 == strcmp("--bitstream2", option)) {
+      strcpy(pcmdline->bitstream_file2 ,value);
+      return 0;
+   }
+
+   // Reconfigure  timeout
+   if ( 0 == strcmp("--testcasenum", option)) {
+
+       if((0 == strcmp("ALL", value)) || (0 == strcmp("all", value))) {
+          pcmdline->testcasenum = 0;
+       } else {
+
+         char *endptr = NULL;
+         pcmdline->testcasenum = strtoul(value, &endptr, 0);
+       }
+      return 0;
+   }
    // Reconfigure  timeout
    if ( 0 == strcmp("--reconftimeout", option)) {
       char *endptr = NULL;
@@ -212,12 +229,16 @@ CLEANUP:
 void help_msg_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
 {
    fprintf(fp, "Usage:\n");
-   fprintf(fp, "   aliconfafu [--bitstream=<FILENAME>] [--reconftimeout=<SECONDS>]  \
-                [--reconfaction=<ACTION_HONOR_REQUEST or ACTION_HONOR_OWNER >]        \
+   fprintf(fp, "Partial_Reconfig [--bitstream1=<MODE0 BITSTREAM FILENAME>] \n \
+                [--bitstream2=<MODE3 BITSTREAM FILENAME>] \n \
+                [--testcasenum=<TEST CASE NUMBER>]  \n \
+                [--reconftimeout=<SECONDS>]  \n \
+                [--reconfaction=<ACTION_HONOR_REQUEST or ACTION_HONOR_OWNER >] \n \
                 [--reactivateDisabled=< TRUE or FALSE>]\n");
    fprintf(fp, "\n");
 
 }
+
 
 void showhelp(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
 {

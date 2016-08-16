@@ -66,7 +66,15 @@ using namespace AAL;
 #define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
 
 
+// LPBK1_BUFFER_SIZE is size in cachelines that are copied
 #define LPBK1_BUFFER_SIZE        CL(1)
+// LPBK1_BUFFER_ALLOCATION_SIZE is the amount of space that needs to
+//   be allocated due to an optimization of the NLB AFU to operate on
+//   2 MiB buffer boundaries. Note that the way to get 2 MiB alignment
+//   is to allocate 2 MiB.
+// NOTE:
+//   2 MiB alignment is not a general requirement -- it is NLB-specific
+#define LPBK1_BUFFER_ALLOCATION_SIZE MB(2)
 
 #define LPBK1_DSM_SIZE           MB(4)
 #define CSR_SRC_ADDR             0x0120
@@ -130,7 +138,7 @@ btInt AllocatesNLBService::run()
    }
 
    // Repeat for the Input and Output Buffers
-   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_InputVirt)){
+   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_ALLOCATION_SIZE, &m_InputVirt)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -145,7 +153,7 @@ btInt AllocatesNLBService::run()
       goto done_3;
    }
 
-   if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_OutputVirt)){
+   if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_ALLOCATION_SIZE, &m_OutputVirt)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -171,8 +179,8 @@ btInt AllocatesNLBService::run()
       ::memset( m_DSMVirt, 0, m_DSMSize);
 
       // Initialize the source and destination buffers
-      ::memset( m_InputVirt,  0, m_InputSize);     // Input initialized to 0
-      ::memset( m_OutputVirt, 0, m_OutputSize);    // Output initialized to 0
+      ::memset( m_InputVirt,  0xAF, m_InputSize);  // Input initialized to AFter
+      ::memset( m_OutputVirt, 0xBE, m_OutputSize); // Output initialized to BEfore
 
       struct CacheLine {                           // Operate on cache lines
          btUnsigned32bitInt uint[16];
@@ -219,13 +227,13 @@ btInt AllocatesNLBService::run()
       // Start the test
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
 
-/*
+
       // Wait for test completion
       while( 0 == ((*StatusAddr)&0x1) ) {
          SleepMicro(100);
       }
-      */
-     // MSG("Done Running Test");
+
+      MSG("Done Running Test");
 
       // Stop the device
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
@@ -350,11 +358,13 @@ btBool AllocatesNLBService::AllocateNLBService(Runtime *pRuntime)
    NamedValueSet ConfigRecord;
 
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
-   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
-   ConfigRecord.Add(keyRegSubDeviceNumber,0);
+   ConfigRecord.Add(keyRegAFU_ID, "D8424DC4-A4A3-C413-F89E-433683F9040B");
 
+   // Add the Config Record to the Manifest describing what we want to allocate
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
-   Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "ALI NLB AFU");
+
+   // in future, everything could be figured out by just giving the service name
+   Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello ALI NLB");
 
    m_pRuntime =pRuntime;
 
@@ -396,7 +406,7 @@ btInt AllocatesNLBService::runInLoop()
    }
 
    // Repeat for the Input and Output Buffers
-   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_InputVirt)){
+   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_ALLOCATION_SIZE, &m_InputVirt)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -411,7 +421,7 @@ btInt AllocatesNLBService::runInLoop()
       goto done_3;
    }
 
-   if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_OutputVirt)){
+   if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_ALLOCATION_SIZE, &m_OutputVirt)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -437,8 +447,8 @@ btInt AllocatesNLBService::runInLoop()
       ::memset( m_DSMVirt, 0, m_DSMSize);
 
       // Initialize the source and destination buffers
-      ::memset( m_InputVirt,  0, m_InputSize);     // Input initialized to 0
-      ::memset( m_OutputVirt, 0, m_OutputSize);    // Output initialized to 0
+      ::memset( m_InputVirt,  0xAF, m_InputSize);  // Input initialized to AFter
+      ::memset( m_OutputVirt, 0xBE, m_OutputSize); // Output initialized to BEfore
 
       struct CacheLine {                           // Operate on cache lines
        btUnsigned32bitInt uint[16];
