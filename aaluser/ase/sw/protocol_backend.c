@@ -646,19 +646,19 @@ int ase_listener()
        * *FIXME*: Notification service needs to be built
        */
       char umsg_mapstr[ASE_MQ_MSGSIZE];
-      struct umsgcmd_t *umsg_pkt;
-      umsg_pkt = (struct umsgcmd_t *)ase_malloc(sizeof(struct umsgcmd_t) );
+      /* struct umsgcmd_t *umsg_pkt; */
+      /* umsg_pkt = (struct umsgcmd_t *)ase_malloc(sizeof(struct umsgcmd_t) ); */
 
       // cleanse string before reading
       if ( mqueue_recv(app2sim_umsg_rx, (char*)umsg_mapstr, sizeof(struct umsgcmd_t) ) == ASE_MSG_PRESENT)
 	{
-	  memcpy(umsg_pkt, (umsgcmd_t *)umsg_mapstr, sizeof(struct umsgcmd_t));
+	  memcpy(incoming_umsg_pkt, (umsgcmd_t *)umsg_mapstr, sizeof(struct umsgcmd_t));
 
 	  // Hint trigger
-	  umsg_pkt->hint = (glbl_umsgmode >> (4*umsg_pkt->id)) & 0xF;
+	  incoming_umsg_pkt->hint = (glbl_umsgmode >> (4*incoming_umsg_pkt->id)) & 0xF;
 
 	  // dispatch to event processing
-	  umsg_dispatch(0, umsg_pkt);
+	  umsg_dispatch(0, incoming_umsg_pkt);
 	}
       // ------------------------------------------------------------------------------- //
     }
@@ -738,14 +738,8 @@ int ase_init()
   ase_pid = getpid();
   printf("SIM-C : PID of simulator is %d\n", ase_pid);
 
-  // Lock initializations
-  /* if ( pthread_mutex_init(&mmio_resp_lock, NULL) != 0 ) */
-  /*   { */
-  /*     BEGIN_RED_FONTCOLOR; */
-  /*     printf("SIM-C : MMIO Response lock initialization failed, EXIT\n"); */
-  /*     END_RED_FONTCOLOR; */
-  /*     start_simkill_countdown(); */
-  /*   } */
+  // Allocate incoming_umsg_pkt
+  incoming_umsg_pkt = (struct umsgcmd_t *)ase_malloc(sizeof(struct umsgcmd_t) );
 
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
@@ -1016,9 +1010,10 @@ void start_simkill_countdown()
   svSetScope(scope);
 
   // Free memories
-  free(ase_workdir_path);
+  // ase_free_buffer (ase_workdir_path);
   free(cfg);
   free(ase_ready_filepath);
+  free(incoming_umsg_pkt);
 
   // Issue Simulation kill
   simkill();

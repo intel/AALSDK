@@ -620,7 +620,7 @@ void session_deinit()
       setlocale(LC_NUMERIC, oldLocale);
 
       // Free memories
-      free (ase_workdir_path);
+      // ase_free_buffer (ase_workdir_path);
 
       END_YELLOW_FONTCOLOR;      
     }

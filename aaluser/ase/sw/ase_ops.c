@@ -591,3 +591,16 @@ void print_mmiopkt(FILE *fp, char *activity, struct mmio_t *pkt)
 
   FUNC_CALL_EXIT;
 }
+
+
+/*
+ * ase_free_buffer : Free memory if not NULL
+ */
+void ase_free_buffer(char *ptr)
+{
+  if (ptr != (char*)NULL)
+    {
+      free (ptr);
+    }
+}
+

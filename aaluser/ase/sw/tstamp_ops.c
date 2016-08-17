@@ -175,8 +175,8 @@ char* get_timestamp(int dont_kill)
 	}
     }
   
-  free(tstamp_str);
-  free(tstamp_filepath);
+  ase_free_buffer (tstamp_str);
+  ase_free_buffer (tstamp_filepath);
 
   FUNC_CALL_EXIT;
   return tstamp_str;
