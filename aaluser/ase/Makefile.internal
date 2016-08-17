@@ -51,13 +51,12 @@ ASE_BASEDIR = $(PWD)
 ASE_DEBUG ?= 1
 ASE_DISABLE_LOGGER = 0
 
+# Profile settings
+ASE_PROFILE ?= 0
+
 # Coverage settings (lcov in SW and VCS-CM in HW)
 ASE_COVERAGE ?= 0
 COV_DIR=$(ASE_BASEDIR)/coverage/
-ifeq ($(ASE_COVERAGE),1)
-ASE_PROFILE_ENABLE ?= 1
-ASE_LCOV_ENABLE ?= 1
-endif
 
 # Enable Altera gates library
 GLS_SIM = 1
@@ -105,7 +104,7 @@ endif
 ifeq ($(SIMULATOR), QUESTA)
   CC_OPT+= -I $(MTI_HOME)/include/
 endif
-ifeq ($(ASE_LCOV_ENABLE), 1)
+ifeq ($(ASE_COVERAGE), 1)
   CC_OPT+= -fprofile-arcs -ftest-coverage
 endif
 
@@ -125,7 +124,7 @@ ASE_SHOBJ_SO = $(ASE_SHOBJ_NAME).so
 # -lrt option is required in order to use shared memory /dev/shm,
 # -message queues and pthreads
 ASE_LD_SWITCHES = -lrt -lpthread -lstdc++
-ifeq ($(ASE_LCOV_ENABLE), 1)
+ifeq ($(ASE_COVERAGE), 1)
   ASE_LD_SWITCHES+= -lgcov
 endif
 
@@ -150,7 +149,7 @@ endif
 ifeq ($(ASE_DEBUG), 1)
   SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +warn
 endif
-ifdef GLS_SIM
+ifeq ($(GLS_SIM), 1)
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
@@ -167,14 +166,19 @@ SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
 SNPS_VCS_OPT+= -j 4
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) +lint=TFIPC-L
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
+## Debug switches
 ifeq ($(ASE_DEBUG), 1)
   SNPS_VCS_OPT+=  -race
 endif
-ifeq ($(ASE_PROFILE_ENABLE), 1)
-  SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
+## Coverage switches
+ifeq ($(ASE_COVERAGE), 1)
   SNPS_VCS_OPT+= -cm_dir $(COV_DIR)/vcs_coverage -cm_name ase_cov
   SNPS_VCS_OPT+= -cm cond+fsm+branch -cm_tgl mda
   SNPS_VCS_OPT+= -cm_hier $(ASEVAL_GIT)/ase_coverage.cfg
+endif
+## Profile switches
+ifeq ($(ASE_PROFILE), 1)
+  SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
   SNPS_VCS_OPT+= -simprofile +prof
 endif
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
@@ -182,7 +186,7 @@ endif
 ## Simulation options
 VCS_SIM_OPT = -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
 VCS_SIM_OPT+= -l run.log
-ifeq ($(ASE_PROFILE_ENABLE), 1)
+ifeq ($(ASE_PROFILE), 1)
   VCS_SIM_OPT+= -cm cond+fsm+branch
 endif
 
@@ -203,7 +207,7 @@ MENT_VLOG_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +d
 ifeq ($(ASE_DEBUG), 1)
   MENT_VLOG_OPT+= +define+ASE_DEBUG -hazards
 endif
-ifdef GLS_SIM
+ifeq ($(GLS_SIM), 1)
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
@@ -316,38 +320,6 @@ CLANG_OPT+= \
 	-enable-checker  unix.cstring.BadSizeArg \
 	-enable-checker  unix.cstring.NullArg \
 
-#	-enable-checker  alpha.deadcode.UnreachableCode \
-	-enable-checker  alpha.core.CastToStruct \
-	-enable-checker  alpha.osx.cocoa.Dealloc \
-	-enable-checker  alpha.osx.cocoa.DirectIvarAssignment \
-	-enable-checker  alpha.osx.cocoa.DirectIvarAssignmentForAnnotatedFunctions \
-	-enable-checker  alpha.osx.cocoa.InstanceVariableInvalidation \
-	-enable-checker  alpha.osx.cocoa.MissingInvalidationMethod \
-	-enable-checker  alpha.osx.cocoa.localizability.PluralMisuseChecker \
-	-enable-checker  optin.osx.cocoa.localizability.EmptyLocalizationContextChecker \
-	-enable-checker  optin.osx.cocoa.localizability.NonLocalizedStringChecker \
-	-enable-checker  osx.API \
-	-enable-checker  osx.SecKeychainAPI \
-	-enable-checker  osx.cocoa.AtSync \
-	-enable-checker  osx.cocoa.ClassRelease \
-	-enable-checker  osx.cocoa.IncompatibleMethodTypes \
-	-enable-checker  osx.cocoa.Loops \
-	-enable-checker  osx.cocoa.MissingSuperCall \
-	-enable-checker  osx.cocoa.NSAutoreleasePool \
-	-enable-checker  osx.cocoa.NSError \
-	-enable-checker  osx.cocoa.NilArg \
-	-enable-checker  osx.cocoa.NonNilReturnValue \
-	-enable-checker  osx.cocoa.ObjCGenerics \
-	-enable-checker  osx.cocoa.RetainCount \
-	-enable-checker  osx.cocoa.SelfInit \
-	-enable-checker  osx.cocoa.UnusedIvars \
-	-enable-checker  osx.cocoa.VariadicMethodTypes \
-	-enable-checker  osx.coreFoundation.CFError \
-	-enable-checker  osx.coreFoundation.CFNumber \
-	-enable-checker  osx.coreFoundation.CFRetainRelease \
-	-enable-checker  osx.coreFoundation.containers.OutOfBounds \
-	-enable-checker  osx.coreFoundation.containers.PointerSizedValues \
-
 
 #########################################################################
 #                            Build Targets                              #
@@ -378,7 +350,7 @@ ifneq ($(SIMULATOR), VCS)
   endif
 endif
 # Check gate simulation libraries
-ifdef GLS_SIM
+ifeq ($(GLS_SIM), 1)
   ifndef QUARTUS_HOME
 	@echo "** ERROR **: env(QUARTUS_HOME) has not been set."
 	@echo "** ERROR **: GLS_SIM needs QUARTUS_HOME environment variable to be set."
@@ -489,7 +461,7 @@ ifdef DUT_VLOG_SRC_LIST
 	vlogan $(SNPS_VLOGAN_OPT) -f $(DUT_VLOG_SRC_LIST) -l vlogan-afu.log
 endif
 ifeq ($(CC), gcc)
-	vcs $(SNPS_VCS_OPT) $(ASE_TOP) $(WORK)/$(ASE_SHOBJ_SO) $(SAFECLIB) $(ASE_LD_SWITCHES)
+	vcs $(SNPS_VCS_OPT) $(ASE_TOP) $(WORK)/$(ASE_SHOBJ_SO) $(ASE_LD_SWITCHES)
 endif
 
 
@@ -595,9 +567,9 @@ scan-build:
 cov_gui: coverage_gui
 
 coverage_gui:
-	firefox  $(COV_DIR)/urgReport/dashboard.html &
-	firefox  $(COV_DIR)/lcov_coverage/index.html &
-	firefox  $(COV_DIR)/profileReport.html &
+	chromium-browser  $(COV_DIR)/urgReport/dashboard.html &
+	chromium-browser  $(COV_DIR)/lcov_coverage/index.html &
+	chromium-browser  $(COV_DIR)/profileReport.html &
 	dve -dir $(COV_DIR)/vcs_coverage.vdb/ -full64 &
 
 # Valgrind run
