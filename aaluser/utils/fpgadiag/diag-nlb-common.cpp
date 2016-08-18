@@ -1079,6 +1079,19 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
 
    // --rdi, --rds
 
+   /********************** FOR SKX POWER-ON ONLY **************************/
+
+   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_RDS)) {
+	   os << "--rds is NOT supported in this release." << endl;
+	   return false;
+   }
+
+   if ( flags_are_clr(cmd.cmdflags, NLB_CMD_FLAG_RDI)) {
+   	   os << "WARNING: No option selected for <RDSEL>. Defaulting to --rdi." << endl;
+   	   flag_setf(cmd.cmdflags, NLB_CMD_FLAG_RDI);
+   }
+   /**********************************************************************/
+
    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_RDI|NLB_CMD_FLAG_RDS)) {
 	   	os << "--rdi and --rds are mutually exclusive." << endl;
 	   	return false;

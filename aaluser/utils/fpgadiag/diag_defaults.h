@@ -59,8 +59,8 @@
 #define DEFAULT_WLI          	"off"
 #define DEFAULT_WLM          	"on"
 #define DEFAULT_WPI          	"off"
-#define DEFAULT_RDS         	"on"
-#define DEFAULT_RDI         	"off"
+#define DEFAULT_RDS         	"off"
+#define DEFAULT_RDI         	"on"
 #define DEFAULT_CONT        	"off"
 #define DEFAULT_TOUSEC      	0
 #define DEFAULT_TOMSEC      	(DEFAULT_NLB_CONT_TIMEOUT_NS / NANOSEC_PER_MILLI(1))
