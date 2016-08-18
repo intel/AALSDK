@@ -77,7 +77,7 @@ ASE_CONFIG ?= $(ASE_SRCDIR)/ase.cfg
 ASE_SCRIPT ?= $(ASE_SRCDIR)/ase_regress.sh
 
 # SafeStringLib
-SAFECLIB =
+# SAFECLIB =
 # $(ASE_SRCDIR)/../../../safestringlib/build/safestringlib.so
 
 #########################################################################
@@ -501,6 +501,10 @@ endif
 sim: check
 ifeq ($(SIMULATOR), VCS)
 	cd $(ASE_WORKDIR) ; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
+  ifeq ($(ASE_COVERAGE), 1)
+	cd $(COV_DIR) ; lcov --base-directory $(COV_DIR) --directory $(ASE_WORKDIR) --capture --output-file $(COV_DIR)/sim_coverage.info ; genhtml $(COV_DIR)/sim_coverage.info --output-directory $(COV_DIR)/sim_coverage ; cd -
+	cd $(COV_DIR) ; urg -full64 -dir $(COV_DIR)/vcs_coverage.vdb ; cd -
+  endif
 else
   ifeq ($(SIMULATOR), QUESTA)
 	cd $(ASE_WORKDIR) ; vsim $(MENT_VSIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) $(ASE_TOP) ; cd -
@@ -509,10 +513,6 @@ else
 	@echo "#         SIMULATOR=$(SIMULATOR) not supported             #"
 	@echo "############################################################"
   endif
-endif
-ifeq ($(ASE_COVERAGE), 1)
-	cd $(COV_DIR) ; lcov --base-directory $(COV_DIR) --directory $(ASE_WORKDIR) --capture --output-file $(COV_DIR)/ase_libs.info ; genhtml $(COV_DIR)/ase_libs.info --output-directory $(COV_DIR)/lcov_coverage ; cd -
-	cd $(COV_DIR) ; urg -full64 -dir $(COV_DIR)/vcs_coverage.vdb ; cd -
 endif
 
 # Open Wave file
@@ -583,8 +583,6 @@ test: all sim
 long_sim:
 	cd ./$(WORK)/; ./ase_simv -ucli -do $(ASE_SRCDIR)/vcs_run.tcl +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
 
-cppcheck:
-	cd sw ; cppcheck *.c -DSIM_SIDE=1 -D__x86_64__ --enable=all -v --check-config | tee ../lint.log -I /usr/include/ ; cd -
-
+# GDB enabled sim run
 gdb_sim:
 	cd ./$(WORK)/; gdb -ex run --args ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -

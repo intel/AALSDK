@@ -119,7 +119,9 @@ char* get_timestamp(int dont_kill)
   snprintf(tstamp_filepath, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
 #ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
   printf("  [DEBUG] tstamp_filepath = %s\n", tstamp_filepath);
+  END_YELLOW_FONTCOLOR;
 #endif
 
   // Check if file exists
@@ -174,8 +176,17 @@ char* get_timestamp(int dont_kill)
         #endif
 	}
     }
+
+  if (tstamp_str == NULL)
+    {
+      printf("** ASE ERROR: Session ID was calculated as NULL **\n");
+    #ifdef SIM_SIDE
+      start_simkill_countdown();
+    #else
+      exit(1);
+    #endif
+    }
   
-  ase_free_buffer (tstamp_str);
   ase_free_buffer (tstamp_filepath);
 
   FUNC_CALL_EXIT;
