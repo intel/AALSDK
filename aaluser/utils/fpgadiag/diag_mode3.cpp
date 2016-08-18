@@ -362,6 +362,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
 		   ERR("Cool CPU cache operation failed.");
 		   ++res;
 	   }
+	   free(c);
 	}
 
 #if   defined( __AAL_WINDOWS__ )
