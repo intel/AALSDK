@@ -60,7 +60,7 @@
 #define MAX_NUM_SOCKETS  2
 
 PwrMgrRuntime * g_PwrMgrRuntime                   = NULL;
-PwrMgrService * g_PwrMgrService[MAX_NUM_SOCKETS]  = {0};
+PwrMgrClient  * g_PwrMgrClient[MAX_NUM_SOCKETS]  = {0};
 
 
 
@@ -68,10 +68,10 @@ void Release_PwrMgrservice()
 {
    for(int i=0;i< MAX_NUM_SOCKETS;i++) {
 
-      if( NULL != g_PwrMgrService[i]) {
-            g_PwrMgrService[i]->FreeService();
-           delete g_PwrMgrService[i];
-           g_PwrMgrService[i] = NULL;
+      if( NULL != g_PwrMgrClient[i]) {
+            g_PwrMgrClient[i]->FreeService();
+           delete g_PwrMgrClient[i];
+           g_PwrMgrClient[i] = NULL;
         }
 
    }
@@ -133,18 +133,19 @@ int main(int argc, char *argv[])
       for(int i=0;i< MAX_NUM_SOCKETS;i++) {
 
          // Allocate Power manager service
-         g_PwrMgrService[i] = new (nothrow) PwrMgrService(g_PwrMgrRuntime->getRuntime());
-         if( NULL != g_PwrMgrService[i] ) {
+         g_PwrMgrClient[i] = new (nothrow) PwrMgrClient(g_PwrMgrRuntime->getRuntime());
+         if( NULL != g_PwrMgrClient[i] ) {
 
             // Allocate power manager service
-            g_PwrMgrService[i]->AllocateService();
-            if(!g_PwrMgrService[i]->IsOK()) {
+            g_PwrMgrClient[i]->AllocateService();
+            if(!g_PwrMgrClient[i]->IsOK()) {
                ERR(" App Failed to allocate Power Mgr Service");
-               delete g_PwrMgrService[i];
-               g_PwrMgrService[i] = NULL;
-            }
+               delete g_PwrMgrClient[i];
+               g_PwrMgrClient[i] = NULL;
 
-            std::cout << "AlLocated Power Manager Service for Socket:" << i<<  std::endl;
+            }else {
+               std::cout << "AlLocated Power Manager Service for Socket:" << i<<  std::endl;
+            }
 
          } else {
             ERR("Power Manger Failed to  memory for AAL Power Manger service");

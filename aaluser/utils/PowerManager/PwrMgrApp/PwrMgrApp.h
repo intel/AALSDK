@@ -95,12 +95,12 @@ protected:
 };
 
 
-class PwrMgrService : public CAASBase,
-                      public IPwrMgr_Client,
-                      public IServiceClient
+class PwrMgrClient : public CAASBase,
+                     public IPwrMgr_Client,
+                     public IServiceClient
 {
 public:
-   PwrMgrService(Runtime *pRuntime);
+   PwrMgrClient(Runtime *pRuntime);
 
    btInt Errors() const { return m_Errors; }
    btInt AllocateService();

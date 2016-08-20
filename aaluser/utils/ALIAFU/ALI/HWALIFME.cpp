@@ -1085,9 +1085,7 @@ btBool CHWALIFME::powerGetValues(INamedValueSet &rResult )
 
    pm_status.csr = pthermal_pwr->pwr_status ;
 
-   if(pm_status.pwr_consumed !=0 ) {
-      rResult.Add(AALPOWER_CONSUMPTION,pm_status.pwr_consumed);
-    }
+   rResult.Add(AALPOWER_CONSUMPTION,pm_status.pwr_consumed);
 
    return true;
 }

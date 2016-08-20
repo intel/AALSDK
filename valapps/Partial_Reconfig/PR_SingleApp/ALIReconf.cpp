@@ -245,6 +245,26 @@ void showhelp(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
    help_msg_callback(fp, gcs);
 }
 
+
+int verifycmds(struct ALIConfigCommandLine *cl)
+{
+   std::ifstream bitfile1(cl->bitstream_file1,std::ios::binary);
+
+   if(!bitfile1.good()) {
+      printf("Invalid File : %s\n", cl->bitstream_file1);
+      return 3;
+   }
+
+   std::ifstream bitfile2(cl->bitstream_file2,std::ios::binary);
+
+   if(!bitfile2.good()) {
+      printf("Invalid File : %s\n", cl->bitstream_file2);
+      return 3;
+   }
+   return 0;
+}
+
+
 END_C_DECLS
 
 AllocatesReconfService::AllocatesReconfService() :

@@ -917,6 +917,8 @@ int main(int argc, char *argv[])
       return 2;
    }else if ( flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_HELP|ALICONIFG_CMD_FLAG_VERSION) ) {
       return 0;
+   }else if ( verifycmds(&configCmdLine) ) {
+      return 3;
    }
 
    PRTest theApp;

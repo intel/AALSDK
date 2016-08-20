@@ -78,11 +78,13 @@ PwrMgrRuntime::PwrMgrRuntime() :
    // Start the Runtime and wait for the callback by sitting on the semaphore.
    //   the runtimeStarted() or runtimeStartFailed() callbacks should set m_Errors appropriately.
    if ( !m_Runtime.start(configArgs) ) {
+      m_bIsOK = false;
       ++m_Errors;
       return;
    }
 
    m_Sem.Wait();
+   m_bIsOK = true;
 }
 
 void PwrMgrRuntime::runtimeStop()
@@ -102,12 +104,14 @@ void PwrMgrRuntime::runtimeStarted(IRuntime            *pRuntime,
                                            const NamedValueSet &rConfigParms)
 {
    MSG("Runtime Started");
+   m_bIsOK = true;
    m_Sem.Post(1);
 }
 
 void PwrMgrRuntime::runtimeStopped(IRuntime *pRuntime)
 {
    MSG("Runtime Stopped");
+   m_bIsOK = false;
    m_Sem.Post(1);
 }
 
@@ -115,6 +119,7 @@ void PwrMgrRuntime::runtimeStartFailed(const IEvent &rEvent)
 {
    ++m_Errors;
    ERR("didn't expect runtimeStartFailed()");
+   m_bIsOK = false;
    PrintExceptionDescription(rEvent);
    m_Sem.Post(1);
 }
@@ -148,8 +153,8 @@ void PwrMgrRuntime::runtimeEvent(const IEvent &rEvent)
 
 
 
-void PwrMgrService::serviceAllocated(AAL::IBase               *pServiceBase,
-                                     AAL::TransactionID const &rTranID)
+void PwrMgrClient::serviceAllocated(AAL::IBase               *pServiceBase,
+                                    AAL::TransactionID const &rTranID)
 {
    // Save the IBase for the Service. Through it we can get any other
    //  interface implemented by the Service
@@ -157,20 +162,23 @@ void PwrMgrService::serviceAllocated(AAL::IBase               *pServiceBase,
    ASSERT(NULL != m_pPwrMgrService);
    if ( NULL == m_pPwrMgrService ) {
       ERR("returned  service was NULL");
+      m_bIsOK = false;
       m_Sem.Post(1);
       return;
    }
+   m_bIsOK = true;
    m_Sem.Post(1);
 }
 
-void PwrMgrService::serviceAllocateFailed(const AAL::IEvent &rEvent)
+void PwrMgrClient::serviceAllocateFailed(const AAL::IEvent &rEvent)
 {
    ++m_Errors;
+   m_bIsOK = false;
    ERR("Failed to allocate  Service");
    m_Sem.Post(1);
 }
 
-void PwrMgrService::serviceReleased(AAL::TransactionID const &rTranID)
+void PwrMgrClient::serviceReleased(AAL::TransactionID const &rTranID)
 {
    MSG(" Service Released");
    if ( rTranID.Context() != (AAL::btApplicationContext)1 ) {
@@ -180,7 +188,7 @@ void PwrMgrService::serviceReleased(AAL::TransactionID const &rTranID)
    m_pPwrMgrService = NULL;
 }
 
-void PwrMgrService::serviceReleaseRequest(AAL::IBase        *pServiceBase,
+void PwrMgrClient::serviceReleaseRequest(AAL::IBase        *pServiceBase,
                                       const AAL::IEvent &rEvent)
 {
    ++m_Errors;
@@ -196,21 +204,22 @@ void PwrMgrService::serviceReleaseRequest(AAL::IBase        *pServiceBase,
    }
 }
 
-void PwrMgrService::serviceReleaseFailed(const AAL::IEvent &rEvent)
+void PwrMgrClient::serviceReleaseFailed(const AAL::IEvent &rEvent)
 {
    ++m_Errors;
+   m_bIsOK =false;
    ERR( " didn't expect serviceReleaseFailed()");
    m_Sem.Post(1);
 }
 
-void PwrMgrService::serviceEvent(const AAL::IEvent &rEvent)
+void PwrMgrClient::serviceEvent(const AAL::IEvent &rEvent)
 {
    ++m_Errors;
    ERR( " serviceEvent(): received unexpected event 0x" << std::hex << rEvent.SubClassID() << std::dec);
 }
 
 
-btInt PwrMgrService::AllocateService()
+btInt PwrMgrClient::AllocateService()
 {
 
    SetInterface(iidServiceClient, dynamic_cast<AAL::IServiceClient *>(this));
@@ -240,7 +249,7 @@ btInt PwrMgrService::AllocateService()
    }
 }
 
-PwrMgrService::PwrMgrService(Runtime *pRuntime) :
+PwrMgrClient::PwrMgrClient(Runtime *pRuntime) :
                m_pRuntime(pRuntime),
                m_Errors(0)
 {
@@ -248,7 +257,7 @@ PwrMgrService::PwrMgrService(Runtime *pRuntime) :
       m_Sem.Create(0, 1);
 }
 
-btInt PwrMgrService::FreeService()
+btInt PwrMgrClient::FreeService()
 {
    if ( NULL != m_pPwrMgrService ) {
       MSG("Freeing  Service");
@@ -262,7 +271,7 @@ btInt PwrMgrService::FreeService()
    }
 }
 
-void PwrMgrService::reconfPowerRequest( TransactionID &rTranID,IEvent const &rEvent ,INamedValueSet &rInputArgs)
+void PwrMgrClient::reconfPowerRequest( TransactionID &rTranID,IEvent const &rEvent ,INamedValueSet &rInputArgs)
 {
    MSG("reconfPowerEvent Triggered");
 
@@ -303,6 +312,12 @@ void PwrMgrService::reconfPowerRequest( TransactionID &rTranID,IEvent const &rEv
    res = CoreIdler( Wattsvalue,socketID);
    printf("res= %d \n",res);
 
+   // if PR fails , make all Cores online
+   if(0 == Wattsvalue) {
+      return ;
+   }
+
+
    IPwrMgr *pALIPwrMgr = dynamic_ptr<IPwrMgr>(iid_PWRMGR_Service, m_pPwrMgrService);
 
    ASSERT(NULL != pALIPwrMgr);
@@ -317,7 +332,7 @@ void PwrMgrService::reconfPowerRequest( TransactionID &rTranID,IEvent const &rEv
 }
 
 
-btInt PwrMgrService::CoreIdler(btInt &FPIWatts, btInt &socket)
+btInt PwrMgrClient::CoreIdler(btInt &FPIWatts, btInt &socket)
 {
 
    FILE *fp                    = NULL;
