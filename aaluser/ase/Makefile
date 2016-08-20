@@ -76,9 +76,8 @@ ASE_WORKDIR = $(ASE_SRCDIR)/$(WORK)
 ASE_CONFIG ?= $(ASE_SRCDIR)/ase.cfg
 ASE_SCRIPT ?= $(ASE_SRCDIR)/ase_regress.sh
 
-# SafeStringLib
-# SAFECLIB =
-# $(ASE_SRCDIR)/../../../safestringlib/build/safestringlib.so
+# ASE Absolute max runtime - set to 12 hours
+ASE_ABSOLUTE_TIMEOUT ?= 43200
 
 #########################################################################
 #                          Default options                              #
@@ -446,13 +445,12 @@ endif
 
 
 ## VCS build template ##
-vcs_build:
+vcs_build: sw_build
 	@echo "############################################################"
 	@echo "#                                                          #"
 	@echo "#                VCS-GCC build initiated                   #"
 	@echo "#                                                          #"
 	@echo "############################################################"
-	make sw_build
 	vlogan $(SNPS_VLOGAN_OPT) $(ASEHW_FILE_LIST) -l vlogan-ase.log
 ifdef DUT_VHD_SRC_LIST
 	vhdlan $(SNPS_VHDLAN_OPT) -f $(DUT_VHD_SRC_LIST)
@@ -466,13 +464,12 @@ endif
 
 
 ## Questasim template ##
-questa_build:
+questa_build: sw_build
 	@echo "############################################################"
 	@echo "#                                                          #"
 	@echo "#              QuestaSim-GCC build initiated               #"
 	@echo "#                                                          #"
 	@echo "############################################################"
-	make sw_build
 	cd $(WORK) ; vlib $(WORK) ; vmap work $(WORK) ; cd -
 	cd $(WORK) ; vlog $(MENT_VLOG_OPT) $(ASEHW_FILE_LIST) ; cd -
 ifdef DUT_VHD_SRC_LIST
@@ -500,15 +497,15 @@ endif
 ## Run ASE Simulator ##
 sim: check
 ifeq ($(SIMULATOR), VCS)
-	cd $(ASE_WORKDIR) ; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
+	cd $(ASE_WORKDIR) ; /usr/bin/timeout $(ASE_ABSOLUTE_TIMEOUT) ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
   ifeq ($(ASE_COVERAGE), 1)
 	cd $(COV_DIR) ; lcov --base-directory $(COV_DIR) --directory $(ASE_WORKDIR) --capture --output-file $(COV_DIR)/sim_coverage.info ; genhtml $(COV_DIR)/sim_coverage.info --output-directory $(COV_DIR)/sim_coverage ; cd -
 	cd $(COV_DIR) ; urg -full64 -dir $(COV_DIR)/vcs_coverage.vdb ; cd -
   endif
 else
   ifeq ($(SIMULATOR), QUESTA)
-	cd $(ASE_WORKDIR) ; vsim $(MENT_VSIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) $(ASE_TOP) ; cd -
-  else
+	cd $(ASE_WORKDIR) ; /usr/bin/timeout $(ASE_ABSOLUTE_TIMEOUT) vsim $(MENT_VSIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) $(ASE_TOP) ; cd -
+  else	
 	@echo "############################################################"
 	@echo "#         SIMULATOR=$(SIMULATOR) not supported             #"
 	@echo "############################################################"

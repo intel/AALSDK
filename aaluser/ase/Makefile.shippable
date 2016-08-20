@@ -44,6 +44,13 @@
 
 include ase_sources.mk
 
+# Base directory
+ASE_BASEDIR = $(PWD)
+
+# Coverage settings (lcov in SW and VCS-CM in HW)
+ASE_COVERAGE ?= 0
+COV_DIR=$(ASE_BASEDIR)/coverage/
+
 # Enable Altera gates library
 GLS_SIM = 1
 GLS_SAMPLE_LIB = $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
@@ -62,6 +69,8 @@ ASE_WORKDIR = $(ASE_SRCDIR)/$(WORK)
 ASE_CONFIG ?= $(ASE_SRCDIR)/ase.cfg
 ASE_SCRIPT ?= $(ASE_SRCDIR)/ase_regress.sh
 
+# ASE Absolute max runtime - set to 12 hours
+ASE_ABSOLUTE_TIMEOUT ?= 43200
 
 #########################################################################
 #                          Default options                              #
@@ -75,14 +84,16 @@ SNPS_COMMAND = $(shell command -v vcs)
 MENT_COMMAND = $(shell command -v vsim)
 
 ## C Compiler options
-CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -D SIMULATOR=$(SIMULATOR)
-CC_OPT+= -Wall 
+CC_OPT = -g  -m64 -fPIC -D SIM_SIDE=1 -D SIMULATOR=$(SIMULATOR)
+# CC_OPT+= -std=c11
+CC_OPT+= -Wall -fstack-protector-all
 ifeq ($(SIMULATOR), VCS)
   CC_OPT+= -I $(VCS_HOME)/include/
 endif
 ifeq ($(SIMULATOR), QUESTA)
   CC_OPT+= -I $(MTI_HOME)/include/
 endif
+
 
 ## Print information ##
  $(info SIMULATOR=$(SIMULATOR))
@@ -99,9 +110,6 @@ ASE_SHOBJ_SO = $(ASE_SHOBJ_NAME).so
 # -lrt option is required in order to use shared memory /dev/shm,
 # -message queues and pthreads
 ASE_LD_SWITCHES = -lrt -lpthread -lstdc++
-ifeq ($(ASE_LCOV_ENABLE), 1)
-  ASE_LD_SWITCHES+= -lgcov
-endif
 
 
 #########################################################################
@@ -116,9 +124,12 @@ SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog +define+$(SIMULATOR)
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 # SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
-# SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+MPF_PLATFORM_BDX  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
+SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+MPF_PLATFORM_BDX  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
 SNPS_VLOGAN_OPT+= +lint=all,noVCDE,noNS,NCEID,CAWM,TFIPC,IPDP,PCWM
-ifdef GLS_SIM
+ifeq ($(ASE_DISABLE_LOGGER), 1)
+  SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
+endif
+ifeq ($(GLS_SIM), 1)
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
@@ -149,13 +160,13 @@ VCS_SIM_OPT+= -l run.log
 MENT_VCOM_OPT = -nologo -work $(WORK)
 
 ## VLOG compile
-# MENT_VLOG_OPT = -64 
+# MENT_VLOG_OPT = -64
 MENT_VLOG_OPT+= -nologo +librescan -work $(WORK) +define+$(SIMULATOR)
 MENT_VLOG_OPT+= -dpiheader work/dpiheader.h
 MENT_VLOG_OPT+= +incdir+$(ASE_INCDIR)+$(DUT_INCDIR)+$(WORK)
 MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
 MENT_VLOG_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
-ifdef GLS_SIM
+ifeq ($(GLS_SIM), 1)
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
@@ -168,8 +179,8 @@ ifdef GLS_SIM
 endif
 
 ## VSIM elaboration, and run options
-# MENT_VSIM_OPT = -64 
-MENT_VSIM_OPT+= -c -l run.log -dpioutoftheblue 1 
+# MENT_VSIM_OPT = -64
+MENT_VSIM_OPT+= -c -l run.log -dpioutoftheblue 1
 MENT_VSIM_OPT+= -sv_lib $(ASE_SHOBJ_NAME) -do $(ASE_SRCDIR)/vsim_run.tcl
 # -voptargs="+acc"
 
@@ -203,7 +214,7 @@ ifneq ($(SIMULATOR), VCS)
   endif
 endif
 # Check gate simulation libraries
-ifdef GLS_SIM
+ifeq ($(GLS_SIM), 1)
   ifndef QUARTUS_HOME
 	@echo "** ERROR **: env(QUARTUS_HOME) has not been set."
 	@echo "** ERROR **: GLS_SIM needs QUARTUS_HOME environment variable to be set."
@@ -294,14 +305,14 @@ sw_build:
 	cd $(WORK) ; $(CC) -g -shared -o $(ASE_SHOBJ_SO) `ls *.o` $(ASE_LD_SWITCHES) ; cd -
 	nm $(WORK)/$(ASE_SHOBJ_SO) > $(WORK)/$(ASE_SHOBJ_NAME).nm
 
+
 ## VCS build template ##
-vcs_build:
+vcs_build: sw_build
 	@echo "############################################################"
 	@echo "#                                                          #"
 	@echo "#                VCS-GCC build initiated                   #"
 	@echo "#                                                          #"
 	@echo "############################################################"
-	make sw_build
 	vlogan $(SNPS_VLOGAN_OPT) $(ASEHW_FILE_LIST) -l vlogan-ase.log
 ifdef DUT_VHD_SRC_LIST
 	vhdlan $(SNPS_VHDLAN_OPT) -f $(DUT_VHD_SRC_LIST)
@@ -315,13 +326,12 @@ endif
 
 
 ## Questasim template ##
-questa_build:
+questa_build: sw_build
 	@echo "############################################################"
 	@echo "#                                                          #"
 	@echo "#              QuestaSim-GCC build initiated               #"
 	@echo "#                                                          #"
 	@echo "############################################################"
-	make sw_build
 	cd $(WORK) ; vlib $(WORK) ; vmap work $(WORK) ; cd -
 	cd $(WORK) ; vlog $(MENT_VLOG_OPT) $(ASEHW_FILE_LIST) ; cd -
 ifdef DUT_VHD_SRC_LIST
@@ -349,18 +359,19 @@ endif
 ## Run ASE Simulator ##
 sim: check
 ifeq ($(SIMULATOR), VCS)
-	cd $(ASE_WORKDIR) ; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
+	cd $(ASE_WORKDIR) ; /usr/bin/timeout $(ASE_ABSOLUTE_TIMEOUT) ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
+  ifeq ($(ASE_COVERAGE), 1)
+	cd $(COV_DIR) ; lcov --base-directory $(COV_DIR) --directory $(ASE_WORKDIR) --capture --output-file $(COV_DIR)/sim_coverage.info ; genhtml $(COV_DIR)/sim_coverage.info --output-directory $(COV_DIR)/sim_coverage ; cd -
+	cd $(COV_DIR) ; urg -full64 -dir $(COV_DIR)/vcs_coverage.vdb ; cd -
+  endif
 else
   ifeq ($(SIMULATOR), QUESTA)
-	cd $(ASE_WORKDIR) ; vsim $(MENT_VSIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) $(ASE_TOP) ; cd -
-  else
+	cd $(ASE_WORKDIR) ; /usr/bin/timeout $(ASE_ABSOLUTE_TIMEOUT) vsim $(MENT_VSIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) $(ASE_TOP) ; cd -
+  else	
 	@echo "############################################################"
 	@echo "#         SIMULATOR=$(SIMULATOR) not supported             #"
 	@echo "############################################################"
   endif
-endif
-ifeq ($(ASE_COVERAGE), 1)
-	make coverage
 endif
 
 # Open Wave file

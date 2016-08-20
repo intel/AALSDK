@@ -66,6 +66,7 @@ void put_timestamp()
 
   FILE *fp = (FILE *)NULL;
   char *tstamp_path;
+  unsigned long long rdtsc_out;
 
   tstamp_path = (char*) ase_malloc(ASE_FILEPATH_LEN);
 
@@ -83,8 +84,16 @@ void put_timestamp()
     }
   else
     {
+      // rdtsc call
+      rdtsc_out = rdtsc();
+#ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [DEBUG]  rdtsc_out = %lld\n", rdtsc_out);
+      END_YELLOW_FONTCOLOR;
+#endif
+
       // Write session code
-      fprintf(fp, "%lld", (unsigned long long)rdtsc() );
+      fprintf(fp, "%lld\n", rdtsc_out );
       
       // Close file
       fclose(fp);
@@ -120,7 +129,7 @@ char* get_timestamp(int dont_kill)
 
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
-  printf("  [DEBUG] tstamp_filepath = %s\n", tstamp_filepath);
+  printf("  [DEBUG]  tstamp_filepath = %s\n", tstamp_filepath);
   END_YELLOW_FONTCOLOR;
 #endif
 
@@ -177,6 +186,10 @@ char* get_timestamp(int dont_kill)
 	}
     }
 
+  // Remove newline char
+  remove_newline(tstamp_str);
+
+  // check if null
   if (tstamp_str == NULL)
     {
       printf("** ASE ERROR: Session ID was calculated as NULL **\n");
