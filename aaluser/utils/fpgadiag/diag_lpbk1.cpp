@@ -290,7 +290,24 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 
        // Verify the buffers
        if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, (NumCacheLines * CL(1))) != 0 ){
-          cerr << "Data mismatch in Input and Output buffers.\n";
+
+    	   cerr << "Data mismatch in Input and Output buffers.\n";
+
+    	   volatile btUnsigned32bitInt *pInput    = (volatile btUnsigned32bitInt *)pInputUsrVirt;
+    	   volatile btUnsigned32bitInt *pOutput    = (volatile btUnsigned32bitInt *)pOutputUsrVirt;
+    	   volatile btUnsigned32bitInt *pEndInput = (volatile btUnsigned32bitInt *)pInput +
+    	                                     	 	(m_pMyApp->InputSize() / sizeof(btUnsigned32bitInt));
+    	   for(;pInput < pEndInput, pOutput < pEndInput; ++pInput, ++pOutput)
+    	   {
+    		   if(*pInput != *pOutput){
+    			   cerr << "Expected value: " << std::hex << *pInput  << std::dec << endl;
+    			   cerr << "Actual value:   " << std::hex << *pOutput << std::dec << endl;
+    			   cerr << "Phy Addr of Src  Buffer: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA((btVirtAddr)pInput)  << std::dec << endl;
+    			   cerr << "Phy Addr of Dest Buffer: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA((btVirtAddr)pOutput) << std::dec << endl;
+    			   break;
+    		   }
+    	   }
+
            ++res;
 //           break;
        }
@@ -383,7 +400,6 @@ void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
         << setw(12) << GetPerfMonitor(UPI_READ)       << ' '
         << setw(12) << GetPerfMonitor(UPI_WRITE)      << ' '
         << endl << endl;
-
 
    if(pAFUDSM->num_reads < cls)
    {
