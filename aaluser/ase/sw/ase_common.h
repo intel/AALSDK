@@ -143,12 +143,10 @@
 // work Directory location
 char *ase_workdir_path;
 
-// Run location
-// char *ase_run_path;
-
 // Timestamp IPC file
 #define TSTAMP_FILENAME ".ase_timestamp"
 char *tstamp_filepath;
+char glbl_session_id[20];
 
 // CCIP Warnings and Error stat location
 char *ccip_sniffer_file_statpath;
@@ -293,9 +291,6 @@ uint64_t *mmio_afu_vbase;
 // UMAS Base Address
 uint64_t *umsg_umas_vbase;
 
-
-// Timestamp reference time
-// extern struct timeval start;
 
 // ASE buffer valid/invalid indicator
 // When a buffer is 'allocated' successfully, it will be valid, when
@@ -456,10 +451,6 @@ extern "C" {
  * MESSAGING IPC
  *
  * ********************************************************************/
-// Message Queue establishment status
-// #define MQ_NOT_ESTABLISHED 0x0
-//#define MQ_ESTABLISHED     0xCAFE
-
 // Message queue parameters
 #define ASE_MQ_MAXMSG     8
 #define ASE_MQ_MSGSIZE    1024
@@ -596,6 +587,7 @@ int ase_listener();
 void ase_config_parse(char*);
 
 // Simulation control function
+void register_signal (int , void*);
 void start_simkill_countdown();
 void run_clocks(int num_clocks);
 void afu_softreset_trig(int init, int value);

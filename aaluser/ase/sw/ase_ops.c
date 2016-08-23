@@ -604,3 +604,24 @@ void ase_free_buffer(char *ptr)
     }
 }
 
+
+/*
+ * register_signal : Register Signal Handler
+ */
+void register_signal (int sig, void *handler )
+{
+  FUNC_CALL_ENTRY;
+
+  struct sigaction cfg;
+  
+  // Configure signal handler
+  cfg.sa_handler = handler;
+  sigemptyset(&cfg.sa_mask);
+  cfg.sa_flags = SA_RESTART;
+  
+  // Declare signal action
+  sigaction (sig, &cfg, 0);
+
+  FUNC_CALL_EXIT;
+}
+

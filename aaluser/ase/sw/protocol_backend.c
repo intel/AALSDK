@@ -721,15 +721,15 @@ int ase_init()
   self_destruct_in_progress = 0;
 
   // Graceful kill handlers
-  signal(SIGTERM, start_simkill_countdown);
-  signal(SIGINT , start_simkill_countdown);
-  signal(SIGQUIT, start_simkill_countdown);
-  signal(SIGHUP,  start_simkill_countdown);
+  register_signal(SIGTERM, start_simkill_countdown);
+  register_signal(SIGINT , start_simkill_countdown);
+  register_signal(SIGQUIT, start_simkill_countdown);
+  register_signal(SIGHUP,  start_simkill_countdown);
 
   // Runtime error handler (print backtrace)
-  signal(SIGSEGV, backtrace_handler);
-  signal(SIGBUS, backtrace_handler);
-  signal(SIGABRT, backtrace_handler);
+  register_signal(SIGSEGV, backtrace_handler);
+  register_signal(SIGBUS, backtrace_handler);
+  register_signal(SIGABRT, backtrace_handler);
 
   // Ignore SIGPIPE *FIXME*: Look for more elegant solution
   signal(SIGPIPE, SIG_IGN);
@@ -927,6 +927,12 @@ int ase_ready()
 void start_simkill_countdown()
 {
   FUNC_CALL_ENTRY;
+
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [DEBUG]  Caught a SIG\n");
+  END_YELLOW_FONTCOLOR;
+#endif
 
   // Close and unlink message queue
   printf("SIM-C : Closing message queue and unlinking...\n");

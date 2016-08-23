@@ -160,7 +160,8 @@ char* get_timestamp(int dont_kill)
 	      exit(1);
             #endif
 	    }
-	  
+
+	  // Close fp
 	  fclose(fp);
 	}
     }
@@ -199,7 +200,11 @@ char* get_timestamp(int dont_kill)
       exit(1);
     #endif
     }
+
+  // Marking a global session ID
+  strncpy(glbl_session_id, tstamp_str, 20);
   
+  // Free path string
   ase_free_buffer (tstamp_filepath);
 
   FUNC_CALL_EXIT;
