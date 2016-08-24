@@ -56,11 +56,15 @@ void create_ipc_listfile()
       printf("Local IPC file cannot be opened\n");
       start_simkill_countdown(); // RRS: exit(1);
     }
+#ifdef ASE_DEBUG
   else
     {
-      printf("SIM-C : IPC Watchdog file %s opened\n", IPC_LOCAL_FILENAME);
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [DEBUG]  IPC Watchdog file %s opened\n", IPC_LOCAL_FILENAME);
+      END_YELLOW_FONTCOLOR;
     }
-  
+#endif
+
   FUNC_CALL_EXIT;
 }
 
