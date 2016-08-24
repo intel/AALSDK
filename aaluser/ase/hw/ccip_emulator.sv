@@ -119,9 +119,9 @@ module ccip_emulator
    /*
     * Reset lockdown flag
     * - Stop taking any more requests if ase_reset was requested
-    */ 
+    */
    logic reset_lockdown = 0;
-   
+
 
    /*
     * Local valid/debug breakout signals
@@ -353,7 +353,7 @@ module ccip_emulator
    // Get ASE seed
    import "DPI-C" function int get_ase_seed();
    int ase_seed;
-         
+
    // MMIO response
    import "DPI-C" function void mmio_response(inout mmio_t mmio_pkt);
    mmio_t mmio_rdrsp_pkt;
@@ -387,7 +387,7 @@ module ccip_emulator
    // Finish logger command
    logic finish_trigger = 0;
 
-   
+
    /*
     * Credit control system
     */
@@ -403,10 +403,10 @@ module ccip_emulator
 
    logic [ASE_RSPFIFO_COUNT_WIDTH:0] rdrsp_fifo_cnt;
    logic [ASE_RSPFIFO_COUNT_WIDTH:0] wrrsp_fifo_cnt;
-   
+
    /*
     * CH0 and CH1 latbuf
-    */ 
+    */
    // cf2as_latbuf_ch0 signals
    TxHdr_t                       cf2as_latbuf_tx0hdr;
    RxHdr_t                       cf2as_latbuf_rx0hdr;
@@ -426,7 +426,7 @@ module ccip_emulator
    // Hazard checker signals
    ase_haz_if haz_if;
 
-   
+
    /*
     * ASE Simulator reset
     * - Use sparingly, only for initialization and reset between session_init(s)
@@ -440,7 +440,7 @@ module ccip_emulator
 	 run_clocks(20);
 	 ase_reset = 0;
 	 run_clocks(20);
-	 reset_lockdown = 0;	 
+	 reset_lockdown = 0;
       end
    endtask // ase_reset_trig
 
@@ -866,7 +866,7 @@ module ccip_emulator
    logic 			      mmioresp_full;
    logic 			      mmioresp_empty;
    logic [3:0] 			      mmioresp_count;
-   
+
    // Response staging FIFO
    ase_svfifo
      #(
@@ -2367,7 +2367,7 @@ module ccip_emulator
       // Read seed and print
       ase_seed = get_ase_seed();
       $display("SIM-SV: ASE running with seed => %d", ase_seed);
-            
+
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
       ase_reset_trig();

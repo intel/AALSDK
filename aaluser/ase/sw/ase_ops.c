@@ -625,3 +625,11 @@ void register_signal (int sig, void *handler )
   FUNC_CALL_EXIT;
 }
 
+
+/*
+ * ret_random_in_range : Return random number in a range 
+ */
+uint32_t ret_random_in_range(int low, int high) 
+{
+  return (rand() % (high+1-low) + low );
+}

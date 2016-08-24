@@ -745,4 +745,12 @@ package ase_pkg;
       } ccip_txn_t;
  `endif
 
+   /*
+    * Macros
+    */
+   // Get random number from range
+ `define get_random_from_range(low, high)\
+   ($random() % (high + 1 - low) + low)
+
+
 endpackage

@@ -24,13 +24,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 // **************************************************************************
-/* 
+/*
  * Module Info: ASE common (C header file)
  * Language   : C/C++
  * Owner      : Rahul R Sharma
  *              rahul.r.sharma@intel.com
  *              Intel Corporation
- * 
+ *
  */
 
 
@@ -43,16 +43,16 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/mman.h>
-#include <sys/types.h>   
+#include <sys/types.h>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
-#include <time.h>       
-#include <ctype.h>         
-#include <mqueue.h>        
-#include <errno.h>         
-#include <signal.h>        
-#include <sys/resource.h>  
-#include <sys/time.h>      
+#include <time.h>
+#include <ctype.h>
+#include <mqueue.h>
+#include <errno.h>
+#include <signal.h>
+#include <sys/resource.h>
+#include <sys/time.h>
 #include <math.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -64,10 +64,10 @@
 #include <sys/wait.h>
 
 #ifndef SIM_SIDE
-#include <pthread.h>       
+#include <pthread.h>
 #endif
 
-#ifdef SIM_SIDE 
+#ifdef SIM_SIDE
 #include "svdpi.h"
 #endif
 
@@ -90,7 +90,7 @@
 /* *******************************************************************************
  *
  * SYSTEM FACTS
- * 
+ *
  * *******************************************************************************/
 /* #define FPGA_ADDR_WIDTH       48 */
 /* #define PHYS_ADDR_PREFIX_MASK 0x0000FFFFFFE00000 */
@@ -103,7 +103,7 @@
 
 // Size of page
 #define ASE_PAGESIZE         0x1000        // 4096 bytes
-#define CCI_CHUNK_SIZE       2*1024*1024   // CCI 2 MB physical chunks 
+#define CCI_CHUNK_SIZE       2*1024*1024   // CCI 2 MB physical chunks
 
 //MMIO memory map size
 #define MMIO_LENGTH                512*1024   // 512 KB MMIO size
@@ -151,7 +151,7 @@ char glbl_session_id[20];
 // CCIP Warnings and Error stat location
 char *ccip_sniffer_file_statpath;
 
-// READY file name 
+// READY file name
 #define ASE_READY_FILENAME ".ase_ready.pid"
 
 // IPC control list
@@ -220,7 +220,7 @@ char *app_run_cmd;
  *
  * Shared buffer structure
  * Fri Mar 11 09:02:18 PST 2016 : Converted to dual-ended linked list
- * 
+ *
  * ******************************************************************************/
 // Buffer information structure
 struct buffer_t                   //  Descriptiion                    Computed by
@@ -233,8 +233,8 @@ struct buffer_t                   //  Descriptiion                    Computed b
   uint64_t pbase;                 // SIM virtual address             |   SIM
   uint64_t fake_paddr;            // unique low FPGA_ADDR_WIDTH addr |   SIM
   uint64_t fake_paddr_hi;         // unique hi FPGA_ADDR_WIDTH addr  |   SIM
-  int is_privmem;                 // Flag memory as a private memory |    
-  int is_mmiomap;                 // Flag memory as CSR map          |   
+  int is_privmem;                 // Flag memory as a private memory |
+  int is_mmiomap;                 // Flag memory as CSR map          |
   int is_umas;                    // Flag memory as UMAS region      |
   struct buffer_t *next;
 };
@@ -243,7 +243,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
 /*
  * Workspace meta list
  */
-struct wsmeta_t 
+struct wsmeta_t
 {
   int      index;
   int      valid;
@@ -278,7 +278,7 @@ typedef struct umsgcmd_t {
 // Incoming UMSG packet (allocated in ase_init, deallocated in start_simkill_countdown)
 struct umsgcmd_t *incoming_umsg_pkt;
 
-// Compute buffer_t size 
+// Compute buffer_t size
 #define BUFSIZE     sizeof(struct buffer_t)
 
 
@@ -287,7 +287,7 @@ extern struct buffer_t *head;      // Head pointer
 extern struct buffer_t *end;       // Tail pointer
 
 // DPI side CSR base, offsets updated on CSR writes
-uint64_t *mmio_afu_vbase;  
+uint64_t *mmio_afu_vbase;
 // UMAS Base Address
 uint64_t *umsg_umas_vbase;
 
@@ -345,11 +345,14 @@ void ase_dbg_memtest(struct buffer_t *);
 void ase_perror_teardown();
 void ase_empty_buffer(struct buffer_t *);
 uint64_t get_range_checked_physaddr(uint32_t);
-void ase_write_seed(uint32_t);
-uint32_t ase_read_seed();
 void ase_memory_barrier();
 void print_mmiopkt(FILE *, char *, struct mmio_t *);
 void ase_free_buffer(char*);
+
+uint32_t generate_ase_seed();
+void ase_write_seed(uint32_t);
+uint32_t ase_read_seed();
+
 
 // ASE operations
 void ase_buffer_info(struct buffer_t *);
@@ -364,6 +367,7 @@ int ase_instance_running();
 void remove_spaces (char*);
 void remove_tabs (char*);
 void remove_newline (char*);
+uint32_t ret_random_in_range(int, int);
 
 // Message queue operations
 void ipc_init();
@@ -502,7 +506,7 @@ struct ipc_t mq_array[ASE_MQ_INSTANCES];
 // ASE message view #define - Print messages as they go around
 // #define ASE_MSG_VIEW
 
-// Enable debug info from linked lists 
+// Enable debug info from linked lists
 // #define ASE_LL_VIEW
 
 // Print buffers as they are being alloc/dealloc
@@ -510,7 +514,7 @@ struct ipc_t mq_array[ASE_MQ_INSTANCES];
 // #define ASE_BUFFER_VIEW
 
 // Backtrace data
-int bt_j, bt_nptrs;  
+int bt_j, bt_nptrs;
 void *bt_buffer[4096];
 char **bt_strings;
 
@@ -520,7 +524,7 @@ char **bt_strings;
 /* *********************************************************************
  *
  * SIMULATION-ONLY (SIM_SIDE) declarations
- * - This is available only in simulation side 
+ * - This is available only in simulation side
  * - This compiled in when SIM_SIDE is set to 1
  *
  * *********************************************************************/
@@ -548,7 +552,7 @@ struct ase_cfg_t *cfg;
 // ASE seed file
 #define ASE_SEED_FILE  "ase_seed.txt"
 
-/* 
+/*
  * Data-exchange functions and structures
  */
 // CCI transaction packet
@@ -562,9 +566,9 @@ typedef struct {
   int       success;
 } cci_pkt;
 
-#define CCIPKT_WRITE_MODE    0x1000 
+#define CCIPKT_WRITE_MODE    0x1000
 #define CCIPKT_READ_MODE     0x2000
-#define CCIPKT_WRFENCE_MODE  0xFFFF   
+#define CCIPKT_WRFENCE_MODE  0xFFFF
 #define CCIPKT_ATOMIC_MODE   0x8000
 
 
@@ -601,7 +605,7 @@ void wr_memline_dex( cci_pkt *pkt );
 // Seed Dex
 uint32_t get_ase_seed();
 
-// MMIO request 
+// MMIO request
 void mmio_dispatch(int init, struct mmio_t *mmio_pkt);
 
 // MMIO Read response
@@ -627,7 +631,7 @@ FILE *fp_ase_ready;
 // Ready filepath
 char *ase_ready_filepath;
 
-// ASE seed 
+// ASE seed
 uint64_t ase_seed;
 
 // ASE error file
@@ -654,7 +658,7 @@ int ase_pid;
 // ASE hostname
 char *ase_hostname;
 
-// Workspace information log (information dump of 
+// Workspace information log (information dump of
 FILE *fp_workspace_log; // = (FILE *)NULL;
 
 // Memory access debug log
@@ -692,17 +696,15 @@ int sim2app_alloc_rx;         // sim2app mesaage queue in TX mode
 int app2sim_mmioreq_tx;       // MMIO Request path
 int sim2app_mmiorsp_rx;       // MMIO Response path
 int app2sim_umsg_tx;          // UMSG    message queue in RX mode
-int app2sim_portctrl_req_tx;  // Port Control message in TX mode 
+int app2sim_portctrl_req_tx;  // Port Control message in TX mode
 int app2sim_dealloc_tx;
 int sim2app_dealloc_rx;
 int sim2app_portctrl_rsp_rx;
 int sim2app_intr_request_rx;
 #endif // End SIM_SIDE
 
-// Defeature Atomics for BDX releases 
+// Defeature Atomics for BDX releases
 // There is no global fixes for this
 #define DEFEATURE_ATOMICS
 
 #endif // End _ASE_COMMON_H_
-
-

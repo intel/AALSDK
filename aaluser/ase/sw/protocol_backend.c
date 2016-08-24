@@ -841,7 +841,7 @@ int ase_init()
     }
   else
     {
-      ase_seed = time(NULL);
+      ase_seed = generate_ase_seed();
       ase_write_seed ( ase_seed );
     }
   srand(ase_seed);

@@ -29,6 +29,20 @@
 
 
 /*
+ * Generate seed
+ */
+uint32_t generate_ase_seed()
+{
+  uint32_t seed;
+
+  seed = (uint32_t)time(NULL);
+  seed = seed & 0x0000FFFF ;
+  
+  return seed;
+}
+
+
+/*
  * Write simulation seed to file
  */
 void ase_write_seed(uint32_t seed)
@@ -39,7 +53,7 @@ void ase_write_seed(uint32_t seed)
   fp_seed = fopen(ASE_SEED_FILE, "w");
 
   // Use no more than 31-bits of seed
-  seed = seed & 0x8FFFFFFF ;
+  seed = seed & 0x0000FFFF ;
 
   // Write to file
   if (fp_seed == NULL)
@@ -71,7 +85,7 @@ uint32_t ase_read_seed()
       printf("        Old seed unusable --- creating a new seed\n");
 
       // Generate seed
-      new_seed = time(NULL);
+      new_seed = generate_ase_seed();
 
       // Write seed to file
       ase_write_seed(new_seed);
@@ -90,7 +104,7 @@ uint32_t ase_read_seed()
 	  printf("        Old seed unusable --- creating a new seed\n");
 
 	  // Generate seed
-	  new_seed = time(NULL);
+	  new_seed = generate_ase_seed();
 
 	  // Write seed to file
 	  ase_write_seed(new_seed);

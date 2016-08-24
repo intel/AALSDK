@@ -1148,15 +1148,16 @@ module outoforder_wrf_channel
 	 case (hdr.vc)
 	   VC_VL0:
 	     begin
-		return $urandom_range(20, 118);
+		// return $urandom_range(20, 118);
+		return `get_random_from_range(20, 118);
 	     end
 	   VC_VH0:
 	     begin
-		return $urandom_range(240, 270);
+		return `get_random_from_range(240, 270);
 	     end
 	   VC_VH1:
 	     begin
-		return $urandom_range(240, 270);
+		return `get_random_from_range(240, 270);
 	     end
 	   VC_VA:
 	     begin
