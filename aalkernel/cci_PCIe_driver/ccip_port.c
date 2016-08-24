@@ -628,11 +628,19 @@ btBool get_port_feature( struct port_device *pport_dev,
    }
    // read PORT Device feature Header
    pkvp_port = ((btVirtAddr)ccip_port_hdr(pport_dev)) + ccip_port_hdr(pport_dev)->ccip_port_dfh.next_DFH_offset;
+   port_dfh.csr = ccip_port_hdr(pport_dev)->ccip_port_dfh.csr;
 
    // Track the physical address as we walk the list
    pphys_port = ccip_port_phys_mmio(pport_dev) + ccip_port_hdr(pport_dev)->ccip_port_dfh.next_DFH_offset;
 
    do {
+      // sanity check
+      if (pkvp_port >= ((btVirtAddr)ccip_port_hdr(pport_dev)) + pport_dev->m_port_mmio_len) {
+         PERR("Next DFH offset points beyond BAR!\n");
+         PERR("   next_DFH_offset: 0x%x\n", port_dfh.next_DFH_offset);
+         PERR("   DFH            : 0x%0llx\n", port_dfh.csr);
+         return false;
+      }
       // Peek at the Header
       port_dfh.csr = read_ccip_csr64(pkvp_port,0);
 
