@@ -540,6 +540,7 @@ struct ase_cfg_t
   int ase_timeout;
   int ase_num_tests;
   int enable_reuse_seed;
+  int ase_seed;
   int enable_cl_view;
   int usr_tps;
   int phys_memory_available_gb;

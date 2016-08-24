@@ -1355,6 +1355,7 @@ module ccip_emulator
 	 cfg.ase_timeout              = cfg_in.ase_timeout              ;
 	 cfg.ase_num_tests            = cfg_in.ase_num_tests            ;
 	 cfg.enable_reuse_seed        = cfg_in.enable_reuse_seed        ;
+	 cfg.ase_seed                 = cfg_in.ase_seed                 ;
 	 cfg.enable_cl_view           = cfg_in.enable_cl_view           ;
 	 cfg.usr_tps                  = cfg_in.usr_tps                  ;
 	 cfg.phys_memory_available_gb = cfg_in.phys_memory_available_gb ;
@@ -2365,8 +2366,8 @@ module ccip_emulator
       ase_init();
 
       // Read seed and print
-      ase_seed = get_ase_seed();
-      $display("SIM-SV: ASE running with seed => %d", ase_seed);
+      // ase_seed = get_ase_seed();
+      $display("SIM-SV: ASE running with seed => %d", cfg.ase_seed);
 
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");

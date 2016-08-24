@@ -154,7 +154,8 @@ void sv2c_script_dex(const char *str)
  */
 uint32_t get_ase_seed ()
 {
-  return ase_seed;
+  // return ase_seed;
+  return 0xFF;
 }
 
 
@@ -835,16 +836,17 @@ int ase_init()
   calc_phys_memory_ranges();
 
   // Random number for csr_pinned_addr
-  if (cfg->enable_reuse_seed)
-    {
-      ase_seed = ase_read_seed ();
-    }
-  else
-    {
-      ase_seed = generate_ase_seed();
-      ase_write_seed ( ase_seed );
-    }
-  srand(ase_seed);
+  /* if (cfg->enable_reuse_seed) */
+  /*   { */
+  /*     ase_seed = ase_read_seed (); */
+  /*   } */
+  /* else */
+  /*   { */
+  /*     ase_seed = generate_ase_seed(); */
+  /*     ase_write_seed ( ase_seed ); */
+  /*   } */
+  ase_write_seed (cfg->ase_seed);
+  srand(cfg->ase_seed);
 
   // Open Buffer info log
   fp_workspace_log = fopen("workspace_info.log", "wb");
@@ -1075,17 +1077,17 @@ void ase_config_parse(char *filename)
     }
   else
     {
-
       // Allocate memory to store a line
       line = ase_malloc(sizeof(char) * 80);
 
       // Default values
-      cfg->ase_mode = ASE_MODE_DAEMON_NO_SIMKILL;
-      cfg->ase_timeout = 50000;
-      cfg->ase_num_tests = 1;
-      cfg->enable_reuse_seed = 0;
-      cfg->enable_cl_view = 1;
-      cfg->usr_tps = DEFAULT_USR_CLK_TPS;
+      cfg->ase_mode                 = ASE_MODE_DAEMON_NO_SIMKILL;
+      cfg->ase_timeout              = 50000;
+      cfg->ase_num_tests            = 1;
+      cfg->enable_reuse_seed        = 0;
+      cfg->ase_seed                 = 9876;
+      cfg->enable_cl_view           = 1;
+      cfg->usr_tps                  = DEFAULT_USR_CLK_TPS;
       cfg->phys_memory_available_gb = 256;
 
       // Find ase.cfg OR not
@@ -1114,6 +1116,8 @@ void ase_config_parse(char *filename)
 		    cfg->ase_num_tests =  atoi(strtok(NULL, ""));
 		  else if (strncmp (parameter, "ENABLE_REUSE_SEED", 20) == 0)
 		    cfg->enable_reuse_seed =  atoi(strtok(NULL, ""));
+		  else if (strncmp (parameter, "ASE_SEED", 20) == 0)
+		    cfg->ase_seed =  atoi(strtok(NULL, ""));
 		  else if (strncmp (parameter,"ENABLE_CL_VIEW", 20) == 0)
 		    cfg->enable_cl_view =  atoi(strtok(NULL, ""));
 		  else if (strncmp (parameter, "USR_CLK_MHZ", 20) == 0)
@@ -1169,7 +1173,9 @@ void ase_config_parse(char *filename)
 		}
 	    }
 
-	  // ASE mode control
+	  /*
+	   * ASE mode control
+	   */
 	  BEGIN_YELLOW_FONTCOLOR;
 	  switch (cfg->ase_mode)
 	    {
@@ -1236,7 +1242,13 @@ void ase_config_parse(char *filename)
       if (cfg->enable_reuse_seed != 0)
 	printf("        Reuse simulation seed      ... ENABLED \n");
       else
-	printf("        Reuse simulation seed      ... DISABLED \n");
+	{
+	  printf("        Reuse simulation seed      ... DISABLED (will create one at $ASE_WORKDIR/ase_seed.txt) \n");
+	  cfg->ase_seed = generate_ase_seed();
+	}
+
+      // ASE will be run with this seed
+      printf("        ASE Seed                   ... %d \n", cfg->ase_seed);
 
       // CL view
       if (cfg->enable_cl_view != 0)
