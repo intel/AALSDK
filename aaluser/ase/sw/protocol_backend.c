@@ -150,6 +150,15 @@ void sv2c_script_dex(const char *str)
 
 
 /*
+ * DPI: Return ASE seed
+ */
+uint32_t get_ase_seed ()
+{
+  return ase_seed;
+}
+
+
+/*
  * DPI: WriteLine Data exchange
  */
 void wr_memline_dex(cci_pkt *pkt)
@@ -777,13 +786,13 @@ int ase_init()
   if (fp_memaccess_log == NULL)
     {
       BEGIN_RED_FONTCOLOR;
-      printf("SIM-C : Memory access debug logger initialization failed !\n");
+      printf("  [DEBUG]  Memory access debug logger initialization failed !\n");
       END_RED_FONTCOLOR;
     }
   else
     {
       BEGIN_YELLOW_FONTCOLOR;
-      printf("SIM-C : Memory access debug logger initialized\n");
+      printf("  [DEBUG]  Memory access debug logger initialized\n");
       END_YELLOW_FONTCOLOR;
     }
 
@@ -792,16 +801,15 @@ int ase_init()
   if (fp_pagetable_log == NULL)
     {
       BEGIN_RED_FONTCOLOR;
-      printf("SIM-C : ASE pagetable logger initialization failed !\n");
+      printf("  [DEBUG]  ASE pagetable logger initialization failed !\n");
       END_RED_FONTCOLOR;
     }
   else
     {
       BEGIN_YELLOW_FONTCOLOR;
-      printf("SIM-C : ASE pagetable logger initialized\n");
+      printf("  [DEBUG]  ASE pagetable logger initialized\n");
       END_YELLOW_FONTCOLOR;
     }
-
 #endif
 
   // Set up message queues
@@ -829,14 +837,14 @@ int ase_init()
   // Random number for csr_pinned_addr
   if (cfg->enable_reuse_seed)
     {
-      ase_addr_seed = ase_read_seed ();
+      ase_seed = ase_read_seed ();
     }
   else
     {
-      ase_addr_seed = time(NULL);
-      ase_write_seed ( ase_addr_seed );
+      ase_seed = time(NULL);
+      ase_write_seed ( ase_seed );
     }
-  srand ( ase_addr_seed );
+  srand(ase_seed);
 
   // Open Buffer info log
   fp_workspace_log = fopen("workspace_info.log", "wb");

@@ -31,10 +31,17 @@
 /*
  * Write simulation seed to file
  */
-void ase_write_seed(uint64_t seed)
+void ase_write_seed(uint32_t seed)
 {
   FILE *fp_seed = (FILE *)NULL;
+
+  // Open seed file
   fp_seed = fopen(ASE_SEED_FILE, "w");
+
+  // Use no more than 31-bits of seed
+  seed = seed & 0x8FFFFFFF ;
+
+  // Write to file
   if (fp_seed == NULL)
     {
       printf("SIM-C : ASE Seed file could not be written\n");
@@ -42,7 +49,7 @@ void ase_write_seed(uint64_t seed)
     }
   else
     {
-      fprintf(fp_seed, "%lu", seed);
+      fprintf(fp_seed, "%u", seed);
       fclose(fp_seed);
     }
 }
@@ -51,11 +58,11 @@ void ase_write_seed(uint64_t seed)
 /*
  * Readback simulation seed - used if ENABLE_REUSE_SEED is enabled
  */
-uint64_t ase_read_seed()
+uint32_t ase_read_seed()
 {
   FILE *fp_seed = (FILE *)NULL;
-  uint64_t new_seed;
-  uint64_t readback_seed;
+  uint32_t new_seed;
+  uint32_t readback_seed;
 
   // Check if file already exists (FALSE)
   if (access(ASE_SEED_FILE, F_OK) == -1)
@@ -94,8 +101,8 @@ uint64_t ase_read_seed()
       else
 	{
 	  // Read conents, post on log, close, return
-	  fscanf(fp_seed, "%lu", &readback_seed);
-	  printf("SIM-C : Readback seed %lu\n", readback_seed);
+	  fscanf(fp_seed, "%u", &readback_seed);
+	  // printf("SIM-C : Readback seed %u\n", readback_seed);
 	  fclose(fp_seed);
 
 	  // Return seed

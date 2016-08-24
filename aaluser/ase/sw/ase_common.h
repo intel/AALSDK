@@ -336,8 +336,6 @@ uint32_t check_if_physaddr_used(uint64_t);
 struct buffer_t* ll_search_buffer(int);
 
 // Mem-ops functions
-// void ase_mqueue_setup();
-// void ase_mqueue_teardown();
 int ase_recv_msg(struct buffer_t *);
 void ase_alloc_action(struct buffer_t *);
 void ase_dealloc_action(struct buffer_t *, int );
@@ -347,8 +345,8 @@ void ase_dbg_memtest(struct buffer_t *);
 void ase_perror_teardown();
 void ase_empty_buffer(struct buffer_t *);
 uint64_t get_range_checked_physaddr(uint32_t);
-void ase_write_seed(uint64_t);
-uint64_t ase_read_seed();
+void ase_write_seed(uint32_t);
+uint32_t ase_read_seed();
 void ase_memory_barrier();
 void print_mmiopkt(FILE *, char *, struct mmio_t *);
 void ase_free_buffer(char*);
@@ -600,6 +598,9 @@ void rd_memline_dex( cci_pkt *pkt );
 // Write system memory line
 void wr_memline_dex( cci_pkt *pkt );
 
+// Seed Dex
+uint32_t get_ase_seed();
+
 // MMIO request 
 void mmio_dispatch(int init, struct mmio_t *mmio_pkt);
 
@@ -627,7 +628,7 @@ FILE *fp_ase_ready;
 char *ase_ready_filepath;
 
 // ASE seed 
-uint64_t ase_addr_seed;
+uint64_t ase_seed;
 
 // ASE error file
 FILE *error_fp; // = (FILE *)NULL;
