@@ -127,6 +127,9 @@ struct NLBDefaults
    wkspc_size_type strides;
    wkspc_size_type min_strides;
    wkspc_size_type max_strides;
+   uint_type       busnum;
+   uint_type       devnum;
+   uint_type       funnum;
 };
 
 struct NLBBandwidth
@@ -235,6 +238,10 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   		/* --0 */
 #define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  		/* --1 */
 
+#define NLB_CMD_FLAG_BUS_NUMBER       (u64_type)0x800000000000000 /* --bus-num      PCI bus number to use for AFU allocation */
+#define NLB_CMD_FLAG_DEVICE_NUMBER    (u64_type)0x1000000000000000 /* --device-num      PCI device number to use for AFU allocation */
+#define NLB_CMD_FLAG_FUNCTION_NUMBER  (u64_type)0x2000000000000000 /* --function-num      PCI function number to use for AFU allocation */
+
    uint_type                dispflags;
    uint_type                iter;
    wkspc_size_type          begincls;
@@ -271,6 +278,9 @@ struct NLBCmdLine
    AAL::btInt       DevTarget;
    std::string      TestMode;
    AAL::btInt       LogLevel;
+   uint_type        busnum;
+   uint_type        devnum;
+   uint_type        funnum;
 };
 
 #define NLB_DISP_FLAG_TITLE         (uint_type)0x00000001  /* NLB test title / description                 */

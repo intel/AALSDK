@@ -371,6 +371,37 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
       } else {
          flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_STRIDED_ACS);
       }
+
+   } else if ( (0 == strcmp("--bus-number", option)) || (0 == strcmp("--bn", option)) ) {
+      nlbcl->busnum = strtoul(value, &endptr, 0);
+      if ( value + strlen(value) != endptr ) {
+         nlbcl->busnum = nlbcl->defaults.busnum;
+         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER);
+         printf("Invalid value for --bus-number : %s. Defaulting to %u.\n", value, nlbcl->busnum);
+      } else {
+         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER);
+      }
+
+   } else if ( (0 == strcmp("--device-number", option)) || (0 == strcmp("--dn", option)) ) {
+      nlbcl->devnum = strtoul(value, &endptr, 0);
+      if ( value + strlen(value) != endptr ) {
+         nlbcl->devnum = nlbcl->defaults.devnum;
+         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER);
+         printf("Invalid value for --device-number : %s. Defaulting to %u.\n", value, nlbcl->devnum);
+      } else {
+         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER);
+      }
+
+   } else if ( (0 == strcmp("--function-number", option)) || (0 == strcmp("--fn", option)) ) {
+      nlbcl->funnum = strtoul(value, &endptr, 0);
+      if ( value + strlen(value) != endptr ) {
+         nlbcl->funnum = nlbcl->defaults.funnum;
+         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER);
+         printf("Invalid value for --function-number : %s. Defaulting to %u.\n", value, nlbcl->funnum);
+      } else {
+         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER);
+      }
+
    } else {
       printf("Invalid option: %s\n", option);
       flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
