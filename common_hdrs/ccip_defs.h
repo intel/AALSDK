@@ -903,9 +903,11 @@ struct CCIP_FME_ERROR0 {
       struct {
          btUnsigned64bitInt fabFifo_underflow :1;        // Fabric fifo underflow
          btUnsigned64bitInt fabFifo_overflow :1;         // Fabric fifo overflow
-         btUnsigned64bitInt poison_detected :1;          // Poison Detected
-         btUnsigned64bitInt parity_error :1;             // Parity Error
-         btUnsigned64bitInt rsvd :60;                    // Reserved
+         btUnsigned64bitInt pcie0_poison_detected :1;    // PCIe0 Poison Detected
+         btUnsigned64bitInt pcie1_poison_detected :1;    // PCIE1 Poison Detected
+         btUnsigned64bitInt iommu_parity_error :1;       // IOMMU Parity Error
+         btUnsigned64bitInt afuerr_access_mismatch :1;   // AFU error mismatch
+         btUnsigned64bitInt rsvd :58;                    // Reserved
       }; // end struct
    }; // end union
 
@@ -991,13 +993,20 @@ struct CCIP_FME_RAS_GERROR {
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt therm_warn0 :1;                  // thremal threshold warning 0
-         btUnsigned64bitInt therm_warn1 :1;                  // thremal threshold warning 1
-         btUnsigned64bitInt pcie_error :1;                   // pcie Error
-         btUnsigned64bitInt afufatal_error :1;               // afu fatal error
-         btUnsigned64bitInt rsvd :4;                         // Reserved
-         btUnsigned64bitInt gb_crc_err :1;                   // Green bitstream CRC Error
-         btUnsigned64bitInt rsvd2 :55;                       // Reserved
+         btUnsigned64bitInt temp_trash_ap1 :1;                // thremal threshold AP1
+         btUnsigned64bitInt temp_trash_ap2 :1;                // thremal threshold AP2
+         btUnsigned64bitInt pcie_error :1;                    // pcie Error
+         btUnsigned64bitInt afufatal_error :1;                // afu fatal error
+         btUnsigned64bitInt prochot_error :1;                 // proc hot error
+         btUnsigned64bitInt afu_access_mode_error :1;         // afu access mode  error
+         btUnsigned64bitInt injected_warn_error :1;           // Injected warning  error
+         btUnsigned64bitInt pcie_posion_error :1;             // PCIe poison port  error
+         btUnsigned64bitInt gb_crc_err :1;                    // Green bitstream CRC Error
+         btUnsigned64bitInt temp_trash_ap6 :1;                // thremal threshold AP6
+         btUnsigned64bitInt power_trash_ap1 :1;               // Power threshold AP1
+         btUnsigned64bitInt power_trash_ap2 :1;               // Power threshold AP6
+         btUnsigned64bitInt mbp_error :1;                     // MBP error Error
+         btUnsigned64bitInt rsvd2 :51;                        // Reserved
       }; // end struct
    }; // end union
 
@@ -1016,11 +1025,13 @@ struct CCIP_FME_RAS_BERROR {
          btUnsigned64bitInt ktiprpto_fatal_err :1;                 // KTI Protocol error detected
          btUnsigned64bitInt dma_fatal_err :1;                      // DMA error detected
          btUnsigned64bitInt iommu_fatal_err :1;                    // IOMMU detected
-         btUnsigned64bitInt rsvd :2;                               // Reserved
-         btUnsigned64bitInt iommu_catast_err :1;                  // Catastrophic IOMMU Error
-         btUnsigned64bitInt crc_catast_err :1;                    // Catastrophic CRC Error
-         btUnsigned64bitInt therm_catast_err :1;                  // Catastrophic Thermal Error
-         btUnsigned64bitInt rsvd1 :53;                             // Reserved
+         btUnsigned64bitInt injected_fatal_err :1;                 // Injected fatal error
+         btUnsigned64bitInt rsvd :1;                               // Reserved
+         btUnsigned64bitInt iommu_catast_err :1;                   // Catastrophic IOMMU Error
+         btUnsigned64bitInt crc_catast_err :1;                     // Catastrophic CRC Error
+         btUnsigned64bitInt therm_catast_err :1;                   // Catastrophic Thermal Error
+         btUnsigned64bitInt injected_catast_err :1;                // Catastrophic Thermal Error
+         btUnsigned64bitInt rsvd1 :52;                             // Reserved
       }; // end struct
    }; // end union
 

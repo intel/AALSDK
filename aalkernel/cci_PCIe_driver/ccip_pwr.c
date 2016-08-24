@@ -329,9 +329,11 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 /// @brief   sends power request to power manager demon.
 ///
 /// @param[in] pReconf_context AFU reconfiguration context
+/// @param[in] power_required  Power required
 /// @return    0 = success , non zero failure.
 ///============================================================================
-bt32bitInt send_pr_power_event(struct pr_program_context* pReconf_context )
+bt32bitInt send_pr_power_event(struct pr_program_context* pReconf_context,
+                              int power_required)
 {
    kosal_list_head *pitr              = NULL;
    kosal_list_head *temp              = NULL;
@@ -400,12 +402,16 @@ bt32bitInt send_pr_power_event(struct pr_program_context* pReconf_context )
              busID        = ccip_dev_fme_pwraal_dev(pfme_dev)->m_pcidev->bus->number;
              deviceID     = PCI_SLOT(ccip_dev_fme_pwraal_dev(pfme_dev)->m_pcidev->devfn);
              functionID   = PCI_FUNC(ccip_dev_fme_pwraal_dev(pfme_dev)->m_pcidev->devfn);
-             socketID     = dev_to_node(&(ccip_dev_fme_pwraal_dev(pfme_dev)->m_pcidev->dev));
+             socketID     = pfme_dev->m_pHDR->fab_capability.socket_id;
 
-             // Set Trans ID
-            // get Power from GB
+             PDEBUG("busID %x\n", busID);
+             PDEBUG("deviceID %x\n", deviceID);
+             PDEBUG("functionID %x\n", functionID);
+             PDEBUG("socketID %x\n", socketID)
+             PDEBUG("power_required %d\n", power_required);
+
+             // get Power from GB
              // Get Total Power  =  BB + SUM GB ?
-
             pafuws_evt = ccipdrv_event_afu_aysnc_reconf_pwr_create( uid_afurespPwrMgrResponce,
                                                                    pOwner->m_sess.m_device,
                                                                    pOwner->m_sess.m_ownerContext,
@@ -413,7 +419,7 @@ bt32bitInt send_pr_power_event(struct pr_program_context* pReconf_context )
                                                                    busID,
                                                                    deviceID,
                                                                    functionID,
-                                                                   25, // TDB
+                                                                   power_required, // TDB
                                                                    pfme_dev->m_pr_program_context->m_pwrReqTranID,
                                                                    0);
 

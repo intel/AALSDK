@@ -191,7 +191,7 @@ void CHWALIFME::readfmeError( struct CCIP_ERROR *pError, INamedValueSet &rResult
       ras_warnerror.csr    = pError->ras_warnerror_mask;
    }
 
-
+   // FME Error
    if(fme_error0.fabFifo_underflow) {
       rResult.Add(AAL_ERR_FME_FAB_UNDERFLOW,true);
    }
@@ -200,14 +200,23 @@ void CHWALIFME::readfmeError( struct CCIP_ERROR *pError, INamedValueSet &rResult
       rResult.Add(AAL_ERR_FME_FAB_OVERFLOW,true);
    }
 
-   if(fme_error0.poison_detected) {
-      rResult.Add(AAL_ERR_FME_POSION_DETECT,true);
+   if(fme_error0.pcie0_poison_detected) {
+      rResult.Add(AAL_ERR_FME_PCIE0_POSION_DETECT,true);
    }
 
-   if(fme_error0.parity_error) {
-        rResult.Add(AAL_ERR_FME_PARIRY,true);
+   if(fme_error0.pcie1_poison_detected) {
+        rResult.Add(AAL_ERR_FME_PCIE1_POSION_DETECT,true);
    }
 
+   if(fme_error0.iommu_parity_error) {
+      rResult.Add(AAL_ERR_FME_IOMMU_PARIRY,true);
+   }
+
+   if(fme_error0.afuerr_access_mismatch) {
+        rResult.Add(AAL_ERR_FME_AFUMISMATCH_DETECT,true);
+   }
+
+   // PCIe0 Error
    if(pcie0_error.formattype_err) {
         rResult.Add(AAL_ERR_PCIE0_FORMAT,true);
    }
@@ -240,6 +249,7 @@ void CHWALIFME::readfmeError( struct CCIP_ERROR *pError, INamedValueSet &rResult
       rResult.Add(AAL_ERR_PCIE0_TIMEOUT,true);
    }
 
+   // PCIe1 Error
    if(pcie1_error.formattype_err) {
       rResult.Add(AAL_ERR_PCIE1_FORMAT,true);
    }
@@ -272,12 +282,13 @@ void CHWALIFME::readfmeError( struct CCIP_ERROR *pError, INamedValueSet &rResult
       rResult.Add(AAL_ERR_PCIE1_TIMEOUT,true);
    }
 
-   if(ras_gerr.therm_warn0) {
-      rResult.Add(AAL_ERR_RAS_THERMWARN0,true);
+   // RAS Bluebitstream
+   if(ras_gerr.temp_trash_ap1) {
+      rResult.Add(AAL_ERR_RAS_TEMPAP1,true);
    }
 
-   if(ras_gerr.therm_warn1) {
-      rResult.Add(AAL_ERR_RAS_THERMWARN1,true);
+   if(ras_gerr.temp_trash_ap2) {
+      rResult.Add(AAL_ERR_RAS_TEMPAP2,true);
    }
 
    if(ras_gerr.pcie_error) {
@@ -288,10 +299,35 @@ void CHWALIFME::readfmeError( struct CCIP_ERROR *pError, INamedValueSet &rResult
       rResult.Add(AAL_ERR_RAS_AFUFATAL,true);
    }
 
+   if(ras_gerr.afu_access_mode_error) {
+      rResult.Add(AAL_ERR_RAS_AFUACCESS_MODE,true);
+   }
+
+   if(ras_gerr.pcie_posion_error) {
+      rResult.Add(AAL_ERR_RAS_PCIEPOSION,true);
+   }
+
    if(ras_gerr.gb_crc_err) {
       rResult.Add(AAL_ERR_RAS_GBCRC,true);
    }
 
+   if(ras_gerr.temp_trash_ap6) {
+      rResult.Add(AAL_ERR_RAS_TEMPAP6,true);
+   }
+
+   if(ras_gerr.power_trash_ap1) {
+      rResult.Add(AAL_ERR_RAS_POWERAP1,true);
+   }
+
+   if(ras_gerr.power_trash_ap2) {
+      rResult.Add(AAL_ERR_RAS_POWERAP2,true);
+   }
+
+   if(ras_gerr.mbp_error) {
+      rResult.Add(AAL_ERR_RAS_MDP,true);
+   }
+
+   // RAS Green bitstream Error
    if(ras_berror.ktilink_fatal_err) {
       rResult.Add(AAL_ERR_RAS_GBCRC,true);
    }
@@ -392,15 +428,26 @@ void CHWALIFME::readOrderError( struct CCIP_ERROR *pError, INamedValueSet &rResu
          rResult.Add(str.append(AAL_ERR_FME_FAB_OVERFLOW).c_str(),true);
       }
 
-      if(fme_error0.poison_detected) {
+      if(fme_error0.pcie0_poison_detected) {
          std::string str(FME_FIRST_ERR_STR);
-         rResult.Add(str.append(AAL_ERR_FME_POSION_DETECT).c_str(),true);
+         rResult.Add(AAL_ERR_FME_PCIE0_POSION_DETECT,true);
       }
 
-      if(fme_error0.parity_error) {
-           std::string str(FME_FIRST_ERR_STR);
-           rResult.Add(str.append(AAL_ERR_FME_PARIRY).c_str(),true);
+      if(fme_error0.pcie1_poison_detected) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(AAL_ERR_FME_PCIE1_POSION_DETECT,true);
       }
+
+      if(fme_error0.iommu_parity_error) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(AAL_ERR_FME_IOMMU_PARIRY,true);
+      }
+
+      if(fme_error0.afuerr_access_mismatch) {
+         std::string str(FME_FIRST_ERR_STR);
+         rResult.Add(AAL_ERR_FME_AFUMISMATCH_DETECT,true);
+      }
+
 
    }
 
@@ -418,15 +465,26 @@ void CHWALIFME::readOrderError( struct CCIP_ERROR *pError, INamedValueSet &rResu
          rResult.Add(str.append(AAL_ERR_FME_FAB_OVERFLOW).c_str(),true);
       }
 
-      if(fme_error0.poison_detected) {
+      if(fme_error0.pcie0_poison_detected) {
          std::string str(FME_NEXT_ERR_STR);
-         rResult.Add(str.append(AAL_ERR_FME_POSION_DETECT).c_str(),true);
+         rResult.Add(AAL_ERR_FME_PCIE0_POSION_DETECT,true);
       }
 
-      if(fme_error0.parity_error) {
-           std::string str(FME_NEXT_ERR_STR);
-           rResult.Add(str.append(AAL_ERR_FME_PARIRY).c_str(),true);
+      if(fme_error0.pcie1_poison_detected) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(AAL_ERR_FME_PCIE1_POSION_DETECT,true);
       }
+
+      if(fme_error0.iommu_parity_error) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(AAL_ERR_FME_IOMMU_PARIRY,true);
+      }
+
+      if(fme_error0.afuerr_access_mismatch) {
+         std::string str(FME_NEXT_ERR_STR);
+         rResult.Add(AAL_ERR_FME_AFUMISMATCH_DETECT,true);
+      }
+
    }
 
    if(0x1 == fme_first_err.errReg_id ) {
@@ -706,7 +764,7 @@ void CHWALIFME::writewriteError( struct CCIP_ERROR *pError,const INamedValueSet 
    struct CCIP_FME_RAS_BERROR ras_berror           = {0};
    struct CCIP_FME_RAS_WARNERROR ras_warnerror     = {0};
 
-
+   // FME Error
    if(rInputArgs.Has(AAL_ERR_FME_FAB_UNDERFLOW)) {
       fme_error0.fabFifo_underflow = 0x1;
    }
@@ -715,14 +773,23 @@ void CHWALIFME::writewriteError( struct CCIP_ERROR *pError,const INamedValueSet 
       fme_error0.fabFifo_overflow = 0x1;
    }
 
-   if(rInputArgs.Has(AAL_ERR_FME_POSION_DETECT)) {
-      fme_error0.poison_detected = 0x1;
+   if(rInputArgs.Has(AAL_ERR_FME_PCIE0_POSION_DETECT)) {
+      fme_error0.pcie0_poison_detected = 0x1;
    }
 
-   if(rInputArgs.Has(AAL_ERR_FME_PARIRY)) {
-      fme_error0.parity_error = 0x1;
+   if(rInputArgs.Has(AAL_ERR_FME_PCIE1_POSION_DETECT)) {
+      fme_error0.pcie1_poison_detected = 0x1;
    }
 
+   if(rInputArgs.Has(AAL_ERR_FME_IOMMU_PARIRY)) {
+      fme_error0.iommu_parity_error = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_FME_AFUMISMATCH_DETECT)) {
+      fme_error0.afuerr_access_mismatch = 0x1;
+   }
+
+   // PCIe Error
    if(rInputArgs.Has(AAL_ERR_PCIE0_FORMAT)) {
       pcie0_error.formattype_err = 0x1;
    }
@@ -751,6 +818,7 @@ void CHWALIFME::writewriteError( struct CCIP_ERROR *pError,const INamedValueSet 
       pcie0_error.cpl_status_err = 0x1;
    }
 
+   //PCIe Error
    if(rInputArgs.Has(AAL_ERR_PCIE0_TIMEOUT)) {
       pcie0_error.cpl_timeout_err = 0x1;
    }
@@ -787,12 +855,14 @@ void CHWALIFME::writewriteError( struct CCIP_ERROR *pError,const INamedValueSet 
       pcie1_error.cpl_timeout_err = 0x1;
    }
 
-   if(rInputArgs.Has(AAL_ERR_RAS_THERMWARN0)) {
-      ras_gerr.therm_warn0 = 0x1;
+   // RAS Green bitstrem Error
+
+   if(rInputArgs.Has(AAL_ERR_RAS_TEMPAP1)) {
+      ras_gerr.temp_trash_ap1 = 0x1;
    }
 
-   if(rInputArgs.Has(AAL_ERR_RAS_THERMWARN1)) {
-      ras_gerr.therm_warn1 = 0x1;
+   if(rInputArgs.Has(AAL_ERR_RAS_TEMPAP2)) {
+      ras_gerr.temp_trash_ap2 = 0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_RAS_PCIE)) {
@@ -803,10 +873,35 @@ void CHWALIFME::writewriteError( struct CCIP_ERROR *pError,const INamedValueSet 
       ras_gerr.afufatal_error = 0x1;
    }
 
+   if(rInputArgs.Has(AAL_ERR_RAS_AFUACCESS_MODE)) {
+      ras_gerr.afu_access_mode_error = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_PCIEPOSION)) {
+      ras_gerr.pcie_posion_error = 0x1;
+   }
+
    if(rInputArgs.Has(AAL_ERR_RAS_GBCRC)) {
       ras_gerr.gb_crc_err = 0x1;
    }
 
+   if(rInputArgs.Has(AAL_ERR_RAS_TEMPAP6)) {
+      ras_gerr.temp_trash_ap6 = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_POWERAP1)) {
+      ras_gerr.power_trash_ap1 = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_POWERAP2)) {
+      ras_gerr.power_trash_ap2 = 0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_RAS_MDP)) {
+      ras_gerr.mbp_error = 0x1;
+   }
+
+   // RAS blue bitstream Error
    if(rInputArgs.Has(AAL_ERR_RAS_GBCRC)) {
       ras_berror.ktilink_fatal_err = 0x1;
    }
@@ -843,6 +938,7 @@ void CHWALIFME::writewriteError( struct CCIP_ERROR *pError,const INamedValueSet 
       ras_berror.therm_catast_err = 0x1;
    }
 
+   // RAS warning
    if(rInputArgs.Has(AAL_ERR_RAS_GB_FATAL)) {
       ras_warnerror.event_warn_err = 0x1;
    }

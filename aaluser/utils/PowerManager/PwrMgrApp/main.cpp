@@ -120,6 +120,11 @@ int main(int argc, char *argv[])
    sigaction(SIGHUP, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
+   if(getuid()) {
+       ERR(" export LD_LIBRARY_PATH in root and Run Power Manager with root privialge ");
+       exit(1);
+   }
+
    g_PwrMgrRuntime = new (nothrow) PwrMgrRuntime();
 
    if( NULL == g_PwrMgrRuntime ){
