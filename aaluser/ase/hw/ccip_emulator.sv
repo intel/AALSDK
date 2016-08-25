@@ -352,7 +352,7 @@ module ccip_emulator
 
    // Get ASE seed
    import "DPI-C" function int get_ase_seed();
-   int ase_seed;
+   // int ase_seed;
 
    // MMIO response
    import "DPI-C" function void mmio_response(inout mmio_t mmio_pkt);
@@ -2366,9 +2366,9 @@ module ccip_emulator
       ase_init();
 
       // Read seed and print
-      // ase_seed = get_ase_seed();
       $display("SIM-SV: ASE running with seed => %d", cfg.ase_seed);
-
+      $srandom(cfg.ase_seed);
+            
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
       ase_reset_trig();
@@ -2378,7 +2378,6 @@ module ccip_emulator
 
       // Indicate to APP that ASE is ready
       ase_ready();
-
    end
 
 
