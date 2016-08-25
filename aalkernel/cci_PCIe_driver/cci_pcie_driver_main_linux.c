@@ -825,6 +825,11 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          goto ERR;
       }
 
+      // Creates AAL Power device object
+      if(!cci_create_AAL_power_Device(pccipdev)){
+         goto ERR;
+      }
+
 #if 1
       // print fme CSRS
       print_sim_fme_device(pccipdev->m_pfme_dev);

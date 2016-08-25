@@ -618,7 +618,7 @@ ccipdrv_event_afu_aysnc_reconf_pwr_create(uid_afurespID_e    respID,
                                           btInt busID,
                                           btInt deviceID,
                                           btInt functionID,
-                                          btFloat Reconf_PwrRequired,
+                                          btInt Reconf_PwrRequired,
                                           stTransactionID_t tranID,
                                           uid_errnum_e       eno)
 {

@@ -62,6 +62,7 @@ public:
   virtual void reset(bool val) = 0;
   virtual void enable(int channel, bool state) = 0;
   virtual int get_fd(void) = 0;
+  virtual bool can_read_data() = 0;
   virtual size_t buf_end(void) = 0;
   virtual void buf_end(int index) = 0;
   virtual char *buf(void) = 0;

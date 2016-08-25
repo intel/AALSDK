@@ -294,8 +294,11 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    // FME error mask
    fme_gerror.fme_err_mask.fabFifo_underflow =0x1;
    fme_gerror.fme_err_mask.fabFifo_overflow =0x1;
-   fme_gerror.fme_err_mask.poison_detected =0x1;
-   fme_gerror.fme_err_mask.parity_error =0x1;
+   fme_gerror.fme_err_mask.pcie0_poison_detected =0x1;
+   fme_gerror.fme_err_mask.pcie1_poison_detected =0x1;
+   fme_gerror.fme_err_mask.iommu_parity_error =0x1;
+   fme_gerror.fme_err_mask.afuerr_access_mismatch =0x1;
+
 
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_gerror.fme_err_mask.csr);
@@ -303,8 +306,11 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    // FME error
    fme_gerror.fme_err.fabFifo_underflow =0x1;
    fme_gerror.fme_err.fabFifo_overflow =0x1;
-   fme_gerror.fme_err.poison_detected =0x1;
-   fme_gerror.fme_err.parity_error =0x1;
+   fme_gerror.fme_err.pcie0_poison_detected =0x1;
+   fme_gerror.fme_err.pcie1_poison_detected =0x1;
+   fme_gerror.fme_err.iommu_parity_error =0x1;
+   fme_gerror.fme_err.afuerr_access_mismatch =0x1;
+
 
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_gerror.fme_err.csr);
@@ -368,7 +374,7 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
 
    firsterror.fabFifo_underflow =0x1;
    firsterror.fabFifo_overflow =0x1;
-   firsterror.poison_detected =0x1;
+   firsterror.pcie0_poison_detected =0x1;
 
    fme_gerror.fme_first_err.csr = firsterror.csr;
    fme_gerror.fme_first_err.errReg_id =0x0;
@@ -391,21 +397,38 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
 
 
    // RAS Error maks
-   fme_gerror.ras_gerr_mask.therm_warn0 = 0x1;
-   fme_gerror.ras_gerr_mask.therm_warn1 = 0x1;
+   fme_gerror.ras_gerr_mask.temp_trash_ap1 = 0x1;
+   fme_gerror.ras_gerr_mask.temp_trash_ap2 = 0x1;
    fme_gerror.ras_gerr_mask.pcie_error = 0x1;
    fme_gerror.ras_gerr_mask.afufatal_error = 0x1;
+   fme_gerror.ras_gerr_mask.prochot_error = 0x1;
+   fme_gerror.ras_gerr_mask.afu_access_mode_error = 0x1;
+   fme_gerror.ras_gerr_mask.injected_warn_error = 0x1;
+   fme_gerror.ras_gerr_mask.pcie_posion_error = 0x1;
    fme_gerror.ras_gerr_mask.gb_crc_err = 0x1;
+   fme_gerror.ras_gerr_mask.temp_trash_ap6 = 0x1;
+   fme_gerror.ras_gerr_mask.power_trash_ap1 = 0x1;
+   fme_gerror.ras_gerr_mask.power_trash_ap2 = 0x1;
+   fme_gerror.ras_gerr_mask.mbp_error = 0x1;
 
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_gerror.ras_gerr_mask.csr);
 
    // RAS Error
-   fme_gerror.ras_gerr.therm_warn0 = 0x1;
-   fme_gerror.ras_gerr.therm_warn1 = 0x1;
+   fme_gerror.ras_gerr.temp_trash_ap1 = 0x1;
+   fme_gerror.ras_gerr.temp_trash_ap2 = 0x1;
    fme_gerror.ras_gerr.pcie_error = 0x1;
    fme_gerror.ras_gerr.afufatal_error = 0x1;
+   fme_gerror.ras_gerr.prochot_error = 0x1;
+   fme_gerror.ras_gerr.afu_access_mode_error = 0x1;
+   fme_gerror.ras_gerr.injected_warn_error = 0x1;
+   fme_gerror.ras_gerr.pcie_posion_error = 0x1;
    fme_gerror.ras_gerr.gb_crc_err = 0x1;
+   fme_gerror.ras_gerr.temp_trash_ap6 = 0x1;
+   fme_gerror.ras_gerr.power_trash_ap1 = 0x1;
+   fme_gerror.ras_gerr.power_trash_ap2 = 0x1;
+   fme_gerror.ras_gerr.mbp_error = 0x1;
+;
 
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_gerror.ras_gerr.csr);
@@ -420,6 +443,8 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    fme_gerror.ras_berror_mask.iommu_catast_err = 0x1;
    fme_gerror.ras_berror_mask.crc_catast_err = 0x1;
    fme_gerror.ras_berror_mask.therm_catast_err = 0x1;
+   fme_gerror.ras_berror_mask.injected_fatal_err = 0x1;
+
 
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_gerror.ras_berror_mask.csr);
@@ -434,6 +459,7 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    fme_gerror.ras_berror.iommu_catast_err = 0x1;
    fme_gerror.ras_berror.crc_catast_err = 0x1;
    fme_gerror.ras_berror.therm_catast_err = 0x1;
+   fme_gerror.ras_berror.injected_fatal_err = 0x1;
 
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_gerror.ras_berror.csr);
@@ -1004,15 +1030,19 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
 
       PDEBUG( "FME Error fabFifo_underflow  = %x \n",pfme_dev->m_pGerror->fme_err.fabFifo_underflow);
       PDEBUG( "FME Error fabFifo_overflow  = %x \n",pfme_dev->m_pGerror->fme_err.fabFifo_overflow);
-      PDEBUG( "FME Error poison_detected  = %x \n",pfme_dev->m_pGerror->fme_err.poison_detected);
-      PDEBUG( "FME Error parity_error  = %x \n",pfme_dev->m_pGerror->fme_err.parity_error);
-
+      PDEBUG( "FME Error PCIe0 poison_detected  = %x \n",pfme_dev->m_pGerror->fme_err.pcie0_poison_detected);
+      PDEBUG( "FME Error PCIe0 poison_detected  = %x \n",pfme_dev->m_pGerror->fme_err.pcie1_poison_detected);
+      PDEBUG( "FME Error IOMMU Parity Erro  = %x \n",pfme_dev->m_pGerror->fme_err.iommu_parity_error);
+      PDEBUG( "FME Error AFU error mismatch  = %x \n",pfme_dev->m_pGerror->fme_err.afuerr_access_mismatch);
 
 
       PDEBUG( "FME Error mask  fabFifo_underflow  = %x \n",pfme_dev->m_pGerror->fme_err_mask.fabFifo_underflow);
       PDEBUG( "FME Error mask fabFifo_overflow  = %x \n",pfme_dev->m_pGerror->fme_err_mask.fabFifo_overflow);
-      PDEBUG( "FME Error maskcpoison_detected  = %x \n",pfme_dev->m_pGerror->fme_err_mask.poison_detected);
-      PDEBUG( "FME Error mask parity_error  = %x \n",pfme_dev->m_pGerror->fme_err_mask.parity_error);
+      PDEBUG( "FME Error PCIe0 poison_detected  = %x \n",pfme_dev->m_pGerror->fme_err_mask.pcie0_poison_detected);
+      PDEBUG( "FME Error PCIe0 poison_detected  = %x \n",pfme_dev->m_pGerror->fme_err_mask.pcie1_poison_detected);
+      PDEBUG( "FME Error IOMMU Parity Erro  = %x \n",pfme_dev->m_pGerror->fme_err_mask.iommu_parity_error);
+      PDEBUG( "FME Error AFU error mismatch  = %x \n",pfme_dev->m_pGerror->fme_err_mask.afuerr_access_mismatch);
+
 
 
 
@@ -1057,18 +1087,35 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "PCIe1 Error   formattype_err  = %x \n",pfme_dev->m_pGerror->pcie1_err.cpl_timeout_err);
 
 
-      PDEBUG( "Green BS Error mask  therm_warn0  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.therm_warn0);
-      PDEBUG( "Green BS Error mask  therm_warn1  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.therm_warn1);
+      PDEBUG( "Green BS Error mask  thremal threshold AP1  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.temp_trash_ap1);
+      PDEBUG( "Green BS Error mask  thremal threshold AP2  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.temp_trash_ap2);
       PDEBUG( "Green BS Error mask  pcie_error  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.pcie_error);
       PDEBUG( "Green BS Error mask  afufatal_error  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.afufatal_error);
+      PDEBUG( "Green BS Error mask  proc hot error  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.prochot_error);
+      PDEBUG( "Green BS Error mask  afu access mode  error  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.afu_access_mode_error);
+      PDEBUG( "Green BS Error mask  Injected warning  errorr  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.injected_warn_error);
+      PDEBUG( "Green BS Error mask  PCIe poison port  error  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.pcie_posion_error);
       PDEBUG( "Green BS Error mask  gb_crc_err  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.gb_crc_err);
+      PDEBUG( "Green BS Error mask  thremal threshold AP  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.temp_trash_ap6);
+      PDEBUG( "Green BS Error mask  Power threshold AP1  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.power_trash_ap1);
+      PDEBUG( "Green BS Error mask  Power threshold AP6  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.power_trash_ap2);
+      PDEBUG( "Green BS Error mask  MBP error Error  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.mbp_error);
 
 
-      PDEBUG( "Green BS Error therm_warn0  = %x \n",pfme_dev->m_pGerror->ras_gerr.therm_warn0);
-      PDEBUG( "Green BS Error therm_warn1  = %x \n",pfme_dev->m_pGerror->ras_gerr.therm_warn1);
-      PDEBUG( "Green BS Error  pcie_error  = %x \n",pfme_dev->m_pGerror->ras_gerr.pcie_error);
-      PDEBUG( "Green BS Error  afufatal_error  = %x \n",pfme_dev->m_pGerror->ras_gerr.afufatal_error);
-      PDEBUG( "Green BS Error  gb_crc_err  = %x \n",pfme_dev->m_pGerror->ras_gerr.gb_crc_err);
+      PDEBUG( "Green BS Error mask  thremal threshold AP1  = %x \n",pfme_dev->m_pGerror->ras_gerr.temp_trash_ap1);
+      PDEBUG( "Green BS Error mask  thremal threshold AP2  = %x \n",pfme_dev->m_pGerror->ras_gerr.temp_trash_ap2);
+      PDEBUG( "Green BS Error mask  pcie_error  = %x \n",pfme_dev->m_pGerror->ras_gerr.pcie_error);
+      PDEBUG( "Green BS Error mask  afufatal_error  = %x \n",pfme_dev->m_pGerror->ras_gerr.afufatal_error);
+      PDEBUG( "Green BS Error mask  proc hot error  = %x \n",pfme_dev->m_pGerror->ras_gerr.prochot_error);
+      PDEBUG( "Green BS Error mask  afu access mode  error  = %x \n",pfme_dev->m_pGerror->ras_gerr.afu_access_mode_error);
+      PDEBUG( "Green BS Error mask  Injected warning  errorr  = %x \n",pfme_dev->m_pGerror->ras_gerr.injected_warn_error);
+      PDEBUG( "Green BS Error mask  PCIe poison port  error  = %x \n",pfme_dev->m_pGerror->ras_gerr.pcie_posion_error);
+      PDEBUG( "Green BS Error mask  gb_crc_err  = %x \n",pfme_dev->m_pGerror->ras_gerr.gb_crc_err);
+      PDEBUG( "Green BS Error mask  thremal threshold AP  = %x \n",pfme_dev->m_pGerror->ras_gerr.temp_trash_ap6);
+      PDEBUG( "Green BS Error mask  Power threshold AP1  = %x \n",pfme_dev->m_pGerror->ras_gerr.power_trash_ap1);
+      PDEBUG( "Green BS Error mask  Power threshold AP6  = %x \n",pfme_dev->m_pGerror->ras_gerr.power_trash_ap2);
+      PDEBUG( "Green BS Error mask  MBP error Error  = %x \n",pfme_dev->m_pGerror->ras_gerr.mbp_error);
+
 
 
       PDEBUG( "blue BS Error mask  ktilink_fatal_err  = %x \n",pfme_dev->m_pGerror->ras_berror_mask.ktilink_fatal_err);

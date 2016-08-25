@@ -97,10 +97,28 @@ BEGIN_NAMESPACE(AAL)
 // AFU Resource Release queue timeout in milliseconds
 #define AFU_RES_RELEASE_TIMEOUT 5
 
-// Power Manager PR response  20 seconds
-#define PWRMGR_RESPONSE_TIMEOUT  20
+// Power Manager PR response  10 seconds
+#define PWRMGR_RESPONSE_TIMEOUT  1000000
 
-//#define PWRMGR   0;
+//#define PWRMGR   1;
+
+// Green Bit stream Header
+struct __attribute__((__packed__))  CCIP_GBS_HEADER {
+
+   btByte                          m_digst[256];                   // Digital signature
+   btByte                          m_mesgDist[32];                 // Message digest
+   btByte                          m_intelpub_key[260];            // Intel public key
+   btByte                          m_hash_pubkey[32];              // Hash of public key
+   btByte                          m_md_afu[16];                   // GB meta Data structure
+   btByte                          m_md_slot_type_uuid[16];        // Partial bitstream slot type UUID
+   btUnsigned32bitInt              m_md_afu_power;                 // Partial bitstream power
+   btByte                          m_md_port;                      // Partial bitstream port
+   btUnsigned16bitInt              m_md_latency;                   // Partial bitstream latency
+   btUnsigned32bitInt              m_md_clknum;                    // Partial bitstream clock number
+   btUnsigned32bitInt              m_md_btlength;                  // Partial bitstream length *
+
+};
+
 ///============================================================================
 /// Name: pr_program_context
 /// @brief PR worker thread device context
@@ -128,6 +146,7 @@ struct pr_program_context
    btUnsigned64bitInt               m_sigtapRevokeCount;
    btUnsigned64bitInt               m_timeElapsed;
    stTransactionID_t                m_pwrReqTranID;
+   struct CCIP_GBS_HEADER          *m_gbs_header;
 };
 
 
@@ -227,7 +246,7 @@ void  reconfigure_bitstream_cancelPwrmgrTimer(struct pr_program_context* ppr_pro
 ///
 /// @param[in] pr_context -pr configuration context
 /// @return    error code if fails , 0 if pass
-int send_event_to_pwrmgr(struct pr_program_context* ppr_context);
+int send_event_to_pwrmgr(struct pr_program_context* ppr_context,int power_required);
 
 /// Name: ccipdrv_event_afu_aysnc_pr_release_send
 /// @brief sends event to application

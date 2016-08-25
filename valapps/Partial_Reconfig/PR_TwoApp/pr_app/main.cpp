@@ -224,7 +224,7 @@ btBool ALIConfAFUApp::allocRecongService()
       ERR("--- Failed to Allocate Reconfigure Service --- ");
       return false;
    }
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    return true;
 
 }
@@ -236,7 +236,7 @@ btBool ALIConfAFUApp::runTests()
       return false;
    }
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file,configCmdLine.reconftimeout,configCmdLine.reconfAction,configCmdLine.reactivateDisabled);
+   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,configCmdLine.reconftimeout,configCmdLine.reconfAction,configCmdLine.reactivateDisabled);
 
    TEST_CASE(" configCmdLine.reconfInterface");
    cout << "configCmdLine.reconfInterface" << configCmdLine.reconfInterface<< endl;

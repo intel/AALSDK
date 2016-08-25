@@ -254,7 +254,7 @@ int mmlink_server::run(btVirtAddr stpAddr)
     {
       bool can_write_host = FD_ISSET(data_conn->socket(), &writefds);
       //bool can_read_driver = FD_ISSET(m_driver->get_fd(), &readfds);
-      bool can_read_driver = true;
+      bool can_read_driver = m_driver->can_read_data();
       err = handle_t2h(data_conn, can_read_driver, can_write_host); //TODO add logic to check if driver has data to be read
 
       if (err)
@@ -272,6 +272,9 @@ int mmlink_server::run(btVirtAddr stpAddr)
         data_conn->close_connection();
         printf("closed data connection due to handle_h2t return value, now have %d\n", m_num_connections);
       }
+
+      // Yield after done process the current known acitivty
+      ::sched_yield();
     }
 
     // Handle management connection commands and responses.

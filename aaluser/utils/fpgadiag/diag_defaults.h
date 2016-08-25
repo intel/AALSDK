@@ -59,8 +59,8 @@
 #define DEFAULT_WLI          	"off"
 #define DEFAULT_WLM          	"on"
 #define DEFAULT_WPI          	"off"
-#define DEFAULT_RDS         	"on"
-#define DEFAULT_RDI         	"off"
+#define DEFAULT_RDS         	"off"
+#define DEFAULT_RDI         	"on"
 #define DEFAULT_CONT        	"off"
 #define DEFAULT_TOUSEC      	0
 #define DEFAULT_TOMSEC      	(DEFAULT_NLB_CONT_TIMEOUT_NS / NANOSEC_PER_MILLI(1))
@@ -101,5 +101,8 @@
 #define DEFAULT_MIN_STRIDES   	1
 #define DEFAULT_MAX_STRIDES   	64
 //#define DEFAULT_FPGA_CLK_FREQ 	200000000ULL
+#define DEFAULT_BUS_NUMBER      0xFFFFFFFF
+#define DEFAULT_DEVICE_NUMBER   0xFFFFFFFF
+#define DEFAULT_FUNCTION_NUMBER 0xFFFFFFFF
 
 #endif

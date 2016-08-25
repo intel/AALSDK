@@ -438,6 +438,14 @@ void ccipdrv_event_afu_aysnc_pr_release_send(struct pr_program_context *ppr_prog
    struct ccipdrv_event_afu_response_event *pafuws_evt      = NULL;
    PTRACEIN;
 
+#ifdef PWRMGR
+   //PR failed, Movning Idle cores to online
+   if ((ppr_program_ctx->m_cmd == ccipdrv_configureAFU) &&
+      (uid_errnumOK != eno)) {
+      send_pr_power_event(ppr_program_ctx, 0);
+   }
+#endif
+
    pafuws_evt = ccipdrv_event_afu_aysnc_pr_release_create( ppr_program_ctx->m_respID,
                                                            ppr_program_ctx->m_pownerSess->m_device,
                                                            ppr_program_ctx->m_pownerSess->m_ownerContext,
@@ -446,11 +454,13 @@ void ccipdrv_event_afu_aysnc_pr_release_send(struct pr_program_context *ppr_prog
    ccidrv_sendevent(ppr_program_ctx->m_pownerSess,
                     AALQIP(pafuws_evt));
 
+ 
    if((ppr_program_ctx->m_cmd == ccipdrv_configureAFU) &&
-      (NULL != ppr_program_ctx->m_kbufferptr)) {
-      kosal_free_user_buffer(ppr_program_ctx->m_kbufferptr, ppr_program_ctx->m_bufferlen);
-      ppr_program_ctx->m_kbufferptr = NULL;
-   }
+        (NULL != ppr_program_ctx->m_kbufferptr)) {
+        kosal_free_user_buffer(ppr_program_ctx->m_kbufferptr, ppr_program_ctx->m_bufferlen);
+        ppr_program_ctx->m_kbufferptr = NULL;
+     }
+
 
    kosal_sem_put(cci_dev_pr_sem(ppr_program_ctx->m_pPR_dev));
    PDEBUG("UN-LOCK RECONF \n");
@@ -484,6 +494,14 @@ void ccipdrv_event_reconfig_event_create_send( struct pr_program_context *ppr_pr
 {
    struct ccipdrv_event_afu_response_event *pafuws_evt      = NULL;
    PTRACEIN;
+
+#ifdef PWRMGR
+   //PR failed, Movning Idle cores to online
+   if ((ppr_program_ctx->m_cmd == ccipdrv_configureAFU) &&
+      (uid_errnumOK != errnum)) {
+      send_pr_power_event(ppr_program_ctx, 0);
+   }
+#endif
 
    pafuws_evt = ccipdrv_event_reconfig_event_create(respID,
                                                     devhandle,
@@ -577,6 +595,7 @@ void  ccipdrv_event_activationchange_event_create_send( struct pr_program_contex
    }
    PTRACEOUT;
 }
+
 ///============================================================================
 /// Name: program_afu_callback
 /// @brief Reconfigures  AFU with bitstream
@@ -618,6 +637,12 @@ void program_afu_callback(struct kosal_work_object * pwork)
 
    kptr = ppr_program_ctx->m_kbufferptr;
    len  = ppr_program_ctx->m_bufferlen;
+
+#ifdef PWRMGR
+    // Check Boundrys of bitstrem buffer TBD
+    kptr = kptr + sizeof(struct CCIP_GBS_HEADER);
+    len  = len - sizeof(struct CCIP_GBS_HEADER);
+#endif
 
    PDEBUG("kptr =%p", kptr);
    PDEBUG("len =%d\n", (unsigned)len);
@@ -1437,14 +1462,14 @@ void  reconfigure_bitstream(struct pr_program_context* ppr_program_ctx)
 
 }
 
-int send_event_to_pwrmgr(struct pr_program_context* ppr_context)
+int send_event_to_pwrmgr(struct pr_program_context* ppr_context, int power_required)
 {
    int res = 0;
 
    PTRACEIN;
 
    // Send event to
-   res = send_pr_power_event(ppr_context);
+   res = send_pr_power_event(ppr_context,power_required);
    if( 0 != res) {
       PERR(" No  Power device hasn't allocated \n");
       ccipdrv_event_afu_aysnc_pr_release_send(ppr_context,uid_errnumNoPRPowerMgrDemon);
@@ -2141,15 +2166,18 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          // Signal Tap Resource
          psigtapdev = ccip_port_stap_dev(pportdev)->m_aaldev;
 
-#if 0
+#ifdef PWRMGR
+         // Green bitstream Header
+         ppr_program_ctx->m_gbs_header = (struct CCIP_GBS_HEADER *) kptr;
+
+         PDEBUG("GBS Power %d \n",ppr_program_ctx->m_gbs_header->m_md_afu_power);
+         PDEBUG("GBS Clock %d \n",ppr_program_ctx->m_gbs_header->m_md_clknum);
 
          // Sends Event to power Manger
-         // Total Power ?
-         send_event_to_pwrmgr(ppr_program_ctx);
+         send_event_to_pwrmgr(ppr_program_ctx,ppr_program_ctx->m_gbs_header->m_md_afu_power);
+         return 0;
 
-#endif
-
-
+#else
           // Case 4 - if Signal tap object has owners.
          // sends signal tap release event and Do pr in worker queue
          // --------------------------------------------------------------------
@@ -2271,7 +2299,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
             goto ERROR;
          } // end if else loop
-
+#endif
         goto CLEANUP;
 
       }break;

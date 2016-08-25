@@ -176,11 +176,40 @@ void mm_debug_link_linux::write_mmr(off_t target, int access_type, unsigned int 
 	 	}
 }
 
+bool mm_debug_link_linux::can_read_data()
+{
+    bool ret  = this->m_write_before_any_read_rfifo_level;
+    
+    if ( !ret )
+    {
+        clock_t cur_time = ::clock();
+        clock_t duration = cur_time - this->m_last_read_rfifo_level_empty_time;
+        if ( duration < 0 )
+        {
+            duration = -duration;
+        }
+        if ( duration >= this->m_read_rfifo_level_empty_interval )
+        {
+            ret = true;
+        }
+    }
+
+    return ret;
+}
+
 ssize_t mm_debug_link_linux::read()
 {
      unsigned int  num_bytes;
 	  num_bytes = *(static_cast<unsigned int *>(read_mmr(MM_DEBUG_LINK_FIFO_READ_COUNT, 'b' )));
 
+      // Reset the timer record 
+      if ( (this->m_write_before_any_read_rfifo_level ||  // when this is the first read after write
+           num_bytes > 0) )                               // when something is available to read 
+      {
+          this->m_write_before_any_read_rfifo_level = false;
+          this->m_read_rfifo_level_empty_interval = 1;     // Increase the read fifo level polling freq. in anticipation of more read data availability.
+      }
+      
 	  if (num_bytes > 0 )
 	  {
 	    if ( num_bytes > (mm_debug_link_linux::BUFSIZE - m_buf_end) )
@@ -213,6 +242,15 @@ ssize_t mm_debug_link_linux::read()
 	  {
 	      //printf( "%s %s(): error read hw read buffer level\n", __FILE__, __FUNCTION__ );
 	      num_bytes = 0;
+          
+          this->m_last_read_rfifo_level_empty_time = ::clock();
+
+          //Throttle the read rfifo level polling freq.  up to 10 sec.
+          this->m_read_rfifo_level_empty_interval *= 2;
+          if ( this->m_read_rfifo_level_empty_interval >= 10 * CLOCKS_PER_SEC )
+          {
+              this->m_read_rfifo_level_empty_interval = 10 * CLOCKS_PER_SEC;
+          }
 	  }
 
 	  return num_bytes;
@@ -223,6 +261,8 @@ ssize_t mm_debug_link_linux::write(const void *buf, size_t count)
      unsigned int  num_bytes;
      unsigned int x;
 	  num_bytes = *(static_cast<unsigned int*>(read_mmr(MM_DEBUG_LINK_FIFO_WRITE_COUNT, 'b' )));
+
+      this->m_write_before_any_read_rfifo_level = true;     // Set this to kick off any possible read activity even if write FIFO is full to avoid potential deadlock.
 
 	  if ( num_bytes < this->m_write_fifo_capacity )
 	  {

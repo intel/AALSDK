@@ -232,7 +232,10 @@ struct NLBCmdLine gCmdLine =
    std::string(DEFAULT_TARGET_AFU),
    DEFAULT_TARGET_DEV,
    std::string(DEFAULT_TEST_MODE),
-   0
+   0,
+   DEFAULT_BUS_NUMBER,
+   DEFAULT_DEVICE_NUMBER,
+   DEFAULT_FUNCTION_NUMBER
 };
 
 END_C_DECLS
@@ -380,6 +383,19 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
 
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
+
+           if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_BUS_NUMBER)) {
+              cout << "Using PCIe bus 0x" << hex << uint_type(gCmdLine.busnum) << endl;
+              ConfigRecord.Add(keyRegBusNumber, uint_type(gCmdLine.busnum));
+           }
+           if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER)) {
+              cout << "Using PCIe device 0x" << hex << uint_type(gCmdLine.devnum) << endl;
+              ConfigRecord.Add(keyRegDeviceNumber, uint_type(gCmdLine.devnum));
+           }
+           if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER)) {
+              cout << "Using PCIe function 0x" << hex << uint_type(gCmdLine.funnum) << endl;
+              ConfigRecord.Add(keyRegfuntionNumber, uint_type(gCmdLine.funnum));
+           }
 
   	   if(0 == strcmp(TestMode().c_str(), "TestMode_read") ||
 		  0 == strcmp(TestMode().c_str(), "TestMode_write") ||
@@ -877,7 +893,7 @@ int main(int argc, char *argv[])
    		// Run NLB test, which performs sw data verification.
    		CNLBLpbk1 nlb_lpbk1(&myapp);
 
-   		cout << " * Data Copy - LPBK1" << flush;
+   		cout << " * Data Copy - LPBK1" << endl << flush;
    		res = nlb_lpbk1.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
@@ -892,7 +908,7 @@ int main(int argc, char *argv[])
    		// Run NLB read test.
 	      CNLBMode3 nlb_read(&myapp);
 
-   		cout << " * Read Bandwidth from Memory - READ" << flush;
+   		cout << " * Read Bandwidth from Memory - READ" << endl << flush;
    		res = nlb_read.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
@@ -907,7 +923,7 @@ int main(int argc, char *argv[])
    		// Run NLB write test.
 	      CNLBMode3 nlb_write(&myapp);
 
-   		cout << " * Write Bandwidth from Memory - WRITE" << flush;
+   		cout << " * Write Bandwidth from Memory - WRITE" << endl << flush;
    		res = nlb_write.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
@@ -922,7 +938,7 @@ int main(int argc, char *argv[])
    		// Run NLB  trput test.
 	      CNLBMode3 nlb_trput(&myapp);
 
-   		cout << " * Simultaneous Read/Write Bandwidth - TRPUT" << flush;
+   		cout << " * Simultaneous Read/Write Bandwidth - TRPUT" << endl << flush;
    		res = nlb_trput.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
@@ -938,7 +954,7 @@ int main(int argc, char *argv[])
    	   // * report bandwidth in GiB/s
    	   CNLBSW nlb_sw(&myapp);
 
-   	   cout << " * SW test " << flush;
+   	   cout << " * SW test " << endl << flush;
    	   res = nlb_sw.RunTest(gCmdLine);
    	   totalres += res;
    	   if ( 0 == res ) {
@@ -955,7 +971,7 @@ int main(int argc, char *argv[])
 	   	   // * report bandwidth in GiB/s
 	   	   CNLBAtomic nlb_atomic(&myapp);
 
-	   	   cout << " * Atomic test " << flush;
+	   	   cout << " * Atomic test " << endl << flush;
 	   	   res = nlb_atomic.RunTest(gCmdLine);
 	   	   totalres += res;
 	   	   if ( 0 == res ) {

@@ -970,8 +970,11 @@ public:
    // FME Error definitions
    #define AAL_ERR_FME_FAB_UNDERFLOW              "Fabric FIFO underflow"
    #define AAL_ERR_FME_FAB_OVERFLOW               "Fabric FIFO overflow"
-   #define AAL_ERR_FME_POSION_DETECT              "Poison Detected"
-   #define AAL_ERR_FME_PARIRY                     "Parity Error"
+   #define AAL_ERR_FME_PCIE0_POSION_DETECT        "PCIe0 Poison Detected"
+   #define AAL_ERR_FME_PCIE1_POSION_DETECT        "PCIe0 Poison Detected"
+   #define AAL_ERR_FME_IOMMU_PARIRY               "IOMMU Parity Error"
+   #define AAL_ERR_FME_AFUMISMATCH_DETECT         "AFU Access Mismatch detected"
+
 
    #define AAL_ERR_PCIE0_FORMAT                   "PCIe0 TLP Format/type error"
    #define AAL_ERR_PCIE0_MWADDR                   "PCIe0 TLP MW Address error"
@@ -995,23 +998,30 @@ public:
    #define AAL_ERR_PCIE_PHYFUNC                   "Physical function error"
    #define AAL_ERR_PCIE_VIRTFUNCR                 "Virtual function error"
 
-   #define AAL_ERR_RAS_THERMWARN0                 "Thermal threshold warning0"
-   #define AAL_ERR_RAS_THERMWARN1                 "Thermal threshold warning1"
-   #define AAL_ERR_RAS_PCIE                       "PCIE Fatal Error"
+   #define AAL_ERR_RAS_TEMPAP1                    "Thermal threshold Triggered AP1"
+   #define AAL_ERR_RAS_TEMPAP2                    "Thermal threshold Triggered AP2"
+   #define AAL_ERR_RAS_PCIE                       "PCIe Fatal Error"
    #define AAL_ERR_RAS_AFUFATAL                   "AFU Fatal error"
+   #define AAL_ERR_RAS_AFUACCESS_MODE             "AFU access mode error"
+   #define AAL_ERR_RAS_PCIEPOSION                 "PCIe poison port  error"
    #define AAL_ERR_RAS_GBCRC                      "Green bitstream CRC Error"
+   #define AAL_ERR_RAS_TEMPAP6                    "Thremal threshold Triggered AP6"
+   #define AAL_ERR_RAS_POWERAP1                   "Power threshold Triggered AP1"
+   #define AAL_ERR_RAS_POWERAP2                   "Power threshold Triggered AP2"
+   #define AAL_ERR_RAS_MDP                        "MBP error "
 
    #define AAL_ERR_RAS_KTILINK_FATAL              "KTI Link layer Fatal error"
    #define AAL_ERR_RAS_TAGCCH_FATAL               "tag-n-cache Fatal error"
    #define AAL_ERR_RAS_CCI_FATAL                  "CCI Fatal error"
    #define AAL_ERR_RAS_KTIPROTO_FATAL             "KTI Protocal Fatal error"
    #define AAL_ERR_RAS_DMA_FATAL                  "DMA Fatal error"
+   #define AAL_ERR_RAS_INJ_FATAL                  "Injected Fatal error"
    #define AAL_ERR_RAS_IOMMU_FATAL                "IOMMU Fatal error"
    #define AAL_ERR_RAS_IOMMU_CATAS                "Catastrophic IOMMU Error"
    #define AAL_ERR_RAS_CRC_CATAS                  "Catastrophic CRC Error"
    #define AAL_ERR_RAS_THER_CATAS                 "Catastrophic Thermal Error"
    #define AAL_ERR_RAS_GB_FATAL                   "Green bitstream fatal event Error"
-
+   #define AAL_ERR_RAS_INJ_CATAS_                 "Injected Catastrophic error"
 
 
    virtual ~IALIFMEError() {}

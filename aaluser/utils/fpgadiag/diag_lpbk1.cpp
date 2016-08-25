@@ -290,7 +290,24 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 
        // Verify the buffers
        if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, (NumCacheLines * CL(1))) != 0 ){
-          cerr << "Data mismatch in Input and Output buffers.\n";
+
+    	   cerr << "Data mismatch in Input and Output buffers.\n";
+
+    	   volatile btUnsigned32bitInt *pInput    = (volatile btUnsigned32bitInt *)pInputUsrVirt;
+    	   volatile btUnsigned32bitInt *pOutput    = (volatile btUnsigned32bitInt *)pOutputUsrVirt;
+    	   volatile btUnsigned32bitInt *pEndInput = (volatile btUnsigned32bitInt *)pInput +
+    	                                     	 	(m_pMyApp->InputSize() / sizeof(btUnsigned32bitInt));
+    	   for(;pInput < pEndInput, pOutput < pEndInput; ++pInput, ++pOutput)
+    	   {
+    		   if(*pInput != *pOutput){
+    			   cerr << "Expected value: " << std::hex << *pInput  << std::dec << endl;
+    			   cerr << "Actual value:   " << std::hex << *pOutput << std::dec << endl;
+    			   cerr << "Phy Addr of Src  Buffer: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA((btVirtAddr)pInput)  << std::dec << endl;
+    			   cerr << "Phy Addr of Dest Buffer: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA((btVirtAddr)pOutput) << std::dec << endl;
+    			   break;
+    		   }
+    	   }
+
            ++res;
 //           break;
        }
@@ -331,9 +348,9 @@ void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
    bt32bitCSR startpenalty = pAFUDSM->start_overhead;
    bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
 
-   cout << endl << endl;
+   cout << endl ;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-            //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
+             //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
       cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
           << Normalized(cmd) << ")'";
 
@@ -384,4 +401,8 @@ void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
         << setw(12) << GetPerfMonitor(UPI_WRITE)      << ' '
         << endl << endl;
 
+   if(pAFUDSM->num_reads < cls)
+   {
+	   ERR("WARNING: Test did NOT run for the requested number of CLs");
+   }
 }

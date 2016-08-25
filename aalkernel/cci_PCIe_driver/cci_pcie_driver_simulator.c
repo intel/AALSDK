@@ -290,7 +290,7 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
       }
 
 
-      // Instantiate allocatable objects
+      // Creates AAL Power device object
       if(!cci_create_AAL_power_Device(pccipdev)){
          goto ERR;
       }

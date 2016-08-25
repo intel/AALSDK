@@ -83,8 +83,9 @@ BEGIN_NAMESPACE(AAL)
 /// @brief   sends power request to power manager demon.
 ///
 /// @param[in] pReconf_context AFU reconfiguration context
+/// @param[in] power_required power consumed by green bitstream.
 /// @return    0 = success , non zero failure.
-bt32bitInt send_pr_power_event(struct pr_program_context* pReconf_contxt );
+bt32bitInt send_pr_power_event(struct pr_program_context* pReconf_context, int power_required);
 
 END_NAMESPACE(AAL)
 

@@ -60,9 +60,9 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_SUPPRESSHDR);
    } else if ( 0 == strcmp("--no-bw", option) ) {
       flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_BANDWIDTH);
-   } else if ((0 == strcmp("--wrline-I", option)) || (0 == strcmp("--wli", option))) {
+   } else if ((0 == strcmp("--wrline-I", option)) || (0 == strcmp("--wli", option)) || (0 == strcmp("--wt", option))) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_I);
-   } else if ((0 == strcmp("--wrline-M", option)) || (0 == strcmp("--wlm", option))) {
+   } else if ((0 == strcmp("--wrline-M", option)) || (0 == strcmp("--wlm", option)) || (0 == strcmp("--wb", option))) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_M);
    } else if ((0 == strcmp("--wrpush-I", option)) || (0 == strcmp("--wpi", option))) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRPUSH_I);
@@ -371,6 +371,37 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
       } else {
          flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_STRIDED_ACS);
       }
+
+   } else if ( (0 == strcmp("--bus-number", option)) || (0 == strcmp("--bn", option)) ) {
+      nlbcl->busnum = strtoul(value, &endptr, 0);
+      if ( value + strlen(value) != endptr ) {
+         nlbcl->busnum = nlbcl->defaults.busnum;
+         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER);
+         printf("Invalid value for --bus-number : %s. Defaulting to %u.\n", value, nlbcl->busnum);
+      } else {
+         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER);
+      }
+
+   } else if ( (0 == strcmp("--device-number", option)) || (0 == strcmp("--dn", option)) ) {
+      nlbcl->devnum = strtoul(value, &endptr, 0);
+      if ( value + strlen(value) != endptr ) {
+         nlbcl->devnum = nlbcl->defaults.devnum;
+         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER);
+         printf("Invalid value for --device-number : %s. Defaulting to %u.\n", value, nlbcl->devnum);
+      } else {
+         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER);
+      }
+
+   } else if ( (0 == strcmp("--function-number", option)) || (0 == strcmp("--fn", option)) ) {
+      nlbcl->funnum = strtoul(value, &endptr, 0);
+      if ( value + strlen(value) != endptr ) {
+         nlbcl->funnum = nlbcl->defaults.funnum;
+         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER);
+         printf("Invalid value for --function-number : %s. Defaulting to %u.\n", value, nlbcl->funnum);
+      } else {
+         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER);
+      }
+
    } else {
       printf("Invalid option: %s\n", option);
       flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
@@ -1078,6 +1109,19 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
    }
 
    // --rdi, --rds
+
+   /********************** FOR SKX POWER-ON ONLY **************************/
+
+   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_RDS)) {
+	   os << "--rds is NOT supported in this release." << endl;
+	   return false;
+   }
+
+   if ( flags_are_clr(cmd.cmdflags, NLB_CMD_FLAG_RDI)) {
+   	   os << "WARNING: No option selected for <RDSEL>. Defaulting to --rdi." << endl;
+   	   flag_setf(cmd.cmdflags, NLB_CMD_FLAG_RDI);
+   }
+   /**********************************************************************/
 
    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_RDI|NLB_CMD_FLAG_RDS)) {
 	   	os << "--rdi and --rds are mutually exclusive." << endl;
