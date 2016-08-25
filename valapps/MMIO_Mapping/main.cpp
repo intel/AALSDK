@@ -225,8 +225,8 @@ btBool MMIOMapping::_getALIMMIOService()
 
 	   // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
 	   //ConfigRecord.Add(keyRegAFU_ID,"949C47DE-DA1A-EEB8-3B56-1FBB2ADE456D");
-	   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
-
+	   ConfigRecord.Add(keyRegAFU_ID,"D8424DC4-A4A3-C413-F89E-433683F9040B");
+	   //ConfigRecord.Add(keyRegBusNumber, (btUnsigned32bitInt)0xbe);
    }
 
    // Add the Config Record to the Manifest describing what we want to allocate
@@ -547,7 +547,9 @@ btInt MMIOMapping::testMMIOWriteOneCacheLine()
       m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
 
       // Set the test mode
-      m_pALIMMIOService->mmioWrite32(CSR_CFG,0);
+      m_pALIMMIOService->mmioWrite32(CSR_CFG,0x200); //Rdline_I
+
+      MSG("Running test with Rdline_I by default.");
 
       volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
                                          (m_DSMVirt  + DSM_STATUS_TEST_COMPLETE);

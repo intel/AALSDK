@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 {
     btInt use_fpga = 0;
     btInt opt;
-    string afu_id = "C000C966-0D82-4272-9AEF-FE5F84570612";
+    string afu_id = "D8424DC4-A4A3-C413-F89E-433683F9040B";
 
     while ((opt = getopt(argc,argv,"c:d")) != EOF)
         switch(opt)

@@ -12,7 +12,7 @@
 ///
 appbase::appbase () :
     m_AppType("HW"),
-    m_AFUId("C000C966-0D82-4272-9AEF-FE5F84570612"), // initialize the value using default AFU ID
+    m_AFUId("D8424DC4-A4A3-C413-F89E-433683F9040B"), // initialize the value using default AFU ID
     m_RequestBuffers(false),
     m_AppName("Base Application"),
     m_Runtime(this),
@@ -159,6 +159,7 @@ if (m_AppType == "HW") {               /* Use FPGA hardware */
 
     // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
     ConfigRecord.Add(keyRegAFU_ID, m_AFUId.c_str());
+    //ConfigRecord.Add(keyRegBusNumber, (btUnsigned32bitInt)0xbe);
 
     // indicate that this service needs to allocate an AIAService, too to talk to the HW
     ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
