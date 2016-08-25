@@ -110,11 +110,14 @@ MODULE_LICENSE    (DRV_LICENSE);
 //       Value: Number of AFUs to instantiate
 //      sriov: Activate SR-IOV
 //       Value: Number of VFs to enable (can't exceed number of PORTs)
+//      skip_pf: Skip PF enumeration (to enable VF enumeration on bare metal)
+//       Value: 1 to skip PF enumeration, 0 to enumerate PF (default)
 //
 // Typical usage:
 //    sudo insmod ccidrv           # Normal load. PCIe enumeration enabled
 //    sudo insmod ccidrv sim=4     # Instantiate 4 simulated AFUs
 //    sudo insmod ccidrv sriov=1   # Activate SR-IOV with 1 VF
+//    sudo insmod ccidrv skip_pf   # Don't enumerate PF
 
 unsigned long  sim = 0;
 MODULE_PARM_DESC(sim, "Simulation: #=Number of simulated AFUs to instantiate");
@@ -123,6 +126,10 @@ module_param    (sim, ulong, S_IRUGO);
 unsigned long  sriov = 0;
 MODULE_PARM_DESC(sriov, "SR-IOV: #=Number of VFs to activate");
 module_param    (sriov, ulong, S_IRUGO);
+
+int            skip_pf = 0;
+MODULE_PARM_DESC(skip_pf, "Skip PF enumeration: 1 to skip PF enumeration");
+module_param    (skip_pf, int, S_IRUGO);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -707,6 +714,14 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
    int                  res            = 0;
 
    PTRACEIN;
+
+   // Skip PF if requested
+   //  This is useful for bringing up a driver on bare metal that only sees the
+   //  VFs. Mainly for testing and debug, but perhaps also for containers?
+   if (skip_pf) {
+      PINFO("Skipping PF, as requested (skip_pf)\n");
+      return NULL;
+   }
 
    // Check arguments
    ASSERT(pcidev);
@@ -1319,6 +1334,12 @@ ccidrv_init(void)
    PINFO("-> Version %s\n", DRV_VERSION);
    PINFO("-> License %s\n", DRV_LICENSE);
    PINFO("-> %s\n",       DRV_COPYRIGHT);
+
+   // Module parameter sanity check
+   if (sriov > 0 && skip_pf != 0) {
+      PERR("Can't skip PF and enable VFs at the same time. Sorry.\n");
+      return -EINVAL;
+   }
 
    // Call the framework initialization
    ret = ccidrv_initDriver(/* Callback */);
