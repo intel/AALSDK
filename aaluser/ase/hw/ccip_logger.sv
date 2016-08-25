@@ -60,7 +60,7 @@ module ccip_logger
     input 	t_if_ccip_Tx ccip_tx
     );
 
-   
+
    /*
     * ASE Hardware Interface (CCI) logger
     * - Logs CCI transaction into a transactions.tsv file
@@ -72,9 +72,16 @@ module ccip_logger
    // Reset management
    logic 				    SoftReset_q;
 
+   // AlmostFull management
+   logic 				    C0TxAlmFull_q;
+   logic 				    C1TxAlmFull_q;
+
+
    // Registers for comparing previous states
    always @(posedge clk) begin
       SoftReset_q	<= SoftReset;
+      C0TxAlmFull_q     <= ccip_rx.c0TxAlmFull;
+      C1TxAlmFull_q     <= ccip_rx.c1TxAlmFull;
    end
 
    // Config header
@@ -85,7 +92,7 @@ module ccip_logger
    UMsgHdr_t C0RxUMsgHdr;
    assign C0RxUMsgHdr = UMsgHdr_t'(ccip_rx.c0.hdr);
 
-   
+
    /*
     * Buffer channels, request and response types
     */
@@ -111,14 +118,14 @@ module ccip_logger
 	 endcase
       end
    endfunction
-   
+
    // Print req type - CH1
    function string print_c1_reqtype (t_ccip_c1_ReqMemHdr req);
       begin
 	 case (req)
 	   eREQ_WRLINE_I   : return "Wr_I       ";
 	   eREQ_WRLINE_M   : return "Wr_M       ";
-	   eREQ_WRPUSH_I   : return "WrPush_I   ";	   
+	   eREQ_WRPUSH_I   : return "WrPush_I   ";
 	   eREQ_WRFENCE    : return "WrFence    ";
 	   eREQ_INTR       : return "IntrReq    ";
 	   default         : return "** ERROR %m : eREQ-CH1 unindentified **" ;
@@ -148,7 +155,7 @@ module ccip_logger
       end
    endfunction
 
-   
+
    // Print CL number (in Request)
    function string print_cllen (t_ccip_clLen len);
       begin
@@ -161,7 +168,7 @@ module ccip_logger
       end
    endfunction
 
-   
+
    // Print CL number (in Response)
    function string print_clnum (t_ccip_clNum num);
       begin
@@ -174,7 +181,7 @@ module ccip_logger
       end
    endfunction
 
-   
+
    // Print CSR data
    function string csr_data(int num_bytes, logic [CCIP_DATA_WIDTH-1:0] rx0_data);
       string str_4;
@@ -201,7 +208,7 @@ module ccip_logger
       end
    endfunction
 
-   
+
    // MMIO Request length
    function int mmioreq_length (logic [1:0] mmio_len);
       begin
@@ -213,7 +220,7 @@ module ccip_logger
       end
    endfunction // mmioreq_length
 
-   
+
    // Space generator - formatting help
    function string ret_spaces (int num);
       string spaces;
@@ -229,22 +236,22 @@ module ccip_logger
 
 
    /*
-    * Function checks 
-    */ 
+    * Function checks
+    */
    // Is a Read Request
    function logic isRdLineRequest(t_ccip_c0_req req);
       begin
-	 if ((req == eREQ_RDLINE_I)||(req == eREQ_RDLINE_S)) 
+	 if ((req == eREQ_RDLINE_I)||(req == eREQ_RDLINE_S))
 	   return 1;
 	 else
 	   return 0;
       end
    endfunction
-   
+
    // Is a Write Request
    function logic isWrLineRequest(t_ccip_c1_req req);
       begin
-	 if ((req == eREQ_WRLINE_I)||(req == eREQ_WRLINE_M)||(req == eREQ_WRPUSH_I)) 
+	 if ((req == eREQ_WRLINE_I)||(req == eREQ_WRLINE_M)||(req == eREQ_WRPUSH_I))
 	   return 1;
 	 else
 	   return 0;
@@ -270,7 +277,7 @@ module ccip_logger
 	   return 0;
       end
    endfunction
-   
+
    // Is a Read Response
    function logic isRdLineResponse(t_ccip_c0_rsp rsp);
       begin
@@ -280,7 +287,7 @@ module ccip_logger
 	   return 0;
       end
    endfunction
-   
+
    // Is a Umsg Response
    function logic isUmsgResponse(t_ccip_c0_rsp rsp);
       begin
@@ -290,7 +297,7 @@ module ccip_logger
 	   return 0;
       end
    endfunction
-   
+
    // Is a Write Response
    function logic isWrLineResponse(t_ccip_c1_rsp rsp);
       begin
@@ -300,7 +307,7 @@ module ccip_logger
 	   return 0;
       end
    endfunction
-   
+
    // Is a Write Fence Response
    function logic isWrFenceResponse(t_ccip_c1_rsp rsp);
       begin
@@ -310,29 +317,31 @@ module ccip_logger
 	   return 0;
       end
    endfunction
-   
+
 
    /*
     * FUNCTION: print_and_post_log wrapper function to simplify logging
-    */ 
+    */
    function void print_and_post_log(string formatted_string);
       begin
 	 if (stdout_en)
 	   $display(formatted_string);
 	 $fwrite(log_fd, formatted_string);
-	 $fflush();	 
+	 $fflush();
       end
    endfunction // print_and_post_log
-   
+
    // Placeholder strings
-   string softreset_str;   
+   string softreset_str;
+   string c0TxAlmFull_str;
+   string c1TxAlmFull_str;
    string c0rx_str;
    string c1rx_str;
-   string c0tx_str;   
+   string c0tx_str;
    string c1tx_str;
    string c2tx_str;
-     
-   
+
+
    /*
     * Watcher process
     */
@@ -349,12 +358,34 @@ module ccip_logger
 	 // Indicate Software controlled reset
 	 // -------------------------------------------------- //
 	 if (SoftReset_q != SoftReset) begin
-	    $sformat(softreset_str, 
-		     "%d\tSoftReset toggled from %b to %b\n", 
-		     $time, 
-		     SoftReset_q, 
+	    $sformat(softreset_str,
+		     "%d\tSoftReset toggled from %b to %b\n",
+		     $time,
+		     SoftReset_q,
 		     SoftReset);
-	    print_and_post_log(softreset_str);	    
+	    print_and_post_log(softreset_str);
+	 end
+	 // -------------------------------------------------- //
+	 // Track C0TxAlmFull transitions
+	 // -------------------------------------------------- //
+	 if (C0TxAlmFull_q != ccip_rx.c0TxAlmFull) begin
+	    $sformat(c0TxAlmFull_str,
+		     "%d\tC0Tx AlmFull toggled from %b to %b\n",
+		     $time,
+		     C0TxAlmFull_q,
+		     ccip_rx.c0TxAlmFull);
+	    print_and_post_log(c0TxAlmFull_str);
+	 end
+	 // -------------------------------------------------- //
+	 // Track C1TxAlmFull transitions
+	 // -------------------------------------------------- //
+	 if (C1TxAlmFull_q != ccip_rx.c1TxAlmFull) begin
+	    $sformat(c1TxAlmFull_str,
+		     "%d\tC1Tx AlmFull toggled from %b to %b\n",
+		     $time,
+		     C1TxAlmFull_q,
+		     ccip_rx.c1TxAlmFull);
+	    print_and_post_log(c1TxAlmFull_str);
 	 end
 	 // -------------------------------------------------- //
 	 // Buffer messages
@@ -366,7 +397,7 @@ module ccip_logger
 	    end
 	    else begin
 	       $fwrite(log_fd, "-----------------------------------------------------\n");
-	       $fwrite(log_fd, "%s\n", log_string);	       
+	       $fwrite(log_fd, "%s\n", log_string);
 	    end
 	 end
 	 // -------------------------------------------------- //
@@ -374,27 +405,27 @@ module ccip_logger
 	 // -------------------------------------------------- //
 	 // MMIO Write Request
 	 if (ccip_rx.c0.mmioWrValid) begin
-	    $sformat(c0rx_str, 
+	    $sformat(c0rx_str,
 		     "%d\t   \tMMIOWrReq   \t  \t%x\t%d bytes\t%s\n",
 		     $time,
 		     C0RxMmioHdr.address,
 		     mmioreq_length(C0RxMmioHdr.length),
 		     csr_data(mmioreq_length(C0RxMmioHdr.length), ccip_rx.c0.data) );
-	    print_and_post_log(c0rx_str);	    
+	    print_and_post_log(c0rx_str);
 	 end
 	 // MMIO Read Request
 	 else if (ccip_rx.c0.mmioRdValid) begin
-	    $sformat(c0rx_str, 
+	    $sformat(c0rx_str,
 		     "%d\t   \tMMIORdReq   \t%x\t%x\t%d bytes\n",
 	    	     $time,
 	    	     C0RxMmioHdr.tid,
 	    	     C0RxMmioHdr.address,
 	    	     mmioreq_length(C0RxMmioHdr.length));
-	    print_and_post_log(c0rx_str);	    
-	 end // if (ccip_rx.c0.mmioRdValid)	 
-	 // Read Response 
+	    print_and_post_log(c0rx_str);
+	 end // if (ccip_rx.c0.mmioRdValid)
+	 // Read Response
 	 else if (ccip_rx.c0.rspValid && isRdLineResponse(ccip_rx.c0.hdr.resp_type)) begin
-	    $sformat(c0rx_str, 
+	    $sformat(c0rx_str,
 		     "%d\t%s\t%s\t%x\t%s\t%x\n",
 	 	     $time,
 	 	     print_channel(ccip_rx.c0.hdr.vc_used),
@@ -402,24 +433,24 @@ module ccip_logger
 	 	     ccip_rx.c0.hdr.mdata,
 		     print_clnum(ccip_rx.c0.hdr.cl_num),
 	 	     ccip_rx.c0.data);
-	    print_and_post_log(c0rx_str);	    
-	 end // if (ccip_tx.c0.rspValid && (ccip_rx.c0.hdr.resptype == eRSP_RDLINE)) 
+	    print_and_post_log(c0rx_str);
+	 end // if (ccip_tx.c0.rspValid && (ccip_rx.c0.hdr.resptype == eRSP_RDLINE))
 	 /*************** SW -> MEM -> AFU Unordered Message  *************/
 	 else if (ccip_rx.c0.rspValid && isUmsgResponse(ccip_rx.c0.hdr.resp_type)) begin
 	    if (C0RxUMsgHdr.umsg_type) begin
-	       $sformat(c0rx_str, 
+	       $sformat(c0rx_str,
 			"%d\t   \tUMsgHint   \t%d\n",
 			$time,
 			C0RxUMsgHdr.umsg_id);
-	       print_and_post_log(c0rx_str);	       
+	       print_and_post_log(c0rx_str);
 	    end
 	    else if (~C0RxUMsgHdr.umsg_type) begin
-	       $sformat(c0rx_str, 
+	       $sformat(c0rx_str,
 			"%d\t   \tUMsgData   \t%d\t%x\n",
 			$time,
 			C0RxUMsgHdr.umsg_id,
 			ccip_rx.c0.data);
-	       print_and_post_log(c0rx_str);	       
+	       print_and_post_log(c0rx_str);
 	    end
 	 end
 	 // -------------------------------------------------- //
@@ -427,23 +458,23 @@ module ccip_logger
 	 // -------------------------------------------------- //
 	 // Write response
 	 if (ccip_rx.c1.rspValid && isWrLineResponse(ccip_rx.c1.hdr.resp_type)) begin
-	    $sformat(c1rx_str, 
+	    $sformat(c1rx_str,
 		     "%d\t%s\t%s\t%x\t%s\n",
 	 	     $time,
 	 	     print_channel(ccip_rx.c1.hdr.vc_used),
 	 	     print_c1_resptype(ccip_rx.c1.hdr.resp_type),
 	 	     ccip_rx.c1.hdr.mdata,
 	 	     print_clnum(ccip_rx.c1.hdr.cl_num));
-	    print_and_post_log(c1rx_str);	    
+	    print_and_post_log(c1rx_str);
 	 end // if (ccip_rx.c1.rspValid && isWrLineResponse(ccip_rx.c1.hdr.resp_type))
 	 // Write Fence Response
 	 else if (ccip_rx.c1.rspValid && isWrFenceResponse(ccip_rx.c1.hdr.resp_type)) begin
-	    $sformat(c1rx_str, 
+	    $sformat(c1rx_str,
 		     "%d\t%s\tWrFenceRsp\t%x\n",
 	 	     $time,
 	 	     print_channel(ccip_rx.c1.hdr.vc_used),
 	 	     ccip_rx.c1.hdr.mdata);
-	    print_and_post_log(c1rx_str);	    
+	    print_and_post_log(c1rx_str);
 	 end
 
 	 // -------------------------------------------------- //
@@ -451,7 +482,7 @@ module ccip_logger
 	 // -------------------------------------------------- //
 	 // AFU -> MEM Read Request
 	 if (ccip_tx.c0.valid && isRdLineRequest(ccip_tx.c0.hdr.req_type) ) begin
-	    $sformat(c0tx_str, 
+	    $sformat(c0tx_str,
 		     "%d\t%s\t%s\t%x\t%x\t%s\n",
 	 	     $time,
 	 	     print_channel(ccip_tx.c0.hdr.vc_sel),
@@ -459,14 +490,14 @@ module ccip_logger
 	 	     ccip_tx.c0.hdr.mdata,
 	 	     ccip_tx.c0.hdr.address,
 		     print_cllen(ccip_tx.c0.hdr.cl_len));
-	    print_and_post_log(c0tx_str);	    
-	 end	 
+	    print_and_post_log(c0tx_str);
+	 end
 	 // -------------------------------------------------- //
 	 // C1Tx Channel activity
 	 // -------------------------------------------------- //
 	 // Write Request
 	 if (ccip_tx.c1.valid && isWrLineRequest(ccip_tx.c1.hdr.req_type)) begin
-	    $sformat(c1tx_str, 
+	    $sformat(c1tx_str,
 		     "%d\t%s\t%s\t%x\t%x\t%x\t%s\n",
 	 	     $time,
 	 	     print_channel(ccip_tx.c1.hdr.vc_sel),
@@ -475,27 +506,27 @@ module ccip_logger
 	 	     ccip_tx.c1.hdr.address,
 	 	     ccip_tx.c1.data,
 		     print_clnum(ccip_tx.c1.hdr.cl_len));
-	    print_and_post_log(c1tx_str);	    
+	    print_and_post_log(c1tx_str);
 	 end // if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.req_type != eREQ_WRFENCE))
 	 // Write Fence
 	 else if (ccip_tx.c1.valid && isWrFenceRequest(ccip_tx.c1.hdr.req_type)) begin
-	    $sformat(c1tx_str, 
+	    $sformat(c1tx_str,
 		     "%d\t%s\tWrFence \t%x\n",
 		     $time,
 		     print_channel(ccip_tx.c1.hdr.vc_sel),
 		     ccip_tx.c1.hdr.mdata);
-	    print_and_post_log(c1tx_str);	    
-	 end	 
+	    print_and_post_log(c1tx_str);
+	 end
 	 // -------------------------------------------------- //
 	 // C2Tx Channel activity
 	 // -------------------------------------------------- //
-	 if (ccip_tx.c2.mmioRdValid) begin	    
-	    $sformat(c2tx_str, 
+	 if (ccip_tx.c2.mmioRdValid) begin
+	    $sformat(c2tx_str,
 		     "%d\t   \tMMIORdRsp   \t%x\t%x\n",
 		     $time,
 		     ccip_tx.c2.hdr.tid,
 		     ccip_tx.c2.data);
-	    print_and_post_log(c2tx_str);	    
+	    print_and_post_log(c2tx_str);
 	 end
 	 // -------------------------------------------------- //
 	 // FINISH command
