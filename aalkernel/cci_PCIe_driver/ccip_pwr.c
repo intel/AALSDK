@@ -407,7 +407,7 @@ bt32bitInt send_pr_power_event(struct pr_program_context* pReconf_context,
              PDEBUG("busID %x\n", busID);
              PDEBUG("deviceID %x\n", deviceID);
              PDEBUG("functionID %x\n", functionID);
-             PDEBUG("socketID %x\n", socketID)
+             PDEBUG("socketID %x\n", socketID);
              PDEBUG("power_required %d\n", power_required);
 
              // get Power from GB
