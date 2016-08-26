@@ -371,108 +371,6 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
    }
 
    m_pRuntime = pRT;
-
-   btcString AFUName = "ALIAFU";
-
-   INFO("Allocating " << AFUName << " Service");
-
-   NamedValueSet Manifest;
-   NamedValueSet ConfigRecord;
-
-   if ( 0 == strcmp(AFUTarget().c_str(), "ALIAFUTarget_FPGA") ) {      // Use FPGA hardware
-
-  	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
-  	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
-
-           if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_BUS_NUMBER)) {
-              cout << "Using PCIe bus 0x" << std::hex << uint_type(gCmdLine.busnum) << std::dec << endl;
-              ConfigRecord.Add(keyRegBusNumber, uint_type(gCmdLine.busnum));
-           }
-           if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER)) {
-              cout << "Using PCIe device 0x" << std::hex << uint_type(gCmdLine.devnum) << std::dec << endl;
-              ConfigRecord.Add(keyRegDeviceNumber, uint_type(gCmdLine.devnum));
-           }
-           if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER)) {
-              cout << "Using PCIe function 0x" << std::hex << uint_type(gCmdLine.funnum) << std::dec << endl;
-              ConfigRecord.Add(keyRegfuntionNumber, uint_type(gCmdLine.funnum));
-           }
-
-  	   if(0 == strcmp(TestMode().c_str(), "TestMode_read") ||
-		  0 == strcmp(TestMode().c_str(), "TestMode_write") ||
-		  0 == strcmp(TestMode().c_str(), "TestMode_trput")){
-
-  		   ConfigRecord.Add(keyRegAFU_ID, NLB_MODE3_AFU_ID);
-  		   Manifest.Add(keyRegAFU_ID, NLB_MODE3_AFU_ID);
-
-  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_lpbk1")){
-
-  		   ConfigRecord.Add(keyRegAFU_ID, NLB_MODE0_AFU_ID);
-  		   Manifest.Add(keyRegAFU_ID, NLB_MODE0_AFU_ID);
-
-  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_sw")){
-
- 		   ConfigRecord.Add(keyRegAFU_ID, NLB_MODE7_AFU_ID);
- 		   Manifest.Add(keyRegAFU_ID, NLB_MODE7_AFU_ID);
-
-  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_atomic")){
-
-		   /*ConfigRecord.Add(keyRegAFU_ID,"41BAFB9D-D97E-43CF-967D-22E837CD2182");
-		   Manifest.Add(keyRegAFU_ID,"41BAFB9D-D97E-43CF-967D-22E837CD2182");*/
-
-         ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
-         Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612"); //TODO: Remove me and uncomment about lines
-
- 	   }else{
-
-  		  cout << "Unsupported Test mode." << endl;
-  		  exit(1);
-  	   }
-
-  	   if(-1 != DevTarget()){
-
-  		   ConfigRecord.Add(keyRegSubDeviceNumber, DevTarget());
-  	   }
-  }else if ( 0 == strcasecmp(AFUTarget().c_str(), "ALIAFUTarget_ASE") ) {         // Use ASE based RTL simulation
-
-	   Manifest.Add(keyRegHandle, 20);
-
-	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASEALIAFU");
-  	   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
-
-   }else if ( 0 == strcasecmp(AFUTarget().c_str(), "ALIAFUTarget_SWSIM") ) {
-
-//      ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimALIAFU");
-//      ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
-
-      ERR("--target=swsim is unsupported in this release. Please choose one of 'ase' or 'fpga'.");
-      exit(1);
-   }
-
-  	Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
-  	Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, AFUName);
-  	Manifest.Add(ALIAFU_NVS_KEY_TARGET, AFUTarget().c_str());
-
-   #if DBG_HOOK
-  	INFO(Manifest);
-   #endif // DBG_HOOK
-
-  	TransactionID afu_tid(CMyApp::AFU);
-  	pRT->allocService(dynamic_cast<IBase *>(this), Manifest, afu_tid);
-
-  	// Modify the manifest for the NLB AFU
-    Manifest.Delete(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED);
-    ConfigRecord.Delete(keyRegAFU_ID);
-
-    ConfigRecord.Add(keyRegAFU_ID, "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764");
-    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
-
-	#if DBG_HOOK
-	INFO(Manifest);
-	#endif // DBG_HOOK
-
-	// Allocate the AFU
-	TransactionID fme_tid(CMyApp::FME);
-	pRT->allocService(dynamic_cast<IBase *>(this), Manifest, fme_tid);
 }
 
 void CMyApp::runtimeStopped(IRuntime *pRT)
@@ -486,7 +384,7 @@ void CMyApp::runtimeStartFailed(const IEvent &e)
    if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
       PrintExceptionDescription(e);
    }
-   m_bIsOK = false;
+//   m_bIsOK = false;
    INFO("Runtime Start Failed");
    Post();
 }
@@ -496,8 +394,8 @@ void CMyApp::runtimeAllocateServiceFailed(IEvent const &e)
    if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
       PrintExceptionDescription(e);
    }
-   m_bIsOK = false;
-   ERR("Service Allocate Failed (rt)");
+//   m_bIsOK = false;
+//   ERR("Service Allocate Failed (rt)");
 }
 
 void CMyApp::runtimeAllocateServiceSucceeded(IBase               *pServiceBase,
@@ -594,11 +492,11 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
    }else if(tid.ID() == CMyApp::FME){
 
 	   m_pFMEService = pServiceBase;
-	   ASSERT(NULL != m_pFMEService);
+	   /*ASSERT(NULL != m_pFMEService);
 	   if ( NULL == m_pFMEService ) {
 		  m_bIsOK = false;
 		  return;
-	   }
+	   }*/
 
 	   // Documentation says HWALIAFU Service publishes
 	   //    IALIPerf as subclass interface. Used to access performance monitors
@@ -609,6 +507,11 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 		  return;
 	   }
 	   */
+
+	   if(m_pFMEService){
+		   Post();
+	   }
+
    }else if(tid.ID() == CMyApp::VTP){
 	  // Save the IBase for the VTP Service.
 	  m_pVTP_AALService = pServiceBase;
@@ -633,8 +536,7 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 	  m_pDiagBufferService = dynamic_cast<IALIBuffer *>(m_pVTPService);
    }
 
-	if( m_pFMEService &&
-		m_pNLBService)
+	if( m_pNLBService)
 	{
 		if(true == m_VTPActive){
 			if ( m_pVTPService ){
@@ -702,12 +604,10 @@ void CMyApp::serviceAllocateFailed(const IEvent &e)
   if ( e.Has(iidExTranEvent) &&
 	   0 == strcmp (dynamic_ref<IExceptionTransactionEvent>(iidExTranEvent, e).Description(), "Resources unavailable")) {
          //ExceptionTransaction
-
-	  cout << FAIL << TestMode() << " is unsupported in the current bitstream loaded. Please program the correct bitstream and try again." << NORMAL << endl;
    }
 
    m_bIsOK = false;
-   ERR("Service Allocate Failed");
+//   ERR("Service Allocate Failed");
    Post();
 }
 
@@ -750,6 +650,124 @@ void CMyApp::serviceFreed(TransactionID const &tid)
 	}
     INFO("Service Freed");
     Post();
+}
+
+void CMyApp::StartServices()
+{
+
+	btcString AFUName = "ALIAFU";
+
+   INFO("Allocating " << AFUName << " Service");
+
+   NamedValueSet Manifest;
+   NamedValueSet ConfigRecord;
+
+   if ( 0 == strcmp(AFUTarget().c_str(), "ALIAFUTarget_FPGA") ) {      // Use FPGA hardware
+
+	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
+	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
+
+		   if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_BUS_NUMBER)) {
+			  cout << "Using PCIe bus 0x" << std::hex << uint_type(gCmdLine.busnum) << std::dec << endl;
+			  ConfigRecord.Add(keyRegBusNumber, uint_type(gCmdLine.busnum));
+		   }
+		   if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER)) {
+			  cout << "Using PCIe device 0x" << std::hex << uint_type(gCmdLine.devnum) << std::dec << endl;
+			  ConfigRecord.Add(keyRegDeviceNumber, uint_type(gCmdLine.devnum));
+		   }
+		   if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER)) {
+			  cout << "Using PCIe function 0x" << std::hex << uint_type(gCmdLine.funnum) << std::dec << endl;
+			  ConfigRecord.Add(keyRegfuntionNumber, uint_type(gCmdLine.funnum));
+		   }
+
+	   if(0 == strcmp(TestMode().c_str(), "TestMode_read") ||
+		  0 == strcmp(TestMode().c_str(), "TestMode_write") ||
+		  0 == strcmp(TestMode().c_str(), "TestMode_trput")){
+
+		   ConfigRecord.Add(keyRegAFU_ID, NLB_MODE3_AFU_ID);
+		   Manifest.Add(keyRegAFU_ID, NLB_MODE3_AFU_ID);
+
+	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_lpbk1")){
+
+		   ConfigRecord.Add(keyRegAFU_ID, NLB_MODE0_AFU_ID);
+		   Manifest.Add(keyRegAFU_ID, NLB_MODE0_AFU_ID);
+
+	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_sw")){
+
+		   ConfigRecord.Add(keyRegAFU_ID, NLB_MODE7_AFU_ID);
+		   Manifest.Add(keyRegAFU_ID, NLB_MODE7_AFU_ID);
+
+	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_atomic")){
+
+		   /*ConfigRecord.Add(keyRegAFU_ID,"41BAFB9D-D97E-43CF-967D-22E837CD2182");
+		   Manifest.Add(keyRegAFU_ID,"41BAFB9D-D97E-43CF-967D-22E837CD2182");*/
+
+		 ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+		 Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612"); //TODO: Remove me and uncomment about lines
+
+	   }else{
+
+		  cout << "Unsupported Test mode." << endl;
+		  exit(1);
+	   }
+
+	   if(-1 != DevTarget()){
+
+		   ConfigRecord.Add(keyRegSubDeviceNumber, DevTarget());
+	   }
+  }else if ( 0 == strcasecmp(AFUTarget().c_str(), "ALIAFUTarget_ASE") ) {         // Use ASE based RTL simulation
+
+	   Manifest.Add(keyRegHandle, 20);
+
+	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASEALIAFU");
+	   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
+
+   }else if ( 0 == strcasecmp(AFUTarget().c_str(), "ALIAFUTarget_SWSIM") ) {
+
+//      ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimALIAFU");
+//      ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
+
+	  ERR("--target=swsim is unsupported in this release. Please choose one of 'ase' or 'fpga'.");
+	  exit(1);
+   }
+
+	Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+	Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, AFUName);
+	Manifest.Add(ALIAFU_NVS_KEY_TARGET, AFUTarget().c_str());
+
+   #if DBG_HOOK
+	INFO(Manifest);
+   #endif // DBG_HOOK
+
+	TransactionID afu_tid(CMyApp::AFU);
+	m_pRuntime->allocService(dynamic_cast<IBase *>(this), Manifest, afu_tid);
+
+	Wait();
+	if(!m_bIsOK){
+		cout << FAIL << TestMode() << " is unsupported in the current bitstream loaded. Please program the correct bitstream and try again." << NORMAL << endl;
+		return;
+	}
+
+	// Modify the manifest for the NLB AFU
+	Manifest.Delete(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED);
+	ConfigRecord.Delete(keyRegAFU_ID);
+
+	ConfigRecord.Add(keyRegAFU_ID, "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764");
+	Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+
+	#if DBG_HOOKls
+
+	INFO(Manifest);
+	#endif // DBG_HOOK
+
+	// Allocate the AFU
+	TransactionID fme_tid(CMyApp::FME);
+	m_pRuntime->allocService(dynamic_cast<IBase *>(this), Manifest, fme_tid);
+	Wait();
+	if(!m_bIsOK){
+		m_bIsOK = true; //Continue with the program flow even if FME is not available.
+		cout << "WARNING: FME Service not found." << endl;
+	}
 }
 
 void CMyApp::StartVTP()
@@ -867,11 +885,13 @@ int main(int argc, char *argv[])
 
    INFO("Starting the AAL Runtime");
    if ( aal.start(args) ) {
-      myapp.Wait(); // For service allocated notification.
+	   INFO("Services Allocated.");
    } else {
       ERR("AAL Runtime start failed");
       return 4;     // Runtime could not start
    }
+
+   myapp.StartServices();
 
    if ( !myapp.IsOK() ) {
       // runtime start failed.
