@@ -420,7 +420,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
       if ( MaxPoll < 0 ) {
          cerr << "The maximum timeout for test stop was exceeded." << endl;
          ++res;
-         break;
+//         break;
       }
 
       if ( 0 != pAFUDSM->test_error ) {
@@ -435,7 +435,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
          cout << std::dec << endl;
 
          ++res;
-         break;
+//         break;
       }
 
       //Checking for num_clocks underflow.
@@ -443,7 +443,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
       {
          cerr << "Number of Clocks underflow.\n";
          ++res;
-         break;
+//         break;
       }
 
 	   PrintOutput(cmd, (sz / CL(1)));
