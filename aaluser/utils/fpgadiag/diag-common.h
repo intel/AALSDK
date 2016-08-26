@@ -176,7 +176,6 @@ public:
    operator IALIPerf * ()   { return m_pALIPerf; }
    operator IMPFVTP * ()    { return m_pVTPService; }
 
-   void StartServices();             ///< Start the AFU and FME services
    void StartVTP();                  ///< Start the VTP service
    btInt VTPActive() const             { return m_VTPActive;   }
 protected:
