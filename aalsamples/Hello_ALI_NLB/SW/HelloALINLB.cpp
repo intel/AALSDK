@@ -277,7 +277,7 @@ btInt HelloALINLBApp::run()
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
 
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
-   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+   ConfigRecord.Add(keyRegAFU_ID,"D8424DC4-A4A3-C413-F89E-433683F9040B");
 
 
    #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
