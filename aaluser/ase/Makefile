@@ -47,10 +47,6 @@ include ase_sources.mk
 # Base directory
 ASE_BASEDIR = $(PWD)
 
-# Coverage settings (lcov in SW and VCS-CM in HW)
-ASE_COVERAGE ?= 0
-COV_DIR=$(ASE_BASEDIR)/coverage/
-
 # Enable Altera gates library
 GLS_SIM = 1
 GLS_SAMPLE_LIB = $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
@@ -358,10 +354,6 @@ endif
 sim: check
 ifeq ($(SIMULATOR), VCS)
 	cd $(ASE_WORKDIR) ; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
-  ifeq ($(ASE_COVERAGE), 1)
-	cd $(COV_DIR) ; lcov --base-directory $(COV_DIR) --directory $(ASE_WORKDIR) --capture --output-file $(COV_DIR)/sim_coverage.info ; genhtml $(COV_DIR)/sim_coverage.info --output-directory $(COV_DIR)/sim_coverage ; cd -
-	cd $(COV_DIR) ; urg -full64 -dir $(COV_DIR)/vcs_coverage.vdb ; cd -
-  endif
 else
   ifeq ($(SIMULATOR), QUESTA)
 	cd $(ASE_WORKDIR) ; vsim $(MENT_VSIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) $(ASE_TOP) ; cd -
