@@ -83,7 +83,8 @@ declare -ra DRIVER_SETS=(\
 'cci' \
 'cci-sim' \
 'cci-dbg' \
-'cci-sriov'\
+'cci-sriov' \
+'cci-vf'\
 )
 
 declare -r DEV_PERMS='a+rw'
@@ -273,6 +274,48 @@ case $1 in
       fi
       printf "[ OK ]\n"
    ;; # cci-sriov | cci_sriov
+
+   cci-vf|cci_vf)
+      mod="@AALBUS_DRV_NAME@.ko"
+      mod_path="${BUILD_DIR}/aalbus/kbuild"
+      printf "insmod %-15s " "${mod}"
+      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+         printf "[ALREADY]\n"
+      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+         die "[FAIL]"
+      fi
+      printf "[ OK ]\n"
+
+      mod="@AALRMS_DRV_NAME@.ko"
+      mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
+      printf "insmod %-15s " "${mod}"
+      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+         printf "[ALREADY]\n"
+      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+         die "[FAIL]"
+      fi
+      printf "[ OK ]\n"
+
+      mod="@AALRMC_DRV_NAME@.ko"
+      mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
+      printf "insmod %-15s " "${mod}"
+      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+         printf "[ALREADY]\n"
+      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+         die "[FAIL]"
+      fi
+      printf "[ OK ]\n"
+
+      mod="@CCIPCIEDRV_DRV_NAME@.ko"
+      mod_path="${BUILD_DIR}/cci_PCIe_driver/kbuild"
+      printf "insmod %-15s " "${mod}"
+      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+         printf "[ALREADY]\n"
+      elif ! ${INSMOD} "${mod_path}/${mod}" skip_pf=1; then
+         die "[FAIL]"
+      fi
+      printf "[ OK ]\n"
+   ;; # cci-vf | cci_vf
 
    ##  The following are to be deprecated 
    base)
