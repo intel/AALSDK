@@ -385,15 +385,15 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
 
            if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_BUS_NUMBER)) {
-              cout << "Using PCIe bus 0x" << hex << uint_type(gCmdLine.busnum) << endl;
+              cout << "Using PCIe bus 0x" << std::hex << uint_type(gCmdLine.busnum) << std::dec << endl;
               ConfigRecord.Add(keyRegBusNumber, uint_type(gCmdLine.busnum));
            }
            if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER)) {
-              cout << "Using PCIe device 0x" << hex << uint_type(gCmdLine.devnum) << endl;
+              cout << "Using PCIe device 0x" << std::hex << uint_type(gCmdLine.devnum) << std::dec << endl;
               ConfigRecord.Add(keyRegDeviceNumber, uint_type(gCmdLine.devnum));
            }
            if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER)) {
-              cout << "Using PCIe function 0x" << hex << uint_type(gCmdLine.funnum) << endl;
+              cout << "Using PCIe function 0x" << std::hex << uint_type(gCmdLine.funnum) << std::dec << endl;
               ConfigRecord.Add(keyRegfuntionNumber, uint_type(gCmdLine.funnum));
            }
 

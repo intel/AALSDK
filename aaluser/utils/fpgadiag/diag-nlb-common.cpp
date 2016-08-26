@@ -546,17 +546,17 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    fprintf(fp, "Usage:\n");
 
    if ( 0 == strcasecmp(test.c_str(), "LPBK1") ) {
-         fprintf(fp, "   --mode=lpbk1 <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<OUTPUT>]");
+         fprintf(fp, "   --mode=lpbk1 <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<BUS>] [<DEVICE>] [<FUNCTION>] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "READ") ) {
-         fprintf(fp, "   --mode=read <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<OUTPUT>]");
+         fprintf(fp, "   --mode=read <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<BUS>] [<DEVICE>] [<FUNCTION>] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "WRITE") ) {
-         fprintf(fp, "   --mode=write <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<WR-PATTERN>] [<OUTPUT>]");
+         fprintf(fp, "   --mode=write <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<WR-PATTERN>] [<BUS>] [<DEVICE>] [<FUNCTION>] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "TRPUT") ) {
-         fprintf(fp, "   --mode=trput <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<OUTPUT>]");
+         fprintf(fp, "   --mode=trput <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<BUS>] [<DEVICE>] [<FUNCTION>] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "SW") ) {
-         fprintf(fp, "   --mode=sw <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<OUTPUT>] [<NOTICE>]");
+         fprintf(fp, "   --mode=sw <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<BUS>] [<DEVICE>] [<FUNCTION>] [<OUTPUT>] [<NOTICE>]");
    }else if ( 0 == strcasecmp(test.c_str(), "ATOMIC") ) {
-         fprintf(fp, "   --mode=atomic <TARGET> <SUB-MODE> [<CMP-XCHG>] [<QUAD-WORD>] [<OUTPUT>]");
+         fprintf(fp, "   --mode=atomic <TARGET> <SUB-MODE> [<CMP-XCHG>] [<QUAD-WORD>] [<BUS>] [<DEVICE>] [<FUNCTION>] [<OUTPUT>]");
    }else {
 	   cerr << "Invalid test mode." << endl;
 	   return;
@@ -921,6 +921,27 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
               nlbcl->defaults.mincx, nlbcl->defaults.maxcx);
       fprintf(fp, "Default=%llu\n", nlbcl->defaults.cx);
 
+   }
+
+   fprintf(fp, "      <BUS>       = --bus-number       OR --bn,     Bus number of the PCIe device,                  ");
+   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER) ) {
+	   fprintf(fp, "%d\n", nlbcl->busnum);
+   } else {
+	   fprintf(fp, "Default=%d\n", nlbcl->defaults.busnum);
+   }
+
+   fprintf(fp, "      <DEVICE>    = --device-number    OR --dn,     Device number of the PCIe device,               ");
+   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER) ) {
+	   fprintf(fp, "%d\n", nlbcl->devnum);
+   } else {
+	   fprintf(fp, "Default=%d\n", nlbcl->defaults.devnum);
+   }
+
+   fprintf(fp, "      <FUNCTION>  = --function-number  OR --fn,     Function number of the PCIe device,             ");
+   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER) ) {
+	   fprintf(fp, "%d\n", nlbcl->funnum);
+   } else {
+	   fprintf(fp, "Default=%d\n", nlbcl->defaults.funnum);
    }
 
    fprintf(fp, "      <OUTPUT>    = --suppress-hdr     OR --sh,     suppress column headers for text output,        ");
