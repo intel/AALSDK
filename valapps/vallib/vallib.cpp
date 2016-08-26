@@ -105,6 +105,7 @@ void AllocatesNLBLpbk1AFU::Allocate(AAL::IRuntime *pRuntime)
 
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID, "D8424DC4-A4A3-C413-F89E-433683F9040B");
+//   ConfigRecord.Add(keyRegBusNumber, (btUnsigned32bitInt)0xbe);
 
 #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
 
@@ -150,6 +151,7 @@ void AllocatesFME::Allocate(AAL::IRuntime *pRuntime)
 
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID, "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764");
+//   ConfigRecord.Add(keyRegBusNumber, (btUnsigned32bitInt)0xbe);
 
 #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
 
@@ -195,6 +197,7 @@ void AllocatesPort::Allocate(AAL::IRuntime *pRuntime)
 
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID, "3AB49893-138D-42EB-9642-B06C6B355B87");
+//   ConfigRecord.Add(keyRegBusNumber, (btUnsigned32bitInt)0xbe);
 
 #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
 
@@ -289,7 +292,9 @@ AAL::btInt DoesNLBLpbk1::NLBLpbk1()
    pALIMMIOIfc->mmioWrite32(CSR_NUM_LINES, m_TransferSize / CL(1));
 
    // Set the transfer mode
-   pALIMMIOIfc->mmioWrite32(CSR_CFG, NLB_TEST_MODE_LPBK1);
+   pALIMMIOIfc->mmioWrite32(CSR_CFG, NLB_TEST_MODE_LPBK1 | 0x200); //Rdline_I
+
+   MSG("Rdline_Invalidate selected by default.");
 
    pDSM = (volatile nlb_vafu_dsm *)m_DSMVirt;
 
