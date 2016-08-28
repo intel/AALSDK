@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
         default: cout<<endl; abort(); }
 
     HelloALIBufferApp theApp("HW",
-                             "C000C966-0D82-4272-9AEF-FE5F84570612",
+                             "D8424DC4-A4A3-C413-F89E-433683F9040B",
                              "Buffer Test");
     theApp.setRequestBuffers(true);
     theApp.setBufferSize(bufferSize);
