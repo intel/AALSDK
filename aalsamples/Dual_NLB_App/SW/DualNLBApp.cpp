@@ -348,24 +348,42 @@ public:
 
    // <end IRuntimeClient interface>
 protected:
+   enum {
+         AFU0,
+         AFU1
+   };
+
    Runtime        m_Runtime;           ///< AAL Runtime
-   IBase         *m_pAALService;       ///< The generic AAL Service interface for the AFU.
-   IALIBuffer    *m_pALIBufferService; ///< Pointer to Buffer Service
-   IALIMMIO      *m_pALIMMIOService;   ///< Pointer to MMIO Service
-   IALIReset     *m_pALIResetService;  ///< Pointer to AFU Reset Service
    CSemaphore     m_Sem;               ///< For synchronizing with the AAL runtime.
    btInt          m_Result;            ///< Returned result value; 0 if success
 
+   IBase         *m_pAALService_afu0;       ///< The generic AAL Service interface for the AFU.
+   IALIBuffer    *m_pALIBufferService_afu0; ///< Pointer to Buffer Service
+   IALIMMIO      *m_pALIMMIOService_afu0;   ///< Pointer to MMIO Service
+   IALIReset     *m_pALIResetService_afu0;  ///< Pointer to AFU Reset Service
+
+   IBase         *m_pAALService_afu1;       ///< The generic AAL Service interface for the AFU.
+   IALIBuffer    *m_pALIBufferService_afu1; ///< Pointer to Buffer Service
+   IALIMMIO      *m_pALIMMIOService_afu1;   ///< Pointer to MMIO Service
+   IALIReset     *m_pALIResetService_afu1;  ///< Pointer to AFU Reset Service
+
    // Workspace info
-   btVirtAddr     m_DSMVirt;        ///< DSM workspace virtual address.
-   btPhysAddr     m_DSMPhys;        ///< DSM workspace physical address.
-   btWSSize       m_DSMSize;        ///< DSM workspace size in bytes.
-   btVirtAddr     m_InputVirt;      ///< Input workspace virtual address.
-   btPhysAddr     m_InputPhys;      ///< Input workspace physical address.
-   btWSSize       m_InputSize;      ///< Input workspace size in bytes.
-   btVirtAddr     m_OutputVirt;     ///< Output workspace virtual address.
-   btPhysAddr     m_OutputPhys;     ///< Output workspace physical address.
-   btWSSize       m_OutputSize;     ///< Output workspace size in bytes.
+   btVirtAddr     m_DSMVirt_afu0;        ///< DSM workspace virtual address.
+   btPhysAddr     m_DSMPhys_afu0;        ///< DSM workspace physical address.
+   btWSSize       m_DSMSize_afu0;        ///< DSM workspace size in bytes.
+   btVirtAddr     m_InputVirt_afu0;      ///< Input workspace virtual address.
+   btPhysAddr     m_InputPhys_afu0;      ///< Input workspace physical address.
+   btWSSize       m_InputSize_afu0;      ///< Input workspace size in bytes.
+   btVirtAddr     m_OutputVirt_afu0;     ///< Output workspace virtual address.
+   btPhysAddr     m_OutputPhys_afu0;     ///< Output workspace physical address.
+   btWSSize       m_OutputSize_afu0;     ///< Output workspace size in bytes.
+
+   btVirtAddr     m_DSMVirt_afu1;        ///< DSM workspace virtual address.
+   btPhysAddr     m_DSMPhys_afu1;        ///< DSM workspace physical address.
+   btWSSize       m_DSMSize_afu1;        ///< DSM workspace size in bytes.
+   btVirtAddr     m_OutputVirt_afu1;     ///< Output workspace virtual address.
+   btPhysAddr     m_OutputPhys_afu1;     ///< Output workspace physical address.
+   btWSSize       m_OutputSize_afu1;     ///< Output workspace size in bytes.
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -378,20 +396,30 @@ protected:
 
 DualNLBApp::DualNLBApp() :
    m_Runtime(this),
-   m_pAALService(NULL),
-   m_pALIBufferService(NULL),
-   m_pALIMMIOService(NULL),
-   m_pALIResetService(NULL),
+   m_pAALService_afu0(NULL),
+   m_pALIBufferService_afu0(NULL),
+   m_pALIMMIOService_afu0(NULL),
+   m_pALIResetService_afu0(NULL),
+   m_pAALService_afu1(NULL),
+   m_pALIBufferService_afu1(NULL),
+   m_pALIMMIOService_afu1(NULL),
+   m_pALIResetService_afu1(NULL),
    m_Result(0),
-   m_DSMVirt(NULL),
-   m_DSMPhys(0),
-   m_DSMSize(0),
-   m_InputVirt(NULL),
-   m_InputPhys(0),
-   m_InputSize(0),
-   m_OutputVirt(NULL),
-   m_OutputPhys(0),
-   m_OutputSize(0)
+   m_DSMVirt_afu0(NULL),
+   m_DSMPhys_afu0(0),
+   m_DSMSize_afu0(0),
+   m_DSMVirt_afu1(NULL),
+   m_DSMPhys_afu1(0),
+   m_DSMSize_afu1(0),
+   m_InputVirt_afu0(NULL),
+   m_InputPhys_afu0(0),
+   m_InputSize_afu0(0),
+   m_OutputVirt_afu0(NULL),
+   m_OutputPhys_afu0(0),
+   m_OutputSize_afu0(0),
+   m_OutputVirt_afu1(NULL),
+   m_OutputPhys_afu1(0),
+   m_OutputSize_afu1(0)
 {
    // Register our Client side interfaces so that the Service can acquire them.
    //   SetInterface() is inherited from CAASBase
@@ -442,7 +470,7 @@ DualNLBApp::~DualNLBApp()
 btInt DualNLBApp::run()
 {
    cout <<"========================"<<endl;
-   cout <<"= Hello ALI NLB Sample ="<<endl;
+   cout <<"=   Dual NLB Sample    ="<<endl;
    cout <<"========================"<<endl;
 
    // Request the Servcie we are interested in.
@@ -453,49 +481,70 @@ btInt DualNLBApp::run()
    //  readily available and bound at run-time.
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
+   TransactionID afu0_tid(AFU0);
+   TransactionID afu1_tid(AFU1);
 
-#if defined( HWAFU )                /* Use FPGA hardware */
    // Service Library to use
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
 
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID,"D8424DC4-A4A3-C413-F89E-433683F9040B");
 
+	if (flag_is_set(configCmdLine.flags, DUALNLB_CMD_FLAG_BUS0)) {
+		ConfigRecord.Add(keyRegBusNumber, btUnsigned32bitInt(configCmdLine.bus0));
+	}
+	if (flag_is_set(configCmdLine.flags, DUALNLB_CMD_FLAG_DEV0)) {
+		ConfigRecord.Add(keyRegDeviceNumber, btUnsigned32bitInt(configCmdLine.device0));
+	}
+	if (flag_is_set(configCmdLine.flags, DUALNLB_CMD_FLAG_FUNC0)) {
+		ConfigRecord.Add(keyRegfuntionNumber, btUnsigned32bitInt(configCmdLine.function0));
+	}
 
-   #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
-   Manifest.Add(keyRegHandle, 20);
-
-   Manifest.Add(ALIAFU_NVS_KEY_TARGET, ali_afu_ase);
-
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
-   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
-
-   #else                            /* default is Software Simulator */
-#if 0 // NOT CURRRENTLY SUPPORTED
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimALIAFU");
-   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
-#endif
-   return -1;
-#endif
 
    // Add the Config Record to the Manifest describing what we want to allocate
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
 
    // in future, everything could be figured out by just giving the service name
-   Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello ALI NLB");
+   Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Dual NLB");
 
-   MSG("Allocating Service");
+   MSG("Allocating Service on Socket0");
 
    // Allocate the Service and wait for it to complete by sitting on the
    //   semaphore. The serviceAllocated() callback will be called if successful.
    //   If allocation fails the serviceAllocateFailed() should set m_bIsOK appropriately.
    //   (Refer to the serviceAllocated() callback to see how the Service's interfaces
    //    are collected.)
-   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest);
+   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, afu0_tid);
    m_Sem.Wait();
    if(!m_bIsOK){
-      ERR("Allocation failed\n");
+      ERR("AFU_0 Allocation failed\n");
       goto done_0;
+   }
+
+   // Modify the manifest for the NLB AFU1
+   Manifest.Delete(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED);
+   ConfigRecord.Delete(keyRegBusNumber);
+   ConfigRecord.Delete(keyRegDeviceNumber);
+   ConfigRecord.Delete(keyRegDeviceNumber);
+
+   if (flag_is_set(configCmdLine.flags, DUALNLB_CMD_FLAG_BUS1)) {
+	   ConfigRecord.Add(keyRegBusNumber, btUnsigned32bitInt(configCmdLine.bus1));
+   }
+   if (flag_is_set(configCmdLine.flags, DUALNLB_CMD_FLAG_DEV1)) {
+	   ConfigRecord.Add(keyRegDeviceNumber, btUnsigned32bitInt(configCmdLine.device1));
+   }
+   if (flag_is_set(configCmdLine.flags, DUALNLB_CMD_FLAG_FUNC1)) {
+	   ConfigRecord.Add(keyRegfuntionNumber, btUnsigned32bitInt(configCmdLine.function1));
+   }
+
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+
+   MSG("Allocating Service on Socket1");
+   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, afu1_tid);
+   m_Sem.Wait();
+   if(!m_bIsOK){
+	  ERR("AFU_1 Allocation failed\n");
+	  goto done_0;
    }
 
    // Now that we have the Service and have saved the IALIBuffer interface pointer
@@ -505,53 +554,84 @@ btInt DualNLBApp::run()
    // Device Status Memory (DSM) is a structure defined by the NLB implementation.
 
    // User Virtual address of the pointer is returned directly in the function
-   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, &m_DSMVirt)){
+   if( ali_errnumOK != m_pALIBufferService_afu0->bufferAllocate(LPBK1_DSM_SIZE, &m_DSMVirt_afu0)){
       m_bIsOK = false;
       m_Result = -1;
       goto done_1;
    }
 
    // Save the size and get the IOVA from teh User Virtual address. The HW only uses IOVA.
-   m_DSMSize = LPBK1_DSM_SIZE;
-   m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
+   m_DSMSize_afu0 = LPBK1_DSM_SIZE;
+   m_DSMPhys_afu0 = m_pALIBufferService_afu0->bufferGetIOVA(m_DSMVirt_afu0);
 
-   if(0 == m_DSMPhys){
+   if(0 == m_DSMPhys_afu0){
       m_bIsOK = false;
       m_Result = -1;
       goto done_2;
+   }
+
+   if( ali_errnumOK != m_pALIBufferService_afu1->bufferAllocate(LPBK1_DSM_SIZE, &m_DSMVirt_afu1)){
+	   m_bIsOK = false;
+	   m_Result = -1;
+	   goto done_1;
+   }
+
+   // Save the size and get the IOVA from teh User Virtual address. The HW only uses IOVA.
+   m_DSMSize_afu1 = LPBK1_DSM_SIZE;
+   m_DSMPhys_afu1 = m_pALIBufferService_afu1->bufferGetIOVA(m_DSMVirt_afu1);
+
+   if(0 == m_DSMPhys_afu1){
+	  m_bIsOK = false;
+	  m_Result = -1;
+	  goto done_2;
    }
 
    // Repeat for the Input and Output Buffers
-   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_ALLOCATION_SIZE, &m_InputVirt)){
+   if( ali_errnumOK != m_pALIBufferService_afu0->bufferAllocate(LPBK1_BUFFER_ALLOCATION_SIZE, &m_InputVirt_afu0)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
       goto done_2;
    }
 
-   m_InputSize = LPBK1_BUFFER_SIZE;
-   m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
-   if(0 == m_InputPhys){
+   m_InputSize_afu0 = LPBK1_BUFFER_SIZE;
+   m_InputPhys_afu0 = m_pALIBufferService_afu0->bufferGetIOVA(m_InputVirt_afu0);
+   if(0 == m_InputPhys_afu0){
       m_bIsOK = false;
       m_Result = -1;
       goto done_3;
    }
 
-   if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_ALLOCATION_SIZE, &m_OutputVirt)){
+   if( ali_errnumOK !=  m_pALIBufferService_afu0->bufferAllocate(LPBK1_BUFFER_ALLOCATION_SIZE, &m_OutputVirt_afu0)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
       goto done_3;
    }
 
-   m_OutputSize = LPBK1_BUFFER_SIZE;
-   m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
-   if(0 == m_OutputPhys){
+   m_OutputSize_afu0 = LPBK1_BUFFER_SIZE;
+   m_OutputPhys_afu0 = m_pALIBufferService_afu0->bufferGetIOVA(m_OutputVirt_afu0);
+   if(0 == m_OutputPhys_afu0){
       m_bIsOK = false;
       m_Result = -1;
       goto done_4;
    }
 
+
+   if( ali_errnumOK !=  m_pALIBufferService_afu1->bufferAllocate(LPBK1_BUFFER_ALLOCATION_SIZE, &m_OutputVirt_afu1)){
+	  m_bIsOK = false;
+	  m_Sem.Post(1);
+	  m_Result = -1;
+	  goto done_3;
+   }
+
+   m_OutputSize_afu1 = LPBK1_BUFFER_SIZE;
+   m_OutputPhys_afu1 = m_pALIBufferService_afu1->bufferGetIOVA(m_OutputVirt_afu1);
+   if(0 == m_OutputPhys_afu1){
+	  m_bIsOK = false;
+	  m_Result = -1;
+	  goto done_4;
+   }
 
 
    //=============================
@@ -562,17 +642,18 @@ btInt DualNLBApp::run()
    if(true == m_bIsOK){
 
       // Clear the DSM
-      ::memset( m_DSMVirt, 0, m_DSMSize);
+      ::memset( m_DSMVirt_afu0, 0, m_DSMSize_afu0);
 
       // Initialize the source and destination buffers
-      ::memset( m_InputVirt,  0xAF, m_InputSize);  // Input initialized to AFter
-      ::memset( m_OutputVirt, 0xBE, m_OutputSize); // Output initialized to BEfore
+      ::memset( m_InputVirt_afu0,  0xAF, m_InputSize_afu0);  // Input initialized to AFter
+      ::memset( m_OutputVirt_afu0, 0xBE, m_OutputSize_afu0); // Output initialized to BEfore
+      ::memset( m_OutputVirt_afu1, 0xCD, m_OutputSize_afu1); // Output initialized to CD
 
       struct CacheLine {                           // Operate on cache lines
          btUnsigned32bitInt uint[16];
       };
-      struct CacheLine *pCL = reinterpret_cast<struct CacheLine *>(m_InputVirt);
-      for ( btUnsigned32bitInt i = 0; i < m_InputSize / CL(1) ; ++i ) {
+      struct CacheLine *pCL = reinterpret_cast<struct CacheLine *>(m_InputVirt_afu0);
+      for ( btUnsigned32bitInt i = 0; i < m_InputSize_afu0 / CL(1) ; ++i ) {
          pCL[i].uint[15] = i;
       };                         // Cache-Line[n] is zero except last uint = n
 
@@ -581,74 +662,108 @@ btInt DualNLBApp::run()
       //    reverses that. We are following ccipTest here.
 
       // Initiate AFU Reset
-      m_pALIResetService->afuReset();
-
+      m_pALIResetService_afu0->afuReset();
+      m_pALIResetService_afu1->afuReset();
 
       // Initiate DSM Reset
       // Set DSM base, high then low
-      m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys);
+      m_pALIMMIOService_afu0->mmioWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys_afu0);
+      m_pALIMMIOService_afu1->mmioWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys_afu1);
 
       // Assert AFU reset
-      m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
+      m_pALIMMIOService_afu0->mmioWrite32(CSR_CTL, 0);
+      m_pALIMMIOService_afu1->mmioWrite32(CSR_CTL, 0);
 
       //De-Assert AFU reset
-      m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
+      m_pALIMMIOService_afu0->mmioWrite32(CSR_CTL, 1);
+      m_pALIMMIOService_afu1->mmioWrite32(CSR_CTL, 1);
 
-      // If ASE, give it some time to catch up
-      /*
-      #if defined ( ASEAFU )
-      SleepSec(5);
-      #endif*/ /* ASE AFU */
+      // Set input workspace address for afu0
+      m_pALIMMIOService_afu0->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_InputPhys_afu0));
 
+      // Set output workspace address for afu0
+      m_pALIMMIOService_afu0->mmioWrite64(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_OutputPhys_afu0));
 
-      // Set input workspace address
-      m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_InputPhys));
+      // Set input workspace address for afu1
+	  m_pALIMMIOService_afu1->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_OutputPhys_afu0));
 
-      // Set output workspace address
-      m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_OutputPhys));
+	  // Set output workspace address for afu1
+	  m_pALIMMIOService_afu1->mmioWrite64(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_OutputPhys_afu1));
 
       // Set the number of cache lines for the test
-      m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
+      m_pALIMMIOService_afu0->mmioWrite32(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
+      m_pALIMMIOService_afu1->mmioWrite32(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
 
       // Set the test mode
-      m_pALIMMIOService->mmioWrite32(CSR_CFG,0x42000);
+      m_pALIMMIOService_afu0->mmioWrite32(CSR_CFG,0x42000);
+      m_pALIMMIOService_afu1->mmioWrite32(CSR_CFG,0x42000);
 
-      volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
-                                         (m_DSMVirt  + DSM_STATUS_TEST_COMPLETE);
-      // Start the test
-      m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
+      volatile bt32bitCSR *StatusAddr_afu0 = (volatile bt32bitCSR *)
+                                        	 (m_DSMVirt_afu0  + DSM_STATUS_TEST_COMPLETE);
+
+      volatile bt32bitCSR *StatusAddr_afu1 = (volatile bt32bitCSR *)
+											 (m_DSMVirt_afu1  + DSM_STATUS_TEST_COMPLETE);
+
+      // Start the test on afu 0
+      m_pALIMMIOService_afu0->mmioWrite32(CSR_CTL, 3);
 
 
       // Wait for test completion
-      while( 0 == ((*StatusAddr)&0x1) ) {
+      while( 0 == ((*StatusAddr_afu0)&0x1) ) {
          SleepMicro(100);
       }
-      MSG("Done Running Test");
+      MSG("Done Running Test on AFU 0");
 
       // Stop the device
-      m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
+      m_pALIMMIOService_afu0->mmioWrite32(CSR_CTL, 7);
 
       // Check that output buffer now contains what was in input buffer, e.g. 0xAF
-      if (int err = memcmp( m_OutputVirt, m_InputVirt, m_OutputSize)) {
-         ERR("Output does NOT Match input, at offset " << err << "!");
+      if (int err = memcmp( m_OutputVirt_afu0, m_InputVirt_afu0, m_OutputSize_afu0)) {
+         ERR("Output does NOT Match input, at offset !");
          ++m_Result;
       } else {
-         MSG("Output matches Input!");
+         MSG("Output matches Input on AFU 0!");
       }
+
+
+      // Start the test on afu 1
+      m_pALIMMIOService_afu1->mmioWrite32(CSR_CTL, 3);
+
+	  // Wait for test completion
+	  while( 0 == ((*StatusAddr_afu1)&0x1) ) {
+	    SleepMicro(100);
+	  }
+	  MSG("Done Running Test on AFU 1");
+
+	  // Stop the device
+	  m_pALIMMIOService_afu1->mmioWrite32(CSR_CTL, 7);
+
+	  // Check that output buffer now contains what was in input buffer, e.g. 0xAF
+	  if (int err = memcmp( m_OutputVirt_afu0, m_OutputVirt_afu1, m_OutputSize_afu1)) {
+	     ERR("Output does NOT Match input, at offset !");
+	     ++m_Result;
+	  } else {
+	     MSG("Output matches Input on AFU 1!");
+	  }
    }
    MSG("Done Running Test");
 
    // Clean-up and return
 done_4:
-   m_pALIBufferService->bufferFree(m_OutputVirt);
+   m_pALIBufferService_afu0->bufferFree(m_OutputVirt_afu0);
+   m_pALIBufferService_afu1->bufferFree(m_OutputVirt_afu1);
 done_3:
-   m_pALIBufferService->bufferFree(m_InputVirt);
+   m_pALIBufferService_afu0->bufferFree(m_InputVirt_afu0);
 done_2:
-   m_pALIBufferService->bufferFree(m_DSMVirt);
+   m_pALIBufferService_afu0->bufferFree(m_DSMVirt_afu0);
+   m_pALIBufferService_afu1->bufferFree(m_DSMVirt_afu1);
 
 done_1:
    // Freed all three so now Release() the Service through the Services IAALService::Release() method
-   (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
+   (dynamic_ptr<IAALService>(iidService, m_pAALService_afu0))->Release(TransactionID());
+   m_Sem.Wait();
+
+   (dynamic_ptr<IAALService>(iidService, m_pAALService_afu1))->Release(TransactionID());
    m_Sem.Wait();
 
 done_0:
@@ -664,46 +779,88 @@ done_0:
 
 // <begin IServiceClient interface>
 void DualNLBApp::serviceAllocated(IBase *pServiceBase,
-                                      TransactionID const &rTranID)
+                                  TransactionID const &rTranID)
 {
-   // Save the IBase for the Service. Through it we can get any other
-   //  interface implemented by the Service
-   m_pAALService = pServiceBase;
-   ASSERT(NULL != m_pAALService);
-   if ( NULL == m_pAALService ) {
-      m_bIsOK = false;
-      return;
-   }
+	if(rTranID.ID() == AFU0){
+	   // Save the IBase for the Service. Through it we can get any other
+	   //  interface implemented by the Service
+	   m_pAALService_afu0 = pServiceBase;
+	   ASSERT(NULL != m_pAALService_afu0);
+	   if ( NULL == m_pAALService_afu0 ) {
+		  m_bIsOK = false;
+		  return;
+	   }
 
-   // Documentation says HWALIAFU Service publishes
-   //    IALIBuffer as subclass interface. Used in Buffer Allocation and Free
-   m_pALIBufferService = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
-   ASSERT(NULL != m_pALIBufferService);
-   if ( NULL == m_pALIBufferService ) {
-      m_bIsOK = false;
-      return;
-   }
+	   // Documentation says HWALIAFU Service publishes
+	   //    IALIBuffer as subclass interface. Used in Buffer Allocation and Free
+	   m_pALIBufferService_afu0 = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
+	   ASSERT(NULL != m_pALIBufferService_afu0);
+	   if ( NULL == m_pALIBufferService_afu0 ) {
+		  m_bIsOK = false;
+		  return;
+	   }
 
-   // Documentation says HWALIAFU Service publishes
-   //    IALIMMIO as subclass interface. Used to set/get MMIO Region
-   m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
-   ASSERT(NULL != m_pALIMMIOService);
-   if ( NULL == m_pALIMMIOService ) {
-      m_bIsOK = false;
-      return;
-   }
+	   // Documentation says HWALIAFU Service publishes
+	   //    IALIMMIO as subclass interface. Used to set/get MMIO Region
+	   m_pALIMMIOService_afu0 = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
+	   ASSERT(NULL != m_pALIMMIOService_afu0);
+	   if ( NULL == m_pALIMMIOService_afu0 ) {
+		  m_bIsOK = false;
+		  return;
+	   }
 
-   // Documentation says HWALIAFU Service publishes
-   //    IALIReset as subclass interface. Used for resetting the AFU
-   m_pALIResetService = dynamic_ptr<IALIReset>(iidALI_RSET_Service, pServiceBase);
-   ASSERT(NULL != m_pALIResetService);
-   if ( NULL == m_pALIResetService ) {
-      m_bIsOK = false;
-      return;
-   }
+	   // Documentation says HWALIAFU Service publishes
+	   //    IALIReset as subclass interface. Used for resetting the AFU
+	   m_pALIResetService_afu0 = dynamic_ptr<IALIReset>(iidALI_RSET_Service, pServiceBase);
+	   ASSERT(NULL != m_pALIResetService_afu0);
+	   if ( NULL == m_pALIResetService_afu0 ) {
+		  m_bIsOK = false;
+		  return;
+	   }
 
-   MSG("Service Allocated");
+	   MSG("Service on AFU0 Allocated");
+
+	}else if(rTranID.ID() == AFU1){
+	   // Save the IBase for the Service. Through it we can get any other
+	   //  interface implemented by the Service
+	   m_pAALService_afu1 = pServiceBase;
+	   ASSERT(NULL != m_pAALService_afu1);
+	   if ( NULL == m_pAALService_afu1 ) {
+		  m_bIsOK = false;
+		  return;
+	   }
+
+	   // Documentation says HWALIAFU Service publishes
+	   //    IALIBuffer as subclass interface. Used in Buffer Allocation and Free
+	   m_pALIBufferService_afu1 = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
+	   ASSERT(NULL != m_pALIBufferService_afu1);
+	   if ( NULL == m_pALIBufferService_afu1 ) {
+		  m_bIsOK = false;
+		  return;
+	   }
+
+	   // Documentation says HWALIAFU Service publishes
+	   //    IALIMMIO as subclass interface. Used to set/get MMIO Region
+	   m_pALIMMIOService_afu1 = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
+	   ASSERT(NULL != m_pALIMMIOService_afu1);
+	   if ( NULL == m_pALIMMIOService_afu1 ) {
+		  m_bIsOK = false;
+		  return;
+	   }
+
+	   // Documentation says HWALIAFU Service publishes
+	   //    IALIReset as subclass interface. Used for resetting the AFU
+	   m_pALIResetService_afu1 = dynamic_ptr<IALIReset>(iidALI_RSET_Service, pServiceBase);
+	   ASSERT(NULL != m_pALIResetService_afu1);
+	   if ( NULL == m_pALIResetService_afu1 ) {
+		  m_bIsOK = false;
+		  return;
+	   }
+
+	   MSG("Service on AFU1 Allocated");
+   }
    m_Sem.Post(1);
+
 }
 
 void DualNLBApp::serviceAllocateFailed(const IEvent &rEvent)
@@ -726,11 +883,17 @@ void DualNLBApp::serviceAllocateFailed(const IEvent &rEvent)
  void DualNLBApp::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
  {
     MSG("Service unexpected requested back");
-    if(NULL != m_pAALService){
-       IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService);
+    if(NULL != m_pAALService_afu0){
+       IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService_afu0);
        ASSERT(pIAALService);
        pIAALService->Release(TransactionID());
     }
+
+    if(NULL != m_pAALService_afu1){
+	   IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService_afu1);
+	   ASSERT(pIAALService);
+	   pIAALService->Release(TransactionID());
+	}
  }
 
 
@@ -822,7 +985,7 @@ void DualNLBApp::serviceAllocateFailed(const IEvent &rEvent)
 int main(int argc, char *argv[])
 {
 
-	if ( argc < 2 ) {
+	if ( argc < 3 ) {
 	  showhelp(stdout, &_aalclp_gcs_data);
 	  return 1;
 	} else if ( 0!= ParseCmds(&configCmdLine, argc, argv) ) {
