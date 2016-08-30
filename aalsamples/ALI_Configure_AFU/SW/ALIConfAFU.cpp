@@ -97,13 +97,20 @@ struct  ALIConfigCommandLine
 #define ALICONIFG_CMD_FLAG_VERSION   0x00000002
 #define ALICONIFG_CMD_PARSE_ERROR    0x00000003
 
+#define ALICONIFG_CMD_FLAG_BUS       0x00000008
+#define ALICONIFG_CMD_FLAG_DEV       0x00000010
+#define ALICONIFG_CMD_FLAG_FUNC      0x00000020
+
    char    bitstream_file[200];
    int     reconftimeout;
    int     reconfAction;
    bool    reactivateDisabled;
+   int     bus;
+   int     device;
+   int     function;
 
 };
-struct ALIConfigCommandLine configCmdLine = { 0,"",1,0,0 };
+struct ALIConfigCommandLine configCmdLine = { 0,"",1,0,0,0,0,0 };
 
 
 int aliconigafu_on_non_option(AALCLP_USER_DEFINED user, const char *nonoption) {
@@ -188,6 +195,25 @@ int aliconigafu_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option,
       return 0;
    }
 
+   //Bus Number
+   if ( 0 == strcmp("--bus", option)) {
+    char *endptr = NULL;
+    pcmdline->bus = strtoul(value, &endptr, 0);
+    flag_setf(pcmdline->flags, ALICONIFG_CMD_FLAG_BUS);
+  }
+
+   //Device Number
+   if ( 0 == strcmp("--device", option)) {
+	   char *endptr = NULL;
+	   pcmdline->device = strtoul(value, &endptr, 0);
+	   flag_setf(pcmdline->flags, ALICONIFG_CMD_FLAG_DEV);
+   }
+   //Function Number
+   if ( 0 == strcmp("--function", option)) {
+	  char *endptr = NULL;
+	  pcmdline->function = strtoul(value, &endptr, 0);
+	  flag_setf(pcmdline->flags, ALICONIFG_CMD_FLAG_FUNC);
+	}
    return 0;
 }
 
@@ -255,9 +281,12 @@ CLEANUP:
 void help_msg_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
 {
    fprintf(fp, "Usage:\n");
-   fprintf(fp, "   aliconfafu [--bitstream=<FILENAME>] [--reconftimeout=<SECONDS>]  \
-                [--reconfaction=<ACTION_HONOR_REQUEST or ACTION_HONOR_OWNER >]        \
-                [--reactivateDisabled=< TRUE or FALSE>]\n");
+   fprintf(fp, "   aliconfafu [--bitstream=<FILENAME>] [--reconftimeout=<SECONDS>] \n \
+             [--reconfaction=<ACTION_HONOR_REQUEST or ACTION_HONOR_OWNER >] \n \
+             [--reactivateDisabled=< TRUE or FALSE>]\n \
+             [--bus=<BUS_NUMBER>]\n \
+	      [--device=<DEVICE_NUMBER>]\n \
+	      [--function=<FUNCTION_NUMBER>]\n");
    fprintf(fp, "\n");
 
 }
@@ -435,6 +464,15 @@ btInt ALIConfAFUApp::run()
 
    ConfigRecord.Add(keyRegSubDeviceNumber,0);
 
+   if (flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_BUS)) {
+   		ConfigRecord.Add(keyRegBusNumber, btUnsigned32bitInt(configCmdLine.bus));
+   }
+   if (flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_DEV)) {
+   		ConfigRecord.Add(keyRegDeviceNumber, btUnsigned32bitInt(configCmdLine.device));
+   }
+   if (flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_FUNC)) {
+   		ConfigRecord.Add(keyRegfuntionNumber, btUnsigned32bitInt(configCmdLine.function));
+   }
 
    #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
    Manifest.Add(keyRegHandle, 20);
