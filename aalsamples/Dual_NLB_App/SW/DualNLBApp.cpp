@@ -91,8 +91,10 @@ using namespace AAL;
 # define MB(x)                     ((x) * 1024 * 1024)
 #endif // MB
 
+#define LPBK1_NUM_CL			 10
+
 // LPBK1_BUFFER_SIZE is size in cachelines that are copied
-#define LPBK1_BUFFER_SIZE        CL(1)
+#define LPBK1_BUFFER_SIZE        CL(LPBK1_NUM_CL)
 // LPBK1_BUFFER_ALLOCATION_SIZE is the amount of space that needs to
 //   be allocated due to an optimization of the NLB AFU to operate on
 //   2 MiB buffer boundaries. Note that the way to get 2 MiB alignment
@@ -641,6 +643,11 @@ btInt DualNLBApp::run()
    MSG("Running Test");
    if(true == m_bIsOK){
 
+	   struct timespec ts_afu0, ts_afu1;
+	   ts_afu0.tv_sec = 6;
+	   ts_afu1.tv_sec = 3;
+	   Timer     absolute_afu0, absolute_afu1;
+
       // Clear the DSM
       ::memset( m_DSMVirt_afu0, 0, m_DSMSize_afu0);
 
@@ -695,8 +702,8 @@ btInt DualNLBApp::run()
       m_pALIMMIOService_afu1->mmioWrite32(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
 
       // Set the test mode
-      m_pALIMMIOService_afu0->mmioWrite32(CSR_CFG,0x42000);
-      m_pALIMMIOService_afu1->mmioWrite32(CSR_CFG,0x42000);
+      m_pALIMMIOService_afu0->mmioWrite32(CSR_CFG,0x42002); //LPBK1, RD-VH0, WR-VH0, CONT
+      m_pALIMMIOService_afu1->mmioWrite32(CSR_CFG,0x42002); //LPBK1, RD-VH0, WR-VH0, CONT
 
       volatile bt32bitCSR *StatusAddr_afu0 = (volatile bt32bitCSR *)
                                         	 (m_DSMVirt_afu0  + DSM_STATUS_TEST_COMPLETE);
@@ -704,18 +711,42 @@ btInt DualNLBApp::run()
       volatile bt32bitCSR *StatusAddr_afu1 = (volatile bt32bitCSR *)
 											 (m_DSMVirt_afu1  + DSM_STATUS_TEST_COMPLETE);
 
+      absolute_afu0 = Timer() + Timer(&ts_afu0);
+      absolute_afu1 = Timer() + Timer(&ts_afu1);
+
       // Start the test on afu 0
       m_pALIMMIOService_afu0->mmioWrite32(CSR_CTL, 3);
 
+      // Start the test on afu 1
+	  m_pALIMMIOService_afu1->mmioWrite32(CSR_CTL, 3);
+
+	  //Wait till timeout.
+	   while(Timer() < absolute_afu1){
+		   SleepNano(10);
+	   }
+
+	  // Stop the device on afu1
+	  m_pALIMMIOService_afu1->mmioWrite32(CSR_CTL, 7);
+
+	  //Wait till timeout.
+	   while(Timer() < absolute_afu0){
+		   SleepNano(10);
+	   }
+
+	   // Stop the device on afu0
+	   m_pALIMMIOService_afu0->mmioWrite32(CSR_CTL, 7);
+
+	   // Wait for test completion
+	   while( 0 == ((*StatusAddr_afu1)&0x1) ) {
+		 SleepMicro(100);
+	   }
+	   MSG("Done Running Test on AFU 1");
 
       // Wait for test completion
       while( 0 == ((*StatusAddr_afu0)&0x1) ) {
          SleepMicro(100);
       }
       MSG("Done Running Test on AFU 0");
-
-      // Stop the device
-      m_pALIMMIOService_afu0->mmioWrite32(CSR_CTL, 7);
 
       // Check that output buffer now contains what was in input buffer, e.g. 0xAF
       if (int err = memcmp( m_OutputVirt_afu0, m_InputVirt_afu0, m_OutputSize_afu0)) {
@@ -724,19 +755,6 @@ btInt DualNLBApp::run()
       } else {
          MSG("Output matches Input on AFU 0!");
       }
-
-
-      // Start the test on afu 1
-      m_pALIMMIOService_afu1->mmioWrite32(CSR_CTL, 3);
-
-	  // Wait for test completion
-	  while( 0 == ((*StatusAddr_afu1)&0x1) ) {
-	    SleepMicro(100);
-	  }
-	  MSG("Done Running Test on AFU 1");
-
-	  // Stop the device
-	  m_pALIMMIOService_afu1->mmioWrite32(CSR_CTL, 7);
 
 	  // Check that output buffer now contains what was in input buffer, e.g. 0xAF
 	  if (int err = memcmp( m_OutputVirt_afu0, m_OutputVirt_afu1, m_OutputSize_afu1)) {
