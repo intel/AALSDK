@@ -308,10 +308,37 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
         cerr << "Error bit set in DSM.\n";
         cout << "DSM Test Error: 0x" << std::hex << pAFUDSM->test_error << endl;
 
+        if( 0 != (pAFUDSM->test_error | 0x00000001)){
+        	cout << "Unexpected Read or Write response\n";
+
+        }else if(0 != (pAFUDSM->test_error | 0x00000004)){
+        	cout << "Write FIFO overflow\n";
+
+        }else if(0 != (pAFUDSM->test_error | 0x00000008)){
+        	cout << "Read data not as expected when FPGA read back N lines\n";
+
+        }
+
         cout << "Mode error vector: " << endl;
         for (int i=0; i < 8; i++)
         {
-           cout << "[" << i << "]: 0x" << pAFUDSM->mode_error[i] << endl;
+           cout << "[" << i << "]: 0x" << std::hex << pAFUDSM->mode_error[i] << std::dec;
+
+           if( 0 == i ){
+        	   cout << " ; Read Data";
+
+           }else if( 1 == i ){
+        	   cout << " ; Read response address";
+
+           }else if( 2 == i ){
+        	   cout << " ; Read response header";
+
+           }else if( 3 == i ){
+        	   cout << " ; Num of read responses";
+
+           }
+
+           cout << endl;
         }
         cout << std::dec << endl;
         ++res;

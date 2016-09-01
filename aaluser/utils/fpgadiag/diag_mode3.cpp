@@ -427,6 +427,14 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
          cerr << "Error bit set in DSM.\n";
          cout << "DSM Test Error: 0x" << std::hex << pAFUDSM->test_error << endl;
 
+         if( 0 != (pAFUDSM->test_error | 0x00000001)){
+        	 cout << "Unexpected Read or Write response\n";
+
+         }else if(0 != (pAFUDSM->test_error | 0x00000004)){
+        	 cout << "Write FIFO overflow\n";
+
+         }
+
          cout << "Mode error vector: " << endl;
          for (int i=0; i < 8; i++)
          {
