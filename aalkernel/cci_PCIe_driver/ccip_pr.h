@@ -248,6 +248,14 @@ void  reconfigure_bitstream_cancelPwrmgrTimer(struct pr_program_context* ppr_pro
 /// @return    error code if fails , 0 if pass
 int send_event_to_pwrmgr(struct pr_program_context* ppr_context,int power_required);
 
+/// Name: getport_device
+/// @brief get port device  pointer
+///
+/// @param[in] pdev    -aal device pointer
+/// @param[in] portId  -port index
+/// @return    port device pointer
+struct port_device * getport_device(struct cci_aal_device  *pdev , int portId);
+
 /// Name: ccipdrv_event_afu_aysnc_pr_release_send
 /// @brief sends event to application
 ///

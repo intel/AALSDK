@@ -87,6 +87,9 @@
 #define BS_WRITE_CSR_LEN  4
 
 extern btUnsigned32bitInt sim;
+extern kosal_list_head g_device_list;
+extern kosal_semaphore g_dev_list_sem;
+
 
 extern struct cci_aal_device   *
                        cci_create_AAL_UAFU_Device( struct port_device  *,
@@ -1657,7 +1660,7 @@ void afu_release_timeout_callback(struct kosal_work_object *pwork)
 /// @return    AAL Device pointer
 ///============================================================================
 struct cci_aal_device   *
-               cci_create_AAL_PR_Device( struct port_device  *pportdev,
+               cci_create_AAL_PR_Device( struct fme_device  *pfmedev,
                                           struct aal_device_id *paalid)
 {
    struct cci_aal_device   *pcci_aaldev = NULL;
@@ -1679,9 +1682,8 @@ struct cci_aal_device   *
    cci_aaldev_type(pcci_aaldev) = cci_dev_PR;
 
    // Record parentage
-   cci_aaldev_pport(pcci_aaldev)    = pportdev;       // Save its port
-   cci_aaldev_pfme(pcci_aaldev)     = ccip_port_dev_fme(pportdev);
-   cci_aaldev_pci_dev(pcci_aaldev)  = ccip_dev_to_pci_dev( ccip_port_to_ccidev(pportdev) );
+   cci_aaldev_pfme(pcci_aaldev)     = pfmedev;
+   cci_aaldev_pci_dev(pcci_aaldev)  = ccip_fme_dev_pci_dev(pfmedev) ;
 
    // Device Address is the same as the Port. Set the AFU ID information
    // The following attributes describe the interfaces supported by the device
@@ -1690,9 +1692,9 @@ struct cci_aal_device   *
    aaldevid_pipguid(*paalid)             = CCIP_PR_PIPIID;
 
    // Setup the MMIO region parameters
-   cci_aaldev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)ccip_port_pr(pportdev);
-   cci_aaldev_len_afu_mmio(pcci_aaldev)   = sizeof(struct CCIP_PORT_DFL_PR);
-   cci_aaldev_phys_afu_mmio(pcci_aaldev)  = kosal_virt_to_phys((btVirtAddr)ccip_port_pr(pportdev));
+   cci_aaldev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)ccip_fme_pr(pfmedev);
+   cci_aaldev_len_afu_mmio(pcci_aaldev)   = sizeof(struct CCIP_FME_DFL_PR);
+   cci_aaldev_phys_afu_mmio(pcci_aaldev)  = kosal_virt_to_phys((btVirtAddr)ccip_fme_pr(pfmedev));
 
    // Create the AAL device and attach it to the CCI device object
    cci_aaldev_to_aaldev(pcci_aaldev) =  aaldev_create( "CCIPPR",           // AAL device base name
@@ -1707,10 +1709,6 @@ struct cci_aal_device   *
    //
 
    // Initialize the worker thread
-
-  // cci_aaldev_workq_pwrmgr_timeout( pcci_aaldev )    = kosal_create_workqueue( "PwrMgrTimer", cci_aaldev_to_aaldev( pcci_aaldev ) );
-
-
    cci_aaldev_workq_reconf( pcci_aaldev )        = kosal_create_workqueue( "ReconfWQ", cci_aaldev_to_aaldev( pcci_aaldev ) );
 
    // Set how many owners are allowed access to this device simultaneously
@@ -1833,7 +1831,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          PDEBUG("reconfAction=%lld\n",reconfAction);
 
          // Port for this AAL PR object
-         pportdev = cci_aaldev_pport(pdev);
+         //pportdev = cci_aaldev_pport(pdev);
+         pportdev = getport_device(pdev,0);
 
          // Find the AFU device associated with this port
          // Make sure device is not in use. If it is notify user and start time out timer.
@@ -2008,7 +2007,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
       AFU_COMMAND_CASE(ccipdrv_activateAFU) {
 
          // Port for this AAL PR object
-         struct port_device  *pportdev                         = cci_aaldev_pport(pdev);
+         //struct port_device  *pportdev                         = cci_aaldev_pport(pdev);
+         struct port_device  *pportdev = getport_device(pdev,0);
          struct ccipdrv_event_afu_response_event *pafuws_evt   = NULL;
          // Find the AFU device associated with this port
          if(NULL != ccip_port_uafu_dev(pportdev)){
@@ -2084,7 +2084,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          PDEBUG("reconfTimeout=%lld\n",reconfTimeout);
          PDEBUG("reconfAction=%lld\n" ,reconfAction);
 
-         pportdev = cci_aaldev_pport(pdev);
+         //pportdev = cci_aaldev_pport(pdev);
+         pportdev = getport_device(pdev,0);
 
          // Case 1 - if bitstream buffer is null or buffer length is zero.
          // sends bad parameter error event .
@@ -2543,3 +2544,45 @@ ERROR:
    return retval;
 }
 
+
+//=============================================================================
+/// Name: getport_device
+/// @brief get port device  pointer
+///
+/// @param[in] pdev    -aal device pointer
+/// @param[in] portId  -port index
+/// @return    port device pointer
+//=============================================================================
+struct port_device * getport_device(struct cci_aal_device  *pdev , int portId)
+{
+   struct ccip_device   *pccidev    = NULL;
+   struct list_head     *This       = NULL;
+   struct list_head     *tmp        = NULL;
+   struct port_device   *pport_dev = NULL;
+
+   PTRACEIN;
+
+   //lock g_device_list
+   //kosal_sem_get_krnl(&g_dev_list_sem);
+
+   // Search through our list of devices to find the one matching pcidev
+   if ( !kosal_list_is_empty(&g_device_list) ) {
+
+      // Run through list of devices.  Use safe variant
+      //  as we will be deleting entries
+      kosal_list_for_each_safe(This, tmp, &g_device_list) {
+
+         pccidev = ccip_list_to_ccip_device(This);
+         if(pdev->m_pfme->m_pHDR->fab_capability.socket_id ==
+            pccidev->m_pfme_dev->m_pHDR->fab_capability.socket_id) {
+
+            pport_dev = pccidev->m_pport_dev[portId];
+         }
+      }
+   }
+   //unlock g_device_list
+   //kosal_sem_put(&g_dev_list_sem);
+
+   PTRACEOUT;
+   return pport_dev;
+}

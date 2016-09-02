@@ -255,6 +255,7 @@ struct ccip_device
    int                        m_maxVFs;
 
    struct fme_device         *m_pfme_dev;       // FME Device
+   struct port_device        *m_pport_dev[4];   // Port Device array
 
    kosal_pci_dev            *m_pcidev;         // Linux pci_dev pointer
 
@@ -295,7 +296,7 @@ struct ccip_device
 #define ccip_dev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
 #define ccip_dev_to_aaldev(pdev)             ((pdev)->m_aaldev)
 #define ccip_dev_to_fme_dev(pdev)            ((pdev)->m_pfme_dev)
-#define ccip_dev_to_port_dev(pdev)           ((pdev)->m_pfme_dev)
+#define ccip_dev_to_port_dev(pdev,i)         ((pdev)->m_pport_dev[i])
 
 #define ccip_dev_pci_dev(pdev)               ((pdev)->m_pcidev)
 
@@ -367,6 +368,7 @@ struct port_device;
 struct ccip_device * create_ccidevice(void);
 void  destroy_ccidevice(struct ccip_device *pccidev);
 extern btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device *);
+extern btBool cci_create_AAL_PR_allocatable_objects(struct ccip_device * pccipdev);
 extern  btBool cci_create_AAL_power_Device(struct ccip_device *);
 btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *,
                                                    btUnsigned32bitInt);
