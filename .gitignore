@@ -63,3 +63,7 @@ synopsys_sim.setup
 *.mk
 *.list
 *.pyc
+
+# Mac cruft
+.DS_Store
+
