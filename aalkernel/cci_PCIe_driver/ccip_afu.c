@@ -600,7 +600,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          PDEBUG("uMSG @ %p [%" PRIxPHYS_ADDR "]\n", krnl_virt, (btPhysAddr)puMsgvirt->ccip_umsg_base_address.umsg_base_address);
 
          // Enable uMsg operation
-         puMsgvirt->ccip_umsg_capability.status_umsg_engine = 1;
+         // FIXME: Disable UMSgs until BBS bug with Readline_S is resolved
+         puMsgvirt->ccip_umsg_capability.status_umsg_engine = 0;
          {
             // Wait for the uMSG engine to start
             btTime delay = 10;
