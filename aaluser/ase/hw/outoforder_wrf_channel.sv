@@ -137,19 +137,35 @@ module outoforder_wrf_channel
    endgenerate
 
 
+   /*
+    * FUNCTION: get_random_from_range
+    */
+   function int get_random_from_range(int low,
+				      int high);
+      int 				  rand_out;
+      begin
+	 rand_out = $random() % (high + 1 - low) + low;
+	 return rand_out;
+      end
+   endfunction
+
+
+   /*
+    * Optional tracking log - enabled by ASE_DEBUG
+    */
 `ifdef ASE_DEBUG
    int 				       log_fd;
    initial begin
       log_fd = $fopen( DEBUG_LOGNAME, "w");
-      $fwrite(log_fd, "Logger for %m transactions\n");      
+      $fwrite(log_fd, "Logger for %m transactions\n");
    end
 `endif
 
    // Set random seed
    initial begin
-      $srandom(cfg.ase_seed);      
+      $srandom(cfg.ase_seed);
    end
-   
+
    localparam FIFO_WIDTH          = LATBUF_TID_WIDTH + CCIP_TX_HDR_WIDTH + CCIP_DATA_WIDTH;
    localparam OUTFIFO_WIDTH       = LATBUF_TID_WIDTH + CCIP_RX_HDR_WIDTH + CCIP_TX_HDR_WIDTH + CCIP_DATA_WIDTH;
 
@@ -1149,30 +1165,31 @@ module outoforder_wrf_channel
     */
    // Get delay function
    function int get_delay(input TxHdr_t hdr);
+      int delay;
       begin
 	 case (hdr.vc)
 	   VC_VL0:
 	     begin
 		// return $urandom_range(20, 118);
-		return `get_random_from_range(20, 118);
+		delay = get_random_from_range(20, 118);
 	     end
 	   VC_VH0:
 	     begin
-		return `get_random_from_range(240, 270);
+		delay = get_random_from_range(240, 270);
 	     end
 	   VC_VH1:
 	     begin
-		return `get_random_from_range(240, 270);
+		delay = get_random_from_range(240, 270);
 	     end
 	   VC_VA:
 	     begin
-		return 100;
+		delay = 100;
 	 `ifdef ASE_DEBUG
 		$fwrite(log_fd, "%d | *ERROR* => get_delay() must not get VC_VA", $time);
 	 `endif
 	     end
 	 endcase
-	 // return 10;
+	 return delay;
       end
    endfunction
 
@@ -1760,14 +1777,14 @@ endgenerate
 	    `BEGIN_RED_FONTCOLOR;
 	    $display("** ERROR **: VC was assigned incorrectly");
 	    `END_RED_FONTCOLOR;
-	    start_simkill_countdown();	    
+	    start_simkill_countdown();
 	 end
 	 // ** MDATA checks here ***
 	 if (rxhdr_out.mdata != check_hdr_array[tid_out].mdata) begin
 	    `BEGIN_RED_FONTCOLOR;
 	    $display("** ERROR **: MDATA was assigned incorrectly");
 	    `END_RED_FONTCOLOR;
-	    start_simkill_countdown();	    
+	    start_simkill_countdown();
 	 end
       end
    end
