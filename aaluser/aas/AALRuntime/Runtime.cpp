@@ -136,7 +136,7 @@ void Runtime::allocService(IBase               *pClient,
 /// Schedule a Dispatchable object for dispatch (i.e. delivery to its target function).
 ///
 /// @param[in]    pdispatchable  Dispatchable object.
-/// @return       void.
+/// @return       btBool.
 //=============================================================================
 btBool Runtime::schedDispatchable(IDispatchable *pdispatchable)
 {

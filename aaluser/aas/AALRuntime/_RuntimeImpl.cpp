@@ -477,7 +477,7 @@ void _runtime::allocService(IBase               *pClient,
 // Description: Schedule an IDispatchable
 // Interface: public
 // Inputs: pdispatchable - pointer to IDispatchable
-// Outputs: none.
+// Outputs: btBool.
 // Comments:
 //=============================================================================
 btBool _runtime::schedDispatchable(IDispatchable *pDispatchable)
