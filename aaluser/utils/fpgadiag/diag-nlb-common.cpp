@@ -673,7 +673,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       }
 
       fprintf(fp, "                    --wrpush-I	       OR --wpi,    write-push cache behavior,                      ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_I) ) {
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRPUSH_I) ) {
 		 fprintf(fp, "on\n");
 	  } else {
 		 fprintf(fp, "Default=%s\n", nlbcl->defaults.wpi);
@@ -931,14 +931,14 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    }
 
    fprintf(fp, "      <DEVICE>    = --device-number    OR --dn,     Device number of the PCIe device,               ");
-   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER) ) {
+   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER) ) {
 	   fprintf(fp, "%d\n", nlbcl->devnum);
    } else {
 	   fprintf(fp, "Default=%d\n", nlbcl->defaults.devnum);
    }
 
    fprintf(fp, "      <FUNCTION>  = --function-number  OR --fn,     Function number of the PCIe device,             ");
-   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER) ) {
+   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER) ) {
 	   fprintf(fp, "%d\n", nlbcl->funnum);
    } else {
 	   fprintf(fp, "Default=%d\n", nlbcl->defaults.funnum);

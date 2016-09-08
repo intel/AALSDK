@@ -81,7 +81,7 @@ extern struct cci_aal_device   *
                cci_create_AAL_SignalTap_Device( struct port_device  *,
                                                 struct aal_device_id *);
 extern struct cci_aal_device   *
-                      cci_create_AAL_PR_Device( struct port_device  *,
+                      cci_create_AAL_PR_Device( struct fme_device  *,
                                                 struct aal_device_id *);
 
 extern struct cci_aal_device   *
@@ -328,6 +328,44 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
 }
 
 ///============================================================================
+/// Name: cci_create_AAL_PR_allocatable_objects
+/// @brief Creates and registers PR objects (resources) we want to expose
+///        through AAL.
+///
+/// @param[in] pccipdev - CCI Board object .
+/// @return    error code
+///============================================================================
+btBool cci_create_AAL_PR_allocatable_objects(struct ccip_device * pccipdev)
+{
+   struct cci_aal_device   *pcci_aaldev = NULL;
+   struct aal_device_id     aalid;
+
+   //========================
+   // Instantiate a PR Device
+
+   aaldevid_devaddr_bustype(aalid)     = ccip_dev_pcie_bustype(pccipdev);
+   aaldevid_devaddr_busnum(aalid)      = ccip_dev_pcie_busnum(pccipdev);
+   aaldevid_devaddr_devnum(aalid)      = ccip_dev_pcie_devnum(pccipdev);
+   aaldevid_devaddr_fcnnum(aalid)      = ccip_dev_pcie_fcnnum(pccipdev);
+   aaldevid_devaddr_subdevnum(aalid)   = 0x0;    // PR subdevice number is constant
+   aaldevid_devaddr_instanceNum(aalid) = 0x5;    // PR is always instance 06
+   aaldevid_devtype(aalid)             = aal_devtypeAFU;
+
+   pcci_aaldev = cci_create_AAL_PR_Device(ccip_dev_to_fme_dev(pccipdev), &aalid);
+   ASSERT(NULL != pcci_aaldev);
+
+   if(NULL == pcci_aaldev){
+      PDEBUG("ERROR: Creating PR device\n");
+      return false;     // TODO This is a BUG if we get here but should cleanup correctly.
+   }
+
+   // Add the device to the CCI Board device's device list
+   kosal_list_add(&cci_aaldev_list_head(pcci_aaldev), &ccip_aal_dev_list(pccipdev));
+
+   return true;
+}
+
+///============================================================================
 /// Name: cci_port_dev_create_AAL_allocatable_objects
 /// @brief Creates and registers Port objects (resources) we want to expose
 ///        through AAL.
@@ -374,20 +412,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
    // Add the device to the CCI Board device's device list
    kosal_list_add( &cci_aaldev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
 
-   //========================
-   // Instantiate a PR Device
-   aaldevid_devaddr_instanceNum(aalid)++;
-   pcci_aaldev = cci_create_AAL_PR_Device(pportdev, &aalid);
-   ASSERT(NULL != pcci_aaldev);
-
-   if(NULL == pcci_aaldev){
-      PDEBUG("ERROR: Creating PR device\n");
-      return false;     // TODO This is a BUG if we get here but should cleanup correctly.
-   }
-
-   // Add the device to the CCI Board device's device list
-   kosal_list_add( &cci_aaldev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
-
+   
    //=========================================
    // Instantiate a User AFU if one is present
    {

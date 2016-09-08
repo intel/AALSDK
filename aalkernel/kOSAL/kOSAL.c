@@ -670,7 +670,7 @@ char* kosal_gettimestamp(void)
    local_time = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
    rtc_time_to_tm(local_time, &tm);
 
-   sprintf(timestamp," Time Stamp: %04d-%02d-%02d %02d:%02d:%02d\n",
+   sprintf(timestamp," Time Stamp: %04d-%02d-%02d %02d:%02d:%02d ",
                                                                    tm.tm_year + 1900,
                                                                    tm.tm_mon + 1,
                                                                    tm.tm_mday,

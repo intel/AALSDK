@@ -289,6 +289,10 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
          goto ERR;
       }
 
+      // Creates AAL PR device object
+      if(!cci_create_AAL_PR_allocatable_objects(pccipdev)){
+         goto ERR;
+      }
 
       // Creates AAL Power device object
       if(!cci_create_AAL_power_Device(pccipdev)){
@@ -351,8 +355,11 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
          ccip_set_resource(pccipdev, pfme_hdr->port_offsets[i].port_bar);
 
          PDEBUG("Created Port Device\n");
+
          // Point to our parent
          ccip_port_to_ccidev(pportdev) = pccipdev;
+
+         ccip_dev_to_port_dev(pccipdev,i)  = pportdev;
 
          // Inherits B:D:F from board
          ccip_port_bustype(pportdev)   = ccip_dev_pcie_bustype(pccipdev);
