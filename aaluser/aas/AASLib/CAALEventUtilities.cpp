@@ -207,7 +207,7 @@ void ReThrow(IBase               *This,
 // Description:   External function to print information in Exception and
 //                   ExceptionTransaction Events
 //=============================================================================
-void PrintExceptionDescription(IEvent const &theEvent)
+btBool PrintExceptionDescription(IEvent const &theEvent)
 {
    // The Has() method is used here to show how an object can be examined to determine if it supports a particular
    // interface. Exceptions are either derived from ExceptionEvents or ExceptionTransactionEvents
@@ -216,12 +216,14 @@ void PrintExceptionDescription(IEvent const &theEvent)
 
       AAL_ERR(LM_EDS, "\nEXCEPTION EVENT THROWN:  " <<
                       dynamic_ref<IExceptionEvent>(iidExEvent, theEvent).Description() << endl);
+      return true;
 
    } else if ( theEvent.Has(iidExTranEvent) ) {
       //ExceptionTransaction
 
       AAL_ERR(LM_EDS, "\nEXCEPTION TRANSACTION EVENT THROWN:  " <<
                       dynamic_ref<IExceptionTransactionEvent>(iidExTranEvent, theEvent).Description() << endl);
+      return true;
 
    } else if (AAL_IS_EXCEPTION(theEvent.SubClassID())) {
       IExceptionTransactionEvent *trycast_p;
@@ -232,10 +234,12 @@ void PrintExceptionDescription(IEvent const &theEvent)
       } else {
          AAL_ERR(LM_EDS, "\nUNKNOWN EXCEPTION EVENT THROWN:  subclass ID " << hex << theEvent.SubClassID() << endl);
       }
+      return true;
 
    } else {
       // theEvent not an exception.
       ASSERT(false);
+      return false;
    }
 }
 

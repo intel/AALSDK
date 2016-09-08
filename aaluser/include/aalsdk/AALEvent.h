@@ -229,7 +229,7 @@ public:
 
 
 /// Print information in Exception and ExceptionTransaction Events.
-AASLIB_API void PrintExceptionDescription(IEvent const &theEvent);
+AASLIB_API btBool PrintExceptionDescription(IEvent const &theEvent);
 
 #endif //__cplusplus
 
