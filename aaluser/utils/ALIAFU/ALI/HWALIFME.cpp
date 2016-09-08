@@ -95,11 +95,13 @@ btBool CHWALIFME::performanceCountersGet ( INamedValueSet*  const  pResult,
    m_pAFUProxy->SendTransaction(&transaction);
 
    if(transaction.getErrno() != uid_errnumOK){
-       return false;
-     }
+      AAL_ERR( LM_ALI, "FATAL: Performance counter error = " << transaction.getErrno()<< std::endl);
+      return false;
+   }
 
    if(NULL == transaction.getBuffer() )  {
-    return false;
+      AAL_ERR( LM_ALI, "Invalid Transaction buffer"<< std::endl);
+      return false;
    }
 
    pPref = (struct  CCIP_PERF_COUNTERS *)transaction.getBuffer();
@@ -125,7 +127,6 @@ btBool CHWALIFME::performanceCountersGet ( INamedValueSet*  const  pResult,
    pResult->Add(pPref->AFU0_DevTLBRead_Hit.name,pPref->AFU0_DevTLBRead_Hit.value);
    pResult->Add(pPref->AFU0_DevTLBWrite_Hit.name,pPref->AFU0_DevTLBWrite_Hit.value);
 
-
    return true;
 }
 
@@ -150,10 +151,12 @@ btBool CHWALIFME::errorGet( INamedValueSet &rResult )
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: get FME errors = " << transaction.getErrno()<< std::endl);
       return false;
    }
 
    if(NULL == transaction.getBuffer() )  {
+      AAL_ERR( LM_ALI, "Invalid Transaction buffer"<< std::endl);
       return false;
    }
 
@@ -388,10 +391,12 @@ btBool CHWALIFME::errorGetOrder( INamedValueSet &rResult )
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: get FME error Order = " << transaction.getErrno()<< std::endl);
      return false;
    }
 
    if(NULL == transaction.getBuffer() ) {
+     AAL_ERR( LM_ALI, "Invalid Transaction buffer"<< std::endl);
      return false;
    }
 
@@ -687,10 +692,12 @@ btBool CHWALIFME::errorGetMask( INamedValueSet &rResult )
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: get FME errors  mask = " << transaction.getErrno()<< std::endl);
       return false;
    }
 
    if(NULL == transaction.getBuffer() )  {
+      AAL_ERR( LM_ALI, "Invalid Transaction buffer"<< std::endl);
       return false;
    }
 
@@ -722,6 +729,7 @@ btBool CHWALIFME::errorSetMask( const INamedValueSet &rInputArgs )
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: Set FME error mask = " << transaction.getErrno());
       return false;
    }
 
@@ -748,6 +756,7 @@ btBool CHWALIFME::errorClear(const INamedValueSet &rInputArgs )
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: Set FME clear errors = " << transaction.getErrno()<< std::endl);
       return false;
    }
 
@@ -980,7 +989,8 @@ btBool CHWALIFME::errorClearAll()
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
-    return false;
+      AAL_ERR( LM_ALI, "FATAL: Clear all FME errors = " << transaction.getErrno()<< std::endl);
+      return false;
    }
    return true;
 }
@@ -1000,10 +1010,12 @@ btBool CHWALIFME::printAllErrors()
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: Print FME all errors = " << transaction.getErrno()<< std::endl);
       return false;
    }
 
    if(NULL == transaction.getBuffer() )  {
+      AAL_ERR( LM_ALI, "Invalid Transaction buffer"<< std::endl);
       return false;
    }
 
@@ -1098,10 +1110,12 @@ btBool CHWALIFME::thermalGetValues( INamedValueSet &rResult)
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: Get thermal error = " << transaction.getErrno()<< std::endl);
       return false;
    }
 
    if(NULL == transaction.getBuffer() )  {
+      AAL_ERR( LM_ALI, "Invalid Transaction buffer"<< std::endl);
       return false;
    }
 
@@ -1141,7 +1155,7 @@ btBool CHWALIFME::thermalGetValues( INamedValueSet &rResult)
       rResult.Add(AALTEMP_FPGA_TEMP_SENSOR1,temp_rdssensor_fm1.tmp_reading);
    }
    /*
-   if(temp_rdssensor_fm1.tmp_reading_valid ==1  ) {
+   if(temp_rdssensor_fm2.tmp_reading_valid ==1  ) {
       rResult.Add(AALTEMP_READING_SEQNUM,temp_rdssensor_fm1.tmp_reading_seq_num);
       rResult.Add(AALTEMP_FPGA_TEMP_SENSOR2,temp_rdssensor_fm1.tmp_reading);
    }
@@ -1170,10 +1184,12 @@ btBool CHWALIFME::powerGetValues(INamedValueSet &rResult )
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: Get power error = " << transaction.getErrno()<< std::endl);
       return false;
    }
 
    if(NULL == transaction.getBuffer() )  {
+      AAL_ERR( LM_ALI, "Invalid Transaction buffer"<< std::endl);
       return false;
    }
 

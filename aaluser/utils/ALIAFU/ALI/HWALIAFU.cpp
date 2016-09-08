@@ -99,7 +99,7 @@ AAL::ali_errnum_e CHWALIAFU::bufferAllocate( btWSSize             Length,
    }
 
    if(uid_errnumOK != transaction.getErrno() ){
-      AAL_ERR( LM_All, "FATAL:buffer allocate error = " << transaction.getErrno());
+      AAL_ERR( LM_ALI, "FATAL:buffer allocate error = " << transaction.getErrno()<< std::endl);
       return ali_errnumSystem;
 
    }
@@ -107,7 +107,7 @@ AAL::ali_errnum_e CHWALIAFU::bufferAllocate( btWSSize             Length,
 
    // mmap
    if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr, rInputArgs)) {
-      AAL_ERR( LM_All, "FATAL: MapWSID failed");
+      AAL_ERR( LM_ALI, "FATAL: MapWSID failed"<< std::endl);
       return ali_errnumSystem;
    }
    // store entire aalui_WSParms struct in map
@@ -130,7 +130,7 @@ AAL::ali_errnum_e CHWALIAFU::bufferFree( btVirtAddr           Address)
    // Find workspace id
    mapWkSpc_t::iterator i = m_mapWkSpc.find(Address);
    if (i == m_mapWkSpc.end()) {  // not found
-      AAL_ERR(LM_All, "Tried to free non-existent Buffer");
+      AAL_ERR(LM_ALI, "Tried to free non-existent Buffer"<< std::endl);
       return ali_errnumBadParameter;
    }
    // workspace id is in i->second.wsid
@@ -215,7 +215,7 @@ btVirtAddr CHWALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
 
       // mmap
       if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr)) {
-         AAL_ERR( LM_All,"FATAL: MapWSID failed");
+         AAL_ERR( LM_ALI,"FATAL: MapWSID failed"<< std::endl);
          return NULL;
       }
       else
@@ -256,17 +256,17 @@ bool CHWALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 {
 
    if( true != nvsArgs.Has(UMSG_HINT_MASK_KEY)){
-      AAL_ERR( LM_All,"Missing Parameter or Key");
+      AAL_ERR( LM_ALI,"Missing Parameter or Key"<< std::endl);
       return false;
    }
    eBasicTypes nvsType;
    if(ENamedValuesOK !=  nvsArgs.Type(UMSG_HINT_MASK_KEY, &nvsType)){
-      AAL_ERR( LM_All,"Unable to get key value type.");
+      AAL_ERR( LM_ALI,"Unable to get key value type."<< std::endl);
       return false;
    }
 
    if(btUnsigned64bitInt_t !=  nvsType){
-      AAL_ERR( LM_All,"Bad value type.");
+      AAL_ERR( LM_ALI,"Bad value type."<< std::endl);
       return false;
    }
 

@@ -487,23 +487,23 @@ UmsgSetAttributes::UmsgSetAttributes(AAL::NamedValueSet const &nvsArgs) :
 {
 
    if( true != nvsArgs.Has(UMSG_HINT_MASK_KEY)){
-      AAL_ERR( LM_All,"Missing Parameter or Key");
+      AAL_ERR( LM_ALI,"Missing Parameter or Key"<< std::endl);
       return;
    }
    eBasicTypes nvsType;
    if(ENamedValuesOK !=  nvsArgs.Type(UMSG_HINT_MASK_KEY, &nvsType)){
-      AAL_ERR( LM_All,"Unable to get key value type.");
+      AAL_ERR( LM_ALI,"Unable to get key value type."<< std::endl);
       return;
    }
 
    if(btUnsigned64bitInt_t !=  nvsType){
-      AAL_ERR( LM_All,"Bad value type.");
+      AAL_ERR( LM_ALI,"Bad value type."<< std::endl);
       return;
    }
 
    btUnsigned64bitInt  val;
    if(ENamedValuesOK !=  nvsArgs.Get(UMSG_HINT_MASK_KEY, &val)){
-      AAL_ERR( LM_All,"Unable to get key value type.");
+      AAL_ERR( LM_ALI,"Unable to get key value type."<< std::endl);
       return;
    }
 

@@ -182,6 +182,7 @@
                                                 //    May wish to disable this and set DEBUG_BEYOND_LOGGER
                                                 //    in AALLoggerExtern.h, instead
 #define AAL_sysResConf                 (0x0010) // Resource Configuration Service
+#define AAL_sysALI                     (0x0011) // ALI Service
 
 /* Reserved for AAL to 0x0FF */
 #define AAL_sysBase                    (0x0100) // Start from sysBase to define your own
