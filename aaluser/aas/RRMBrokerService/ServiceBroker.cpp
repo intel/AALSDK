@@ -199,14 +199,35 @@ void ServiceBroker::serviceAllocateFailed(const IEvent &rEvent)
    TransactionID origTid = m_Transactions[TranID];
    m_Transactions.erase(TranID);
 
-   // If we were unable to load the ResourceManager then we cannot load.
-   initFailed( new CExceptionTransactionEvent( this,
-                                               origTid,
-                                               errServiceNotFound,
-                                               reasInvalidService,
-                                               strInvalidService) );
+   // Print an error message. If the reason for failure was "reasNoDevice",
+   //  meaning that we couldn't establish a connection to the remote resource
+   //  manager, the most common reason is that there's no driver loaded.
 
-}
+   IExceptionTransactionEvent *evt =
+         dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+
+   if ( NULL != evt ) {
+      AAL_CRIT( LM_All, "Failed to allocate local resource manager: " <<
+            evt->Description() << std::endl );
+      if ( evt->Reason() == reasNoDevice ) {
+         AAL_CRIT( LM_All, "Did you load the drivers?" << std::endl );
+      }
+      // If we were unable to load the ResourceManager then we cannot load.
+      initFailed( new CExceptionTransactionEvent( this,
+                                                  origTid,
+                                                  evt->ExceptionNumber(),
+                                                  evt->Reason(),
+                                                  evt->Description()) );
+   } else {
+      // Not an ExceptionTransactionEvent -- do the best we can.
+      initFailed( new CExceptionTransactionEvent( this,
+                                       origTid,
+                                       errServiceNotFound,
+                                       reasInvalidService,
+                                       strInvalidService) );
+   }
+
+} // ServiceBroker::serviceAllocateFailed()
 
 //=============================================================================
 // Name: serviceReleased
