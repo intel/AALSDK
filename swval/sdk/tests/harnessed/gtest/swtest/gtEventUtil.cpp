@@ -115,7 +115,7 @@ TEST_F(CAALEventUtilities_f, aal0808)
    /// ========================================================================
    /// @test         Passes CExceptionEvent to PrintExceptionDescription.
    ///
-   /// @brief        Expects to return true after logging the exception.
+   /// @brief        Expects true return, after logging the exception.
 
    CExceptionEvent theEvent(&m_Base, 0, 0, "basic exception event");
 
@@ -130,7 +130,7 @@ TEST_F(CAALEventUtilities_f, aal0809)
    /// @test         Passes a CTransactionExceptionEvent object to
    ///               PrintExceptionDescription.
    ///
-   /// @brief        Expects to return true after logging the exception.
+   /// @brief        Expects true return, after logging the exception.
 
    const TransactionID& tid = TransactionID();
 
@@ -148,12 +148,12 @@ TEST_F(CAALEventUtilities_f, aal0810)
    /// @test         Passes a CAALEvent with a custom interface iid to
    ///               PrintExceptionDescription.
    ///
-   /// @brief        Expects return true following log of an unknown exception
-   ///               event message,
+   /// @brief        Expects true return, following log of an unknown exception
+   ///               event message.
    ///
-   /// @details      This event does not have a transaction ID, but it will be
-   ///               an event (i.e. derive from IEvent) and will be an exception
-   ///               (i.e. have the exception bit set and return true from the
+   /// @details      Event does not have a transaction ID, but it is 
+   ///               an event (i.e. derives from IEvent) and is an exception
+   ///               (i.e. has the exception bit set and returns true from the
    ///               macro: AAL_IS_EXCEPTION(btIID)).
 
    CAALEvent* pEvent = new (std::nothrow) CAALEvent(&m_Base);
