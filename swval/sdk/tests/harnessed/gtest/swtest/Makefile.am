@@ -18,6 +18,7 @@ gtCritSect.cpp \
 gtDispatchables.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
+gtEventUtil.cpp \
 gtHWALIAFU.cpp \
 gtMDS.cpp \
 gtNVS0.cpp \
