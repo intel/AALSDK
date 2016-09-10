@@ -180,7 +180,7 @@ btBool CHWALIBase::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
    filterByID = false;
    if (rInputArgs.Has(ALI_GETFEATURE_ID_KEY)) {
       if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_ID_KEY, &filterID)) {
-         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_ID) failed -- " <<
+         AAL_ERR(LM_ALI, "rInputArgs.Get(ALI_GETFEATURE_ID) failed -- " <<
                          "wrong datatype?" << std::endl);
          return false;
       } else {
@@ -191,7 +191,7 @@ btBool CHWALIBase::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
    filterByType = false;
    if (rInputArgs.Has(ALI_GETFEATURE_TYPE_KEY)) {
       if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_TYPE_KEY, &filterType)) {
-         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_TYPE) failed -- " <<
+         AAL_ERR(LM_ALI, "rInputArgs.Get(ALI_GETFEATURE_TYPE) failed -- " <<
                          "wrong datatype?" << std::endl);
          return false;
       } else {
@@ -202,7 +202,7 @@ btBool CHWALIBase::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
    filterByGUID = false;
    if (rInputArgs.Has(ALI_GETFEATURE_GUID_KEY)) {
       if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_GUID_KEY, &filterGUID)) {
-         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_GUID) failed -- " <<
+         AAL_ERR(LM_ALI, "rInputArgs.Get(ALI_GETFEATURE_GUID) failed -- " <<
                          "wrong datatype?" << std::endl);
          return false;
       } else {
@@ -317,7 +317,7 @@ btBool CHWALIBase:: mapMMIO()
 
          // mmap
          if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr)) {
-            AAL_ERR( LM_All, "FATAL: MapWSID failed");
+            AAL_ERR( LM_ALI, "FATAL: MapWSID failed"<< std::endl);
             m_pServiceBase->initFailed(new CExceptionTransactionEvent( NULL,
                                                                        m_tidSaved,
                                                                        errCreationFailure,
@@ -328,7 +328,7 @@ btBool CHWALIBase:: mapMMIO()
 
          // Remember workspace parameters associated with virtual ptr (if we ever need it)
          if (m_mapWkSpc.find(wsevt.wsParms.ptr) != m_mapWkSpc.end()) {
-            AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
+            AAL_ERR( LM_ALI, "FATAL: WSID already exists in m_mapWSID"<< std::endl);
             m_pServiceBase->initFailed(new CExceptionTransactionEvent( NULL,
                                                                        m_tidSaved,
                                                                        errCreationFailure,
@@ -539,6 +539,10 @@ void CHWALIBase::AFUEvent(AAL::IEvent const &theEvent)
                                                            theEvent);
 
    ASSERT(NULL != puidEvent);
+   if(NULL == puidEvent){
+      AAL_ERR( LM_ALI," Invalid ALIAFUProxy event"<< std::endl);
+      return;
+   }
 
    //std::cerr << "Got CHWALIBase AFU event BASE type " << puidEvent->MessageID() << "\n" << std::endl;
 
@@ -555,11 +559,21 @@ void CHWALIBase::AFUEvent(AAL::IEvent const &theEvent)
    case rspid_AFU_PR_Release_Request_Event:
    {
       struct aalui_PREvent *pResult = reinterpret_cast<struct aalui_PREvent *>(puidEvent->Payload());
+      ASSERT(NULL != pResult);
 
-      getRuntime()->schedDispatchable( new ReleaseServiceRequest(m_pSvcClient, new CReleaseRequestEvent(NULL,
-                                                                                                        pResult->reconfTimeout,
-                                                                                                        IReleaseRequestEvent::resource_revokeing,
-                                                                                                        "AFU Release Request")) );
+      if( NULL != pResult) {
+         getRuntime()->schedDispatchable( new ReleaseServiceRequest(m_pSvcClient, new CReleaseRequestEvent(NULL,
+                                                                                                           pResult->reconfTimeout,
+                                                                                                           IReleaseRequestEvent::resource_revokeing,
+                                                                                                           "AFU Release Request")) );
+
+      } else {
+         AAL_ERR( LM_ALI," Invalid AFU Release Request"<< std::endl);
+         getRuntime()->schedDispatchable( new ReleaseServiceRequest(m_pSvcClient, new CReleaseRequestEvent(NULL,
+                                                                                                           0,
+                                                                                                           IReleaseRequestEvent::resource_revokeing,
+                                                                                                           "Invalid AFU Release Request")) );
+      }
    }
    break;
 
@@ -569,6 +583,11 @@ void CHWALIBase::AFUEvent(AAL::IEvent const &theEvent)
 
          // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
          struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
+         ASSERT(NULL != pResult);
+         if(NULL == pResult){
+            AAL_ERR( LM_ALI," Invalid Payload"<< std::endl);
+            return;
+         }
 
          switch(pResult->evtID)
          {

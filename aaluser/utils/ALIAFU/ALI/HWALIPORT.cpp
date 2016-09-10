@@ -88,10 +88,12 @@ btBool CHWALIPORT::errorGet( INamedValueSet &rResult )
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: get port errors = " << transaction.getErrno() << std::endl);
       return false;
    }
 
    if(NULL == transaction.getBuffer() )  {
+      AAL_ERR( LM_ALI, "Invalid Transaction buffer"<< std::endl);
       return false;
    }
 
@@ -124,10 +126,12 @@ btBool CHWALIPORT::errorGetOrder( INamedValueSet &rResult )
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: get port error Order = " << transaction.getErrno()<< std::endl);
       return false;
    }
 
    if(NULL == transaction.getBuffer() )  {
+      AAL_ERR( LM_ALI, "Invalid Transaction buffer"<< std::endl);
       return false;
    }
 
@@ -159,10 +163,12 @@ btBool CHWALIPORT::errorGetMask( INamedValueSet &rResult )
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: get port error mask = " << transaction.getErrno()<< std::endl);
       return false;
    }
 
    if(NULL == transaction.getBuffer() )  {
+      AAL_ERR( LM_ALI, "Invalid Transaction buffer"<< std::endl);
       return false;
    }
 
@@ -198,6 +204,7 @@ btBool CHWALIPORT::errorSetMask( const INamedValueSet &rInputArgs )
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: set port error mask = " << transaction.getErrno()<< std::endl);
       return false;
    }
 
@@ -228,6 +235,7 @@ btBool CHWALIPORT::errorClear(const INamedValueSet &rInputArgs )
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: Clear port errors = " << transaction.getErrno()<< std::endl);
       return false;
    }
 
@@ -251,6 +259,7 @@ btBool CHWALIPORT::errorClearAll()
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+    AAL_ERR( LM_ALI, "FATAL: Clear all port errors = " << transaction.getErrno()<< std::endl);
     return false;
    }
 
@@ -277,10 +286,12 @@ btBool CHWALIPORT::errorGetPortMalformedReq( INamedValueSet &rResult )
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: get port malformed request = " << transaction.getErrno()<< std::endl);
       return false;
    }
 
    if(NULL == transaction.getBuffer() )  {
+      AAL_ERR( LM_ALI, "Invalid Transaction buffer"<< std::endl);
       return false;
    }
 
@@ -317,10 +328,12 @@ btBool CHWALIPORT::printAllErrors()
    // Send transaction
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: print port all errors = " << transaction.getErrno()<< std::endl);
       return false;
    }
 
    if(NULL == transaction.getBuffer() )  {
+      AAL_ERR( LM_ALI, "Invalid Transaction buffer"<< std::endl);
       return false;
    }
 

@@ -102,6 +102,9 @@ btBool ALI::init(IBase               *pclientBase,
    m_pSvcClient = pclientBase;
    ASSERT( NULL != m_pSvcClient );
 
+   // Set LM_ALI error mask to enable logger
+   //pAALLogger()->AddToMask(LM_ALI, LOG_ERR);
+
    //
    // Allocate AIA service. Init is completed in serviceAllocated callback.
    //
@@ -135,6 +138,7 @@ btBool ALI::init(IBase               *pclientBase,
    if( optArgs.Has(keyRegHandle) ) {
       optArgs.Get(keyRegHandle, &devHandle);
    }else {
+      AAL_ERR( LM_ALI, "No device handle in Configuration Record"<< std::endl);
       initFailed(new CExceptionTransactionEvent( NULL,
                                                 TranID,
                                                 errBadParameter,
@@ -166,8 +170,6 @@ btBool ALI::Release(TransactionID const &TranID, btTime timeout)
    ReleaseContext *prc = new ReleaseContext(TranID, timeout);
    btApplicationContext appContext = reinterpret_cast<btApplicationContext>(prc);
 
-
-
    if( OptArgs().Has(ALIAFU_NVS_KEY_TARGET) ){
       OptArgs().Get(ALIAFU_NVS_KEY_TARGET, &targetType);
 
@@ -192,7 +194,6 @@ btBool ALI::Release(TransactionID const &TranID, btTime timeout)
    return m_pAALService->Release(TransactionID(appContext), timeout);
 }
 
-
 /*
  * IServiceClient methods (callbacks from AIA service)
  */
@@ -205,6 +206,7 @@ void ALI::serviceAllocated(IBase               *pServiceBase,
    m_pAFUProxy = dynamic_ptr<IAFUProxy>(iidAFUProxy, pServiceBase);
    if (!m_pAFUProxy) {
       // TODO: handle error
+      AAL_ERR( LM_ALI, "No AFUProxy Interface."<< std::endl);
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  m_tidSaved,
                                                  errBadParameter,
@@ -217,6 +219,7 @@ void ALI::serviceAllocated(IBase               *pServiceBase,
    m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
    if (!m_pAALService) {
       // TODO: handle error
+      AAL_ERR( LM_ALI, "No Service Base Interface."<< std::endl);
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  m_tidSaved,
                                                  errBadParameter,
@@ -227,7 +230,7 @@ void ALI::serviceAllocated(IBase               *pServiceBase,
 
    INamedValueSet const *pConfigRecord;
    if(!OptArgs().Has(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED)){
-      AAL_ERR( LM_All, "No Config Record");
+      AAL_ERR( LM_ALI, "No Config Record"<< std::endl);
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  m_tidSaved,
                                                  errAllocationFailure,
@@ -241,7 +244,7 @@ void ALI::serviceAllocated(IBase               *pServiceBase,
    // Service Library to use
    btcString pAFUID;
    if(!pConfigRecord->Has(keyRegAFU_ID)){
-      AAL_ERR( LM_All, "No AFU ID in Config Record");
+      AAL_ERR( LM_ALI, "No AFU ID in Config Record"<< std::endl);
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  m_tidSaved,
                                                  errAllocationFailure,
@@ -286,8 +289,9 @@ btBool ALI::setSigTapInterfaces()
 {
    if(NULL == m_pALIBase) {
 
-      m_pALIBase = new CHWALISigTap(m_pSvcClient,this,m_tidSaved,m_pAFUProxy);
+      m_pALIBase = new (std::nothrow) CHWALISigTap(m_pSvcClient,this,m_tidSaved,m_pAFUProxy);
       if(NULL == m_pALIBase) {
+         AAL_ERR( LM_ALI, "No Memory to allocate Signal Tap"<< std::endl);
          initFailed(new CExceptionTransactionEvent( NULL,
                                                     m_tidSaved,
                                                     errMemory,
@@ -309,6 +313,7 @@ btBool ALI::setSigTapInterfaces()
    return true;
 FAIL:
    m_bIsOK = false;
+   AAL_ERR( LM_ALI, "Could not register Siganl Tap interface "<< std::endl);
    initFailed(new CExceptionTransactionEvent( NULL,
                                               m_tidSaved,
                                               errCreationFailure,
@@ -325,8 +330,9 @@ btBool ALI::setPortInterfaces()
 {
    if(NULL == m_pALIBase) {
 
-      m_pALIBase = new CHWALIPORT(m_pSvcClient,this,m_tidSaved,m_pAFUProxy);
+      m_pALIBase = new (std::nothrow) CHWALIPORT(m_pSvcClient,this,m_tidSaved,m_pAFUProxy);
       if(NULL == m_pALIBase) {
+         AAL_ERR( LM_ALI, "No Memory to allocate PORT."<< std::endl);
          initFailed(new CExceptionTransactionEvent( NULL,
                                                     m_tidSaved,
                                                     errMemory,
@@ -352,6 +358,7 @@ btBool ALI::setPortInterfaces()
    return true;
 FAIL:
    m_bIsOK = false;
+   AAL_ERR( LM_ALI, "Could not register Port interface"<< std::endl);
    initFailed(new CExceptionTransactionEvent( NULL,
                                               m_tidSaved,
                                               errCreationFailure,
@@ -367,8 +374,9 @@ btBool ALI::setAFUInterfaces()
 {
    if(NULL == m_pALIBase) {
 
-      m_pALIBase = new CHWALIAFU(m_pSvcClient,this,m_tidSaved,m_pAFUProxy);
+      m_pALIBase = new (std::nothrow) CHWALIAFU(m_pSvcClient,this,m_tidSaved,m_pAFUProxy);
       if(NULL == m_pALIBase) {
+         AAL_ERR( LM_ALI, "No Memory to allocate AFU"<< std::endl);
          initFailed(new CExceptionTransactionEvent( NULL,
                                                     m_tidSaved,
                                                     errMemory,
@@ -403,6 +411,7 @@ btBool ALI::setAFUInterfaces()
 
 FAIL:
    m_bIsOK = false;
+   AAL_ERR( LM_ALI, "Could not register AFU interface"<< std::endl);
    initFailed(new CExceptionTransactionEvent( NULL,
                                               m_tidSaved,
                                               errCreationFailure,
@@ -418,9 +427,10 @@ btBool ALI::setReconfInterfaces()
 {
    if(NULL == m_pALIBase) {
 
-      m_pALIBase = new CHWALIReconf(m_pSvcClient,this,m_tidSaved,m_pAFUProxy);
+      m_pALIBase = new (std::nothrow) CHWALIReconf(m_pSvcClient,this,m_tidSaved,m_pAFUProxy);
 
       if(NULL == m_pALIBase) {
+         AAL_ERR( LM_ALI, "No Memory to allocate Reconfigure"<< std::endl);
          initFailed(new CExceptionTransactionEvent( NULL,
                                                     m_tidSaved,
                                                     errMemory,
@@ -435,6 +445,7 @@ btBool ALI::setReconfInterfaces()
    (dynamic_cast<CHWALIReconf *>(m_pALIBase))->setReconfClientInterface();
 
    if( EObjOK != SetInterface(iidALI_CONF_Service, dynamic_cast<IALIReconfigure *>(m_pALIBase)) ){
+      AAL_ERR( LM_ALI, "Could not register Reconfigure interface"<< std::endl);
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  m_tidSaved,
                                                  errCreationFailure,
@@ -452,8 +463,9 @@ btBool ALI::setFMEInterfaces()
 {
    if(NULL == m_pALIBase) {
 
-     m_pALIBase = new CHWALIFME(m_pSvcClient,this,m_tidSaved,m_pAFUProxy);
+     m_pALIBase = new (std::nothrow) CHWALIFME(m_pSvcClient,this,m_tidSaved,m_pAFUProxy);
      if(NULL == m_pALIBase) {
+         AAL_ERR( LM_ALI, "No Memory to allocate FME"<< std::endl);
          initFailed(new CExceptionTransactionEvent( NULL,
                                                     m_tidSaved,
                                                     errMemory,
@@ -491,6 +503,7 @@ btBool ALI::setFMEInterfaces()
    return true;
 FAIL:
    m_bIsOK = false;
+   AAL_ERR( LM_ALI, "Could not register FME interfaces"<< std::endl);
    initFailed(new CExceptionTransactionEvent( NULL,
                                               m_tidSaved,
                                               errCreationFailure,
@@ -506,9 +519,10 @@ btBool ALI::ASEInit()
 {
    if(m_pALIBase == NULL) {
 
-      m_pALIBase = new CASEALIAFU(m_pSvcClient,this,m_tidSaved);
+      m_pALIBase = new (std::nothrow)CASEALIAFU(m_pSvcClient,this,m_tidSaved);
 
       if(m_pALIBase == NULL) {
+         AAL_ERR( LM_ALI, "No Memory to allocate ASE AFU "<< std::endl);
          initFailed(new CExceptionTransactionEvent( NULL,
                                                     m_tidSaved,
                                                     errMemory,
@@ -539,6 +553,7 @@ btBool ALI::ASEInit()
 
 FAIL:
    m_bIsOK = false;
+   AAL_ERR( LM_ALI, "Could not register ASE AFU interfaces"<< std::endl);
    initFailed(new CExceptionTransactionEvent( NULL,
                                               m_tidSaved,
                                               errCreationFailure,
@@ -556,6 +571,7 @@ void ALI::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
 void ALI::serviceAllocateFailed(const IEvent &rEvent) {
 
    m_bIsOK = false;
+   AAL_ERR( LM_ALI, "Service Allocation Failed"<< std::endl);
    initFailed(new CExceptionTransactionEvent( NULL,
                                               m_tidSaved,
                                               errAllocationFailure,
@@ -573,6 +589,7 @@ void ALI::serviceReleased(TransactionID const &rTranID) {
 // Service released failed callback
 void ALI::serviceReleaseFailed(const IEvent &rEvent) {
    m_bIsOK = false;
+   AAL_ERR( LM_ALI, "Service Release Failed"<< std::endl);
 }
 
 // Callback for generic events
