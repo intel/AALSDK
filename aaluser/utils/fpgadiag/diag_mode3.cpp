@@ -541,4 +541,18 @@ void  CNLBMode3::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
          cout << "INFO: Cachelines   -- Number of CLs read.\n";
          cout << "      VH0_Rd_Count -- Number of Multi-CL read requests sent out.\n\n ";
       }
+
+   if(( 0 == strcmp(cmd.TestMode.c_str(), "TestMode_read")) &&
+	  (pAFUDSM->num_reads < cls)){
+	  	cout << "WARNING: Read test did NOT run for the requested number of CLs" << endl;
+
+   }else if(( 0 == strcmp(cmd.TestMode.c_str(), "TestMode_write")) &&
+	    (pAFUDSM->num_writes < cls)){
+	  	cout << "WARNING: Write test did NOT run for the requested number of CLs" << endl;
+
+   }else if(( 0 == strcmp(cmd.TestMode.c_str(), "TestMode_trput")) &&
+	    ((pAFUDSM->num_writes < cls)||(pAFUDSM->num_writes < cls))){
+	  	cout << "WARNING: Trput test did NOT run for the requested number of CLs" << endl;
+
+   }
 }
