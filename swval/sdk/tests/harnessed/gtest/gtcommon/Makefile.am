@@ -15,6 +15,16 @@ gtCommon_Status.h \
 gtCommon_Signals.h \
 gtCommon_GTest.h \
 gtCommon_Mocks.h \
+gtCommon_ClassOverrides.h \
+gtCommon_DoWorker.h \
+gtCommon_ModuleStub.h \
+gtCommon_RTAdapter.cpp \
+gtCommon_RTAdapter.h \
+gtCommon_RTClientAdapter.cpp \
+gtCommon_RTClientAdapter.h \
+gtCommon_SMocks.cpp \
+gtCommon_SMocks.h \
+gtCommon_ServiceListener.h \
 gtCommon.cpp \
 gtCommon_Config.cpp \
 gtCommon_RNG.cpp \
@@ -23,7 +33,7 @@ gtCommon_Console.cpp \
 gtCommon_Status.cpp \
 gtCommon_Signals.cpp \
 gtCommon_GTest.cpp \
-gtCommon_Mocks.cpp
+gtCommon_Mocks.cpp 
 
 libgtcommon_la_CPPFLAGS=\
 -I$(top_srcdir)/include \
