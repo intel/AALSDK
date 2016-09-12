@@ -83,7 +83,7 @@ btBool CHWALIReconf::setReconfClientInterface()
 
    ASSERT( NULL != m_pReconClient ); //QUEUE object failed
    if(NULL == m_pReconClient) {
-
+         AAL_ERR( LM_ALI,"Client did not publish Cleint interfaces "<< std::endl);
          m_pServiceBase->initFailed(new CExceptionTransactionEvent( NULL,
                                                                     m_tidSaved,
                                                                     errBadParameter,
@@ -118,7 +118,7 @@ void CHWALIReconf::reconfDeactivate( TransactionID const &rTranID,
 
    if(!deactivatetrans.IsOK() ){
 
-      AAL_ERR( LM_All,"Deactivate failed");
+      AAL_ERR( LM_ALI,"Deactivate failed"<< std::endl);
       getRuntime()->schedDispatchable(new AFUDeactivateFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
                                                                                                               rTranID,
                                                                                                               errCauseUnknown,
@@ -131,7 +131,7 @@ void CHWALIReconf::reconfDeactivate( TransactionID const &rTranID,
    // Send transaction
    m_pAFUProxy->SendTransaction(&deactivatetrans);
    if(deactivatetrans.getErrno() != uid_errnumOK){
-      AAL_ERR( LM_All,"Deactivate failed");
+      AAL_ERR( LM_ALI,"Deactivate failed"<< std::endl);
 
       getRuntime()->schedDispatchable(new AFUDeactivateFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
                                                                                                               rTranID,
@@ -169,7 +169,7 @@ void CHWALIReconf::reconfConfigure( TransactionID const &rTranID,
       std::string bitfilename(filename);
       if(BITSTREAM_FILE_EXTENSION != (bitfilename.substr(bitfilename.find_last_of("."))))  {
          // file extension invalid
-         AAL_ERR( LM_All, "Wrong bitstream file extension \n");
+         AAL_ERR( LM_ALI, "Wrong bitstream file extension "<< std::endl);
          getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
                                                                                                                   rTranID,
                                                                                                                   errBadParameter,
@@ -183,7 +183,7 @@ void CHWALIReconf::reconfConfigure( TransactionID const &rTranID,
 
       if(!bitfile.good()) {
          // file is invalid, Dispatch error Message "Wrong bitstream file path"
-         AAL_ERR( LM_All, "Wrong bitstream file path \n ");
+         AAL_ERR( LM_ALI, "Wrong bitstream file path " << std::endl);
          getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
                                                                                                                   rTranID,
                                                                                                                   errFileError,
@@ -198,7 +198,7 @@ void CHWALIReconf::reconfConfigure( TransactionID const &rTranID,
 
       if(0 == filesize) {
          // file size is 0, Dispatch error Message "Zero bitstream file size"
-         AAL_ERR( LM_All, "Zero bitstream file size \n");
+         AAL_ERR( LM_ALI, "Zero bitstream file size "<< std::endl);
          getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
                                                                                                                   rTranID,
                                                                                                                   errFileError,
@@ -214,7 +214,7 @@ void CHWALIReconf::reconfConfigure( TransactionID const &rTranID,
 
       if(NULL == bufptr) {
          // Memory  allocation failed  error Message "Failed to allocate file buffer"
-         AAL_ERR( LM_All, "Failed to allocate bitstream file buffer \n");
+         AAL_ERR( LM_ALI, "Failed to allocate bitstream file buffer "<< std::endl);
          getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
                                                                                                                   rTranID,
                                                                                                                   errAllocationFailure,
@@ -226,12 +226,12 @@ void CHWALIReconf::reconfConfigure( TransactionID const &rTranID,
       bitfile.read(reinterpret_cast<char *>(bufptr), filesize);
 
    }else{
-
+      AAL_ERR( LM_ALI,"No bitstream file source"<< std::endl);
       getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
                                                                                                                rTranID,
                                                                                                                errBadParameter,
                                                                                                                reasMissingParameter,
-                                                                                                               "Error: No bitfile source.")));
+                                                                                                               "Error: No bitstream file source.")));
       return;
 
 #if 0 // Test code
@@ -248,7 +248,7 @@ void CHWALIReconf::reconfConfigure( TransactionID const &rTranID,
    // Send transaction
    m_pAFUProxy->SendTransaction(&configuretrans);
    if(configuretrans.getErrno() != uid_errnumOK){
-      AAL_ERR( LM_All,"Reconfigure failed");
+      AAL_ERR( LM_ALI,"Reconfigure failed"<< std::endl);
       getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
                                                                                                                rTranID,
                                                                                                                errCauseUnknown,
@@ -280,7 +280,7 @@ void CHWALIReconf::reconfActivate( TransactionID const &rTranID,
    // Send transaction
    m_pAFUProxy->SendTransaction(&activatetrans);
    if(activatetrans.getErrno() != uid_errnumOK){
-      AAL_ERR( LM_All,"Activate failed");
+      AAL_ERR( LM_ALI,"Activate failed"<< std::endl);
 
       getRuntime()->schedDispatchable(new AFUActivateFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
                                                                                                             rTranID,
@@ -301,7 +301,10 @@ void CHWALIReconf::AFUEvent(AAL::IEvent const &theEvent)
                                                            theEvent);
 
    ASSERT(NULL != puidEvent);
-
+   if(NULL == puidEvent){
+      AAL_ERR( LM_ALI," Invalid ALIAFUProxy event"<< std::endl);
+      return;
+   }
    //std::cerr << "Got CHWALIReconf AFU event CHWALIReconf type " << puidEvent->MessageID() << "\n" << std::endl;
 
    switch(puidEvent->MessageID())

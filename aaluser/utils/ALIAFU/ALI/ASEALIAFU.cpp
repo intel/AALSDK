@@ -101,6 +101,7 @@ btBool CASEALIAFU::ASEInit()
    // If we have a valid MMIO region, expose IALIMMIO interface
    if (m_MMIORmap != NULL && m_MMIORsize > 0) {
       if ( EObjOK !=  SetInterface(iidALI_MMIO_Service, dynamic_cast<IALIMMIO *>(this)) ) {
+         AAL_ERR( LM_ALI, "Set ASE MMIO Interface failed"<< std::endl);
          m_pServiceBase->initFailed(new CExceptionTransactionEvent( NULL,
                                                                     m_tidSaved,
                                                                     errCreationFailure,
@@ -113,6 +114,7 @@ btBool CASEALIAFU::ASEInit()
    // Populate internal data structures for feature discovery
    if (! _discoverFeatures() ) {
       // FIXME: use correct error classes
+      AAL_ERR( LM_ALI, "Discover Features failed"<< std::endl);
       m_pServiceBase->initFailed(new CExceptionTransactionEvent( NULL,
                                                                  m_tidSaved,
                                                                  errBadParameter,
@@ -342,7 +344,7 @@ btBool  CASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
    filterByID = false;
    if (rInputArgs.Has(ALI_GETFEATURE_ID_KEY)) {
       if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_ID_KEY, &filterID)) {
-         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_ID) failed -- " <<
+         AAL_ERR(LM_ALI, "rInputArgs.Get(ALI_GETFEATURE_ID) failed -- " <<
                          "wrong datatype?" << std::endl);
          return false;
       } else {
@@ -353,7 +355,7 @@ btBool  CASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
    filterByType = false;
    if (rInputArgs.Has(ALI_GETFEATURE_TYPE_KEY)) {
       if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_TYPE_KEY, &filterType)) {
-         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_TYPE) failed -- " <<
+         AAL_ERR(LM_ALI, "rInputArgs.Get(ALI_GETFEATURE_TYPE) failed -- " <<
                          "wrong datatype?" << std::endl);
          return false;
       } else {
@@ -364,7 +366,7 @@ btBool  CASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
    filterByGUID = false;
    if (rInputArgs.Has(ALI_GETFEATURE_GUID_KEY)) {
       if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_GUID_KEY, &filterGUID)) {
-         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_GUID) failed -- " <<
+         AAL_ERR(LM_ALI, "rInputArgs.Get(ALI_GETFEATURE_GUID) failed -- " <<
                          "wrong datatype?" << std::endl);
          return false;
       } else {
@@ -532,7 +534,7 @@ AAL::ali_errnum_e CASEALIAFU::bufferFree( btVirtAddr Address)
   // Find in map and remove
    mapWkSpc_t::iterator i = m_mapWkSpc.find(Address);
    if (i == m_mapWkSpc.end()) {  // not found
-      AAL_ERR(LM_All, "Tried to free non-existent Buffer");
+      AAL_ERR(LM_ALI, "Tried to free non-existent Buffer");
       return ali_errnumBadParameter;
    }
 

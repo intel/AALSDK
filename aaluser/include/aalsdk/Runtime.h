@@ -224,7 +224,7 @@ public:
 
    /// @brief     Schedule a Dispatchable
    /// @param[in] pdispatchable - Pointer Dispatchable to schedule.
-   /// @return    void
+   /// @return    btBool
    virtual btBool          schedDispatchable(IDispatchable *pdispatchable)                      = 0;
 
    /// @brief     Returns a unique pointer to the Runtime. This enables subordinate
