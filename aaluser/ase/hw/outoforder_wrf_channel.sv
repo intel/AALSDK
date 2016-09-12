@@ -144,7 +144,7 @@ module outoforder_wrf_channel
 				      int high);
       int 				  rand_out;
       begin
-	 rand_out = $random() % (high + 1 - low) + low;
+	 rand_out = abs_val($random() % (high + 1 - low) + low);
 	 return rand_out;
       end
    endfunction

@@ -416,7 +416,10 @@ package ase_pkg;
     */
    function automatic int abs_val(int num);
       begin
-	 return (num < 0) ? ~num : num;
+	 if (num < 0)
+	   return -num;
+	 else
+	   return num;
       end
    endfunction
 
