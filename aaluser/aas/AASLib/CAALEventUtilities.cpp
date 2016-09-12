@@ -121,44 +121,6 @@ void UnWrapAndReThrow(IBase              *This,
 }
 
 //=============================================================================
-// Name:          UnWrapTransactionIDFromEvent
-// Description:   UnWrap the inner TransactionID from the outer one, and return it
-// Input:         The TransactionID in the Event is expected to be wrapped,
-//                   i.e. its context is a pointer to an allocated copy of the
-//                   TransactionID for the rethrow target.
-// Returns:       This function returns a copy of rTranID
-// Comments:      The Original Transaction id would be wrapped by a statement
-//                   like this:
-//                      TransactionID tid( static_cast<btApplicationContext>(new TransactionID( rTranID)));
-//                   where rTranID is the original TranID, and tid is what is
-//                   passed in the event
-//                Note that this comment originally specified the following code:
-//                   TransactionID tid (new TransactionID(rTranID));
-//=============================================================================
-TransactionID UnWrapTransactionIDFromEvent(const IEvent &theEvent, btBool bDeleteOrig)
-{
-   // Retrieve the original TransactionID
-   ITransactionEvent &rTransEvt   = dynamic_ref<ITransactionEvent>(iidTranEvent, theEvent);
-   TransactionID     *pOrigTranID = reinterpret_cast<TransactionID *>(rTransEvt.TranID().Context());
-   TransactionID      temp        = *pOrigTranID; // copy 1
-
-   if ( ( NULL != pOrigTranID ) && bDeleteOrig ) {
-      AAL_VERBOSE(LM_EDS, "UnWrapTransactionIDFromEvent:OrigTranID is " << *pOrigTranID);
-
-      // We're deleting the allocated copy of the original TransactionID, so clear the pointer
-      //  from the Event's TransactionID's Context to prevent a future invalid dereference.
-      TransactionID tid(rTransEvt.TranID());
-      tid.Context(NULL);
-      rTransEvt.SetTranID(tid);
-
-      // Delete the allocated copy of the original TransactionID.
-      delete pOrigTranID;   // should be valid, but you never know
-   }
-
-   return temp; // copy 2, then copy into the target
-}
-
-//=============================================================================
 // Name:          ReThrow
 // Description:   Re-throw an Event to an object's owner
 // Input:         Parameters

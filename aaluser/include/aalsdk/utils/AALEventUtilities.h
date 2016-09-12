@@ -68,22 +68,6 @@ BEGIN_NAMESPACE(AAL)
 /// @return The wrapped TransactionID object.
 AASLIB_API TransactionID WrapTransactionID(const TransactionID &rTranID);
 
-/// @brief UnWrap the inner TransactionID from the outer one, and return it.
-///
-/// The TransactionID in the Event is expected to be wrapped, i.e. its context is a
-/// pointer to an allocated copy of the TransactionID for the rethrow target.
-///
-/// The Original Transaction id would be wrapped by a statement like this:
-/// @code
-/// TransactionID tid( new TransactionID( rTranID ) );@endcode
-/// where rTranID is the original TranID, and tid is what is passed in the event.
-///
-/// @param[in]  theEvent     The event whose TransactionID is assumed to be wrapped.
-/// @param[in]  bDeleteOrig  Signals whether to delete the allocated copy of the original TransactionID.
-///
-/// @return A copy of the original (wrapped) TransactionID.
-AASLIB_API TransactionID UnWrapTransactionIDFromEvent(const IEvent &theEvent, btBool bDeleteOrig=true);
-
 /// @brief Re-throw an Event to an object's owner.
 ///
 /// The Original Transaction id would be wrapped by a statement like this:

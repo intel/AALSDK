@@ -172,43 +172,6 @@ TEST_F(CAALEventUtilities_f, aal0810)
    pEvent->Delete();
 }
 
-TEST_F(CAALEventUtilities_f, aal0811)
-{
-   /// ========================================================================
-   /// @test         Passes a CExceptionTransactionEvent to
-   ///               UnWrapTransactionIDFromEvent.
-   ///
-   /// @brief        Verifies that the context is set and destroyed as expected,
-   ///               according to the boolean parm sent to
-   ///               UnWrapTransactionIDFromEvent(IEvent, boolean)
-
-   const TransactionID& tid = TransactionID();
-
-   CExceptionTransactionEvent theEvent(
-      &m_Base, tid, 0, 0, "basic exception transaction event");
-
-   TransactionID wrappedTID = WrapTransactionID(tid);
-   EXPECT_NE(wrappedTID.ID(), tid.ID());
-   // original tid contained in context?
-   TransactionID* pContext = reinterpret_cast
-      <TransactionID*>(wrappedTID.Context());
-
-   EXPECT_EQ(pContext->ID(), tid.ID());
-   // exercise the equals (==) operator
-   EXPECT_EQ(*pContext, tid);
-
-   theEvent.SetTranID(wrappedTID);
-   TransactionID tempID = UnWrapTransactionIDFromEvent(theEvent, false);
-   // got the original tid back?
-   EXPECT_EQ(tempID, tid);
-
-   // try again, but this time, delete the original
-   theEvent.SetTranID(wrappedTID);
-   wrappedTID = UnWrapTransactionIDFromEvent(theEvent, true);
-
-   EXPECT_NULL(wrappedTID.Context());
-}
-
 TEST_F(CAALEventUtilities_f, aal0812)
 {
    /// ========================================================================
