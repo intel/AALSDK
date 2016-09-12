@@ -416,7 +416,10 @@ package ase_pkg;
     */
    function automatic int abs_val(int num);
       begin
-	 return (num < 0) ? ~num : num;
+	 if (num < 0)
+	   return -num;
+	 else
+	   return num;
       end
    endfunction
 
@@ -745,13 +748,6 @@ package ase_pkg;
       ccip_vc_t                    virt_channel;
       } ccip_txn_t;
  `endif
-
-   /*
-    * Macros
-    */
-   // Get random number from range
- `define get_random_from_range(low, high)\
-   ($random() % (high + 1 - low) + low)
 
 
 endpackage

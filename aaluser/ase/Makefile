@@ -155,7 +155,7 @@ MENT_VCOM_OPT = -nologo -work $(WORK)
 
 ## VLOG compile
 # MENT_VLOG_OPT = -64
-MENT_VLOG_OPT+= -nologo +librescan -work $(WORK) +define+$(SIMULATOR)
+MENT_VLOG_OPT+= -nologo +librescan -work $(WORK) +define+$(SIMULATOR) -novopt
 MENT_VLOG_OPT+= -dpiheader work/dpiheader.h
 MENT_VLOG_OPT+= +incdir+$(ASE_INCDIR)+$(DUT_INCDIR)+$(WORK)
 MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
@@ -174,7 +174,7 @@ endif
 
 ## VSIM elaboration, and run options
 # MENT_VSIM_OPT = -64
-MENT_VSIM_OPT+= -c -l run.log -dpioutoftheblue 1
+MENT_VSIM_OPT+= -c -l run.log -dpioutoftheblue 1 -novopt
 MENT_VSIM_OPT+= -sv_lib $(ASE_SHOBJ_NAME) -do $(ASE_SRCDIR)/vsim_run.tcl
 # -voptargs="+acc"
 
@@ -327,12 +327,12 @@ questa_build: sw_build
 	@echo "#                                                          #"
 	@echo "############################################################"
 	cd $(WORK) ; vlib $(WORK) ; vmap work $(WORK) ; cd -
-	cd $(WORK) ; vlog $(MENT_VLOG_OPT) $(ASEHW_FILE_LIST) ; cd -
+	cd $(WORK) ; vlog $(MENT_VLOG_OPT) $(ASEHW_FILE_LIST) -l vlog-ase.log ; cd -
 ifdef DUT_VHD_SRC_LIST
-	cd $(WORK) ; vcom $(MENT_VCOM_OPT) -f $(DUT_VHD_SRC_LIST) ; cd -
+	cd $(WORK) ; vcom $(MENT_VCOM_OPT) -f $(DUT_VHD_SRC_LIST) -l vcom-afu.log ; cd -
 endif
 ifdef DUT_VLOG_SRC_LIST
-	cd $(WORK) ; vlog $(MENT_VLOG_OPT) -f $(DUT_VLOG_SRC_LIST) ; cd -
+	cd $(WORK) ; vlog $(MENT_VLOG_OPT) -f $(DUT_VLOG_SRC_LIST) -l vlog-afu.log ; cd -
 endif
 
 
