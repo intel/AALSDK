@@ -269,13 +269,24 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
        if ( MaxPoll < 0 ) {
          cerr << "The maximum timeout for test stop was exceeded." << endl;
          ++res;
-         break;
+//         break;
        }
 
        // Verify the device
        if ( 0 != pAFUDSM->test_error ) {
            cerr << "Error bit set in DSM.\n";
            cout << "DSM Test Error: 0x" << std::hex << pAFUDSM->test_error << endl;
+
+           if( 0 != (pAFUDSM->test_error | 0x00000001)){
+        	  cout << "Unexpected Read or Write response\n";
+
+           }else if(0 != (pAFUDSM->test_error | 0x00000004)){
+        	  cout << "Write FIFO overflow\n";
+
+           }else if(0 != (pAFUDSM->test_error | 0x00000008)){
+         	  cout << "WriteEnable asserted, but not forwarded to CCIP.\n";
+
+           }
 
            cout << "Mode error vector: " << endl;
            for (int i=0; i < 8; i++)
@@ -285,7 +296,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
            cout << std::dec << endl;
 
            ++res;
-           break;
+//           break;
        }
 
        // Verify the buffers
@@ -316,7 +327,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
         if(pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead)){
            cerr << "Number of Clocks underflow.\n";
            ++res;
-           break;
+//           break;
        }
 
 	    PrintOutput(cmd, NumCacheLines);

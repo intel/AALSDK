@@ -81,6 +81,10 @@ using namespace AAL;
 # define EVENT_CASE(x) case x :
 #endif
 
+/// Filename prefix check - needs to match (or specify --force=TRUE)
+#define FILENAME_PREFIX "090716_skxp_611_pr"
+#define FILENAME_PREFIX_LEN (strlen(FILENAME_PREFIX))
+
 /// Command Line
 BEGIN_C_DECLS
 
@@ -97,13 +101,21 @@ struct  ALIConfigCommandLine
 #define ALICONIFG_CMD_FLAG_VERSION   0x00000002
 #define ALICONIFG_CMD_PARSE_ERROR    0x00000003
 
+#define ALICONIFG_CMD_FLAG_BUS       0x00000008
+#define ALICONIFG_CMD_FLAG_DEV       0x00000010
+#define ALICONIFG_CMD_FLAG_FUNC      0x00000020
+
    char    bitstream_file[200];
    int     reconftimeout;
    int     reconfAction;
    bool    reactivateDisabled;
+   int     bus;
+   int     device;
+   int     function;
+   bool    force;
 
 };
-struct ALIConfigCommandLine configCmdLine = { 0,"",1,0,0 };
+struct ALIConfigCommandLine configCmdLine = { 0,"",1,0,0,0,0,0,0 };
 
 
 int aliconigafu_on_non_option(AALCLP_USER_DEFINED user, const char *nonoption) {
@@ -188,6 +200,39 @@ int aliconigafu_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option,
       return 0;
    }
 
+   //Bus Number
+   if ( 0 == strcmp("--bus", option)) {
+    char *endptr = NULL;
+    pcmdline->bus = strtoul(value, &endptr, 0);
+    flag_setf(pcmdline->flags, ALICONIFG_CMD_FLAG_BUS);
+  }
+
+   //Device Number
+   if ( 0 == strcmp("--device", option)) {
+	   char *endptr = NULL;
+	   pcmdline->device = strtoul(value, &endptr, 0);
+	   flag_setf(pcmdline->flags, ALICONIFG_CMD_FLAG_DEV);
+   }
+   //Function Number
+   if ( 0 == strcmp("--function", option)) {
+	  char *endptr = NULL;
+	  pcmdline->function = strtoul(value, &endptr, 0);
+	  flag_setf(pcmdline->flags, ALICONIFG_CMD_FLAG_FUNC);
+	}
+
+   //Force programming
+   if ( 0 == strcmp("--force", option)) {
+
+      if ( 0 == strcmp("TRUE", value))  {
+         pcmdline->force=true;
+      } else {
+      // Default
+         pcmdline->force=false;
+         printf("Command line option --force= can only be TRUE, but was found to be %s\n", value);
+         printf("\t--force= option being set to false.\n");
+      }
+      return 0;
+   }
    return 0;
 }
 
@@ -255,9 +300,13 @@ CLEANUP:
 void help_msg_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
 {
    fprintf(fp, "Usage:\n");
-   fprintf(fp, "   aliconfafu [--bitstream=<FILENAME>] [--reconftimeout=<SECONDS>]  \
-                [--reconfaction=<ACTION_HONOR_REQUEST or ACTION_HONOR_OWNER >]        \
-                [--reactivateDisabled=< TRUE or FALSE>]\n");
+   fprintf(fp, "   aliconfafu [--bitstream=<FILENAME>] [--reconftimeout=<SECONDS>] \n \
+             [--reconfaction=<ACTION_HONOR_REQUEST or ACTION_HONOR_OWNER >] \n \
+             [--reactivateDisabled=< TRUE or FALSE>]\n \
+             [--bus=<BUS_NUMBER>]\n \
+	      [--device=<DEVICE_NUMBER>]\n \
+	      [--function=<FUNCTION_NUMBER>]\n \
+             [--force==TRUE]\n");
    fprintf(fp, "\n");
 
 }
@@ -275,6 +324,16 @@ int verifycmds(struct ALIConfigCommandLine *cl)
       printf("Invalid File : %s\n", cl->bitstream_file);
       return 3;
    }
+
+   if ( 0 != strncmp( FILENAME_PREFIX, cl->bitstream_file, FILENAME_PREFIX_LEN) ) {
+      if (! cl->force) {
+         printf("Filename prefix mismatch - please check bitstream versions.\n");
+         printf("Expected prefix is '%s'\n", FILENAME_PREFIX);
+         printf("Add --force=TRUE to override.\n");
+         return 3;
+      }
+   }
+
    return 0;
 }
 
@@ -435,6 +494,15 @@ btInt ALIConfAFUApp::run()
 
    ConfigRecord.Add(keyRegSubDeviceNumber,0);
 
+   if (flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_BUS)) {
+   		ConfigRecord.Add(keyRegBusNumber, btUnsigned32bitInt(configCmdLine.bus));
+   }
+   if (flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_DEV)) {
+   		ConfigRecord.Add(keyRegDeviceNumber, btUnsigned32bitInt(configCmdLine.device));
+   }
+   if (flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_FUNC)) {
+   		ConfigRecord.Add(keyRegfuntionNumber, btUnsigned32bitInt(configCmdLine.function));
+   }
 
    #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
    Manifest.Add(keyRegHandle, 20);
