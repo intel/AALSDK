@@ -248,6 +248,9 @@ void SigTapApp::serviceAllocated(IBase *pServiceBase,
 {
    m_pAALService = pServiceBase;
    ASSERT(NULL != m_pAALService);
+   if ( NULL == m_pAALService ) {
+      return;
+   }
 
    m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
 

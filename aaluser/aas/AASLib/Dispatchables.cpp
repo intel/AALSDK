@@ -424,7 +424,11 @@ void ReleaseServiceRequest::operator ()()
    IServiceClient * psvcClient = dynamic_ptr<IServiceClient>(iidServiceClient, m_pSvcBase);
 
    ASSERT(NULL != psvcClient);
-   psvcClient->serviceReleaseRequest(m_pSvcBase, *m_pEvent);
+   if (NULL != psvcClient){
+      // Only call the request if we have a valid client ptr
+      psvcClient->serviceReleaseRequest(m_pSvcBase, *m_pEvent);
+   }
+
    delete this;
 
 }

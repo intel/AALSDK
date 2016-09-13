@@ -82,6 +82,9 @@ using namespace AAL;
 #define DEFAULT_TARGET_DEV -1
 
 ////////////////////////////////////////////////////////////////////////////////
+
+#define AFU_RESET_FAIL 100
+
 // CMyApp
 // Ugly hack so that Doxygen produces the correct class diagrams.
 #define CMyApp CMyfpgasaneApp
