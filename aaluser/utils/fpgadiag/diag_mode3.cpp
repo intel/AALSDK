@@ -83,8 +83,8 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
    {
       // Initiate AFU Reset
       if ( 0 != m_pALIResetService->afuReset()){
-         ERR("AFU reset failed. Exiting test.");
-         return 1;
+         ERR("AFU reset failed before cool FPGA cache. Exiting test.");
+         return AFU_RESET_FAIL;
       }
 
       if ( 0 != CacheCooldown(pOutputUsrVirt, m_pMyApp->InputPhys(), (1024 * CL(1)), cmd) ) {
@@ -99,7 +99,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
    // Initiate AFU Reset
    if ( 0 != m_pALIResetService->afuReset()){
       ERR("AFU reset failed. Exiting test.");
-      return 1;
+      return AFU_RESET_FAIL;
    }
 
    if(NULL != m_pVTPService){
@@ -325,7 +325,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
    	 // Initiate AFU Reset
        if ( 0 != m_pALIResetService->afuReset()){
             ERR("AFU reset failed post warm-fpga-cache. Exiting test.");
-            return 1;
+            return AFU_RESET_FAIL;
        }
 
        //Set DSM base, high then low
@@ -467,7 +467,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
    // Initiate AFU Reset
    if (0 != m_pALIResetService->afuReset()){
       ERR("AFU reset failed after test completion.");
-      ++res;
+      return AFU_RESET_FAIL;
    }
 
    return res;
