@@ -325,7 +325,13 @@ int verifycmds(struct ALIConfigCommandLine *cl)
       return 3;
    }
 
-   if ( 0 != strncmp( FILENAME_PREFIX, cl->bitstream_file, FILENAME_PREFIX_LEN) ) {
+   // find filename part of path
+   std::string bitstream_file_path(cl->bitstream_file);
+   std::string bitstream_file_base =
+      bitstream_file_path.substr( bitstream_file_path.find_last_of( "/\\" ) +1 );
+
+   // compare filename prefix
+   if ( 0 != bitstream_file_base.compare(0, FILENAME_PREFIX_LEN, FILENAME_PREFIX) ) {
       if (! cl->force) {
          printf("Filename prefix mismatch - please check bitstream versions.\n");
          printf("Expected prefix is '%s'\n", FILENAME_PREFIX);
