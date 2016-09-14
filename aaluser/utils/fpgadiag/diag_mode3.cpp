@@ -317,7 +317,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
 
    	 // Check the device status
        if ( MaxPoll < 0 ) {
-            cerr << "The maximum timeout for test stop was exceeded during warm-fpga-cache." << endl;
+            ERR( "Maximum timeout for test stop was exceeded during warm-fpga-cache.");
             return 1;
        }
        MaxPoll = StopTimeoutMillis;
@@ -424,14 +424,14 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
 
 	   // Check the device status
       if ( MaxPoll < 0 ) {
-         cerr << "The maximum timeout for test stop was exceeded." << endl;
+         ERR( "Maximum timeout for test stop was exceeded.");
          ++res;
          PrintOutput(cmd, (sz / CL(1)));
          break;
       }
 
       if ( 0 != pAFUDSM->test_error ) {
-         cerr << "Error bit set in DSM.\n";
+    	 ERR( "Error bit set in DSM.");
          cout << "DSM Test Error: 0x" << std::hex << pAFUDSM->test_error << endl;
 
          if( 0 != (pAFUDSM->test_error | 0x00000001)){
@@ -457,7 +457,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
       //Checking for num_clocks underflow.
       if(pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead))
       {
-         cerr << "Number of Clocks underflow.\n";
+    	 ERR( "Number of Clocks underflow.");
          ++res;
          PrintOutput(cmd, (sz / CL(1)));
          break;
@@ -560,7 +560,7 @@ void  CNLBMode3::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 	  	cout << "WARNING: Write test did NOT run for the requested number of CLs" << endl;
 
    }else if(( 0 == strcmp(cmd.TestMode.c_str(), "TestMode_trput")) &&
-	    ((pAFUDSM->num_writes < cls)||(pAFUDSM->num_writes < cls))){
+	    ((pAFUDSM->num_reads < cls)||(pAFUDSM->num_writes < cls))){
 	  	cout << "WARNING: Trput test did NOT run for the requested number of CLs" << endl;
 
    }
