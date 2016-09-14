@@ -163,7 +163,6 @@ void ReThrow(IBase               *This,
    pDispatcher->schedDispatchable(dynamic_ptr<CAALEvent>(iidCEvent, theEvent));
 }
 
-
 //=============================================================================
 // Name:          PrintExceptionDescription
 // Description:   External function to print information in Exception and
@@ -206,4 +205,5 @@ btBool PrintExceptionDescription(IEvent const &theEvent)
 }
 
 END_NAMESPACE(AAL)
+
 

@@ -97,9 +97,9 @@ protected:
 TEST_F(CAALEventUtilities_f, aal0807)
 {
    /// ========================================================================
-   /// @test         Passes a CEvent to PrintExceptionDescription.
+   /// @test         Pass a CEvent to PrintExceptionDescription.
    ///
-   /// @brief        Expects return false because the event object is not an
+   /// @brief        Expect false return because the event object is not an
    ///               exception.
 
    CAALEvent* pEvent = new (std::nothrow) CAALEvent(&m_Base);
@@ -113,9 +113,9 @@ TEST_F(CAALEventUtilities_f, aal0807)
 TEST_F(CAALEventUtilities_f, aal0808)
 {
    /// ========================================================================
-   /// @test         Passes CExceptionEvent to PrintExceptionDescription.
+   /// @test         Pass a CExceptionEvent to PrintExceptionDescription.
    ///
-   /// @brief        Expects true return, after logging the exception.
+   /// @brief        Expect true return, after logging the exception.
 
    CExceptionEvent theEvent(&m_Base, 0, 0, "basic exception event");
 
@@ -127,10 +127,10 @@ TEST_F(CAALEventUtilities_f, aal0808)
 TEST_F(CAALEventUtilities_f, aal0809)
 {
    /// ========================================================================
-   /// @test         Passes a CTransactionExceptionEvent object to
+   /// @test         Pass a CTransactionExceptionEvent object to
    ///               PrintExceptionDescription.
    ///
-   /// @brief        Expects true return, after logging the exception.
+   /// @brief        Expect true return, after logging the exception.
 
    const TransactionID& tid = TransactionID();
 
@@ -144,17 +144,17 @@ TEST_F(CAALEventUtilities_f, aal0809)
 
 TEST_F(CAALEventUtilities_f, aal0810)
 {
-   /// ========================================================================
-   /// @test         Passes a CAALEvent with a custom interface iid to
+   /// ================================================================
+   /// @test         Pass a CAALEvent with a custom interface ID to
    ///               PrintExceptionDescription.
    ///
-   /// @brief        Expects true return, following log of an unknown exception
-   ///               event message.
+   /// @brief        Expect true return, following log of an unknown
+   ///               exception event message.
    ///
-   /// @details      Event does not have a transaction ID, but it is 
-   ///               an event (i.e. derives from IEvent) and is an exception
-   ///               (i.e. has the exception bit set and returns true from the
-   ///               macro: AAL_IS_EXCEPTION(btIID)).
+   /// @details      Event has no transaction ID, but it is an event
+   ///               (i.e. derives from IEvent) and is an exception
+   ///               (i.e. has the exception bit set and returns true
+   ///               from the macro: AAL_IS_EXCEPTION(btIID)).
 
    CAALEvent* pEvent = new (std::nothrow) CAALEvent(&m_Base);
 
@@ -175,12 +175,12 @@ TEST_F(CAALEventUtilities_f, aal0810)
 TEST_F(CAALEventUtilities_f, aal0812)
 {
    /// ========================================================================
-   /// @test         Passes a CExceptionTransactionEvent to the ReThrow and
+   /// @test         Pass a CExceptionTransactionEvent object to the ReThrow and
    ///               UnWrapAndReThrow event utility functions.
    ///
-   /// @brief        Expects events_handled to be incremented by two, step one.
+   /// @brief        Expect events_handled to be incremented by two, step one.
    ///
-   /// @details      Re-throws event to a static handler in the base object,
+   /// @details      Re-throw event to a static handler in the base object,
    ///               using a dummy runtime implementation.
 
    const TransactionID& tid = TransactionID();
