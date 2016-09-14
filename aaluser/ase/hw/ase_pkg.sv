@@ -416,10 +416,7 @@ package ase_pkg;
     */
    function automatic int abs_val(int num);
       begin
-	 if (num < 0)
-	   return -num;
-	 else
-	   return num;
+	 return (num < 0) ? ~num : num;
       end
    endfunction
 
@@ -717,25 +714,24 @@ package ase_pkg;
 		   SNIFF_C0TX_XZ_FOUND_WARN      = 10,
 		   SNIFF_C0TX_3CL_REQUEST        = 11,
 		   SNIFF_C0TX_ADDR_ZERO_WARN     = 12,
+		   SNIFF_C0TX_UNEXP_ADDR         = 13,
 		   // ------------ C1TX -------------- //
-		   SNIFF_C1TX_INVALID_REQTYPE    = 13,
-		   SNIFF_C1TX_OVERFLOW           = 14,
-		   SNIFF_C1TX_ADDRALIGN_2_ERROR  = 15,
-		   SNIFF_C1TX_ADDRALIGN_4_ERROR  = 16,
-		   SNIFF_C1TX_RESET_IGNORED_WARN = 17,
-		   SNIFF_C1TX_XZ_FOUND_WARN      = 18,
-		   SNIFF_C1TX_UNEXP_VCSEL        = 19,
-		   SNIFF_C1TX_UNEXP_MDATA        = 20,
-		   SNIFF_C1TX_UNEXP_ADDR         = 21,
-		   SNIFF_C1TX_UNEXP_CLLEN        = 22,
-		   SNIFF_C1TX_UNEXP_REQTYPE      = 23,
-		   SNIFF_C1TX_PAYLOAD_OVERRUN    = 24,
-		   SNIFF_C1TX_PAYLOAD_UNDERRUN   = 25,
-		   SNIFF_C1TX_SOP_NOT_SET        = 26,
-		   SNIFF_C1TX_SOP_SET_MCL1TO3    = 27,
-		   SNIFF_C1TX_3CL_REQUEST        = 28,
-		   SNIFF_C1TX_WRFENCE_IN_MCL1TO3 = 29,
-		   SNIFF_C1TX_ADDR_ZERO_WARN     = 30
+		   SNIFF_C1TX_INVALID_REQTYPE    = 14,
+		   SNIFF_C1TX_OVERFLOW           = 15,
+		   SNIFF_C1TX_ADDRALIGN_2_ERROR  = 16,
+		   SNIFF_C1TX_ADDRALIGN_4_ERROR  = 17,
+		   SNIFF_C1TX_RESET_IGNORED_WARN = 18,
+		   SNIFF_C1TX_XZ_FOUND_WARN      = 19,
+		   SNIFF_C1TX_UNEXP_VCSEL        = 20,
+		   SNIFF_C1TX_UNEXP_MDATA        = 21,
+		   SNIFF_C1TX_UNEXP_ADDR         = 22,
+		   SNIFF_C1TX_UNEXP_CLLEN        = 23,
+		   SNIFF_C1TX_UNEXP_REQTYPE      = 24,
+		   SNIFF_C1TX_SOP_NOT_SET        = 25,
+		   SNIFF_C1TX_SOP_SET_MCL1TO3    = 26,
+		   SNIFF_C1TX_3CL_REQUEST        = 27,
+		   SNIFF_C1TX_WRFENCE_IN_MCL1TO3 = 28,
+		   SNIFF_C1TX_ADDR_ZERO_WARN     = 29
 		   // --------------------------------- //
 		   } sniff_code_t;
 
@@ -748,6 +744,13 @@ package ase_pkg;
       ccip_vc_t                    virt_channel;
       } ccip_txn_t;
  `endif
+
+   /*
+    * Macros
+    */
+   // Get random number from range
+ `define get_random_from_range(low, high)\
+   ($random() % (high + 1 - low) + low)
 
 
 endpackage
