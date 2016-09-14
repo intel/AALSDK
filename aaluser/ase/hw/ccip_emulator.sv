@@ -1865,6 +1865,7 @@ module ccip_emulator
    assign pack_hdr_valid = pp_wrrsp_write;
  `else
    // Compile time error goes here ??
+   unsupported rtl compiler found
  `endif
 `endif
 
