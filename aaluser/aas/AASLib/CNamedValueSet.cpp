@@ -3114,6 +3114,10 @@ ENamedValues CNamedValueSet::FromStr(const std::string &s)
 ENamedValues CNamedValueSet::FromStr(void *pv, btWSSize len)
 {
    ASSERT(NULL != pv);
+   if (NULL == pv){
+      return ENamedValuesInvalidReadToNull;
+   }
+
    std::string s(static_cast<char *>(pv), (size_t)len);   // initializing this way allows embedded nulls
    return FromStr(s);
 }

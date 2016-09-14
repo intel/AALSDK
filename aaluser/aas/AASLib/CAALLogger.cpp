@@ -882,6 +882,7 @@ void CLogger::FileFlushThread(OSLThread *pThread, void *pContext)
    CLogger *This = static_cast<CLogger *>(pContext);
 
    ASSERT(NULL != This);
+   if (NULL == This) return;
 
    while( true ) {
 

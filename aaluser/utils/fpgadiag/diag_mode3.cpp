@@ -83,8 +83,8 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
    {
       // Initiate AFU Reset
       if ( 0 != m_pALIResetService->afuReset()){
-         ERR("AFU reset failed. Exiting test.");
-         return 1;
+         ERR("AFU reset failed before cool FPGA cache. Exiting test.");
+         return AFU_RESET_FAIL;
       }
 
       if ( 0 != CacheCooldown(pOutputUsrVirt, m_pMyApp->InputPhys(), (1024 * CL(1)), cmd) ) {
@@ -99,7 +99,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
    // Initiate AFU Reset
    if ( 0 != m_pALIResetService->afuReset()){
       ERR("AFU reset failed. Exiting test.");
-      return 1;
+      return AFU_RESET_FAIL;
    }
 
    if(NULL != m_pVTPService){
@@ -325,7 +325,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
    	 // Initiate AFU Reset
        if ( 0 != m_pALIResetService->afuReset()){
             ERR("AFU reset failed post warm-fpga-cache. Exiting test.");
-            return 1;
+            return AFU_RESET_FAIL;
        }
 
        //Set DSM base, high then low
@@ -467,7 +467,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
    // Initiate AFU Reset
    if (0 != m_pALIResetService->afuReset()){
       ERR("AFU reset failed after test completion.");
-      ++res;
+      return AFU_RESET_FAIL;
    }
 
    return res;
@@ -541,4 +541,18 @@ void  CNLBMode3::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
          cout << "INFO: Cachelines   -- Number of CLs read.\n";
          cout << "      VH0_Rd_Count -- Number of Multi-CL read requests sent out.\n\n ";
       }
+
+   if(( 0 == strcmp(cmd.TestMode.c_str(), "TestMode_read")) &&
+	  (pAFUDSM->num_reads < cls)){
+	  	cout << "WARNING: Read test did NOT run for the requested number of CLs" << endl;
+
+   }else if(( 0 == strcmp(cmd.TestMode.c_str(), "TestMode_write")) &&
+	    (pAFUDSM->num_writes < cls)){
+	  	cout << "WARNING: Write test did NOT run for the requested number of CLs" << endl;
+
+   }else if(( 0 == strcmp(cmd.TestMode.c_str(), "TestMode_trput")) &&
+	    ((pAFUDSM->num_writes < cls)||(pAFUDSM->num_writes < cls))){
+	  	cout << "WARNING: Trput test did NOT run for the requested number of CLs" << endl;
+
+   }
 }

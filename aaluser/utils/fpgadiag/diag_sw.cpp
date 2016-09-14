@@ -87,7 +87,7 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
     // Initiate AFU Reset
     if (0 != m_pALIResetService->afuReset()){
        ERR("AFU reset failed. Exiting test.");
-       return 1;
+       return AFU_RESET_FAIL;
     }
 
     if(NULL != m_pVTPService){
@@ -370,7 +370,7 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
    if ( 0 != m_pALIResetService->afuReset())
    {
       ERR("AFU reset failed after test completion.");
-      ++res;
+      return AFU_RESET_FAIL;
    }
 
    return res;

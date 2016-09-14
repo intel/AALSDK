@@ -224,6 +224,7 @@ int mmlink_connection::handle_data()
   }
   cout << "\n";
   m_buf_end = 0;
+  return 0;
 }
 
 int mmlink_connection::handle_bound_command(char *cmd)
