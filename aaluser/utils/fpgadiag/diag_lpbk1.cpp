@@ -269,7 +269,8 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
        if ( MaxPoll < 0 ) {
          cerr << "The maximum timeout for test stop was exceeded." << endl;
          ++res;
-//         break;
+         PrintOutput(cmd, NumCacheLines);
+         break;
        }
 
        // Verify the device
@@ -296,7 +297,8 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
            cout << std::dec << endl;
 
            ++res;
-//           break;
+           PrintOutput(cmd, NumCacheLines);
+           break;
        }
 
        // Verify the buffers
@@ -320,14 +322,16 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
     	   }
 
            ++res;
-//           break;
+           PrintOutput(cmd, NumCacheLines);
+           break;
        }
 
        //Checking for num_clocks underflow.
         if(pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead)){
            cerr << "Number of Clocks underflow.\n";
            ++res;
-//           break;
+           PrintOutput(cmd, NumCacheLines);
+           break;
        }
 
 	    PrintOutput(cmd, NumCacheLines);
