@@ -216,8 +216,9 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
    while ( sz <= CL(cmd.endcls)){
 
       // Clear the UMsg address space
-      ::memset((void *)pUMsgUsrVirt, 0, m_pMyApp->UMsgSize());
-
+      if(NULL != pUMsgUsrVirt){
+         ::memset((void *)pUMsgUsrVirt, 0, m_pMyApp->UMsgSize());
+      }
       // zero the output buffer
       ::memset((void *)pOutputUsrVirt, 0, m_pMyApp->OutputSize());
 
