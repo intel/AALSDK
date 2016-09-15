@@ -439,11 +439,23 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
           PVERBOSE("ccipdrv_portClearAllError \n");
 
           // Clear ALL Port errors
-          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr          = CLEAR_ALL_ERRORS;
-          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_first_error.csr    = CLEAR_ALL_ERRORS;
+          // 1) Set PORT mask to all 1's to mask errors
+          // 2) Clear all errors
+          // 3) Set PORT mask to all 0's to enable errors.
+          // 4) All errors starts capturing new errors
 
-          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_malformed_req_0.csr = CLEAR_ALL_ERRORS;
-          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_malformed_req_1.csr = CLEAR_ALL_ERRORS;
+          //Set PORT mask to all 1's to mask errors
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error_mask.csr        = CLEAR_ALL_ERRORS;
+
+          //Clear all errors
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr             = CLEAR_ALL_ERRORS;
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_first_error.csr       = CLEAR_ALL_ERRORS;
+
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_malformed_req_0.csr   = CLEAR_ALL_ERRORS;
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_malformed_req_1.csr   = CLEAR_ALL_ERRORS;
+
+          //Set PORT mask to all 0's to enable errors.
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error_mask.csr        = 0x0;
 
           Message->m_errcode = uid_errnumOK;
 
@@ -458,8 +470,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
              break;
           }
 
-          PVERBOSE("ccipdrv_portClearError CSR:%llX \n",ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr);
-          PVERBOSE("ccipdrv_portClearError CSR:%llX \n",preq->ahmreq.u.error_csr.error0);
+          PVERBOSE("Port Error  CSR:%llX \n",ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr);
+          PVERBOSE("New Port Error  CSR:%llX \n",preq->ahmreq.u.error_csr.error0);
 
           // Clear port error and First error
           ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr = preq->ahmreq.u.error_csr.error0;
@@ -480,8 +492,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
               break;
            }
 
-           PVERBOSE("ccipdrv_portClearError CSR:%llX \n",cci_aaldev_pport(pdev)->m_pport_err->ccip_port_error_mask.csr);
-           PVERBOSE("ccipdrv_portClearError CSR:%llX \n",preq->ahmreq.u.error_csr.error0);
+           PVERBOSE("Port mask CSR:%llX \n",cci_aaldev_pport(pdev)->m_pport_err->ccip_port_error_mask.csr);
+           PVERBOSE("New Port Mask CSR:%llX \n",preq->ahmreq.u.error_csr.error0);
 
            ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error_mask.csr =preq->ahmreq.u.error_csr.error0;
 

@@ -84,6 +84,8 @@ public :
 
    virtual btBool errorSetMask( const INamedValueSet &rInputArgs) ;
 
+   virtual btBool errorClearMask(const INamedValueSet &rInputArgs);
+
    virtual btBool errorClear( const INamedValueSet &rInputArgs);
 
    virtual btBool errorClearAll() ;
@@ -106,7 +108,7 @@ public :
 
    void readfmeError( struct CCIP_ERROR *pError, INamedValueSet &rResult ,btBool errMask =false);
 
-   void writewriteError( struct CCIP_ERROR *pError,const INamedValueSet &rInputArgs,btBool errMask = false);
+   void writefmeError( struct CCIP_ERROR *pError,const INamedValueSet &rInputArgs,btBool errMask,btInt errbit);
 
    void readOrderError( struct CCIP_ERROR *pError, INamedValueSet &rResult);
 

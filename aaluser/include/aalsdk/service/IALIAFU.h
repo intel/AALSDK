@@ -933,6 +933,14 @@ public:
    /// @retval      False if the error mask is not set.
    virtual btBool errorSetMask(const INamedValueSet &rInputArgs) = 0;
 
+
+   /// @brief       Clears error mask on FPGA.
+   /// @note        Synchronous.
+   /// @param[in]   rInputArgs  Error mask to clear.
+   /// @retval      True if the error mask is set successfully.
+   /// @retval      False if the error mask is not set.
+   virtual btBool errorClearMask(const INamedValueSet &rInputArgs) = 0;
+
    /// @brief       Clears error from FPGA.
    /// @note        Synchronous.
    /// @param[in]   rInputArgs  Error to clear.
@@ -968,12 +976,13 @@ class IALIFMEError: public IALIError
 public:
 
    // FME Error definitions
-   #define AAL_ERR_FME_FAB_UNDERFLOW              "Fabric FIFO underflow"
-   #define AAL_ERR_FME_FAB_OVERFLOW               "Fabric FIFO overflow"
+   #define AAL_ERR_FME_FAB                        "Fabric Error"
+   #define AAL_ERR_FME_FAB_UOVERFLOW              "Fabric FIFO Under / Overflow error"
    #define AAL_ERR_FME_PCIE0_POSION_DETECT        "PCIe0 Poison Detected"
    #define AAL_ERR_FME_PCIE1_POSION_DETECT        "PCIe0 Poison Detected"
    #define AAL_ERR_FME_IOMMU_PARIRY               "IOMMU Parity Error"
-   #define AAL_ERR_FME_AFUMISMATCH_DETECT         "AFU Access Mismatch detected"
+   #define AAL_ERR_FME_AFUMISMATCH_DETECT         "AFU PF/VF Access Mismatch detected"
+   #define AAL_ERR_FME_MBPEVENT                   "MBP error event"
 
 
    #define AAL_ERR_PCIE0_FORMAT                   "PCIe0 TLP Format/type error"
@@ -1001,14 +1010,15 @@ public:
    #define AAL_ERR_RAS_TEMPAP1                    "Thermal threshold Triggered AP1"
    #define AAL_ERR_RAS_TEMPAP2                    "Thermal threshold Triggered AP2"
    #define AAL_ERR_RAS_PCIE                       "PCIe Fatal Error"
-   #define AAL_ERR_RAS_AFUFATAL                   "AFU Fatal error"
-   #define AAL_ERR_RAS_AFUACCESS_MODE             "AFU access mode error"
+   #define AAL_ERR_RAS_AFUFATAL                   "AFU Fatal error has occurred in AFU port"
+   #define AAL_ERR_RAS_PROCHOT                    "Indicates A Proc Hot event"
+   #define AAL_ERR_RAS_AFUACCESS_MODE             "AFU PF/VF access mode mismatch"
    #define AAL_ERR_RAS_PCIEPOSION                 "PCIe poison port  error"
    #define AAL_ERR_RAS_GBCRC                      "Green bitstream CRC Error"
    #define AAL_ERR_RAS_TEMPAP6                    "Thremal threshold Triggered AP6"
    #define AAL_ERR_RAS_POWERAP1                   "Power threshold Triggered AP1"
    #define AAL_ERR_RAS_POWERAP2                   "Power threshold Triggered AP2"
-   #define AAL_ERR_RAS_MDP                        "MBP error "
+   #define AAL_ERR_RAS_MDP                        "MBP error event "
 
    #define AAL_ERR_RAS_KTILINK_FATAL              "KTI Link layer Fatal error"
    #define AAL_ERR_RAS_TAGCCH_FATAL               "tag-n-cache Fatal error"
