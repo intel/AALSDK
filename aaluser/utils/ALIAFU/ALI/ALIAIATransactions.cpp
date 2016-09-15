@@ -82,7 +82,8 @@ BufferAllocateTransaction::BufferAllocateTransaction( btWSSize len ) :
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
    union msgpayload{
       struct ahm_req                req;    // [IN]
@@ -95,6 +96,13 @@ BufferAllocateTransaction::BufferAllocateTransaction( btWSSize len ) :
 
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+      setErrno(uid_errnumNoMem);
+      return;
+   }
 
    // Point at payload
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
@@ -110,11 +118,6 @@ BufferAllocateTransaction::BufferAllocateTransaction( btWSSize len ) :
 
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){
-      return;
-   }
 
    m_bIsOK = true;
 }
@@ -146,7 +149,8 @@ BufferFreeTransaction::BufferFreeTransaction( btWSID wsid ) :
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
 
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
@@ -155,6 +159,13 @@ BufferFreeTransaction::BufferFreeTransaction( btWSID wsid ) :
 
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+     setErrno(uid_errnumNoMem);
+     return;
+   }
 
    // Point at payload
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
@@ -172,11 +183,6 @@ BufferFreeTransaction::BufferFreeTransaction( btWSID wsid ) :
 
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){
-      return;
-   }
 
    m_bIsOK = true;
 }
@@ -205,7 +211,8 @@ GetMMIOBufferTransaction::GetMMIOBufferTransaction() :
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
    union msgpayload{
       struct ahm_req                req;    // [IN]
@@ -219,6 +226,13 @@ GetMMIOBufferTransaction::GetMMIOBufferTransaction() :
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
 
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+     setErrno(uid_errnumNoMem);
+     return;
+   }
+
    // Point at payload
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
 
@@ -230,11 +244,6 @@ GetMMIOBufferTransaction::GetMMIOBufferTransaction() :
 
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){
-      return;
-   }
 
    m_bIsOK = true;
 }
@@ -267,7 +276,8 @@ AFUQuiesceAndHalt::AFUQuiesceAndHalt() :
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
    // GetMMIOBufferTransaction-AIATransaction.
@@ -276,17 +286,19 @@ AFUQuiesceAndHalt::AFUQuiesceAndHalt() :
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
 
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+      setErrno(uid_errnumNoMem);
+      return;
+   }
+
    // fill out aalui_CCIdrvMessage
    afumsg->cmd     = ccipdrv_afucmdPort_afuQuiesceAndHalt;
    afumsg->size    = 0;
 
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){
-      return;
-   }
 
    m_bIsOK = true;
 }
@@ -316,7 +328,8 @@ AFUEnable::AFUEnable() :
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
    // GetMMIOBufferTransaction-AIATransaction.
@@ -325,17 +338,19 @@ AFUEnable::AFUEnable() :
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
 
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+      setErrno(uid_errnumNoMem);
+      return;
+   }
+
    // fill out aalui_CCIdrvMessage
    afumsg->cmd     = ccipdrv_afucmdPort_afuEnable;
    afumsg->size    = 0;
 
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){
-      return;
-   }
 
    m_bIsOK = true;
 }
@@ -364,7 +379,8 @@ UmsgGetNumber::UmsgGetNumber() :
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
    // BufferAllocate-AIATransaction.
@@ -372,6 +388,13 @@ UmsgGetNumber::UmsgGetNumber() :
 
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+     setErrno(uid_errnumNoMem);
+     return;
+   }
 
    // Point at payload
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
@@ -385,10 +408,6 @@ UmsgGetNumber::UmsgGetNumber() :
 
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){      return;
-   }
 
    m_bIsOK = true;
 }
@@ -419,7 +438,8 @@ UmsgGetBaseAddress::UmsgGetBaseAddress() :
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
 
    union msgpayload{
@@ -434,25 +454,27 @@ UmsgGetBaseAddress::UmsgGetBaseAddress() :
     // Allocate structs
     struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
 
-    // Point at payload
-    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+     setErrno(uid_errnumNoMem);
+     return;
+   }
 
-    // fill out aalui_CCIdrvMessage
-    afumsg->cmd     = ccipdrv_afucmdGet_UmsgBase;
-    afumsg->size    = sizeof(union msgpayload);
+   // Point at payload
+   struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
 
+   // fill out aalui_CCIdrvMessage
+   afumsg->cmd     = ccipdrv_afucmdGet_UmsgBase;
+   afumsg->size    = sizeof(union msgpayload);
 
+   //TODO: remove this line.  incorrect 2nd size assignment
    afumsg->size    = sizeof(struct ahm_req);
 
    req->u.wksp.m_wsid = WSID_MAP_MMIOR;
 
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){
-      return;
-   }
 
    m_bIsOK = true;
 }
@@ -483,7 +505,8 @@ UmsgSetAttributes::UmsgSetAttributes(AAL::NamedValueSet const &nvsArgs) :
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
 
    if( true != nvsArgs.Has(UMSG_HINT_MASK_KEY)){
@@ -515,6 +538,13 @@ UmsgSetAttributes::UmsgSetAttributes(AAL::NamedValueSet const &nvsArgs) :
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
 
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+     setErrno(uid_errnumNoMem);
+     return;
+   }
+
    // Point at payload
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
 
@@ -525,11 +555,6 @@ UmsgSetAttributes::UmsgSetAttributes(AAL::NamedValueSet const &nvsArgs) :
 
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){
-      return;
-   }
 
    m_bIsOK = true;
 }
@@ -559,7 +584,8 @@ PerfCounterGet::PerfCounterGet(btWSSize size) :
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in
    // must allocate enough memory , so playload returns performance counters
@@ -568,6 +594,13 @@ PerfCounterGet::PerfCounterGet(btWSSize size) :
 
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+     setErrno(uid_errnumNoMem);
+     return;
+   }
 
    // Point at payload
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
@@ -578,10 +611,6 @@ PerfCounterGet::PerfCounterGet(btWSSize size) :
 
 // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){      return;
-   }
 
    m_bIsOK = true;
 }
@@ -616,7 +645,8 @@ AFUActivateTransaction::AFUActivateTransaction(AAL::TransactionID const &rTranID
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
 
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
@@ -625,6 +655,13 @@ AFUActivateTransaction::AFUActivateTransaction(AAL::TransactionID const &rTranID
 
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+     setErrno(uid_errnumNoMem);
+     return;
+   }
 
    // fill out aalui_CCIdrvMessage
    afumsg->cmd     = ccipdrv_activateAFU;
@@ -669,7 +706,8 @@ AFUDeactivateTransaction::AFUDeactivateTransaction(AAL::TransactionID const &rTr
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
 
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
@@ -678,6 +716,13 @@ AFUDeactivateTransaction::AFUDeactivateTransaction(AAL::TransactionID const &rTr
 
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+     setErrno(uid_errnumNoMem);
+     return;
+   }
 
    // Point at payload
     struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
@@ -716,11 +761,6 @@ AFUDeactivateTransaction::AFUDeactivateTransaction(AAL::TransactionID const &rTr
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
 
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){
-      return;
-   }
-
    m_bIsOK = true;
 }
 
@@ -755,7 +795,8 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
 
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in
@@ -765,6 +806,13 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
 
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+     setErrno(uid_errnumNoMem);
+     return;
+   }
 
    // Point at payload
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
@@ -812,10 +860,6 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
 // package in AIA transaction
    m_payload = reinterpret_cast<AAL::btVirtAddr>(afumsg);
 
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){      return;
-   }
-
    m_bIsOK = true;
 }
 
@@ -846,7 +890,8 @@ ErrorGet::ErrorGet(btWSSize size,btUnsigned64bitInt cmd) :
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in
    // must allocate enough memory , so playload returns errors
@@ -855,6 +900,13 @@ ErrorGet::ErrorGet(btWSSize size,btUnsigned64bitInt cmd) :
 
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+     setErrno(uid_errnumNoMem);
+     return;
+   }
 
    // Point at payload
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
@@ -901,7 +953,8 @@ SetError::SetError(btUnsigned64bitInt cmd,struct CCIP_ERROR ccip_error ) :
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in
    // must allocate enough memory , so playload sets error or mask in csr.
@@ -910,6 +963,13 @@ SetError::SetError(btUnsigned64bitInt cmd,struct CCIP_ERROR ccip_error ) :
 
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+     setErrno(uid_errnumNoMem);
+     return;
+   }
 
    // Point at payload
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
@@ -931,10 +991,6 @@ SetError::SetError(btUnsigned64bitInt cmd,struct CCIP_ERROR ccip_error ) :
 
   // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){      return;
-   }
 
    m_bIsOK = true;
 }
@@ -967,7 +1023,8 @@ ThermalPwrGet::ThermalPwrGet(btWSSize size,btUnsigned64bitInt cmd) :
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
-   m_bufLength(0)
+   m_bufLength(0),
+   m_errno(uid_errnumOK)
 {
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in
    // must allocate enough memory , so playload returns errors
@@ -976,6 +1033,13 @@ ThermalPwrGet::ThermalPwrGet(btWSSize size,btUnsigned64bitInt cmd) :
 
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if (afumsg == NULL){
+     setErrno(uid_errnumNoMem);
+     return;
+   }
 
    // Point at payload
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
@@ -986,10 +1050,6 @@ ThermalPwrGet::ThermalPwrGet(btWSSize size,btUnsigned64bitInt cmd) :
 
 // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){      return;
-   }
 
    m_bIsOK = true;
 }
