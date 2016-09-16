@@ -2,13 +2,13 @@
 #define __GTCOMMON_CLASSOVERRIDES_H__
 
 /// ===================================================================
-/// @brief        This is a facilitator class for all listeners to derive
-///               from CriticalSection if needed.
+/// @brief        A facilitator class for listeners to derive from
+///               CriticalSection as needed.
 ///
-/// @details      CriticalSection is a class found in CriticalSection.h 
-///               and is a member of the osal group of classes (Operating 
-///               System Abstraction Layer).
-/// 
+/// @details      CriticalSection is a class found in CriticalSection.h
+///               and is a member of the osal group of classes
+///               (Operating System Abstraction Layer).
+///
 class GTCOMMON_API Listener : public CriticalSection
 {
 public:
@@ -18,8 +18,8 @@ public:
 };
 
 /// ===================================================================
-/// @brief        Basic, light-weight spin-lock semaphore that works without
-///               native synchronization primitives.
+/// @brief        A basic, light-weight spin-lock semaphore that works
+///               without native synchronization primitives.
 ///
 /// @details      This class can be used in place of the SDK framework
 ///               semaphore when an atomic guarantee is not required to
@@ -39,15 +39,19 @@ private:
    volatile int signal_count;
    // volatile may be helpful, but does not guarantee atomic access
    CriticalSection* m_pCritSec;
-   CSemaphore m_Sem;
    // we own deletion of the critical section
+   CSemaphore m_Sem;
 
 public:
    /// ================================================================
-   /// @brief        Constructor, supporting wrap of the SDK semaphore.
+   /// @brief        A constructor, supporting wrap of the SDK semaphore.
    ///
-   /// @param        pCS    Pointer to a critical section that can be
-   ///                      used to create the SDK semaphore.
+   /// @param        pCS    A pointer to the critical section, that will
+   ///                      be used to create the SDK semaphore if
+   ///                      required.
+   ///
+   /// @details      Default value is NULL as the use of this parameter
+   ///               depends on disabled code.
    ///
    CListenerLock(CriticalSection* pCS = NULL)
       : signal_count(0)
@@ -63,7 +67,7 @@ public:
    }
 
    /// ================================================================
-   /// @brief        Copy constructor
+   /// @brief        The copy constructor
    ///
    /// @param        lock    The lock from which to copy the critical
    ///                       section.
@@ -77,7 +81,8 @@ public:
    void signal()
    {
       // AutoLock(m_pCritSec);
-      MOCKDEBUG("                              >>>>>>>>>>");
+      // stdout indicator to aid in debugging 
+      MOCKDEBUG("                              >>>>>>>>>>"); 
       --signal_count;
       // m_Sem.Post(1);
    }
@@ -88,6 +93,7 @@ public:
          SleepZero();
       }
       // AutoLock(m_pCritSec);
+      // stdout indicator to aid in debugging 
       MOCKDEBUG("                              ||||||||||");
       ++signal_count;
       // m_Sem.Wait();

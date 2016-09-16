@@ -9,7 +9,7 @@ class GTCOMMON_API CRuntimeClientAdapter : public CAASBase, public IRuntimeClien
 
 public:
    /// ========================================================================
-   /// @brief        Default constructor, taking a shared lock.
+   /// @brief        The default constructor, taking a shared lock.
    ///
    /// @param        pLock    The lock
    ///
@@ -26,7 +26,25 @@ protected:
 
 public:
    // custom functions
+
+   /// ================================================================
+   /// @brief        Gets the listener lock.
+   ///
+   /// @details      Invoked when service clients needs a lock to
+   ///               synchronize runtime events through a listener.
+   ///
+   /// @return       The listener lock.
+   ///
    CListenerLock* getListenerLock();
+   /// ================================================================
+   /// @brief        Gets the runtime adapter.
+   ///
+   /// @return       The runtime adapter.
+   ///
+   /// @details      Provides a redirect mechanism when the framework
+   ///               calls getRuntime(), plugging the custom runtime
+   ///               proxy into existing framework code.
+   ///
    IRuntime* getRuntimeAdapter();
 
    // functions taken from samples
@@ -35,7 +53,7 @@ public:
    btBool isOK();
 
    /// ========================================================================
-   /// @brief        Runtime client interface
+   /// @brief        The runtime client interface
    ///
 
    virtual void runtimeCreateOrGetProxyFailed(IEvent const& rEvent);
