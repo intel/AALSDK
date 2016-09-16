@@ -18,13 +18,13 @@ gtCommon_Mocks.h \
 gtCommon_ClassOverrides.h \
 gtCommon_DoWorker.h \
 gtCommon_ModuleStub.h \
-gtCommon_RTAdapter.cpp \
 gtCommon_RTAdapter.h \
-gtCommon_RTClientAdapter.cpp \
 gtCommon_RTClientAdapter.h \
-gtCommon_SMocks.cpp \
 gtCommon_SMocks.h \
 gtCommon_ServiceListener.h \
+gtCommon_RTAdapter.cpp \
+gtCommon_RTClientAdapter.cpp \
+gtCommon_SMocks.cpp \
 gtCommon.cpp \
 gtCommon_Config.cpp \
 gtCommon_RNG.cpp \

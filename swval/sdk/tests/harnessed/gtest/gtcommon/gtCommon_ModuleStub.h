@@ -1,9 +1,6 @@
+// INTEL CONFIDENTIAL - For Intel Internal Use Only
 #ifndef __GTCOMMON_MODULESTUB_H__
 #define __GTCOMMON_MODULESTUB_H__
-
-#include "gtCommon.h"
-#include "gtCommon_SMocks.h"
-#include "gtCommon_DoWorker.h"
 
 /// ===================================================================
 /// @brief        Custom service factory for use when both client and

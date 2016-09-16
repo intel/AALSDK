@@ -1,12 +1,6 @@
+// INTEL CONFIDENTIAL - For Intel Internal Use Only
 #ifndef __GTCOMMON_RUNTIMEADAPTER_H__
 #define __GTCOMMON_RUNTIMEADAPTER_H__
-
-#include "gtCommon_RTClientAdapter.h"
-
-#include "aalsdk/aas/Dispatchables.h"
-#include "aalsdk/eds/AASEventDeliveryService.h"
-
-using namespace std;
 
 /// ===================================================================
 /// @brief        Runtime listener interface, providing a delegation
