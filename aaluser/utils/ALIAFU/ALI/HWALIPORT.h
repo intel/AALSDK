@@ -76,6 +76,8 @@ public :
 
    virtual btBool errorSetMask(const INamedValueSet &rInputArgs);
 
+   virtual btBool errorClearMask(const INamedValueSet &rInputArgs);
+
    virtual btBool errorClear(const INamedValueSet &rInputArgs) ;
 
    virtual btBool errorClearAll();
@@ -86,7 +88,7 @@ public :
    // </IALIPortError>
 
    void readPortError( struct CCIP_PORT_ERROR port_error, INamedValueSet &rResult );
-   void writePortError( struct CCIP_PORT_ERROR *pPort_Error,const INamedValueSet &rInputArgs);
+   void writePortError( struct CCIP_ERROR *pError,const INamedValueSet &rInputArgs,btBool errMask,btInt errbit);
    void pirntPortErrors(struct CCIP_ERROR *pError);
 
    // AFU Event Handler

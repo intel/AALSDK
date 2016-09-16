@@ -901,13 +901,14 @@ struct CCIP_FME_ERROR0 {
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt fabFifo_underflow :1;        // Fabric fifo underflow
-         btUnsigned64bitInt fabFifo_overflow :1;         // Fabric fifo overflow
+         btUnsigned64bitInt fabric_err :1;               // Fabric error
+         btUnsigned64bitInt fabFifo_uoflow :1;           // Fabric fifo underflow overflow
          btUnsigned64bitInt pcie0_poison_detected :1;    // PCIe0 Poison Detected
          btUnsigned64bitInt pcie1_poison_detected :1;    // PCIE1 Poison Detected
          btUnsigned64bitInt iommu_parity_error :1;       // IOMMU Parity Error
          btUnsigned64bitInt afuerr_access_mismatch :1;   // AFU error mismatch
-         btUnsigned64bitInt rsvd :58;                    // Reserved
+         btUnsigned64bitInt mbp_event :1;                // MBP Event
+         btUnsigned64bitInt rsvd :57;                    // Reserved
       }; // end struct
    }; // end union
 
@@ -998,7 +999,7 @@ struct CCIP_FME_RAS_GERROR {
          btUnsigned64bitInt pcie_error :1;                    // pcie Error
          btUnsigned64bitInt afufatal_error :1;                // afu fatal error
          btUnsigned64bitInt prochot_error :1;                 // proc hot error
-         btUnsigned64bitInt afu_access_mode_error :1;         // afu access mode  error
+         btUnsigned64bitInt afu_access_mismatch :1;           // afu access PF/VF mismatch
          btUnsigned64bitInt injected_warn_error :1;           // Injected warning  error
          btUnsigned64bitInt pcie_posion_error :1;             // PCIe poison port  error
          btUnsigned64bitInt gb_crc_err :1;                    // Green bitstream CRC Error

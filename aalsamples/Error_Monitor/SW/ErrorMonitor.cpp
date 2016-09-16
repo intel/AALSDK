@@ -82,7 +82,6 @@ using namespace AAL;
 # define EVENT_CASE(x) case x :
 #endif
 
-#define FOUND_ERR  1
 
 // FME GUID
 #define CCIP_FME_AFUID              "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764"
@@ -110,18 +109,29 @@ public:
    /// Blocks calling thread from [Main} untill application is done.
    btInt run(btBool bClear); //Return 0 if success
 
-   // Gets FME Errors
-   btInt getFMEError();
-   // Gets Port errors
-   btInt getPortError();
+   // Get FME Errors
+   btBool getFMEError();
 
-   // Gets FME and PORT Error CSR masks
-   void getFMEPortErrorMask();
+   // Get Port errors
+   btBool getPortError();
 
-   // Clears FME and Port Errors
-   void clearErrors();
-   // prints all Errors
-   void printAllErrors();
+   // Get FME Error masks
+   btBool getFMEErrorMask();
+
+   // Get PORT Error masks
+   btBool getPortErrorMask();
+
+   // Clears FME Errors
+   btBool clearFMEErrors();
+
+   // Clears Port Errors
+   btBool clearPortErrors();
+
+   // Prints All FME  Errors
+   btBool printAllFMEErrors();
+
+   // Prints All PORT Errors
+   btBool printAllPortErrors();
 
    btBool isOK()  {return m_bIsOK;}
 
@@ -139,41 +149,40 @@ public:
    // <end IServiceClient interface>
 
    // <begin IRuntimeClient interface>
-    void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
+   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
 
-    void runtimeStarted(IRuntime            *pRuntime,
-                        const NamedValueSet &rConfigParms);
+   void runtimeStarted(IRuntime            *pRuntime,
+                       const NamedValueSet &rConfigParms);
 
-    void runtimeStopped(IRuntime *pRuntime);
+   void runtimeStopped(IRuntime *pRuntime);
 
-    void runtimeStartFailed(const IEvent &rEvent);
+   void runtimeStartFailed(const IEvent &rEvent);
 
-    void runtimeStopFailed(const IEvent &rEvent);
+   void runtimeStopFailed(const IEvent &rEvent);
 
-    void runtimeAllocateServiceFailed( IEvent const &rEvent);
+   void runtimeAllocateServiceFailed( IEvent const &rEvent);
 
-    void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent);
+   void serviceReleaseRequest(IBase *pServiceBase,
+                              const IEvent &rEvent);
 
-    void runtimeAllocateServiceSucceeded(IBase               *pClient,
-                                         TransactionID const &rTranID);
+   void runtimeAllocateServiceSucceeded(IBase               *pClient,
+                                        TransactionID const &rTranID);
 
-    void runtimeEvent(const IEvent &rEvent);
-  // <end IRuntimeClient interface>
+   void runtimeEvent(const IEvent &rEvent);
+   // <end IRuntimeClient interface>
 
 protected:
-    enum {
-       FME,
-       PORT
-    };
-   IBase            *m_pFMEService;     // The generic AAL Service interface for the FME.
-   IBase            *m_pPortService ;   // The generic AAL Service interface for the Port.
+   enum {
+      FME,
+      PORT
+   };
+   IBase            *m_pFMEService;      // The generic AAL Service interface for the FME.
+   IBase            *m_pPortService;     // The generic AAL Service interface for the Port.
    Runtime           m_Runtime;
-   IALIMMIO         *m_pFMEMMIOService;
-   IALIMMIO         *m_pPortMMIOService;
-   CSemaphore        m_Sem;            // For synchronizing with the AAL runtime.
-   btInt             m_Result;         // Returned result value; 0 if success
-   IALIFMEError     *m_pALIFMEError;
-   IALIPortError    *m_pALIPortError;
+   CSemaphore        m_Sem;              // For synchronizing with the AAL runtime.
+   btInt             m_Result;           // Returned result value; 0 if success
+   IALIFMEError     *m_pALIFMEError;     // FME ALI Error Interface
+   IALIPortError    *m_pALIPortError;    // PORT ALI Error Interface
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -185,31 +194,29 @@ ErrorMonApp::ErrorMonApp() :
    m_pFMEService(NULL),
    m_pPortService(NULL),
    m_Runtime(this),
-   m_pFMEMMIOService(NULL),
-   m_pPortMMIOService(NULL),
    m_Result(0),
    m_pALIFMEError(NULL),
    m_pALIPortError(NULL)
 {
-    // Publish our interfaces
-    SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
-    SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
+   // Publish our interfaces
+   SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
+   SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
 
-    m_Sem.Create(0, 1);
+   m_Sem.Create(0, 1);
 
-    NamedValueSet configArgs;
-    NamedValueSet configRecord;
+   NamedValueSet configArgs;
+   NamedValueSet configRecord;
 
-    configRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-    configArgs.Add(AALRUNTIME_CONFIG_RECORD, &configRecord);
+   configRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+   configArgs.Add(AALRUNTIME_CONFIG_RECORD, &configRecord);
 
-    if(!m_Runtime.start(configArgs)){
-       m_bIsOK = false;
-       return;
-    }
+   if(!m_Runtime.start(configArgs)){
+      m_bIsOK = false;
+      return;
+   }
 
-    m_Sem.Wait();
-    m_bIsOK = true;
+   m_Sem.Wait();
+   m_bIsOK = true;
 }
 
 ErrorMonApp::~ErrorMonApp()
@@ -218,49 +225,83 @@ ErrorMonApp::~ErrorMonApp()
    m_Sem.Destroy();
 }
 
-void ErrorMonApp::clearErrors()
+btBool ErrorMonApp::clearFMEErrors()
 {
+   cout << endl<< "-----Clears All FME Error ----- "<< endl;
 
-   m_pALIFMEError->errorClearAll();
-   m_pALIPortError->errorClearAll();
+   // Clear All FME Errors
+   if(!m_pALIFMEError->errorClearAll()) {
+      return false;
+   }
+   return true ;
 }
 
-void ErrorMonApp::getFMEPortErrorMask()
+btBool ErrorMonApp::clearPortErrors()
 {
+   cout << endl<< "-----Clears All PORT Error ----- "<< endl;
+   // Clear All PORT Errors
+   if(!m_pALIPortError->errorClearAll()) {
+      return false;
+   }
+   return true ;
+}
 
+
+btBool ErrorMonApp::getPortErrorMask()
+{
    NamedValueSet Error;
    btUnsignedInt count = 0;
-   m_pALIFMEError->errorGetMask(Error);
 
-   Error.GetNumNames(&count);
-   for(int i=0;i<count ;i++) {
-      btStringKey type;
-      Error.GetName(i,&type);
-      std::cout << "FME Error Mask: " << type <<"  Set"<< std::endl;
+   // Get PORT Errors Masks
+   if(!m_pALIPortError->errorGetMask(Error)) {
+      return false;
    }
 
-   Error.Empty();
-
-   m_pALIPortError->errorGetMask(Error);
+   cout << endl<< "-----PORT Error Mask ----- "<< endl;
+   // Print PORT Error masks
    Error.GetNumNames(&count);
    for(int i=0;i<count ;i++) {
       btStringKey type;
       Error.GetName(i,&type);
       std::cout << "Port Error Mask: " << type <<"  Set"<< std::endl;
    }
-
+   return true ;
 }
 
-btInt ErrorMonApp::getFMEError()
+btBool ErrorMonApp::getFMEErrorMask()
 {
-  
-   NamedValueSet fmeError;
-   btUnsignedInt count   = 0;
-   btInt res             = 0;
-   if( false == m_pALIFMEError->errorGet(fmeError)) {
-      return FOUND_ERR;
+   NamedValueSet Error;
+   btUnsignedInt count = 0;
+
+   // Get FME Errors Masks
+   if(!m_pALIFMEError->errorGetMask(Error)) {
+      return false;
    }
 
+   cout << endl<< "-----FME Error Mask ----- "<< endl;
+   // Print FME Error masks
+   Error.GetNumNames(&count);
+   for(int i=0;i<count ;i++) {
+      btStringKey type;
+      Error.GetName(i,&type);
+      std::cout << "FME Error Mask: " << type <<"  Set"<< std::endl;
+   }
+   return true ;
+}
+
+btBool ErrorMonApp::getFMEError()
+{
+   NamedValueSet fmeError;
+   btUnsignedInt count   = 0;
+
+   // Get FME Errors
+   if(!m_pALIFMEError->errorGet(fmeError)) {
+      return false;
+   }
+
+   cout <<endl << "-----FME Error ----- "<< endl;
+
+   // Print FME Errors
    fmeError.GetNumNames(&count);
    for(int i=0;i<count ;i++) {
       btStringKey type;
@@ -270,10 +311,13 @@ btInt ErrorMonApp::getFMEError()
 
    fmeError.Empty();
 
-   if( false == m_pALIFMEError->errorGetOrder(fmeError)) {
-       return FOUND_ERR;
-    }
+   cout << endl<< "-----FME First& Next Error ----- "<< endl;
+   // Get FME First and Next Errors
+   if(!m_pALIFMEError->errorGetOrder(fmeError)) {
+      return false;
+   }
 
+   // Print FME First and Next Errors
    fmeError.GetNumNames(&count);
    for(int i=0;i<count ;i++) {
       btStringKey type;
@@ -281,20 +325,22 @@ btInt ErrorMonApp::getFMEError()
       std::cout << "Error : " << type <<"  Set"<< std::endl;
    }
 
-   return res ;
+   return true ;
 }
 
-btInt ErrorMonApp::getPortError()
+btBool ErrorMonApp::getPortError()
 {
-
    NamedValueSet portError;
    btUnsignedInt count       = 0;
-   btInt res                 = 0;
    btUnsigned64bitInt value  = 0;
-   if( false == m_pALIPortError->errorGet(portError)) {
-      return FOUND_ERR;
+
+   // Get PORT Errors
+   if(!m_pALIPortError->errorGet(portError)) {
+      return false;
    }
 
+   cout << endl<< "-----PORT Error ----- "<< endl;
+   // Print PORT Errors
    portError.GetNumNames(&count);
    for(int i=0;i<count ;i++) {
       btStringKey type;
@@ -304,10 +350,13 @@ btInt ErrorMonApp::getPortError()
 
    portError.Empty();
 
-   if( false == m_pALIPortError->errorGetOrder(portError)) {
-       return FOUND_ERR;
-    }
+   cout << endl<< "-----PORT First Error ----- "<< endl;
+   // Get PORT First  Errors
+   if(!m_pALIPortError->errorGetOrder(portError)) {
+      return false;
+   }
 
+   // Prints PORT First  Errors
    portError.GetNumNames(&count);
    for(int i=0;i<count ;i++) {
       btStringKey type;
@@ -316,34 +365,54 @@ btInt ErrorMonApp::getPortError()
    }
 
    portError.Empty();
+   // Get PORT Errors
+   if(!m_pALIPortError->errorGet(portError)) {
+      return false;
+   }
+   portError.GetNumNames(&count);
 
-   if( false == m_pALIPortError->errorGetPortMalformedReq(portError)) {
-       return FOUND_ERR;
-    }
+   // Get Port Malformed Request if PORT Error
+   if(count >0) {
+      portError.Empty();
 
-   if (portError.Has(AAL_ERR_PORT_MALFORMED_REQ_0)) {
-      portError.Get( AAL_ERR_PORT_MALFORMED_REQ_0, &value);
-      printf("Port malformed request0 %llu \n",value);
+      if(!m_pALIPortError->errorGetPortMalformedReq(portError)) {
+       return false;
+      }
+
+      cout << endl<< "-----PORT MalFormed Request----- "<< endl;
+
+      if (portError.Has(AAL_ERR_PORT_MALFORMED_REQ_0)) {
+         portError.Get( AAL_ERR_PORT_MALFORMED_REQ_0, &value);
+         printf("PORT malformed request0 %llu \n",value);
+      }
+
+      if (portError.Has(AAL_ERR_PORT_MALFORMED_REQ_1)) {
+         portError.Get( AAL_ERR_PORT_MALFORMED_REQ_1, &value);
+         printf("PORT malformed request1 %llu \n",value);
+      }
    }
 
-   if (portError.Has(AAL_ERR_PORT_MALFORMED_REQ_1)) {
-      portError.Get( AAL_ERR_PORT_MALFORMED_REQ_1, &value);
-      printf("Port malformed request1 %llu \n",value);
-   }
-
-   return res;
-
+   return true;
 }
 
-void ErrorMonApp::printAllErrors()
+btBool ErrorMonApp::printAllFMEErrors()
 {
+   cout <<endl<<"-------Print ALL FME Errors ------"<<endl;
+   if(!m_pALIFMEError->printAllErrors()) {
+      return false;
+   }
 
-   cout <<"FME Errors"<<endl;
-   m_pALIFMEError->printAllErrors();
+   return true;
+}
 
-   cout <<"Port Errors"<<endl;
-   m_pALIPortError->printAllErrors();
+btBool ErrorMonApp::printAllPortErrors()
+{
+   cout <<endl<<"-------Print ALL PORT Errors ------"<<endl;
+   if(!m_pALIPortError->printAllErrors()) {
+      return false;
+   }
 
+   return true;
 }
 
 
@@ -358,16 +427,64 @@ btInt ErrorMonApp::run(btBool bClear)
 
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
-   btInt         res = 0;
 
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
-   ConfigRecord.Add(keyRegAFU_ID,CCIP_FME_AFUID);
 
+   // Modify the manifest for the PORT
+   ConfigRecord.Add(keyRegAFU_ID,CCIP_PORT_AFUID);
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Error Monitor");
 
-   MSG("Allocating Service");
+   MSG("Allocating PORT Service");
 
+   // Allocate the Service and wait for it to complete by sitting on the
+   // semaphore. The serviceAllocated() callback will be called if successful.
+   // If allocation fails the serviceAllocateFailed() should set m_bIsOK appropriately.
+   // (Refer to the serviceAllocated() callback to see how the Service's interfaces
+   // are collected.)
+   {
+      // Allocate the PORT Resource
+      TransactionID port_tid(ErrorMonApp::PORT);
+      m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, port_tid);
+      m_Sem.Wait();
+      if(!m_bIsOK){
+         ERR("Allocation failed\n");
+         goto done_0;
+      }
+   }
+
+   // clears PORT Errors
+   if(bClear) {
+      if(!clearPortErrors()) {
+            ++m_Result;   // record error
+      }
+   }
+
+   // get PORT Error mask
+   if(!getPortErrorMask()) {
+       ++m_Result;   // record error
+   }
+
+   // Get PORT Errors
+   if(!getPortError()) {
+       ++m_Result;   // record error
+   }
+
+   //Prints all PORT errors
+   if(!printAllPortErrors()) {
+       ++m_Result;   // record error
+   }
+
+
+   // Modify the manifest for the FME
+   Manifest.Delete(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED);
+   ConfigRecord.Delete(keyRegAFU_ID);
+
+   ConfigRecord.Add(keyRegAFU_ID,CCIP_FME_AFUID);
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+
+   MSG("Allocating FME Service");
 
    // Allocate the Service and wait for it to complete by sitting on the
    // semaphore. The serviceAllocated() callback will be called if successful.
@@ -376,8 +493,8 @@ btInt ErrorMonApp::run(btBool bClear)
    // are collected.)
    {
       // Allocate the FME Resource
-      TransactionID afu_tid(ErrorMonApp::FME);
-      m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, afu_tid);
+      TransactionID fme_tid(ErrorMonApp::FME);
+      m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, fme_tid);
       m_Sem.Wait();
       if(!m_bIsOK){
          ERR("Allocation failed\n");
@@ -385,56 +502,45 @@ btInt ErrorMonApp::run(btBool bClear)
       }
    }
 
-   // Modify the manifest for the PORT
-    Manifest.Delete(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED);
-    ConfigRecord.Delete(keyRegAFU_ID);
-
-    ConfigRecord.Add(keyRegAFU_ID,CCIP_PORT_AFUID);
-    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
-
-   {
-      // Allocate the PORT Resource
-      TransactionID fme_tid(ErrorMonApp::PORT);
-      m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, fme_tid);
-      m_Sem.Wait();
-      if(!m_bIsOK){
-         ERR("Allocation failed\n");
-         goto done_1;
+   // clears FME Errors
+   if(bClear) {
+      if(!clearFMEErrors()) {
+         ++m_Result;   // record error
       }
    }
 
-   // clears FME and Port Errors
-   if(bClear) {
-      clearErrors();
+   // Get FME Errors mask
+   if(!getFMEErrorMask()) {
+       ++m_Result;   // record error
    }
 
-   getFMEPortErrorMask();
-
-   // Prints Port Errors
-   res = getPortError();
-   if(0 != res)
-       ++m_Result;   // record error
-
-   // Prints FME Errors
-   res = getFMEError();
-   if(0 != res)
+   // Get FME Errors
+   if(!getFMEError()) {
       ++m_Result;   // record error
+   }
 
-   printAllErrors();
+   // Prints all FME Errors
+   if(!printAllFMEErrors()) {
+       ++m_Result;   // record error
+   }
 
    // Clean-up and return
    // Release() the Service through the Services IAALService::Release() method
+done_0:
 
    // Release PORT Resource
-   (dynamic_ptr<IAALService>(iidService, m_pPortService))->Release(TransactionID());
-   m_Sem.Wait();
+   if(m_pPortService) {
+      (dynamic_ptr<IAALService>(iidService, m_pPortService))->Release(TransactionID());
+      m_Sem.Wait();
+   }
 
-done_1:
    // Release FME Resource
-   (dynamic_ptr<IAALService>(iidService, m_pFMEService))->Release(TransactionID());
-   m_Sem.Wait();
+   if(m_pFMEService) {
+      (dynamic_ptr<IAALService>(iidService, m_pFMEService))->Release(TransactionID());
+      m_Sem.Wait();
+   }
 
-done_0:
+   // Stop Runtime
    m_Runtime.stop();
    m_Sem.Wait();
 
@@ -457,14 +563,6 @@ void ErrorMonApp::serviceAllocated(IBase *pServiceBase,
          return;
       }
 
-      m_pFMEMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
-      ASSERT(NULL != m_pFMEMMIOService);
-      if ( NULL == m_pFMEMMIOService ) {
-         m_bIsOK = false;
-         return;
-      }
-
-
       m_pALIFMEError = dynamic_ptr<IALIFMEError>(iidALI_FMEERR_Service, pServiceBase);
       ASSERT(NULL != m_pALIFMEError);
       if ( NULL == m_pALIFMEError ) {
@@ -478,13 +576,6 @@ void ErrorMonApp::serviceAllocated(IBase *pServiceBase,
       m_pPortService = pServiceBase;
       ASSERT(NULL != m_pPortService);
       if ( NULL == m_pPortService ) {
-         m_bIsOK = false;
-         return;
-      }
-
-      m_pPortMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
-      ASSERT(NULL != m_pPortMMIOService);
-      if ( NULL == m_pPortMMIOService ) {
          m_bIsOK = false;
          return;
       }

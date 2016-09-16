@@ -182,29 +182,105 @@ btBool CHWALIPORT::errorGetMask( INamedValueSet &rResult )
 }
 
 //
-// errorSetMask. sets port error mask.
+// errorClearMask. clears port error mask.
 //
-btBool CHWALIPORT::errorSetMask( const INamedValueSet &rInputArgs )
+btBool CHWALIPORT::errorClearMask( const INamedValueSet &rInputArgs )
 {
-   struct CCIP_PORT_ERROR cip_port_error_mask   = {0};
-   struct CCIP_ERROR ccip_error                 = {0};
 
-   writePortError(&cip_port_error_mask,rInputArgs);
-
-   ccip_error.error0_mask = cip_port_error_mask.csr;
+   struct CCIP_ERROR *pError               = NULL;
+   struct CCIP_PORT_ERROR ccip_port_error_msk  = {0};
+   btWSSize size                           = sizeof(struct CCIP_ERROR);
 
    // Create the Transaction
-   SetError transaction(ccipdrv_SetPortErrorMask,ccip_error);
+   ErrorGet GetMaskTransaction(size,ccipdrv_getPortError);
 
    // Should never fail
-   if ( !transaction.IsOK() ) {
+   if ( !GetMaskTransaction.IsOK() ) {
       return  false;
    }
 
    // Send transaction
-   m_pAFUProxy->SendTransaction(&transaction);
-   if(transaction.getErrno() != uid_errnumOK) {
-      AAL_ERR( LM_ALI, "FATAL: set port error mask = " << transaction.getErrno()<< std::endl);
+   m_pAFUProxy->SendTransaction(&GetMaskTransaction);
+   if(GetMaskTransaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: get port error mask = " << GetMaskTransaction.getErrno()<< std::endl);
+      return false;
+   }
+
+   if(NULL == GetMaskTransaction.getBuffer() )  {
+      AAL_ERR( LM_ALI, "Invalid Transaction buffer"<< std::endl);
+      return false;
+   }
+
+   pError = (struct  CCIP_ERROR *)GetMaskTransaction.getBuffer();
+
+
+   writePortError(pError,rInputArgs,true,0x0);
+
+   // Create the Transaction
+   SetError SetMaskTransaction(ccipdrv_SetPortErrorMask,*pError);
+
+   // Should never fail
+   if ( !SetMaskTransaction.IsOK() ) {
+      return  false;
+   }
+
+   // Send transaction
+   m_pAFUProxy->SendTransaction(&SetMaskTransaction);
+   if(SetMaskTransaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: set port error mask = " << SetMaskTransaction.getErrno()<< std::endl);
+      return false;
+   }
+
+   return true;
+}
+
+//
+// errorSetMask. sets port error mask.
+//
+btBool CHWALIPORT::errorSetMask( const INamedValueSet &rInputArgs )
+{
+
+   struct CCIP_ERROR *pError               = NULL;
+   struct CCIP_PORT_ERROR ccip_port_error_msk  = {0};
+   btWSSize size                           = sizeof(struct CCIP_ERROR);
+
+   // Create the Transaction
+   ErrorGet GetMaskTransaction(size,ccipdrv_getPortError);
+
+   // Should never fail
+   if ( !GetMaskTransaction.IsOK() ) {
+      return  false;
+   }
+
+   // Send transaction
+   m_pAFUProxy->SendTransaction(&GetMaskTransaction);
+   if(GetMaskTransaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: get port error mask = " << GetMaskTransaction.getErrno()<< std::endl);
+      return false;
+   }
+
+   if(NULL == GetMaskTransaction.getBuffer() )  {
+      AAL_ERR( LM_ALI, "Invalid Transaction buffer"<< std::endl);
+      return false;
+   }
+
+   pError = (struct  CCIP_ERROR *)GetMaskTransaction.getBuffer();
+
+
+   writePortError(pError,rInputArgs,true,0x1);
+
+   // Create the Transaction
+   SetError SetMaskTransaction(ccipdrv_SetPortErrorMask,*pError);
+
+   // Should never fail
+   if ( !SetMaskTransaction.IsOK() ) {
+      return  false;
+   }
+
+   // Send transaction
+   m_pAFUProxy->SendTransaction(&SetMaskTransaction);
+   if(SetMaskTransaction.getErrno() != uid_errnumOK) {
+      AAL_ERR( LM_ALI, "FATAL: set port error mask = " << SetMaskTransaction.getErrno()<< std::endl);
       return false;
    }
 
@@ -220,7 +296,7 @@ btBool CHWALIPORT::errorClear(const INamedValueSet &rInputArgs )
    struct CCIP_PORT_ERROR port_error = {0};
    struct CCIP_ERROR ccip_error      = {0};
 
-   writePortError(&port_error,rInputArgs);
+   writePortError(&ccip_error,rInputArgs,false,0x1);
 
    ccip_error.error0 = port_error.csr;
 
@@ -354,12 +430,12 @@ void CHWALIPORT::pirntPortErrors(struct CCIP_ERROR *pError)
    NamedValueSet portErrornvs;
    struct CCIP_PORT_ERROR ccip_port_error   = {0};
 
-   // print CSR
-   std::cout << " Port Error CSR 0x: "<< std::hex << pError->error0 << std::endl;
+   // Print PORT CSR
+   std::cout << " Port Error CSR 0x"<< std::hex << pError->error0 << std::endl;
 
-   std::cout << " Port Error Mask CSR 0x: "<<std::hex << pError->error0_mask << std::endl;
+   std::cout << " Port Error Mask CSR 0x"<<std::hex << pError->error0_mask << std::endl;
 
-   std::cout << " Port First Error CSR 0x: "<<std::hex << pError->first_error << std::endl;
+   std::cout << " Port First Error CSR 0x"<<std::hex << pError->first_error << std::endl;
 
 
    // Port Error
@@ -399,13 +475,15 @@ void CHWALIPORT::pirntPortErrors(struct CCIP_ERROR *pError)
       std::cout << " PORT First: " << type <<"  Set"<< std::endl;
    }
 
-   // Malformed Request count
-   if(0x0 != pError->malreq0) {
-      std::cout << "Port malformed request0 Error CSR:0x"<< std::hex << pError->malreq0 << std::endl;
-   }
+   if(0x0 != pError->error0 ) {
+      // Malformed Request count
+      if(0x0 != pError->malreq0) {
+         std::cout << "Port malformed request0 Error CSR:0x"<< std::hex << pError->malreq0 << std::endl;
+      }
 
-   if(0x0 != pError->malreq1) {
-      std::cout << "Port malformed request0 Error CSR:0x"<< std::hex << pError->malreq1 << std::endl;
+      if(0x0 != pError->malreq1) {
+         std::cout << "Port malformed request0 Error CSR:0x"<< std::hex << pError->malreq1 << std::endl;
+      }
    }
 
 }
@@ -548,126 +626,139 @@ void CHWALIPORT::readPortError( struct CCIP_PORT_ERROR port_error,
 }
 
 //
-// errorMaskGet. reads Port errors from NVS and write to PORT CSR
+// writePortError. Set Port Error bits
 //
-void CHWALIPORT::writePortError(struct CCIP_PORT_ERROR *pPort_Error,const INamedValueSet &rInputArgs)
+void CHWALIPORT::writePortError(struct CCIP_ERROR *pError,const INamedValueSet &rInputArgs,btBool errMask,btInt errbit)
 {
 
+   struct CCIP_PORT_ERROR  ccip_port_error  = {0};
+
+   // To clear PORT error,set bit to 0x1
+   // To Set PORT error Mask ,set bit 0x1
+   // To Clear PORT error Mask ,set bit 0x0
+
+   if(errMask) {
+      ccip_port_error.csr       = pError->error0_mask;
+   }
+
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH0_OVERFLOW)) {
-      pPort_Error->tx_ch0_overflow =0x1;
+      ccip_port_error.tx_ch0_overflow =0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH0_INVALIDREQ)) {
-      pPort_Error->tx_ch0_invalidreq =0x1;
+      ccip_port_error.tx_ch0_invalidreq =0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH0_REQ_CL_LEN3)) {
-      pPort_Error->tx_ch0_req_cl_len3 =0x1;
+      ccip_port_error.tx_ch0_req_cl_len3 =0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH0_REQ_CL_LEN2)) {
-      pPort_Error->tx_ch0_req_cl_len2=0x1;
+      ccip_port_error.tx_ch0_req_cl_len2=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH0_REQ_CL_LEN4)) {
-      pPort_Error->tx_ch0_req_cl_len4=0x1;
+      ccip_port_error.tx_ch0_req_cl_len4=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_OVERFLOW)) {
-      pPort_Error->tx_ch1_overflow=0x1;
+      ccip_port_error.tx_ch1_overflow=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_REQ_CL_LEN3)) {
-      pPort_Error->tx_ch1_req_cl_len3=0x1;
+      ccip_port_error.tx_ch1_req_cl_len3=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_REQ_CL_LEN2)) {
-      pPort_Error->tx_ch1_req_cl_len2=0x1;
+      ccip_port_error.tx_ch1_req_cl_len2=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_REQ_CL_LEN4)) {
-      pPort_Error->tx_ch1_req_cl_len4=0x1;
+      ccip_port_error.tx_ch1_req_cl_len4=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_DATAPYL_OVERRUN)) {
-      pPort_Error->tx_ch1_datapayload_overrun=0x1;
+      ccip_port_error.tx_ch1_datapayload_overrun=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_INCORR_ADDR)) {
-       pPort_Error->tx_ch1_incorr_addr=0x1;
+       ccip_port_error.tx_ch1_incorr_addr=0x1;
     }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_SOP_DETECTED)) {
-       pPort_Error->tx_ch1_sop_detcted=0x1;
+       ccip_port_error.tx_ch1_sop_detcted=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_ATOMIC_REQ)) {
-      pPort_Error->tx_ch1_atomic_req=0x1;
+      ccip_port_error.tx_ch1_atomic_req=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_MMIOREAD_TIMEOUT)) {
-      pPort_Error->mmioread_timeout=0x1;
+      ccip_port_error.mmioread_timeout=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH2_FIFO_OVERFLOW)) {
-      pPort_Error->tx_ch2_fifo_overflow=0x1;
+      ccip_port_error.tx_ch2_fifo_overflow=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_NUM_PENDREQ_OVERFLOW)) {
-      pPort_Error->num_pending_req_overflow=0x1;
+      ccip_port_error.num_pending_req_overflow=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_UNEXP_MMIORESP)) {
-      pPort_Error->unexp_mmio_resp=0x1;
+      ccip_port_error.unexp_mmio_resp=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_LLPR_SMRR)) {
-      pPort_Error->llpr_smrr_err=0x1;
+      ccip_port_error.llpr_smrr_err=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_LLPR_SMRR2)) {
-      pPort_Error->llpr_smrr2_err=0x1;
+      ccip_port_error.llpr_smrr2_err=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_LLPR_MSG)) {
-      pPort_Error->llpr_mesg_err=0x1;
+      ccip_port_error.llpr_mesg_err=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_GENPORT_RANGE)) {
-      pPort_Error->genport_range_err=0x1;
+      ccip_port_error.genport_range_err=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_LEGRANGE_LOW)) {
-      pPort_Error->legrange_low_err=0x1;
+      ccip_port_error.legrange_low_err=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_LEGRANGE_HIGH)) {
-      pPort_Error->legrange_hight_err=0x1;
+      ccip_port_error.legrange_hight_err=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_VGAMEM_RANGE)) {
-      pPort_Error->vgmem_range_err=0x1;
+      ccip_port_error.vgmem_range_err=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_PAGEFAULT)) {
-      pPort_Error->page_fault_err=0x1;
+      ccip_port_error.page_fault_err=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_PMRERROR)) {
-      pPort_Error->pmr_err=0x1;
+      ccip_port_error.pmr_err=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_PAGEFAULT)) {
-      pPort_Error->page_fault_err=0x1;
+      ccip_port_error.page_fault_err=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_AP6EVENT)) {
-      pPort_Error->ap6_event=0x1;
+      ccip_port_error.ap6_event=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_VFFLR_ACCESS)) {
-      pPort_Error->vfflr_accesseror=0x1;
+      ccip_port_error.vfflr_accesseror=0x1;
    }
+
+   pError->error0                 = ccip_port_error.csr;
+
 
 }
 
