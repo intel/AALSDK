@@ -55,6 +55,12 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
 	btInt res = 0;
 	btWSSize  sz = CL(cmd.begincls);
 
+   btInt StopTimeoutMillis = 1000;
+   if ( cmd.AFUTarget == ALIAFU_NVS_VAL_TARGET_ASE){
+      StopTimeoutMillis = StopTimeoutMillis * 100000;
+   }
+   btInt MaxPoll = StopTimeoutMillis;
+
     // We need to initialize the input and output buffers, so we need addresses suitable
     // for dereferencing in user address space.
     // volatile, because the FPGA will be updating the buffers, too.
@@ -203,12 +209,6 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
    ts.tv_sec = 10;
    Timer     timeout = Timer() + Timer(&ts);
 #endif // OS
-
-   btInt StopTimeoutMillis = 250;
-   if ( cmd.AFUTarget == ALIAFU_NVS_VAL_TARGET_ASE){
-	StopTimeoutMillis = StopTimeoutMillis * 100000;
-   }
-   btInt MaxPoll = StopTimeoutMillis;
 
    ReadPerfMonitors();
    SavePerfMonitors();

@@ -53,7 +53,7 @@ btInt CNLBMode3::RunTest(const NLBCmdLine &cmd)
    btWSSize  sz = CL(cmd.begincls);
    uint_type  mcl = cmd.multicls;
 
-   btInt StopTimeoutMillis = 250;
+   btInt StopTimeoutMillis = 1000;
    if ( cmd.AFUTarget == ALIAFU_NVS_VAL_TARGET_ASE){
 	   StopTimeoutMillis = StopTimeoutMillis * 100000;
    }

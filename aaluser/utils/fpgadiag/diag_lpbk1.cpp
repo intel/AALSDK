@@ -55,9 +55,9 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
    uint_type mcl = cmd.multicls;
    uint_type NumCacheLines = cmd.begincls;
 
-   btInt StopTimeoutMillis = 250;
+   btInt StopTimeoutMillis = 1000;
    if ( cmd.AFUTarget == ALIAFU_NVS_VAL_TARGET_ASE){
-   	   StopTimeoutMillis = StopTimeoutMillis * 100000;
+      StopTimeoutMillis = StopTimeoutMillis * 100000;
    }
    btInt MaxPoll = StopTimeoutMillis;
 
