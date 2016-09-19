@@ -319,6 +319,9 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
          struct aalui_WSMEvent WSID;
 
+         // clear WSID structure
+         memset(&WSID, 0, sizeof(struct aalui_WSMEvent));
+
          if ( !cci_aaldev_allow_map_mmior_space(pdev) ) {
             PERR("Failed ccipdrv_getMMIOR map Permission\n");
             PERR("Direct API access not permitted on this device\n");
@@ -380,6 +383,9 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          btWSID                featurenum = preq->ahmreq.u.wksp.m_wsid;
          btPhysAddr            pFeature   = 0;
          btVirtAddr            pvFeature  = 0;
+
+         // clear WSID structure
+         memset(&WSID, 0, sizeof(struct aalui_WSMEvent));
 
          PVERBOSE("Getting feature ID %u\n",(unsigned int)featurenum);
 
