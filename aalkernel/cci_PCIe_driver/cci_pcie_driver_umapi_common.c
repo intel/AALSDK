@@ -273,11 +273,9 @@ ccidrv_messageHandler( struct ccidrv_session  *psess,
    // Variables used in the Device Allocate Messages
    struct aal_q_item *pqitem = NULL; // Generic request queue item
 
-   // Save the response buffer size
-   btWSSize               OutbufSize = *pOutbufSize;
+   // response buffer size (will be used below)
+   btWSSize OutbufSize = 0;
 
-   // Assume no payload to return
-   *pOutbufSize = 0;
 
 #if 1
 # define UIDRV_IOCTL_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -291,6 +289,11 @@ ccidrv_messageHandler( struct ccidrv_session  *psess,
 
    ASSERT(NULL != presp);
    ASSERT(NULL != pOutbufSize);
+   if ( presp == NULL ) return -EINVAL;
+   if ( pOutbufSize == NULL ) return -EINVAL;
+
+   // Assume no payload to return
+   OutbufSize = *pOutbufSize = 0;
 
    // Process the message
    switch ( cmd ) {
