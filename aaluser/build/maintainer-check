@@ -1149,9 +1149,6 @@ declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
 'RRMService.h.in' \
 'AIAService.h.in' \
 'aalclp.h.in' \
-'HWALIAFUService.h.in' \
-'ASEALIAFUService.h.in' \
-'SWSimALIAFUService.h.in'\
 'ALIService.h.in'\
 'PwrMgrService.h.in' \
 )
@@ -1165,9 +1162,6 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'RRMService.h' \
 'AIAService.h' \
 'aalclp.h' \
-'HWALIAFUService.h' \
-'ASEALIAFUService.h' \
-'SWSimALIAFUService.h' \
 'ALIService.h' \
 'PwrMgrService.h' \
 'Readme.MultiPackage.txt' \

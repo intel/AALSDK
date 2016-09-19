@@ -237,9 +237,6 @@ servicehdrs_HEADERS=\
 include/aalsdk/service/IALIAFU.h \
 include/aalsdk/service/IMPF.h \
 include/aalsdk/service/ALIService.h \
-include/aalsdk/service/HWALIAFUService.h \
-include/aalsdk/service/ASEALIAFUService.h \
-include/aalsdk/service/SWSimALIAFUService.h \
 include/aalsdk/service/PwrMgrService.h \
 include/aalsdk/service/IPwrMgr.h 
 
@@ -312,9 +309,6 @@ include/aalsdk/rm/ResMgrService.h.in \
 include/aalsdk/rm/RRMService.h.in
 
 SERVICE_EXTRA=\
-include/aalsdk/service/HWALIAFUService.h.in \
-include/aalsdk/service/ASEALIAFUService.h.in \
-include/aalsdk/service/SWSimALIAFUService.h.in \
 include/aalsdk/service/ALIService.h.in   \
 include/aalsdk/service/PwrMgrService.h.in
 

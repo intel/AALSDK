@@ -19,7 +19,7 @@ gtDispatchables.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
 gtEventUtil.cpp \
-gtHWALIAFU.cpp \
+gtALI.cpp \
 gtMDS.cpp \
 gtNVS0.cpp \
 gtNVS1.cpp \
@@ -84,7 +84,7 @@ gtCritSect.cpp \
 gtDispatchables.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
-gtHWALIAFU.cpp \
+gtALI.cpp \
 gtMDS.cpp \
 gtNVS0.cpp \
 gtNVS1.cpp \
