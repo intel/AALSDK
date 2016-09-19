@@ -82,7 +82,7 @@ module ccip_sniffer
     input 				  t_if_ccip_Rx ccip_rx,
     input 				  t_if_ccip_Tx ccip_tx
     );
- logic [SNIFF_VECTOR_WIDTH-1:0] error_code1;
+ logic [SNIFF_VECTOR_WIDTH-1:0] error_code_q;
    /*
     * Function Request type checker
     */
@@ -294,28 +294,12 @@ module ccip_sniffer
 
 
    // Trigger Error bit by index
-  /* task trigger_error_bit(logic init, int index);
-      begin
-	  int index1;//index;
-	 if (init) begin
-	    error_code1[index] = 0;
-	 end
-	 else begin
-	    $display ($time,"1---error_code1 %d , error_code1 index1 %d ",error_code1[index],error_code1[index1]);
-	    error_code[index] = 1;
-		index1=index;
-	 // @(posedge clk);
-		// $display ($time,"2---error_code1 %d , error_code1 index1 %d ",error_code1[index],error_code1[index1]);
-	 error_code1[index1] = 0;
-	 end
-      end
-   endtask*/
    always@(posedge clk)
    begin
 		if (SoftReset)
 			error_code<=32'b0;
 		else
-			error_code<=error_code1;
+			error_code<=error_code_q;
    end
 
    // Error code enumeration
@@ -327,20 +311,15 @@ module ccip_sniffer
       string 			      log_str;
       begin
 	 if (init) begin
-	    /*for(int jj = 0; jj < SNIFF_VECTOR_WIDTH; jj = jj + 1) begin
-	       trigger_error_bit(1, jj);
-	    end*/
-		error_code1[code]=1'b0;
+		error_code_q[code]=1'b0;
 	 end
 	 else begin
-	   // trigger_error_bit(0, code);
-
-	    errcode_str = code.name;
+		    errcode_str = code.name;
 	    case (code)
 	      // C0TX - Invalid request type
 	      SNIFF_C0TX_INVALID_REQTYPE:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C0TxHdr was issued with an invalid reqtype !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -348,7 +327,7 @@ module ccip_sniffer
 	      // C0TX - Overflow check
 	      SNIFF_C0TX_OVERFLOW:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] Overflow detected on CCI-P Channel 0 !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -356,7 +335,7 @@ module ccip_sniffer
 	      // C0TX - 2CL address alignment check
 	      SNIFF_C0TX_ADDRALIGN_2_ERROR:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C0TxHdr Multi-line address request is not aligned 2-CL aligned (C0TxHdr.addr[0] != 1'b0) !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -364,7 +343,7 @@ module ccip_sniffer
 	      // C0TX - 4CL address alignment check
 	      SNIFF_C0TX_ADDRALIGN_4_ERROR:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C0TxHdr Multi-line address request is not aligned 4-CL aligned (C0TxHdr.addr[1:0] != 2'b00) !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -372,7 +351,7 @@ module ccip_sniffer
 	      // C0TX - Reset ignored
 	      SNIFF_C0TX_RESET_IGNORED_WARN:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C0TxHdr was issued when AFU Reset is HIGH !\n", errcode_str);
 		   print_message_and_log(1, log_str);
 		end
@@ -380,7 +359,7 @@ module ccip_sniffer
 	      // C0TX - X or Z found [Warning only]
 	      SNIFF_C0TX_XZ_FOUND_WARN:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C0TxHdr request contained a 'Z' or 'X' !\n", errcode_str);
 		   print_message_and_log(1, log_str);
 		end
@@ -388,7 +367,7 @@ module ccip_sniffer
 	      // C0TX - 3CL Read Request
 	      SNIFF_C0TX_3CL_REQUEST:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C0TxHdr 3-CL request issued. This is illegal !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -396,20 +375,20 @@ module ccip_sniffer
 	      // C0TX - Address found to be zero
 	      SNIFF_C0TX_ADDR_ZERO_WARN:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C0TxHdr address was ZERO.. this will cause simulation failure", errcode_str);
 		   print_message_and_log(1, log_str);
 		end
         SNIFF_C0TX_UNEXP_ADDR:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] Unexpected C0TxHdr address . this will cause simulation failure", errcode_str);
 		   print_message_and_log(1, log_str);
 		end
 	      // C1TX - Invalid request type
 	      SNIFF_C1TX_INVALID_REQTYPE:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr was issued with an invalid reqtype !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -417,7 +396,7 @@ module ccip_sniffer
 	      // C1TX - Overflow check
 	      SNIFF_C1TX_OVERFLOW:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] Overflow detected on CCI-P Channel 1 !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -425,7 +404,7 @@ module ccip_sniffer
 	      // C1TX - 2CL address alignment check
 	      SNIFF_C1TX_ADDRALIGN_2_ERROR:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr Multi-line address request is not aligned 2-CL aligned (C1TxHdr.addr[0] != 1'b0) !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -433,7 +412,7 @@ module ccip_sniffer
 	      // C1TX - 4CL address alignment check
 	      SNIFF_C1TX_ADDRALIGN_4_ERROR:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr Multi-line address request is not aligned 4-CL aligned (C1TxHdr.addr[1:0] != 2'b00) !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -441,7 +420,7 @@ module ccip_sniffer
 	      // C1TX - Reset ignored
 	      SNIFF_C1TX_RESET_IGNORED_WARN:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr was issued when AFU Reset is HIGH !\n", errcode_str);
 		   print_message_and_log(1, log_str);
 		end
@@ -449,7 +428,7 @@ module ccip_sniffer
 	      // C1TX - X or Z found [Warning only]
 	      SNIFF_C1TX_XZ_FOUND_WARN:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr request contained a 'Z' or 'X' !\n", errcode_str);
 		   print_message_and_log(1, log_str);
 		end
@@ -457,7 +436,7 @@ module ccip_sniffer
 	      // C1Tx - Unexpected VC changes
 	      SNIFF_C1TX_UNEXP_VCSEL:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr VC-selection must not change in between multi-line beat !\n", errcode_str);
 		   print_message_and_log(1, log_str);
 		end
@@ -465,7 +444,7 @@ module ccip_sniffer
 	      // C1Tx - Unexpected MDATA changes [Warning only]
 	      SNIFF_C1TX_UNEXP_MDATA:
 		begin
-		  error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr MDATA changed between multi-line beat !\n", errcode_str);
 		   print_message_and_log(1, log_str);
 		end
@@ -473,7 +452,7 @@ module ccip_sniffer
 	      // C1Tx - Unexpected address changes
 	      SNIFF_C1TX_UNEXP_ADDR:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr multi-line beat found unexpected address - addr[1:0] must increment by 1 !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -481,7 +460,7 @@ module ccip_sniffer
 	      // C1Tx - Unexpected cl_len change [Warning only]
 	      SNIFF_C1TX_UNEXP_CLLEN:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr cl_len field changed between multi-line beat !\n", errcode_str);
 		   print_message_and_log(1, log_str);
 		end
@@ -489,29 +468,15 @@ module ccip_sniffer
 	      // C1Tx - unexpected request type change
 	      SNIFF_C1TX_UNEXP_REQTYPE:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr multi-line beat found unexpected Request type change !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
 
-	      // Covered by SOP bit not found
-	      // SNIFF_C1TX_PAYLOAD_OVERRUN:
-	      // 	begin
-	      // 	   $sformat(log_str, "[%s] C1TxHdr multi-line beat detected more than expected number of transactions !\n", errcode_str);
-	      // 	   print_message_and_log(0, log_str);
-	      // 	end
-
-	      // Covered by SOP bit found
-	      // SNIFF_C1TX_PAYLOAD_UNDERRUN:
-	      // 	begin
-	      // 	   $sformat(log_str, "[%s] C1TxHdr multi-line beat detected less than expected number of transactions !\n", errcode_str);
-	      // 	   print_message_and_log(0, log_str);
-	      // 	end
-
 	      // C1Tx - SOP field not set
 	      SNIFF_C1TX_SOP_NOT_SET:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr First transaction of multi-line beat must set SOP field to HIGH !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -519,7 +484,7 @@ module ccip_sniffer
 	      // C1Tx - SOP field set for subsequent transactions
 	      SNIFF_C1TX_SOP_SET_MCL1TO3:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr Subsequent transaction of multi-line beat must set SOP field to LOW !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -527,7 +492,7 @@ module ccip_sniffer
 	      // C0TX - 3CL Request check
 	      SNIFF_C1TX_3CL_REQUEST:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr 3-CL request issued. This is illegal !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -535,7 +500,7 @@ module ccip_sniffer
 	      // C1Tx - Write fence observered between CL1-CL3 in MCL request
 	      SNIFF_C1TX_WRFENCE_IN_MCL1TO3:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr cannot issue a WriteFence in between a multi-line transaction !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -543,7 +508,7 @@ module ccip_sniffer
 	      // C1TX - Address found to be zero
 	      SNIFF_C1TX_ADDR_ZERO_WARN:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr address was ZERO.. this will cause simulation failure", errcode_str);
 		   print_message_and_log(1, log_str);
 		end
@@ -551,21 +516,15 @@ module ccip_sniffer
 	      // C2Tx - MMIO Read Response timeout
 	      MMIO_RDRSP_TIMEOUT:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] MMIO Read Response timed out. AFU must respond to MMIO Read responses within %d clocks !\n", errcode_str, `MMIO_RESPONSE_TIMEOUT);
 		   print_message_and_log(0, log_str);
 		end
 
-	      // MMIO_RDRSP_TID_MISMATCH:
-	      // 	begin
-	      // 	   $sformat(log_str, "[%s] MMIO Read Response TID did not match MMIO Read Request !\n", errcode_str);
-	      // 	   print_message_and_log(0, log_str);
-	      // 	end
-
 	      // C2TX - MMIO Read Response was unsolicited
 	      MMIO_RDRSP_UNSOLICITED:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] ASE detected an unsolicited MMIO Response. In system, this can cause unexpected behavior !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
@@ -573,7 +532,7 @@ module ccip_sniffer
 	      // C2TX - X or Z found
 	      MMIO_RDRSP_XZ_FOUND_WARN:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] MMIO Response contained a 'Z' or 'X' !\n", errcode_str);
 		   print_message_and_log(1, log_str);
 		end
@@ -581,16 +540,14 @@ module ccip_sniffer
 	      // C2TX - Reset ignored
 	      MMIO_RDRSP_RESET_IGNORED_WARN:
 		begin
-		   error_code1[code] = 1'b1;
+		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] MMIO Response was issued when SoftReset signal was HIGH !\n", errcode_str);
 		   print_message_and_log(1, log_str);
 		end
          
 		 SNIFF_NO_ERROR:
 		begin
-		   error_code1[code] = 1'b0;
-		 //  $sformat(log_str, "[%s] MMIO Response was issued when SoftReset signal was HIGH !\n", errcode_str);
-		  // print_message_and_log(1, log_str);
+		   error_code_q[code] = 1'b0;
 		end
 	      // Unknown type -- this must not happen
 	      default:
@@ -786,7 +743,7 @@ decode_error_code(1, SNIFF_C1TX_INVALID_REQTYPE);
    		 Exp_3CL,
    		 Exp_4CL
    		 } ExpTxState;
-   ExpTxState exp_c1state,next_state;
+   ExpTxState exp_c1state,exp_c1state_q;
 
    logic [15:0] 		base_c1mdata;
    logic [1:0] 			base_c1addr_low2;
@@ -814,7 +771,7 @@ decode_error_code(1, SNIFF_C1TX_INVALID_REQTYPE);
       end
         else
 		begin
-		       exp_c1state = next_state;
+		       exp_c1state = exp_c1state_q;
 			   if (ccip_tx.c1.valid && isCCIPWrFenceRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.sop && ccip_tx.c1.hdr.cl_len == 2'b00)||((base_c1len == 2'b01)||(base_c1len == 2'b11)))
 				wrfence_flag=1;
 				else
@@ -874,23 +831,22 @@ always@(*)
 		// ----------------------------------------- //
 		// State Transition
 		if (ccip_tx.c1.valid && isWrFenceRequest(ccip_tx.c1.hdr)) begin
-		   next_state = Exp_1CL_WrFence;
+		    exp_c1state_q = Exp_1CL_WrFence;
 		end
 		else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (base_c1len == 2'b00)) begin
-		    next_state = Exp_1CL_WrFence;
-			 
+		    exp_c1state_q = Exp_1CL_WrFence;			 
 		end
 		else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (base_c1len == 2'b01)) begin
-		   next_state = Exp_2CL;
+		    exp_c1state_q = Exp_2CL;
 		end
 		else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (base_c1len == 2'b11)) begin
-			   next_state = Exp_2CL;
+			exp_c1state_q = Exp_2CL;
 		end
 		else begin
-		   c1tx_1to3_flag = 0;
-		   next_state = Exp_1CL_WrFence;
+		    c1tx_1to3_flag = 0;
+		    exp_c1state_q = Exp_1CL_WrFence;
 		end
-	     end
+	    end
 
 	   // ==================================================== //
 	   // 2nd line in MCL request
@@ -899,27 +855,25 @@ always@(*)
 		// ----------------------------------------- //
 		// address increment check
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 1))) 
-		   decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);
+		    decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);
 		else
-		   decode_error_code(1, SNIFF_C1TX_UNEXP_ADDR);
+		    decode_error_code(1, SNIFF_C1TX_UNEXP_ADDR);
 		// ----------------------------------------- //
 		// State transition
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (base_c1len == 2'b11)) 
 		begin
-				//wrfence_flag=0;
-				mcl_flag=1;
-				next_state = Exp_3CL;
+			mcl_flag=1;
+			exp_c1state_q = Exp_3CL;
 		end
-		else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (base_c1len == 2'b01))
+		else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (base_c1len == 2'b01)||(base_c1len == 2'b00))
 		begin
-				//wrfence_flag=0;
-				mcl_flag=1;
-				next_state = Exp_1CL_WrFence;
+			mcl_flag=1;
+			exp_c1state_q = Exp_1CL_WrFence;
 		end
 		else 
 		begin
-				mcl_flag=0;
-				next_state = Exp_2CL;
+			mcl_flag=0;
+			exp_c1state_q = Exp_2CL;
 		end
 		   
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && ((base_c1len == 2'b11)||(base_c1len == 2'b01)))
@@ -941,22 +895,20 @@ always@(*)
 		// ----------------------------------------- //
 		// State transition
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (base_c1len == 2'b11))
-         begin		
+        begin		
 				mcl_flag=1;
-				next_state = Exp_4CL;
-		 end
+				exp_c1state_q = Exp_4CL;
+		end
 		else 
 		begin
 				mcl_flag=0;
-				next_state= Exp_3CL;
+				exp_c1state_q = Exp_3CL;
 		end
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (base_c1len == 2'b11))
 		   c1tx_1to3_flag = 1;
 		 else
 		    c1tx_1to3_flag = 0;
-	     end
-	   
-
+	    end
 	   // ==================================================== //
 	   // 4th line in MCL request
 	   Exp_4CL:
@@ -969,42 +921,35 @@ always@(*)
 		else
 		   decode_error_code(1, SNIFF_C1TX_UNEXP_ADDR);
 		// ----------------------------------------- //
-		// State transition
-	
+		// State transition	
 	   if (ccip_tx.c1.valid && isCCIPWrFenceRequest(ccip_tx.c1.hdr))
 	   begin
-	    next_state =Exp_4CL;
-		wrfence_flag=1;
-		mcl_flag =0;
-		end
-		else
-		begin
-		next_state =Exp_1CL_WrFence;
-		wrfence_flag=0;
-		mcl_flag=1;
-		end
+	       exp_c1state_q =Exp_4CL;
+		   wrfence_flag=1;
+		   mcl_flag =0;
+	   end
+	   else
+	   begin
+		   exp_c1state_q =Exp_1CL_WrFence;
+		   wrfence_flag=0;
+		   mcl_flag=1;
+	   end
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (base_c1len == 2'b11))
 		   c1tx_1to3_flag = 1;
 		 else
-		    c1tx_1to3_flag = 0;
-	     end		
-	     
-
+		   c1tx_1to3_flag = 0;
+	    end		 
 	   // ==================================================== //
 	   // Lala-land
 	   default:
-	     begin
-		// c1tx_txn_ctr <= 2'b00;
-		mcl_flag=0;
-		wrfence_flag=0;
-		c1tx_1to3_flag = 0;
-		next_state    = Exp_1CL_WrFence;
-	     end
-
+	   begin
+		   mcl_flag=0;
+		   wrfence_flag=0;
+		   c1tx_1to3_flag = 0;
+	   	   exp_c1state_q = Exp_1CL_WrFence;
+	   end
 	 endcase
-	 end
- 
-  
+	 end  
 
    /*
     * Subsequent line checks
@@ -1064,9 +1009,7 @@ always@(*)
    string  waw_haz_str;
    string  raw_haz_str;
    string  war_haz_str;
-
    logic   hazard_found;
-
    // ------------------------------------------- //
    // Hazard check process
    // - Take in address, check if exists in
@@ -1136,21 +1079,20 @@ always@(*)
 
    always@(*)
    begin
-    error_code1[31:30]=2'b0;
+    error_code_q[31:30]=2'b0;
    if((ccip_rx.c0.mmioRdValid || ccip_tx.c2.mmioRdValid)&& ~ccip_tx.c1.valid && ~ccip_tx.c0.valid)
    begin
-   error_code1[31:5]=28'b0;
-   error_code1[0]=1'b0;
+   error_code_q[31:5]=28'b0;
+   error_code_q[0]=1'b0;
    end
    else if(ccip_tx.c1.valid && ~ccip_tx.c0.valid && ~(ccip_rx.c0.mmioRdValid || ccip_tx.c2.mmioRdValid) )
    begin
-   error_code1[13:0]=13'b0;
-   //error_code1[31:30]=1'b0;
+   error_code_q[13:0]=13'b0;
    end
    else if(ccip_tx.c0.valid && ~(ccip_rx.c0.mmioRdValid || ccip_tx.c2.mmioRdValid) && ~ccip_tx.c1.valid )
    begin
-   error_code1[4:0]=4'b0;
-   error_code1[31:14]=17'b0;
+   error_code_q[4:0]=4'b0;
+   error_code_q[31:14]=17'b0;
    end
    end
    /*
