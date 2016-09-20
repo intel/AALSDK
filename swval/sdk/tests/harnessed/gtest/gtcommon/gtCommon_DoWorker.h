@@ -9,8 +9,8 @@
 #include "gtCommon_ClassOverrides.h"
 
 /// ===================================================================
-/// @brief        Service event listener interface, used for definition of
-///               adapter classes to facilitate event delegation.
+/// @brief        The service event listener interface, used for definition
+///               of adapter classes to facilitate event delegation.
 ///
 class GTCOMMON_API IServiceListener : public Listener
 {
@@ -28,9 +28,10 @@ public:
 };
 
 /// ===================================================================
-/// @brief        Primary custom service client interface.  Clients of
-///               the service implement this interface to get callback
-///               notifications.
+/// @brief        The primary custom service client interface.
+///
+/// @details      Clients of the service implement this interface to get
+///               callback notifications.
 ///
 #define iidMockWorkClient __INTC_IID(INTC_sysSampleAFU, 0x0002)
 
@@ -45,9 +46,10 @@ public:
 };
 
 /// ===================================================================
-/// @brief        This is the primary custom service interface.  Clients
-///               access the service through this interface in order to
-///               "do work".
+/// @brief        The primary custom service interface.
+///
+/// @details      Clients access the service through this interface in
+///               order to "do work".
 ///
 
 #define iidMockDoWorker __INTC_IID(INTC_sysSampleAFU, 0x0001)
@@ -62,7 +64,11 @@ public:
 };
 
 /// ===================================================================
-/// @brief        CMockDoWorker
+/// @brief        The custom service.
+///
+/// @details      Provides the work dispatch functions:  Work is done in
+///               the dispatchable object(s) implementation of doWork(),
+///               doWork2(), etc.
 ///
 
 class GTCOMMON_API CMockDoWorker : public ServiceBase, public IMockDoWorker
@@ -99,6 +105,9 @@ protected:
 /// ===================================================================
 /// @brief        The primary custom service functor.
 ///
+/// @details      The operator()() overload invokes work site(s) to
+///               do work, perform tasks, etc.
+///
 
 class GTCOMMON_API CMockDispatchable : public IDispatchable
 {
@@ -119,7 +128,9 @@ protected:
 /// ===================================================================
 /// @brief        The secondary custom service functor.
 ///
-
+/// @details      The operator()() overload invokes work site(s) to
+///               do work, perform tasks, etc.
+///
 class GTCOMMON_API CMockDispatchable2 : public IDispatchable
 {
 public:

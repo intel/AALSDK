@@ -41,25 +41,22 @@ using namespace std;
 #include "gtCommon_ServiceListener.h"
 
 /// ===================================================================
-/// @brief        Google mock service client class, providing implementation
-///               for the attendent, (and required) derived client and
-///               service client interfaces.
+/// @brief        The custom service client.
 ///
-/// @details      The interface includes the custom work-completion
-///               callback, used to recieve notification from the custom
-///               service class, which implements the custom service
-///               interface.
+/// @details      The custom service client (work client) interface
+///               includes work-completion callbacks, which are
+///               recieved here.
 ///
-
 class GTCOMMON_API CMockWorkClient : public CAASBase, public IServiceClient, public IMockWorkClient
 {
 
 public:
    /// ================================================================
-   /// @brief        Main object constructor, taking a Runtime client to use
-   ///               for callback notifications.
+   /// @brief        The main service client constructor, taking a runtime
+   ///               client adapter to recieve callback notifications from the shared
+   ///               singlton runtime instance through a proxy.
    ///
-   /// @param        pRCA    The Runtime client adapter pointer.
+   /// @param        pRCA    The runtime client adapter pointer.
    ///
 
    CMockWorkClient(CRuntimeClientAdapter* pRCA)
@@ -85,9 +82,9 @@ public:
    }
 
    /// ================================================================
-   /// @brief        Custom service work completion callback.
+   /// @brief        The custom service work completion callback.
    ///
-   /// @param        rTranID    Read-only transaction ID reference.
+   /// @param        rTranID    A read-only transaction ID reference.
    ///
    virtual void workComplete(TransactionID const& rTranID);
    virtual void workComplete2(TransactionID const& rTranID);
