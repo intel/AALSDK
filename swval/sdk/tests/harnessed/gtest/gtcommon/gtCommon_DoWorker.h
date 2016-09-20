@@ -1,12 +1,6 @@
+// INTEL CONFIDENTIAL - For Intel Internal Use Only
 #ifndef __GTCOMMON_DOWORKER_H__
 #define __GTCOMMON_DOWORKER_H__
-
-#include "aalsdk/aas/IServiceRevoke.h"
-
-#include "gtCommon.h"
-#include "gtCommon_SMocks.h"
-#include "gtCommon_ModuleStub.h"
-#include "gtCommon_ClassOverrides.h"
 
 /// ===================================================================
 /// @brief        The service event listener interface, used for definition

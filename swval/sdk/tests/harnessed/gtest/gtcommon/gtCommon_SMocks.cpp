@@ -3,12 +3,9 @@
 #include <config.h>
 #endif   // HAVE_CONFIG_H
 
+#ifndef HAVE_COMMON_H
 #include "gtCommon.h"
-#include "gtCommon_Mocks.h"
-#include "gtCommon_SMocks.h"
-#include "gtCommon_ModuleStub.h"
-#include "gtCommon_DoWorker.h"
-#include "gtCommon_RTAdapter.h"
+#endif
 
 /// ===================================================================
 /// @internal        CMockDoWorker

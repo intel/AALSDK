@@ -1,8 +1,6 @@
+// INTEL CONFIDENTIAL - For Intel Internal Use Only
 #ifndef __RUNTIME_CLIENT_ADAPTER_H__
 #define __RUNTIME_CLIENT_ADAPTER_H__
-
-#include "aalsdk/Runtime.h"
-#include "gtCommon_RTAdapter.h"
 
 class GTCOMMON_API CRuntimeClientAdapter : public CAASBase, public IRuntimeClient
 {

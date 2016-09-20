@@ -488,7 +488,7 @@ protected:
 
 // Standard messsage keys
 #define AAL_SERVICE_PROXY_INTERFACE_NEW            "AAL_SERVICE_PROXY_INTERFACE_NEW"
-#define AAL_SERVICE_PROXY_INTERFACE_NEW_OPTARGS    "AAL_SERVICE_PROXY_INTERFACE_NEW_OPTARGS"    // USed to pass NVS opt Args
+#define AAL_SERVICE_PROXY_INTERFACE_NEW_OPTARGS    "AAL_SERVICE_PROXY_INTERFACE_NEW_OPTARGS"    // Used to pass NVS opt Args
 #define AAL_SERVICE_PROXY_INTERFACE                "AAL_SERVICE_PROXY_INTERFACE"                // Used to reference Proxy Interface
 #define AAL_SERVICE_STUB_INTERFACE                 "AAL_SERVICE_STUB_INTERFACE"                 // Used to reference Stub Interface
 #define AAL_SERVICE_PROXY_INTERFACE_METHOD         "AAL_SERVICE_PROXY_INTERFACE_METHOD"         // Used for method/response IDs

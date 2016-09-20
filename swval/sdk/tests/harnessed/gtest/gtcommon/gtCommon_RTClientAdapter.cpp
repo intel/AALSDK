@@ -1,25 +1,22 @@
+// INTEL CONFIDENTIAL - For Intel Internal Use Only
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif   // HAVE_CONFIG_H
 
+#ifndef HAVE_COMMON_H
 #include "gtCommon.h"
-#include "gtCommon_Mocks.h"
-#include "gtCommon_SMocks.h"
-
-#include "aalsdk/Runtime.h"
-#include "gtCommon_RTAdapter.h"
-#include "gtCommon_RTClientAdapter.h"
+#endif
 
 /// ===================================================================
 /// @internal        CRuntimeClientAdapter
 ///
 
 CRuntimeClientAdapter::CRuntimeClientAdapter(CListenerLock* pLock)
-   : m_pRuntimeAdapter(new (nothrow) CRuntimeAdapter(dynamic_cast<IRuntimeClient*>(this)))
+   : m_pRuntimeAdapter(new (std::nothrow) CRuntimeAdapter(dynamic_cast<IRuntimeClient*>(this)))
    , m_isOK(false)
    , m_pLock(pLock)
 {
-   m_pRTListener = dynamic_cast<IRuntimeListener*>(new (nothrow) CRuntimeListener(pLock));
+   m_pRTListener = dynamic_cast<IRuntimeListener*>(new (std::nothrow) CRuntimeListener(pLock));
 
    SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient*>(this));
 
