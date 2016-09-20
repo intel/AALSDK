@@ -72,9 +72,6 @@ AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [0],[0],[0])
 AALSDK_LTLIB_VERSION([AIASERVICE],   [libaia],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [0],[0],[0])
 AALSDK_LTLIB_VERSION([ASE],          [libASE],          [0],[0],[0])
-AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     [0],[0],[0])
-AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    [0],[0],[0])
-AALSDK_LTLIB_VERSION([SWSIMALIAFU],  [libSWSimALIAFU],  [0],[0],[0])
 AALSDK_LTLIB_VERSION([ALI],          [libALI],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([PWRMGR],       [libPwrMgr],       [0],[0],[0])
 
@@ -170,9 +167,6 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/rm/RRMService.h
                  include/aalsdk/uaia/AIAService.h
                  include/aalsdk/aalclp/aalclp.h
-                 include/aalsdk/service/HWALIAFUService.h
-                 include/aalsdk/service/ASEALIAFUService.h
-                 include/aalsdk/service/SWSimALIAFUService.h
                  include/aalsdk/service/PwrMgrService.h
                  include/aalsdk/service/ALIService.h])
 
@@ -192,9 +186,6 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/aalscan/Makefile
                  utils/fpgadiag/Makefile
                  utils/data_model/Makefile
-                 utils/ALIAFU/HWALIAFU/Makefile
-                 utils/ALIAFU/ASEALIAFU/Makefile
-                 utils/ALIAFU/SWSimALIAFU/Makefile
                  utils/ALIAFU/ALI/Makefile
                  utils/PowerManager/PwrMgrService/Makefile
                  utils/PowerManager/PwrMgrApp/Makefile
