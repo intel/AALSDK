@@ -913,7 +913,7 @@ bt32bitInt get_port_error(struct port_device* pport_dev,
 
    PTRACEIN;
 
-   if( (NULL == pport_dev) && (NULL == pport_error))  {
+   if( (NULL == pport_dev) || (NULL == pport_error))  {
          PERR("Invalid input pointers \n");
          res =-EINVAL;
          goto ERR;

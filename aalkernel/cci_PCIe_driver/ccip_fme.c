@@ -744,7 +744,7 @@ bt32bitInt get_fme_error(struct fme_device  *pfme_dev,
 
    PTRACEIN;
 
-   if( (NULL == pfme_dev) && (NULL == pfme_error))  {
+   if( (NULL == pfme_dev) || (NULL == pfme_error))  {
       PERR("Invalid input pointers \n");
       res =-EINVAL;
       goto ERR;
@@ -796,7 +796,7 @@ bt32bitInt get_fme_power(struct fme_device       *pfme_dev,
 
    PTRACEIN;
 
-   if( (NULL == pfme_dev) && (NULL == pthermal_power))  {
+   if( (NULL == pfme_dev) || (NULL == pthermal_power))  {
       PERR("Invalid input pointers \n");
       res =-EINVAL;
       goto ERR;
@@ -829,7 +829,7 @@ bt32bitInt get_fme_thermal(struct fme_device        *pfme_dev,
 
    PTRACEIN;
 
-   if( (NULL == pfme_dev) && (NULL == pthermal_power))  {
+   if( (NULL == pfme_dev) || (NULL == pthermal_power))  {
       PERR("Invalid input pointers \n");
       res =-EINVAL;
       goto ERR;
