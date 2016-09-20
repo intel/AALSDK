@@ -1,16 +1,11 @@
+// INTEL CONFIDENTIAL - For Intel Internal Use Only
 #ifndef __GTCOMMON_RUNTIMEADAPTER_H__
 #define __GTCOMMON_RUNTIMEADAPTER_H__
 
-#include "gtCommon_RTClientAdapter.h"
-
-#include "aalsdk/aas/Dispatchables.h"
-#include "aalsdk/eds/AASEventDeliveryService.h"
-
-using namespace std;
-
 /// ===================================================================
-/// @brief        Runtime listener interface, providing a delegation
-///               interface for adapter classes.
+/// @brief        The runtime listener interface.
+/// 
+/// @details      Provides a delegation interface for adapter classes.
 ///
 
 class GTCOMMON_API IRuntimeListener : public Listener
@@ -27,8 +22,10 @@ public:
 };
 
 /// ===================================================================
-/// @brief        Default empty implementation of the Runtime listener
-///               interface.
+/// @brief        The runtime listener adapter class.
+///
+/// @details      Provides a non-pure-virtual empty implementaion to
+///               enable easy, selective subclassing.
 ///
 class GTCOMMON_API CRuntimeListener : public IRuntimeListener
 {
@@ -52,7 +49,11 @@ public:
 };
 
 /// ===================================================================
-/// @brief        Wrapper class / custom proxy for the runtime singleton.
+/// @brief        The runtime wrapper class / custom proxy.
+///
+/// @details      Allows a custom implementation of allocService() in
+///               order to support the in-module service factory
+///               implementation.
 ///
 class GTCOMMON_API CRuntimeAdapter : public CAASBase, public IRuntime
 {
@@ -77,9 +78,9 @@ public:
    virtual void allocService(IBase* pServiceClient, NamedValueSet const& rManifest, TransactionID const& rTranID);
 
 private:
-   Runtime* m_pRuntimeDelegate;
+   Runtime*        m_pRuntimeDelegate;
    IRuntimeClient* m_pRCA;
-   CListenerLock* m_pLock;
+   CListenerLock*  m_pLock;
 };
 
 #endif   // __GTCOMMON_RUNTIMEADAPTER_H__

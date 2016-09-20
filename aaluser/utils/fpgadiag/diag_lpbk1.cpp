@@ -55,9 +55,9 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
    uint_type mcl = cmd.multicls;
    uint_type NumCacheLines = cmd.begincls;
 
-   btInt StopTimeoutMillis = 250;
+   btInt StopTimeoutMillis = 1000;
    if ( cmd.AFUTarget == ALIAFU_NVS_VAL_TARGET_ASE){
-   	   StopTimeoutMillis = StopTimeoutMillis * 100000;
+      StopTimeoutMillis = StopTimeoutMillis * 100000;
    }
    btInt MaxPoll = StopTimeoutMillis;
 
@@ -267,7 +267,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 
 	    // Check the device status
        if ( MaxPoll < 0 ) {
-         cerr << "The maximum timeout for test stop was exceeded." << endl;
+         ERR("Maximum timeout for test stop was exceeded.");
          ++res;
          PrintOutput(cmd, NumCacheLines);
          break;
@@ -275,7 +275,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 
        // Verify the device
        if ( 0 != pAFUDSM->test_error ) {
-           cerr << "Error bit set in DSM.\n";
+    	   ERR("Error bit set in DSM.");
            cout << "DSM Test Error: 0x" << std::hex << pAFUDSM->test_error << endl;
 
            if( 0 != (pAFUDSM->test_error | 0x00000001)){
@@ -304,7 +304,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
        // Verify the buffers
        if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, (NumCacheLines * CL(1))) != 0 ){
 
-    	   cerr << "Data mismatch in Input and Output buffers.\n";
+    	   ERR("Data mismatch in Input and Output buffers.");
 
     	   volatile btUnsigned32bitInt *pInput    = (volatile btUnsigned32bitInt *)pInputUsrVirt;
     	   volatile btUnsigned32bitInt *pOutput    = (volatile btUnsigned32bitInt *)pOutputUsrVirt;
@@ -313,10 +313,10 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
     	   for(;pInput < pEndInput, pOutput < pEndInput; ++pInput, ++pOutput)
     	   {
     		   if(*pInput != *pOutput){
-    			   cerr << "Expected value: " << std::hex << *pInput  << std::dec << endl;
-    			   cerr << "Actual value:   " << std::hex << *pOutput << std::dec << endl;
-    			   cerr << "Phy Addr of Src  Buffer: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA((btVirtAddr)pInput)  << std::dec << endl;
-    			   cerr << "Phy Addr of Dest Buffer: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA((btVirtAddr)pOutput) << std::dec << endl;
+    			   cout << "Expected value: " << std::hex << *pInput  << std::dec << endl;
+    			   cout << "Actual value:   " << std::hex << *pOutput << std::dec << endl;
+    			   cout << "Phy Addr of Src  Buffer: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA((btVirtAddr)pInput)  << std::dec << endl;
+    			   cout << "Phy Addr of Dest Buffer: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA((btVirtAddr)pOutput) << std::dec << endl;
     			   break;
     		   }
     	   }
@@ -328,7 +328,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 
        //Checking for num_clocks underflow.
         if(pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead)){
-           cerr << "Number of Clocks underflow.\n";
+           ERR("Number of Clocks underflow.");
            ++res;
            PrintOutput(cmd, NumCacheLines);
            break;
@@ -418,6 +418,6 @@ void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 
    if(pAFUDSM->num_reads < cls)
    {
-	   ERR("WARNING: Test did NOT run for the requested number of CLs");
+	   cout << "WARNING: Lpbk1 Test did NOT run for the requested number of CLs" << endl;
    }
 }

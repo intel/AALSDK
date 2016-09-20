@@ -1,65 +1,26 @@
+// INTEL CONFIDENTIAL - For Intel Internal Use Only
 #ifndef __GTCOMMON_SMOCKS_H__
 #define __GTCOMMON_SMOCKS_H__
 
 using namespace std;
 
-// Convenience macros for printing messages and errors.
-//===========================================================================
-#ifndef MSG
-#define MSG(x) std::cout << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl
-#endif   // MSG
-#ifndef ERR
-#define ERR(x) \
-   std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
-#endif   // ERR
-//===========================================================================
-
-// #define DBGMOCK
-// #define PRINT_EVENTS
-
-#ifdef DBGMOCK
-#define MOCKDEBUG(x) \
-   MSG(endl << (x)); \
-   raise(SIGTRAP)
-#define NULLCHECKDBG(x) \
-   if(NULL == (x)) MOCKDEBUG;
-#else
-#define MOCKDEBUG \
-   while(0)       \
-      ;
-#ifdef PRINT_EVENTS
-#define MOCKDEBUG(x) MSG(endl << (x))
-#endif
-#endif
-
-#define SUCCESS 0
-
-#include "gtCommon.h"
-#include "gtCommon_ModuleStub.h"
-#include "gtCommon_DoWorker.h"
-#include "gtCommon_RTClientAdapter.h"
-#include "gtCommon_ServiceListener.h"
-
 /// ===================================================================
-/// @brief        Google mock service client class, providing implementation
-///               for the attendent, (and required) derived client and
-///               service client interfaces.
+/// @brief        The custom service client.
 ///
-/// @details      The interface includes the custom work-completion
-///               callback, used to recieve notification from the custom
-///               service class, which implements the custom service
-///               interface.
+/// @details      The custom service client (work client) interface
+///               includes work-completion callbacks, which are
+///               recieved here.
 ///
-
 class GTCOMMON_API CMockWorkClient : public CAASBase, public IServiceClient, public IMockWorkClient
 {
 
 public:
    /// ================================================================
-   /// @brief        Main object constructor, taking a Runtime client to use
-   ///               for callback notifications.
+   /// @brief        The main service client constructor, taking a runtime
+   ///               client adapter to recieve callback notifications from the shared
+   ///               singlton runtime instance through a proxy.
    ///
-   /// @param        pRCA    The Runtime client adapter pointer.
+   /// @param        pRCA    The runtime client adapter pointer.
    ///
 
    CMockWorkClient(CRuntimeClientAdapter* pRCA)
@@ -85,9 +46,9 @@ public:
    }
 
    /// ================================================================
-   /// @brief        Custom service work completion callback.
+   /// @brief        The custom service work completion callback.
    ///
-   /// @param        rTranID    Read-only transaction ID reference.
+   /// @param        rTranID    A read-only transaction ID reference.
    ///
    virtual void workComplete(TransactionID const& rTranID);
    virtual void workComplete2(TransactionID const& rTranID);

@@ -1,15 +1,13 @@
+// INTEL CONFIDENTIAL - For Intel Internal Use Only
 #ifndef __RUNTIME_CLIENT_ADAPTER_H__
 #define __RUNTIME_CLIENT_ADAPTER_H__
-
-#include "aalsdk/Runtime.h"
-#include "gtCommon_RTAdapter.h"
 
 class GTCOMMON_API CRuntimeClientAdapter : public CAASBase, public IRuntimeClient
 {
 
 public:
    /// ========================================================================
-   /// @brief        Default constructor, taking a shared lock.
+   /// @brief        The default constructor, taking a shared lock.
    ///
    /// @param        pLock    The lock
    ///
@@ -26,7 +24,25 @@ protected:
 
 public:
    // custom functions
+
+   /// ================================================================
+   /// @brief        Gets the listener lock.
+   ///
+   /// @details      Invoked when service clients needs a lock to
+   ///               synchronize runtime events through a listener.
+   ///
+   /// @return       The listener lock.
+   ///
    CListenerLock* getListenerLock();
+   /// ================================================================
+   /// @brief        Gets the runtime adapter.
+   ///
+   /// @return       The runtime adapter.
+   ///
+   /// @details      Provides a redirect mechanism when the framework
+   ///               calls getRuntime(), plugging the custom runtime
+   ///               proxy into existing framework code.
+   ///
    IRuntime* getRuntimeAdapter();
 
    // functions taken from samples
@@ -35,7 +51,7 @@ public:
    btBool isOK();
 
    /// ========================================================================
-   /// @brief        Runtime client interface
+   /// @brief        The runtime client interface
    ///
 
    virtual void runtimeCreateOrGetProxyFailed(IEvent const& rEvent);

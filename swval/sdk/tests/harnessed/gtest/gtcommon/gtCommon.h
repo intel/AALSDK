@@ -27,6 +27,37 @@ using namespace AAL;
 #elif defined( __AAL_LINUX__ )
 # define GTCOMMON_API    __declspec(0)
 #endif // OS
+       
+// Convenience macros for printing messages and errors.
+//===========================================================================
+#ifndef MSG
+#define MSG(x) std::cout << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl
+#endif   // MSG
+#ifndef ERR
+#define ERR(x) \
+   std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
+#endif   // ERR
+//===========================================================================
+
+// #define DBGMOCK
+// #define PRINT_EVENTS
+
+#ifdef DBGMOCK
+#define MOCKDEBUG(x) \
+   MSG(endl << (x)); \
+   raise(SIGTRAP)
+#define NULLCHECKDBG(x) \
+   if(NULL == (x)) MOCKDEBUG;
+#else
+#define MOCKDEBUG \
+   while(0)       \
+      ;
+#ifdef PRINT_EVENTS
+#define MOCKDEBUG(x) MSG(endl << (x))
+#endif
+#endif
+
+#define SUCCESS 0
 
 #include "gtCommon_Config.h"
 #include "gtCommon_RNG.h"
@@ -36,6 +67,13 @@ using namespace AAL;
 #include "gtCommon_Signals.h"
 #include "gtCommon_GTest.h"
 #include "gtCommon_Mocks.h"
+#include "gtCommon_ClassOverrides.h"
+#include "gtCommon_DoWorker.h"
+#include "gtCommon_ModuleStub.h"
+#include "gtCommon_RTAdapter.h"
+#include "gtCommon_RTClientAdapter.h"
+#include "gtCommon_SMocks.h"
+#include "gtCommon_ServiceListener.h"
 
 template <typename X>
 X PassReturnByValue(X x) { return x; }

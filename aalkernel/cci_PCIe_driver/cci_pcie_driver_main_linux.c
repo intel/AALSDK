@@ -678,18 +678,25 @@ struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev
 
    return pccipdev;
 ERR:
-{
 
-  if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev,0)) {
-     PVERBOSE("Freeing Port BAR 0\n");
-     iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
-     pci_release_region(pcidev, 0);
-  }
+   // unmap MMIO region if valid region.
+   if( (NULL != pccipdev) &&
+       (NULL != ccip_portdev_kvp_afu_mmio(pccipdev,0))) {
+      PVERBOSE("Freeing Port BAR 0\n");
+      iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
+      pci_release_region(pcidev, 0);
+   }
 
-  if ( NULL != pccipdev ) {
-     kfree(pccipdev);
-  }
-}
+   // Release MMIO region if PCI Resource reserved
+   if( (NULL != pccipdev) &&
+       ( 0 != ccip_portdev_phys_afu_mmio(pccipdev,0) ||
+         0 != ccip_portdev_len_afu_mmio(pccipdev,0)) )    {
+      pci_release_region(pcidev, 0);
+   }
+
+   if ( NULL != pccipdev ) {
+      kfree(pccipdev);
+   }
 
    PTRACEOUT_INT(res);
    return NULL;
@@ -767,6 +774,9 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
    //  and populate it with its reource information
    //----------------------------------------------
    pccipdev = create_ccidevice();
+   if( NULL == pccipdev ) {
+      goto ERR;
+   }
 
    // Save the PCI device in the CCI object
    ccip_dev_pci_dev(pccipdev) = pcidev;

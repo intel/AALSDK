@@ -55,6 +55,12 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
 	btInt res = 0;
 	btWSSize  sz = CL(cmd.begincls);
 
+   btInt StopTimeoutMillis = 1000;
+   if ( cmd.AFUTarget == ALIAFU_NVS_VAL_TARGET_ASE){
+      StopTimeoutMillis = StopTimeoutMillis * 100000;
+   }
+   btInt MaxPoll = StopTimeoutMillis;
+
     // We need to initialize the input and output buffers, so we need addresses suitable
     // for dereferencing in user address space.
     // volatile, because the FPGA will be updating the buffers, too.
@@ -204,12 +210,6 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
    Timer     timeout = Timer() + Timer(&ts);
 #endif // OS
 
-   btInt StopTimeoutMillis = 250;
-   if ( cmd.AFUTarget == ALIAFU_NVS_VAL_TARGET_ASE){
-	StopTimeoutMillis = StopTimeoutMillis * 100000;
-   }
-   btInt MaxPoll = StopTimeoutMillis;
-
    ReadPerfMonitors();
    SavePerfMonitors();
 
@@ -250,7 +250,7 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
 	   while ( *(btUnsigned32bitInt *)(pOutputUsrVirt + sz) != HIGH){
 		  if ( Timer() > timeout ){
 			 res++;
-			 cerr << "Maximum timeout for CPU poll on Address N+1 was exceeded\n";
+			 ERR( "Maximum timeout for CPU poll on Address N+1 was exceeded");
 			 break;
 		  }
 	   }
@@ -282,7 +282,7 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
 			  ( 0 == res) ){
 		  	if(Timer() > timeout ){
 			  res++;
-			  cerr << "Maximum Timeout for test complete was exceeded.\n";
+			  ERR( "Maximum Timeout for test complete was exceeded.");
 			  break;
 		  	}
 	  }
@@ -300,14 +300,14 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
 
 	  // Check the device status
      if ( MaxPoll < 0 ) {
-        cerr << "The maximum timeout for test stop was exceeded." << endl;
+    	ERR("Maximum timeout for test stop was exceeded.");
         ++res;
         PrintOutput(cmd, (sz / CL(1)));
         break;
      }
 
      if ( 0 != pAFUDSM->test_error ) {
-        cerr << "Error bit set in DSM.\n";
+    	ERR( "Error bit set in DSM.");
         cout << "DSM Test Error: 0x" << std::hex << pAFUDSM->test_error << endl;
 
         if( 0 != (pAFUDSM->test_error | 0x00000001)){
@@ -351,7 +351,7 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
      //Checking for num_clocks underflow.
      if ( pAFUDSM->num_clocks < (pAFUDSM->start_overhead + pAFUDSM->end_overhead))
      {
-        cerr << "Number of Clocks underflow.\n";
+    	ERR( "Number of Clocks underflow.");
         ++res;
         PrintOutput(cmd, (sz / CL(1)));
         break;
@@ -441,4 +441,7 @@ void  CNLBSW::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
         << setw(12) << GetPerfMonitor(UPI_WRITE)      << ' '
         << endl << endl;
 
+   if ( (pAFUDSM->num_reads < cls)||(pAFUDSM->num_writes < cls) ){
+		 cout << "WARNING: SW Test did NOT run for the requested number of CLs" << endl;
+      }
 }

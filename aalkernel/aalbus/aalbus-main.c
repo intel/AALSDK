@@ -1879,7 +1879,7 @@ aalbus_itr_get_device(struct device *pdev, void *data)
       }
       DPRINTF(AALBUS_DBG_MOD, ": check AAL_DEV_ID_MASK_DEVID\n");
       if( mask & AAL_DEV_ID_MASK_DEVID){
-          if(memcmp(&param->m_devID, &aaldev_devid(paal), sizeof(struct aal_device_id) ) !=0){
+          if(memcmp(param->m_devID, &aaldev_devid(paal), sizeof(struct aal_device_id) ) !=0){
             DPRINTF(AALBUS_DBG_MOD, ": No match on AAL_DEV_ID_MASK_DEVID\n");
             return 0;
           }

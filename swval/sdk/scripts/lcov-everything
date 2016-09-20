@@ -30,7 +30,7 @@ GCDA_DIRS=(\
 "--directory ${VPATH}/aas/AIAService/.libs" \
 "--directory ${VPATH}/aas/RRMBrokerService/.libs" \
 "--directory ${VPATH}/aas/AASResourceManager/.libs" \
-"--directory ${VPATH}/utils/ALIAFU/HWALIAFU/.libs" \
+"--directory ${VPATH}/utils/ALIAFU/ALI/.libs" \
 "--directory ${VPATH}/tests/harnessed/gtest" \
 "--directory ${VPATH}/tests/standalone/OSAL_TestSem" \
 "--directory ${VPATH}/tests/standalone/OSAL_TestThreadGroup"\

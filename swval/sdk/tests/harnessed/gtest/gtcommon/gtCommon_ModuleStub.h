@@ -1,16 +1,13 @@
+// INTEL CONFIDENTIAL - For Intel Internal Use Only
 #ifndef __GTCOMMON_MODULESTUB_H__
 #define __GTCOMMON_MODULESTUB_H__
 
-#include "gtCommon.h"
-#include "gtCommon_SMocks.h"
-#include "gtCommon_DoWorker.h"
-
 /// ===================================================================
-/// @brief        Custom service factory for use when both client and
-///               service are required or desired to be in the samme module.
+/// @brief        The custom service factory template.
 ///
 /// @details      Copied from the SDK source code for InProcSvcsFact and
-///               modified.
+///               modified. For use when a single module will contain
+///               both client and service.
 ///
 /// @tparam       I     The service class / object type.
 ///
@@ -48,7 +45,7 @@ public:
 namespace
 {
 /// ===================================================================
-/// Anonymous namespace to avoid use of global functions.
+/// @internal Anonymous namespace to avoid use of global functions.
 ///
 AALServiceModule* pModule = NULL;
 InModuleSvcsFact<CMockDoWorker>* pFactory = NULL;

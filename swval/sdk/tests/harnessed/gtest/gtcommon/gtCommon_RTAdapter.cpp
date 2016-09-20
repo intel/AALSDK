@@ -1,16 +1,11 @@
+// INTEL CONFIDENTIAL - For Intel Internal Use Only
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif   // HAVE_CONFIG_H
 
+#ifndef HAVE_COMMON_H
 #include "gtCommon.h"
-#include "gtCommon_Mocks.h"
-#include "gtCommon_SMocks.h"
-
-#include "gtCommon_RTAdapter.h"
-#include "gtCommon_RTClientAdapter.h"
-#include "aalsdk/aas/Dispatchables.h"
-
-using namespace std;
+#endif
 
 /// ===================================================================
 /// @internal        CRuntimeListener
@@ -88,7 +83,7 @@ CRuntimeAdapter::CRuntimeAdapter(IRuntimeClient* pRCA)
    , m_pRCA(pRCA)
    , m_pLock(NULL)
 {
-   m_pRuntimeDelegate = new (nothrow) Runtime(pRCA);
+   m_pRuntimeDelegate = new (std::nothrow) Runtime(pRCA);
    SetInterface(iidRuntime, m_pRuntimeDelegate);
 }
 
