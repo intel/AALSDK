@@ -1701,6 +1701,12 @@ struct cci_aal_device   *
                                                        paalid,             // AAL ID
                                                        &cci_PRpip);
 
+   //CCI device object create fails, delete PR AAL device
+   if(NULL == cci_aaldev_to_aaldev(pcci_aaldev) ){
+      cci_destroy_aal_device(pcci_aaldev);
+      return NULL;
+   }
+
    // Set up reverse look up. Use aaldev_to_cci_aal_device() to access
    aaldev_context(cci_aaldev_to_aaldev(pcci_aaldev)) = pcci_aaldev;
 

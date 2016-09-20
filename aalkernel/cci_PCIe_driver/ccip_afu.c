@@ -149,8 +149,10 @@ struct cci_aal_device   *
 
    // Construct the cci_aal_device object
    pcci_aaldev = cci_create_aal_device();
-
    ASSERT(NULL != pcci_aaldev);
+   if(NULL == pcci_aaldev ){
+      return NULL;
+   }
 
    // Make it a User AFU
    cci_aaldev_type(pcci_aaldev)     = cci_dev_UAFU;
@@ -179,6 +181,12 @@ struct cci_aal_device   *
    cci_aaldev_to_aaldev(pcci_aaldev)  =  aaldev_create( "CCIPAFU",          // AAL device base name
                                                         &*paalid,             // AAL ID
                                                         &cci_AFUpip);
+
+   //CCI device object create fails, delete AFU AAL device
+   if(NULL == cci_aaldev_to_aaldev(pcci_aaldev) ){
+      cci_destroy_aal_device(pcci_aaldev);
+      return NULL;
+   }
 
    //===========================================================
    // Set up the optional aal_device attributes
