@@ -1175,10 +1175,11 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
 
    // Check the device status
    if ( MaxPoll < 0 ) {
-     cerr << "The maximum timeout for test stop was exceeded." << endl;
+     ERR( "Cool-FPGA-Cache: The maximum timeout for test stop was exceeded.");
      ++res;
    }
    if ( 0 != pAFUDSM->test_error ) {
+      ERR( "Cool-FPGA-Cache: Error bit set in DSM.");
       ++res;
    }
 
