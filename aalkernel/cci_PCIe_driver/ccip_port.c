@@ -153,6 +153,10 @@ struct cci_aal_device   *
    pcci_aaldev = cci_create_aal_device();
 
    ASSERT(NULL != pcci_aaldev);
+   if(pcci_aaldev == NULL ) {
+      return NULL;
+   }
+
 
    // Make it an Port by setting the type field and giving a pointer to the
    //  Port device object of the CCIP board device
@@ -199,6 +203,11 @@ struct cci_aal_device   *
    cci_aaldev_to_aaldev(pcci_aaldev)  =  aaldev_create( "CCIPPORT",           // AAL device base name
                                                         &*paalid,             // AAL ID
                                                         &cci_Portpip);
+   //CCI device object create fails, delete Port AAL device
+   if( NULL == cci_aaldev_to_aaldev(pcci_aaldev)) {
+      cci_destroy_aal_device(pcci_aaldev);
+      return NULL;
+   }
 
    //===========================================================
    // Set up the optional aal_device attributes
