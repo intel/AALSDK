@@ -205,7 +205,6 @@ public:
    // General Parser functions spawned from Parse_AALRMS_Msg
    int                     DoRequestDevice      (int fdServer, struct aalrm_ioctlreq *pIoctlReq);
    int                     DoReleaseDevice      (int fdServer, struct aalrm_ioctlreq *pIoctlReq);
-   int                     DoRegistrar          (int fdServer, struct aalrm_ioctlreq *pIoctlReq);
    int                     DoShutdown           (int fdServer, struct aalrm_ioctlreq *pIoctlReq);
    int                     DoRestart            (int fdServer, struct aalrm_ioctlreq *pIoctlReq);
    int                     DoConfigUpdate       (int fdServer, struct aalrm_ioctlreq *pIoctlReq);
