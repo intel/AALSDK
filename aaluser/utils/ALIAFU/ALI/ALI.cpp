@@ -191,6 +191,10 @@ btBool ALI::Release(TransactionID const &TranID, btTime timeout)
 
    // Release ALI / AFUProxy
    ASSERT(m_pAALService != NULL);
+   if (NULL == m_pAALService){
+      return false;
+   }
+
    return m_pAALService->Release(TransactionID(appContext), timeout);
 }
 
