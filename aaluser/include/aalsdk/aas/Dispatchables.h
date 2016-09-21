@@ -69,6 +69,7 @@ public:
    ///
    /// @returns void
    virtual void operator() ();
+
 protected:
    IServiceClient      *m_pSvcClient;
    IRuntimeClient      *m_pRTClient;
@@ -347,11 +348,25 @@ public:
    /// @returns void
    RuntimeEvent(IRuntimeClient *pRTClient,
                 const IEvent   *pEvent);
+
+   /// @brief RuntimeEvent copy constructor.
+   ///
+   /// @param[in] other    Runtime Event object to be copied.
+   /// @returns void
+
+   RuntimeEvent(const AAL::RuntimeEvent& other);
+
    ~RuntimeEvent();
    /// @brief Where the work happens.
    ///
    /// @returns void
    virtual void operator() ();
+
+   /// @brief assignment operator
+   ///
+   /// @returns RuntimeEvent&
+   virtual RuntimeEvent& operator=(const AAL::RuntimeEvent& other);
+
 protected:
    IRuntimeClient *m_pRTClient;
    const IEvent   *m_pEvent;
@@ -387,4 +402,3 @@ protected:
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_DISPATCHABLES_H__
-
