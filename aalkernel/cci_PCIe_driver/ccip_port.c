@@ -153,7 +153,7 @@ struct cci_aal_device   *
    pcci_aaldev = cci_create_aal_device();
 
    ASSERT(NULL != pcci_aaldev);
-   if(pcci_aaldev == NULL ) {
+   if(NULL == pcci_aaldev ) {
       return NULL;
    }
 

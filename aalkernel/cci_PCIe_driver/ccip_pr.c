@@ -440,6 +440,11 @@ void ccipdrv_event_afu_aysnc_pr_release_send(struct pr_program_context *ppr_prog
 {
    struct ccipdrv_event_afu_response_event *pafuws_evt      = NULL;
    PTRACEIN;
+   // return if PR program context is NULL
+   ASSERT(NULL != ppr_program_ctx);
+   if(NULL == ppr_program_ctx) {
+      return ;
+   }
 
 #ifdef PWRMGR
    //PR failed, Movning Idle cores to online
@@ -497,6 +502,11 @@ void ccipdrv_event_reconfig_event_create_send( struct pr_program_context *ppr_pr
 {
    struct ccipdrv_event_afu_response_event *pafuws_evt      = NULL;
    PTRACEIN;
+   // return if PR program context is NULL
+   ASSERT(NULL != ppr_program_ctx);
+   if(NULL == ppr_program_ctx) {
+      return ;
+   }
 
 #ifdef PWRMGR
    //PR failed, Movning Idle cores to online
@@ -580,6 +590,11 @@ void  ccipdrv_event_activationchange_event_create_send( struct pr_program_contex
 
    struct ccipdrv_event_afu_response_event *pafuws_evt      = NULL;
    PTRACEIN;
+   // return if PR program context is NULL
+   ASSERT(NULL != ppr_program_ctx);
+   if(NULL == ppr_program_ctx) {
+      return ;
+   }
 
    pafuws_evt = ccipdrv_event_activationchange_event_create(respID,
                                                             devhandle,

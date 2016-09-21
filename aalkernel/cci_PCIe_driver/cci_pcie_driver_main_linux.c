@@ -560,6 +560,10 @@ struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev
    //  and populate it with its resource information
    //----------------------------------------------
    pccipdev = create_ccidevice();
+   ASSERT(NULL != pccipdev);
+   if( NULL == pccipdev) {
+      return NULL;
+   }
 
    // Save the PCI device in the CCI object
    ccip_dev_pci_dev(pccipdev) = pcidev;
@@ -774,6 +778,7 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
    //  and populate it with its reource information
    //----------------------------------------------
    pccipdev = create_ccidevice();
+   ASSERT(NULL != pccipdev);
    if( NULL == pccipdev ) {
       goto ERR;
    }
