@@ -439,7 +439,7 @@ extern "C" {
 #else
   void *umsg_watcher();
 #endif
-  void *intr_request_watcher();
+  // void *intr_request_watcher();
 
 #ifdef __cplusplus
 }
