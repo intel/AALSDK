@@ -2,10 +2,10 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif   // HAVE_CONFIG_H
+
+#ifndef HAVE_COMMON_H
 #include "gtCommon.h"
-#include "gtCommon_Mocks.h"
-#include <iostream>
-#include "aalsdk/utils/AALEventUtilities.h"
+#endif
 
 static btInt events_handled = 0;
 
@@ -94,7 +94,7 @@ protected:
    btEventHandler sEHandler;
 };
 
-TEST_F(CAALEventUtilities_f, aal0807)
+TEST_F(CAALEventUtilities_f, aal0814)
 {
    /// ========================================================================
    /// @test         Pass a CEvent to PrintExceptionDescription.
@@ -110,7 +110,7 @@ TEST_F(CAALEventUtilities_f, aal0807)
    pEvent->Delete();
 }
 
-TEST_F(CAALEventUtilities_f, aal0808)
+TEST_F(CAALEventUtilities_f, aal0815)
 {
    /// ========================================================================
    /// @test         Pass a CExceptionEvent to PrintExceptionDescription.
@@ -124,7 +124,7 @@ TEST_F(CAALEventUtilities_f, aal0808)
    EXPECT_TRUE(PrintExceptionDescription(theEvent));
 }
 
-TEST_F(CAALEventUtilities_f, aal0809)
+TEST_F(CAALEventUtilities_f, aal0816)
 {
    /// ========================================================================
    /// @test         Pass a CTransactionExceptionEvent object to
@@ -142,7 +142,7 @@ TEST_F(CAALEventUtilities_f, aal0809)
    EXPECT_TRUE(PrintExceptionDescription(theEvent));
 }
 
-TEST_F(CAALEventUtilities_f, aal0810)
+TEST_F(CAALEventUtilities_f, aal0817)
 {
    /// ================================================================
    /// @test         Pass a CAALEvent with a custom interface ID to
@@ -172,7 +172,7 @@ TEST_F(CAALEventUtilities_f, aal0810)
    pEvent->Delete();
 }
 
-// TEST_F(CAALEventUtilities_f, aal0811)
+// TEST_F(CAALEventUtilities_f, aal0818)
 // {
 //    /// ========================================================================
 //    /// @test         Pass a CExceptionTransactionEvent to
@@ -209,7 +209,7 @@ TEST_F(CAALEventUtilities_f, aal0810)
 //    EXPECT_NULL(wrappedTID.Context());
 // }
 
-TEST_F(CAALEventUtilities_f, aal0812)
+TEST_F(CAALEventUtilities_f, aal0819)
 {
    /// ========================================================================
    /// @test         Pass a CExceptionTransactionEvent object to the ReThrow and
