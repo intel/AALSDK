@@ -45,561 +45,388 @@
 /* All fn's return non-zero on error, unless otherwise noted. */
 
 BEGIN_C_DECLS
+#define GETOPT_STRING ":ht:m:b:e:u:LO:Q:X:Y:Z:p:i:HMCr:w:f:a:lN:B:D:F:d:T:SV"
 
-static int
-nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
-   struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)user;
+struct option longopts[] = {
+      {"help",                no_argument,       NULL, 'h'},
+      {"target",              required_argument, NULL, 't'}, //one of { fpga ase }
+      {"mode",                required_argument, NULL, 'm'}, //one of { lpbk1 read write trput sw }
+      {"begin",               required_argument, NULL, 'b'},
+      {"end",                 required_argument, NULL, 'e'},
+      {"multi-cl",            required_argument, NULL, 'u'},
+      {"cont",                no_argument,       NULL, 'L'}, //continuous mode (Loop)
+      {"timeout-usec",        required_argument, NULL, 'O'}, //usec
+      {"timeout-msec",        required_argument, NULL, 'Q'}, //millisec
+      {"timeout-sec",         required_argument, NULL, 'X'}, //sec
+      {"timeout-min",         required_argument, NULL, 'Y'}, //min
+      {"timeout-hour",        required_argument, NULL, 'Z'}, //hour
+      {"cache-policy",        required_argument, NULL, 'p'}, //one of { wrline-I wli wrline-M wlm wrpush-I wpi}
+      {"cache-hint",          required_argument, NULL, 'i'}, //one of {rdline-I, rdline-S}
+      {"warm-fpga-cache",     no_argument,       NULL, 'H'}, //attempt to prime the cache with hits
+      {"cool-fpga-cache",     no_argument,       NULL, 'M'}, //attempt to prime the cache with misses
+      {"cool-cpu-cache",      no_argument,       NULL, 'C'}, //attempt to prime the cpu cache with misses
+      {"read-vc",             required_argument, NULL, 'r'}, //one of { auto, vl0, vh0, vh1, random }
+      {"write-vc",            required_argument, NULL, 'w'}, //one of { auto, vl0, vh0, vh1, random }
+      {"wrfence-vc",          required_argument, NULL, 'f'}, //one of { auto, vl0, vh0, vh1 }
+      {"strided-access",      required_argument, NULL, 'a'}, //strided-access
+      {"alt-wr-pattern",      no_argument,       NULL, 'l'}, //alternate write pattern
+      {"notice",              required_argument, NULL, 'N'}, //one of { poll p csr-write cw umsg-data ud umsg-hint uh}
+      {"bus-number",          required_argument, NULL, 'B'},
+      {"device-number",       required_argument, NULL, 'D'},
+      {"function-number",     required_argument, NULL, 'F'},
+      {"sub-device",          required_argument, NULL, 'd'},
+      {"clock-freq",          required_argument, NULL, 'T'}, //Timing
+      {"suppress-hdr",        no_argument,       NULL, 'S'},
+      {"csv",                 no_argument,       NULL, 'V'},
+      {0, 0, 0, 0}
+};
 
-   if ( (0 == strcmp("--help", option)) || (0 == strcmp("--h", option)) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_HELP);
-   } else if ( 0 == strcmp("--version", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VERSION);
-   } else if ( 0 == strcmp("--tabular", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_TABULAR);
-   } else if ((0 == strcmp("--suppress-hdr", option)) || (0 == strcmp("--sh", option))) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_SUPPRESSHDR);
-   } else if ( 0 == strcmp("--no-bw", option) ) {
-      flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_BANDWIDTH);
-   } else if ((0 == strcmp("--wrline-I", option)) || (0 == strcmp("--wli", option)) || (0 == strcmp("--wt", option))) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_I);
-   } else if ((0 == strcmp("--wrline-M", option)) || (0 == strcmp("--wlm", option)) || (0 == strcmp("--wb", option))) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_M);
-   } else if ((0 == strcmp("--wrpush-I", option)) || (0 == strcmp("--wpi", option))) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRPUSH_I);
-   } else if ( 0 == strcmp("--pwr", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_PWR);
-   } else if ( 0 == strcmp("--cont", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CONT);
-   } else if ( 0 == strcmp("--csrs", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CSRS);
-   } else if ((0 == strcmp("--warm-fpga-cache", option)) || (0 == strcmp("--wfc", option))) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE);
-   } else if ((0 == strcmp("--cool-fpga-cache", option)) || (0 == strcmp("--cfc", option))) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_COOL_FPGA_CACHE);
-   } else if ((0 == strcmp("--cool-cpu-cache", option))  || (0 == strcmp("--ccc", option))) {
-	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE);
-   } else if ( 0 == strcmp("--rds", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_RDS);
-   } else if ( 0 == strcmp("--rdi", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_RDI);
-   } else if ((0 == strcmp("--poll", option) ) || (0 == strcmp("--p", option))) {
-	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_POLL);
-   } else if ((0 == strcmp("--csr-write", option)) || (0 == strcmp("--cw", option))) {
-	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CSR_WRITE);
-   } else if ((0 == strcmp("--umsg-data", option) ) || (0 == strcmp("--ud", option))) {
-	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_DATA);
-   } else if ((0 == strcmp("--umsg-hint", option)) || (0 == strcmp("--uh", option))) {
-	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_HINT);
-   } else if ((0 == strcmp("--read-va", option))  || (0 == strcmp("--rva", option))) {
-   	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VA);
-   } else if ((0 == strcmp("--read-vl0", option)) || (0 == strcmp("--rvl0", option)) ) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VL0);
-   } else if ((0 == strcmp("--read-vh0", option)) || (0 == strcmp("--rvh0", option))) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VH0);
-   } else if ((0 == strcmp("--read-vh1", option)) || (0 == strcmp("--rvh1", option)) ) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VH1);
-   } else if ((0 == strcmp("--read-vr", option)) || (0 == strcmp("--rvr", option))) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VR);
-   } else if ((0 == strcmp("--write-va", option))  || (0 == strcmp("--wva", option))) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VA);
-   } else if ((0 == strcmp("--write-vl0", option)) || (0 == strcmp("--wvl0", option)) ) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VL0);
-   } else if ((0 == strcmp("--write-vh0", option)) || (0 == strcmp("--wvh0", option))) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VH0);
-   } else if ((0 == strcmp("--write-vh1", option)) || (0 == strcmp("--wvh1", option)) ) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VH1);
-   } else if ((0 == strcmp("--write-vr", option)) || (0 == strcmp("--wvr", option))) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VR);
-   } else if ((0 == strcmp("--wrfence-va", option))  || (0 == strcmp("--wrfva", option))) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VA);
-   } else if ((0 == strcmp("--wrfence-vl0", option)) || (0 == strcmp("--wrfvl0", option)) ) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VL0);
-   } else if ((0 == strcmp("--wrfence-vh0", option)) || (0 == strcmp("--wrfvh0", option))) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VH0);
-   } else if ((0 == strcmp("--wrfence-vh1", option)) || (0 == strcmp("--wrfvh1", option)) ) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VH1);
-   } else if ( 0 == strcmp("--alt-wr-pattern", option) || (0 == strcmp("--awp", option))) {
-        flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_ALT_WR_PRN);
-   } else if ( 0 == strcmp("--0", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FEATURE0);
-   } else if ( 0 == strcmp("--1", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FEATURE1);
-   } else if ((0 == strcmp("--shared-token", option)) || (0 == strcmp("--st", option))) {
-	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_ST);
-   } else if ((0 == strcmp("--separate-token", option)) || (0 == strcmp("--ut", option))) {
-     flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UT);
-   } else {
-      printf("Invalid option: %s\n", option);
-      flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
-   }
-
-   return 0;
-}
-
-static int
-nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char *value) {
-   struct NLBCmdLine *nlbcl  = (struct NLBCmdLine *)user;
-   char              *endptr = NULL;
-
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
+int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
+{
+   int res = 0;
+   int getopt_ret;
+   int option_index;
+   char *endptr = NULL;
    timespec_type tsval;
-#endif // OS
 
-   	   if ( (0 == strcmp("--target", option)) || (0 == strcmp("--t", option))) {
-         if ( 0 == strcasecmp("fpga", value) ) {
-        	 nlbcl->AFUTarget = std::string(ALIAFU_NVS_VAL_TARGET_FPGA);
-         } else if ( 0 == strcasecmp("ase", value) ) {
-        	 nlbcl->AFUTarget = std::string(ALIAFU_NVS_VAL_TARGET_ASE);
-         } else if ( 0 == strcasecmp("swsim", value) ) {
-        	 nlbcl->AFUTarget = std::string(ALIAFU_NVS_VAL_TARGET_SWSIM);
-         } else {
-            cout << "Invalid value for --target : " << value << endl;
-            return 4;
-         }
-   	   }else if ( (0 == strcmp("--device", option)) || (0 == strcmp("--d", option))) {
-   			 nlbcl->DevTarget = (AAL::btInt)strtol(value, &endptr, 0);
-   	   }else if ( (0 == strcmp("--mode", option)) || (0 == strcmp("--m", option)) ) {
-          if ( 0 == strcasecmp("lpbk1", value) ) {
-			nlbcl->TestMode = std::string(NLB_TESTMODE_LPBK1);
-          } else if ( 0 == strcasecmp("read", value) ) {
-			nlbcl->TestMode = std::string(NLB_TESTMODE_READ);
-          } else if ( 0 == strcasecmp("write", value) ) {
-			nlbcl->TestMode = std::string(NLB_TESTMODE_WRITE);
-          } else if ( 0 == strcasecmp("trput", value) ) {
-			nlbcl->TestMode = std::string(NLB_TESTMODE_TRPUT);
-          } else if ( 0 == strcasecmp("sw", value) ) {
-			nlbcl->TestMode = std::string(NLB_TESTMODE_SW);
-          } else if ( 0 == strcasecmp("atomic", value) ) {
-          nlbcl->TestMode = std::string(NLB_TESTMODE_ATOMIC);
-          } else {
-             cout << "Invalid value for --mode : " << value << endl;
-             return 4;
-          }
-       }else if ( 0 == strcmp("--log", option) ) {
-         char *endptr = NULL;
+   while( -1 != ( getopt_ret = getopt_long(argc, argv, GETOPT_STRING, longopts, &option_index))){
+      const char *tmp_optarg = optarg;
 
-         nlbcl->LogLevel = (AAL::btInt)strtol(value, &endptr, 0);
-         if ( endptr != value + strlen(value) ) {
-        	 nlbcl->LogLevel = 0;
-         } else if ( nlbcl->LogLevel < 0) {
-        	 nlbcl->LogLevel = 0;
-         } else if ( nlbcl->LogLevel > 8) {
-        	 nlbcl->LogLevel = 8;
-         }
-      }else if ( (0 == strcmp("--begin", option)) || (0 == strcmp("--b", option)) ) {
-
-      nlbcl->begincls = strtoul(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-         nlbcl->begincls = nlbcl->defaults.begincls;
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_BEGINCL);
-         printf("Invalid value for --begin : %s. Defaulting to %llu.\n", value, nlbcl->begincls);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_BEGINCL);
+      if((optarg) &&
+         ('=' == *tmp_optarg)){
+         ++tmp_optarg;
       }
 
-   } else if ( (0 == strcmp("--end", option)) || (0 == strcmp("--e", option)) ) {
-
-      nlbcl->endcls = strtoul(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-         nlbcl->endcls = nlbcl->defaults.endcls;
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_ENDCL);
-         printf("Invalid value for --end : %s. Defaulting to %llu.\n", value, nlbcl->endcls);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_ENDCL);
+      if((!optarg) &&
+         (NULL != argv[optind]) &&
+         ('-' != argv[optind][0]) ) {
+         tmp_optarg = argv[optind++];
       }
 
-   } else if ( (0 == strcmp("--multi-cl", option)) || (0 == strcmp("--mcl", option)) ) {
+      switch(getopt_ret){
+         case 'h':
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_HELP);
+            NLBShowHelp(nlbcl);
+            break;
 
-         nlbcl->multicls = strtoul(value, &endptr, 0);
-         if ( value + strlen(value) != endptr ) {
-            nlbcl->multicls = nlbcl->defaults.multicls;
-            flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_MULTICL);
-            printf("Invalid value for --multi-cl : %s. Defaulting to %llu.\n", value, nlbcl->multicls);
-         } else {
+         case 't':
+            if ( 0 == strcasecmp("fpga", tmp_optarg) ) {
+               nlbcl->AFUTarget = std::string(ALIAFU_NVS_VAL_TARGET_FPGA);
+            } else if ( 0 == strcasecmp("ase", tmp_optarg) ) {
+               nlbcl->AFUTarget = std::string(ALIAFU_NVS_VAL_TARGET_ASE);
+            } else {
+               cout << "Invalid value for --target : " << tmp_optarg << endl;
+               return CMD_PARSE_ERR;
+            }
+            break;
+
+         case 'm':
+            if ( 0 == strcasecmp("lpbk1", tmp_optarg) ) {
+               nlbcl->TestMode = std::string(NLB_TESTMODE_LPBK1);
+            } else if ( 0 == strcasecmp("read", tmp_optarg) ) {
+               nlbcl->TestMode = std::string(NLB_TESTMODE_READ);
+            } else if ( 0 == strcasecmp("write", tmp_optarg) ) {
+               nlbcl->TestMode = std::string(NLB_TESTMODE_WRITE);
+            } else if ( 0 == strcasecmp("trput", tmp_optarg) ) {
+               nlbcl->TestMode = std::string(NLB_TESTMODE_TRPUT);
+            } else if ( 0 == strcasecmp("sw", tmp_optarg) ) {
+               nlbcl->TestMode = std::string(NLB_TESTMODE_SW);
+            } else {
+               cout << "Invalid value for --mode : " << tmp_optarg << endl;
+               return CMD_PARSE_ERR;
+            }
+            break;
+
+         case 'b':
+            endptr = NULL;
+            nlbcl->begincls = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_BEGINCL);
+            break;
+
+         case 'e':
+            endptr = NULL;
+            nlbcl->endcls = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_ENDCL);
+            break;
+
+         case 'u':
+            endptr = NULL;
+            nlbcl->multicls = strtoul(tmp_optarg, &endptr, 0);
             flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_MULTICL);
-         }
-   } else if ( (0 == strcmp("--hardware-qw", option)) || (0 == strcmp("--hqw", option)) ) {
+            break;
 
-		 nlbcl->hqw = strtoul(value, &endptr, 0);
-		 if ( value + strlen(value) != endptr ) {
-			nlbcl->hqw = nlbcl->defaults.hqw;
-			flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_HQW);
-			printf("Invalid value for --hardware-qw : %s. Defaulting to %llu.\n", value, nlbcl->hqw);
-		 } else {
-			flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_HQW);
-		 }
-   } else if ( (0 == strcmp("--software-qw", option)) || (0 == strcmp("--sqw", option)) ) {
+         case 'L':
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CONT);
+            break;
 
-		 nlbcl->sqw = strtoul(value, &endptr, 0);
-		 if ( value + strlen(value) != endptr ) {
-			nlbcl->sqw = nlbcl->defaults.sqw;
-			flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_SQW);
-			printf("Invalid value for --software-qw : %s. Defaulting to %llu.\n", value, nlbcl->sqw);
-		 } else {
-			flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_SQW);
-		 }
-   } else if ( (0 == strcmp("--cmp-xchg", option)) || (0 == strcmp("--cx", option)) ) {
+         case 'O':
+            endptr = NULL;
+            tsval = strtotimespec(tmp_optarg, &endptr, 0);
+            nlbcl->to_usec += tsval;
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_TOUSEC);
+            break;
 
-	  nlbcl->cx = strtoul(value, &endptr, 0);
-	  if ( value + strlen(value) != endptr ) {
-		 nlbcl->cx = nlbcl->defaults.cx;
-		 flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_CX);
-		 printf("Invalid value for --cmp-xchg : %s. Defaulting to %llu.\n", value, nlbcl->cx);
-	  } else {
-		 flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CX);
-	  }
+         case 'Q':
+            endptr = NULL;
+            tsval = strtotimespec(tmp_optarg, &endptr, 0);
+            nlbcl->to_msec += tsval;
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_TOMSEC);
+            break;
 
-   } else if ( (0 == strcmp("--clock-freq", option)) ||  (0 == strcmp("--f", option))) {
+         case 'X':
+            endptr = NULL;
+            tsval = strtotimespec(tmp_optarg, &endptr, 0);
+            nlbcl->to_sec += tsval;
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_TOSEC);
+            break;
 
-      nlbcl->clkfreq = strtoul(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-         nlbcl->clkfreq = nlbcl->defaults.clkfreq;
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_CLKFREQ);
-         printf("Invalid value for --clock-freq : %s. Defaulting to %llu.\n", value, nlbcl->clkfreq);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CLKFREQ);
+         case 'Y':
+            endptr = NULL;
+            tsval = strtotimespec(tmp_optarg, &endptr, 0);
+            nlbcl->to_min += tsval;
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_TOMIN);
+            break;
+
+         case 'Z':
+            endptr = NULL;
+            tsval = strtotimespec(tmp_optarg, &endptr, 0);
+            nlbcl->to_hour += tsval;
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_TOHOUR);
+            break;
+
+         case 'p':
+            if ( 0 == strcasecmp("wrline-I", tmp_optarg)) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_I);
+            } else if ( 0 == strcasecmp("wrline-M", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_M);
+            } else if ( 0 == strcasecmp("wrpush-I", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRPUSH_I);
+            }else {
+               cout << "Invalid value for --cache-policy : " << tmp_optarg << endl;
+               return CMD_PARSE_ERR;
+            }
+            break;
+
+         case 'i':
+            if ( 0 == strcasecmp("rdline-I", tmp_optarg)) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_RDI);
+            } else if ( 0 == strcasecmp("rdline-S", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_RDS);
+            }else {
+               cout << "Invalid value for --cache-hint : " << tmp_optarg << endl;
+               return CMD_PARSE_ERR;
+            }
+            break;
+
+         case 'H':
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE);
+            break;
+
+         case 'M':
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_COOL_FPGA_CACHE);
+            break;
+
+         case 'C':
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE);
+            break;
+
+         case 'r':
+            if ( 0 == strcasecmp("auto", tmp_optarg)) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VA);
+            } else if ( 0 == strcasecmp("vl0", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VL0);
+            } else if ( 0 == strcasecmp("vh0", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VH0);
+            } else if ( 0 == strcasecmp("vh1", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VH1);
+            } else if ( 0 == strcasecmp("random", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VR);
+            }else {
+               cout << "Invalid value for --read : " << tmp_optarg << endl;
+               return CMD_PARSE_ERR;
+            }
+            break;
+
+         case 'w':
+            if ( 0 == strcasecmp("auto", tmp_optarg)) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VA);
+            } else if ( 0 == strcasecmp("vl0", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VL0);
+            } else if ( 0 == strcasecmp("vh0", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VH0);
+            } else if ( 0 == strcasecmp("vh1", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VH1);
+            } else if ( 0 == strcasecmp("random", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VR);
+            }else {
+               cout << "Invalid value for --write : " << tmp_optarg << endl;
+               return CMD_PARSE_ERR;
+            }
+            break;
+
+         case 'f':
+            if ( 0 == strcasecmp("auto", tmp_optarg)) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VA);
+            } else if ( 0 == strcasecmp("vl0", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VL0);
+            } else if ( 0 == strcasecmp("vh0", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VH0);
+            } else if ( 0 == strcasecmp("vh1", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VH1);
+            }else {
+               cout << "Invalid value for --wrfence : " << tmp_optarg << endl;
+               return CMD_PARSE_ERR;
+            }
+            break;
+
+         case 'a':
+            endptr = NULL;
+            nlbcl->strided_acs = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_STRIDED_ACS);
+            break;
+
+         case 'l':
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_ALT_WR_PRN);
+            break;
+
+         case 'N':
+            if ( 0 == strcasecmp("poll", tmp_optarg)) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_POLL);
+            } else if ( 0 == strcasecmp("csr-write", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CSR_WRITE);
+            } else if ( 0 == strcasecmp("umsg-data", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_DATA);
+            } else if ( 0 == strcasecmp("umsg-hint", tmp_optarg) ) {
+               flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_HINT);
+            }else {
+               cout << "Invalid value for --notice : " << tmp_optarg << endl;
+               return CMD_PARSE_ERR;
+            }
+            break;
+
+         case 'B':
+            endptr = NULL;
+            nlbcl->busnum = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER);
+            break;
+
+         case 'D':
+            endptr = NULL;
+            nlbcl->devnum = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER);
+            break;
+
+         case 'F':
+            endptr = NULL;
+            nlbcl->funnum = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER);
+            break;
+
+         case 'd':
+            endptr = NULL;
+            //TODO change "DevTarget" to "subDev"
+            //TODO set subDev flag (reuse --no-bw)
+            nlbcl->DevTarget = strtoul(tmp_optarg, &endptr, 0);
+            break;
+
+         case 'T':
+            endptr = NULL;
+            nlbcl->clkfreq = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CLKFREQ);
+            break;
+
+         case 'S':
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_SUPPRESSHDR);
+            break;
+
+         /*case 'V':
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CSV);
+            break;*/
+
+         case ':':   /* missing option argument */
+            cout << "Missing option argument.\n";
+            return CMD_PARSE_ERR;
+
+         case '?':
+         default:    /* invalid option */
+            cout << "Invalid cmdline options.\n";
+            return CMD_PARSE_ERR;
       }
-
-   } else if ( (0 == strcmp("--timeout-usec", option)) || (0 == strcmp("--tu", option)) ) {
-
-      tsval = strtotimespec(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
-         nlbcl->to_usec = nlbcl->defaults.to_usec;
-#endif // OS
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_TOUSEC);
-         printf("Invalid usec value: %s. Defaulting to %ld\n", value, nlbcl->to_usec);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_TOUSEC);
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
-         nlbcl->to_usec += tsval;
-#endif // OS
-      }
-
-   } else if ( (0 == strcmp("--timeout-msec", option)) || (0 == strcmp("--tms", option)) ) {
-
-      tsval = strtotimespec(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
-         nlbcl->to_msec = nlbcl->defaults.to_msec;
-#endif // OS
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_TOMSEC);
-         printf("Invalid msec value: %s. Defaulting to %ld\n", value, nlbcl->to_msec);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_TOMSEC);
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
-         nlbcl->to_msec += tsval;
-#endif // OS
-      }
-
-   } else if ( (0 == strcmp("--timeout-sec", option)) || (0 == strcmp("--ts", option)) ) {
-
-      tsval = strtotimespec(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
-         nlbcl->to_sec = nlbcl->defaults.to_sec;
-#endif // OS
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_TOSEC);
-         printf("Invalid seconds value: %s. Defaulting to %ld\n", value, nlbcl->to_sec);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_TOSEC);
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
-         nlbcl->to_sec += tsval;
-#endif // OS
-      }
-
-   } else if ( (0 == strcmp("--timeout-min", option)) || (0 == strcmp("--tmi", option)) ) {
-
-      tsval = strtotimespec(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
-         nlbcl->to_min = nlbcl->defaults.to_min;
-#endif // OS
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_TOMIN);
-         printf("Invalid minutes value: %s. Defaulting to %ld\n", value, nlbcl->to_min);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_TOMIN);
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
-         nlbcl->to_min += tsval;
-#endif // OS
-      }
-
-   } else if ( (0 == strcmp("--timeout-hour", option)) || (0 == strcmp("--th", option)) ) {
-
-      tsval = strtotimespec(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
-         nlbcl->to_hour = nlbcl->defaults.to_hour;
-#endif // OS
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_TOHOUR);
-         printf("Invalid hours value: %s. Defaulting to %ld\n", value, nlbcl->to_hour);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_TOHOUR);
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
-         nlbcl->to_hour += tsval;
-#endif // OS
-      }
-   } else if ( (0 == strcmp("--strided-access", option)) || (0 == strcmp("--sa", option)) ) {
-
-      nlbcl->strided_acs = strtoul(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-         nlbcl->strided_acs = nlbcl->defaults.strides;
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_STRIDED_ACS);
-         printf("Invalid value for --strided-access : %s. Defaulting to %llu.\n", value, nlbcl->strided_acs);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_STRIDED_ACS);
-      }
-
-   } else if ( (0 == strcmp("--bus-number", option)) || (0 == strcmp("--bn", option)) ) {
-      nlbcl->busnum = strtoul(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-         nlbcl->busnum = nlbcl->defaults.busnum;
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER);
-         printf("Invalid value for --bus-number : %s. Defaulting to %u.\n", value, nlbcl->busnum);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER);
-      }
-
-   } else if ( (0 == strcmp("--device-number", option)) || (0 == strcmp("--dn", option)) ) {
-      nlbcl->devnum = strtoul(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-         nlbcl->devnum = nlbcl->defaults.devnum;
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER);
-         printf("Invalid value for --device-number : %s. Defaulting to %u.\n", value, nlbcl->devnum);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER);
-      }
-
-   } else if ( (0 == strcmp("--function-number", option)) || (0 == strcmp("--fn", option)) ) {
-      nlbcl->funnum = strtoul(value, &endptr, 0);
-      if ( value + strlen(value) != endptr ) {
-         nlbcl->funnum = nlbcl->defaults.funnum;
-         flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER);
-         printf("Invalid value for --function-number : %s. Defaulting to %u.\n", value, nlbcl->funnum);
-      } else {
-         flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER);
-      }
-
-   } else {
-      printf("Invalid option: %s\n", option);
-      flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
    }
-
-   return 0;
+   return res;
 }
 
-static int
-nlb_on_nix_short_option_only(AALCLP_USER_DEFINED user, const char *option) {
-   struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)user;
-   flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
-   printf("Invalid option: %s\n", option);
-   return 0;
-}
-
-static int
-nlb_on_nix_short_option(AALCLP_USER_DEFINED user, const char *option, const char *value) {
-   struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)user;
-   flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
-   printf("Invalid option: %s %s\n", option, value);
-   return 0;
-}
-
-static int
-nlb_on_dash_only(AALCLP_USER_DEFINED user) {
-   struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)user;
-   flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
-   printf("Invalid option: -\n");
-   return 0;
-}
-
-static int
-nlb_on_dash_dash_only(AALCLP_USER_DEFINED user) {
-   struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)user;
-   flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
-   printf("Invalid option: --\n");
-   return 0;
-}
-
-static int
-nlb_on_win_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
-   struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)user;
-   flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
-   printf("Invalid option: %s\n", option);
-   return 0;
-}
-
-static int
-nlb_on_win_long_option(AALCLP_USER_DEFINED user, const char *option, const char *value) {
-   struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)user;
-   flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
-   printf("Invalid option: %s %s\n", option, value);
-   return 0;
-}
-
-static int
-nlb_on_win_short_option_only(AALCLP_USER_DEFINED user, const char *option) {
-   struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)user;
-   flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
-   printf("Invalid option: %s\n", option);
-   return 0;
-}
-
-static int
-nlb_on_win_short_option(AALCLP_USER_DEFINED user, const char *option, const char *value) {
-   struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)user;
-   flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
-   printf("Invalid option: %s %s\n", option, value);
-   return 0;
-}
-
-static int
-nlb_on_non_option(AALCLP_USER_DEFINED user, const char *nonoption) {
-   struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)user;
-   flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
-   printf("Invalid: %s\n", nonoption);
-   return 0;
-}
-
-static int
-nlb_on_invalid(AALCLP_USER_DEFINED user, const char *invalid, size_t len) {
-   struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)user;
-   flag_setf(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR);
-
-   size_t i;
-
-   for ( i = 0 ; i < len ; ++i ) {
-      printf("Invalid: '%c'\n", invalid[i]);
-   }
-
-   return 0;
-}
-
-static aalclp_option_only nlb_nix_long_option_only  = { nlb_on_nix_long_option_only,  };
-static aalclp_option      nlb_nix_long_option       = { nlb_on_nix_long_option,       };
-static aalclp_option_only nlb_nix_short_option_only = { nlb_on_nix_short_option_only, };
-static aalclp_option      nlb_nix_short_option      = { nlb_on_nix_short_option,      };
-static aalclp_dash_only   nlb_dash_only             = { nlb_on_dash_only,             };
-static aalclp_dash_only   nlb_dash_dash_only        = { nlb_on_dash_dash_only,        };
-static aalclp_option_only nlb_win_long_option_only  = { nlb_on_win_long_option_only,  };
-static aalclp_option      nlb_win_long_option       = { nlb_on_win_long_option,       };
-static aalclp_option_only nlb_win_short_option_only = { nlb_on_win_short_option_only, };
-static aalclp_option      nlb_win_short_option      = { nlb_on_win_short_option,      };
-static aalclp_non_option  nlb_non_option            = { nlb_on_non_option,            };
-static aalclp_invalid     nlb_invalid               = { nlb_on_invalid,               };
-
-void NLBSetupCmdLineParser(aalclp *clp, struct NLBCmdLine *nlbcl) {
-   nlb_nix_long_option_only.user  = nlbcl;
-   nlb_nix_long_option.user       = nlbcl;
-   nlb_nix_short_option_only.user = nlbcl;
-   nlb_nix_short_option.user      = nlbcl;
-   nlb_dash_only.user             = nlbcl;
-   nlb_dash_dash_only.user        = nlbcl;
-   nlb_win_long_option_only.user  = nlbcl;
-   nlb_win_long_option.user       = nlbcl;
-   nlb_win_short_option_only.user = nlbcl;
-   nlb_win_short_option.user      = nlbcl;
-   nlb_non_option.user            = nlbcl;
-   nlb_invalid.user               = nlbcl;
-
-   aalclp_add_nix_long_option_only(clp,  &nlb_nix_long_option_only);
-   aalclp_add_nix_long_option(clp,       &nlb_nix_long_option);
-   aalclp_add_nix_short_option_only(clp, &nlb_nix_short_option_only);
-   aalclp_add_nix_short_option(clp,      &nlb_nix_short_option);
-   aalclp_add_dash_only(clp,             &nlb_dash_only);
-   aalclp_add_dash_dash_only(clp,        &nlb_dash_dash_only);
-   aalclp_add_win_long_option_only(clp,  &nlb_win_long_option_only);
-   aalclp_add_win_long_option(clp,       &nlb_win_long_option);
-   aalclp_add_win_short_option_only(clp, &nlb_win_short_option_only);
-   aalclp_add_win_short_option(clp,      &nlb_win_short_option);
-   aalclp_add_non_option(clp,            &nlb_non_option);
-   aalclp_add_invalid(clp,               &nlb_invalid);
-}
-
-void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs) {
-   struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)gcs->user;
-
+void NLBShowHelp( struct NLBCmdLine *nlbcl ) {
    string test;
-   cout << "Enter test name: [LPBK1] [READ] [WRITE] [TRPUT] [SW] [ATOMIC]" << endl;
-   cin >> test;
-   fprintf(fp, "Usage:\n");
+
+   if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_LPBK1)){
+      test="lpbk1";
+   }else if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_READ)){
+      test="read";
+   }else if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_WRITE)){
+      test="write";
+   }else if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_TRPUT)){
+      test="trput";
+   }else if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_SW)){
+      test="sw";
+   }else {
+      cout << "Enter test name: [LPBK1] [READ] [WRITE] [TRPUT] [SW] [ATOMIC]" << endl;
+      cin >> test;
+   }
+   cout << "Usage:\n";
 
    if ( 0 == strcasecmp(test.c_str(), "LPBK1") ) {
-         fprintf(fp, "   --mode=lpbk1 <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<BUS>] [<DEVICE>] [<FUNCTION>] [<OUTPUT>]");
+      cout << "   --mode=lpbk1 [<TARGET>] [<BEGIN>] [<END>] [<MULTI-CL>] [<CONT> <TIMEOUT>] [CACHE-POLICY] [CACHE-HINT] [<READ-VC>] [<WRITE-VC>] [<WRFENCE-VC>] [<BUS>] [<DEVICE>] [<FUNCTION>] [SUB-DEVICE] [<FREQ>] [<OUTPUT>]";
    } else if ( 0 == strcasecmp(test.c_str(), "READ") ) {
-         fprintf(fp, "   --mode=read <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<BUS>] [<DEVICE>] [<FUNCTION>] [<OUTPUT>]");
+      cout <<  "   --mode=read [<TARGET>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<CONT> <TIMEOUT>] [CACHE-HINT] [<FPGA-CACHE>] [<CPU-CACHE>] [<READ-VC>] [<BUS>] [<DEVICE>] [<FUNCTION>] [SUB-DEVICE] [<FREQ>] [<OUTPUT>]";
    } else if ( 0 == strcasecmp(test.c_str(), "WRITE") ) {
-         fprintf(fp, "   --mode=write <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<WR-PATTERN>] [<BUS>] [<DEVICE>] [<FUNCTION>] [<OUTPUT>]");
+      cout <<  "   --mode=write [<TARGET>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<CONT> <TIMEOUT>] [CACHE-POLICY] [CACHE-HINT] [<FPGA-CACHE>] [<CPU-CACHE>] [<WRITE-VC>] [<WRFENCE-VC>] [<WR-PATTERN>] [<BUS>] [<DEVICE>] [<FUNCTION>] [SUB-DEVICE] [<FREQ>] [<OUTPUT>]";
    } else if ( 0 == strcasecmp(test.c_str(), "TRPUT") ) {
-         fprintf(fp, "   --mode=trput <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<BUS>] [<DEVICE>] [<FUNCTION>] [<OUTPUT>]");
+      cout <<  "   --mode=trput [<TARGET>] [<BEGIN>] [<END>] [<MULTI-CL>] [<STRIDES>] [<CONT> <TIMEOUT>] [CACHE-POLICY] [CACHE-HINT] [<READ-VC>] [<WRITE-VC>] [<WRFENCE-VC>] [<BUS>] [<DEVICE>] [<FUNCTION>] [SUB-DEVICE] [<FREQ>] [<OUTPUT>]";
    } else if ( 0 == strcasecmp(test.c_str(), "SW") ) {
-         fprintf(fp, "   --mode=sw <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<READ-VC>] [<WRITE-VC>] [<WR-FENCE>] [<BUS>] [<DEVICE>] [<FUNCTION>] [<OUTPUT>] [<NOTICE>]");
-   }else if ( 0 == strcasecmp(test.c_str(), "ATOMIC") ) {
-         fprintf(fp, "   --mode=atomic <TARGET> <SUB-MODE> [<CMP-XCHG>] [<QUAD-WORD>] [<BUS>] [<DEVICE>] [<FUNCTION>] [<OUTPUT>]");
+      cout <<  "   --mode=sw [<TARGET>] [<BEGIN>] [<END>] [<CONT>] [CACHE-POLICY] [CACHE-HINT] [<READ-VC>] [<WRITE-VC>] [<WRFENCE-VC>] [<NOTICE>] [<BUS>] [<DEVICE>] [<FUNCTION>] [SUB-DEVICE] [<FREQ>] [<OUTPUT>]";
    }else {
-	   cerr << "Invalid test mode." << endl;
+	   cout << "Invalid test mode." << endl;
 	   return;
    }
 
-   fprintf(fp, "\n\n");
+   cout << endl << endl;
 
-   fprintf(fp, "      <TARGET>    = --target=one of { fpga ase }  OR --t=one of { fpga ase }\n");
+   cout << "      <TARGET>        = --target=one of { fpga ase }  OR  -t=one of { fpga ase },                                  ";
+   cout << "Default=fpga\n";
 
-   if ( 0 != strcasecmp(test.c_str(), "SW") &&
-        0 != strcasecmp(test.c_str(), "ATOMIC") ) {
+   cout << "      <BEGIN>         = --begin=B              OR  -b=B,    ";
+   cout << "Where "<< nlbcl->defaults.mincls <<" <= B <= " << nlbcl->defaults.maxcls << ",                                 ";
+   cout << "Default=" << nlbcl->defaults.begincls << endl;
 
-      fprintf(fp, "      <BANDWIDTH> = --no-bw,                        suppress bandwidth calculations,                ");
+   cout << "      <END>           = --end=E                OR  -e=E,    ";
+   cout << "Where " << nlbcl->defaults.mincls <<" <= E <= " << nlbcl->defaults.maxcls <<",                                 ";
+   cout << "Default=B\n";
 
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-         fprintf(fp, "Default=%s\n", nlbcl->defaults.nobw);
-      } else {
-         fprintf(fp, "yes\n");
-      }
+   if ( 0 == strcasecmp(test.c_str(), "LPBK1") ||
+        0 == strcasecmp(test.c_str(), "READ")  ||
+        0 == strcasecmp(test.c_str(), "WRITE") ||
+        0 == strcasecmp(test.c_str(), "TRPUT")) {
+
+      cout << "      <MULTI-CL>      = --multi-cl=M           OR  -u=M,    Where M =one of { 1 2 4 },                             ";
+      cout << "Default=" << nlbcl->defaults.multicls << endl;
    }
 
-   if ( 0 != strcasecmp(test.c_str(), "ATOMIC") ) {
+   if ( 0 == strcasecmp(test.c_str(), "READ")  ||
+        0 == strcasecmp(test.c_str(), "WRITE") ||
+        0 == strcasecmp(test.c_str(), "TRPUT")) {
 
-      fprintf(fp, "      <DEVICE>    = --device=D         OR --d=D,    where D is the Sub-device Number,               ");
-      fprintf(fp, "Default is not set\n");
+      cout << "      <STRIDES>       = --strided-access=S     OR  -a=S,    ";
+      cout << nlbcl->defaults.min_strides << "<= S <= " << nlbcl->defaults.max_strides <<",                                           ";
+      cout << "Default=" << nlbcl->defaults.min_strides << endl;
+   }
 
-      fprintf(fp, "      <BEGIN>     = --begin=B          OR --b=B,    where %llu <= B <= %5llu,                          ",
-            nlbcl->defaults.mincls, nlbcl->defaults.maxcls);
+   if ( 0 == strcasecmp(test.c_str(), "SW") ) {
+      cout << "      <CONT>                   (SW is a non-continuous mode-only test)                                             off\n";
 
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_BEGINCL) ) {
-         fprintf(fp, "%llu\n", nlbcl->begincls);
-      } else {
-         fprintf(fp, "Default=%llu\n", nlbcl->defaults.begincls);
-      }
-
-      fprintf(fp, "      <END>       = --end=E            OR --e=E,    where %llu <= E <= %5llu,                          ",
-               nlbcl->defaults.mincls, nlbcl->defaults.maxcls);
-
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_ENDCL) ) {
-         fprintf(fp, "%llu\n", nlbcl->endcls);
-      } else {
-         fprintf(fp, "Default=B\n"/*, nlbcl->defaults.endcls*/);
-      }
+   } else {
+      cout << "      <CONT>          = --cont                 OR  -L,      Continuous mode,                                       ";
+      cout << "Default=" << nlbcl->defaults.cont << endl;
    }
 
    if ( 0 == strcasecmp(test.c_str(), "LPBK1") ||
@@ -607,50 +434,20 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
         0 == strcasecmp(test.c_str(), "WRITE") ||
         0 == strcasecmp(test.c_str(), "TRPUT")) {
 
-      fprintf(fp, "      <MULTI-CL>  = --multi-cl=M       OR --mcl=M,  where M =one of { 1 2 4 },                      ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_MULTICL) ) {
-            fprintf(fp, "%llu\n", nlbcl->multicls);
-         } else {
-            fprintf(fp, "Default=%llu\n", nlbcl->defaults.multicls);
-         }
-   }
+      cout << "      <TIMEOUT>       = --timeout-usec=T,                   Timeout for --cont mode (microseconds portion),        ";
+      cout << "Default=" << nlbcl->defaults.to_usec << endl;
 
-   if ( 0 == strcasecmp(test.c_str(), "READ")  ||
-        0 == strcasecmp(test.c_str(), "WRITE") ||
-        0 == strcasecmp(test.c_str(), "TRPUT")) {
+      cout << "                        --timeout-msec=T,                   Timeout for --cont mode (milliseconds portion),        ";
+      cout << "Default=" << nlbcl->defaults.to_msec << endl;
 
-       fprintf(fp, "      <STRIDES>   = --strided-access=S OR --sa=S,   %llu <= S <= %2llu,                                   ",
-               nlbcl->defaults.min_strides, nlbcl->defaults.max_strides);
-       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_STRIDED_ACS) ) {
-               fprintf(fp, "%llu\n", nlbcl->strided_acs);
-            } else {
-               fprintf(fp, "Default=%llu\n", nlbcl->defaults.min_strides);
-            }
-   }
+      cout << "                        --timeout-sec=T,                    Timeout for --cont mode (seconds portion),             ";
+      cout << "Default=" << nlbcl->defaults.to_sec << endl;
 
-   if ( 0 == strcasecmp(test.c_str(), "READ") ||
-	    0 == strcasecmp(test.c_str(), "WRITE")) {
+      cout << "                        --timeout-min=T,                    Timeout for --cont mode (minutes portion),             ";
+      cout << "Default=" << nlbcl->defaults.to_min << endl;
 
-      fprintf(fp, "      <FPGA-CACHE>= --warm-fpga-cache  OR --wfc,    attempt to prime the cache with hits,           ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE) ) {
-         fprintf(fp, "yes\n");
-      } else {
-         fprintf(fp, "Default=%s\n", nlbcl->defaults.warmfpgacache);
-      }
-
-      fprintf(fp, "                    --cool-fpga-cache  OR --cfc,    attempt to prime the cache with misses,         ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_COOL_FPGA_CACHE) ) {
-         fprintf(fp, "yes\n");
-      } else {
-         fprintf(fp, "Default=%s\n", nlbcl->defaults.coolfpgacache);
-      }
-
-      fprintf(fp, "      <CPU-CACHE> = --cool-cpu-cache   OR --ccc,    attempt to prime the cpu cache with misses,     ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE) ) {
-    	 fprintf(fp, "yes\n");
-      } else {
-    	 fprintf(fp, "Default=%s\n", nlbcl->defaults.coolcpucache);
-      }
+      cout << "                        --timeout-hour=T,                   Timeout for --cont mode (hours portion),               ";
+      cout << "Default=" <<  nlbcl->defaults.to_hour << endl;
    }
 
    if ( 0 == strcasecmp(test.c_str(), "LPBK1") ||
@@ -658,85 +455,8 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
         0 == strcasecmp(test.c_str(), "TRPUT") ||
         0 == strcasecmp(test.c_str(), "SW") ) {
 
-      fprintf(fp, "      <WRITES>    = --wrline-I	       OR --wli,    write-through cache behavior,                   ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_I) ) {
-         fprintf(fp, "on\n");
-      } else {
-         fprintf(fp, "Default=%s\n", nlbcl->defaults.wli);
-      }
-
-      fprintf(fp, "                    --wrline-M	       OR --wlm,    write-back cache behavior,                      ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_M) ) {
-         fprintf(fp, "on\n");
-      } else {
-         fprintf(fp, "Default=%s\n", nlbcl->defaults.wlm);
-      }
-
-      fprintf(fp, "                    --wrpush-I	       OR --wpi,    write-push cache behavior,                      ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRPUSH_I) ) {
-		 fprintf(fp, "on\n");
-	  } else {
-		 fprintf(fp, "Default=%s\n", nlbcl->defaults.wpi);
-	  }
-   }
-
-   if ( 0 == strcasecmp(test.c_str(), "SW") ) {
-
-   	  fprintf(fp, "      <CONT>                   (SW is a non-continuous mode-only test)                              off\n");
-   } else if ( 0 != strcasecmp(test.c_str(), "ATOMIC") ){
-
-         fprintf(fp, "      <CONT>      = --cont,                         continuous mode,                                ");
-         if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_CONT) ) {
-            fprintf(fp, "on\n");
-         } else {
-            fprintf(fp, "Default=%s\n", nlbcl->defaults.cont);
-         }
-   }
-
-   if ( 0 != strcasecmp(test.c_str(), "ATOMIC") ) {
-
-      fprintf(fp, "      <FREQ>      = --clock-freq=T     OR --f=T,    Clock frequency in Hz,                          Default=400 MHz\n");
-   }
-
-   if ( 0 == strcasecmp(test.c_str(), "LPBK1") ||
-	    0 == strcasecmp(test.c_str(), "READ")  ||
-	    0 == strcasecmp(test.c_str(), "WRITE") ||
-	    0 == strcasecmp(test.c_str(), "TRPUT")) {
-
-	   fprintf(fp, "      <TIMEOUT>   = --timeout-usec=T   OR --tu=T,   timeout for --cont mode (microseconds portion), ");
-	   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_TOUSEC) ) {
-		  fprintf(fp, "%ld\n", nlbcl->to_usec);
-	   } else {
-		  fprintf(fp, "Default=%ld\n", nlbcl->defaults.to_usec);
-	   }
-
-	   fprintf(fp, "                    --timeout-msec=T   OR --tms=T,  timeout for --cont mode (milliseconds portion), ");
-	   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_TOMSEC) ) {
-		  fprintf(fp, "%ld\n", nlbcl->to_msec);
-	   } else {
-		  fprintf(fp, "Default=%ld\n", nlbcl->defaults.to_msec);
-	   }
-
-	   fprintf(fp, "                    --timeout-sec=T    OR --ts=T,   timeout for --cont mode (seconds portion),      ");
-	   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_TOSEC) ) {
-		  fprintf(fp, "%ld\n", nlbcl->to_sec);
-	   } else {
-		  fprintf(fp, "Default=%ld\n", nlbcl->defaults.to_sec);
-	   }
-
-	   fprintf(fp, "                    --timeout-min=T    OR --tmi=T,  timeout for --cont mode (minutes portion),      ");
-	   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_TOMIN) ) {
-		  fprintf(fp, "%ld\n", nlbcl->to_min);
-	   } else {
-		  fprintf(fp, "Default=%ld\n", nlbcl->defaults.to_min);
-	   }
-
-	   fprintf(fp, "                    --timeout-hour=T   OR --th=T,   timeout for --cont mode (hours portion),        ");
-	   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_TOHOUR) ) {
-		  fprintf(fp, "%ld\n", nlbcl->to_hour);
-	   } else {
-		  fprintf(fp, "Default=%ld\n", nlbcl->defaults.to_hour);
-	   }
+      cout << "      <CACHE-POLICY>  = --cache-policy=P       OR  -p=P,    Where P =one of { wrline-I wrline-M wrpush-I }         ";
+      cout << "Default=" << nlbcl->defaults.cachepolicy << endl;
    }
 
    if ( 0 == strcasecmp(test.c_str(), "LPBK1") ||
@@ -744,218 +464,77 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
         0 == strcasecmp(test.c_str(), "TRPUT") ||
         0 == strcasecmp(test.c_str(), "SW") ) {
 
-      fprintf(fp, "      <RDSEL>     = --rds,                          readline-shared,                                ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_RDS) ) {
-         fprintf(fp, "yes\n");
-      } else {
-         fprintf(fp, "Default=%s\n", nlbcl->defaults.rds);
-      }
-
-      fprintf(fp, "                  = --rdi,                          readline-invalidate,                            ");
-	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_RDI) ) {
-	     fprintf(fp, "yes\n");
-	  } else {
-	     fprintf(fp, "Default=%s\n", nlbcl->defaults.rdi);
-	  }
+      cout << "      <CACHE-HINT>    = --cache-hint=I         OR  -i=I,    Where I =one of { rdline-I rdline-S }                  ";
+      cout << "Default=" << nlbcl->defaults.cachehint << endl;
    }
 
-   if ( 0 == strcasecmp(test.c_str(), "SW")) {
+   if ( 0 == strcasecmp(test.c_str(), "READ") ||
+        0 == strcasecmp(test.c_str(), "WRITE")) {
 
-      fprintf(fp, "      <NOTICE>    = --poll             OR --p,      Polling-method,                                 ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_POLL) ) {
-         fprintf(fp, "yes\n");
-      } else {
-         fprintf(fp, "Default=%s\n", nlbcl->defaults.poll);
-      }
+      cout << "      <FPGA-CACHE>    = --warm-fpga-cache      OR  -H,      Attempt to prime the cache with hits,                  ";
+      cout << "Default=" << nlbcl->defaults.warmfpgacache << endl;
 
-      fprintf(fp, "                  = --csr-write        OR --cw,     CSR Write,                                      ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_CSR_WRITE) ) {
-         fprintf(fp, "yes\n");
-      } else {
-         fprintf(fp, "Default=%s\n", nlbcl->defaults.csr_write);
-      }
+      cout << "                        --cool-fpga-cache      OR  -M,      Attempt to prime the cache with misses,                ";
+      cout << "Default=" << nlbcl->defaults.coolfpgacache << endl;
 
-      fprintf(fp, "                  = --umsg-data        OR --ud,     UMsg with data,                                 ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_DATA) ) {
-    	 fprintf(fp, "yes\n");
-      } else {
-    	 fprintf(fp, "Default=%s\n", nlbcl->defaults.umsg_data);
-      }
-
-      fprintf(fp, "                  = --umsg-hint        OR --uh,     UMsg Hint without data,                         ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_HINT) ) {
-    	 fprintf(fp, "yes\n");
-      } else {
-    	 fprintf(fp, "Default=%s\n", nlbcl->defaults.umsg_hint);
-      }
+      cout << "      <CPU-CACHE>     = --cool-cpu-cache       OR  -C,      Attempt to prime the cpu cache with misses,            ";
+      cout << "Default=" << nlbcl->defaults.coolcpucache << endl;
    }
 
    if ( 0 == strcasecmp(test.c_str(), "LPBK1") ||
         0 == strcasecmp(test.c_str(), "READ")  ||
-	    0 == strcasecmp(test.c_str(), "WRITE") ||
-	    0 == strcasecmp(test.c_str(), "TRPUT") ||
+        0 == strcasecmp(test.c_str(), "TRPUT") ||
         0 == strcasecmp(test.c_str(), "SW"))   {
 
-      fprintf(fp, "      <READ-VC>   = --read-va,         OR --rva,    Auto Mode for reads,                            ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VA) ) {
-    	  fprintf(fp, "yes\n");
-      }  else {
-    	  fprintf(fp, "Default=%s\n", nlbcl->defaults.rva);
-      }
-
-      fprintf(fp, "                    --read-vl0,        OR --rvl0,   Low Latency Channel 0 for reads,                ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VL0) ) {
-    	 fprintf(fp, "yes\n");
-      } else {
-    	 fprintf(fp, "Default=%s\n", nlbcl->defaults.rvl0);
-      }
-
-      fprintf(fp, "                    --read-vh0,        OR --rvh0,   High Latency Channel 0 for reads,               ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VH0) ) {
-    	 fprintf(fp, "yes\n");
-      } else {
-    	 fprintf(fp, "Default=%s\n", nlbcl->defaults.rvh0);
-      }
-
-      fprintf(fp, "                    --read-vh1,        OR --rvh1,   High Latency Channel 1 for reads,               ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VH1) ) {
-    	 fprintf(fp, "yes\n");
-      } else {
-    	 fprintf(fp, "Default=%s\n", nlbcl->defaults.rvh1);
-      }
-
-      fprintf(fp, "                    --read-vr,         OR --rvr,    Randomly Chosen Channel for reads,              ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VR) ) {
-       fprintf(fp, "yes\n");
-      } else {
-       fprintf(fp, "Default=%s\n", nlbcl->defaults.rvr);
-      }
-
-      fprintf(fp, "      <WRITE-VC>  = --write-va,        OR --wva,    Auto Mode for writes,                           ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VA) ) {
-       fprintf(fp, "yes\n");
-      } else {
-       fprintf(fp, "Default=%s\n", nlbcl->defaults.wva);
-      }
-
-      fprintf(fp, "                    --write-vl0,       OR --wvl0,   Low Latency Channel 0 for writes,               ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VL0) ) {
-       fprintf(fp, "yes\n");
-      } else {
-       fprintf(fp, "Default=%s\n", nlbcl->defaults.wvl0);
-      }
-
-      fprintf(fp, "                    --write-vh0,       OR --wvh0,   High Latency Channel 0 for writes,              ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VH0) ) {
-       fprintf(fp, "yes\n");
-      } else {
-       fprintf(fp, "Default=%s\n", nlbcl->defaults.wvh0);
-      }
-
-      fprintf(fp, "                    --write-vh1,       OR --wvh1,   High Latency Channel 1 for writes,              ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VH1) ) {
-       fprintf(fp, "yes\n");
-      } else {
-       fprintf(fp, "Default=%s\n", nlbcl->defaults.wvh1);
-      }
-
-      fprintf(fp, "                    --write-vr,        OR --wvr,    Randomly Chosen Channel for writes,             ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VR) ) {
-       fprintf(fp, "yes\n");
-      } else {
-       fprintf(fp, "Default=%s\n", nlbcl->defaults.wvr);
-      }
-
-      fprintf(fp, "      <WR-FENCE>  = --wrfence-va,      OR --wrfva,  Auto Mode for write fence,                      ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VA) ) {
-       fprintf(fp, "yes\n");
-      } else {
-       fprintf(fp, "Default=%s\n", nlbcl->defaults.wrfva);
-      }
-
-      fprintf(fp, "                    --wrfence-vl0,     OR --wrfvl0, Low Latency Channel 0 for write fence,          ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VL0) ) {
-       fprintf(fp, "yes\n");
-      } else {
-       fprintf(fp, "Default=%s\n", nlbcl->defaults.wrfvl0);
-      }
-
-      fprintf(fp, "                    --wrfence-vh0,     OR --wrfvh0, High Latency Channel 0 for write fence,         ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VH0) ) {
-       fprintf(fp, "yes\n");
-      } else {
-       fprintf(fp, "Default=%s\n", nlbcl->defaults.wrfvh0);
-      }
-
-      fprintf(fp, "                    --wrfence-vh1,     OR --wrfvh1, High Latency Channel 1 for write fence,         ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VH1) ) {
-       fprintf(fp, "yes\n");
-      } else {
-       fprintf(fp, "Default=%s\n", nlbcl->defaults.wrfvh1);
-      }
+      cout << "      <READ-VC>       = --read-vc=R,           OR  -r=R,    Where R =one of { auto vl0 vh0 vh1 random }            ";
+      cout << "Default=" << nlbcl->defaults.readvc << endl;
    }
 
-   if ( 0 == strcasecmp(test.c_str(), "WRITE"))
-   {
-      fprintf(fp, "      <WR-PATTERN>= --alt-wr-pattern   OR --awp,    Alternate Write Pattern,                        ");
-      fprintf(fp, "Default=%s\n", nlbcl->defaults.awp);
+   if ( 0 == strcasecmp(test.c_str(), "LPBK1") ||
+        0 == strcasecmp(test.c_str(), "WRITE") ||
+        0 == strcasecmp(test.c_str(), "TRPUT") ||
+        0 == strcasecmp(test.c_str(), "SW"))   {
+
+      cout << "      <WRITE-VC>      = --write-vc=W,          OR  -w=W,    Where R =one of { auto vl0 vh0 vh1 random }            ";
+      cout << "Default=" << nlbcl->defaults.writevc << endl;
+
+      cout << "      <WRFENCE-VC>    = --wrfence-vc=F,        OR  -f=F,    Where R =one of { auto vl0 vh0 vh1 }                   ";
+      cout << "Default=" << nlbcl->defaults.wrfencevc << endl;
    }
 
-   if ( 0 == strcasecmp(test.c_str(), "ATOMIC"))
-   {
-      fprintf(fp, "      <SUB-MODE>  = --shared-token     OR --st,     CmpXchg is lock-stepped between SW and HW,      ");
-      fprintf(fp, "Default=%s\n", nlbcl->defaults.st);
+   if ( 0 == strcasecmp(test.c_str(), "WRITE")){
 
-      fprintf(fp, "                  = --separate-token   OR --ut,     CmpXchg is independent on SW and HW,            ");
-      fprintf(fp, "Default=%s\n", nlbcl->defaults.ut);
-
-      fprintf(fp, "      <QUAD-WORD> = --hardware-qw=H    OR --hqw=H,  where %llu <= H <= %llu,                              ",
-              nlbcl->defaults.minhqw, nlbcl->defaults.maxhqw);
-      fprintf(fp, "Default=%llu\n", nlbcl->defaults.hqw);
-
-      fprintf(fp, "                  = --software-qw=S    OR --sqw=S,  where %llu <= S <= %llu,                              ",
-              nlbcl->defaults.minsqw, nlbcl->defaults.maxsqw);
-      fprintf(fp, "Default=%llu\n", nlbcl->defaults.sqw);
-
-      fprintf(fp, "      <CMP-XCHG>  = --cmp-xchg=C       OR --cx=C,   where %llu <= C <= %llu,                          ",
-              nlbcl->defaults.mincx, nlbcl->defaults.maxcx);
-      fprintf(fp, "Default=%llu\n", nlbcl->defaults.cx);
-
+      cout << "      <WR-PATTERN>    = --alt-wr-pattern       OR  -l,      Alternate Write Pattern,                               ";
+      cout << "Default=" << nlbcl->defaults.awp << endl;
    }
 
-   fprintf(fp, "      <BUS>       = --bus-number       OR --bn,     Bus number of the PCIe device,                  ");
-   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER) ) {
-	   fprintf(fp, "%d\n", nlbcl->busnum);
-   } else {
-	   fprintf(fp, "Default=%d\n", nlbcl->defaults.busnum);
+   if ( 0 == strcasecmp(test.c_str(), "SW")) {
+
+      cout << "      <NOTICE>        = --notice=O             OR  -N=O,    Where O =one of { poll csr-write umsg-data umsg-hint } ";
+      cout << "Default=" << nlbcl->defaults.notice << endl;
    }
 
-   fprintf(fp, "      <DEVICE>    = --device-number    OR --dn,     Device number of the PCIe device,               ");
-   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER) ) {
-	   fprintf(fp, "%d\n", nlbcl->devnum);
-   } else {
-	   fprintf(fp, "Default=%d\n", nlbcl->defaults.devnum);
-   }
+   cout << "      <BUS>           = --bus-number=0xN       OR  -B=0xN,  Bus number of the PCIe device,                         ";
+   cout << "Default=" << nlbcl->defaults.busnum << endl;
 
-   fprintf(fp, "      <FUNCTION>  = --function-number  OR --fn,     Function number of the PCIe device,             ");
-   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER) ) {
-	   fprintf(fp, "%d\n", nlbcl->funnum);
-   } else {
-	   fprintf(fp, "Default=%d\n", nlbcl->defaults.funnum);
-   }
+   cout << "      <DEVICE>        = --device-number=0xN    OR  -D=0xN,  Device number of the PCIe device,                      ";
+   cout << "Default=" << nlbcl->defaults.devnum << endl;
 
-   fprintf(fp, "      <OUTPUT>    = --suppress-hdr     OR --sh,     suppress column headers for text output,        ");
-   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-	  fprintf(fp, "yes\n");
-   } else {
-	  fprintf(fp, "Default=%s\n", nlbcl->defaults.suppresshdr);
-   }
+   cout << "      <FUNCTION>      = --function-number=0xN  OR  -F=0xN,  Function number of the PCIe device,                    ";
+   cout << "Default=" << nlbcl->defaults.funnum << endl;
 
-   fprintf(fp, "\n");
-}
+   cout << "      <SUB-DEVICE>    = --sub-device=D         OR  -d=D,    Where D is the Sub-device Number,                      ";
+   cout << "Default is not set\n";
 
-void MyNLBShowHelp(FILE *fp, aalclp_gcs_compliance_data *gcs) {
-   nlb_help_message_callback(fp, gcs);
+   cout << "      <FREQ>          = --clock-freq=T         OR  -f=T,    Clock frequency in Hz,                                 Default=400 MHz\n";
+
+   cout << "      <OUTPUT>        = --suppress-hdr         OR  -S,      Suppress column headers for text output,               ";
+   cout << "Default=" << nlbcl->defaults.suppresshdr << endl;
+
+   cout << "                      = --csv                  OR  -V,      Comma separated value format,                          ";
+//   cout << "Default=" << nlbcl->defaults.csv << endl;
+
+   cout << endl;
 }
 
 END_C_DECLS
@@ -963,8 +542,6 @@ END_C_DECLS
 // false indicates error.
 bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
 {
-   //cfg.SetAsynchronous(false);
-
    // --begin=X
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BEGINCL) ) {
       if ( cmd.begincls < cmd.defaults.mincls ) {
@@ -986,6 +563,7 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
 			  return false;
 			}
       }
+
       if ( cmd.begincls > cmd.defaults.maxcls ) {
          os << cmd.TestMode << " allows at most " << cmd.defaults.maxcls << " cache line";
          if ( cmd.defaults.maxcls > 1 ) {
@@ -1139,7 +717,7 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
    }
 
    if ( flags_are_clr(cmd.cmdflags, NLB_CMD_FLAG_RDI)) {
-   	   os << "WARNING: No option selected for <RDSEL>. Defaulting to --rdi." << endl;
+   	   os << "WARNING: No option selected for <CACHE-HINT>. Defaulting to --rdline-I." << endl;
    	   flag_setf(cmd.cmdflags, NLB_CMD_FLAG_RDI);
    }
    /**********************************************************************/
@@ -1150,71 +728,54 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
    }
 
    // --poll, --csr-write, --umsg-data, --umsg-hint
-
-   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_POLL|NLB_CMD_FLAG_CSR_WRITE) ||
-		flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_POLL|NLB_CMD_FLAG_UMSG_DATA) ||
-		flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_POLL|NLB_CMD_FLAG_UMSG_HINT) ||
-		flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_CSR_WRITE|NLB_CMD_FLAG_UMSG_DATA) ||
-		flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_CSR_WRITE|NLB_CMD_FLAG_UMSG_HINT) ||
-		flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_DATA|NLB_CMD_FLAG_UMSG_HINT)) {
+   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_POLL|NLB_CMD_FLAG_CSR_WRITE)      ||
+        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_POLL|NLB_CMD_FLAG_UMSG_DATA)      ||
+        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_POLL|NLB_CMD_FLAG_UMSG_HINT)      ||
+        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_CSR_WRITE|NLB_CMD_FLAG_UMSG_DATA) ||
+        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_CSR_WRITE|NLB_CMD_FLAG_UMSG_HINT) ||
+        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_DATA|NLB_CMD_FLAG_UMSG_HINT)) {
 	    os << "--poll --csr-write --umsg-data and --umsg-hint are mutually exclusive." << endl;
 	    return false;
    }
 
    // --va, --vl0, --vh0, --vh1, --vr
 
-    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VA|NLB_CMD_FLAG_READ_VL0)||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VA|NLB_CMD_FLAG_READ_VH0)  ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VA|NLB_CMD_FLAG_READ_VH1)  ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0|NLB_CMD_FLAG_READ_VH0) ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0|NLB_CMD_FLAG_READ_VH1) ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH0|NLB_CMD_FLAG_READ_VH1) ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VA|NLB_CMD_FLAG_READ_VR)   ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0|NLB_CMD_FLAG_READ_VR)  ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH0|NLB_CMD_FLAG_READ_VR)  ||
-    	 flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH1|NLB_CMD_FLAG_READ_VR) ) {
+    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VA|NLB_CMD_FLAG_READ_VL0) ||
+         flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VA|NLB_CMD_FLAG_READ_VH0) ||
+         flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VA|NLB_CMD_FLAG_READ_VH1) ||
+         flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0|NLB_CMD_FLAG_READ_VH0)||
+         flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0|NLB_CMD_FLAG_READ_VH1)||
+         flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH0|NLB_CMD_FLAG_READ_VH1)||
+         flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VA|NLB_CMD_FLAG_READ_VR)  ||
+         flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0|NLB_CMD_FLAG_READ_VR) ||
+         flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH0|NLB_CMD_FLAG_READ_VR) ||
+         flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH1|NLB_CMD_FLAG_READ_VR) ) {
     	 os << "--read-va, --read-vl0, --read-vh0, --read-vh1 and --read-vr are mutually exclusive." << endl;
     	 return false;
     }
 
-    // --va, --vl0, --vh0, --vh1, --vr
-
-     if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VA|NLB_CMD_FLAG_WRITE_VL0)||
-        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VA|NLB_CMD_FLAG_WRITE_VH0)  ||
-        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VA|NLB_CMD_FLAG_WRITE_VH1)  ||
-        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VL0|NLB_CMD_FLAG_WRITE_VH0) ||
-        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VL0|NLB_CMD_FLAG_WRITE_VH1) ||
-        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH0|NLB_CMD_FLAG_WRITE_VH1) ||
-        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VA|NLB_CMD_FLAG_WRITE_VR)   ||
-        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VL0|NLB_CMD_FLAG_WRITE_VR)  ||
-        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH0|NLB_CMD_FLAG_WRITE_VR)  ||
-        flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH1|NLB_CMD_FLAG_WRITE_VR) ) {
+     if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VA|NLB_CMD_FLAG_WRITE_VL0)  ||
+          flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VA|NLB_CMD_FLAG_WRITE_VH0)  ||
+          flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VA|NLB_CMD_FLAG_WRITE_VH1)  ||
+          flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VL0|NLB_CMD_FLAG_WRITE_VH0) ||
+          flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VL0|NLB_CMD_FLAG_WRITE_VH1) ||
+          flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH0|NLB_CMD_FLAG_WRITE_VH1) ||
+          flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VA|NLB_CMD_FLAG_WRITE_VR)   ||
+          flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VL0|NLB_CMD_FLAG_WRITE_VR)  ||
+          flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH0|NLB_CMD_FLAG_WRITE_VR)  ||
+          flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH1|NLB_CMD_FLAG_WRITE_VR) ) {
         os << "--write-va, --write-vl0, --write-vh0, --write-vh1 and --write-vr are mutually exclusive." << endl;
         return false;
      }
 
-   // --wt, --wb, --pwr
-
+   // --wrline-I, --wrline-M and --wrpush-I
    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_M|NLB_CMD_FLAG_WRLINE_I) ||
-	    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_M|NLB_CMD_FLAG_WRPUSH_I) ||
-	    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRPUSH_I|NLB_CMD_FLAG_WRLINE_I) ) {
+	     flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_M|NLB_CMD_FLAG_WRPUSH_I) ||
+	     flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WRPUSH_I|NLB_CMD_FLAG_WRLINE_I) ) {
       os << "--wrline-I, --wrline-M and --wrpush-I are mutually exclusive." << endl;
       return false;
    }
 
-/*   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_M|NLB_CMD_FLAG_WRPUSH_I) ||
-        flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_I) ) {
-      // force --wb on; force --wt off.
-
-      flag_setf(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_M);
-      flag_clrf(cmd.cmdflags, NLB_CMD_FLAG_WRPUSH_I);
-   } else {
-      // force --wb off; force --wt on.
-
-      flag_clrf(cmd.cmdflags, NLB_CMD_FLAG_WRLINE_M);
-      flag_setf(cmd.cmdflags, NLB_CMD_FLAG_WRPUSH_I);
-   }
-*/
    // --warm-fpga-cache and --cool-fpga-cache
    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE|NLB_CMD_FLAG_COOL_FPGA_CACHE) ) {
       os << "--warm-fpga-cache and --cool-fpga-cache are mutually exclusive." << endl;
@@ -1226,7 +787,6 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
 #if   defined( __AAL_WINDOWS__ )
 
 #elif defined( __AAL_LINUX__ )
-
       if ( flags_are_clr(cmd.cmdflags, NLB_CMD_FLAGS_TO) ) {
          // no timeout given - use defaults
          cmd.to_usec = cmd.defaults.to_usec;
@@ -1235,7 +795,6 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
          cmd.to_min  = cmd.defaults.to_min;
          cmd.to_hour = cmd.defaults.to_hour;
       }
-
 # define NORM_TS(x)                                   \
 do                                                    \
 {                                                     \
@@ -1256,28 +815,16 @@ do                                                            \
 }while(0)
 
       struct timespec ts = { 0, 0 };
-
       CALC_TIME(ts);
-
       cmd.timeout = ts;
-
-      //TODO cfg.SetContinuous(true);
-      //TODO cfg.SetContModeTimeout(Timer(&ts));
 
 # undef CALC_TIME
 # undef NORM_TS
 #endif // OS
    } else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAGS_TO) ) {
-      os << "--timeout-* are meaningful only when --cont is also given." << endl;
+      os << "--timeout-* is meaningful only when --cont is also given." << endl;
       return false;
    }
-
-   // --clock-freq
-
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CLKFREQ) ) {
-	   //TODO cfg.SetFPGAClkFreqHz(cmd.clkfreq);
-   }
-
    return true;
 }
 
