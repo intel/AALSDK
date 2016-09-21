@@ -651,12 +651,20 @@ OSAL_API btInt GetNumProcessors()
 OSAL_API btUnsigned32bitInt GetRand(btUnsigned32bitInt *storage)
 {
    ASSERT(NULL != storage);
+
+   unsigned int seed = 0;
+   // if the storage is NULL, use zero as the seed and call this
+   // function recursively (ensuring not to pass NULL as the storage)
+   if (NULL == storage){
+      return GetRand(&seed);
+   }
+
 #if   defined( __AAL_WINDOWS__ )
-   unsigned int seed = (unsigned int)*storage;
+   seed = (unsigned int)*storage;
    ::rand_s(&seed);
    return (*storage = (btUnsigned32bitInt)seed);
 #elif defined( __AAL_LINUX__ )
-   unsigned int       seed = (unsigned int)*storage;
+   seed = (unsigned int)*storage;
    btUnsigned32bitInt val  = (btUnsigned32bitInt) ::rand_r(&seed);
    *storage = (btUnsigned32bitInt)seed;
    return val;
