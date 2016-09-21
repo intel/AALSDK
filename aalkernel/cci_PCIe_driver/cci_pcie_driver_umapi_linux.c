@@ -341,6 +341,12 @@ int ccidrv_ioctl(struct inode *inode,
    //   user mode request.
    //-------------------------------------------------------------------------------------------
    pfullresponse = (struct ccipui_ioctlreq *) kosal_kzmalloc(FullRequestSize);
+   ASSERT(NULL != pfullresponse);
+   if( NULL == pfullresponse) {
+      PERR("Unable to allocate memory \n");
+      ret = -ENOMEM;
+      return ret;
+   }
 
    // Limit on response payload.  This will be changed by the request processor to the actual return size
    //  or zero if no response data.
