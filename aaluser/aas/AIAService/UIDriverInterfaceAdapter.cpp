@@ -55,6 +55,11 @@ btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr 
    int mmapFlags;               // mmap flags
 
    ASSERT(NULL != pRet);
+   if (NULL == pRet)
+   {
+      return false;
+   }
+
 #if defined( __AAL_LINUX__ )
    // extract target VA from optArgs
    if ( ENamedValuesOK == optArgs.Get(ALI_MMAP_TARGET_VADDR, &pTargetVirtAddr) ) {
