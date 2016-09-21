@@ -283,7 +283,9 @@ int CResMgr::Parse_AALRMS_Msg(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
       break;
    } // End of case reqid_URMS_ReleaseDevice:
    case reqid_RS_Registrar: {
-      Retval = DoRegistrar( fdServer, pIoctlReq);
+      AAL_ERR(LM_ResMgr, "CResMgr::Parse_AALRMS_Msg: reqid_RS_Registrar is deprecated" 
+            << std::endl);
+      Retval = EINVAL; // deprecated request code
       break;
    } // end of case reqid_Registrar:
 
@@ -519,77 +521,6 @@ int CResMgr::DoReleaseDevice(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
    // Respond
    return Send_AALRMS_Msg(fdServer, pIoctlReq);
 }
-
-//=============================================================================
-// Name:          CResMgr::DoRegistrar
-// Description:   Handle reqid_RS_Registrar for the parser
-// Interface:     public
-// Inputs:        fdServer - file index - NOT CHECKED FOR VALIDITY
-//                pIoctlReq - ioctl structure - NOT CHECKED FOR VALIDITY
-// Outputs:
-// Returns:       0 for Success, errno for failure, with perror having already
-//                been called.
-// Comments:
-//=============================================================================
-int CResMgr::DoRegistrar(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
-{
-
-#if 0
-   AAL_DEBUG(LM_ResMgr,"CResMgr::DoRegistrar: reqid_Registrar seen\n");
-   int Retval;
-
-   if (pIoctlReq->size) { // only do anything if there is something to do
-
-      // extract the RegistrarCmdResp_t
-      pRegistrarCmdResp_t pRCR =
-            reinterpret_cast<pRegistrarCmdResp_t> (pIoctlReq->payload);
-      AAL_DEBUG(LM_ResMgr,"CResMgr::DoRegistrar: RECEIVED RegistrarCmdResp is:\n" << *pRCR << std::endl);
-      // execute the database command, collect the response in pResp
-      // TODO: use auto_ptr here, see how it affects other calls using the pointer type
-      pRegistrarCmdResp_t pResp = m_pRegDBSkeleton->ParseCommand(pRCR);
-      if (NULL == pResp) {
-         AAL_DEBUG(LM_ResMgr,"CResMgr::DoRegistrar: RESPONSE RegistrarCmdResp is NULL\n");
-      } else {
-         AAL_DEBUG(LM_ResMgr,"CResMgr::DoRegistrar: RESPONSE RegistrarCmdResp is:\n" << *pResp << std::endl);
-      }
-
-      // Done with the input payload, free it
-      if (pIoctlReq->payload)
-         delete[] pIoctlReq->payload; // matches allocation in Get_AALRMS_Msg
-
-      // Setup static fields in response IoctlReq
-      pIoctlReq->id = rspid_RS_Registrar;
-
-      // Setup response-specific  fields
-      if (pResp) {
-         pIoctlReq->size = pResp->LengthOfStruct;
-         pIoctlReq->payload = reinterpret_cast<btVirtAddr>(pResp);
-         pIoctlReq->result_code = rms_resultOK;
-      } else {
-         // valid to have no return, but still have to respond to the kernel so it can clear itself
-         pIoctlReq->size = 0;
-         pIoctlReq->payload = NULL;
-         pIoctlReq->result_code = rms_resultOK;
-      }
-
-      // Send the response
-      Retval = Send_AALRMS_Msg(fdServer, pIoctlReq);
-
-      // Delete the (now sent) response
-      //       RegistrarCmdResp_Destroy(pResp); // Now handled in top loop
-
-   } else { // No buffer provided by client, still have to clean up
-      AAL_DEBUG(LM_ResMgr,"CResMgr::DoRegistrar:reqid_Registrar sees null payload. Invalid parameter. Sending clear message.\n");
-      pIoctlReq->id = rspid_RS_Registrar;
-      pIoctlReq->size = 0;
-      pIoctlReq->payload = NULL;
-      pIoctlReq->result_code = rms_resultOK;
-      Send_AALRMS_Msg(fdServer, pIoctlReq);
-      Retval = EINVAL;
-   }
-   return Retval;
-#endif
-} // CResMgr::DoRegistrar
 
 //=============================================================================
 // Name:          CResMgr::DoShutdown
