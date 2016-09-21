@@ -27,4 +27,4 @@
 #Sanity check for nlb400_7 bitstream
 #SW test
 
-./fpgadiag --target=fpga --mode=sw --begin=65530 --umsg-data
+./fpgadiag --target=fpga --mode=sw --begin=65530 --notice=umsg-data

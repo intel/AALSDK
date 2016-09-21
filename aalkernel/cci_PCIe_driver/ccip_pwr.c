@@ -178,6 +178,12 @@ btBool cci_create_AAL_power_Device(struct ccip_device * pccipdev)
                                                        &aalid,             // AAL ID
                                                        &cci_PWRpip);
 
+   //CCI device object create fails, delete Power AAL device
+   if(NULL == cci_aaldev_to_aaldev(pcci_aaldev) ){
+      cci_destroy_aal_device(pcci_aaldev);
+      return false;
+   }
+
    //===========================================================
    // Set up the optional aal_device attributes
    //

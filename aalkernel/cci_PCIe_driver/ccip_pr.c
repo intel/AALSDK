@@ -440,6 +440,11 @@ void ccipdrv_event_afu_aysnc_pr_release_send(struct pr_program_context *ppr_prog
 {
    struct ccipdrv_event_afu_response_event *pafuws_evt      = NULL;
    PTRACEIN;
+   // return if PR program context is NULL
+   ASSERT(NULL != ppr_program_ctx);
+   if(NULL == ppr_program_ctx) {
+      return ;
+   }
 
 #ifdef PWRMGR
    //PR failed, Movning Idle cores to online
@@ -497,6 +502,11 @@ void ccipdrv_event_reconfig_event_create_send( struct pr_program_context *ppr_pr
 {
    struct ccipdrv_event_afu_response_event *pafuws_evt      = NULL;
    PTRACEIN;
+   // return if PR program context is NULL
+   ASSERT(NULL != ppr_program_ctx);
+   if(NULL == ppr_program_ctx) {
+      return ;
+   }
 
 #ifdef PWRMGR
    //PR failed, Movning Idle cores to online
@@ -580,6 +590,11 @@ void  ccipdrv_event_activationchange_event_create_send( struct pr_program_contex
 
    struct ccipdrv_event_afu_response_event *pafuws_evt      = NULL;
    PTRACEIN;
+   // return if PR program context is NULL
+   ASSERT(NULL != ppr_program_ctx);
+   if(NULL == ppr_program_ctx) {
+      return ;
+   }
 
    pafuws_evt = ccipdrv_event_activationchange_event_create(respID,
                                                             devhandle,
@@ -1700,6 +1715,12 @@ struct cci_aal_device   *
    cci_aaldev_to_aaldev(pcci_aaldev) =  aaldev_create( "CCIPPR",           // AAL device base name
                                                        paalid,             // AAL ID
                                                        &cci_PRpip);
+
+   //CCI device object create fails, delete PR AAL device
+   if(NULL == cci_aaldev_to_aaldev(pcci_aaldev) ){
+      cci_destroy_aal_device(pcci_aaldev);
+      return NULL;
+   }
 
    // Set up reverse look up. Use aaldev_to_cci_aal_device() to access
    aaldev_context(cci_aaldev_to_aaldev(pcci_aaldev)) = pcci_aaldev;

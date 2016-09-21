@@ -165,14 +165,9 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_WARMFPGACACHE,
       DEFAULT_COOLFPGACACHE,
       DEFAULT_COOLCPUCACHE,
-      DEFAULT_NOBW,
-      DEFAULT_TABULAR,
       DEFAULT_SUPPRESSHDR,
-      DEFAULT_WLI,
-      DEFAULT_WLM,
-      DEFAULT_WPI,
-      DEFAULT_RDS,
-      DEFAULT_RDI,
+      DEFAULT_CACHEPOLICY,
+      DEFAULT_CACHEHINT,
       DEFAULT_CONT,
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
@@ -183,27 +178,13 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_TOMIN,
       DEFAULT_TOHOUR,
 #endif // OS
-      DEFAULT_POLL,
-      DEFAULT_CSR_WRITE,
-      DEFAULT_UMSG_DATA,
-      DEFAULT_UMSG_HINT,
-      DEFAULT_READ_VA,
-      DEFAULT_READ_VL0,
-      DEFAULT_READ_VH0,
-      DEFAULT_READ_VH1,
-      DEFAULT_READ_VR,
-      DEFAULT_WRITE_VA,
-      DEFAULT_WRITE_VL0,
-      DEFAULT_WRITE_VH0,
-      DEFAULT_WRITE_VH1,
-      DEFAULT_WRITE_VR,
-      DEFAULT_WRFENCE_VA,
-      DEFAULT_WRFENCE_VL0,
-      DEFAULT_WRFENCE_VH0,
-      DEFAULT_WRFENCE_VH1,
+      DEFAULT_NOTICE,
+      DEFAULT_READ_VC,
+      DEFAULT_WRITE_VC,
+      DEFAULT_WRFENCE_VC,
       DEFAULT_AWP,
       DEFAULT_ST,
-	  DEFAULT_UT,
+	   DEFAULT_UT,
       DEFAULT_MINCX,
       DEFAULT_MAXCX,
       DEFAULT_CX,
@@ -245,12 +226,12 @@ END_C_DECLS
 BEGIN_C_DECLS
 
 
-AALCLP_DECLARE_GCS_COMPLIANT(stdout,
-                             "fpgadiag",
-                             "0.0.0",
-                             "",
-                             nlb_help_message_callback,
-                             &gCmdLine)
+//AALCLP_DECLARE_GCS_COMPLIANT(stdout,
+//                             "fpgadiag",
+//                             "0.0.0",
+//                             "",
+//                             nlb_help_message_callback,
+//                             &gCmdLine)
 
 int ParseCmds(struct NLBCmdLine * , int , char *[] );
 //int verifycmds(struct NLBCmdLine * );
@@ -806,30 +787,24 @@ void CMyApp::StartVTP()
 
 }
 
-
 int main(int argc, char *argv[])
 {
    btInt res      = 0;
    btInt totalres = 0;
 
    if ( argc < 2 ) {
-	   MyNLBShowHelp(stdout, &_aalclp_gcs_data);
-	   return 1;
+      NLBShowHelp(&gCmdLine);
+      return 1;
    } else if ( 0 != ParseCmds(&gCmdLine, argc, argv) ) {
       cerr << "Error scanning command line." << endl;
       return 2;
-   } else if ( flag_is_set(gCmdLine.flags, MY_CMD_FLAG_HELP|MY_CMD_FLAG_VERSION) ) {
-      return 0; // per GCS
+   }else if ( flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_HELP) ) {
+      return 0; // Exit after displaying the help menu
    } else if ( !NLBVerifyCmdLine(gCmdLine, std::cout) ) {
       return 3;
    }
 
-   if ( flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_HELP) ) {
-       return 0; // Exit after displaying the help menu
-      }
-
-   cout << endl
-        << "FpgaDiag - FPGA Diagnostics Test:" << endl;
+   cout << endl << "FpgaDiag - FPGA Diagnostics Test:" << endl;
 
 #if DBG_HOOK
    cerr << "Waiting for debugger attach.." << endl;
@@ -993,93 +968,6 @@ int main(int argc, char *argv[])
    }
 
    return totalres;
-}
-
-btInt INLB::ResetHandshake()
-{
-   btInt      res = 0;
-   bt32bitCSR csr;
-   bt32bitCSR tmp;
-
-   volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMPhys();
-
-   const btInt StatusTimeoutMillis = 250;
-   btInt MaxPoll = NANOSEC_PER_MILLI(StatusTimeoutMillis);
-
-   // Assert CAFU Reset
-   csr = 0;
-   m_pALIMMIOService->mmioRead32(QLP_CSR_CIPUCTL, &csr);
-   flag_setf(csr, CIPUCTL_RESET_BIT);
-   m_pALIMMIOService->mmioWrite32(QLP_CSR_CIPUCTL, csr);
-
-   // Poll CAFU Status until ready.
-   do
-   {
-      SleepNano(500);
-      MaxPoll -= 500;
-      csr = 0;
-      m_pALIMMIOService->mmioRead32(QLP_CSR_CAFU_STATUS, &csr);
-   }while( flag_is_clr(csr, CAFU_STATUS_READY_BIT) && (MaxPoll >= 0) );
-
-   if ( MaxPoll < 0 ) {
-      cerr << "The maximum timeout for CAFU_STATUS ready bit was exceeded." << endl;
-      return 1;
-   }
-
-   // De-assert CAFU Reset
-   csr = 0;
-   m_pALIMMIOService->mmioRead32(QLP_CSR_CIPUCTL, &csr);
-   flag_clrf(csr, CIPUCTL_RESET_BIT);
-   m_pALIMMIOService->mmioWrite32(QLP_CSR_CIPUCTL, csr);
-
-   tmp = 0;
-   m_pALIMMIOService->mmioRead32(QLP_CSR_CIPUCTL, &tmp);
-   ASSERT(csr == tmp);
-
-
-   const btInt AFUIDTimeoutMillis = 250;
-   MaxPoll = NANOSEC_PER_MILLI(AFUIDTimeoutMillis);
-
-   // zero the DSM status fields
-   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
-
-   // Set DSM base, high then low
-   m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
-
-   // Poll for AFU ID
-   do
-   {
-      SleepNano(500);
-      MaxPoll -= 500;
-   }while( (0 == pAFUDSM->afuid[0]) && (MaxPoll >= 0) );
-
-   if ( MaxPoll < 0 ) {
-      cerr << "The maximum timeout for AFU ID was exceeded." << endl;
-      return 1;
-   }
-
-
-   ASSERT(0x84570612 == pAFUDSM->afuid[0]);
-   if ( 0x84570612 != pAFUDSM->afuid[0] ) {
-      ++res;
-   }
-
-   ASSERT(0x9aeffe5f == pAFUDSM->afuid[1]);
-   if ( 0x9aeffe5f != pAFUDSM->afuid[1] ) {
-      ++res;
-   }
-
-   ASSERT(0x0d824272 == pAFUDSM->afuid[2]);
-   if ( 0x0d824272 != pAFUDSM->afuid[2] ) {
-      ++res;
-   }
-
-   ASSERT(0xc000c966 == pAFUDSM->afuid[3]);
-   if ( 0xc000c966 != pAFUDSM->afuid[3] ) {
-      ++res;
-   }
-
-   return res;
 }
 
 btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize CoolSize, const NLBCmdLine &cmd)
@@ -1377,51 +1265,6 @@ std::string INLB::Normalized(const NLBCmdLine &cmd ) const throw()
 #if defined ( __AAL_WINDOWS__ )
 # define strcasecmp _stricmp
 #endif // __AAL_WINDOWS__
-
-
-BEGIN_C_DECLS
-
-int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
-{
-   int    res;
-   int    clean;
-   aalclp clp;
-
-   res = aalclp_init(&clp);
-   if ( 0 != res ) {
-      cerr << "aalclp_init() failed : " << res << ' ' << strerror(res) << endl;
-      return res;
-   }
-
-   NLBSetupCmdLineParser(&clp, nlbcl);
-
-   res = aalclp_add_gcs_compliance(&clp);
-   if ( 0 != res ) {
-      cerr << "aalclp_add_gcs_compliance() failed : " << res << ' ' << strerror(res) << endl;
-      goto CLEANUP;
-   }
-
-   res = aalclp_scan_argv(&clp, argc, argv);
-   if ( 0 != res ) {
-      cerr << "aalclp_scan_argv() failed : " << res << ' ' << strerror(res) << endl;
-   }
-
-   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_PARSE_ERROR) ) {
-         res = 99;
-      }
-
-CLEANUP:
-   clean = aalclp_destroy(&clp);
-   if ( 0 != clean ) {
-      cerr << "aalclp_destroy() failed : " << clean << ' ' << strerror(clean) << endl;
-   }
-
-   return res;
-}
-
-
-END_C_DECLS
-
 
 /**
 @addtogroup ALIapp

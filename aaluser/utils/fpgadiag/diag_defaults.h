@@ -44,47 +44,28 @@
 
 #include "nlb-specific.h"
 
-#define DEFAULT_BEGINCL     	NLB_MIN_CL
-#define DEFAULT_ENDCL       	NLB_MIN_CL
+#define DEFAULT_BEGINCL     	   NLB_MIN_CL
+#define DEFAULT_ENDCL       	   NLB_MIN_CL
 #define DEFAULT_MULTICL       	1
-#define DEFAULT_DSMPHYS     	0
-#define DEFAULT_SRCPHYS     	0
-#define DEFAULT_DSTPHYS     	0
+#define DEFAULT_DSMPHYS     	   0
+#define DEFAULT_SRCPHYS     	   0
+#define DEFAULT_DSTPHYS     	   0
 #define DEFAULT_WARMFPGACACHE 	"off"
 #define DEFAULT_COOLFPGACACHE 	"off"
-#define DEFAULT_COOLCPUCACHE 	"off"
-#define DEFAULT_NOBW        	"off"
-#define DEFAULT_TABULAR     	"on"
-#define DEFAULT_SUPPRESSHDR 	"off"
-#define DEFAULT_WLI          	"off"
-#define DEFAULT_WLM          	"on"
-#define DEFAULT_WPI          	"off"
-#define DEFAULT_RDS         	"off"
-#define DEFAULT_RDI         	"on"
-#define DEFAULT_CONT        	"off"
-#define DEFAULT_TOUSEC      	0
-#define DEFAULT_TOMSEC      	(DEFAULT_NLB_CONT_TIMEOUT_NS / NANOSEC_PER_MILLI(1))
-#define DEFAULT_TOSEC       	0
-#define DEFAULT_TOMIN       	0
-#define DEFAULT_TOHOUR      	0
-#define DEFAULT_POLL       		"on"
-#define DEFAULT_CSR_WRITE  		"off"
-#define DEFAULT_UMSG_DATA  		"off"
-#define DEFAULT_UMSG_HINT  		"off"
-#define DEFAULT_READ_VA   		"on"
-#define DEFAULT_READ_VL0	   	"off"
-#define DEFAULT_READ_VH0		"off"
-#define DEFAULT_READ_VH1		"off"
-#define DEFAULT_READ_VR       	"off"
-#define DEFAULT_WRITE_VA     	"on"
-#define DEFAULT_WRITE_VL0     	"off"
-#define DEFAULT_WRITE_VH0     	"off"
-#define DEFAULT_WRITE_VH1     	"off"
-#define DEFAULT_WRITE_VR      	"off"
-#define DEFAULT_WRFENCE_VA    	"<WRITE-VC>"
-#define DEFAULT_WRFENCE_VL0   	"<WRITE-VC>"
-#define DEFAULT_WRFENCE_VH0   	"<WRITE-VC>"
-#define DEFAULT_WRFENCE_VH1   	"<WRITE-VC>"
+#define DEFAULT_COOLCPUCACHE 	   "off"
+#define DEFAULT_SUPPRESSHDR 	   "off"
+#define DEFAULT_CACHEPOLICY  	   "wrline-M"
+#define DEFAULT_CACHEHINT        "rdline-I"
+#define DEFAULT_CONT        	   "off"
+#define DEFAULT_TOUSEC      	   0
+#define DEFAULT_TOMSEC      	   0
+#define DEFAULT_TOSEC       	   1
+#define DEFAULT_TOMIN       	   0
+#define DEFAULT_TOHOUR      	   0
+#define DEFAULT_NOTICE       		"poll"
+#define DEFAULT_READ_VC   		   "auto"
+#define DEFAULT_WRITE_VC     	   "auto"
+#define DEFAULT_WRFENCE_VC    	"<WRITE-VC>"
 #define DEFAULT_AWP           	"off"
 #define DEFAULT_ST		   		"off"
 #define DEFAULT_UT		   		"on"
@@ -101,8 +82,8 @@
 #define DEFAULT_MIN_STRIDES   	1
 #define DEFAULT_MAX_STRIDES   	64
 //#define DEFAULT_FPGA_CLK_FREQ 	200000000ULL
-#define DEFAULT_BUS_NUMBER      0xFFFFFFFF
-#define DEFAULT_DEVICE_NUMBER   0xFFFFFFFF
-#define DEFAULT_FUNCTION_NUMBER 0xFFFFFFFF
+#define DEFAULT_BUS_NUMBER       0xFFFFFFFF
+#define DEFAULT_DEVICE_NUMBER    0xFFFFFFFF
+#define DEFAULT_FUNCTION_NUMBER  0xFFFFFFFF
 
 #endif

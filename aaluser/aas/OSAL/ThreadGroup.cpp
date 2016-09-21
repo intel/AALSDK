@@ -1133,11 +1133,16 @@ namespace FAF {
    {
       Parms *p = reinterpret_cast<Parms *>(lpParms);
       ASSERT(NULL != p);
+      if (NULL != p){
+         p->m_pThrGrp->Destroy(p->m_JoinTimeout); // deletes OSLThreadGroup::m_pState
+         delete p->m_pThrGrp;                     // deletes OSLThreadGroup
+         delete p;                                // deletes FAF::Parms
+      }
 
-      p->m_pThrGrp->Destroy(p->m_JoinTimeout); // deletes OSLThreadGroup::m_pState
-      delete p->m_pThrGrp;                     // deletes OSLThreadGroup
-      delete p;                                // deletes FAF::Parms
-      delete pThread;                          // deletes pThread. d'tor runs to completion.
+      ASSERT(NULL != pThread);
+      if (NULL != pThread){
+         delete pThread;                          // deletes pThread. d'tor runs to completion.
+      }
 
       ExitCurrentThread(0);
    }

@@ -226,7 +226,9 @@ public:
    {
       ASSERT(NULL != pCS);
       ASSERT(NULL != pCond);
-      m_Result = ::pthread_cond_wait(pCond, &pCS->m_Lock);
+      if (NULL != pCond && NULL != pCS){
+         m_Result = ::pthread_cond_wait(pCond, &pCS->m_Lock);
+      }
    }
    virtual ~_PThreadCondWait() {}
 
@@ -245,7 +247,10 @@ public:
       ASSERT(NULL != pCS);
       ASSERT(NULL != pCond);
       ASSERT(NULL != pTS);
-      m_Result = ::pthread_cond_timedwait(pCond, &pCS->m_Lock, pTS);
+      if (NULL != pCS && NULL != pCond && NULL != pTS){
+         m_Result = ::pthread_cond_timedwait(pCond, &pCS->m_Lock, pTS);
+      }
+
    }
    virtual ~_PThreadCondTimedWait() {}
 
@@ -267,8 +272,13 @@ public:
    {
       ASSERT(NULL != m_pCS);
       ASSERT(NULL != pDisp);
-      m_pCS->Unlock();
-      pDisp->operator() ();
+      if (NULL != m_pCS){
+         m_pCS->Unlock();
+      }
+
+      if (NULL != pDisp){
+         pDisp->operator() ();
+      }
    }
 
    virtual ~_UnlockedDispatch()

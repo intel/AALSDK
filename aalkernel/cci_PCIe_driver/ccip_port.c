@@ -153,7 +153,7 @@ struct cci_aal_device   *
    pcci_aaldev = cci_create_aal_device();
 
    ASSERT(NULL != pcci_aaldev);
-   if(pcci_aaldev == NULL ) {
+   if(NULL == pcci_aaldev ) {
       return NULL;
    }
 
@@ -913,7 +913,7 @@ bt32bitInt get_port_error(struct port_device* pport_dev,
 
    PTRACEIN;
 
-   if( (NULL == pport_dev) && (NULL == pport_error))  {
+   if( (NULL == pport_dev) || (NULL == pport_error))  {
          PERR("Invalid input pointers \n");
          res =-EINVAL;
          goto ERR;

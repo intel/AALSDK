@@ -429,6 +429,11 @@ process_send_message(struct ccidrv_session  *psess,
    ASSERT(NULL != psess);
    ASSERT(NULL != preq);
 
+   if( (NULL == psess) || (NULL == preq)) {
+      PERR("Invalid Input parameter \n");
+      ret = -EINVAL;
+      return ret ;
+   }
 
    // Process the request copying in remaining request arguments as appropriate
    //--------------------------------------------------------------------------
@@ -579,6 +584,12 @@ process_bind_request(struct ccidrv_session  *psess,
 
    ASSERT(NULL != psess);
    ASSERT(NULL != preq);
+
+   if( (NULL == psess) || (NULL == preq)) {
+      PERR("Invalid Input parameter \n");
+      ret = -EINVAL;
+      return ret ;
+   }
 
    switch ( preq->id ) {
       //--------------------
@@ -851,6 +862,11 @@ ccidrv_sendevent(struct aaldev_ownerSession * pOwnerSession,
 
    PTRACEIN;
    ASSERT(NULL != psess);
+   if( NULL == psess) {
+      PERR("Invalid Input parameter \n");
+      ret = -EINVAL;
+      return ret ;
+   }
 
    if ( NULL != eventp ) {
 

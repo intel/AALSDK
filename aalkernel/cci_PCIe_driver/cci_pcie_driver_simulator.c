@@ -237,6 +237,10 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
 
    // Create the CCI device object
    pccipdev = create_ccidevice();
+   ASSERT(NULL != pccipdev);
+   if(NULL  == pccipdev ) {
+      return NULL;
+   }
    ccip_dev_pci_dev(pccipdev) = NULL;
 
    // Save the Bus:Device:Function of simulated device

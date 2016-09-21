@@ -166,6 +166,10 @@ void ALIAFUProxy::AFUEvent( AAL::IEvent const &theEvent)
                                                             theEvent);
 
    ASSERT(NULL != puidEvent);
+   if (NULL == puidEvent)
+   {
+      return;
+   }
 
    switch(puidEvent->MessageID())
    {

@@ -16,8 +16,6 @@
 #include <aalsdk/AAL.h>
 #include <aalsdk/Runtime.h>
 
-using namespace std;
-
 TEST(SMocks, aal0813)
 {
    /// ========================================================================
@@ -34,9 +32,9 @@ TEST(SMocks, aal0813)
    ///               separate service module.
    ///
 
-   CListenerLock localLock(new (nothrow) CriticalSection());
+   CListenerLock localLock(new (std::nothrow) CriticalSection());
 
-   CRuntimeClientAdapter* pRCA = new (nothrow) CRuntimeClientAdapter(&localLock);
+   CRuntimeClientAdapter* pRCA = new (std::nothrow) CRuntimeClientAdapter(&localLock);
    EXPECT_NONNULL(pRCA);
    localLock.wait(); // wait for runtime start
 
@@ -50,7 +48,7 @@ TEST(SMocks, aal0813)
    // Was m_bIsOK set to true in CAASBase()?
    EXPECT_TRUE((pRCA)->IsOK());
 
-   CMockWorkClient* pMSC = new (nothrow) CMockWorkClient(pRCA);
+   CMockWorkClient* pMSC = new (std::nothrow) CMockWorkClient(pRCA);
    EXPECT_NONNULL(pMSC);
 
    EXPECT_NONNULL(dynamic_cast<IBase*>(pMSC));
@@ -64,7 +62,7 @@ TEST(SMocks, aal0813)
    // Did we have success on a call to SetInterface for IMockWorkClient?
    EXPECT_TRUE(pMSC->IsOK());
 
-   CServiceListener* listener = new (nothrow) CServiceListener(pRCA, &localLock, "aal0813");
+   CServiceListener* listener = new (std::nothrow) CServiceListener(pRCA, &localLock, "aal0813");
    EXPECT_NONNULL(listener);
 
    pMSC->setListener(listener);

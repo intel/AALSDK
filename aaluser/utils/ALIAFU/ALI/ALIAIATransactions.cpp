@@ -468,9 +468,6 @@ UmsgGetBaseAddress::UmsgGetBaseAddress() :
    afumsg->cmd     = ccipdrv_afucmdGet_UmsgBase;
    afumsg->size    = sizeof(union msgpayload);
 
-   //TODO: remove this line.  incorrect 2nd size assignment
-   afumsg->size    = sizeof(struct ahm_req);
-
    req->u.wksp.m_wsid = WSID_MAP_MMIOR;
 
    // package in AIA transaction

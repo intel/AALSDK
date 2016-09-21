@@ -119,13 +119,12 @@ ShutdownMDT::ShutdownMDT(AAL::TransactionID const &tranID, AAL::btTime timeout) 
 
    // Allocate to union and save pointer avoiding casting ugliness
    puiShutdown = (new (std::nothrow) struct aalui_Shutdown);
-   m_payload = ppayload;
-
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){
+   ASSERT(NULL != puiShutdown);
+   if (NULL == puiShutdown){
       return;
    }
 
+   m_payload = ppayload;
    m_size = sizeof(struct aalui_Shutdown);
 
    puiShutdown->m_reason = ui_shutdownReasonNormal;
