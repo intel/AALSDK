@@ -94,7 +94,7 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
 
    PTRACEIN;
 
-   if((NULL == pfme_dev)&& (NULL == pPerf))  {
+   if((NULL == pfme_dev) || (NULL == pPerf))  {
       PERR("Invalid Input pointers  \n");
       res= -EINVAL;
       goto ERR;
@@ -548,7 +548,7 @@ bt32bitInt get_perfmon_counters(struct fme_device* pfme_dev,
 
    PTRACEIN;
 
-   if( (NULL == pfme_dev) && (NULL == pPerfCounter))  {
+   if( (NULL == pfme_dev) || (NULL == pPerfCounter))  {
       PERR("Invalid input pointers \n");
       res =-EINVAL;
       goto ERR;
