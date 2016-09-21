@@ -209,8 +209,10 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
 
    // Construct the cci_aal_device object
    pcci_aaldev = cci_create_aal_device();
-
    ASSERT(NULL != pcci_aaldev);
+   if(NULL == pcci_aaldev) {
+      return false;
+   }
 
    // Make it an FME by setting the type field and giving a pointer to the
    //  FME device object of the CCIP board device
@@ -272,6 +274,12 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
    cci_aaldev_to_aaldev(pcci_aaldev) =  aaldev_create( "CCIPFME",           // AAL device base name
                                                        &aalid,             // AAL ID
                                                        &cci_FMEpip);
+
+   //CCI device object create fails, delete FME AAL device
+   if(NULL == cci_aaldev_to_aaldev(pcci_aaldev) ){
+      cci_destroy_aal_device(pcci_aaldev);
+      return false;
+   }
 
    //===========================================================
    // Set up the optional aal_device attributes
