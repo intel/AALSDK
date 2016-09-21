@@ -106,6 +106,10 @@ btInt _kosal_pci_read_config_dword(__ASSERT_HERE_PROTO
 
    __ASSERT_HERE_IN_FN(NULL != pdev);
    __ASSERT_HERE_IN_FN(NULL != pval);
+   if((NULL ==  pdev) || (NULL == pval)) {
+      res = -EINVAL;
+      return res ;
+   }
 
 #if   defined( __AAL_LINUX__ )
 
