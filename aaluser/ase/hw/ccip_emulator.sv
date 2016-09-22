@@ -2368,7 +2368,8 @@ module ccip_emulator
 
       // Read seed and print
       $display("SIM-SV: ASE running with seed => %d", cfg.ase_seed);
-      $srandom(cfg.ase_seed);
+      // $srandom(cfg.ase_seed);
+      // $urandom(cfg.ase_seed);
             
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
