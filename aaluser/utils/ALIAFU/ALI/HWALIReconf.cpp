@@ -255,11 +255,11 @@ void CHWALIReconf::reconfConfigure( TransactionID const &rTranID,
                                                                                                                reasUnknown,
                                                                                                                "Error: Failed transaction")));
       if(bufptr)
-         delete bufptr;
+         delete[] bufptr;
       return;
    }
    if(bufptr)
-      delete bufptr;
+      delete[] bufptr;
 }
 
 /// @brief Activate an AFU after it has been reconfigured.
