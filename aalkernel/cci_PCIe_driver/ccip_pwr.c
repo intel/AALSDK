@@ -167,7 +167,7 @@ btBool cci_create_AAL_power_Device(struct ccip_device * pccipdev)
    aaldevid_devaddr_devnum(aalid)      = ccip_dev_pcie_devnum(pccipdev);
    aaldevid_devaddr_fcnnum(aalid)      = ccip_dev_pcie_fcnnum(pccipdev);
    aaldevid_devaddr_subdevnum(aalid)   = aaldevid_devaddr_fcnnum(aalid)++;  // PWR subdevice number is constant
-   aaldevid_devaddr_instanceNum(aalid) ++;  // PWR is always instance 0
+   aaldevid_devaddr_instanceNum(aalid) = 0;  // PWR is always instance 0
 
 
    aaldevid_devtype(aalid)             = aal_devtypeAFU;

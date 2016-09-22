@@ -7,16 +7,8 @@
 #define HAVE_COMMON_H
 #include "gtCommon.h"
 #endif
-#ifndef HAVE_COMMON_MOCKS_H
-#define HAVE_COMMON_MOCKS_H
-#include "gtCommon_Mocks.h"
-#include "gtCommon_SMocks.h"
-#endif
 
-#include <aalsdk/AAL.h>
-#include <aalsdk/Runtime.h>
-
-TEST(SMocks, aal0813)
+TEST(SMocks, aal0820)
 {
    /// ========================================================================
    /// @test         Base line test case for the in-module mock service, client
@@ -62,7 +54,7 @@ TEST(SMocks, aal0813)
    // Did we have success on a call to SetInterface for IMockWorkClient?
    EXPECT_TRUE(pMSC->IsOK());
 
-   CServiceListener* listener = new (std::nothrow) CServiceListener(pRCA, &localLock, "aal0813");
+   CServiceListener* listener = new (std::nothrow) CServiceListener(pRCA, &localLock, "aal0820");
    EXPECT_NONNULL(listener);
 
    pMSC->setListener(listener);

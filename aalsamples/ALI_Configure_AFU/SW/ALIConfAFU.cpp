@@ -507,7 +507,7 @@ btInt ALIConfAFUApp::run()
    		ConfigRecord.Add(keyRegDeviceNumber, btUnsigned32bitInt(configCmdLine.device));
    }
    if (flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_FUNC)) {
-   		ConfigRecord.Add(keyRegfuntionNumber, btUnsigned32bitInt(configCmdLine.function));
+   		ConfigRecord.Add(keyRegFunctionNumber, btUnsigned32bitInt(configCmdLine.function));
    }
 
    #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */

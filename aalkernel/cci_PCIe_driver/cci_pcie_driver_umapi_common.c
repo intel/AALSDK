@@ -276,7 +276,6 @@ ccidrv_messageHandler( struct ccidrv_session  *psess,
    // response buffer size (will be used below)
    btWSSize OutbufSize = 0;
 
-
 #if 1
 # define UIDRV_IOCTL_CASE(x) case x : PDEBUG("%s\n", #x);
 #else
@@ -292,8 +291,11 @@ ccidrv_messageHandler( struct ccidrv_session  *psess,
    if ( presp == NULL ) return -EINVAL;
    if ( pOutbufSize == NULL ) return -EINVAL;
 
+   // Save the response buffer size
+   OutbufSize = *pOutbufSize;
+
    // Assume no payload to return
-   OutbufSize = *pOutbufSize = 0;
+   *pOutbufSize = 0;
 
    // Process the message
    switch ( cmd ) {

@@ -378,11 +378,11 @@ btInt PwrMgrClient::CoreIdler(btInt &FPIWatts, btInt &socket)
 
    // set msr commands based on socket and split_point
    if (socket == 0) {
-      sprintf(command610, PWR_MSR610,0);
-      sprintf(command606, PWR_MSR606,0);
+      snprintf(command610, sizeof(command610), PWR_MSR610, 0);
+      snprintf(command606, sizeof(command606), PWR_MSR606, 0);
    } else {
-      sprintf(command610, PWR_MSR610, split_point);
-      sprintf(command606, PWR_MSR606, split_point);
+      snprintf(command610, sizeof(command610), PWR_MSR610, split_point);
+      snprintf(command606, sizeof(command606), PWR_MSR606, split_point);
    }
 
     FpgaWatts = (double) FPIWatts;

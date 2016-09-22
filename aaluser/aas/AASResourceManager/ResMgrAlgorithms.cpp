@@ -267,8 +267,8 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
    bt32bitInt         FunctionNumber;
    btBool             testFunctionNumber(false);
 
-   if (nvsBackDoorRecord.Has( keyRegfuntionNumber)) {
-      nvsBackDoorRecord.Get( keyRegfuntionNumber, &FunctionNumber);
+   if (nvsBackDoorRecord.Has( keyRegFunctionNumber)) {
+      nvsBackDoorRecord.Get( keyRegFunctionNumber, &FunctionNumber);
       testFunctionNumber = true;
       AAL_DEBUG( LM_ResMgr,  "CResMgr::ComputeBackdoorGoalRecords: Desired Function Number is: " << FunctionNumber << std::endl);
    }
