@@ -124,10 +124,8 @@ typedef enum
    uid_errnumSigtapRevokeTimeout,                // 43
    uid_errnumBadSocket,                          // 44
    uid_errnumRdMsrCmdFail,                       // 45
-   uid_errnumFPGAPowerRequestTooLarge            // 46
-
-
-
+   uid_errnumFPGAPowerRequestTooLarge,           // 46
+   uid_errnumAP6Detected                         // 47
 
 } uid_errnum_e;
 

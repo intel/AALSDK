@@ -191,6 +191,14 @@ void ccip_log_port_error(struct ccip_device *pccipdev,
 /// @return    no return value
 void ccip_log_pr_error(struct fme_device   *pfme_dev );
 
+/// Name:    ccip_log_port_apstates
+/// @brief   logs AP states to kernel logger.
+///
+/// @param[in] pccipdev  ccip device pointer.
+/// @param[in] pport_dev  port device pointer.
+/// @return    no return value
+void ccip_log_port_apstates(struct ccip_device *pccipdev ,struct port_device *pport_dev);
+
 /// Name:    ccip_log_bad_vkey
 /// @brief   logs bad v-key value.
 ///

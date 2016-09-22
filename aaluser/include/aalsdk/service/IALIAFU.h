@@ -184,7 +184,8 @@ typedef enum
    ali_errnumSigtapRevokeTimeout,                // 43
    ali_errnumBadSocket,                          // 44
    ali_errnumRdMsrCmdFail,                       // 45
-   ali_errnumFPGAPowerRequestTooLarge            // 46
+   ali_errnumFPGAPowerRequestTooLarge,           // 46
+   ali_errnumAP6Detected                         // 47
 
 } ali_errnum_e;
 

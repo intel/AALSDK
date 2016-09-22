@@ -451,13 +451,37 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
        AFU_COMMAND_CASE(ccipdrv_ClearAllPortErrors) {
 
-          PVERBOSE("ccipdrv_portClearAllError \n");
-
           // Clear ALL Port errors
-          // 1) Set PORT mask to all 1's to mask errors
-          // 2) Clear all errors
-          // 3) Set PORT mask to all 0's to enable errors.
-          // 4) All errors starts capturing new errors
+          // 1) Check for AP6 State
+          // 2) Reset Port
+          // 3) Set PORT mask to all 1's to mask errors
+          // 4) Clear all errors
+          // 5) Set PORT mask to all 0's to enable errors.
+          // 6) All errors starts capturing new errors
+          // 7) Enable port
+
+          struct CCIP_PORT_STATUS local_port_status ;
+          Get64CSR(&cci_aaldev_pport(pdev)->m_pport_hdr->ccip_port_status.csr,&local_port_status.csr);
+
+          // if Device in AP6 state don't clear any PORT errors
+          if( AFU_Power_AP6 == local_port_status.afu_pwr_state  ) {
+
+             PERR("Could not clear all errors, device in AP6 state. \n");
+             Message->m_errcode = uid_errnumAP6Detected;
+             break;
+          }
+
+          // Reset PORT if AP6 event detected.
+          if( 0x1 == ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.ap6_event) {
+             // Soft Reset PORT before Clearing AP6 Error
+             if(0 != port_afu_quiesce_and_halt( cci_aaldev_pport(pdev) )){
+                // Failure
+                PERR(" Port Reset Timeout error. \n");
+                Message->m_errcode = uid_errnumTimeout;
+                break;
+             }
+
+          }
 
           //Set PORT mask to all 1's to mask errors
           ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error_mask.csr        = CLEAR_ALL_ERRORS;
@@ -466,18 +490,33 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
           ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr             = CLEAR_ALL_ERRORS;
           ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_first_error.csr       = CLEAR_ALL_ERRORS;
 
-          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_malformed_req_0.csr   = CLEAR_ALL_ERRORS;
-          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_malformed_req_1.csr   = CLEAR_ALL_ERRORS;
-
           //Set PORT mask to all 0's to enable errors.
           ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error_mask.csr        = 0x0;
 
+          // Enable Port after clearing Errors.
+          if(0 != port_afu_Enable( cci_aaldev_pport(pdev) )){
+             PERR(" Port Enable timeout error. \n");
+             // Failure event
+             Message->m_errcode = uid_errnumTimeout;
+             break;
+          }
+
+          // Success Event
           Message->m_errcode = uid_errnumOK;
 
         } break; // case ccipdrv_ClearAllPortErrors
 
        AFU_COMMAND_CASE(ccipdrv_ClearPortError) {
 
+          // Clear Port errors
+          // 1) Check for AP6 State
+          // 2) Reset Port
+          // 3) Clear errors
+          // 4) Port errors starts capturing new errors
+          // 5) Enable port
+
+          struct CCIP_PORT_ERROR  local_port_error;
+          struct CCIP_PORT_STATUS local_port_status ;
           struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
 
           if(NULL == preq) {
@@ -488,9 +527,49 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
           PVERBOSE("Port Error  CSR:%llX \n",ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr);
           PVERBOSE("New Port Error  CSR:%llX \n",preq->ahmreq.u.error_csr.error0);
 
-          // Clear port error and First error
-          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr = preq->ahmreq.u.error_csr.error0;
-          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_first_error.csr =preq->ahmreq.u.error_csr.error0;
+          // Port error to local CSR
+          local_port_error.csr = preq->ahmreq.u.error_csr.error0 ;
+
+          // Checking for AP6 Error
+          if(0x1 == local_port_error.ap6_event) {
+
+             Get64CSR(&cci_aaldev_pport(pdev)->m_pport_hdr->ccip_port_status.csr,&local_port_status.csr);
+
+             if( AFU_Power_AP6 == local_port_status.afu_pwr_state  ) {
+                PERR("Could not clear error, device in AP6 state. \n");
+                Message->m_errcode = uid_errnumAP6Detected;
+                break;
+             }
+
+             // Reset PORT if AP6 event detected.
+             if( 0x1 == ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.ap6_event) {
+                // Soft Reset PORT before Clearing AP6 Error
+                if(0 != port_afu_quiesce_and_halt( cci_aaldev_pport(pdev) )){
+                   // Failure
+                   PERR(" Port Reset Timeout error. \n");
+                   Message->m_errcode = uid_errnumTimeout;
+                   break;
+                }
+
+             }
+          }
+
+          //Clear  errors
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_error.csr             = preq->ahmreq.u.error_csr.error0;
+          ccip_port_err(cci_aaldev_pport(pdev))->ccip_port_first_error.csr       = preq->ahmreq.u.error_csr.error0;
+
+          // Enable PORT after clearing AP6 Error
+          if(0x1 == local_port_error.ap6_event) {
+
+             // Enable Port after clearing Errors.
+             if(0 != port_afu_Enable( cci_aaldev_pport(pdev) )){
+                PERR(" Port Enable Timeout error. \n");
+                // Failure event
+                Message->m_errcode = uid_errnumTimeout;
+                break;
+             }
+
+          }
 
           // Success Event
           Message->m_errcode = uid_errnumOK;
