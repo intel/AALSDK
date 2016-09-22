@@ -499,7 +499,7 @@ btInt DualNLBApp::run()
 		ConfigRecord.Add(keyRegDeviceNumber, btUnsigned32bitInt(configCmdLine.device0));
 	}
 	if (flag_is_set(configCmdLine.flags, DUALNLB_CMD_FLAG_FUNC0)) {
-		ConfigRecord.Add(keyRegfuntionNumber, btUnsigned32bitInt(configCmdLine.function0));
+		ConfigRecord.Add(keyRegFunctionNumber, btUnsigned32bitInt(configCmdLine.function0));
 	}
 
 
@@ -536,7 +536,7 @@ btInt DualNLBApp::run()
 	   ConfigRecord.Add(keyRegDeviceNumber, btUnsigned32bitInt(configCmdLine.device1));
    }
    if (flag_is_set(configCmdLine.flags, DUALNLB_CMD_FLAG_FUNC1)) {
-	   ConfigRecord.Add(keyRegfuntionNumber, btUnsigned32bitInt(configCmdLine.function1));
+	   ConfigRecord.Add(keyRegFunctionNumber, btUnsigned32bitInt(configCmdLine.function1));
    }
 
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);

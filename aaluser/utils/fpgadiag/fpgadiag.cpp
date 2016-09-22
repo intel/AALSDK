@@ -375,7 +375,7 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
            }
            if (flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER)) {
               cout << "Using PCIe function 0x" << std::hex << uint_type(gCmdLine.funnum) << std::dec << endl;
-              ConfigRecord.Add(keyRegfuntionNumber, uint_type(gCmdLine.funnum));
+              ConfigRecord.Add(keyRegFunctionNumber, uint_type(gCmdLine.funnum));
            }
 
   	   if(0 == strcmp(TestMode().c_str(), "TestMode_read") ||
