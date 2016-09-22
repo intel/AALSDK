@@ -246,7 +246,9 @@ btInt PwrMgrClient::AllocateService()
    if(NULL != m_pRuntime) {
       m_pRuntime->allocService(dynamic_cast<IBase *>(this), Manifest);
       m_Sem.Wait();
-   }
+      return 0;
+   } else return 1;
+
 }
 
 PwrMgrClient::PwrMgrClient(Runtime *pRuntime) :
@@ -266,8 +268,10 @@ btInt PwrMgrClient::FreeService()
       ASSERT(NULL != pIAALService);
       pIAALService->Release(AAL::TransactionID());
       m_Sem.Wait();
+      return 0;
    } else {
       //m_Sem.Post(1);
+      return 1;
    }
 }
 
