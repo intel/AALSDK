@@ -510,17 +510,24 @@ btInt PwrMgrClient::CoreIdler(btInt &FPIWatts, btInt &socket)
    //--//
    //--// "User Mode Code"
    //--// Find max pid number
-   fp = fopen("/proc/sys/kernel/pid_max", "r");
-   for (i = 0; i < 20; i++) {
-      data1[i] = fgetc(fp);
-      if  (feof(fp)) {
-         data1[i] = 0;
-         break;
+   if((fp = fopen("/proc/sys/kernel/pid_max", "r")) != NULL) {
+      for (i = 0; i < 20; i++) {
+          data1[i] = fgetc(fp);
+          if (feof(fp)) {
+              data1[i] = 0;
+              break;
+          }
       }
+   
+      max_pid_index = strtol(&data1[0], &endptr, 10);
+      ret_val = fclose(fp);
+   } else {
+     
+      printf("Failed to read pid_max \n");
+      ERR("Failed to read pid_max ");
+      return(ali_errnumSystem);
+ 
    }
-   max_pid_index = strtol(&data1[0], &endptr, 10);
-   ret_val = fclose(fp);
-
    //--//
    //--//  Set affinity for all possible pids to mask in cpuset.
    //--//
