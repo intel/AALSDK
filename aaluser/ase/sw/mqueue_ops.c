@@ -37,19 +37,19 @@
 /*
  * Named pipe string array
  */
-const char * mq_name_arr[] = 
+const char * mq_name_arr[] =
   {
-    "app2sim_alloc_ping_smq"    ,    
-    "app2sim_mmioreq_smq"       ,
-    "app2sim_umsg_smq"          ,
-    "sim2app_alloc_pong_smq"    ,
-    "sim2app_mmiorsp_smq"       ,
-    "app2sim_portctrl_req_smq"  ,
-    "app2sim_dealloc_ping_smq"  ,
-    "sim2app_dealloc_pong_smq"  ,
-    "sim2app_portctrl_rsp_smq"  ,
-    "sim2app_intr_request_smq"
-  }; 
+    "app2sim_alloc_ping_smq\0"    ,
+    "app2sim_mmioreq_smq\0"       ,
+    "app2sim_umsg_smq\0"          ,
+    "sim2app_alloc_pong_smq\0"    ,
+    "sim2app_mmiorsp_smq\0"       ,
+    "app2sim_portctrl_req_smq\0"  ,
+    "app2sim_dealloc_ping_smq\0"  ,
+    "sim2app_dealloc_pong_smq\0"  ,
+    "sim2app_portctrl_rsp_smq\0"  ,
+    "sim2app_intr_request_smq\0"
+  };
 
 
 /*
@@ -59,7 +59,7 @@ const char * mq_name_arr[] =
  */
 int get_smq_perm_flag(const char *mq_name_str)
 {
-  char mq_str[ASE_MQ_NAME_LEN]; 
+  char mq_str[ASE_MQ_NAME_LEN];
   strncpy(mq_str, mq_name_str, ASE_MQ_NAME_LEN);
 
   // Tokenize string and get first phrase --- "app2sim" OR "sim2app"
@@ -74,11 +74,11 @@ int get_smq_perm_flag(const char *mq_name_str)
       END_RED_FONTCOLOR;
     #ifdef SIM_SIDE
       start_simkill_countdown();
-    #else      
+    #else
       exit(1);
     #endif
     }
-  
+
 #ifdef SIM_SIDE
   if (strncmp(token, "sim2app", 7) == 0)
     {
@@ -111,11 +111,11 @@ void ipc_init()
   FUNC_CALL_ENTRY;
 
   int ipc_iter;
-  
+
   // Evaluate ase_workdir_path
   ase_workdir_path = (char*) ase_malloc(ASE_FILEPATH_LEN);
   ase_eval_session_directory();
-  
+
   // Initialize named pipe array
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
     {
@@ -128,7 +128,7 @@ void ipc_init()
       if (mq_array[ipc_iter].perm_flag == -1)
 	{
 	  BEGIN_RED_FONTCOLOR;
-        #ifdef SIM_SIDE 
+        #ifdef SIM_SIDE
 	  printf("SIM-C : Message pipes opened up with wrong permissions --- unexpected error");
 	  start_simkill_countdown();
         #else
@@ -138,7 +138,7 @@ void ipc_init()
 	  END_RED_FONTCOLOR;
 	}
     }
-     
+
   // Remove IPCs if already there
 #ifdef SIM_SIDE
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
@@ -321,7 +321,7 @@ void mqueue_send(int mq, const char* str, int size)
       printf("  [DEBUG]  write() returned wrong data size.");
 #endif
     }
-  
+
   FUNC_CALL_EXIT;
 }
 
