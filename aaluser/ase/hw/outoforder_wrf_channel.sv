@@ -144,7 +144,8 @@ module outoforder_wrf_channel
 				      int high);
       int 				  rand_out;
       begin
-	 rand_out = abs_val($random() % (high + 1 - low) + low);
+	 // rand_out = abs_val($random() % (high + 1 - low) + low);
+	 rand_out = $urandom_range(low, high);	 
 	 return rand_out;
       end
    endfunction
@@ -162,9 +163,10 @@ module outoforder_wrf_channel
 `endif
 
    // Set random seed
-   initial begin
-      $srandom(cfg.ase_seed);
-   end
+   // initial begin
+   //    // $srandom(cfg.ase_seed);
+   //    // $urandom(cfg.ase_seed);
+   // end
 
    localparam FIFO_WIDTH          = LATBUF_TID_WIDTH + CCIP_TX_HDR_WIDTH + CCIP_DATA_WIDTH;
    localparam OUTFIFO_WIDTH       = LATBUF_TID_WIDTH + CCIP_RX_HDR_WIDTH + CCIP_TX_HDR_WIDTH + CCIP_DATA_WIDTH;
