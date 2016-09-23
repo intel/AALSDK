@@ -34,11 +34,12 @@
 ///    It is not intended to represent a model for developing commercially-deployable applications.
 ///    It is designed to show working examples of the AAL programming model and APIs.
 ///
-///
+/// AUTHORS: Rahul R Sharma, Intel Corporation
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
 /// 05/11/2016     HM       Initial version.@endverbatim
+/// 12/16/2015     RRS      Integration with ASE App-backend.@endverbatim
 //****************************************************************************
 
 #ifndef __ASEALIAFU1000_H__
@@ -46,6 +47,7 @@
 
 #include "ALIBase.h"
 #include "aalsdk/kernel/ccip_defs.h"
+//#include <aalsdk/ase/ase_common.h>
 
 // Buffer information structure
 struct buffer_t_ase                   //  Descriptiion                    Computed by
@@ -55,7 +57,7 @@ struct buffer_t_ase                   //  Descriptiion                    Comput
   int index;                      // Tracking id                     | INTERNAL
   int valid;                      // Valid buffer indicator          | INTERNAL
   int metadata;                   // MQ marshalling command          | INTERNAL
-  char memname[40]; // Shared memory name              | INTERNAL
+  char memname[40];               // Shared memory name              | INTERNAL
   uint32_t memsize;               // Memory size                     |   APP
   uint64_t vbase;                 // SW virtual address              |   APP
   uint64_t pbase;                 // SIM virtual address             |   SIM
@@ -66,7 +68,6 @@ struct buffer_t_ase                   //  Descriptiion                    Comput
   int is_umas;                    // Flag memory as UMAS region      |
   struct buffer_t_ase *next;
 };
-
 
 
 BEGIN_NAMESPACE(AAL)

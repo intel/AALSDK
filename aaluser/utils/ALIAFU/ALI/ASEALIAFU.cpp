@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file HWALBase.cpp
-/// @brief Definitions for ALI Hardware AFU Service.
-/// @ingroup HWALIAFU
+/// @file ASEALIAFU.cpp
+/// @brief Implementation of ASE ALI AFU Service.
+/// @ingroup ASEALIAFU
 /// @verbatim
 /// Accelerator Abstraction Layer Sample Application
 ///
@@ -34,11 +34,13 @@
 ///    It is not intended to represent a model for developing commercially-deployable applications.
 ///    It is designed to show working examples of the AAL programming model and APIs.
 ///
-///
+/// AUTHORS: Rahul R Sharma (Intel Corporation)
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 05/11/2016     HM       Initial version.@endverbatim
+/// 07/20/2015     HM       Initial version.
+/// 12/16/2015     RRS      Integration with ASE App-backend.@endverbatim
+/// 09/23/2016	   RRS		Porting methods to libALI
 //****************************************************************************
 
 
@@ -110,6 +112,10 @@ btBool CASEALIAFU::ASEInit()
          return true;
       }
    }
+
+   // Umsg Base settings
+   m_uMSGmap  = (btVirtAddr)umsg_umas_vbase;
+   m_uMSGsize = UMAS_LENGTH;
 
    // Populate internal data structures for feature discovery
    if (! _discoverFeatures() ) {
@@ -251,6 +257,13 @@ void CASEALIAFU::_printDFH( const struct CCIP_DFH &dfh )
          ", Feature ID: " << dfh.Feature_ID <<
          ", eol: " << std::dec << dfh.eol << std::endl);
 }
+
+
+// btBool ASEALIAFU::Release(TransactionID const &TranID, btTime timeout)
+// {
+//   session_deinit();
+//   return ServiceBase::Release(TranID, timeout);
+// }
 
 
 // ---------------------------------------------------------
@@ -487,25 +500,10 @@ AAL::ali_errnum_e CASEALIAFU::bufferAllocate( btWSSize             Length,
   memset(buf, 0, sizeof(buffer_t));
 
   buf->memsize = (uint32_t)Length;
-  // ASECCIAFU::sm_ASEMtx.Lock();
 
-#if 0  // FIXME: Retrying several times to work around ASE issue (Redmine #674)
-  int retriesLeft;
-  for ( retriesLeft = 3; retriesLeft > 0; retriesLeft-- ) {
-#endif
-     allocate_buffer(buf, (uint64_t*)pTargetVirtAddr);
-#if 0
-     if ( ( ASE_BUFFER_VALID == buf->valid )   &&
-           ( MAP_FAILED != (void *)buf->vbase ) &&
-           ( 0 != buf->fake_paddr ) ) {
-        break;
-     }
-     AAL_WARNING(LM_AFU, "ASE buffer allocation failed, retrying..." <<
-           std::endl);
-  }
-#endif
+  // Allocate buffer (ASE call)
+  allocate_buffer(buf, (uint64_t*)pTargetVirtAddr);
 
-  //ASECCIAFU::sm_ASEMtx.Unlock();
   if ( ( ASE_BUFFER_VALID != buf->valid )   ||
        ( MAP_FAILED == (void *)buf->vbase ) ||
        ( 0 == buf->fake_paddr ) )
@@ -577,7 +575,7 @@ btPhysAddr CASEALIAFU::bufferGetIOVA( btVirtAddr Address)
 //
 btUnsignedInt CASEALIAFU::umsgGetNumber( void )
 {
-  return true;
+  return NUM_UMSG_PER_AFU;
 }
 
 //
@@ -585,7 +583,22 @@ btUnsignedInt CASEALIAFU::umsgGetNumber( void )
 //
 btVirtAddr CASEALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
 {
-  return 0;
+   // Umsgs are separated by 1 Page + 1 CL
+   // Malicious call could overflow and cause wrap to invalid address.
+   // TODO: Check if there is any problem with using a different address
+   //       in the UMAS range
+
+   // Input check
+   if ((UMsgNumber < 0) || (UMsgNumber > NUM_UMSG_PER_AFU))
+   {
+      return NULL;
+   }
+   else
+   {
+     // m_uMSGmap is btVirtAddr is char* so math is in bytes
+      btUnsigned32bitInt offset = UMsgNumber * (4096 + 64) ;
+      return m_uMSGmap + offset;
+   }
 }
 
 
@@ -601,8 +614,34 @@ void CASEALIAFU::umsgTrigger64( const btVirtAddr pUMsg,
 //
 // TODO: not implemented
 //
-bool CASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
+bool  __attribute__((optimize("O0")))  CASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 {
+  btUnsigned64bitInt hint_flag;
+
+   if( true != nvsArgs.Has(UMSG_HINT_MASK_KEY)){
+      AAL_ERR( LM_All,"Missing Parameter or Key");
+      return false;
+   }
+   eBasicTypes nvsType;
+   if(ENamedValuesOK !=  nvsArgs.Type(UMSG_HINT_MASK_KEY, &nvsType)){
+      AAL_ERR( LM_All,"Unable to get key value type.");
+      return false;
+   }
+
+   if(btUnsigned64bitInt_t !=  nvsType){
+      AAL_ERR( LM_All,"Bad value type.");
+      return false;
+   }
+   
+   if (nvsArgs.Get(UMSG_HINT_MASK_KEY, &hint_flag) != ENamedValuesOK)
+     {
+       AAL_ERR( LM_All,"Get Failed");
+       return false;
+     }
+   
+   // Send UMSG setup (call ASE)
+   umsg_set_attribute(hint_flag);
+
    return true;
 }
 
