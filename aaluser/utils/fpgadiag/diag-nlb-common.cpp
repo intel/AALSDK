@@ -110,6 +110,8 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 't':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             if ( 0 == strcasecmp("fpga", tmp_optarg) ) {
                nlbcl->AFUTarget = std::string(ALIAFU_NVS_VAL_TARGET_FPGA);
             } else if ( 0 == strcasecmp("ase", tmp_optarg) ) {
@@ -121,6 +123,8 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'm':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             if ( 0 == strcasecmp("lpbk1", tmp_optarg) ) {
                nlbcl->TestMode = std::string(NLB_TESTMODE_LPBK1);
             } else if ( 0 == strcasecmp("read", tmp_optarg) ) {
@@ -138,18 +142,24 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'b':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             endptr = NULL;
             nlbcl->begincls = strtoul(tmp_optarg, &endptr, 0);
             flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_BEGINCL);
             break;
 
          case 'e':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             endptr = NULL;
             nlbcl->endcls = strtoul(tmp_optarg, &endptr, 0);
             flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_ENDCL);
             break;
 
          case 'u':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             endptr = NULL;
             nlbcl->multicls = strtoul(tmp_optarg, &endptr, 0);
             flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_MULTICL);
@@ -160,6 +170,8 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'O':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             endptr = NULL;
             tsval = strtotimespec(tmp_optarg, &endptr, 0);
             nlbcl->to_usec += tsval;
@@ -167,6 +179,8 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'Q':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             endptr = NULL;
             tsval = strtotimespec(tmp_optarg, &endptr, 0);
             nlbcl->to_msec += tsval;
@@ -174,6 +188,8 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'X':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             endptr = NULL;
             tsval = strtotimespec(tmp_optarg, &endptr, 0);
             nlbcl->to_sec += tsval;
@@ -188,6 +204,8 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'Z':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             endptr = NULL;
             tsval = strtotimespec(tmp_optarg, &endptr, 0);
             nlbcl->to_hour += tsval;
@@ -195,6 +213,8 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'p':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             if ( 0 == strcasecmp("wrline-I", tmp_optarg)) {
                flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRLINE_I);
             } else if ( 0 == strcasecmp("wrline-M", tmp_optarg) ) {
@@ -208,6 +228,8 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'i':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             if ( 0 == strcasecmp("rdline-I", tmp_optarg)) {
                flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_RDI);
             } else if ( 0 == strcasecmp("rdline-S", tmp_optarg) ) {
@@ -231,6 +253,8 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'r':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             if ( 0 == strcasecmp("auto", tmp_optarg)) {
                flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_READ_VA);
             } else if ( 0 == strcasecmp("vl0", tmp_optarg) ) {
@@ -248,6 +272,8 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'w':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             if ( 0 == strcasecmp("auto", tmp_optarg)) {
                flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRITE_VA);
             } else if ( 0 == strcasecmp("vl0", tmp_optarg) ) {
@@ -265,6 +291,8 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'f':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             if ( 0 == strcasecmp("auto", tmp_optarg)) {
                flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_WRFENCE_VA);
             } else if ( 0 == strcasecmp("vl0", tmp_optarg) ) {
@@ -280,6 +308,8 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'a':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             endptr = NULL;
             nlbcl->strided_acs = strtoul(tmp_optarg, &endptr, 0);
             flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_STRIDED_ACS);
@@ -290,6 +320,8 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'N':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             if ( 0 == strcasecmp("poll", tmp_optarg)) {
                flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_POLL);
             } else if ( 0 == strcasecmp("csr-write", tmp_optarg) ) {
@@ -305,24 +337,32 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'B':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             endptr = NULL;
             nlbcl->busnum = strtoul(tmp_optarg, &endptr, 0);
             flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_BUS_NUMBER);
             break;
 
          case 'D':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             endptr = NULL;
             nlbcl->devnum = strtoul(tmp_optarg, &endptr, 0);
             flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_DEVICE_NUMBER);
             break;
 
          case 'F':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             endptr = NULL;
             nlbcl->funnum = strtoul(tmp_optarg, &endptr, 0);
             flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FUNCTION_NUMBER);
             break;
 
          case 'd':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             endptr = NULL;
             //TODO change "DevTarget" to "subDev"
             //TODO set subDev flag (reuse --no-bw)
@@ -330,6 +370,8 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             break;
 
          case 'T':
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
             endptr = NULL;
             nlbcl->clkfreq = strtoul(tmp_optarg, &endptr, 0);
             flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CLKFREQ);
