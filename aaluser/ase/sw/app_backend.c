@@ -192,41 +192,43 @@ void *mmio_response_watcher()
 	  // Find scoreboard slot number to update
 	  slot_idx = get_scoreboard_slot_by_tid(mmio_rsp_pkt->tid);
 
-#ifdef ASE_DEBUG
+	  // #ifdef ASE_DEBUG
 	  if (slot_idx == 0xFFFF)
 	    {
 	      BEGIN_RED_FONTCOLOR;
 	      printf("get_scoreboard_slot_by_tid() found a bad slot !");
+	      END_RED_FONTCOLOR;
 	      raise(SIGABRT);
-	      END_RED_FONTCOLOR;
 	    }
-#endif
-
-	  // MMIO Read response (for credit count only)
-	  if (mmio_rsp_pkt->write_en == MMIO_READ_REQ)
-	    {
-	      mmio_table[slot_idx].tid = mmio_rsp_pkt->tid;
-	      mmio_table[slot_idx].data = mmio_rsp_pkt->qword[0];
-	      mmio_table[slot_idx].tx_flag = true;
-	      mmio_table[slot_idx].rx_flag = true;
-	    }
-	  // MMIO Write response (for credit count only)
-	  else if (mmio_rsp_pkt->write_en == MMIO_WRITE_REQ)
-	    {
-	      mmio_table[slot_idx].tx_flag = false;
-	      mmio_table[slot_idx].rx_flag = false;
-	    }
-#ifdef ASE_DEBUG
 	  else
+	    //#endif
 	    {
-	      BEGIN_RED_FONTCOLOR;
-	      printf("  [DEBUG]  Illegal MMIO request found -- must not happen !\n");
-	      END_RED_FONTCOLOR;
+	      // MMIO Read response (for credit count only)
+	      if (mmio_rsp_pkt->write_en == MMIO_READ_REQ)
+		{
+		  mmio_table[slot_idx].tid = mmio_rsp_pkt->tid;
+		  mmio_table[slot_idx].data = mmio_rsp_pkt->qword[0];
+		  mmio_table[slot_idx].tx_flag = true;
+		  mmio_table[slot_idx].rx_flag = true;
+		}
+	      // MMIO Write response (for credit count only)
+	      else if (mmio_rsp_pkt->write_en == MMIO_WRITE_REQ)
+		{
+		  mmio_table[slot_idx].tx_flag = false;
+		  mmio_table[slot_idx].rx_flag = false;
+		}
+	      /* #ifdef ASE_DEBUG */
+	      /* 	  else */
+	      /* 	    { */
+	      /* 	      BEGIN_RED_FONTCOLOR; */
+	      /* 	      printf("  [DEBUG]  Illegal MMIO request found -- must not happen !\n"); */
+	      /* 	      END_RED_FONTCOLOR; */
+	      /* 	    } */
+	      /* #endif */
 	    }
-#endif
 	}
     }
-
+  
   return 0;
 }
 
@@ -254,9 +256,14 @@ void send_swreset()
     }
 
   // Sending reset trigger
-  ase_portctrl("AFU_RESET 1");
+  char ase_reset_msg[ASE_MQ_MSGSIZE];
+  snprintf(ase_reset_msg, ASE_MQ_MSGSIZE, "AFU_RESET 1");
+  ase_portctrl(ase_reset_msg);
+  // ase_portctrl("AFU_RESET 1\0");
   usleep(1);
-  ase_portctrl("AFU_RESET 0");
+  snprintf(ase_reset_msg, ASE_MQ_MSGSIZE, "AFU_RESET 0");
+  ase_portctrl(ase_reset_msg);
+  // ase_portctrl("AFU_RESET 0\0");
 }
 
 
@@ -699,15 +706,15 @@ int mmio_request_put(struct mmio_t *pkt)
       mmio_table[mmiotable_idx].tid = pkt->tid;
       mmio_table[mmiotable_idx].data = pkt->qword[0];
     }
-#ifdef ASE_DEBUG
+/* #ifdef ASE_DEBUG */
   else
     {
       BEGIN_RED_FONTCOLOR;
       printf("  [APP] ASE Error generating MMIO TID, simulation cannot proceed !\n");
-      raise(SIGABRT);
       END_RED_FONTCOLOR;
+      raise(SIGABRT);
     }
-#endif
+/* #endif */
 
   // Send packet
   mqueue_send( app2sim_mmioreq_tx, (char*)pkt, sizeof(mmio_t) );
