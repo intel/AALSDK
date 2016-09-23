@@ -237,7 +237,7 @@ void error_logging_callback(struct kosal_work_object *pwork)
       kosal_list_for_each_safe(This, tmp, &g_device_list) {
 
          pccidev = ccip_list_to_ccip_device(This);
-         if(NULL != pccidev) {
+         if(NULL != ccip_list_to_ccip_device(This)) {
             ccip_check_for_error(pccidev);
          }
       }
@@ -292,7 +292,7 @@ void ccip_check_for_error(struct ccip_device *pccipdev)
 
           pportdev = cci_list_to_cci_port_device(This);
 
-          if(NULL != pportdev) {
+          if(NULL != cci_list_to_cci_port_device(This)) {
              ccip_log_port_apstates(pccipdev,pportdev);
              ccip_log_port_error(pccipdev,pportdev);
           }
