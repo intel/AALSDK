@@ -74,7 +74,7 @@ public:
    uid_errnum_e              result_code() const { ASSERT(NULL != m_pmessage); return m_pmessage->errcode; }
    btWSSize                  size()        const { ASSERT(NULL != m_pmessage); return m_pmessage->size;    }
    btWSSize                  msgsize()     const { ASSERT(NULL != m_pmessage); return m_msgsize;    }
-   TransactionID              tranID()     const { ASSERT(NULL != m_pmessage); return TransactionID(m_pmessage->tranID); }
+   stTransactionID_t const & tranID()      const { ASSERT(NULL != m_pmessage); return m_pmessage->tranID; }
    btObjectType              context()     const { ASSERT(NULL != m_pmessage);
                                                    return static_cast<btObjectType>(m_pmessage->context); }
    btVirtAddr                payload()     const;
