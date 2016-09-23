@@ -1297,6 +1297,24 @@ struct CCIP_USER_CLK_FREQ {
 }; // end struct CCIP_USER_CLK_FREQ
 CASSERT(sizeof(struct CCIP_USER_CLK_FREQ) == (1 *8));
 
+
+// Port status
+struct CCIP_PORT_STATUS {
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt port_freeze :1;           // Port freeze
+         btUnsigned64bitInt rsvd1 :7;                 // Reserved
+         btUnsigned64bitInt afu_pwr_state :4;         // Reports AFU Power state
+         btUnsigned64bitInt ap1_event :1;             // AP1 event
+         btUnsigned64bitInt ap2_event :1;             // AP2 event
+         btUnsigned64bitInt rsvd :46;                 // Reserved
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_PORT_STATUS
+CASSERT(sizeof(struct CCIP_PORT_STATUS) == (1 *8));
+
 // Port status
 struct CCIP_PORT_HDR {
 
@@ -1352,18 +1370,7 @@ struct CCIP_PORT_HDR {
    }ccip_port_control; // end struct CCIP_PORT_CONTROL
 
    // Port status
-   struct CCIP_PORT_STATUS {
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt port_freeze :1;           // Port freeze
-            btUnsigned64bitInt rsvd1 :7;                 // Reserved
-            btUnsigned64bitInt afu_pwr_state :4;         // Reports AFU Power state
-            btUnsigned64bitInt rsvd :48;                 // Reserved
-         }; // end struct
-      }; // end union
-
-   }ccip_port_status; // end struct CCIP_PORT_STATUS
+   struct CCIP_PORT_STATUS ccip_port_status;
 
    // Reserved
    btUnsigned64bitInt port_rsvd1_hdr;

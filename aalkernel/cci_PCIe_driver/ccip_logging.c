@@ -279,7 +279,7 @@ void ccip_check_for_error(struct ccip_device *pccipdev)
       // logs fme errors
       ccip_log_fme_error(pccipdev ,pccipdev->m_pfme_dev);
       ccip_log_fme_ras_error(pccipdev ,pccipdev->m_pfme_dev);
-      ccip_log_fme_ap_state(pccipdev ,pccipdev->m_pfme_dev);
+      //ccip_log_fme_ap_state(pccipdev ,pccipdev->m_pfme_dev);
    }
 
 
@@ -293,6 +293,7 @@ void ccip_check_for_error(struct ccip_device *pccipdev)
           pportdev = cci_list_to_cci_port_device(This);
 
           if(NULL != pportdev) {
+             ccip_log_port_apstates(pccipdev,pportdev);
              ccip_log_port_error(pccipdev,pportdev);
           }
       }
@@ -316,13 +317,13 @@ void ccip_log_fme_ap_state(struct ccip_device *pccipdev,
 
       if(0x0 == ccip_fme_therm(pfme_dev)->ccip_tmp_threshold.thshold_policy ) {
 
-         PERR(" FPGA Trigger AP1 state : %s for B:D.F = %x:%x.%x  \n", kosal_gettimestamp(),
+         PERR(" FPGA Trigger AP2 state : %s for B:D.F = %x:%x.%x  \n", kosal_gettimestamp(),
                                                                        ccip_dev_pcie_busnum(pccipdev),
                                                                        ccip_dev_pcie_devnum(pccipdev),
                                                                        ccip_dev_pcie_fcnnum(pccipdev));
       } else {
 
-         PERR(" FPGA Trigger AP2 state : %s for B:D.F = %x:%x.%x  \n", kosal_gettimestamp(),
+         PERR(" FPGA Trigger AP1 state : %s for B:D.F = %x:%x.%x  \n", kosal_gettimestamp(),
                                                                        ccip_dev_pcie_busnum(pccipdev),
                                                                        ccip_dev_pcie_devnum(pccipdev),
                                                                        ccip_dev_pcie_fcnnum(pccipdev));
@@ -475,6 +476,53 @@ void ccip_log_fme_ras_error(struct ccip_device *pccipdev ,struct fme_device *pfm
 
 }
 
+///============================================================================
+/// Name:    ccip_log_port_apstates
+/// @brief   logs AP states to kernel logger.
+///
+/// @param[in] pccipdev  ccip device pointer.
+/// @param[in] pport_dev  port device pointer.
+/// @return    no return value
+///============================================================================
+void ccip_log_port_apstates(struct ccip_device *pccipdev ,struct port_device *pport_dev)
+{
+
+   // Trigger AP6 State
+   if((0x00 != ccip_port_err(pport_dev)->ccip_port_error.csr) &&
+      (ccip_port_lasterr(pport_dev).ccip_port_error.ap6_event != ccip_port_err(pport_dev)->ccip_port_error.ap6_event )) {
+
+      PERR(" FPGA Trigger AP6 state :%s for B:D.F = %x:%x.%x  \n", kosal_gettimestamp(),
+                                                                   ccip_dev_pcie_busnum(pccipdev),
+                                                                   ccip_dev_pcie_devnum(pccipdev),
+                                                                   ccip_dev_pcie_fcnnum(pccipdev));
+   }
+
+   // Trigger AP1 State
+   if((0x00 != ccip_port_hdr(pport_dev)->ccip_port_status.csr) &&
+      (ccip_port_laststatus(pport_dev).ap1_event != ccip_port_hdr(pport_dev)->ccip_port_status.ap1_event )) {
+
+      PERR(" FPGA Trigger AP1 state :%s for B:D.F = %x:%x.%x  \n", kosal_gettimestamp(),
+                                                                   ccip_dev_pcie_busnum(pccipdev),
+                                                                   ccip_dev_pcie_devnum(pccipdev),
+                                                                   ccip_dev_pcie_fcnnum(pccipdev));
+   }
+
+   // Trigger AP2 State
+   if((0x00 != ccip_port_hdr(pport_dev)->ccip_port_status.csr) &&
+      (ccip_port_laststatus(pport_dev).ap2_event != ccip_port_hdr(pport_dev)->ccip_port_status.ap2_event )) {
+
+      PERR(" FPGA Trigger AP2 state :%s for B:D.F = %x:%x.%x  \n", kosal_gettimestamp(),
+                                                                   ccip_dev_pcie_busnum(pccipdev),
+                                                                   ccip_dev_pcie_devnum(pccipdev),
+                                                                   ccip_dev_pcie_fcnnum(pccipdev));
+   }
+
+   // Save Port Error and Status CSR
+   ccip_port_lasterr(pport_dev).ccip_port_error.csr       = ccip_port_err(pport_dev)->ccip_port_error.csr ;
+   ccip_port_laststatus(pport_dev).csr                    = ccip_port_hdr(pport_dev)->ccip_port_status.csr ;
+
+
+}
 ///============================================================================
 /// Name:    ccip_log_port_error
 /// @brief   logs port errors to kernel logger.
