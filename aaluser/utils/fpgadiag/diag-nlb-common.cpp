@@ -339,9 +339,9 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
             flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_SUPPRESSHDR);
             break;
 
-         /*case 'V':
+         case 'V':
             flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CSV);
-            break;*/
+            break;
 
          case ':':   /* missing option argument */
             cout << "Missing option argument.\n";
@@ -359,20 +359,20 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
 void NLBShowHelp( struct NLBCmdLine *nlbcl ) {
    string test;
 
-   if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_LPBK1)){
-      test="lpbk1";
-   }else if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_READ)){
-      test="read";
-   }else if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_WRITE)){
-      test="write";
-   }else if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_TRPUT)){
-      test="trput";
-   }else if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_SW)){
-      test="sw";
-   }else {
-      cout << "Enter test name: [LPBK1] [READ] [WRITE] [TRPUT] [SW] [ATOMIC]" << endl;
+//   if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_LPBK1)){
+//      test="lpbk1";
+//   }else if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_READ)){
+//      test="read";
+//   }else if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_WRITE)){
+//      test="write";
+//   }else if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_TRPUT)){
+//      test="trput";
+//   }else if(0 == strcasecmp(nlbcl->TestMode.c_str(),NLB_TESTMODE_SW)){
+//      test="sw";
+//   }else {
+      cout << "Enter test name: [LPBK1] [READ] [WRITE] [TRPUT] [SW]" << endl;
       cin >> test;
-   }
+//   }
    cout << "Usage:\n";
 
    if ( 0 == strcasecmp(test.c_str(), "LPBK1") ) {
@@ -532,7 +532,7 @@ void NLBShowHelp( struct NLBCmdLine *nlbcl ) {
    cout << "Default=" << nlbcl->defaults.suppresshdr << endl;
 
    cout << "                      = --csv                  OR  -V,      Comma separated value format,                          ";
-//   cout << "Default=" << nlbcl->defaults.csv << endl;
+   cout << "Default=" << nlbcl->defaults.csv << endl;
 
    cout << endl;
 }
@@ -653,58 +653,6 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
          os << cmd.TestMode << " requires last address access to be less than the buffer size. " << endl;
          return false;
       }
-   }
-
-   // --hqw
-   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_HQW)) {
-	  if ( ((cmd.hqw) < cmd.defaults.minhqw) ||
-		   ((cmd.hqw) > cmd.defaults.maxhqw) ) {
-		   os << cmd.TestMode << " requires --hardware-qw to be in the range of "<< cmd.defaults.minhqw <<" to " << cmd.defaults.maxhqw << endl;
-		   return false;
-	  }
-   }
-
-   // --sqw
-   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_SQW)) {
-	  if ( ((cmd.hqw) < cmd.defaults.minsqw) ||
-		   ((cmd.hqw) > cmd.defaults.maxsqw) ) {
-		   os << cmd.TestMode << " requires --software-qw to be in the range of " << cmd.defaults.minsqw <<" to " << cmd.defaults.maxsqw <<endl;
-		   return false;
-	  }
-   }
-
-   // --sqw
-   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_CX)) {
-	  if ( ((cmd.cx) < cmd.defaults.mincx) ||
-		   ((cmd.cx) > cmd.defaults.maxcx) ) {
-		   os << cmd.TestMode << " requires --cmp-xchg to be in the range of " << cmd.defaults.mincx <<" to " << cmd.defaults.maxcx <<endl;
-		   return false;
-	  }
-   }
-
-   // --st, --ut
-   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_ST|NLB_CMD_FLAG_UT)) {
-	  os << "--shared-token and --seperate-token are mutually exclusive." << endl;
-	  return false;
-   }
-
-   // --shared-token
-   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_ST)) {
-	  if ( (cmd.hqw) == (cmd.sqw)) {
-	     os << " Shared-token sub-mode requires --software-qw NOT equal to --hardware-qw. " << endl;
-	     return false;
-	  }
-   }
-
-   if (  !flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_ST)) {
-      if ( (flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_UT))  ||
-           (flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_HQW)) ||
-           (flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_SQW))) {
-            if ( (cmd.hqw) != (cmd.sqw)) {
-               os << " Separate-token sub-mode requires --software-qw to be equal to --hardware-qw. " << endl;
-               return false;
-            }
-       }
    }
 
    // --rdi, --rds

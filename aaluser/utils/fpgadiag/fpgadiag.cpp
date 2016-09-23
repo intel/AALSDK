@@ -127,7 +127,7 @@ struct NLBCmdLine gCmdLine =
    AALSDK_COPYRIGHT_STMNT,
    NLB_MODE,
    NLB_TITLE,
-   NLB_CMD_FLAG_BANDWIDTH,
+   NLB_CMD_FLAG_VERSION,
    0,
    0,
    DEFAULT_BEGINCL,
@@ -137,9 +137,6 @@ struct NLBCmdLine gCmdLine =
    DEFAULT_SRCPHYS,
    DEFAULT_DSTPHYS,
    DEFAULT_FPGA_CLK_FREQ,
-   DEFAULT_CX,
-   DEFAULT_HQW,
-   DEFAULT_SQW,
    DEFAULT_STRIDES,
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
@@ -166,6 +163,7 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_COOLFPGACACHE,
       DEFAULT_COOLCPUCACHE,
       DEFAULT_SUPPRESSHDR,
+      DEFAULT_CSV,
       DEFAULT_CACHEPOLICY,
       DEFAULT_CACHEHINT,
       DEFAULT_CONT,
@@ -183,17 +181,6 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_WRITE_VC,
       DEFAULT_WRFENCE_VC,
       DEFAULT_AWP,
-      DEFAULT_ST,
-	   DEFAULT_UT,
-      DEFAULT_MINCX,
-      DEFAULT_MAXCX,
-      DEFAULT_CX,
-      DEFAULT_HQW,
-      DEFAULT_SQW,
-      DEFAULT_MINHQW,
-      DEFAULT_MAXHQW,
-      DEFAULT_MINSQW,
-      DEFAULT_MAXSQW,
       DEFAULT_STRIDES,
       DEFAULT_MIN_STRIDES,
       DEFAULT_MAX_STRIDES
@@ -415,11 +402,11 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
   	   }
   }else if ( 0 == strcasecmp(AFUTarget().c_str(), "ALIAFUTarget_ASE") ) {         // Use ASE based RTL simulation
 
-	   Manifest.Add(keyRegHandle, 20);
-           Manifest.Add(ALIAFU_NVS_KEY_TARGET, ali_afu_ase);
-	   
-           ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
-  	   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
+     Manifest.Add(keyRegHandle, 20);
+     Manifest.Add(ALIAFU_NVS_KEY_TARGET, ali_afu_ase);
+
+     ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
+     ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
 
    }else if ( 0 == strcasecmp(AFUTarget().c_str(), "ALIAFUTarget_SWSIM") ) {
 
@@ -805,8 +792,9 @@ int main(int argc, char *argv[])
       return 3;
    }
 
-   cout << endl << "FpgaDiag - FPGA Diagnostics Test:" << endl;
-
+   if ( flag_is_clr(gCmdLine.cmdflags, NLB_CMD_FLAG_CSV) ) {
+      cout << endl << "FpgaDiag - FPGA Diagnostics Test:" << endl;
+   }
 #if DBG_HOOK
    cerr << "Waiting for debugger attach.." << endl;
   /* while ( gWaitForDebuggerAttach ) {
@@ -869,7 +857,9 @@ int main(int argc, char *argv[])
    		// Run NLB test, which performs sw data verification.
    		CNLBLpbk1 nlb_lpbk1(&myapp);
 
-   		cout << " * Data Copy - LPBK1" << endl << flush;
+   		if ( flag_is_clr(gCmdLine.cmdflags, NLB_CMD_FLAG_CSV) ){
+            cout << " * Data Copy - LPBK1" << endl << flush;
+         }
    		res = nlb_lpbk1.RunTest(gCmdLine);
    		totalres += res;
    		if ( 0 == res ) {
@@ -879,58 +869,41 @@ int main(int argc, char *argv[])
    		}
    		cout << NORMAL << endl;
 	}
-	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_READ)))
-	{
-   		// Run NLB read test.
-	      CNLBMode3 nlb_read(&myapp);
+   else if ((0 == myapp.TestMode().compare(NLB_TESTMODE_READ)) ||
+            (0 == myapp.TestMode().compare(NLB_TESTMODE_WRITE) ||
+            (0 == myapp.TestMode().compare(NLB_TESTMODE_TRPUT))))
+   {
+         // Run NLB mode3 test.
+         CNLBMode3 nlb_mode3(&myapp);
 
-   		cout << " * Read Bandwidth from Memory - READ" << endl << flush;
-   		res = nlb_read.RunTest(gCmdLine);
-   		totalres += res;
-   		if ( 0 == res ) {
-   		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-   		} else {
-   		  cout << FAIL << "ERROR";
-   		}
-   		cout << NORMAL << endl;
-	}
-	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_WRITE)))
-	{
-   		// Run NLB write test.
-	      CNLBMode3 nlb_write(&myapp);
+         if ((0 == myapp.TestMode().compare(NLB_TESTMODE_READ))){
+            cout << " * Read Bandwidth from Memory - READ" << endl << flush;
 
-   		cout << " * Write Bandwidth from Memory - WRITE" << endl << flush;
-   		res = nlb_write.RunTest(gCmdLine);
-   		totalres += res;
-   		if ( 0 == res ) {
-   		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-   		} else {
-   		  cout << FAIL << "ERROR";
-   		}
-   		cout << NORMAL << endl;
-	}
-	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_TRPUT)))
-	{
-   		// Run NLB  trput test.
-	      CNLBMode3 nlb_trput(&myapp);
+         }else if ((0 == myapp.TestMode().compare(NLB_TESTMODE_WRITE))){
+            cout << " * Write Bandwidth from Memory - WRITE" << endl << flush;
 
-   		cout << " * Simultaneous Read/Write Bandwidth - TRPUT" << endl << flush;
-   		res = nlb_trput.RunTest(gCmdLine);
-   		totalres += res;
-   		if ( 0 == res ) {
-   		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-   		} else {
-   		  cout << FAIL << "ERROR";
-   		}
-   		cout << NORMAL << endl;
-	}
+         }else if ((0 == myapp.TestMode().compare(NLB_TESTMODE_TRPUT))){
+            cout << " * Simultaneous Read/Write Bandwidth - TRPUT" << endl << flush;
+         }
+
+         res = nlb_mode3.RunTest(gCmdLine);
+         totalres += res;
+         if ( 0 == res ) {
+           cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+         } else {
+           cout << FAIL << "ERROR";
+         }
+         cout << NORMAL << endl;
+   }
 	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_SW)))
 	{
    	   // Run an SW Test..
    	   // * report bandwidth in GiB/s
    	   CNLBSW nlb_sw(&myapp);
 
-   	   cout << " * SW test " << endl << flush;
+   	   if ( flag_is_clr(gCmdLine.cmdflags, NLB_CMD_FLAG_CSV) ){
+            cout << " * SW test " << endl << flush;
+         }
    	   res = nlb_sw.RunTest(gCmdLine);
    	   totalres += res;
    	   if ( 0 == res ) {
@@ -940,24 +913,7 @@ int main(int argc, char *argv[])
    	   }
    	   cout << NORMAL << endl
    			<< endl;
-     }
-	else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_ATOMIC)))
-		{
-	   	   // Run an SW Test..
-	   	   // * report bandwidth in GiB/s
-	   	   CNLBAtomic nlb_atomic(&myapp);
-
-	   	   cout << " * Atomic test " << endl << flush;
-	   	   res = nlb_atomic.RunTest(gCmdLine);
-	   	   totalres += res;
-	   	   if ( 0 == res ) {
-	   		  cout << PASS << "PASS";
-	   	   } else {
-	   		  cout << FAIL << "ERROR";
-	   	   }
-	   	   cout << NORMAL << endl
-	   			<< endl;
-	     }
+	}
 
    INFO("Stopping the AAL Runtime");
    myapp.Stop();
@@ -1014,35 +970,9 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
    // Set the number of cache lines for the test
    m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, CoolSize / CL(1));
 
-   csr_type cfc_cfg = (csr_type)NLB_TEST_MODE_READ;
+   csr_type cfc_cfg = (csr_type)NLB_TEST_MODE_READ | NLB_TEST_MODE_READ_VL0;
 
-   // Select the read channel.
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VL0)){
-      cfc_cfg |= (csr_type)NLB_TEST_MODE_READ_VL0;
-   }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH0)){
-      cfc_cfg |= (csr_type)NLB_TEST_MODE_READ_VH0;
-   }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VH1)){
-      cfc_cfg |= (csr_type)NLB_TEST_MODE_READ_VH1;
-   }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_READ_VR)){
-      cfc_cfg |= (csr_type)NLB_TEST_MODE_READ_VR;
-   }
-
-   // Select the write channel.
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VL0)){
-      cfc_cfg |= (csr_type)NLB_TEST_MODE_WRITE_VL0;
-   }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH0)){
-      cfc_cfg |= (csr_type)NLB_TEST_MODE_WRITE_VH0;
-   }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VH1)){
-      cfc_cfg |= (csr_type)NLB_TEST_MODE_WRITE_VH1;
-   }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WRITE_VR)){
-      cfc_cfg |= (csr_type)NLB_TEST_MODE_WRITE_VR;
-   }
+   cfc_cfg |= (csr_type)NLB_TEST_MODE_RDI; //FIXME: Change default to rds when BBS supports it.
 
    // Set the test mode
    m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
@@ -1064,7 +994,7 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
 
    // Check the device status
    if ( MaxPoll < 0 ) {
-     ERR( "Cool-FPGA-Cache: The maximum timeout for test stop was exceeded.");
+     ERR( "Cool-FPGA-Cache: Maximum timeout for test stop was exceeded.");
      ++res;
    }
    if ( 0 != pAFUDSM->test_error ) {
