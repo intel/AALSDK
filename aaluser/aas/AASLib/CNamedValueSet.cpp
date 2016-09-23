@@ -2773,7 +2773,8 @@ public:
                                                                                   ENamedValuesNullPointerArgument : m_sNVS.GetSize(Name, pSize); }
 
    /// Get a '' value from a 'text key' NVS.
-   ENamedValues    Type(btStringKey Name, eBasicTypes *pType) const          { ASSERT(NULL != pType); AutoLock(this); return m_sNVS.Type(Name, pType);    }
+   ENamedValues    Type(btStringKey Name, eBasicTypes *pType) const          { ASSERT(NULL != pType); AutoLock(this); return (NULL == pType) ?
+                                                                                  ENamedValuesNullPointerArgument : m_sNVS.Type(Name, pType); }
 
    /// Return 'True' if the 'text key' NVS contains an entry for 'Name'.
    btBool           Has(btStringKey Name)                     const          { AutoLock(this); return m_sNVS.Has(Name);            }
@@ -4995,5 +4996,3 @@ case __type##Array_t : {                                                        
 
 
 END_NAMESPACE(AAL)
-
-
