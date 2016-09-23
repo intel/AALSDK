@@ -52,6 +52,7 @@
 #include <aalsdk/service/IALIAFU.h>
 
 #include <string.h>
+#include <getopt.h>
 
 //****************************************************************************
 // UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
@@ -111,6 +112,17 @@ using namespace AAL;
 #define CSR_AFU_DSM_BASEH        0x0114
 #	define NLB_TEST_MODE_PCIE0		0x2000
 
+
+// command line parsing
+#define GETOPT_STRING ":hB:D:F"
+
+struct option longopts[] = {
+      {"help",                no_argument,       NULL, 'h'},
+      {"bus-number",          required_argument, NULL, 'B'},
+      {"device-number",       required_argument, NULL, 'D'},
+      {"function-number",     required_argument, NULL, 'F'}
+};
+
 /// @addtogroup HelloALINLB
 /// @{
 
@@ -128,7 +140,7 @@ public:
    HelloALINLBApp();
    ~HelloALINLBApp();
 
-   btInt run();    ///< Return 0 if success
+   btInt run(int busnum, int devnum, int funnum);    ///< Return 0 if success
 
    // <begin IServiceClient interface>
    void serviceAllocated(IBase *pServiceBase,
@@ -257,7 +269,7 @@ HelloALINLBApp::~HelloALINLBApp()
 ///             - Executes the NLB algorithm
 ///             - Cleans up.
 ///
-btInt HelloALINLBApp::run()
+btInt HelloALINLBApp::run(int busnum, int devnum, int funnum)
 {
    cout <<"========================"<<endl;
    cout <<"= Hello ALI NLB Sample ="<<endl;
@@ -295,6 +307,19 @@ btInt HelloALINLBApp::run()
 #endif
    return -1;
 #endif
+
+   if (busnum >= 0) {
+      cout << "Using PCIe bus 0x" << std::hex << busnum << std::dec << endl;
+      ConfigRecord.Add(keyRegBusNumber, btUnsigned32bitInt(busnum));
+   }
+   if (devnum >= 0) {
+      cout << "Using PCIe device 0x" << std::hex << devnum << std::dec << endl;
+      ConfigRecord.Add(keyRegDeviceNumber, btUnsigned32bitInt(devnum));
+   }
+   if (funnum >= 0) {
+      cout << "Using PCIe function 0x" << std::hex << funnum << std::dec << endl;
+      ConfigRecord.Add(keyRegFunctionNumber, btUnsigned32bitInt(funnum));
+   }
 
    // Add the Config Record to the Manifest describing what we want to allocate
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
@@ -639,12 +664,69 @@ void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
 //=============================================================================
 int main(int argc, char *argv[])
 {
+
+   int res = 0;
+   int getopt_ret;
+   int option_index;
+   char *endptr = NULL;
+
+   int busnum = -1;
+   int devnum = -1;
+   int funnum = -1;
+
+   while( -1 != ( getopt_ret = getopt_long(argc, argv, GETOPT_STRING, longopts, &option_index))){
+      const char *tmp_optarg = optarg;
+
+      if((optarg) &&
+         ('=' == *tmp_optarg)){
+         ++tmp_optarg;
+      }
+
+      if((!optarg) &&
+         (NULL != argv[optind]) &&
+         ('-' != argv[optind][0]) ) {
+         tmp_optarg = argv[optind++];
+      }
+
+      switch(getopt_ret){
+         case 'h':
+            printf("Usage:\n\t%s [-B <bus>] [-D <device>] [-F <function>]\n\n",
+                  argv[0]);
+            return -2;
+            break;
+
+         case 'B':
+            endptr = NULL;
+            busnum = strtol(tmp_optarg, &endptr, 0);
+            break;
+
+         case 'D':
+            endptr = NULL;
+            devnum = strtol(tmp_optarg, &endptr, 0);
+            break;
+
+         case 'F':
+            endptr = NULL;
+            funnum = strtol(tmp_optarg, &endptr, 0);
+            break;
+
+         case ':':   /* missing option argument */
+            cout << "Missing option argument.\n";
+            return -1;
+
+         case '?':
+         default:    /* invalid option */
+            cout << "Invalid cmdline options.\n";
+            return -1;
+      }
+   }
+
    HelloALINLBApp theApp;
    if(!theApp.isOK()){
       ERR("Runtime Failed to Start");
       exit(1);
    }
-   btInt Result = theApp.run();
+   btInt Result = theApp.run(busnum, devnum, funnum);
 
    MSG("Done");
    return Result;
