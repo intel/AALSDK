@@ -652,7 +652,7 @@ aalclp_on_##__what(yyscan_t yyscanner) {                           \
    aalclp_links *head = &(clp->callbacks.listhead_##__what.links); \
    aalclp_links *iter;                                             \
    __type       *node;                                             \
-   int           res;                                              \
+   int           res = 0;                                          \
    aalclp_list_for_each_entry(__type, node, head, iter) {          \
       res = node->cb(node->user);                                  \
       if ( 0 != res ) {                                            \
@@ -669,7 +669,7 @@ aalclp_on_##__what(yyscan_t yyscanner, __param1type __param1) {    \
    aalclp_links *head = &(clp->callbacks.listhead_##__what.links); \
    aalclp_links *iter;                                             \
    __type       *node;                                             \
-   int           res;                                              \
+   int           res = 0;                                          \
    aalclp_list_for_each_entry(__type, node, head, iter) {          \
       res = node->cb(node->user, __param1);                        \
       if ( 0 != res ) {                                            \
@@ -686,7 +686,7 @@ aalclp_on_##__what(yyscan_t yyscanner, __param1type __param1, __param2type __par
    aalclp_links *head = &(clp->callbacks.listhead_##__what.links);                      \
    aalclp_links *iter;                                                                  \
    __type       *node;                                                                  \
-   int           res;                                                                   \
+   int           res = 0;                                                               \
    aalclp_list_for_each_entry(__type, node, head, iter) {                               \
       res = node->cb(node->user, __param1, __param2);                                   \
       if ( 0 != res ) {                                                                 \
