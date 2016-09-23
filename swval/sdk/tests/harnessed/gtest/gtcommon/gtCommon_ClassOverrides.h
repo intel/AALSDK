@@ -10,7 +10,8 @@
 ///               and is a member of the osal group of classes
 ///               (Operating System Abstraction Layer).
 ///
-class GTCOMMON_API Listener : public CriticalSection
+class GTCOMMON_API Listener : public CAASBase // changing this from CriticalSection to CAASBase Fri 23 Sep
+                                              // 2016 09:22:55 AM PDT
 {
 public:
    virtual ~Listener()
