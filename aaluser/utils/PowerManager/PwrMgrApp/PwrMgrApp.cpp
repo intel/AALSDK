@@ -196,6 +196,7 @@ void PwrMgrClient::serviceReleaseRequest(AAL::IBase        *pServiceBase,
    if ( NULL != m_pPwrMgrService ) {
       AAL::IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pPwrMgrService);
       ASSERT(NULL != pIAALService);
+      if ( NULL == pIAALService ) return;
 
       // Breadcrumb that this Release resulted from serviceReleaseRequest().
       AAL::TransactionID tid((AAL::btApplicationContext)1);
