@@ -75,6 +75,7 @@ struct NLBDefaults
    const char     *coolfpgacache;
    const char	   *coolcpucache;
    const char     *suppresshdr;
+   const char     *csv;
    const char     *cachepolicy;
    const char     *cachehint;
    const char     *cont;
@@ -93,18 +94,6 @@ struct NLBDefaults
    const char     *writevc;
    const char     *wrfencevc;
    const char     *awp;
-
-   const char     *st;
-   const char     *ut;
-   cmp_xchg_type  mincx;
-   cmp_xchg_type  maxcx;
-   cmp_xchg_type  cx;
-   quad_word_type hqw;
-   quad_word_type sqw;
-   quad_word_type minhqw;
-   quad_word_type maxhqw;
-   quad_word_type minsqw;
-   quad_word_type maxsqw;
    wkspc_size_type strides;
    wkspc_size_type min_strides;
    wkspc_size_type max_strides;
@@ -142,9 +131,9 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_HELP         		(u64_type)0x00000002  /* --help                                                           */
 #define NLB_CMD_FLAG_VERSION      		(u64_type)0x00000004  /* --version                                                        */
 
-#define NLB_CMD_FLAG_TABULAR      		(u64_type)0x00000008  /* --tabular         (show tabular output, like legacy NLBTest)     */
+//#define NLB_CMD_FLAG_TABULAR      		(u64_type)0x00000008  /* --tabular         (show tabular output, like legacy NLBTest)     */
 #define NLB_CMD_FLAG_SUPPRESSHDR  		(u64_type)0x00000010  /* --suppress-hdr    (don't show column headers in text mode)       */
-#define NLB_CMD_FLAG_BANDWIDTH    		(u64_type)0x00000020  /* --no-bw           (don't calculate bandwidth numbers when clear) */
+//#define NLB_CMD_FLAG_BANDWIDTH    		(u64_type)0x00000020  /* --no-bw           (don't calculate bandwidth numbers when clear) */
 
 #define NLB_CMD_FLAG_DSM_PHYS     		(u64_type)0x00000040  /* --dsm-phys  X     (physical address of device status workspace)  */
 #define NLB_CMD_FLAG_SRC_PHYS     		(u64_type)0x00000080  /* --src-phys  X     (physical address of source workspace)         */
@@ -154,7 +143,7 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_ENDCL        		(u64_type)0x00001000  /* --end X           (number of cache lines)                        */
 #define NLB_CMD_FLAG_WRLINE_I      		(u64_type)0x00002000  /* --wli             (write-through caching)                        */
 #define NLB_CMD_FLAG_WRLINE_M      		(u64_type)0x00004000  /* --wlm             (write-back caching)                           */
-#define NLB_CMD_FLAG_PWR          		(u64_type)0x00008000  /* --pwr             (posted writes)                                */
+#define NLB_CMD_FLAG_WRPUSH_I          (u64_type)0x00008000  /* --wpi             (writePush_I caching)                          */
 #define NLB_CMD_FLAG_CONT         		(u64_type)0x00010000  /* --cont            (continuous mode)                              */
 //#define NLB_CMD_FLAG_TONSEC       		(u64_type)0x00020000  /* --timeout-nsec X  (nanosecond timeout for continuous mode)       */
 #define NLB_CMD_FLAG_TOUSEC       		(u64_type)0x00040000  /* --timeout-usec X  (microsecond timeout for continuous mode)      */
@@ -194,11 +183,11 @@ struct NLBCmdLine
 
 #define NLB_CMD_FLAG_MULTICL           (u64_type)0x40000000000		/* --multi-cl X  	 (number of cache lines)        					  */
 
-#define NLB_CMD_FLAG_ST		            (u64_type)0x80000000000		/*  --shared-token   (Sub-mode for atomic tests) 					  */
-#define NLB_CMD_FLAG_UT		            (u64_type)0x100000000000	/*  --seperate-token (Sub-mode for atomic tests) 					  */
-#define NLB_CMD_FLAG_HQW	            (u64_type)0x200000000000	/*  --hardware-qw  	 (QWord number on the Hardware thread) 	     */
-#define NLB_CMD_FLAG_SQW	            (u64_type)0x400000000000	/*  --software-qw    (QWord number on the Software thread)		 */
-#define NLB_CMD_FLAG_CX		            (u64_type)0x800000000000	/*  --cmp-xchg       (Number of Cmp-Xchg operations)				  */
+//#define NLB_CMD_FLAG_ST		            (u64_type)0x80000000000		/*  --shared-token   (Sub-mode for atomic tests) 					  */
+//#define NLB_CMD_FLAG_UT		            (u64_type)0x100000000000	/*  --seperate-token (Sub-mode for atomic tests) 					  */
+//#define NLB_CMD_FLAG_HQW	            (u64_type)0x200000000000	/*  --hardware-qw  	 (QWord number on the Hardware thread) 	     */
+//#define NLB_CMD_FLAG_SQW	            (u64_type)0x400000000000	/*  --software-qw    (QWord number on the Software thread)		 */
+//#define NLB_CMD_FLAG_CX		            (u64_type)0x800000000000	/*  --cmp-xchg       (Number of Cmp-Xchg operations)				  */
 
 #define NLB_CMD_FLAG_ALT_WR_PRN        (u64_type)0x1000000000000   /* --alt-wr-pattern  (Alternate write patterns)                  */
 #define NLB_CMD_FLAG_STRIDED_ACS       (u64_type)0x2000000000000   /* --strided-access  (non-unit strides in NLB)                   */
@@ -213,14 +202,15 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_WRFENCE_VL0       (u64_type)0x100000000000000 /* --wrfvl0       Data transferred on QPI channel for write fence       		*/
 #define NLB_CMD_FLAG_WRFENCE_VH0       (u64_type)0x200000000000000 /* --wrfvh0       Data transferred on PCIe0  channel for write fence          */
 #define NLB_CMD_FLAG_WRFENCE_VH1       (u64_type)0x400000000000000 /* --wrfvh1       Data transferred on PCIe1  channel for write fence          */
-#define NLB_CMD_FLAG_WRPUSH_I       	(u64_type)0x800000000000000 /* --wpi      	  WritePush_I caching          */
+//#define NLB_CMD_FLAG_WRPUSH_I       	(u64_type)0x800000000000000 /* --wpi      	  WritePush_I caching          */
 
-#define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   		/* --0 */
-#define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  		/* --1 */
+//#define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   		/* --0 */
+//#define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  		/* --1 */
 
-#define NLB_CMD_FLAG_BUS_NUMBER        (u64_type)0x1000000000000000 /* --bus-num      PCI bus number to use for AFU allocation */
-#define NLB_CMD_FLAG_DEVICE_NUMBER     (u64_type)0x2000000000000000 /* --device-num      PCI device number to use for AFU allocation */
-#define NLB_CMD_FLAG_FUNCTION_NUMBER   (u64_type)0x4000000000000000 /* --function-num      PCI function number to use for AFU allocation */
+#define NLB_CMD_FLAG_BUS_NUMBER        (u64_type)0x1000000000000000 /* --bus-num       PCI bus number to use for AFU allocation */
+#define NLB_CMD_FLAG_DEVICE_NUMBER     (u64_type)0x2000000000000000 /* --device-num    PCI device number to use for AFU allocation */
+#define NLB_CMD_FLAG_FUNCTION_NUMBER   (u64_type)0x4000000000000000 /* --function-num  PCI function number to use for AFU allocation */
+#define NLB_CMD_FLAG_CSV               (u64_type)0x8000000000000000 /* --csv           csv formatted output */
 
    uint_type                dispflags;
    uint_type                iter;
@@ -231,9 +221,6 @@ struct NLBCmdLine
    phys_type                srcphys;
    phys_type                dstphys;
    freq_type                clkfreq;
-   cmp_xchg_type            cx;
-   quad_word_type           hqw;
-   quad_word_type           sqw;
    wkspc_size_type          strided_acs;
 #if   defined( __AAL_WINDOWS__ )
 # error TODO

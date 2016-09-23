@@ -54,6 +54,7 @@
 #define DEFAULT_COOLFPGACACHE 	"off"
 #define DEFAULT_COOLCPUCACHE 	   "off"
 #define DEFAULT_SUPPRESSHDR 	   "off"
+#define DEFAULT_CSV              "off"
 #define DEFAULT_CACHEPOLICY  	   "wrline-M"
 #define DEFAULT_CACHEHINT        "rdline-I"
 #define DEFAULT_CONT        	   "off"
@@ -67,17 +68,6 @@
 #define DEFAULT_WRITE_VC     	   "auto"
 #define DEFAULT_WRFENCE_VC    	"<WRITE-VC>"
 #define DEFAULT_AWP           	"off"
-#define DEFAULT_ST		   		"off"
-#define DEFAULT_UT		   		"on"
-#define DEFAULT_CX            	2
-#define DEFAULT_MINCX         	2
-#define DEFAULT_MAXCX         	0xFFFE
-#define DEFAULT_HQW           	0
-#define DEFAULT_SQW           	0
-#define DEFAULT_MINHQW        	0
-#define DEFAULT_MAXHQW        	7
-#define DEFAULT_MINSQW        	0
-#define DEFAULT_MAXSQW        	7
 #define DEFAULT_STRIDES       	1
 #define DEFAULT_MIN_STRIDES   	1
 #define DEFAULT_MAX_STRIDES   	64

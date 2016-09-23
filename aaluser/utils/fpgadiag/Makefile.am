@@ -40,7 +40,6 @@ fpgadiag.cpp \
 diag_lpbk1.cpp \
 diag_mode3.cpp \
 diag_sw.cpp \
-diag_atomic.cpp \
 diag_defaults.h \
 diag-common.h \
 diag-nlb-common.cpp \

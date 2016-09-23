@@ -278,13 +278,13 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
     	   ERR("Error bit set in DSM.");
            cout << "DSM Test Error: 0x" << std::hex << pAFUDSM->test_error << endl;
 
-           if( 0 != (pAFUDSM->test_error | 0x00000001)){
+           if( 0 != (pAFUDSM->test_error & 0x00000001)){
         	  cout << "Unexpected Read or Write response\n";
 
-           }else if(0 != (pAFUDSM->test_error | 0x00000004)){
+           }else if(0 != (pAFUDSM->test_error & 0x00000004)){
         	  cout << "Write FIFO overflow\n";
 
-           }else if(0 != (pAFUDSM->test_error | 0x00000008)){
+           }else if(0 != (pAFUDSM->test_error & 0x00000008)){
          	  cout << "WriteEnable asserted, but not forwarded to CCIP.\n";
 
            }
@@ -363,61 +363,75 @@ void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
    bt32bitCSR startpenalty = pAFUDSM->start_overhead;
    bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
 
-   cout << endl ;
-   if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-             //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
-      cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
-          << Normalized(cmd) << ")'";
-
-      if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-                // 01234567890123 01234567890123
-         cout << "   Rd_Bandwidth   Wr_Bandwidth";
-      }
-      cout << endl;
-   }
-
-   cout << setw(10) << cls                         << ' '
-       << setw(10) << pAFUDSM->num_reads           << ' '
-       << setw(11) << pAFUDSM->num_writes          << ' '
-       << setw(12) << GetPerfMonitor(READ_HIT)     << ' '
-       << setw(12) << GetPerfMonitor(WRITE_HIT)    << ' '
-       << setw(13) << GetPerfMonitor(READ_MISS)    << ' '
-       << setw(13) << GetPerfMonitor(WRITE_MISS)   << ' '
-       << setw(10) << GetPerfMonitor(EVICTIONS)    << ' ';
-
    if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
       ticks = rawticks - startpenalty;
    }
    else{
       ticks = rawticks - (startpenalty + endpenalty);
    }
-   cout  << setw(16) << ticks;
 
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-       double rdbw = 0.0;
-       double wrbw = 0.0;
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CSV) ) {
+      if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
+         cout << "Cachelines,Read_Count,Write_Count,Cache_Rd_Hit,Cache_Wr_Hit,Cache_Rd_Miss,Cache_Wr_Miss,Eviction,'Clocks(@"
+              << Normalized(cmd) << ")',Rd_Bandwidth,Wr_Bandwidth,VH0_Rd_Count,VH0_Wr_Count,VH1_Rd_Count,VH1_Wr_Count,VL0_Rd_Count,VL0_Wr_Count" << endl;
+      }
 
-       cout << "  "
-            << setw(14) << CalcReadBandwidth(cmd) << ' '
-            << setw(14) << CalcWriteBandwidth(cmd);
-   }
-   cout << endl << endl;
+      cout << cls                         << ','
+           << pAFUDSM->num_reads          << ','
+           << pAFUDSM->num_writes         << ','
+           << GetPerfMonitor(READ_HIT)    << ','
+           << GetPerfMonitor(WRITE_HIT)   << ','
+           << GetPerfMonitor(READ_MISS)   << ','
+           << GetPerfMonitor(WRITE_MISS)  << ','
+           << GetPerfMonitor(EVICTIONS)   << ','
+           << ticks                       << ','
+           << CalcReadBandwidth(cmd)      << ','
+           << CalcWriteBandwidth(cmd)     << ','
+           << GetPerfMonitor(PCIE0_READ)  << ','
+           << GetPerfMonitor(PCIE0_WRITE) << ','
+           << GetPerfMonitor(PCIE1_READ)  << ','
+           << GetPerfMonitor(PCIE1_WRITE) << ','
+           << GetPerfMonitor(UPI_READ)    << ','
+           << GetPerfMonitor(UPI_WRITE)   << endl ;
 
-   if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
+   }else{
+      cout << endl ;
+      if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
+                //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
+         cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
+             << Normalized(cmd) << ")'";
+                // 01234567890123 01234567890123
+         cout << "   Rd_Bandwidth   Wr_Bandwidth" << endl;
+      }
+
+      cout << setw(10) << cls                          << ' '
+           << setw(10) << pAFUDSM->num_reads           << ' '
+           << setw(11) << pAFUDSM->num_writes          << ' '
+           << setw(12) << GetPerfMonitor(READ_HIT)     << ' '
+           << setw(12) << GetPerfMonitor(WRITE_HIT)    << ' '
+           << setw(13) << GetPerfMonitor(READ_MISS)    << ' '
+           << setw(13) << GetPerfMonitor(WRITE_MISS)   << ' '
+           << setw(10) << GetPerfMonitor(EVICTIONS)    << ' '
+           << setw(16) << ticks                        << ' '
+           << setw(14) << CalcReadBandwidth(cmd)       << ' '
+           << setw(14) << CalcWriteBandwidth(cmd)
+           << endl << endl;
+
+      if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
                //0123456789012 012345678901 012345678901 012345678901 012345678901 012345678901
          cout << "VH0_Rd_Count VH0_Wr_Count VH1_Rd_Count VH1_Wr_Count VL0_Rd_Count VL0_Wr_Count " << endl;
       }
 
-   cout << setw(12) << GetPerfMonitor(PCIE0_READ)     << ' '
-        << setw(12) << GetPerfMonitor(PCIE0_WRITE)    << ' '
-        << setw(12) << GetPerfMonitor(PCIE1_READ)     << ' '
-        << setw(12) << GetPerfMonitor(PCIE1_WRITE)    << ' '
-        << setw(12) << GetPerfMonitor(UPI_READ)       << ' '
-        << setw(12) << GetPerfMonitor(UPI_WRITE)      << ' '
-        << endl << endl;
+      cout << setw(12) << GetPerfMonitor(PCIE0_READ)     << ' '
+           << setw(12) << GetPerfMonitor(PCIE0_WRITE)    << ' '
+           << setw(12) << GetPerfMonitor(PCIE1_READ)     << ' '
+           << setw(12) << GetPerfMonitor(PCIE1_WRITE)    << ' '
+           << setw(12) << GetPerfMonitor(UPI_READ)       << ' '
+           << setw(12) << GetPerfMonitor(UPI_WRITE)      << ' '
+           << endl << endl;
+   }
 
-   if(pAFUDSM->num_reads < cls)
-   {
-	   cout << "WARNING: Lpbk1 Test did NOT run for the requested number of CLs" << endl;
+   if(pAFUDSM->num_reads < cls){
+      cout << "WARNING: Lpbk1 Test did NOT run for the requested number of CLs" << endl;
    }
 }
