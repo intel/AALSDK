@@ -102,7 +102,7 @@ public:
    ///
    /// Application Requests Service using Runtime Client passing a pointer to self.
    /// Blocks calling thread from [Main} untill application is done. 
-   int run(mmlink_server *server, char* filename);
+   int run(mmlink_server *server, char* filename, int busnum, int devnum, int funnum);
 
    btBool IsOK()  {return m_isOK;}
 
@@ -186,7 +186,7 @@ SigTapApp::~SigTapApp()
    m_Sem.Destroy();
 }
 
-int SigTapApp::run(mmlink_server *server, char* filename)
+int SigTapApp::run(mmlink_server *server, char* filename, int busnum, int devnum, int funnum)
 {
 
    cout <<"====================="<<endl;
@@ -201,6 +201,19 @@ int SigTapApp::run(mmlink_server *server, char* filename)
 
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
    ConfigRecord.Add(keyRegAFU_ID,"3AB49893-138D-42EB-9642-B06C6B355B87"); //PORT0 AFU ID
+
+   if (busnum >= 0 && busnum <= 255) {
+      cout << "Using PCIe bus 0x" << std::hex << busnum << std::dec << endl;
+      ConfigRecord.Add(keyRegBusNumber, btUnsigned32bitInt(busnum));
+   }
+   if (devnum >= 0 && devnum <= 32) {
+      cout << "Using PCIe device 0x" << std::hex << devnum << std::dec << endl;
+      ConfigRecord.Add(keyRegDeviceNumber, btUnsigned32bitInt(devnum));
+   }
+   if (funnum >= 0 && funnum <= 8) {
+      cout << "Using PCIe function 0x" << std::hex << funnum << std::dec << endl;
+      ConfigRecord.Add(keyRegFunctionNumber, btUnsigned32bitInt(funnum));
+   }
 
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Signal Tap");
@@ -368,6 +381,9 @@ int main(int argc, char *argv[])
    int 	 ip 	  = INADDR_ANY;
    int    port	  = 3333;
    char *sys_file = (char *)malloc (MAX_FILENAME_SIZE);
+   int bus = -1;
+   int device = -1;
+   int function = -1;
 
 	signal(SIGINT, int_handler);
 
@@ -376,6 +392,9 @@ int main(int argc, char *argv[])
 		sscanf(argv[i], "--ip=%d", &ip);
 		sscanf(argv[i], "--port=%d", &port);
 		sscanf(argv[i], "--sysfs=%s", sys_file);
+		sscanf(argv[i], "--bus=%i", &bus);
+		sscanf(argv[i], "--device=%i", &device);
+		sscanf(argv[i], "--function=%i", &function);
 	}
 
 	struct sockaddr_in sock;
@@ -389,7 +408,7 @@ int main(int argc, char *argv[])
    //int err = server->run(sys_file);
 
    if(theApp.IsOK()){
-      result = theApp.run(server, sys_file);
+      result = theApp.run(server, sys_file, bus, device, function);
    }else{
       MSG("App failed to initialize");
    }
