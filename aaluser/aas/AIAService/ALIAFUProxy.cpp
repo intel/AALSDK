@@ -123,6 +123,7 @@ btBool ALIAFUProxy::init( IBase *pclientBase,
    //  all HW messages will be sent by default.
    m_pAIA->SendMessage(m_devHandle, new BindAFUDevice(m_pClient, rtid), dynamic_cast<IAFUProxyClient*>(this) );
 
+   return true;
 }
 
 //=============================================================================
