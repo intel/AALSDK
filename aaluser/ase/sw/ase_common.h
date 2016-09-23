@@ -78,7 +78,7 @@
 /*
  * ASE Unique ID Check
  */
-#define ASE_UNIQUE_ID "SR-5.0.2-Beta-0b70f5d"
+#define ASE_UNIQUE_ID "SR-5.0.2-Beta-e196aa7"
 
 
 /*
@@ -368,6 +368,7 @@ void remove_spaces (char*);
 void remove_tabs (char*);
 void remove_newline (char*);
 uint32_t ret_random_in_range(int, int);
+void ase_string_copy(char *, const char *, size_t);
 
 // Message queue operations
 void ipc_init();

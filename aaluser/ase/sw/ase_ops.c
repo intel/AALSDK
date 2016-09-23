@@ -102,11 +102,11 @@ int ase_dump_to_file(struct buffer_t *mem, char *dump_file)
   fileptr = fopen(dump_file,"wb");
   if(fileptr == NULL)
     {
-    #ifdef SIM_SIDE
+#ifdef SIM_SIDE
       ase_error_report ("fopen", errno, ASE_OS_FOPEN_ERR);
-    #else
+#else
       perror("fopen");
-    #endif
+#endif
       return NOT_OK;
     }
 
@@ -225,11 +225,11 @@ void ase_eval_session_directory()
 #else
   ase_workdir_path = getenv ("ASE_WORKDIR");
 
-  #ifdef ASE_DEBUG
+#ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [DEBUG]  env(ASE_WORKDIR) = %s\n", ase_workdir_path);
   END_YELLOW_FONTCOLOR;
-  #endif
+#endif
 
   if (ase_workdir_path == NULL)
     {
@@ -257,7 +257,7 @@ void ase_eval_session_directory()
       else
 	{
 	  closedir(ase_dir);
-	}      
+	}
     }
 #endif
 }
@@ -278,13 +278,13 @@ char* ase_malloc (size_t size)
   if (buffer == NULL)
     {
       ase_error_report ("malloc", errno, ASE_OS_MALLOC_ERR);
-    #ifdef SIM_SIDE
+#ifdef SIM_SIDE
       printf("SIM-C : Malloc failed\n");
       start_simkill_countdown();
-    #else
+#else
       printf("  [APP] Malloc failed\n");
       exit(1);
-    #endif
+#endif
     }
   else
     {
@@ -319,10 +319,10 @@ void ase_write_lock_file()
   // Create a filepath string
   ase_ready_filepath = ase_malloc(ASE_FILEPATH_LEN);
   snprintf(ase_ready_filepath, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, ASE_READY_FILENAME);
-  
+
   // Line 2
   ase_hostname = ase_malloc(ASE_FILENAME_LEN);
-  
+
   // Open file
   fp_ase_ready = fopen(ase_ready_filepath, "w");
   if (fp_ase_ready == (FILE*)NULL)
@@ -351,7 +351,7 @@ void ase_write_lock_file()
 
 	  // Remove buffers
 	  free (ase_hostname);
-	  
+
 	  // Issue Simkill
 	  start_simkill_countdown();
 	}
@@ -405,18 +405,18 @@ int ase_read_lock_file(const char *workdir)
   if (workdir == NULL)
     {
       BEGIN_RED_FONTCOLOR;
-    #ifdef SIM_SIDE
+#ifdef SIM_SIDE
       printf("SIM-C : ");
-    #else
+#else
       printf("  [APP]  ");
-    #endif
+#endif
       printf("ase_read_lock_file : Input ASE workdir path is NULL \n");
       END_RED_FONTCOLOR;
-    #ifdef SIM_SIDE
+#ifdef SIM_SIDE
       start_simkill_countdown();
-    #else
+#else
       exit(1);
-    #endif
+#endif
     }
   else
     {
@@ -432,18 +432,18 @@ int ase_read_lock_file(const char *workdir)
 	  if (fp_exp_ready == NULL)
 	    {
 	      BEGIN_RED_FONTCOLOR;
-            #ifdef SIM_SIDE
+#ifdef SIM_SIDE
 	      printf("SIM-C : ");
-            #else
+#else
 	      printf("  [APP]  ");
-            #endif
+#endif
 	      printf("Ready file couldn't be opened for reading, Exiting !\n");
 	      END_RED_FONTCOLOR;
-            #ifdef SIM_SIDE
+#ifdef SIM_SIDE
 	      start_simkill_countdown();
-            #else
+#else
 	      exit(1);
-            #endif
+#endif
 	    }
 
 	  // Malloc/memset
@@ -459,35 +459,53 @@ int ase_read_lock_file(const char *workdir)
 	      // LHS/RHS tokenizing
 	      parameter = strtok(line, "=");
 	      value = strtok(NULL, "");
-	      // Trim contents
-	      remove_spaces (parameter);
-	      remove_tabs (parameter);
-	      remove_newline (parameter);
-	      remove_spaces (value);
-	      remove_tabs (value);
-	      remove_newline(value);
-	      // Line 1/2/3/4 check
-	      if ( strncmp (parameter, "pid", 4) == 0)
-		{
-		  readback_pid = atoi(value);
-		}
-	      else if ( strncmp (parameter, "host", 5) == 0)
-		{
-		  strncpy(readback_hostname, value, ASE_FILENAME_LEN);\
-		}
-	      else if ( strncmp (parameter, "dir", 4) == 0)
-		{
-		  strncpy(readback_workdir_path, value, ASE_FILEPATH_LEN);
-		}
-	      else if ( strncmp (parameter, "uid", 4) == 0)
-		{
-		  strncpy(readback_uid, value, ASE_FILEPATH_LEN);
-		}
-	      else 
+	      // Check for parameter being recorded as NULL
+	      if ((parameter == NULL) || (value == NULL))
 		{
 		  BEGIN_RED_FONTCOLOR;
-		  printf("** ERROR **: Session parameter could not be deciphered !\n");
+		  printf("** Error tokenizing paramter in lock file, EXIT !\n");
 		  END_RED_FONTCOLOR;
+#ifdef SIM_SIDE
+		  start_simkill_countdown();
+#else
+		  exit(1);
+#endif
+		}
+	      else
+		{
+		  // Trim contents
+		  remove_spaces (parameter);
+		  remove_tabs (parameter);
+		  remove_newline (parameter);
+		  remove_spaces (value);
+		  remove_tabs (value);
+		  remove_newline(value);
+		  // Line 1/2/3/4 check
+		  if ( strncmp (parameter, "pid", 4) == 0)
+		    {
+		      readback_pid = atoi(value);
+		    }
+		  else if ( strncmp (parameter, "host", 5) == 0)
+		    {
+		      // strncpy(readback_hostname, value, ASE_FILENAME_LEN);
+		      ase_string_copy(readback_hostname, value, ASE_FILENAME_LEN);
+		    }
+		  else if ( strncmp (parameter, "dir", 4) == 0)
+		    {
+		      // strncpy(readback_workdir_path, value, ASE_FILEPATH_LEN);
+		      ase_string_copy(readback_workdir_path, value, ASE_FILEPATH_LEN);
+		    }
+		  else if ( strncmp (parameter, "uid", 4) == 0)
+		    {
+		      // strncpy(readback_uid, value, ASE_FILEPATH_LEN);
+		      ase_string_copy(readback_uid, value, ASE_FILEPATH_LEN);
+		    }
+		  else
+		    {
+		      BEGIN_RED_FONTCOLOR;
+		      printf("** ERROR **: Session parameter could not be deciphered !\n");
+		      END_RED_FONTCOLOR;
+		    }
 		}
 	    }
 	  fclose(fp_exp_ready);
@@ -511,11 +529,11 @@ int ase_read_lock_file(const char *workdir)
 		  printf("** ERROR ** => Hostname specified in ASE lock file (%s) is different as current hostname (%s)\n", readback_hostname, curr_hostname);
 		  printf("** ERROR ** => Ensure that ASE Simulator and AAL application are running on the same host !\n");
 		  END_RED_FONTCOLOR;
-                #ifdef SIM_SIDE
+#ifdef SIM_SIDE
 		  start_simkill_countdown();
-                #else
+#else
 		  exit(1);
-                #endif
+#endif
 		}
 	      else
 		{
@@ -532,15 +550,15 @@ int ase_read_lock_file(const char *workdir)
 		      printf("** ERROR ** => Ensure that ASE simulator and AAL application are compiled from the same System Release version !\n");
 		      printf("** ERROR ** => Simulation cannot proceed ... EXITING\n");
 		      END_RED_FONTCOLOR;
-                    #ifdef SIM_SIDE
+#ifdef SIM_SIDE
 		      start_simkill_countdown();
-                    #else
+#else
 		      exit(1);
-                    #endif
+#endif
 		    }
-	      
+
 		  // Free curr_uid
-		  free (curr_uid);	      
+		  free (curr_uid);
 		}
 	    }
 
@@ -581,10 +599,10 @@ void print_mmiopkt(FILE *fp, char *activity, struct mmio_t *pkt)
   memset(mmio_action_type, 0, 20);
 
   snprintf(mmio_action_type, 20,
-	  "MMIO-%s-%d-%s",
-	  (pkt->write_en == MMIO_WRITE_REQ ? "Write" : "Read"),
-	  pkt->width,
-	  (pkt->resp_en == 0 ? "Req " : "Resp") );
+	   "MMIO-%s-%d-%s",
+	   (pkt->write_en == MMIO_WRITE_REQ ? "Write" : "Read"),
+	   pkt->width,
+	   (pkt->resp_en == 0 ? "Req " : "Resp") );
 
   fprintf(fp, "%s\t%03x\t%s\t%x\t%llx\n", activity,
 	  pkt->tid, mmio_action_type, pkt->addr, pkt->qword[0]);
@@ -613,12 +631,12 @@ void register_signal (int sig, void *handler )
   FUNC_CALL_ENTRY;
 
   struct sigaction cfg;
-  
+
   // Configure signal handler
   cfg.sa_handler = handler;
   sigemptyset(&cfg.sa_mask);
   cfg.sa_flags = SA_RESTART;
-  
+
   // Declare signal action
   sigaction (sig, &cfg, 0);
 
@@ -627,9 +645,59 @@ void register_signal (int sig, void *handler )
 
 
 /*
- * ret_random_in_range : Return random number in a range 
+ * ret_random_in_range : Return random number in a range
  */
-uint32_t ret_random_in_range(int low, int high) 
+uint32_t ret_random_in_range(int low, int high)
 {
   return (rand() % (high+1-low) + low );
+}
+
+
+/*
+ * ase_string_copy
+ * ASE's own safe string copy insures a null-termination
+ * NOTE: dest must be malloc'ed before use (use ase_malloc)
+ */
+void ase_string_copy(char *dest, const char *src, size_t num_bytes)
+{
+  FUNC_CALL_ENTRY;
+
+  int dest_strlen;
+
+  // Allocate memory if not already done
+  if (dest == NULL)
+    {
+#ifdef ASE_DEBUG
+      BEGIN_RED_FONTCOLOR;
+      printf("  [DEBUG]  ase_string_copy => Destination string not allocated, running ase_malloc\n");
+      END_RED_FONTCOLOR;
+#endif
+      dest = ase_malloc(num_bytes);
+    }
+
+  // Use snprintf as a copy mechanism
+  snprintf(dest, num_bytes, "%s", src);
+
+  // Find length
+  dest_strlen = strlen(dest);
+
+  // Terminate length, or kill
+  if ( dest_strlen < ASE_MQ_NAME_LEN )
+    {
+      dest[dest_strlen] = '\0';
+    }
+  else
+    {
+      BEGIN_RED_FONTCOLOR;
+#ifdef SIM_SIDE
+      printf("SIM-C : ** Internal Error ** => Invalid null termination during string copy ");
+      start_simkill_countdown();
+#else
+      printf("  [APP]  ** Internal Error ** => Invalid null termination during string copy ");
+      exit(1);
+#endif
+      END_RED_FONTCOLOR;
+    }
+
+  FUNC_CALL_EXIT;
 }

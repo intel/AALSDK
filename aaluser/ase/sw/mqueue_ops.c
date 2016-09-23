@@ -59,46 +59,69 @@ const char * mq_name_arr[] =
  */
 int get_smq_perm_flag(const char *mq_name_str)
 {
-  char mq_str[ASE_MQ_NAME_LEN];
-  strncpy(mq_str, mq_name_str, ASE_MQ_NAME_LEN);
+  char *mq_str;
+  int ret = -1;
+
+  // Length controlled string copy
+  mq_str = ase_malloc(ASE_MQ_NAME_LEN);
+
+  // Length terminated string copy
+  ase_string_copy(mq_str, mq_name_str, ASE_MQ_NAME_LEN);
 
   // Tokenize string and get first phrase --- "app2sim" OR "sim2app"
   char *token;
   token = strtok(mq_str, "_");
 
   // If name looks weird, throw an error, crash gracefully
-  if ( (strncmp(token, "sim2app", 7) != 0) && (strncmp(token, "app2sim", 7) != 0) )
+  if (token == NULL)
     {
-      BEGIN_RED_FONTCOLOR;
-      printf("  ** ERROR **: Named pipe name is neither app2sim nor sim2app!\n");
-      END_RED_FONTCOLOR;
-    #ifdef SIM_SIDE
+      ase_free_buffer(mq_str);
+#ifdef SIM_SIDE
       start_simkill_countdown();
-    #else
+#else
       exit(1);
-    #endif
+#endif
+    }
+  else
+    {
+      if ( (strncmp(token, "sim2app", 7) != 0) && (strncmp(token, "app2sim", 7) != 0) )
+	{
+	  BEGIN_RED_FONTCOLOR;
+	  printf("  ** ERROR **: Named pipe name is neither app2sim nor sim2app!\n");
+	  END_RED_FONTCOLOR;
+          ase_free_buffer(mq_str);
+#ifdef SIM_SIDE
+	  start_simkill_countdown();
+#else
+	  exit(1);
+#endif
+	}
+      else
+	{
+#ifdef SIM_SIDE
+	  if (strncmp(token, "sim2app", 7) == 0)
+	    {
+	      ret = O_WRONLY;
+	    }
+	  else if  (strncmp(token, "app2sim", 7) == 0)
+	    {
+	      ret = O_RDONLY|O_NONBLOCK;
+	    }
+#else
+	  if (strncmp(token, "sim2app", 7) == 0)
+	    {
+	      ret = O_RDONLY;
+	    }
+	  else if  (strncmp(token, "app2sim", 7) == 0)
+	    {
+	      ret = O_WRONLY;
+	    }
+#endif
+	}
     }
 
-#ifdef SIM_SIDE
-  if (strncmp(token, "sim2app", 7) == 0)
-    {
-      return O_WRONLY;
-    }
-  else if  (strncmp(token, "app2sim", 7) == 0)
-    {
-      return O_RDONLY|O_NONBLOCK;
-    }
-#else
-  if (strncmp(token, "sim2app", 7) == 0)
-    {
-      return O_RDONLY;
-    }
-  else if  (strncmp(token, "app2sim", 7) == 0)
-    {
-      return O_WRONLY;
-    }
-#endif
-  return -1;
+  ase_free_buffer(mq_str);
+  return ret;
 }
 
 
@@ -128,13 +151,13 @@ void ipc_init()
       if (mq_array[ipc_iter].perm_flag == -1)
 	{
 	  BEGIN_RED_FONTCOLOR;
-        #ifdef SIM_SIDE
+#ifdef SIM_SIDE
 	  printf("SIM-C : Message pipes opened up with wrong permissions --- unexpected error");
 	  start_simkill_countdown();
-        #else
+#else
 	  printf("  [APP]  Message pipes opened up with wrong permissions --- unexpected error");
 	  exit(1);
-        #endif
+#endif
 	  END_RED_FONTCOLOR;
 	}
     }
@@ -211,11 +234,11 @@ int mqueue_open(char *mq_name, int perm_flag)
   int dummy_fd;
   if (perm_flag == O_WRONLY)
     {
-    #ifdef ASE_DEBUG
+#ifdef ASE_DEBUG
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [DEBUG]  Opening IPC in write-only mode with dummy fd\n");
       END_YELLOW_FONTCOLOR;
-    #endif
+#endif
       dummy_fd = open(mq_path, O_RDONLY|O_NONBLOCK);
     }
 #endif
@@ -261,9 +284,9 @@ void mqueue_close(int mq)
   if (ret == -1)
     {
 #ifdef SIM_SIDE
- #ifdef ASE_DEBUG
+#ifdef ASE_DEBUG
       printf("Error closing IPC\n");
- #endif
+#endif
 #endif
     }
 
@@ -340,7 +363,7 @@ int mqueue_recv(int mq, char* str, int size)
   FUNC_CALL_EXIT;
   if (ret > 0)
     {
-       return ASE_MSG_PRESENT;
+      return ASE_MSG_PRESENT;
     }
   else
     {
