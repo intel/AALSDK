@@ -82,8 +82,9 @@ using namespace AAL;
 #endif
 
 /// Filename prefix check - needs to match (or specify --force=TRUE)
-#define FILENAME_PREFIX "090716_skxp_611_pr"
-#define FILENAME_PREFIX_LEN (strlen(FILENAME_PREFIX))
+#define FILENAME_INFIX "_skxp_620_pr"
+#define FILENAME_INFIX_LEN (strlen(FILENAME_INFIX))
+#define FILENAME_INFIX_OFFSET 6
 
 /// Command Line
 BEGIN_C_DECLS
@@ -331,10 +332,10 @@ int verifycmds(struct ALIConfigCommandLine *cl)
       bitstream_file_path.substr( bitstream_file_path.find_last_of( "/\\" ) +1 );
 
    // compare filename prefix
-   if ( 0 != bitstream_file_base.compare(0, FILENAME_PREFIX_LEN, FILENAME_PREFIX) ) {
+   if ( 0 != bitstream_file_base.compare(FILENAME_INFIX_OFFSET, FILENAME_INFIX_LEN, FILENAME_INFIX) ) {
       if (! cl->force) {
          printf("Filename prefix mismatch - please check bitstream versions.\n");
-         printf("Expected prefix is '%s'\n", FILENAME_PREFIX);
+         printf("Expected prefix is 'mmddyy%s', where 'mmddyy' is a date.\n", FILENAME_INFIX);
          printf("Add --force=TRUE to override.\n");
          return 3;
       }
