@@ -1616,7 +1616,15 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 			/* just a shorter name for the current buffer */
 			YY_BUFFER_STATE b = YY_CURRENT_BUFFER;
-
+                          
+			if ( b == NULL)
+			{
+			    num_to_read = 0;
+			    YY_FATAL_ERROR(
+				"fatal error - YY_CURRENT_BUFFER is NULL" );
+			    break;
+			}
+                        
 			int yy_c_buf_p_offset =
 				(int) (yyg->yy_c_buf_p - b->yy_ch_buf);
 
