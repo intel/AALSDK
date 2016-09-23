@@ -89,6 +89,16 @@ ServiceBase::ServiceBase(AALServiceModule *container,
 
    AutoLock(this);
 
+   if ( m_pcontainer == NULL ) {
+      m_bIsOK = false;
+      return;
+   }
+
+   if ( pAALRuntime == NULL ) {
+      m_bIsOK = false;
+      return;
+   }
+
    if ( EObjOK != SetInterface(iidServiceBase, dynamic_cast<IServiceBase *>(this)) ) {
       m_bIsOK = false;
       return;
