@@ -496,8 +496,8 @@ AAL::ali_errnum_e CASEALIAFU::bufferAllocate( btWSSize             Length,
      pTargetVirtAddr = NULL;    // no mapping requested
   }
 
-  buf = (struct buffer_t *) malloc (sizeof(struct buffer_t));
-  memset(buf, 0, sizeof(buffer_t));
+  buf = (struct buffer_t *) ase_malloc (sizeof(struct buffer_t));
+  // memset(buf, 0, sizeof(buffer_t));
 
   buf->memsize = (uint32_t)Length;
 
