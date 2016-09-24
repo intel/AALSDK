@@ -166,7 +166,7 @@ int aliconigafu_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option,
 
    // Bitstream file name
    if ( 0 == strcmp("--bitstream", option)) {
-      strcpy(pcmdline->bitstream_file ,value);
+      strncpy(pcmdline->bitstream_file, value, sizeof(pcmdline->bitstream_file));
       return 0;
    }
 
