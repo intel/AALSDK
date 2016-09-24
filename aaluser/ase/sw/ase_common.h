@@ -362,7 +362,6 @@ void ase_str_to_buffer_t(char *, struct buffer_t *);
 int ase_dump_to_file(struct buffer_t*, char*);
 uint64_t ase_rand64();
 void ase_eval_session_directory();
-char* ase_malloc (size_t);
 int ase_instance_running();
 void remove_spaces (char*);
 void remove_tabs (char*);
@@ -435,6 +434,8 @@ extern "C" {
   void ase_portctrl(const char *);
   // Threaded watch processes
   void *mmio_response_watcher();
+  // ASE-special malloc
+  char* ase_malloc (size_t);
 #ifdef MT_UMSG_POLL
   void *umsg_watcher(void *);
 #else
@@ -623,6 +624,9 @@ void buffer_msg_inject (int, char *);
 extern int count_error_flag_ping();
 void count_error_flag_pong(int);
 void update_glbl_dealloc(int);
+
+// Redeclaring ase_malloc, following maintainer-check issues !!! Do Not Edit !!!
+char* ase_malloc (size_t);
 
 
 /*
