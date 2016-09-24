@@ -262,6 +262,8 @@ btBool TempPowMonApp::getPower()
       printf("Power Consumption Value %lld Watts\n",value);
    }
 
+   return true;
+
 } // TempPowMonApp::getPower
 
 
