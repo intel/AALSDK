@@ -267,9 +267,14 @@ btInt PwrMgrClient::FreeService()
 
       AAL::IAALService *pIAALService = dynamic_ptr<AAL::IAALService>(iidService, m_pPwrMgrService);
       ASSERT(NULL != pIAALService);
-      pIAALService->Release(AAL::TransactionID());
-      m_Sem.Wait();
-      return 0;
+
+      if (NULL != pIAALService) {
+          pIAALService->Release(AAL::TransactionID());
+          m_Sem.Wait();
+          return 0;
+      } else {
+          return 1;
+          }
    } else {
       //m_Sem.Post(1);
       return 1;
@@ -519,15 +524,15 @@ btInt PwrMgrClient::CoreIdler(btInt &FPIWatts, btInt &socket)
               break;
           }
       }
-   
+
       max_pid_index = strtol(&data1[0], &endptr, 10);
       ret_val = fclose(fp);
    } else {
-     
+
       printf("Failed to read pid_max \n");
       ERR("Failed to read pid_max ");
       return(ali_errnumSystem);
- 
+
    }
    //--//
    //--//  Set affinity for all possible pids to mask in cpuset.
