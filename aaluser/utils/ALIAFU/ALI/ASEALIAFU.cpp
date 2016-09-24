@@ -612,9 +612,7 @@ void CASEALIAFU::umsgTrigger64( const btVirtAddr pUMsg,
 //
 // umsgSetAttributes. Set UMSG attributes.
 //
-// TODO: not implemented
-//
-bool  __attribute__((optimize("O0")))  CASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
+bool CASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 {
   btUnsigned64bitInt hint_flag;
 
