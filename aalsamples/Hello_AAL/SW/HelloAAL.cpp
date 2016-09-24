@@ -336,6 +336,9 @@ void HelloAALApp::serviceAllocated(IBase *pServiceBase,
 {
    m_pAALService = pServiceBase;
    ASSERT(NULL != m_pAALService);
+   if ( NULL == m_pAALService) {
+      return;
+   }
 
    IHelloAALService *ptheService = dynamic_ptr<IHelloAALService>(iidSampleHelloAAL, pServiceBase);
 
