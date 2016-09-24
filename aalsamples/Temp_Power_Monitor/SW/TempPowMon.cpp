@@ -324,8 +324,11 @@ void TempPowMonApp::serviceAllocated(IBase *pServiceBase,
 {
    m_pAALService = pServiceBase;
    ASSERT(NULL != m_pAALService);
+   if ( NULL == m_pAALService ) {
+      m_bIsOK = false;
+      return;
+   }
 
-  
    m_pALIPower = dynamic_ptr<IALIPower>(iidALI_POWER_Service, pServiceBase);
    ASSERT(NULL != m_pALIPower);
    if ( NULL == m_pALIPower ) {
