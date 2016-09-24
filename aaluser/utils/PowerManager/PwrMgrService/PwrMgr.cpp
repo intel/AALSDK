@@ -122,7 +122,11 @@ btBool CPwrMgr::Release(TransactionID const &TranID, btTime timeout)
    btApplicationContext appContext = reinterpret_cast<btApplicationContext>(prc);
    // Release ALI / AFUProxy
    ASSERT(m_pAALService != NULL);
-   return m_pAALService->Release(TransactionID(appContext), timeout);
+   if (m_pAALService != NULL) {
+       return m_pAALService->Release(TransactionID(appContext), timeout);
+   } else {
+       return false;
+   }
 }
 
 /*
@@ -397,4 +401,3 @@ PWRMGR_END_SVC_MOD()
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
 #endif // __AAL_WINDOWS__
-
