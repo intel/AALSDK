@@ -54,12 +54,8 @@
 
 #include <string.h>
 
-//****************************************************************************
-// UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
-//    DEFAULT is to use Software Simulation.
-//****************************************************************************
 #define  HWAFU
-//#define  ASEAFU
+
 
 using namespace std;
 using namespace AAL;
@@ -104,7 +100,7 @@ using namespace AAL;
 #	define NLB_TEST_MODE_PCIE0		0x2000
 
 #define CCIP_FME_AFUID              "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764"
-#define CCIP_NLB_AFUID              "C000C966-0D82-4272-9AEF-FE5F84570612"
+#define CCIP_NLB_AFUID              "D8424DC4-A4A3-C413-F89E-433683F9040B"
 
 /// @addtogroup HelloALINLB
 /// @{
@@ -264,7 +260,7 @@ HelloALINLBApp::~HelloALINLBApp()
 btInt HelloALINLBApp::run()
 {
    cout <<"========================"<<endl;
-   cout <<"= Hello ALI NLB Sample ="<<endl;
+   cout <<"= Hello ALI NLB & Performance Counters  Sample ="<<endl;
    cout <<"========================"<<endl;
 
    // Request the Servcie we are interested in.
@@ -283,28 +279,15 @@ btInt HelloALINLBApp::run()
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID,CCIP_NLB_AFUID);
 
-   #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
-   Manifest.Add(keyRegHandle, 20);
-
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASEALIAFU");
-   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
-
-   #else                            /* default is Software Simulator */
-#if 0 // NOT CURRRENTLY SUPPORTED
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimALIAFU");
-   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
-#endif
-   return -1;
-#endif
-
    // Add the Config Record to the Manifest describing what we want to allocate
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
 
+
    // in future, everything could be figured out by just giving the service name
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello ALI NLB");
+#endif
 
-   MSG("Allocating Service");
-#if 1
+   MSG("Allocating AFU Service");
    // Allocate the Service and wait for it to complete by sitting on the
    //   semaphore. The serviceAllocated() callback will be called if successful.
    //   If allocation fails the serviceAllocateFailed() should set m_bIsOK appropriately.
@@ -313,17 +296,18 @@ btInt HelloALINLBApp::run()
    {
       TransactionID afu_tid(HelloALINLBApp::AFU);
       m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, afu_tid);
+      m_Sem.Wait();
       if(!m_bIsOK){
          ERR("Allocation failed\n");
          goto done_0;
       }
    }
-#endif
+
    // Modify the manifest for the NLB AFU
    Manifest.Delete(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED);
    ConfigRecord.Delete(keyRegAFU_ID);
 
-
+   MSG("Allocating FME Service");
    ConfigRecord.Add(keyRegAFU_ID,CCIP_FME_AFUID);
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
    {
@@ -483,20 +467,30 @@ btInt HelloALINLBApp::run()
    getPerfCounters();
    // Clean-up and return
 done_4:
-   m_pALIBufferService->bufferFree(m_OutputVirt);
+   if (NULL != m_pALIBufferService) {
+      m_pALIBufferService->bufferFree(m_OutputVirt);
+   }
 done_3:
-   m_pALIBufferService->bufferFree(m_InputVirt);
+   if (NULL != m_pALIBufferService) {
+      m_pALIBufferService->bufferFree(m_InputVirt);
+   }
 done_2:
-   m_pALIBufferService->bufferFree(m_DSMVirt);
+   if (NULL != m_pALIBufferService) {
+      m_pALIBufferService->bufferFree(m_DSMVirt);
+   }
 
 done_1:
-   (dynamic_ptr<IAALService>(iidService, m_pFMEService))->Release(TransactionID());
-   m_Sem.Wait();
+   if (NULL != m_pFMEService) {
+      (dynamic_ptr<IAALService>(iidService, m_pFMEService))->Release(TransactionID());
+      m_Sem.Wait();
+   }
 
 done_00:
    // Freed all three so now Release() the Service through the Services IAALService::Release() method
-   (dynamic_ptr<IAALService>(iidService, m_pNLBService))->Release(TransactionID());
-   m_Sem.Wait();
+   if (NULL != m_pNLBService) {
+      (dynamic_ptr<IAALService>(iidService, m_pNLBService))->Release(TransactionID());
+       m_Sem.Wait();
+   }
 
 done_0:
    m_Runtime.stop();
@@ -515,7 +509,6 @@ void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
 {
 
    if(rTranID.ID() == HelloALINLBApp::AFU){
-
 
       // Save the IBase for the Service. Through it we can get any other
       //  interface implemented by the Service
@@ -569,10 +562,9 @@ void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
           return;
        }
    }
-   if( m_pFMEService && m_pNLBService){
-      MSG("Services Allocated");
-      m_Sem.Post(1);
-   }
+   MSG("Services Allocated");
+   m_Sem.Post(1);
+  
 }
 
 void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
