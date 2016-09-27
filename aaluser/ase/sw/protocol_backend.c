@@ -281,7 +281,7 @@ void sw_reset_response ()
   FUNC_CALL_ENTRY;
 
   // Send portctrl_rsp message
-  mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
+  mqueue_send(sim2app_portctrl_rsp_tx, completed_str_msg, ASE_MQ_MSGSIZE);
 
   FUNC_CALL_EXIT;
 }
@@ -407,6 +407,10 @@ int ase_listener()
   memset(portctrl_msgstr, 0, ASE_MQ_MSGSIZE);
   memset(portctrl_cmd, 0, ASE_MQ_MSGSIZE);
 
+  // Allocate a completed string
+  completed_str_msg = (char*)ase_malloc(ASE_MQ_MSGSIZE);
+  sprintf(completed_str_msg, "COMPLETED");
+
   // Simulator is not in lockdown mode (simkill not in progress)
   if (self_destruct_in_progress == 0)
     {
@@ -434,7 +438,7 @@ int ase_listener()
 	      buffer_msg_inject(1, umsg_mode_msg);
 
 	      // Send portctrl_rsp message
-	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
+	      mqueue_send(sim2app_portctrl_rsp_tx, completed_str_msg, ASE_MQ_MSGSIZE);
 	    }
 	  else if ( memcmp(portctrl_cmd, "ASE_INIT", 8) == 0)
 	    {
@@ -448,7 +452,7 @@ int ase_listener()
 	      session_empty = 0;
 	      
 	      // Send portctrl_rsp message
-	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
+	      mqueue_send(sim2app_portctrl_rsp_tx, completed_str_msg, ASE_MQ_MSGSIZE);
 	    }
 	  else if ( memcmp(portctrl_cmd, "ASE_SIMKILL", 11) == 0)
 	    {
@@ -520,7 +524,7 @@ int ase_listener()
 #endif
 
 	      // Send portctrl_rsp message
-	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
+	      mqueue_send(sim2app_portctrl_rsp_tx, completed_str_msg, ASE_MQ_MSGSIZE);
 	    }
 	  else
 	    {
@@ -529,7 +533,7 @@ int ase_listener()
 	      END_RED_FONTCOLOR;
 
 	      // Send portctrl_rsp message
-	      mqueue_send(sim2app_portctrl_rsp_tx, "COMPLETED", ASE_MQ_MSGSIZE);
+	      mqueue_send(sim2app_portctrl_rsp_tx, completed_str_msg, ASE_MQ_MSGSIZE);
 	    }
 	}
 
@@ -1053,6 +1057,7 @@ void ase_config_parse(char *filename)
   size_t len = 0;
   char *parameter;
   int value;
+  char *pch;
 
   char *ase_cfg_filepath;
   ase_cfg_filepath = ase_malloc(256);
@@ -1108,21 +1113,62 @@ void ase_config_parse(char *filename)
 	      if ( (line[0] != '#') && (line[0] != '\0') )
 		{
 		  parameter = strtok(line, "=\n");
+		  if (parameter != NULL)
+		    {
 		  if (strncmp (parameter,"ASE_MODE", 20) == 0)
-		    cfg->ase_mode = atoi(strtok(NULL, ""));
+		    {
+		      pch = strtok(NULL, "");
+		      if (pch != NULL)
+			{
+			  cfg->ase_mode = atoi(pch);
+			}
+		    }
 		  else if (strncmp (parameter,"ASE_TIMEOUT", 20) == 0)
-		    cfg->ase_timeout = atoi(strtok(NULL, ""));
+		    {
+		      pch = strtok(NULL, "");
+		      if (pch != NULL)
+			{
+			  cfg->ase_timeout = atoi(pch);
+			}
+		    }
 		  else if (strncmp (parameter,"ASE_NUM_TESTS", 20) == 0)
-		    cfg->ase_num_tests =  atoi(strtok(NULL, ""));
+		    {
+		      pch = strtok(NULL, "");
+		      if (pch != NULL)
+			{
+			  cfg->ase_num_tests = atoi(pch);
+			}
+		    }
 		  else if (strncmp (parameter, "ENABLE_REUSE_SEED", 20) == 0)
-		    cfg->enable_reuse_seed =  atoi(strtok(NULL, ""));
+		    {
+		      pch = strtok(NULL, "");
+		      if (pch != NULL)
+			{
+			  cfg->enable_reuse_seed =  atoi(pch);
+			}
+		    }
 		  else if (strncmp (parameter, "ASE_SEED", 20) == 0)
-		    cfg->ase_seed =  atoi(strtok(NULL, ""));
+		    {
+		      pch = strtok(NULL, "");
+		      if (pch != NULL)
+			{
+			  cfg->ase_seed =  atoi(pch);
+			}
+		    }
 		  else if (strncmp (parameter,"ENABLE_CL_VIEW", 20) == 0)
-		    cfg->enable_cl_view =  atoi(strtok(NULL, ""));
+		    {
+		      pch = strtok(NULL, "");
+		      if (pch != NULL)
+			{
+			  cfg->enable_cl_view =  atoi(pch);
+			}
+		    }
 		  else if (strncmp (parameter, "USR_CLK_MHZ", 20) == 0)
 		    {
-		      f_usrclk = atof(strtok(NULL, ""));
+		      pch = strtok(NULL, "");
+		      if (pch != NULL)
+			{
+		      f_usrclk = atof(pch);
 		      if (f_usrclk == 0.000000) 
 			{
 			  BEGIN_RED_FONTCOLOR;
@@ -1152,10 +1198,14 @@ void ase_config_parse(char *filename)
 			      END_RED_FONTCOLOR;
 			    }
 			}
+			}
 		    }
 		  else if (strncmp(parameter,"PHYS_MEMORY_AVAILABLE_GB", 32) == 0)
 		    {
-		      value = atoi(strtok(NULL, ""));
+		      pch = strtok(NULL, "");
+		      if (pch != NULL)
+			{
+			  value = atoi(pch);
 		      if (value < 0)
 			{
 			  BEGIN_RED_FONTCOLOR;
@@ -1167,9 +1217,13 @@ void ase_config_parse(char *filename)
 			{
 			  cfg->phys_memory_available_gb = value;
 			}
-		    }
+			}
+		    }		    
 		  else
+		    {
 		    printf("SIM-C : In config file %s, Parameter type %s is unidentified \n", ASE_CONFIG_FILE, parameter);
+		    }
+		    }
 		}
 	    }
 

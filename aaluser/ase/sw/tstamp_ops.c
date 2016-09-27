@@ -114,8 +114,6 @@ char* get_timestamp(int dont_kill)
 
   FILE *fp = (FILE *)NULL;
 
-  // unsigned long long readback;
-
   char *tstamp_str;
   tstamp_str = ase_malloc(20);
 
@@ -164,6 +162,29 @@ char* get_timestamp(int dont_kill)
 	  // Close fp
 	  fclose(fp);
 	}
+
+  // Remove newline char
+  remove_newline(tstamp_str);
+
+  // check if null
+  if (tstamp_str == NULL)
+    {
+      printf("** ASE ERROR: Session ID was calculated as NULL **\n");
+    #ifdef SIM_SIDE
+      start_simkill_countdown();
+    #else
+      exit(1);
+    #endif
+    }
+  
+  // Marking a global session ID
+  // strncpy(glbl_session_id, tstamp_str, 20);
+  
+  // Free path string
+  ase_free_buffer (tstamp_filepath);
+  
+  FUNC_CALL_EXIT;
+  return tstamp_str;  
     }
   else   // File doesnt exist
     {
@@ -185,31 +206,11 @@ char* get_timestamp(int dont_kill)
   	  exit(1);
         #endif
 	}
+
+      return NULL;
     }
-
-  // Remove newline char
-  remove_newline(tstamp_str);
-
-  // check if null
-  if (tstamp_str == NULL)
-    {
-      printf("** ASE ERROR: Session ID was calculated as NULL **\n");
-    #ifdef SIM_SIDE
-      start_simkill_countdown();
-    #else
-      exit(1);
-    #endif
-    }
-
-  // Marking a global session ID
-  strncpy(glbl_session_id, tstamp_str, 20);
-  
-  // Free path string
-  ase_free_buffer (tstamp_filepath);
-
-  FUNC_CALL_EXIT;
-  return tstamp_str;
 }
+
 
 // -----------------------------------------------------------------------
 // Check for session file to be created

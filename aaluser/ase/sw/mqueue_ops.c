@@ -118,9 +118,9 @@ int get_smq_perm_flag(const char *mq_name_str)
 	    }
 #endif
 	}
+      ase_free_buffer(mq_str);
     }
 
-  ase_free_buffer(mq_str);
   return ret;
 }
 

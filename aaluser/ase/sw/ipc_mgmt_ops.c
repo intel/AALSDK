@@ -111,7 +111,8 @@ void final_ipc_cleanup()
       ase_error_report("fopen", errno, ASE_IPCKILL_CATERR);
       start_simkill_countdown(); // RRS: exit(1);
     }
-  
+  else
+  {  
   // Parse through list
   printf("SIM-C : Removing message queues and buffer handles ... \n");
   while(1)
@@ -162,7 +163,7 @@ void final_ipc_cleanup()
 
   // Close both files
   fclose(local_ipc_fp);
-
+}
   FUNC_CALL_EXIT;
 }
 

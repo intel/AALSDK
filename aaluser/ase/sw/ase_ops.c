@@ -355,7 +355,8 @@ void ase_write_lock_file()
 	  // Issue Simkill
 	  start_simkill_countdown();
 	}
-
+      else
+	{
       fprintf(fp_ase_ready, "host = %s\n", ase_hostname);
 
       // Line 3
@@ -371,6 +372,7 @@ void ase_write_lock_file()
 
       // Notice on stdout
       printf("SIM-C : ASE lock file .ase_ready.pid written in work directory\n");
+	}
     }
 
 
@@ -445,7 +447,8 @@ int ase_read_lock_file(const char *workdir)
 	      exit(1);
 #endif
 	    }
-
+	  else
+	  {
 	  // Malloc/memset
 	  line = ase_malloc(256);
 	  readback_hostname = ase_malloc(ASE_FILENAME_LEN);
@@ -509,7 +512,7 @@ int ase_read_lock_file(const char *workdir)
 		}
 	    }
 	  fclose(fp_exp_ready);
-
+	  }
 	  ////////////////// Error checks //////////////////
 	  // If hostname does not match
 	  ret_err = gethostname(curr_hostname, ASE_FILENAME_LEN);
