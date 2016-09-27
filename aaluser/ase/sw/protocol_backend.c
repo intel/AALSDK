@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 // **************************************************************************
 /*
- * Module Info: 
+ * Module Info:
  * - Protocol backend for keeping IPCs alive
  * - Interfacing with DPI-C, messaging
  * - Interface to page table
@@ -99,24 +99,37 @@ int ase_instance_running()
  */
 void sv2c_config_dex(const char *str)
 {
-  sv2c_config_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  strncpy(sv2c_config_filepath, str, ASE_FILEPATH_LEN);
-#ifdef ASE_DEBUG
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [DEBUG]  sv2c_config_filepath = %s\n", sv2c_config_filepath);
-  END_YELLOW_FONTCOLOR;
-#endif
-
-  if ( (sv2c_config_filepath != NULL) && (access(sv2c_config_filepath, F_OK)==0) )
+  if (str == NULL)
     {
-      printf("SIM-C : +CONFIG %s file found !\n", sv2c_config_filepath);
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("SIM-C : sv2c_config_dex => Input string is unusable\n");
+      END_YELLOW_FONTCOLOR;
     }
   else
     {
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("SIM-C : ** WARNING ** +CONFIG file was not found, will revert to DEFAULTS\n");
-      memset(sv2c_config_filepath, 0, ASE_FILEPATH_LEN);
-      END_YELLOW_FONTCOLOR;
+      sv2c_config_filepath = ase_malloc(ASE_FILEPATH_LEN);
+      if (sv2c_config_filepath != NULL)
+	{
+	  // strncpy(sv2c_config_filepath, str, ASE_FILEPATH_LEN);
+	  ase_string_copy(sv2c_config_filepath, str, ASE_FILEPATH_LEN);
+#ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("  [DEBUG]  sv2c_config_filepath = %s\n", sv2c_config_filepath);
+	  END_YELLOW_FONTCOLOR;
+#endif
+
+	  if (access(sv2c_config_filepath, F_OK)==0)
+	    {
+	      printf("SIM-C : +CONFIG %s file found !\n", sv2c_config_filepath);
+	    }
+	  else
+	    {
+	      BEGIN_YELLOW_FONTCOLOR;
+	      printf("SIM-C : ** WARNING ** +CONFIG file was not found, will revert to DEFAULTS\n");
+	      memset(sv2c_config_filepath, 0, ASE_FILEPATH_LEN);
+	      END_YELLOW_FONTCOLOR;
+	    }
+	}
     }
 }
 
@@ -126,25 +139,37 @@ void sv2c_config_dex(const char *str)
  */
 void sv2c_script_dex(const char *str)
 {
-  sv2c_script_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  strncpy(sv2c_script_filepath, str, ASE_FILEPATH_LEN);
-#ifdef ASE_DEBUG
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [DEBUG]  sv2c_script_filepath = %s\n", sv2c_script_filepath);
-  END_YELLOW_FONTCOLOR;
-#endif
-
-  // Check for existance of file
-  if ((sv2c_config_filepath != NULL) && (access(sv2c_script_filepath, F_OK)==0))
+  if (str == NULL)
     {
-      printf("SIM-C : +SCRIPT %s file found !\n", sv2c_script_filepath);
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("SIM-C : sv2c_script_dex => Input string is unusable\n");
+      END_YELLOW_FONTCOLOR;
     }
   else
     {
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("SIM-C : ** WARNING ** +SCRIPT file was not found, will revert to DEFAULTS\n");
-      memset(sv2c_script_filepath, 0, ASE_FILEPATH_LEN);
-      END_YELLOW_FONTCOLOR;
+      sv2c_script_filepath = ase_malloc(ASE_FILEPATH_LEN);
+      if (sv2c_script_filepath != NULL)
+	{
+	  ase_string_copy(sv2c_script_filepath, str, ASE_FILEPATH_LEN);
+#ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("  [DEBUG]  sv2c_script_filepath = %s\n", sv2c_script_filepath);
+	  END_YELLOW_FONTCOLOR;
+#endif
+
+	  // Check for existance of file
+	  if (access(sv2c_script_filepath, F_OK)==0)
+	    {
+	      printf("SIM-C : +SCRIPT %s file found !\n", sv2c_script_filepath);
+	    }
+	  else
+	    {
+	      BEGIN_YELLOW_FONTCOLOR;
+	      printf("SIM-C : ** WARNING ** +SCRIPT file was not found, will revert to DEFAULTS\n");
+	      memset(sv2c_script_filepath, 0, ASE_FILEPATH_LEN);
+	      END_YELLOW_FONTCOLOR;
+	    }
+	}
     }
 }
 
@@ -258,7 +283,7 @@ void mmio_response (struct mmio_t *mmio_pkt)
 
   // Lock channel
   // pthread_mutex_lock (&mmio_resp_lock);
-  
+
 #ifdef ASE_DEBUG
   print_mmiopkt(fp_memaccess_log, "MMIO Got ", mmio_pkt);
 #endif
@@ -409,7 +434,7 @@ int ase_listener()
 
   // Allocate a completed string
   completed_str_msg = (char*)ase_malloc(ASE_MQ_MSGSIZE);
-  sprintf(completed_str_msg, "COMPLETED");
+  snprintf(completed_str_msg, 10, "COMPLETED");
 
   // Simulator is not in lockdown mode (simkill not in progress)
   if (self_destruct_in_progress == 0)
@@ -448,9 +473,21 @@ int ase_listener()
 	      tstamp_filepath = ase_malloc(ASE_FILEPATH_LEN);
 	      snprintf(tstamp_filepath, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 	      // Print timestamp
-	      printf("SIM-C : Session ID => %s\n", get_timestamp(0) );
+	      glbl_session_id = ase_malloc(20);
+	      glbl_session_id = get_timestamp(0);
+	      if (glbl_session_id == NULL)
+		{
+		  BEGIN_RED_FONTCOLOR;
+		  printf("SIM-C : Session ID could not be allocated, ERROR.. exiting\n");
+		  END_RED_FONTCOLOR;
+		  start_simkill_countdown();
+		}
+	      else
+		{
+		  printf("SIM-C : Session ID => %s\n", glbl_session_id );
+		}
 	      session_empty = 0;
-	      
+
 	      // Send portctrl_rsp message
 	      mqueue_send(sim2app_portctrl_rsp_tx, completed_str_msg, ASE_MQ_MSGSIZE);
 	    }
@@ -544,11 +581,16 @@ int ase_listener()
        */
       struct buffer_t ase_buffer;
       char logger_str[ASE_LOGGER_LEN];
+      char incoming_alloc_msgstr[ASE_MQ_MSGSIZE];
+      memset(incoming_alloc_msgstr, 0, ASE_MQ_MSGSIZE);
 
       // Receive a DPI message and get information from replicated buffer
       ase_empty_buffer(&ase_buffer);
-      if (mqueue_recv(app2sim_alloc_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
+      if (mqueue_recv(app2sim_alloc_rx, (char*)incoming_alloc_msgstr, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
 	{
+	  // Typecast string to buffer_t
+	  memcpy((char*)&ase_buffer, incoming_alloc_msgstr, sizeof(struct buffer_t));
+
 	  // Allocate action
 	  ase_alloc_action(&ase_buffer);
 	  ase_buffer.is_privmem = 0;
@@ -610,9 +652,15 @@ int ase_listener()
 	}
 
       // ------------------------------------------------------------------------------- //
+      char incoming_dealloc_msgstr[ASE_MQ_MSGSIZE];
+      memset(incoming_dealloc_msgstr, 0, ASE_MQ_MSGSIZE);
+
       ase_empty_buffer(&ase_buffer);
-      if (mqueue_recv(app2sim_dealloc_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
+      if (mqueue_recv(app2sim_dealloc_rx, (char*)incoming_dealloc_msgstr, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
 	{
+	  // Typecast string to buffer_t
+	  memcpy((char*)&ase_buffer, incoming_dealloc_msgstr, sizeof(struct buffer_t));
+
 	  // Format workspace info string
 	  memset (logger_str, 0, ASE_LOGGER_LEN);
 	  snprintf(logger_str + strlen(logger_str), ASE_LOGGER_LEN, "\nBuffer %d Deallocated =>\n", ase_buffer.index);
@@ -1064,11 +1112,13 @@ void ase_config_parse(char *filename)
 
   if ( access(sv2c_script_filepath, F_OK) != -1 )
     {
-      if ( (strlen(sv2c_config_filepath) != 0) && (sv2c_config_filepath!=(char*)NULL))
-	{
-	  snprintf(ase_cfg_filepath, 256, "%s", sv2c_config_filepath);
-	}
+      /* if ( (strlen(sv2c_config_filepath) != 0) && (sv2c_config_filepath!=(char*)NULL)) */
+      /* 	{ */
+  	  snprintf(ase_cfg_filepath, 256, "%s", sv2c_config_filepath);
+  	/* } */
     }
+
+  // ase_string_copy(ase_cfg_filepath, sv2c_config_filepath, 256);
 
   // Allocate space to store ASE config
   cfg = (struct ase_cfg_t *)ase_malloc( sizeof(struct ase_cfg_t) );
@@ -1169,7 +1219,7 @@ void ase_config_parse(char *filename)
 		      if (pch != NULL)
 			{
 		      f_usrclk = atof(pch);
-		      if (f_usrclk == 0.000000) 
+		      if (f_usrclk == 0.000000)
 			{
 			  BEGIN_RED_FONTCOLOR;
 			  printf("SIM-C : User Clock Frequency cannot be 0.000 MHz\n");
@@ -1178,16 +1228,16 @@ void ase_config_parse(char *filename)
 			  cfg->usr_tps = DEFAULT_USR_CLK_TPS;
 			  END_RED_FONTCOLOR;
 			}
-		      else if (f_usrclk == DEFAULT_USR_CLK_MHZ) 
+		      else if (f_usrclk == DEFAULT_USR_CLK_MHZ)
 			{
 			  cfg->usr_tps = DEFAULT_USR_CLK_TPS;
 			}
-		      else 
+		      else
 			{
 			  cfg->usr_tps = (int)( 1E+12/(f_usrclk*pow(1000,2)) );
 #ifdef ASE_DEBUG
 			  BEGIN_YELLOW_FONTCOLOR;
-			  printf("  [DEBUG]  usr_tps = %d\n", cfg->usr_tps); 
+			  printf("  [DEBUG]  usr_tps = %d\n", cfg->usr_tps);
 			  END_YELLOW_FONTCOLOR;
 #endif
 			  if (f_usrclk != DEFAULT_USR_CLK_MHZ)
@@ -1218,7 +1268,7 @@ void ase_config_parse(char *filename)
 			  cfg->phys_memory_available_gb = value;
 			}
 			}
-		    }		    
+		    }
 		  else
 		    {
 		    printf("SIM-C : In config file %s, Parameter type %s is unidentified \n", ASE_CONFIG_FILE, parameter);
@@ -1268,14 +1318,18 @@ void ase_config_parse(char *filename)
 	    }
 
 	  // Close file
-	  fclose(fp);
+	  if (fp != NULL)
+	    {
+	      fclose(fp);
+	    }
+
 	}
       else
 	{
 	  // FILE does not exist
 	  printf("SIM-C : %s not found, using default values\n", ASE_CONFIG_FILE);
 	}
-  
+
       // Mode configuration
       printf("        ASE mode                   ... ");
       switch (cfg->ase_mode)
@@ -1325,7 +1379,7 @@ void ase_config_parse(char *filename)
 #ifdef SIM_SIDE
       ase_config_dex(cfg);
 #endif
-      
+
       // free memory
       free(line);
     }

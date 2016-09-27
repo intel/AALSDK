@@ -45,23 +45,40 @@ struct buffer_t *end;
 // Remove spaces
 void remove_spaces(char* in_str)
 {
-  char* i;
-  char* j;
-  i = in_str;
-  j = in_str;
-  while(*j != 0)
+  if (in_str == NULL)
     {
-      *i = *j++;
-      if(*i != ' ')
-	i++;
+      BEGIN_RED_FONTCOLOR;
+      printf("remove_spaces : Input string is NULL\n");
+      END_RED_FONTCOLOR;
     }
-  *i = 0;
+  else
+    {
+      char* i;
+      char* j;
+      i = in_str;
+      j = in_str;
+      while(*j != 0)
+	{
+	  *i = *j++;
+	  if(*i != ' ')
+	    i++;
+	}
+      *i = 0;
+    }
 }
 
 
 // Remove tabs
 void remove_tabs(char* in_str)
 {
+  if (in_str == NULL)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("remove_tabs : Input string is NULL\n");
+      END_RED_FONTCOLOR;
+    }
+  else
+    {
   char *i = in_str;
   char *j = in_str;
   while(*j != 0)
@@ -71,11 +88,20 @@ void remove_tabs(char* in_str)
   	i++;
     }
   *i = 0;
+    }
 }
 
 // Remove newline
 void remove_newline(char* in_str)
 {
+  if (in_str == NULL)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("remove_newline : Input string is NULL\n");
+      END_RED_FONTCOLOR;
+    }
+  else
+    {
   char *i = in_str;
   char *j = in_str;
   while(*j != 0)
@@ -85,6 +111,7 @@ void remove_newline(char* in_str)
   	i++;
     }
   *i = 0;
+    }
 }
 
 
@@ -429,6 +456,13 @@ int ase_read_lock_file(const char *workdir)
       // Check if file exists
       if (access(exp_ready_filepath, F_OK) != -1)  // File exists
 	{
+	  // Malloc/memset
+	  line = ase_malloc(256);
+	  readback_hostname = ase_malloc(ASE_FILENAME_LEN);
+	  readback_uid = ase_malloc(ASE_FILEPATH_LEN);
+	  readback_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
+	  curr_hostname = ase_malloc(ASE_FILENAME_LEN);
+
 	  // Open file
 	  fp_exp_ready = fopen(exp_ready_filepath, "r");
 	  if (fp_exp_ready == NULL)
@@ -449,12 +483,6 @@ int ase_read_lock_file(const char *workdir)
 	    }
 	  else
 	  {
-	  // Malloc/memset
-	  line = ase_malloc(256);
-	  readback_hostname = ase_malloc(ASE_FILENAME_LEN);
-	  curr_hostname = ase_malloc(ASE_FILENAME_LEN);
-	  readback_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
-	  readback_uid = ase_malloc(ASE_FILEPATH_LEN);
 
 	  // Read file line by line
 	  while( getline(&line, &len, fp_exp_ready) != -1)
@@ -513,6 +541,7 @@ int ase_read_lock_file(const char *workdir)
 	    }
 	  fclose(fp_exp_ready);
 	  }
+
 	  ////////////////// Error checks //////////////////
 	  // If hostname does not match
 	  ret_err = gethostname(curr_hostname, ASE_FILENAME_LEN);
@@ -566,11 +595,11 @@ int ase_read_lock_file(const char *workdir)
 	    }
 
 	  // Free all buffers
-	  free (line);
-	  free (readback_hostname);
-	  free (curr_hostname);
-	  free (readback_workdir_path);
-	  free (readback_uid);
+	  ase_free_buffer (line);
+	  ase_free_buffer (readback_hostname);
+	  ase_free_buffer (curr_hostname);
+	  ase_free_buffer (readback_workdir_path);
+	  ase_free_buffer (readback_uid);
 	}
       else // File does not exist
 	{
@@ -685,7 +714,7 @@ void ase_string_copy(char *dest, const char *src, size_t num_bytes)
   dest_strlen = strlen(dest);
 
   // Terminate length, or kill
-  if ( dest_strlen < ASE_MQ_NAME_LEN )
+  if ( dest_strlen < num_bytes )
     {
       dest[dest_strlen] = '\0';
     }
@@ -693,10 +722,10 @@ void ase_string_copy(char *dest, const char *src, size_t num_bytes)
     {
       BEGIN_RED_FONTCOLOR;
 #ifdef SIM_SIDE
-      printf("SIM-C : ** Internal Error ** => Invalid null termination during string copy ");
+      printf("SIM-C : ** Internal Error ** => Invalid null termination during string copy [%d]\n", dest_strlen);
       start_simkill_countdown();
 #else
-      printf("  [APP]  ** Internal Error ** => Invalid null termination during string copy ");
+      printf("  [APP]  ** Internal Error ** => Invalid null termination during string copy [%d]\n", dest_strlen);
       exit(1);
 #endif
       END_RED_FONTCOLOR;

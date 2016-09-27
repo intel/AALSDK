@@ -146,7 +146,7 @@ char *ase_workdir_path;
 // Timestamp IPC file
 #define TSTAMP_FILENAME ".ase_timestamp"
 char *tstamp_filepath;
-// char glbl_session_id[20];
+char *glbl_session_id;
 
 // CCIP Warnings and Error stat location
 char *ccip_sniffer_file_statpath;

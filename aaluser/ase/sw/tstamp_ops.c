@@ -117,7 +117,7 @@ char* get_timestamp(int dont_kill)
   char *tstamp_str;
   tstamp_str = ase_malloc(20);
 
-  int ret;
+  // int ret;
 
   char *tstamp_filepath;
   tstamp_filepath = (char*)ase_malloc(ASE_FILEPATH_LEN);
@@ -148,10 +148,9 @@ char* get_timestamp(int dont_kill)
       else
 	{
 	  // Read timestamp file
-	  ret = fread(tstamp_str, sizeof(char), 20, fp);
-	  if (ret == 0)
+	  if ( fgets(tstamp_str, 20, fp) == NULL )
 	    {
-	      ase_error_report("fread", errno, ASE_OS_MALLOC_ERR);
+	      ase_error_report("fgets", errno, ASE_OS_MALLOC_ERR);
             #ifdef SIM_SIDE
 	      start_simkill_countdown();
             #else
