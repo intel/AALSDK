@@ -63,6 +63,12 @@ synopsys_sim.setup
 *.mk
 *.list
 *.pyc
+.vlogansetup.args
+AN.DB/
+DVEfiles/
+csrc/
+transcript
+vc_hdrs.h
 
 # Mac cruft
 .DS_Store
