@@ -848,6 +848,9 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       ccip_dev_pcie_socketnum(pccipdev) = ccip_dev_to_fme_dev(pccipdev)->m_pHDR->fab_capability.socket_id ;
       PINFO(" Socket Num = %x   \n",ccip_dev_pcie_socketnum(pccipdev));
 
+      // Save the PCI device in the FME object
+      ccip_fme_dev_pci_dev(ccip_dev_to_fme_dev(pccipdev)) = pcidev;
+
 
       // Instantiate AAL allocatable objects including AFUs if present
       if(!cci_fme_dev_create_AAL_allocatable_objects(pccipdev)){

@@ -1012,6 +1012,11 @@ btBool  reconfigure_activateAFU(struct port_device  *pportdev,struct cci_aal_dev
     // If the device is present
     if(~0ULL != pafu_hdr->ccip_dfh.csr){
 
+       aaldevid_devaddr_busnum(aalid) = ccip_port_busnum(pportdev);
+       aaldevid_devaddr_devnum(aalid) = ccip_port_devnum(pportdev);
+       aaldevid_devaddr_fcnnum(aalid) = ccip_port_fcnnum(pportdev);
+       aaldevid_devaddr_subdevnum(aalid) = 0x1;   
+
        // Instantiate it
        aaldevid_devaddr_instanceNum(aalid)++;
        pcci_aaldev = cci_create_AAL_UAFU_Device(  pportdev,
@@ -2594,11 +2599,15 @@ struct port_device * getport_device(struct cci_aal_device  *pdev , int portId)
       kosal_list_for_each_safe(This, tmp, &g_device_list) {
 
          pccidev = ccip_list_to_ccip_device(This);
-         if(pdev->m_pfme->m_pHDR->fab_capability.socket_id ==
-            pccidev->m_pfme_dev->m_pHDR->fab_capability.socket_id) {
 
-            pport_dev = pccidev->m_pport_dev[portId];
+         // get port device if matching Bus, Device, function of PCIe device
+         if (pdev->m_pcidev->bus->number == ccip_dev_pcie_busnum(pccidev) &&
+            PCI_SLOT(pdev->m_pcidev->devfn) == ccip_dev_pcie_devnum(pccidev) &&
+            PCI_FUNC(pdev->m_pcidev->devfn) == ccip_dev_pcie_fcnnum(pccidev)) {
+
+             pport_dev = pccidev->m_pport_dev[portId];
          }
+         
       }
    }
    //unlock g_device_list
