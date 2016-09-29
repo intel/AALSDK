@@ -435,14 +435,14 @@ struct CCIP_FAB_STATUS {
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt upilink_status :4;     // UPI Link Status
-         btUnsigned64bitInt rsvd1 :4;              // Reserved
+         btUnsigned64bitInt upilink_status :4;       // UPI Link Status
+         btUnsigned64bitInt rsvd1 :4;                // Reserved
 
-         btUnsigned64bitInt pci0link_status :5;    // pci0 link status
-         btUnsigned64bitInt rsvd2 :3;              // Reserved
+         btUnsigned64bitInt pcie0link_status :1;    // PCIe0 link status
+         btUnsigned64bitInt rsvd2 :3;               // Reserved
 
-         btUnsigned64bitInt pci1link_status :5;    // pci1 link status
-         btUnsigned64bitInt rsvd3 :43;             // Reserved
+         btUnsigned64bitInt pcie1link_status :1;    // PCIe1 link status
+         btUnsigned64bitInt rsvd3 :51;              // Reserved
       }; // end struct
    }; // end union
 

@@ -915,6 +915,11 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "cache_assoc= %x \n",pfme_dev->m_pHDR->fab_capability.cache_assoc);
       PDEBUG( "lock_bit= %x \n",pfme_dev->m_pHDR->fab_capability.lock_bit);
 
+      PDEBUG( "QPI link status = %x \n",pfme_dev->m_pHDR->fab_status.upilink_status);
+      PDEBUG( "PCIe0 link status = %x \n",pfme_dev->m_pHDR->fab_status.pcie0link_status);
+      PDEBUG( "PCIe1 link status = %x \n",pfme_dev->m_pHDR->fab_status.pcie1link_status);
+
+
       PDEBUG( "FME Header END \n \n");
 
    }

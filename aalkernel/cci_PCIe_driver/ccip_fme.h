@@ -236,6 +236,13 @@ bt32bitInt get_fme_power(struct fme_device         *pfme_dev,
 bt32bitInt get_fme_thermal(struct fme_device        *pfme_dev,
                            struct CCIP_THERMAL_PWR  *pthermal_power);
 
+/// Name:    ccip_links_status
+/// @brief   get  PCIe0,PCIe1,UPI link status
+///
+/// @param[in] pfme_dev fme device pointer.
+/// @return    true if links are up or false if links are down.
+btBool ccip_links_status(struct fme_device *pfme_dev);
+
 
 extern struct aal_ipip cci_FMEpip;
 

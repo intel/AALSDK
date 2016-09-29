@@ -848,6 +848,12 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       ccip_dev_pcie_socketnum(pccipdev) = ccip_dev_to_fme_dev(pccipdev)->m_pHDR->fab_capability.socket_id ;
       PINFO(" Socket Num = %x   \n",ccip_dev_pcie_socketnum(pccipdev));
 
+      // Checking for PCIe0,PCIe1,UPI link status
+      if(!ccip_links_status(ccip_dev_to_fme_dev(pccipdev))){
+         PERR(" FPGA Interface links are not up \n");
+         goto ERR;
+      }
+
       // Save the PCI device in the FME object
       ccip_fme_dev_pci_dev(ccip_dev_to_fme_dev(pccipdev)) = pcidev;
 
