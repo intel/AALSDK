@@ -6,7 +6,7 @@
 /// @brief        Custom implementation of the service listener interface,
 ///               used for test cases starting with aal0813.
 ///
-class CServiceListener : public IServiceListener
+class GTCOMMON_API CServiceListener : public IServiceListener
 {
 public:
    /// ================================================================
