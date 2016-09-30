@@ -71,10 +71,8 @@ by the current AALSDK installation.
 $ aalscan
 0.0.0 libAAS
 0.0.0 libAASResMgr
-0.0.0 libASEALIAFU
-0.0.0 libHWALIAFU
+0.0.0 libALI
 0.0.0 libOSAL
-0.0.0 libSWSimALIAFU
 0.0.0 libaalrt
 0.0.0 libaia
 0.0.0 librrmbroker@endverbatim
@@ -138,10 +136,8 @@ int parsecmds(struct aalscanCmdLine * , int , char *[] );
 const char *gCoreAALServiceRootNames[] = {
    "libAAS",
    "libAASResMgr",
-   "libASEALIAFU",
-   "libHWALIAFU",
+   "libALI",
    "libOSAL",
-   "libSWSimALIAFU",
    "libaalrt",
    "libaia",
    "librrmbroker"
