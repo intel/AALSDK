@@ -56,6 +56,7 @@
 #include <aalsdk/AALLoggerExtern.h> // Logger
 #include <signal.h>
 #include <aalsdk/service/IALIAFU.h>
+#include <getopt.h>
 
 using namespace std;
 using namespace AAL;
@@ -83,6 +84,19 @@ using namespace AAL;
 #endif
 
 
+// command line parsing
+#define GETOPT_STRING ":hcCB:D:F"
+
+struct option longopts[] = {
+      {"help",                no_argument,       NULL, 'h'},
+      {"clear",               optional_argument, NULL, 'c'},
+      {"Clear",               optional_argument, NULL, 'C'},
+      {"bus-number",          required_argument, NULL, 'B'},
+      {"device-number",       required_argument, NULL, 'D'},
+      {"function-number",     required_argument, NULL, 'F'},
+      {0,0,0,0}
+};
+
 // FME GUID
 #define CCIP_FME_AFUID              "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764"
 // PORT GUID
@@ -107,7 +121,7 @@ public:
    ///
    /// Application Requests Service using Runtime Client passing a pointer to self.
    /// Blocks calling thread from [Main} untill application is done.
-   btInt run(btBool bClear); //Return 0 if success
+   btInt run(int busnum, int devnum, int funnum,btBool bClear);    ///< Return 0 if success
 
    // Get FME Errors
    btBool getFMEError();
@@ -415,8 +429,7 @@ btBool ErrorMonApp::printAllPortErrors()
    return true;
 }
 
-
-btInt ErrorMonApp::run(btBool bClear)
+btInt ErrorMonApp::run(int busnum, int devnum, int funnum,btBool bClear)
 {
 
    cout <<"===================================="<<endl;
@@ -432,6 +445,20 @@ btInt ErrorMonApp::run(btBool bClear)
 
    // Modify the manifest for the PORT
    ConfigRecord.Add(keyRegAFU_ID,CCIP_PORT_AFUID);
+
+   if (busnum >= 0) {
+      cout << "Using PCIe bus 0x" << std::hex << busnum << std::dec << endl;
+      ConfigRecord.Add(keyRegBusNumber, btUnsigned32bitInt(busnum));
+   }
+   if (devnum >= 0) {
+      cout << "Using PCIe device 0x" << std::hex << devnum << std::dec << endl;
+      ConfigRecord.Add(keyRegDeviceNumber, btUnsigned32bitInt(devnum));
+   }
+   if (funnum >= 0) {
+      cout << "Using PCIe function 0x" << std::hex << funnum << std::dec << endl;
+      ConfigRecord.Add(keyRegFunctionNumber, btUnsigned32bitInt(funnum));
+   }
+
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
 
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Error Monitor");
@@ -707,16 +734,70 @@ void int_handler(int sig)
 int main(int argc, char *argv[])
 {
 
-   ErrorMonApp         theApp;
-   int result = 0;
-   btBool bClear = false;
+   int result       = 0;
+   int getopt_ret;
+   int option_index;
+   char *endptr     = NULL;
+   btBool bClear    = false;
+   int busnum       = -1;
+   int devnum       = -1;
+   int funnum       = -1;
 
-   if( argc>1 ) { // process command line arg of "-c"
-      if (0 == strcmp (argv[1], "-c")) bClear = true;
+   while( -1 != ( getopt_ret = getopt_long(argc, argv, GETOPT_STRING, longopts, &option_index))){
+      const char *tmp_optarg = optarg;
+
+      if((optarg) &&
+         ('=' == *tmp_optarg)){
+         ++tmp_optarg;
+      }
+
+      if((!optarg) &&
+         (NULL != argv[optind]) &&
+         ('-' != argv[optind][0]) ) {
+         tmp_optarg = argv[optind++];
+      }
+
+      switch(getopt_ret){
+         case 'h':
+            printf("Usage:\n\t%s [-B <bus>] [-D <device>] [-F <function>] [ -c < Clear All Errors]\n\n",
+                  argv[0]);
+            return -2;
+            break;
+
+         case 'B':
+            endptr = NULL;
+            busnum = strtol(tmp_optarg, &endptr, 0);
+            break;
+
+         case 'D':
+            endptr = NULL;
+            devnum = strtol(tmp_optarg, &endptr, 0);
+            break;
+
+         case 'F':
+            endptr = NULL;
+            funnum = strtol(tmp_optarg, &endptr, 0);
+            break;
+
+         case 'c':
+         case 'C':
+            bClear = true ;
+            break;
+
+         case ':':   /* missing option argument */
+            cout << "Missing option argument.\n";
+            return -1;
+
+         case '?':
+         default:    /* invalid option */
+            cout << "Invalid cmdline options.\n";
+            return -1;
+      }
    }
 
+   ErrorMonApp      theApp;
    if(theApp.IsOK()){
-      result = theApp.run( bClear );
+      result = theApp.run( busnum, devnum, funnum, bClear );
    }else{
       MSG("App failed to initialize");
    }
