@@ -57,6 +57,9 @@
 #include <signal.h>
 #include <aalsdk/service/IALIAFU.h>
 
+#include <string.h>
+#include <getopt.h>
+
 using namespace std;
 using namespace AAL;
 
@@ -88,6 +91,17 @@ using namespace AAL;
 #define PM_MAXVR     0x2018
 
 
+// command line parsing
+#define GETOPT_STRING ":hB:D:F"
+
+struct option longopts[] = {
+      {"help",                no_argument,       NULL, 'h'},
+      {"bus-number",          required_argument, NULL, 'B'},
+      {"device-number",       required_argument, NULL, 'D'},
+      {"function-number",     required_argument, NULL, 'F'}
+};
+
+
 // doxygen hACK to generate correct class diagrams
 #define RuntimeClient TempPowMonRuntimeClient
 /// @addtogroup HelloAAL
@@ -106,7 +120,7 @@ public:
    ///
    /// Application Requests Service using Runtime Client passing a pointer to self.
    /// Blocks calling thread from [Main} untill application is done.
-   btInt run(); //Return 0 if success
+   btInt run(int busnum, int devnum, int funnum);    ///< Return 0 if success
 
    void   getTemp();
    btBool getPower();
@@ -267,7 +281,7 @@ btBool TempPowMonApp::getPower()
 } // TempPowMonApp::getPower
 
 
-btInt TempPowMonApp::run()
+btInt TempPowMonApp::run(int busnum, int devnum, int funnum)
 {
 
    btBool bPowerReturnValue;
@@ -280,6 +294,19 @@ btInt TempPowMonApp::run()
 
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
+
+   if (busnum >= 0) {
+      cout << "Using PCIe bus 0x" << std::hex << busnum << std::dec << endl;
+      ConfigRecord.Add(keyRegBusNumber, btUnsigned32bitInt(busnum));
+   }
+   if (devnum >= 0) {
+      cout << "Using PCIe device 0x" << std::hex << devnum << std::dec << endl;
+      ConfigRecord.Add(keyRegDeviceNumber, btUnsigned32bitInt(devnum));
+   }
+   if (funnum >= 0) {
+      cout << "Using PCIe function 0x" << std::hex << funnum << std::dec << endl;
+      ConfigRecord.Add(keyRegFunctionNumber, btUnsigned32bitInt(funnum));
+   }
 
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
    ConfigRecord.Add(keyRegAFU_ID,"BFAF2AE9-4A52-46E3-82FE-38F0F9E17764"); //FME AFU ID
@@ -456,11 +483,69 @@ void int_handler(int sig)
 int main(int argc, char *argv[])
 {
 
+   int res = 0;
+   int getopt_ret;
+   int option_index;
+   char *endptr = NULL;
+
+   int busnum = -1;
+   int devnum = -1;
+   int funnum = -1;
+
+   while( -1 != ( getopt_ret = getopt_long(argc, argv, GETOPT_STRING, longopts, &option_index))){
+      const char *tmp_optarg = optarg;
+
+      if((optarg) &&
+         ('=' == *tmp_optarg)){
+         ++tmp_optarg;
+      }
+
+      if((!optarg) &&
+         (NULL != argv[optind]) &&
+         ('-' != argv[optind][0]) ) {
+         tmp_optarg = argv[optind++];
+      }
+
+      switch(getopt_ret){
+         case 'h':
+            printf("Usage:\n\t%s [-B <bus>] [-D <device>] [-F <function>]\n\n",
+                  argv[0]);
+            return -2;
+            break;
+
+         case 'B':
+            endptr = NULL;
+            busnum = strtol(tmp_optarg, &endptr, 0);
+            break;
+
+         case 'D':
+            endptr = NULL;
+            devnum = strtol(tmp_optarg, &endptr, 0);
+            break;
+
+         case 'F':
+            endptr = NULL;
+            funnum = strtol(tmp_optarg, &endptr, 0);
+            break;
+
+         case ':':   /* missing option argument */
+            cout << "Missing option argument.\n";
+            return -1;
+
+         case '?':
+         default:    /* invalid option */
+            cout << "Invalid cmdline options.\n";
+            return -1;
+      }
+   }
+
+
+
    TempPowMonApp         theApp;
    int result = 0;
 
    if(theApp.IsOK()){
-      result = theApp.run();
+      result = theApp.run(busnum, devnum, funnum);
    }else{
       MSG("App failed to initialize");
    }
