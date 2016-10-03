@@ -82,7 +82,7 @@ using namespace AAL;
 #endif
 
 /// Filename prefix check - needs to match (or specify --force=TRUE)
-#define FILENAME_INFIX "_skxp_620_pr"
+#define FILENAME_INFIX "_skxp_621_pr"
 #define FILENAME_INFIX_LEN (strlen(FILENAME_INFIX))
 #define FILENAME_INFIX_OFFSET 6
 
