@@ -26,27 +26,27 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  * **************************************************************************
- * 
+ *
  * Module Name: ase_svfifo
- *              A systemverilog built-in compatible SVFIFO, that is 
- *              potentially faster 
- * Language   : System{Verilog} 
+ *              A systemverilog built-in compatible SVFIFO, that is
+ *              potentially faster
+ * Language   : System{Verilog}
  * Owner      : Rahul R Sharma
  *              rahul.r.sharma@intel.com
  *              Intel Corporation
- * 
+ *
  * FIFO implementation for use in ASE only
- * Generics: 
+ * Generics:
  * - DEPTH_BASE2    : Radix of element array, used for counting elements
  * - ALMFULL_THRESH : AlmostFull threshold
- * 
+ *
  * Description:
  * - WRITE: Data is written when write_enable is HIGH
  * - READ : Data is available in next clock it is in RAM
  *          Empty is an ASYNC signal & must be check
  *          read_enable must be used asynchronously with EMPTY signal
  * - Overflow and underflow signals are asserted
- * 
+ *
  */
 
 module ase_svfifo
@@ -72,58 +72,58 @@ module ase_svfifo
     );
 
    // Calculate depth
-   parameter int DEPTH = 2**DEPTH_BASE2;
-      
+   parameter int 		  DEPTH = 2**DEPTH_BASE2;
+
    // FIFO instance
-   logic [DATA_WIDTH-1:0] fifo[$:DEPTH-1];
-   
+   logic [DATA_WIDTH-1:0] 	  fifo[$:DEPTH-1];
+
    always @(posedge clk) begin
       if (wr_en) begin
-	 fifo.push_back(data_in);	 
+	 fifo.push_back(data_in);
       end
    end
 
    // Empty signal
    always @(posedge clk) begin
       if (fifo.size() == 0) begin
-	 empty <= 1;	 
+	 empty <= 1;
       end
       else begin
-	 empty <= 0;	 
+	 empty <= 0;
       end
    end
-   
+
    // Full signal
    always @(posedge clk) begin
       if (fifo.size() == (DEPTH-1)) begin
-	 full <= 1;	 
+	 full <= 1;
       end
       else begin
-	 full <= 0;	 
+	 full <= 0;
       end
    end
 
    // Almfull signal
    always @(posedge clk) begin
       if (fifo.size() >= (DEPTH - ALMFULL_THRESH)) begin
-	 alm_full <= 1;	 
+	 alm_full <= 1;
       end
       else begin
-	 alm_full <= 0;	 
+	 alm_full <= 0;
       end
    end
-   
+
    // Read process
    always @(posedge clk) begin
       if (rst) begin
-	 data_out_v <= 0;	 
+	 data_out_v <= 0;
       end
       else if (rd_en && (fifo.size() != 0)) begin
 	 data_out_v <= 1;
-	 data_out <= fifo.pop_front();	 
+	 data_out <= fifo.pop_front();
       end
       else begin
-	 data_out_v <= 0;	 
+	 data_out_v <= 0;
       end
    end
 
@@ -135,7 +135,7 @@ module ase_svfifo
 
    // Count
    always @(posedge clk) begin
-      count <= fifo.size();      
+      count <= fifo.size();
    end
-   
+
 endmodule

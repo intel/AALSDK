@@ -272,8 +272,8 @@ package ase_pkg;
    // ASE Response FIFO specifics
    parameter ASE_RSPFIFO_DEPTH           = 256;
    parameter ASE_RSPFIFO_COUNT_WIDTH     = $clog2(ASE_RSPFIFO_DEPTH);
-   parameter ASE_RSPFIFO_ALMFULL_THRESH  = ASE_RSPFIFO_DEPTH - 10;   
-   
+   parameter ASE_RSPFIFO_ALMFULL_THRESH  = ASE_RSPFIFO_DEPTH - 10;
+
 
    /*
     * CCI Transaction packet

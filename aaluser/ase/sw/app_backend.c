@@ -167,68 +167,68 @@ void *mmio_response_watcher()
       // If received, update global message
       ret = mqueue_recv( sim2app_mmiorsp_rx, (char*)mmio_rsp_pkt, sizeof(mmio_t) );
       if (ret == ASE_MSG_PRESENT)
-	{
+        {
 #ifdef ASE_DEBUG
-	  // Logging event
-	  print_mmiopkt(fp_mmioaccess_log, "Got ", mmio_rsp_pkt);
-	  if (mmio_rsp_pkt->write_en == MMIO_WRITE_REQ)
-	    {
-	      strncpy(mmio_type, "WR\0", 3);
-	    }
-	  else if (mmio_rsp_pkt->write_en == MMIO_READ_REQ)
-	    {
-	      strncpy(mmio_type, "RD\0", 3);
-	    }
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("  [DEBUG]  mmio_watcher => %03x, %s, %d, %x, %016llx\n",
-		 mmio_rsp_pkt->tid,
-		 mmio_type,
-		 mmio_rsp_pkt->width,
-		 mmio_rsp_pkt->addr,
-		 mmio_rsp_pkt->qword[0]);
-	  END_YELLOW_FONTCOLOR;
+          // Logging event
+          print_mmiopkt(fp_mmioaccess_log, "Got ", mmio_rsp_pkt);
+          if (mmio_rsp_pkt->write_en == MMIO_WRITE_REQ)
+            {
+              strncpy(mmio_type, "WR\0", 3);
+            }
+          else if (mmio_rsp_pkt->write_en == MMIO_READ_REQ)
+            {
+              strncpy(mmio_type, "RD\0", 3);
+            }
+          BEGIN_YELLOW_FONTCOLOR;
+          printf("  [DEBUG]  mmio_watcher => %03x, %s, %d, %x, %016llx\n",
+                 mmio_rsp_pkt->tid,
+                 mmio_type,
+                 mmio_rsp_pkt->width,
+                 mmio_rsp_pkt->addr,
+                 mmio_rsp_pkt->qword[0]);
+          END_YELLOW_FONTCOLOR;
 #endif
 
-	  // Find scoreboard slot number to update
-	  slot_idx = get_scoreboard_slot_by_tid(mmio_rsp_pkt->tid);
+          // Find scoreboard slot number to update
+          slot_idx = get_scoreboard_slot_by_tid(mmio_rsp_pkt->tid);
 
-	  // #ifdef ASE_DEBUG
-	  if (slot_idx == 0xFFFF)
-	    {
-	      BEGIN_RED_FONTCOLOR;
-	      printf("get_scoreboard_slot_by_tid() found a bad slot !");
-	      END_RED_FONTCOLOR;
-	      raise(SIGABRT);
-	    }
-	  else
-	    //#endif
-	    {
-	      // MMIO Read response (for credit count only)
-	      if (mmio_rsp_pkt->write_en == MMIO_READ_REQ)
-		{
-		  mmio_table[slot_idx].tid = mmio_rsp_pkt->tid;
-		  mmio_table[slot_idx].data = mmio_rsp_pkt->qword[0];
-		  mmio_table[slot_idx].tx_flag = true;
-		  mmio_table[slot_idx].rx_flag = true;
-		}
-	      // MMIO Write response (for credit count only)
-	      else if (mmio_rsp_pkt->write_en == MMIO_WRITE_REQ)
-		{
-		  mmio_table[slot_idx].tx_flag = false;
-		  mmio_table[slot_idx].rx_flag = false;
-		}
-	      /* #ifdef ASE_DEBUG */
-	      /* 	  else */
-	      /* 	    { */
-	      /* 	      BEGIN_RED_FONTCOLOR; */
-	      /* 	      printf("  [DEBUG]  Illegal MMIO request found -- must not happen !\n"); */
-	      /* 	      END_RED_FONTCOLOR; */
-	      /* 	    } */
-	      /* #endif */
-	    }
-	}
+          // #ifdef ASE_DEBUG
+          if (slot_idx == 0xFFFF)
+            {
+              BEGIN_RED_FONTCOLOR;
+              printf("get_scoreboard_slot_by_tid() found a bad slot !");
+              END_RED_FONTCOLOR;
+              raise(SIGABRT);
+            }
+          else
+            //#endif
+            {
+              // MMIO Read response (for credit count only)
+              if (mmio_rsp_pkt->write_en == MMIO_READ_REQ)
+                {
+                  mmio_table[slot_idx].tid = mmio_rsp_pkt->tid;
+                  mmio_table[slot_idx].data = mmio_rsp_pkt->qword[0];
+                  mmio_table[slot_idx].tx_flag = true;
+                  mmio_table[slot_idx].rx_flag = true;
+                }
+              // MMIO Write response (for credit count only)
+              else if (mmio_rsp_pkt->write_en == MMIO_WRITE_REQ)
+                {
+                  mmio_table[slot_idx].tx_flag = false;
+                  mmio_table[slot_idx].rx_flag = false;
+                }
+              /* #ifdef ASE_DEBUG */
+              /*          else */
+              /*            { */
+              /*              BEGIN_RED_FONTCOLOR; */
+              /*              printf("  [DEBUG]  Illegal MMIO request found -- must not happen !\n"); */
+              /*              END_RED_FONTCOLOR; */
+              /*            } */
+              /* #endif */
+            }
+        }
     }
-  
+
   return 0;
 }
 
@@ -319,12 +319,12 @@ void session_init()
 
       // Initialize MMIO port lock
       if ( pthread_mutex_init(&mmio_port_lock, NULL) != 0)
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("  [APP]  MMIO Lock initialization failed, EXIT\n");
-	  END_RED_FONTCOLOR;
-	  exit (EXIT_FAILURE);
-	}
+        {
+          BEGIN_RED_FONTCOLOR;
+          printf("  [APP]  MMIO Lock initialization failed, EXIT\n");
+          END_RED_FONTCOLOR;
+          exit (EXIT_FAILURE);
+        }
 
       // Initialize ase_workdir_path
       BEGIN_YELLOW_FONTCOLOR;
@@ -375,31 +375,31 @@ void session_init()
       // Create debug log of page table
       fp_pagetable_log = fopen("app_pagetable.log", "w");
       if (fp_pagetable_log == NULL)
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("  [APP]  APP pagetable logger initialization failed !\n");
-	  END_RED_FONTCOLOR;
-	}
+        {
+          BEGIN_RED_FONTCOLOR;
+          printf("  [APP]  APP pagetable logger initialization failed !\n");
+          END_RED_FONTCOLOR;
+        }
       else
-	{
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("  [APP]  APP pagetable logger initialized\n");
-	  END_YELLOW_FONTCOLOR;
-	}
+        {
+          BEGIN_YELLOW_FONTCOLOR;
+          printf("  [APP]  APP pagetable logger initialized\n");
+          END_YELLOW_FONTCOLOR;
+        }
       // Debug log of MMIO
       fp_mmioaccess_log = fopen("app_mmioaccess.log", "w");
       if (fp_mmioaccess_log == NULL)
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("  [APP]  APP MMIO access logger initialization failed !\n");
-	  END_RED_FONTCOLOR;
-	}
+        {
+          BEGIN_RED_FONTCOLOR;
+          printf("  [APP]  APP MMIO access logger initialization failed !\n");
+          END_RED_FONTCOLOR;
+        }
       else
-	{
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("  [APP]  APP MMIO access logger initialized\n");
-	  END_YELLOW_FONTCOLOR;
-	}
+        {
+          BEGIN_YELLOW_FONTCOLOR;
+          printf("  [APP]  APP MMIO access logger initialized\n");
+          END_YELLOW_FONTCOLOR;
+        }
 #endif
       BEGIN_YELLOW_FONTCOLOR;
 
@@ -462,19 +462,19 @@ void session_init()
       END_YELLOW_FONTCOLOR;
       thr_err = pthread_create (&mmio_watch_tid, NULL, &mmio_response_watcher, NULL);
       if (thr_err != 0)
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("FAILED\n");
-	  perror("pthread_create");
-	  exit(1);
-	  END_RED_FONTCOLOR;
-	}
+        {
+          BEGIN_RED_FONTCOLOR;
+          printf("FAILED\n");
+          perror("pthread_create");
+          exit(1);
+          END_RED_FONTCOLOR;
+        }
       else
-	{
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("SUCCESS\n");
-	  END_YELLOW_FONTCOLOR;
-	}
+        {
+          BEGIN_YELLOW_FONTCOLOR;
+          printf("SUCCESS\n");
+          END_YELLOW_FONTCOLOR;
+        }
 
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  Starting UMsg watcher ... ");
@@ -483,30 +483,30 @@ void session_init()
       // Initiate UMsg watcher
       thr_err = pthread_create (&umsg_watch_tid, NULL, &umsg_watcher, NULL);
       if (thr_err != 0)
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("FAILED\n");
-	  perror("pthread_create");
-	  exit(1);
-	  END_RED_FONTCOLOR;
-	}
+        {
+          BEGIN_RED_FONTCOLOR;
+          printf("FAILED\n");
+          perror("pthread_create");
+          exit(1);
+          END_RED_FONTCOLOR;
+        }
       else
-	{
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("SUCCESS\n");
-	  END_YELLOW_FONTCOLOR;
-	}
+        {
+          BEGIN_YELLOW_FONTCOLOR;
+          printf("SUCCESS\n");
+          END_YELLOW_FONTCOLOR;
+        }
       while(umas_init_flag != 1);
 
       // MMIO Scoreboard setup
       int ii;
       for (ii = 0; ii < MMIO_MAX_OUTSTANDING ; ii = ii + 1)
-	{
-	  mmio_table[ii].tid = 0;
-	  mmio_table[ii].data = 0;
-	  mmio_table[ii].tx_flag = false;
-	  mmio_table[ii].rx_flag = false;
-	}
+        {
+          mmio_table[ii].tid = 0;
+          mmio_table[ii].data = 0;
+          mmio_table[ii].tx_flag = false;
+          mmio_table[ii].rx_flag = false;
+        }
 
       // Session status
       session_exist_status = ESTABLISHED;
@@ -543,26 +543,26 @@ void session_deinit()
 
       // Unmap UMAS region
       if (umas_exist_status == ESTABLISHED)
-	{
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("  [APP]  Closing Watcher threads\n");
-	  END_YELLOW_FONTCOLOR;
-	  // Close UMsg thread
-	  pthread_cancel (umsg_watch_tid);
+        {
+          BEGIN_YELLOW_FONTCOLOR;
+          printf("  [APP]  Closing Watcher threads\n");
+          END_YELLOW_FONTCOLOR;
+          // Close UMsg thread
+          pthread_cancel (umsg_watch_tid);
 
-	  // Deallocate the region
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("  [APP]  Deallocating UMAS\n");
-	  deallocate_buffer(umas_region);
-	  END_YELLOW_FONTCOLOR;
-	}
+          // Deallocate the region
+          BEGIN_YELLOW_FONTCOLOR;
+          printf("  [APP]  Deallocating UMAS\n");
+          deallocate_buffer(umas_region);
+          END_YELLOW_FONTCOLOR;
+        }
 #ifdef ASE_DEBUG
       else
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("  [APP]  No UMAS established\n");
-	  END_RED_FONTCOLOR;
-	}
+        {
+          BEGIN_RED_FONTCOLOR;
+          printf("  [APP]  No UMAS established\n");
+          END_RED_FONTCOLOR;
+        }
 #endif
 
       // Um-mapping CSR region
@@ -647,7 +647,7 @@ int find_empty_mmio_scoreboard_slot()
     {
       idx = ii % MMIO_MAX_OUTSTANDING;
       if ((mmio_table[idx].tx_flag == false) && (mmio_table[idx].rx_flag == false))
-	return idx;
+        return idx;
     }
   return 0xFFFF;
 }
@@ -662,7 +662,7 @@ int get_scoreboard_slot_by_tid(int in_tid)
   for (ii = 0 ; ii < MMIO_MAX_OUTSTANDING ; ii = ii + 1)
     {
       if ( (mmio_table[ii].tx_flag == true) && (mmio_table[ii].tid == in_tid) )
-	return ii;
+        return ii;
     }
   return 0xFFFF;
 }
@@ -706,7 +706,7 @@ int mmio_request_put(struct mmio_t *pkt)
       mmio_table[mmiotable_idx].tid = pkt->tid;
       mmio_table[mmiotable_idx].data = pkt->qword[0];
     }
-/* #ifdef ASE_DEBUG */
+  /* #ifdef ASE_DEBUG */
   else
     {
       BEGIN_RED_FONTCOLOR;
@@ -714,7 +714,7 @@ int mmio_request_put(struct mmio_t *pkt)
       END_RED_FONTCOLOR;
       raise(SIGABRT);
     }
-/* #endif */
+  /* #endif */
 
   // Send packet
   mqueue_send( app2sim_mmioreq_tx, (char*)pkt, sizeof(mmio_t) );
@@ -766,16 +766,16 @@ void mmio_write32 (int offset, uint32_t data)
 
       // Critical Section
       {
-	pthread_mutex_lock (&mmio_port_lock);
+        pthread_mutex_lock (&mmio_port_lock);
 
-	mmio_pkt->tid = generate_mmio_tid();
-      #ifdef ASE_DEBUG
-	slot_idx = mmio_request_put(mmio_pkt);
-      #else
-	mmio_request_put(mmio_pkt);
-      #endif
+        mmio_pkt->tid = generate_mmio_tid();
+#ifdef ASE_DEBUG
+        slot_idx = mmio_request_put(mmio_pkt);
+#else
+        mmio_request_put(mmio_pkt);
+#endif
 
-	pthread_mutex_unlock (&mmio_port_lock);
+        pthread_mutex_unlock (&mmio_port_lock);
       }
 
       // Write to MMIO map
@@ -826,16 +826,16 @@ void mmio_write64 (int offset, uint64_t data)
 
       // Critical section
       {
-	pthread_mutex_lock (&mmio_port_lock);
+        pthread_mutex_lock (&mmio_port_lock);
 
-	mmio_pkt->tid= generate_mmio_tid();
-      #ifdef ASE_DEBUG
-	slot_idx = mmio_request_put(mmio_pkt);
-      #else
-	mmio_request_put(mmio_pkt);
-      #endif
+        mmio_pkt->tid= generate_mmio_tid();
+#ifdef ASE_DEBUG
+        slot_idx = mmio_request_put(mmio_pkt);
+#else
+        mmio_request_put(mmio_pkt);
+#endif
 
-	pthread_mutex_unlock (&mmio_port_lock);
+        pthread_mutex_unlock (&mmio_port_lock);
       }
 
       // Write to MMIO Map
@@ -898,12 +898,12 @@ void mmio_read32(int offset, uint32_t *data32)
 
       // Critical section
       {
-	pthread_mutex_lock (&mmio_port_lock);
+        pthread_mutex_lock (&mmio_port_lock);
 
-	mmio_pkt->tid      = generate_mmio_tid();
-	slot_idx = mmio_request_put(mmio_pkt);
+        mmio_pkt->tid      = generate_mmio_tid();
+        slot_idx = mmio_request_put(mmio_pkt);
 
-	pthread_mutex_unlock (&mmio_port_lock);
+        pthread_mutex_unlock (&mmio_port_lock);
       }
 
       BEGIN_YELLOW_FONTCOLOR;
@@ -918,9 +918,9 @@ void mmio_read32(int offset, uint32_t *data32)
 
       // Wait until correct response found
       while (mmio_table[slot_idx].rx_flag != true)
-	{
-	  usleep(1);
-	}
+        {
+          usleep(1);
+        }
 
       // Write data
       *data32 = (uint32_t)mmio_table[slot_idx].data;
@@ -973,12 +973,12 @@ void mmio_read64(int offset, uint64_t *data64)
 
       // Critical section
       {
-	pthread_mutex_lock (&mmio_port_lock);
+        pthread_mutex_lock (&mmio_port_lock);
 
-	mmio_pkt->tid      = generate_mmio_tid();
-	slot_idx = mmio_request_put(mmio_pkt);
+        mmio_pkt->tid      = generate_mmio_tid();
+        slot_idx = mmio_request_put(mmio_pkt);
 
-	pthread_mutex_unlock (&mmio_port_lock);
+        pthread_mutex_unlock (&mmio_port_lock);
       }
 
       BEGIN_YELLOW_FONTCOLOR;
@@ -986,16 +986,16 @@ void mmio_read64(int offset, uint64_t *data64)
       END_RED_FONTCOLOR;
 
 #ifdef ASE_DEBUG
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [DEBUG]  slot_idx = %d\n", slot_idx);
-  END_YELLOW_FONTCOLOR;
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [DEBUG]  slot_idx = %d\n", slot_idx);
+      END_YELLOW_FONTCOLOR;
 #endif
 
       // Wait for correct response to be back
       while(mmio_table[slot_idx].rx_flag != true)
-	{
-	  usleep(1);
-	};
+        {
+          usleep(1);
+        };
 
       // Write data
       *data64 = mmio_table[slot_idx].data;
@@ -1157,19 +1157,19 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
   if (fp_pagetable_log != NULL)
     {
       if (mem->index % 20 == 0)
-	{
-	  fprintf(fp_pagetable_log,
-		  "Index\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
-	}
+        {
+          fprintf(fp_pagetable_log,
+                  "Index\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
+        }
       fprintf(fp_pagetable_log,
-	      "%d\t%p\t%p\t%x\t%s\t\t%p\n",
-	      mem->index,
-	      (void*)mem->vbase,
-	      (void*)mem->pbase,
-	      mem->memsize,
-	      mem->memname,
-	      (void*)mem->fake_paddr
-	      );
+              "%d\t%p\t%p\t%x\t%s\t\t%p\n",
+              mem->index,
+              (void*)mem->vbase,
+              (void*)mem->pbase,
+              mem->memsize,
+              mem->memname,
+              (void*)mem->fake_paddr
+              );
     }
 #endif
 
@@ -1278,15 +1278,15 @@ void deallocate_buffer_by_index(int search_index)
   while (wsptr != NULL)
     {
       if (wsptr->index == search_index)
-	{
-	  bufptr = wsptr->buf_structaddr;
-	  printf("FOUND\n");
-	  break;
-	}
+        {
+          bufptr = wsptr->buf_structaddr;
+          printf("FOUND\n");
+          break;
+        }
       else
-	{
-	  wsptr = wsptr->next;
-	}
+        {
+          wsptr = wsptr->next;
+        }
     }
   END_YELLOW_FONTCOLOR;
 
@@ -1381,17 +1381,17 @@ void *umsg_watcher()
     {
       // Original copy
       memcpy( (char*)umsg_old_data[cl_index],
-	      (char*)((uint64_t)umas_region->vbase + umsg_byteindex_arr[cl_index]),
-	      CL_BYTE_WIDTH
-	      );
+              (char*)((uint64_t)umas_region->vbase + umsg_byteindex_arr[cl_index]),
+              CL_BYTE_WIDTH
+              );
 
       // Calculate addres
       umsg_addr_array[cl_index] = (char*)((uint64_t)umas_region->vbase + umsg_byteindex_arr[cl_index]);
-    #ifdef ASE_DEBUG
+#ifdef ASE_DEBUG
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [DEBUG]  umsg_addr_array[%d] = %p\n", cl_index, umsg_addr_array[cl_index]);
       END_YELLOW_FONTCOLOR;
-    #endif
+#endif
     }
 
   // Set UMsg initialized flag
@@ -1402,20 +1402,20 @@ void *umsg_watcher()
     {
       // Walk through each line
       for(cl_index = 0; cl_index < NUM_UMSG_PER_AFU ; cl_index++)
-	{
-	  if ( memcmp(umsg_addr_array[cl_index], umsg_old_data[cl_index], CL_BYTE_WIDTH) != 0)
-	    {
-	      // Construct UMsg packet
-	      umsg_pkt->id = cl_index;
-	      memcpy((char*)umsg_pkt->qword, (char*)umsg_addr_array[cl_index], CL_BYTE_WIDTH);
+        {
+          if ( memcmp(umsg_addr_array[cl_index], umsg_old_data[cl_index], CL_BYTE_WIDTH) != 0)
+            {
+              // Construct UMsg packet
+              umsg_pkt->id = cl_index;
+              memcpy((char*)umsg_pkt->qword, (char*)umsg_addr_array[cl_index], CL_BYTE_WIDTH);
 
-	      // Send UMsg
-	      mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt, sizeof(struct umsgcmd_t));
+              // Send UMsg
+              mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt, sizeof(struct umsgcmd_t));
 
-	      // Update local mirror
-	      memcpy( (char*)umsg_old_data[cl_index], (char*)umsg_pkt->qword, CL_BYTE_WIDTH );
-	    }
-	}
+              // Update local mirror
+              memcpy( (char*)umsg_old_data[cl_index], (char*)umsg_pkt->qword, CL_BYTE_WIDTH );
+            }
+        }
       usleep(1);
     }
 

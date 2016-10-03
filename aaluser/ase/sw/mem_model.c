@@ -24,13 +24,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 // **************************************************************************
-/* 
+/*
  * Module Info: Memory Model operations (C module)
  * Language   : System{Verilog} | C/C++
  * Owner      : Rahul R Sharma
  *              rahul.r.sharma@intel.com
  *              Intel Corporation
- * 
+ *
  * Purpose: Keeping cci_to_mem_translator.c clutter free and modular
  * test and debug. Includes message queue management by DPI.
  * NOTE: These functions must be called by DPI side ONLY.
@@ -40,7 +40,7 @@
 
 
 // ---------------------------------------------------------------
-// ASE graceful shutdown - Called if: error() occurs 
+// ASE graceful shutdown - Called if: error() occurs
 // Deallocate & Unlink all shared memories and message queues
 // ---------------------------------------------------------------
 void ase_perror_teardown()
@@ -49,7 +49,7 @@ void ase_perror_teardown()
 
   self_destruct_in_progress = 1;
 
-  ase_destroy(); 
+  ase_destroy();
 
   FUNC_CALL_EXIT;
 }
@@ -58,7 +58,7 @@ void ase_perror_teardown()
 // ------------------------------------------------------------------
 // DPI recv message - Set up DPI to receive an 'allocate' request msg
 // Receive a string and return a buffer_t structure with memsize,
-// memname and index populated. 
+// memname and index populated.
 // NOTE: This function must be called by DPI
 // ------------------------------------------------------------------
 #if 0
@@ -85,7 +85,7 @@ int ase_recv_msg(struct buffer_t *mem)
 #endif
 
 // -------------------------------------------------------------------
-// ase_send_msg : Send a ase reply 
+// ase_send_msg : Send a ase reply
 // Convert a buffer_t to string and transmit string as a message
 // -------------------------------------------------------------------
 #if 0
@@ -118,11 +118,11 @@ void ase_alloc_action(struct buffer_t *mem)
   struct buffer_t *new_buf;
   int fd_alloc;
 
-  #ifdef ASE_DEBUG
+#ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
   printf("SIM-C : Adding a new buffer \"%s\"...\n", mem->memname);
   END_YELLOW_FONTCOLOR;
-  #endif
+#endif
 
   // Obtain a file descriptor
   fd_alloc = shm_open(mem->memname, O_RDWR, S_IRUSR|S_IWUSR);
@@ -136,19 +136,19 @@ void ase_alloc_action(struct buffer_t *mem)
   else
     {
       // Add to IPC list
-  #ifdef SIM_SIDE
+#ifdef SIM_SIDE
       add_to_ipc_list ("SHM", mem->memname);
-  #endif
+#endif
 
       // Mmap to pbase, find one with unique low 38 bit
       mem->pbase = (uint64_t)mmap(NULL, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED, fd_alloc, 0);
       if(mem->pbase == (uint64_t)NULL)
-	{
-	  ase_error_report("mmap", errno, ASE_OS_MEMMAP_ERR);
-	  /* perror("mmap"); */
-	  ase_perror_teardown();
-	  start_simkill_countdown(); // RRS: exit(1);
-	}
+        {
+          ase_error_report("mmap", errno, ASE_OS_MEMMAP_ERR);
+          /* perror("mmap"); */
+          ase_perror_teardown();
+          start_simkill_countdown(); // RRS: exit(1);
+        }
       ftruncate(fd_alloc, (off_t)mem->memsize);
       close(fd_alloc);
 
@@ -165,58 +165,58 @@ void ase_alloc_action(struct buffer_t *mem)
 
       // Append to linked list
       ll_append_buffer(new_buf);
-  #ifdef ASE_LL_VIEW
+#ifdef ASE_LL_VIEW
       BEGIN_YELLOW_FONTCOLOR;
       ll_traverse_print();
       END_YELLOW_FONTCOLOR;
-  #endif
+#endif
 
       // Reply to MEM_ALLOC_REQ message with MEM_ALLOC_REPLY
       // Set metadata to reply mode
       // mem->metadata = HDR_MEM_ALLOC_REPLY;
-  
+
       // Convert buffer_t to string
       mqueue_send(sim2app_alloc_tx, (char*)mem, ASE_MQ_MSGSIZE);
 
       // If memtest is enabled
-  #ifdef ASE_MEMTEST_ENABLE
+#ifdef ASE_MEMTEST_ENABLE
       ase_dbg_memtest(mem);
-  #endif
+#endif
 
       if (mem->is_mmiomap == 1)
-	{
-	  // Pin CSR address
-	  mmio_afu_vbase = (uint64_t*)((uint64_t)mem->pbase + MMIO_AFU_OFFSET);
-  #ifdef ASE_DEBUG
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("SIM-C : Global CSR Base address = %p\n", (void*)mmio_afu_vbase);
-	  END_YELLOW_FONTCOLOR;
-  #endif
+        {
+          // Pin CSR address
+          mmio_afu_vbase = (uint64_t*)((uint64_t)mem->pbase + MMIO_AFU_OFFSET);
+#ifdef ASE_DEBUG
+          BEGIN_YELLOW_FONTCOLOR;
+          printf("SIM-C : Global CSR Base address = %p\n", (void*)mmio_afu_vbase);
+          END_YELLOW_FONTCOLOR;
+#endif
 
-	  // If UMSG is enabled, write information to CSR region
-	  // *FIXME*: Maybe BB DFH has to be updated here
-	}
+          // If UMSG is enabled, write information to CSR region
+          // *FIXME*: Maybe BB DFH has to be updated here
+        }
 
-  #ifdef ASE_DEBUG  
-      if (fp_pagetable_log != NULL) 
-	{
-	  if (mem->index % 20 == 0) 
-	    {
-	      fprintf(fp_pagetable_log, 
-		      "Index\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
-	    }
-	  
-	  fprintf(fp_pagetable_log, 
-		  "%d\t%p\t%p\t%x\t%s\t\t%p\n",
-		  mem->index,
-		  (void*)mem->vbase, 
-		  (void*)mem->pbase,
-		  mem->memsize,
-		  mem->memname,
-		  (void*)mem->fake_paddr
-		  );
-	}
-  #endif
+#ifdef ASE_DEBUG
+      if (fp_pagetable_log != NULL)
+        {
+          if (mem->index % 20 == 0)
+            {
+              fprintf(fp_pagetable_log,
+                      "Index\tAppVBase\tASEVBase\tBufsize\tBufname\t\tPhysBase\n");
+            }
+
+          fprintf(fp_pagetable_log,
+                  "%d\t%p\t%p\t%x\t%s\t\t%p\n",
+                  mem->index,
+                  (void*)mem->vbase,
+                  (void*)mem->pbase,
+                  mem->memsize,
+                  mem->memname,
+                  (void*)mem->fake_paddr
+                  );
+        }
+#endif
     }
 
   FUNC_CALL_EXIT;
@@ -249,26 +249,26 @@ void ase_dealloc_action(struct buffer_t *buf, int mq_enable)
       END_YELLOW_FONTCOLOR;
 
       // Mark buffer as invalid & deallocate
-      dealloc_ptr->valid = ASE_BUFFER_INVALID; 
+      dealloc_ptr->valid = ASE_BUFFER_INVALID;
       munmap((void*)dealloc_ptr->vbase, (size_t)dealloc_ptr->memsize );
       shm_unlink(dealloc_ptr->memname);
-      
+
       // Respond back
       ll_remove_buffer(dealloc_ptr);
       memcpy(buf_str, dealloc_ptr, sizeof(struct buffer_t));
 
       // If Buffer removal is requested by APP, send back notice, else no response
-      if (mq_enable == 1) 
-	{
-	  mqueue_send(sim2app_dealloc_tx, buf_str, ASE_MQ_MSGSIZE);
-	}
+      if (mq_enable == 1)
+        {
+          mqueue_send(sim2app_dealloc_tx, buf_str, ASE_MQ_MSGSIZE);
+        }
 
-    #ifdef ASE_LL_VIEW
+#ifdef ASE_LL_VIEW
       BEGIN_YELLOW_FONTCOLOR;
       ll_traverse_print();
       END_YELLOW_FONTCOLOR;
-    #endif
-      
+#endif
+
     }
   else
     {
@@ -307,7 +307,7 @@ void ase_empty_buffer(struct buffer_t *buf)
 // OPERATION:
 // Traverse trough linked list
 // - Remove each shared memory region
-// - Remove each buffer_t 
+// - Remove each buffer_t
 // --------------------------------------------------------------------
 void ase_destroy()
 {
@@ -317,7 +317,7 @@ void ase_destroy()
   char str[256];
   snprintf(str, 256, "ASE destroy called");
   buffer_msg_inject(1, str);
-#endif  
+#endif
 
   struct buffer_t *ptr;
 
@@ -325,16 +325,16 @@ void ase_destroy()
   if (head != NULL)
     {
       while (ptr != (struct buffer_t*)NULL)
-	{
-	  ase_dealloc_action(ptr, 0);
-	  ptr = ptr->next;
-	}
+        {
+          ase_dealloc_action(ptr, 0);
+          ptr = ptr->next;
+        }
     }
 
-/* #ifdef ASE_DEBUG */
-/*   ll_traverse_print(); */
-/* #endif */
-  
+  /* #ifdef ASE_DEBUG */
+  /*   ll_traverse_print(); */
+  /* #endif */
+
   FUNC_CALL_EXIT;
 }
 
@@ -352,7 +352,7 @@ uint64_t get_range_checked_physaddr(uint32_t size)
   int unique_physaddr_needed = 1;
   uint64_t ret_fake_paddr;
   uint32_t search_flag;
-  uint32_t opposite_flag;  
+  uint32_t opposite_flag;
   uint32_t zero_pbase_flag;
 #ifdef ASE_DEBUG
   int tries = 0;
@@ -364,8 +364,8 @@ uint64_t get_range_checked_physaddr(uint32_t size)
       // Generate a random physical address for system memory
       ret_fake_paddr = sysmem_phys_lo + ase_rand64() % sysmem_size;
       // 2MB align and sanitize
-      // ret_fake_paddr = ret_fake_paddr & 0x00003FFFE00000 ;          
-      ret_fake_paddr = ret_fake_paddr & PHYS_ADDR_PREFIX_MASK ;          
+      // ret_fake_paddr = ret_fake_paddr & 0x00003FFFE00000 ;
+      ret_fake_paddr = ret_fake_paddr & PHYS_ADDR_PREFIX_MASK ;
 
       // Check for conditions
       // Is address in sysmem range, go back
@@ -373,21 +373,21 @@ uint64_t get_range_checked_physaddr(uint32_t size)
 
       // Is HI smaller than LO, go back
       opposite_flag = 0;
-      if ((ret_fake_paddr + (uint64_t)size) < ret_fake_paddr) 
-	opposite_flag = 1;
+      if ((ret_fake_paddr + (uint64_t)size) < ret_fake_paddr)
+        opposite_flag = 1;
 
       // Zero base flag
       zero_pbase_flag = 0;
       if (ret_fake_paddr == 0)
-	zero_pbase_flag = 1;
+        zero_pbase_flag = 1;
 
       // If all OK
       unique_physaddr_needed = search_flag | opposite_flag | zero_pbase_flag;
-    #ifdef ASE_DEBUG
+#ifdef ASE_DEBUG
       tries++;
-    #endif
+#endif
     }
-  
+
 #ifdef ASE_DEBUG
   if (fp_memaccess_log != NULL)
     {
@@ -401,12 +401,12 @@ uint64_t get_range_checked_physaddr(uint32_t size)
 
 /*
  * ASE Physical address to virtual address converter
- * Takes in a simulated physical address from AFU, converts it 
+ * Takes in a simulated physical address from AFU, converts it
  *   to virtual address
  */
 uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 {
-  FUNC_CALL_ENTRY; 
+  FUNC_CALL_ENTRY;
 
   // Traversal ptr
   struct buffer_t *trav_ptr = (struct buffer_t *)NULL;
@@ -419,45 +419,45 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 
       // DPI pbase address
       uint64_t *ase_pbase;
- 
+
       // This is the real offset to perform read/write
       uint64_t real_offset, calc_pbase;
-  
+
       // For debug only
 #ifdef ASE_DEBUG
-      if (fp_memaccess_log != NULL) 
-	{
-	  fprintf(fp_memaccess_log, "req_paddr = %p | ", (void *)req_paddr);
-	}
+      if (fp_memaccess_log != NULL)
+        {
+          fprintf(fp_memaccess_log, "req_paddr = %p | ", (void *)req_paddr);
+        }
 #endif
 
       // Search which buffer offset_from_pin lies in
       trav_ptr = head;
       while(trav_ptr != NULL)
-	{
-	  if((req_paddr >= trav_ptr->fake_paddr) && (req_paddr < trav_ptr->fake_paddr_hi))
-	    {
-	      real_offset = (uint64_t)req_paddr - (uint64_t)trav_ptr->fake_paddr;
-	      calc_pbase = trav_ptr->pbase;
-	      ase_pbase = (uint64_t*)(calc_pbase + real_offset);
-	      // buffer_found = 1;
-	      
-	      // Debug only
+        {
+          if((req_paddr >= trav_ptr->fake_paddr) && (req_paddr < trav_ptr->fake_paddr_hi))
+            {
+              real_offset = (uint64_t)req_paddr - (uint64_t)trav_ptr->fake_paddr;
+              calc_pbase = trav_ptr->pbase;
+              ase_pbase = (uint64_t*)(calc_pbase + real_offset);
+              // buffer_found = 1;
+
+              // Debug only
 #ifdef ASE_DEBUG
-	      if (fp_memaccess_log != NULL)
-		{
-		  fprintf(fp_memaccess_log, "offset=0x%016lx | pbase=%p\n", real_offset, (void *)ase_pbase);
-		}
+              if (fp_memaccess_log != NULL)
+                {
+                  fprintf(fp_memaccess_log, "offset=0x%016lx | pbase=%p\n", real_offset, (void *)ase_pbase);
+                }
 #endif
-	      return ase_pbase;
-	    }
-	  else
-	    {
-	      trav_ptr = trav_ptr->next;
-	    }
-	}  
+              return ase_pbase;
+            }
+          else
+            {
+              trav_ptr = trav_ptr->next;
+            }
+        }
     }
-  else 
+  else
     {
       // buffer_found = 0;
       trav_ptr = NULL;
@@ -468,32 +468,32 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
     {
       BEGIN_RED_FONTCOLOR;
       printf("@ERROR: ASE has detected a memory operation to an unallocated memory region.\n"
-	     "        Simulation cannot continue, please check the code.\n"
-	     "        Failure @ phys_addr = %p \n"
-	     "        See ERROR log file => ase_memory_error.log\n"
-	     "@ERROR: Please check that previously requested memories have not been deallocated before an AFU transaction could access them\n"
-	     "        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n"
-	     "              The simulator may be committing AFU transactions out of order\n",
-	     (void*)req_paddr);
+             "        Simulation cannot continue, please check the code.\n"
+             "        Failure @ phys_addr = %p \n"
+             "        See ERROR log file => ase_memory_error.log\n"
+             "@ERROR: Please check that previously requested memories have not been deallocated before an AFU transaction could access them\n"
+             "        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n"
+             "              The simulator may be committing AFU transactions out of order\n",
+             (void*)req_paddr);
       END_RED_FONTCOLOR;
 
       // Write error to file
       error_fp = (FILE*) NULL;
       error_fp = fopen("ase_memory_error.log", "w");
-      if (error_fp != NULL) 
-	{
-	  fprintf(error_fp, 
-		  "*** ASE stopped on an illegal memory access ERROR ***\n"
-		  "        AFU requested access @ physical memory %p\n"
-		  "        Address not found in requested workspaces\n"
-		  "        Timestamped transaction to this address is listed in ccip_transactions.tsv\n"
-		  "        Check that previously requested memories have not been deallocated before an AFU transaction could access them"
-		  "        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n"
-		  "              The simulator may be committing AFU transactions out of order\n",
-		  (void*)req_paddr );
+      if (error_fp != NULL)
+        {
+          fprintf(error_fp,
+                  "*** ASE stopped on an illegal memory access ERROR ***\n"
+                  "        AFU requested access @ physical memory %p\n"
+                  "        Address not found in requested workspaces\n"
+                  "        Timestamped transaction to this address is listed in ccip_transactions.tsv\n"
+                  "        Check that previously requested memories have not been deallocated before an AFU transaction could access them"
+                  "        NOTE: If your application polls for an AFU completion message, and you deallocate after that, consider using a WriteFence before AFU status message\n"
+                  "              The simulator may be committing AFU transactions out of order\n",
+                  (void*)req_paddr );
 
-	  fclose(error_fp);
-	}
+          fclose(error_fp);
+        }
 
       // Request SIMKILL
       start_simkill_countdown();
@@ -503,4 +503,3 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 
   FUNC_CALL_EXIT;
 }
-

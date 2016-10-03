@@ -85,39 +85,39 @@ int get_smq_perm_flag(const char *mq_name_str)
   else
     {
       if ( (strncmp(token, "sim2app", 7) != 0) && (strncmp(token, "app2sim", 7) != 0) )
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("  ** ERROR **: Named pipe name is neither app2sim nor sim2app!\n");
-	  END_RED_FONTCOLOR;
+        {
+          BEGIN_RED_FONTCOLOR;
+          printf("  ** ERROR **: Named pipe name is neither app2sim nor sim2app!\n");
+          END_RED_FONTCOLOR;
           ase_free_buffer(mq_str);
 #ifdef SIM_SIDE
-	  start_simkill_countdown();
+          start_simkill_countdown();
 #else
-	  exit(1);
+          exit(1);
 #endif
-	}
+        }
       else
-	{
+        {
 #ifdef SIM_SIDE
-	  if (strncmp(token, "sim2app", 7) == 0)
-	    {
-	      ret = O_WRONLY;
-	    }
-	  else if  (strncmp(token, "app2sim", 7) == 0)
-	    {
-	      ret = O_RDONLY|O_NONBLOCK;
-	    }
+          if (strncmp(token, "sim2app", 7) == 0)
+            {
+              ret = O_WRONLY;
+            }
+          else if  (strncmp(token, "app2sim", 7) == 0)
+            {
+              ret = O_RDONLY|O_NONBLOCK;
+            }
 #else
-	  if (strncmp(token, "sim2app", 7) == 0)
-	    {
-	      ret = O_RDONLY;
-	    }
-	  else if  (strncmp(token, "app2sim", 7) == 0)
-	    {
-	      ret = O_WRONLY;
-	    }
+          if (strncmp(token, "sim2app", 7) == 0)
+            {
+              ret = O_RDONLY;
+            }
+          else if  (strncmp(token, "app2sim", 7) == 0)
+            {
+              ret = O_WRONLY;
+            }
 #endif
-	}
+        }
       //      ase_free_buffer(mq_str);
     }
 
@@ -149,17 +149,17 @@ void ipc_init()
       // Set permission flag
       mq_array[ipc_iter].perm_flag = get_smq_perm_flag(mq_name_arr[ipc_iter]);
       if (mq_array[ipc_iter].perm_flag == -1)
-	{
-	  BEGIN_RED_FONTCOLOR;
+        {
+          BEGIN_RED_FONTCOLOR;
 #ifdef SIM_SIDE
-	  printf("SIM-C : Message pipes opened up with wrong permissions --- unexpected error");
-	  start_simkill_countdown();
+          printf("SIM-C : Message pipes opened up with wrong permissions --- unexpected error");
+          start_simkill_countdown();
 #else
-	  printf("  [APP]  Message pipes opened up with wrong permissions --- unexpected error");
-	  exit(1);
+          printf("  [APP]  Message pipes opened up with wrong permissions --- unexpected error");
+          exit(1);
 #endif
-	  END_RED_FONTCOLOR;
-	}
+          END_RED_FONTCOLOR;
+        }
     }
 
   // Remove IPCs if already there
@@ -310,9 +310,9 @@ void mqueue_destroy(char* mq_name_suffix)
       snprintf(mq_path, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, mq_name_suffix);
       ret = unlink ( mq_path );
       if (ret == -1)
-	{
-	  printf("Message queue %s could not be removed, please remove manually\n", mq_name_suffix);
-	}
+        {
+          printf("Message queue %s could not be removed, please remove manually\n", mq_name_suffix);
+        }
     }
   else
     {

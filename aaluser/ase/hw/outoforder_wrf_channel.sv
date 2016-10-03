@@ -129,10 +129,10 @@ module outoforder_wrf_channel
    // Read/Write macro
    generate
       if (WRITE_CHANNEL == 0) begin
-        `define WRITE_LATBUF_CHANNEL
+`define WRITE_LATBUF_CHANNEL
       end
       else if (WRITE_CHANNEL == 1) begin
-	`define READ_LATBUF_CHANNEL
+`define READ_LATBUF_CHANNEL
       end
    endgenerate
 
@@ -145,7 +145,7 @@ module outoforder_wrf_channel
       int 				  rand_out;
       begin
 	 // rand_out = abs_val($random() % (high + 1 - low) + low);
-	 rand_out = $urandom_range(low, high);	 
+	 rand_out = $urandom_range(low, high);
 	 return rand_out;
       end
    endfunction
@@ -186,12 +186,12 @@ module outoforder_wrf_channel
    logic [LATBUF_TID_WIDTH-1:0] 	  tid_out;
 
    // Infifo
-   logic [FIFO_WIDTH-1:0] 	  infifo[$:VISIBLE_DEPTH-1];
+   logic [FIFO_WIDTH-1:0] 		  infifo[$:VISIBLE_DEPTH-1];
 
    // Lanes
-   logic [FIFO_WIDTH-1:0] 	  vl0_array[$:INTERNAL_FIFO_DEPTH-1];
-   logic [FIFO_WIDTH-1:0] 	  vh0_array[$:INTERNAL_FIFO_DEPTH-1];
-   logic [FIFO_WIDTH-1:0] 	  vh1_array[$:INTERNAL_FIFO_DEPTH-1];
+   logic [FIFO_WIDTH-1:0] 		  vl0_array[$:INTERNAL_FIFO_DEPTH-1];
+   logic [FIFO_WIDTH-1:0] 		  vh0_array[$:INTERNAL_FIFO_DEPTH-1];
+   logic [FIFO_WIDTH-1:0] 		  vh1_array[$:INTERNAL_FIFO_DEPTH-1];
 
 
    /*
@@ -212,40 +212,40 @@ module outoforder_wrf_channel
    logic [(LATBUF_TID_WIDTH+CCIP_RX_HDR_WIDTH+CCIP_TX_HDR_WIDTH-1):0] wrfence_rsp_array[$];
 
    // Wrfence assert/deassert/status/compare
-   logic 						       wrfence_rspvalid;
-   logic [LATBUF_TID_WIDTH-1:0] 				       wrfence_rsptid;
+   logic 							      wrfence_rspvalid;
+   logic [LATBUF_TID_WIDTH-1:0] 				      wrfence_rsptid;
    RxHdr_t                                                     wrfence_rsphdr;
    TxHdr_t                                                     wrfence_reqhdr;
-   logic 						       vl0_wrfence_deassert;
-   logic 						       vh0_wrfence_deassert;
-   logic 						       vh1_wrfence_deassert;
+   logic 							      vl0_wrfence_deassert;
+   logic 							      vh0_wrfence_deassert;
+   logic 							      vh1_wrfence_deassert;
 `endif
 
    // Outfifo
-   logic [OUTFIFO_WIDTH-1:0] 	  outfifo[$:VISIBLE_DEPTH-1];
+   logic [OUTFIFO_WIDTH-1:0] 					      outfifo[$:VISIBLE_DEPTH-1];
 
    // FIFO counts
-   int 				  infifo_cnt;
-   int 				  vl0_array_cnt;
-   int 				  vh0_array_cnt;
-   int 				  vh1_array_cnt;
-   int 				  outfifo_cnt;
-   int 				  wrfence_rsp_cnt;
+   int 								      infifo_cnt;
+   int 								      vl0_array_cnt;
+   int 								      vh0_array_cnt;
+   int 								      vh1_array_cnt;
+   int 								      outfifo_cnt;
+   int 								      wrfence_rsp_cnt;
 
-   logic 			  vl0_array_full;
-   logic 			  vh0_array_full;
-   logic 			  vh1_array_full;
+   logic 							      vl0_array_full;
+   logic 							      vh0_array_full;
+   logic 							      vh1_array_full;
 
-   logic 			  vl0_array_empty;
-   logic 			  vh0_array_empty;
-   logic 			  vh1_array_empty;
+   logic 							      vl0_array_empty;
+   logic 							      vh0_array_empty;
+   logic 							      vh1_array_empty;
 
-   logic 			  outfifo_empty;
-   logic 			  outfifo_almfull;
+   logic 							      outfifo_empty;
+   logic 							      outfifo_almfull;
 
-   logic [2:0] 			  vc_push;
+   logic [2:0] 							      vc_push;
 
-   logic 			  some_lane_full;
+   logic 							      some_lane_full;
 
    always @(*) begin : lane_fullcheck_comb
       some_lane_full <= vl0_array_full | vh0_array_full | vh1_array_full;
@@ -299,13 +299,13 @@ module outoforder_wrf_channel
    end
 
    // If Full toggles, log the event
-   `ifdef ASE_DEBUG
+`ifdef ASE_DEBUG
    always @(posedge clk) begin
       if (almfull_q != almfull) begin
 	 $fwrite(log_fd, "%d | Module full toggled from %b to %b\n", $time, almfull_q, almfull);
       end
    end
-   `endif
+`endif
 
    // Full signal
    always @(posedge clk) begin : full_proc
@@ -327,9 +327,9 @@ module outoforder_wrf_channel
       end
       else if ((infifo_cnt == VISIBLE_DEPTH-1) && write_en) begin
 	 overflow_error <= 1;
-   `ifdef ASE_DEBUG
+`ifdef ASE_DEBUG
 	 $fwrite(log_fd, "%d | ** Overflow Error detected **\n", $time);
-   `endif
+`endif
       end
    end
 
@@ -347,36 +347,36 @@ module outoforder_wrf_channel
 		  {
 		     TxHdr_t                     hdr  [0:LATBUF_MAX_TXN-1]; // in
 		     logic [CCIP_DATA_WIDTH-1:0] data [0:LATBUF_MAX_TXN-1]; // in
-		     logic [LATBUF_TID_WIDTH-1:0] 	 tid  [0:LATBUF_MAX_TXN-1]; // in
-		     logic [LATBUF_TIMER_WIDTH-1:0] 	 ctr_out;       // out
-		     int 			 num_items;     // in
-		     logic 			 record_valid;  // out
-		     logic 			 record_ready;  // out
-		     logic 			 record_push;   // in
-		     logic 			 record_pop;    // in
+		     logic [LATBUF_TID_WIDTH-1:0] tid  [0:LATBUF_MAX_TXN-1]; // in
+		     logic [LATBUF_TIMER_WIDTH-1:0] ctr_out;       // out
+		     int 			    num_items;     // in
+		     logic 			    record_valid;  // out
+		     logic 			    record_ready;  // out
+		     logic 			    record_push;   // in
+		     logic 			    record_pop;    // in
 		     latsc_fsmState              state;         // out
 		  } transact_t;
 
    // Array of stored transactions
    transact_t records[NUM_WAIT_STATIONS] ;
 
-   logic [0:NUM_WAIT_STATIONS-1] 		 record_vl0_flag_arr;
-   logic [0:NUM_WAIT_STATIONS-1] 		 record_vh0_flag_arr;
-   logic [0:NUM_WAIT_STATIONS-1] 		 record_vh1_flag_arr;
+   logic [0:NUM_WAIT_STATIONS-1] 		    record_vl0_flag_arr;
+   logic [0:NUM_WAIT_STATIONS-1] 		    record_vh0_flag_arr;
+   logic [0:NUM_WAIT_STATIONS-1] 		    record_vh1_flag_arr;
 
-   logic [0:NUM_WAIT_STATIONS-1] 		 record_pop_arr;
-   logic [0:NUM_WAIT_STATIONS-1] 		 record_push_arr;
+   logic [0:NUM_WAIT_STATIONS-1] 		    record_pop_arr;
+   logic [0:NUM_WAIT_STATIONS-1] 		    record_push_arr;
 
 
    // Infifo, request staging
    always @(posedge clk) begin : infifo_push
       if (write_en) begin
-	 `ifdef ASE_DEBUG
+`ifdef ASE_DEBUG
 	 $fwrite(log_fd, "%d | ENTER : %s assigned tid=%x\n", $time, return_txhdr(hdr_in), tid_in);
 	 if (hdr_in.reqtype == ASE_WRFENCE) begin
 	    $fwrite (log_fd, "%d | WrFence inserted in channel\n", $time);
 	 end
-	 `endif
+`endif
 	 infifo.push_back({ tid_in, data_in, logic_cast_TxHdr_t'(hdr_in) });
       end
    end
@@ -384,7 +384,7 @@ module outoforder_wrf_channel
 
    // Pop infifo, arbitrate between lanes
    logic [CCIP_DATA_WIDTH-1:0]   infifo_data_out;
-   logic [LATBUF_TID_WIDTH-1:0]         infifo_tid_out;
+   logic [LATBUF_TID_WIDTH-1:0]  infifo_tid_out;
    logic [CCIP_TX_HDR_WIDTH-1:0] infifo_hdr_out_vec;
    TxHdr_t                       infifo_hdr_out;
    logic 			 infifo_vld;
@@ -517,16 +517,16 @@ module outoforder_wrf_channel
 		      vl0_hdr.addr = infifo_hdr_out.addr + ii;
 		      vl0_hdr.len = ccip_len_t'(ii);
 		      vl0_array.push_back({infifo_tid_out, infifo_data_out, logic_cast_TxHdr_t'(vl0_hdr)});
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 		      $fwrite(log_fd, "%d | infifo_to_vc(VL0) : tid=%x TX=%s sent to VL0\n", $time, infifo_tid_out, return_txhdr(vl0_hdr) );
-	 `endif
+ `endif
 		   end // for (int ii = 0; ii <= infifo_hdr_out.len; ii = ii + 1)
 		end // if (WRITE_CHANNEL == 0)
 		else begin
 		   vl0_array.push_back({infifo_tid_out, infifo_data_out, logic_cast_TxHdr_t'(infifo_hdr_out)});
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc(VL0) : tid=%x TX=%s sent to VL0\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out) );
-	 `endif
+ `endif
 		end
 	     end
 
@@ -534,18 +534,18 @@ module outoforder_wrf_channel
 	     begin
 		vc_push = 3'b010;
 		vh0_array.push_back({infifo_tid_out, infifo_data_out, logic_cast_TxHdr_t'(infifo_hdr_out)});
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 		$fwrite(log_fd, "%d | infifo_to_vc(VH0) : tid=%x TX=%s sent to VH0\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out));
-	 `endif
+ `endif
 	     end
 
 	   VC_VH1:
 	     begin
 		vc_push = 3'b001;
 		vh1_array.push_back({infifo_tid_out, infifo_data_out, logic_cast_TxHdr_t'(infifo_hdr_out)});
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 		$fwrite(log_fd, "%d | infifo_to_vc(VH1) : tid=%x TX=%s sent to VH1\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out));
-	 `endif
+ `endif
 	     end
 	 endcase
 	 // ----------------------------------------------------------------------- //
@@ -580,9 +580,9 @@ module outoforder_wrf_channel
 		   vh1_array.push_back({infifo_tid_out, infifo_data_out, logic_cast_TxHdr_t'(infifo_hdr_out)});
 		   // Wrfence response
 		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), logic_cast_TxHdr_t'(infifo_hdr_out) } );
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VA\n", $time, infifo_tid_out);
-	 `endif
+ `endif
 		end
 
 	      // If single channel fence, stage requisite response
@@ -590,27 +590,27 @@ module outoforder_wrf_channel
 		begin
 		   vl0_array.push_back({infifo_tid_out, infifo_data_out, logic_cast_TxHdr_t'(infifo_hdr_out)});
 		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), logic_cast_TxHdr_t'(infifo_hdr_out) } );
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VL0\n", $time, infifo_tid_out);
-	 `endif
+ `endif
 		end
 
 	      VC_VH0:
 		begin
 		   vh0_array.push_back({infifo_tid_out, infifo_data_out, logic_cast_TxHdr_t'(infifo_hdr_out)});
 		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), logic_cast_TxHdr_t'(infifo_hdr_out) } );
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VH0\n", $time, infifo_tid_out);
-	 `endif
+ `endif
 		end
 
 	      VC_VH1:
 		begin
 		   vh1_array.push_back({infifo_tid_out, infifo_data_out, logic_cast_TxHdr_t'(infifo_hdr_out)});
 		   wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), logic_cast_TxHdr_t'(infifo_hdr_out) } );
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VH1\n", $time, infifo_tid_out);
-	 `endif
+ `endif
 		end
 
 	    endcase
@@ -634,16 +634,16 @@ module outoforder_wrf_channel
 			 vl0_hdr.addr = infifo_hdr_out.addr + ii;
 			 vl0_hdr.len = ccip_len_t'(ii);
 			 vl0_array.push_back({infifo_tid_out, infifo_data_out, logic_cast_TxHdr_t'(vl0_hdr)});
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 			 $fwrite(log_fd, "%d | infifo_to_vc(VL0) : tid=%x TX=%s sent to VL0\n", $time, infifo_tid_out, return_txhdr(vl0_hdr) );
-	 `endif
+ `endif
 		      end // for (int ii = 0; ii <= infifo_hdr_out.len; ii = ii + 1)
 		   end // if (WRITE_CHANNEL == 0)
 		   else begin
 		      vl0_array.push_back({infifo_tid_out, infifo_data_out, logic_cast_TxHdr_t'(infifo_hdr_out)});
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 		      $fwrite(log_fd, "%d | infifo_to_vc(VL0) : tid=%x TX=%s sent to VL0\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out) );
-	 `endif
+ `endif
 		   end
 		end
 
@@ -651,18 +651,18 @@ module outoforder_wrf_channel
 		begin
 		   vc_push = 3'b010;
 		   vh0_array.push_back({infifo_tid_out, infifo_data_out, logic_cast_TxHdr_t'(infifo_hdr_out)});
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc(VH0) : tid=%x TX=%s sent to VH0\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out));
-	 `endif
+ `endif
 		end
 
 	      VC_VH1:
 		begin
 		   vc_push = 3'b001;
 		   vh1_array.push_back({infifo_tid_out, infifo_data_out, logic_cast_TxHdr_t'(infifo_hdr_out)});
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 		   $fwrite(log_fd, "%d | infifo_to_vc(VH1) : tid=%x TX=%s sent to VH1\n", $time, infifo_tid_out, return_txhdr(infifo_hdr_out));
-	 `endif
+ `endif
 		end
 	    endcase
 	 end // else: !if(infifo_hdr_out.reqtype == ASE_WRFENCE)
@@ -738,17 +738,17 @@ module outoforder_wrf_channel
    logic [LATBUF_TID_WIDTH-1:0] vh0_wrfence_tid;
    logic [LATBUF_TID_WIDTH-1:0] vh1_wrfence_tid;
 
-   int 	 latbuf_push_ptr;
-   int 	 latbuf_pop_ptr;
+   int 				latbuf_push_ptr;
+   int 				latbuf_pop_ptr;
 
-   int 	 vl0_records_cnt ;
-   int 	 vh0_records_cnt ;
-   int 	 vh1_records_cnt;
+   int 				vl0_records_cnt ;
+   int 				vh0_records_cnt ;
+   int 				vh1_records_cnt;
 
-   int 				 latbuf_cnt;
-   logic 			 latbuf_full;
-   logic 			 latbuf_almfull;
-   logic 			 latbuf_empty;
+   int 				latbuf_cnt;
+   logic 			latbuf_full;
+   logic 			latbuf_almfull;
+   logic 			latbuf_empty;
 
    // Count used latbuf
    assign vl0_records_cnt = $countones(record_vl0_flag_arr);
@@ -816,11 +816,11 @@ module outoforder_wrf_channel
    // Read channel VC->LATBUF glue
 `ifdef READ_LATBUF_CHANNEL
    function automatic void READ_get_vc_put_latbuf (ref logic [FIFO_WIDTH-1:0] array[$:INTERNAL_FIFO_DEPTH-1]);
-      logic [CCIP_TX_HDR_WIDTH-1:0] 					     array_hdr;
-      logic [CCIP_DATA_WIDTH-1:0] 					     array_data;
-      logic [LATBUF_TID_WIDTH-1:0] 						     array_tid;
+      logic [CCIP_TX_HDR_WIDTH-1:0] array_hdr;
+      logic [CCIP_DATA_WIDTH-1:0]   array_data;
+      logic [LATBUF_TID_WIDTH-1:0]  array_tid;
       TxHdr_t                                                                hdr;
-      int 								     ptr;
+      int 			    ptr;
       begin
 	 hazpkt_in.valid = 0;
 	 // Find a pointer to use
@@ -840,18 +840,18 @@ module outoforder_wrf_channel
 	    records[ptr].record_valid = 1;
 	    records[ptr].num_items    = int'(ASE_1CL);
 	    mcl_write_in_progress     = 0;
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 	    $fwrite(log_fd, "%d | latbuf_push : tid=%x TX=%s sent to record[%02d][0]\n", $time, array_tid, return_txhdr(hdr), ptr);
-	 `endif
+ `endif
 	    hazpkt_in.hdr     = hdr;
 	    hazpkt_in.tid     = array_tid;
 	    hazpkt_in.valid   = 1;
 	 end // if (ptr != LATBUF_SLOT_INVALID)
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 	 else begin
 	    $fwrite(log_fd, "%d | latbuf_push : Returned slot_num = %d .. UNUSED\n", $time, LATBUF_SLOT_INVALID);
 	 end
-	 `endif
+ `endif
       end
    endfunction
 `endif
@@ -860,14 +860,14 @@ module outoforder_wrf_channel
    // Write channel VC->LATBUF glue
 `ifdef WRITE_LATBUF_CHANNEL
    function automatic void WRITE_get_vc_put_latbuf (ref logic [FIFO_WIDTH-1:0] array[$:INTERNAL_FIFO_DEPTH-1],
-						    ref logic 		      wrfence_flag,
+						    ref logic 			     wrfence_flag,
 						    ref logic [LATBUF_TID_WIDTH-1:0] wrfence_tid
 						    );
-      logic [CCIP_TX_HDR_WIDTH-1:0] 					      array_hdr;
-      logic [CCIP_DATA_WIDTH-1:0] 					      array_data;
-      logic [LATBUF_TID_WIDTH-1:0] 						      array_tid;
+      logic [CCIP_TX_HDR_WIDTH-1:0] 						     array_hdr;
+      logic [CCIP_DATA_WIDTH-1:0] 						     array_data;
+      logic [LATBUF_TID_WIDTH-1:0] 						     array_tid;
       TxHdr_t                                                                 hdr;
-      int 								      ptr;
+      int 									     ptr;
       begin
 	 hazpkt_in.valid = 0;
 	 // Find a pointer to use
@@ -896,9 +896,9 @@ module outoforder_wrf_channel
 	       hazpkt_in.valid = 0;
 	       wrfence_flag = 1;
 	       wrfence_tid  = array_tid;
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 	       $fwrite(log_fd, "%d | latbuf_push : saw Wrfence on tid=%x on channel %s\n", $time, array_tid, ase_channel_type(hdr.vc));
-	 `endif
+ `endif
 	    end
 	    // ------------------------------------------------------ //
 	    // If Transaction is a WRITE
@@ -918,9 +918,9 @@ module outoforder_wrf_channel
 		    mcl_write_in_progress      = 1;
 		  else
 		    mcl_write_in_progress      = 0;
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 		  $fwrite(log_fd, "%d | latbuf_push : tid=%x TX=%s sent to record[%02d][%02d]\n", $time, array_tid, return_txhdr(hdr), ptr, mcl_txn_iter);
-	 `endif
+ `endif
 		  mcl_txn_iter = mcl_txn_iter + 1;
 		  hazpkt_in.hdr   = hdr;
 		  hazpkt_in.tid   = array_tid;
@@ -937,20 +937,20 @@ module outoforder_wrf_channel
 		  records[ptr].record_valid = 1;
 		  records[ptr].num_items    = int'(ASE_1CL);
 		  mcl_write_in_progress     = 0;
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 		  $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d][0]\n", $time, array_tid, ptr);
-	 `endif
+ `endif
 		  hazpkt_in.hdr   = hdr;
 		  hazpkt_in.tid   = array_tid;
 		  hazpkt_in.valid = 1;
 	       end // else: !if(isVHxRequest(hdr))
 	    end // if (isWriteRequest(hdr))
 	 end // if (ptr != LATBUF_SLOT_INVALID)
-	 `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 	 else begin
 	    $fwrite(log_fd, "%d | latbuf_push : Returned slot_num = %d .. UNUSED\n", $time, LATBUF_SLOT_INVALID);
 	 end // else: !if(ptr != LATBUF_SLOT_INVALID)
-	 `endif
+ `endif
       end
    endfunction
 `endif //  `ifdef WRITE_LATBUF_CHANNEL
@@ -1118,25 +1118,25 @@ module outoforder_wrf_channel
 	       if (vl0_wrfence_flag && (vl0_records_cnt == 0) && vl0_wrfence_deassert) begin
 		  hazpkt_in.valid <= 0;
 		  vl0_wrfence_flag <= 0;
-	 `ifdef ASE_DEBUG
+`ifdef ASE_DEBUG
 		  $fwrite(log_fd, "%d | VL0 write fence popped\n", $time);
-	 `endif
+`endif
 	       end
 	       // If a VH0 fence is set, wait till downstream gets cleared
 	       if (vh0_wrfence_flag && (vh0_records_cnt == 0) && vh0_wrfence_deassert) begin
 		  hazpkt_in.valid <= 0;
 		  vh0_wrfence_flag <= 0;
-	 `ifdef ASE_DEBUG
+`ifdef ASE_DEBUG
 		  $fwrite(log_fd, "%d | VH0 write fence popped\n", $time);
-	 `endif
+`endif
 	       end
 	       // If a VH0 fence is set, wait till downstream gets cleared
 	       if (vh1_wrfence_flag && (vh1_records_cnt == 0) && vh1_wrfence_deassert) begin
 		  hazpkt_in.valid <= 0;
 		  vh1_wrfence_flag <= 0;
-	 `ifdef ASE_DEBUG
+`ifdef ASE_DEBUG
 		  $fwrite(log_fd, "%d | VH1 write fence popped\n", $time);
-	 `endif
+`endif
 	       end
 	       // -------------------------------------------------- //
 	       // Release latbuf_used & record_push
@@ -1153,13 +1153,13 @@ module outoforder_wrf_channel
    endgenerate
 
    // Print process (DEBUG ONLY)
-	 `ifdef ASE_DEBUG
+`ifdef ASE_DEBUG
    always @(posedge clk) begin
       if (hazpkt_in.valid) begin
 	 $fwrite(log_fd, "%d | hazpkt_in => tid = %x, hdr=%s\n", $time, hazpkt_in.tid, return_txhdr(hazpkt_in.hdr));
       end
    end
-	 `endif
+`endif
 
    /*
     * Latency scoreboard
@@ -1186,9 +1186,9 @@ module outoforder_wrf_channel
 	   VC_VA:
 	     begin
 		delay = 100;
-	 `ifdef ASE_DEBUG
+`ifdef ASE_DEBUG
 		$fwrite(log_fd, "%d | *ERROR* => get_delay() must not get VC_VA", $time);
-	 `endif
+`endif
 	     end
 	 endcase
 	 return delay;
@@ -1334,13 +1334,13 @@ module outoforder_wrf_channel
       int 			  ptr;
       TxHdr_t                     txhdr;
       RxHdr_t                     rxhdr;
-      logic [LATBUF_TID_WIDTH-1:0] 	  tid;
-      int 			  line_i;
-      logic [41:0] 		  base_addr;
-      logic [15:0] 		  base_mdata;
+      logic [LATBUF_TID_WIDTH-1:0] tid;
+      int 			   line_i;
+      logic [41:0] 		   base_addr;
+      logic [15:0] 		   base_mdata;
       ccip_vc_t                   base_vc;
       ccip_len_t                  base_len;
-      int 			  loop_max;
+      int 			   loop_max;
       begin
 	 unroll_active  = 0;
 	 ptr            = find_next_pop_slot();
@@ -1354,7 +1354,7 @@ module outoforder_wrf_channel
 	    base_len      = records[ptr].hdr[0].len;
 	    loop_max      = records[ptr].num_items + 1;
 	    // --------------------------------------------------------- //
-	    // VL0 request (broken out by infifo_to_vc)
+  // VL0 request (broken out by infifo_to_vc)
 	    // --------------------------------------------------------- //
 	    if (isVL0Request(base_hdr)) begin
 	       txhdr         = records[ptr].hdr[0];
@@ -1369,9 +1369,9 @@ module outoforder_wrf_channel
 	       rxhdr.format  = 0;
 	       rxhdr.resptype = ASE_RD_RSP;
 	       array.push_back({ tid, data, logic_cast_RxHdr_t'(rxhdr), logic_cast_TxHdr_t'(txhdr) });
-         `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 	       $fwrite(log_fd, "%d | record[%02d][0] size %1d with tid=%x unrolled TX=%s RX=%s \n", $time, ptr, loop_max, tid, return_txhdr(txhdr), return_rxhdr(rxhdr) );
-         `endif
+ `endif
 	    end
 	    // ---------------------------------------------- //
 	    // VHx MCL Read Request, unroll the request
@@ -1390,9 +1390,9 @@ module outoforder_wrf_channel
 		  rxhdr.vc_used    = base_vc;
 		  rxhdr.resptype   = ASE_RD_RSP;
 		  array.push_back({ tid, data, logic_cast_RxHdr_t'(rxhdr), logic_cast_TxHdr_t'(txhdr) });
-         `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 	    	  $fwrite(log_fd, "%d | record[%02d][%02d] size %1d with tid=%x unrolled TX=%s RX=%s \n", $time, ptr, jj, loop_max, tid, return_txhdr(txhdr), return_rxhdr(rxhdr) );
-         `endif
+ `endif
 	       end // for (int jj = 0; jj <= txhdr.len; jj = jj + 1)
 	    end // if (isVHxRequest(base_hdr))
 	    // ----------------------------------------------------- //
@@ -1415,13 +1415,13 @@ module outoforder_wrf_channel
       int 			  ptr;
       TxHdr_t                     txhdr;
       RxHdr_t                     rxhdr;
-      logic [LATBUF_TID_WIDTH-1:0] 	  tid;
-      int 			  line_i;
-      logic [41:0] 		  base_addr;
-      logic [15:0] 		  base_mdata;
+      logic [LATBUF_TID_WIDTH-1:0] tid;
+      int 			   line_i;
+      logic [41:0] 		   base_addr;
+      logic [15:0] 		   base_mdata;
       ccip_vc_t                   base_vc;
       ccip_len_t                  base_len;
-      int 			  loop_max;
+      int 			   loop_max;
       begin
 	 unroll_active  = 0;
 	 ptr            = find_next_pop_slot();
@@ -1435,7 +1435,7 @@ module outoforder_wrf_channel
 	    base_len      = records[ptr].hdr[0].len;
 	    loop_max      = records[ptr].num_items + 1;
 	    // --------------------------------------------------------- //
-	    // VL0 request (broken out by infifo_to_vc)
+  // VL0 request (broken out by infifo_to_vc)
 	    // --------------------------------------------------------- //
 	    if (isVL0Request(base_hdr)) begin
 	       txhdr         = records[ptr].hdr[0];
@@ -1450,9 +1450,9 @@ module outoforder_wrf_channel
 	       rxhdr.format  = 0;
 	       rxhdr.resptype = ASE_WR_RSP;
 	       array.push_back({ tid, data, logic_cast_RxHdr_t'(rxhdr), logic_cast_TxHdr_t'(txhdr) });
-         `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 	       $fwrite(log_fd, "%d | record[%02d][0] size %1d with tid=%x unrolled TX=%s RX=%s \n", $time, ptr, loop_max, tid, return_txhdr(txhdr), return_rxhdr(rxhdr) );
-         `endif
+ `endif
 	    end
 	    // ---------------------------------------------- //
 	    // VHx Write request
@@ -1470,9 +1470,9 @@ module outoforder_wrf_channel
 		  rxhdr.format     = 1;
 		  rxhdr.resptype   = ASE_WR_RSP;
 		  array.push_back({ tid, data, logic_cast_RxHdr_t'(rxhdr), logic_cast_TxHdr_t'(txhdr) });
-         `ifdef ASE_DEBUG
+ `ifdef ASE_DEBUG
 	    	  $fwrite(log_fd, "%d | record[%02d][0] size %1d with tid=%x unrolled TX=%s RX=%s \n", $time, ptr, loop_max, tid, return_txhdr(txhdr), return_rxhdr(rxhdr) );
-         `endif
+ `endif
 	       end
 	    end
 	    // ----------------------------------------------------- //
@@ -1489,18 +1489,18 @@ module outoforder_wrf_channel
 
    // Wrfence response monitor
 `ifdef WRITE_LATBUF_CHANNEL
-     always @(posedge clk) begin : wrfence_rsp_monitor
-	if (rst) begin
-	   wrfence_rspvalid <= 0;
-	end
-	else if (~wrfence_rspvalid & (wrfence_rsp_cnt != 0)) begin
-	   wrfence_rspvalid <= 1;
-	   {wrfence_rsptid, wrfence_rsphdr, wrfence_reqhdr } = wrfence_rsp_array.pop_front();
-	end
-	else if (wrfence_rspvalid & (vl0_wrfence_deassert|vh0_wrfence_deassert|vh1_wrfence_deassert) ) begin
-	   wrfence_rspvalid <= 0;
-	end
-     end
+   always @(posedge clk) begin : wrfence_rsp_monitor
+      if (rst) begin
+	 wrfence_rspvalid <= 0;
+      end
+      else if (~wrfence_rspvalid & (wrfence_rsp_cnt != 0)) begin
+	 wrfence_rspvalid <= 1;
+	 {wrfence_rsptid, wrfence_rsphdr, wrfence_reqhdr } = wrfence_rsp_array.pop_front();
+      end
+      else if (wrfence_rspvalid & (vl0_wrfence_deassert|vh0_wrfence_deassert|vh1_wrfence_deassert) ) begin
+	 wrfence_rspvalid <= 0;
+      end
+   end
 `endif
 
    logic [2:0] latbuf_pop_proc_status;
@@ -1685,38 +1685,38 @@ module outoforder_wrf_channel
    /*
     * Hazard-OUT interface assignment
     */
-generate
-   // -------------------------------------- //
-   // Read channel configuration
-   // -------------------------------------- //
-   if (WRITE_CHANNEL == 0) begin
-      always @(posedge clk) begin
-	 if (valid_out) begin
-	    hazpkt_out.valid <= valid_out;
-	    hazpkt_out.hdr   <= txhdr_out;
-	    hazpkt_out.tid   <= tid_out;
-	 end
-	 else begin
-	    hazpkt_out.valid <= 0;
-	 end
-      end
-   end
-   // -------------------------------------- //
-   // Write channel configuration
-   // -------------------------------------- //
-   else if (WRITE_CHANNEL == 1) begin
-      always @(posedge clk) begin
-	 if (valid_out && isWriteRequest(txhdr_out)) begin
-	    hazpkt_out.valid <= valid_out;
-	    hazpkt_out.hdr   <= txhdr_out;
-	    hazpkt_out.tid   <= tid_out;
-	 end
-	 else begin
-	    hazpkt_out.valid <= 0;
+   generate
+      // -------------------------------------- //
+      // Read channel configuration
+      // -------------------------------------- //
+      if (WRITE_CHANNEL == 0) begin
+	 always @(posedge clk) begin
+	    if (valid_out) begin
+	       hazpkt_out.valid <= valid_out;
+	       hazpkt_out.hdr   <= txhdr_out;
+	       hazpkt_out.tid   <= tid_out;
+	    end
+	    else begin
+	       hazpkt_out.valid <= 0;
+	    end
 	 end
       end
-   end
-endgenerate
+      // -------------------------------------- //
+      // Write channel configuration
+      // -------------------------------------- //
+      else if (WRITE_CHANNEL == 1) begin
+	 always @(posedge clk) begin
+	    if (valid_out && isWriteRequest(txhdr_out)) begin
+	       hazpkt_out.valid <= valid_out;
+	       hazpkt_out.hdr   <= txhdr_out;
+	       hazpkt_out.tid   <= tid_out;
+	    end
+	    else begin
+	       hazpkt_out.valid <= 0;
+	    end
+	 end
+      end
+   endgenerate
 
 
    // Log output pop

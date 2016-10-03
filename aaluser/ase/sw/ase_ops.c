@@ -58,11 +58,11 @@ void remove_spaces(char* in_str)
       i = in_str;
       j = in_str;
       while(*j != 0)
-	{
-	  *i = *j++;
-	  if(*i != ' ')
-	    i++;
-	}
+        {
+          *i = *j++;
+          if(*i != ' ')
+            i++;
+        }
       *i = 0;
     }
 }
@@ -79,15 +79,15 @@ void remove_tabs(char* in_str)
     }
   else
     {
-  char *i = in_str;
-  char *j = in_str;
-  while(*j != 0)
-    {
-      *i = *j++;
-      if(*i != '\t')
-  	i++;
-    }
-  *i = 0;
+      char *i = in_str;
+      char *j = in_str;
+      while(*j != 0)
+        {
+          *i = *j++;
+          if(*i != '\t')
+            i++;
+        }
+      *i = 0;
     }
 }
 
@@ -102,15 +102,15 @@ void remove_newline(char* in_str)
     }
   else
     {
-  char *i = in_str;
-  char *j = in_str;
-  while(*j != 0)
-    {
-      *i = *j++;
-      if(*i != '\n')
-  	i++;
-    }
-  *i = 0;
+      char *i = in_str;
+      char *j = in_str;
+      while(*j != 0)
+        {
+          *i = *j++;
+          if(*i != '\n')
+            i++;
+        }
+      *i = 0;
     }
 }
 
@@ -273,18 +273,18 @@ void ase_eval_session_directory()
       DIR* ase_dir;
       ase_dir = opendir(ase_workdir_path);
       if (!ase_dir)
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("  [APP]  ASE workdir path pointed by env(ASE_WORKDIR) does not exist !\n");
-	  printf("         Cannot continue execution... exiting !");
-	  END_RED_FONTCOLOR;
-	  perror("opendir");
-	  exit(1);
-	}
+        {
+          BEGIN_RED_FONTCOLOR;
+          printf("  [APP]  ASE workdir path pointed by env(ASE_WORKDIR) does not exist !\n");
+          printf("         Cannot continue execution... exiting !");
+          END_RED_FONTCOLOR;
+          perror("opendir");
+          exit(1);
+        }
       else
-	{
-	  closedir(ase_dir);
-	}
+        {
+          closedir(ase_dir);
+        }
     }
 #endif
 }
@@ -368,38 +368,38 @@ void ase_write_lock_file()
       // Get hostname for comparison
       ret_err = gethostname(ase_hostname, ASE_FILENAME_LEN);
       if (ret_err != 0)
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("SIM-C : **ERROR** => Hostname could not be calculated, Exiting\n");
-	  END_RED_FONTCOLOR;
+        {
+          BEGIN_RED_FONTCOLOR;
+          printf("SIM-C : **ERROR** => Hostname could not be calculated, Exiting\n");
+          END_RED_FONTCOLOR;
 
-	  // Close file
-	  fclose(fp_ase_ready);
+          // Close file
+          fclose(fp_ase_ready);
 
-	  // Remove buffers
-	  free (ase_hostname);
+          // Remove buffers
+          free (ase_hostname);
 
-	  // Issue Simkill
-	  start_simkill_countdown();
-	}
+          // Issue Simkill
+          start_simkill_countdown();
+        }
       else
-	{
-      fprintf(fp_ase_ready, "host = %s\n", ase_hostname);
+        {
+          fprintf(fp_ase_ready, "host = %s\n", ase_hostname);
 
-      // Line 3
-      fprintf(fp_ase_ready, "dir  = %s\n", ase_workdir_path);
+          // Line 3
+          fprintf(fp_ase_ready, "dir  = %s\n", ase_workdir_path);
 
-      // Line 4
-      fprintf(fp_ase_ready, "uid  = %s\n", ASE_UNIQUE_ID);
+          // Line 4
+          fprintf(fp_ase_ready, "uid  = %s\n", ASE_UNIQUE_ID);
 
-      ////////////////////////////////////////////
-      // Close file
-      fclose(fp_ase_ready);
-      free (ase_hostname);
+          ////////////////////////////////////////////
+          // Close file
+          fclose(fp_ase_ready);
+          free (ase_hostname);
 
-      // Notice on stdout
-      printf("SIM-C : ASE lock file .ase_ready.pid written in work directory\n");
-	}
+          // Notice on stdout
+          printf("SIM-C : ASE lock file .ase_ready.pid written in work directory\n");
+        }
     }
 
 
@@ -455,161 +455,161 @@ int ase_read_lock_file(const char *workdir)
 
       // Check if file exists
       if (access(exp_ready_filepath, F_OK) != -1)  // File exists
-	{
-	  // Malloc/memset
-	  line = ase_malloc(256);
-	  readback_hostname = ase_malloc(ASE_FILENAME_LEN);
-	  readback_uid = ase_malloc(ASE_FILEPATH_LEN);
-	  readback_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
-	  curr_hostname = ase_malloc(ASE_FILENAME_LEN);
+        {
+          // Malloc/memset
+          line = ase_malloc(256);
+          readback_hostname = ase_malloc(ASE_FILENAME_LEN);
+          readback_uid = ase_malloc(ASE_FILEPATH_LEN);
+          readback_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
+          curr_hostname = ase_malloc(ASE_FILENAME_LEN);
 
-	  // Open file
-	  fp_exp_ready = fopen(exp_ready_filepath, "r");
-	  if (fp_exp_ready == NULL)
-	    {
-	      BEGIN_RED_FONTCOLOR;
+          // Open file
+          fp_exp_ready = fopen(exp_ready_filepath, "r");
+          if (fp_exp_ready == NULL)
+            {
+              BEGIN_RED_FONTCOLOR;
 #ifdef SIM_SIDE
-	      printf("SIM-C : ");
+              printf("SIM-C : ");
 #else
-	      printf("  [APP]  ");
+              printf("  [APP]  ");
 #endif
-	      printf("Ready file couldn't be opened for reading, Exiting !\n");
-	      END_RED_FONTCOLOR;
+              printf("Ready file couldn't be opened for reading, Exiting !\n");
+              END_RED_FONTCOLOR;
 #ifdef SIM_SIDE
-	      start_simkill_countdown();
+              start_simkill_countdown();
 #else
-	      exit(1);
+              exit(1);
 #endif
-	    }
-	  else
-	  {
+            }
+          else
+            {
 
-	  // Read file line by line
-	  while( getline(&line, &len, fp_exp_ready) != -1)
-	    {
-	      // LHS/RHS tokenizing
-	      parameter = strtok(line, "=");
-	      value = strtok(NULL, "");
-	      // Check for parameter being recorded as NULL
-	      if ((parameter == NULL) || (value == NULL))
-		{
-		  BEGIN_RED_FONTCOLOR;
-		  printf("** Error tokenizing paramter in lock file, EXIT !\n");
-		  END_RED_FONTCOLOR;
+              // Read file line by line
+              while( getline(&line, &len, fp_exp_ready) != -1)
+                {
+                  // LHS/RHS tokenizing
+                  parameter = strtok(line, "=");
+                  value = strtok(NULL, "");
+                  // Check for parameter being recorded as NULL
+                  if ((parameter == NULL) || (value == NULL))
+                    {
+                      BEGIN_RED_FONTCOLOR;
+                      printf("** Error tokenizing paramter in lock file, EXIT !\n");
+                      END_RED_FONTCOLOR;
 #ifdef SIM_SIDE
-		  start_simkill_countdown();
+                      start_simkill_countdown();
 #else
-		  exit(1);
+                      exit(1);
 #endif
-		}
-	      else
-		{
-		  // Trim contents
-		  remove_spaces (parameter);
-		  remove_tabs (parameter);
-		  remove_newline (parameter);
-		  remove_spaces (value);
-		  remove_tabs (value);
-		  remove_newline(value);
-		  // Line 1/2/3/4 check
-		  if ( strncmp (parameter, "pid", 4) == 0)
-		    {
-		      readback_pid = atoi(value);
-		    }
-		  else if ( strncmp (parameter, "host", 5) == 0)
-		    {
-		      // strncpy(readback_hostname, value, ASE_FILENAME_LEN);
-		      ase_string_copy(readback_hostname, value, ASE_FILENAME_LEN);
-		    }
-		  else if ( strncmp (parameter, "dir", 4) == 0)
-		    {
-		      // strncpy(readback_workdir_path, value, ASE_FILEPATH_LEN);
-		      ase_string_copy(readback_workdir_path, value, ASE_FILEPATH_LEN);
-		    }
-		  else if ( strncmp (parameter, "uid", 4) == 0)
-		    {
-		      // strncpy(readback_uid, value, ASE_FILEPATH_LEN);
-		      ase_string_copy(readback_uid, value, ASE_FILEPATH_LEN);
-		    }
-		  else
-		    {
-		      BEGIN_RED_FONTCOLOR;
-		      printf("** ERROR **: Session parameter could not be deciphered !\n");
-		      END_RED_FONTCOLOR;
-		    }
-		}
-	    }
-	  fclose(fp_exp_ready);
-	  }
+                    }
+                  else
+                    {
+                      // Trim contents
+                      remove_spaces (parameter);
+                      remove_tabs (parameter);
+                      remove_newline (parameter);
+                      remove_spaces (value);
+                      remove_tabs (value);
+                      remove_newline(value);
+                      // Line 1/2/3/4 check
+                      if ( strncmp (parameter, "pid", 4) == 0)
+                        {
+                          readback_pid = atoi(value);
+                        }
+                      else if ( strncmp (parameter, "host", 5) == 0)
+                        {
+                          // strncpy(readback_hostname, value, ASE_FILENAME_LEN);
+                          ase_string_copy(readback_hostname, value, ASE_FILENAME_LEN);
+                        }
+                      else if ( strncmp (parameter, "dir", 4) == 0)
+                        {
+                          // strncpy(readback_workdir_path, value, ASE_FILEPATH_LEN);
+                          ase_string_copy(readback_workdir_path, value, ASE_FILEPATH_LEN);
+                        }
+                      else if ( strncmp (parameter, "uid", 4) == 0)
+                        {
+                          // strncpy(readback_uid, value, ASE_FILEPATH_LEN);
+                          ase_string_copy(readback_uid, value, ASE_FILEPATH_LEN);
+                        }
+                      else
+                        {
+                          BEGIN_RED_FONTCOLOR;
+                          printf("** ERROR **: Session parameter could not be deciphered !\n");
+                          END_RED_FONTCOLOR;
+                        }
+                    }
+                }
+              fclose(fp_exp_ready);
+            }
 
-	  ////////////////// Error checks //////////////////
-	  // If hostname does not match
-	  ret_err = gethostname(curr_hostname, ASE_FILENAME_LEN);
-	  if (ret_err != 0)
-	    {
-	      BEGIN_RED_FONTCOLOR;
-	      printf("**ERROR** => Hostname could not be calculated, Exiting\n");
-	      END_RED_FONTCOLOR;
-	      exit(1);
-	    }
-	  else
-	    {
-	      // Check here
-	      if (strncmp(curr_hostname, readback_hostname, ASE_FILENAME_LEN) != 0)
-		{
-		  BEGIN_RED_FONTCOLOR;
-		  printf("** ERROR ** => Hostname specified in ASE lock file (%s) is different as current hostname (%s)\n", readback_hostname, curr_hostname);
-		  printf("** ERROR ** => Ensure that ASE Simulator and AAL application are running on the same host !\n");
-		  END_RED_FONTCOLOR;
+          ////////////////// Error checks //////////////////
+          // If hostname does not match
+          ret_err = gethostname(curr_hostname, ASE_FILENAME_LEN);
+          if (ret_err != 0)
+            {
+              BEGIN_RED_FONTCOLOR;
+              printf("**ERROR** => Hostname could not be calculated, Exiting\n");
+              END_RED_FONTCOLOR;
+              exit(1);
+            }
+          else
+            {
+              // Check here
+              if (strncmp(curr_hostname, readback_hostname, ASE_FILENAME_LEN) != 0)
+                {
+                  BEGIN_RED_FONTCOLOR;
+                  printf("** ERROR ** => Hostname specified in ASE lock file (%s) is different as current hostname (%s)\n", readback_hostname, curr_hostname);
+                  printf("** ERROR ** => Ensure that ASE Simulator and AAL application are running on the same host !\n");
+                  END_RED_FONTCOLOR;
 #ifdef SIM_SIDE
-		  start_simkill_countdown();
+                  start_simkill_countdown();
 #else
-		  exit(1);
+                  exit(1);
 #endif
-		}
-	      else
-		{
-		  // If readback_uid (Readback unique ID from lock file) doesnt match ase_common.h
-		  curr_uid = ase_malloc(ASE_FILENAME_LEN);
-		  strncpy(curr_uid, ASE_UNIQUE_ID, ASE_FILENAME_LEN);
+                }
+              else
+                {
+                  // If readback_uid (Readback unique ID from lock file) doesnt match ase_common.h
+                  curr_uid = ase_malloc(ASE_FILENAME_LEN);
+                  strncpy(curr_uid, ASE_UNIQUE_ID, ASE_FILENAME_LEN);
 
-		  // Check
-		  if (strncmp(curr_uid, readback_uid, ASE_FILENAME_LEN) != 0)
-		    {
-		      BEGIN_RED_FONTCOLOR;
-		      printf("** ERROR ** => Application UID does not match known release UID\n");
-		      printf("** ERROR ** => Simulator built with UID=%s, Application built with UID=%s\n", readback_uid, curr_uid );
-		      printf("** ERROR ** => Ensure that ASE simulator and AAL application are compiled from the same System Release version !\n");
-		      printf("** ERROR ** => Simulation cannot proceed ... EXITING\n");
-		      END_RED_FONTCOLOR;
+                  // Check
+                  if (strncmp(curr_uid, readback_uid, ASE_FILENAME_LEN) != 0)
+                    {
+                      BEGIN_RED_FONTCOLOR;
+                      printf("** ERROR ** => Application UID does not match known release UID\n");
+                      printf("** ERROR ** => Simulator built with UID=%s, Application built with UID=%s\n", readback_uid, curr_uid );
+                      printf("** ERROR ** => Ensure that ASE simulator and AAL application are compiled from the same System Release version !\n");
+                      printf("** ERROR ** => Simulation cannot proceed ... EXITING\n");
+                      END_RED_FONTCOLOR;
 #ifdef SIM_SIDE
-		      start_simkill_countdown();
+                      start_simkill_countdown();
 #else
-		      exit(1);
+                      exit(1);
 #endif
-		    }
+                    }
 
-		  // Free curr_uid
-		  free (curr_uid);
-		}
-	    }
+                  // Free curr_uid
+                  free (curr_uid);
+                }
+            }
 
-	  // Free all buffers
-	  ase_free_buffer (line);
-	  ase_free_buffer (readback_hostname);
-	  ase_free_buffer (curr_hostname);
-	  ase_free_buffer (readback_workdir_path);
-	  ase_free_buffer (readback_uid);
-	}
+          // Free all buffers
+          ase_free_buffer (line);
+          ase_free_buffer (readback_hostname);
+          ase_free_buffer (curr_hostname);
+          ase_free_buffer (readback_workdir_path);
+          ase_free_buffer (readback_uid);
+        }
       else // File does not exist
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("ASE Ready file was not found at env(ASE_WORKDIR) !\n");
-	  printf("This could be for one of two reasons =>\n");
-	  printf(" - Simualtor is not running yet  \n");
-	  printf(" - env(ASE_WORKDIR) is set to the wrong location \n");
-	  END_RED_FONTCOLOR;
-	}
+        {
+          BEGIN_RED_FONTCOLOR;
+          printf("ASE Ready file was not found at env(ASE_WORKDIR) !\n");
+          printf("This could be for one of two reasons =>\n");
+          printf(" - Simualtor is not running yet  \n");
+          printf(" - env(ASE_WORKDIR) is set to the wrong location \n");
+          END_RED_FONTCOLOR;
+        }
 
       // Free expected filepath buffer
       free (exp_ready_filepath);
@@ -631,13 +631,13 @@ void print_mmiopkt(FILE *fp, char *activity, struct mmio_t *pkt)
   memset(mmio_action_type, 0, 20);
 
   snprintf(mmio_action_type, 20,
-	   "MMIO-%s-%d-%s",
-	   (pkt->write_en == MMIO_WRITE_REQ ? "Write" : "Read"),
-	   pkt->width,
-	   (pkt->resp_en == 0 ? "Req " : "Resp") );
+           "MMIO-%s-%d-%s",
+           (pkt->write_en == MMIO_WRITE_REQ ? "Write" : "Read"),
+           pkt->width,
+           (pkt->resp_en == 0 ? "Req " : "Resp") );
 
   fprintf(fp, "%s\t%03x\t%s\t%x\t%llx\n", activity,
-	  pkt->tid, mmio_action_type, pkt->addr, pkt->qword[0]);
+          pkt->tid, mmio_action_type, pkt->addr, pkt->qword[0]);
 
   FUNC_CALL_EXIT;
 }

@@ -26,13 +26,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  * **************************************************************************
- * 
+ *
  * Module Info: Generic register block & Latency pipe
  * Language   : System{Verilog} | C/C++
  * Owner      : Rahul R Sharma
  *              rahul.r.sharma@intel.com
  *              Intel Corporation
- * 
+ *
  */
 
 module register
@@ -74,12 +74,12 @@ module latency_pipe
     output logic [PIPE_WIDTH-1:0] pipe_out
     );
 
-   logic [PIPE_WIDTH-1:0] 	 pipe_in_tmp [0:NUM_DELAY-1];
-   logic [PIPE_WIDTH-1:0] 	 pipe_out_tmp [0:NUM_DELAY-1];
+   logic [PIPE_WIDTH-1:0] 	  pipe_in_tmp [0:NUM_DELAY-1];
+   logic [PIPE_WIDTH-1:0] 	  pipe_out_tmp [0:NUM_DELAY-1];
 
 
    // Register stages (instantiated here, not connected)
-   genvar 			 ii;
+   genvar 			  ii;
    generate
       for(ii = 0; ii < NUM_DELAY; ii = ii + 1) begin : reg_array_gen
 	 register
@@ -100,7 +100,7 @@ module latency_pipe
    genvar 		    jj;
    generate
       for(jj = 1; jj < NUM_DELAY; jj = jj + 1) begin : connect_gen
-	 assign pipe_in_tmp[jj] = pipe_out_tmp[jj - 1]; 
+	 assign pipe_in_tmp[jj] = pipe_out_tmp[jj - 1];
       end
    endgenerate
 

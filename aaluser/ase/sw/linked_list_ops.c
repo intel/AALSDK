@@ -24,13 +24,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 // **************************************************************************
-/* 
+/*
  * Module Info: Linked List memory buffer controls
  * Language   : C/C++
  * Owner      : Rahul R Sharma
  *              rahul.r.sharma@intel.com
  *              Intel Corporation
- * 
+ *
  */
 
 #include "ase_common.h"
@@ -117,7 +117,7 @@ void ll_remove_buffer(struct buffer_t *ptr)
 
   // Reset linked list traversal
   prev = head;
-  
+
   // If first node is to be deleted
   if(temp == head)
     {
@@ -125,20 +125,20 @@ void ll_remove_buffer(struct buffer_t *ptr)
       head = head->next;
       // If there is only one node in the linked list
       if(end == temp)
-	end = end->next;
+        end = end->next;
     }
   else // If not the first node
     {
       // Traverse until node is found
       while(prev->next != temp)
-	{
-	  prev = prev->next;
-	}
+        {
+          prev = prev->next;
+        }
       // Link previous node to next node
       prev->next = temp->next;
       // If this is the end node, reset the end pointer
       if(end == temp)
-	end = prev;
+        end = prev;
     }
 
   FUNC_CALL_EXIT;
@@ -162,11 +162,11 @@ struct buffer_t* ll_search_buffer(int search_index)
   if (search_ptr != NULL)
     {
       while(search_ptr->index != search_index)
-	{
-	  search_ptr = search_ptr->next;
-	  if(search_ptr == NULL)
-	    break;
-	}
+        {
+          search_ptr = search_ptr->next;
+          if(search_ptr == NULL)
+            break;
+        }
 
     }
 
@@ -174,13 +174,13 @@ struct buffer_t* ll_search_buffer(int search_index)
   if (search_ptr != NULL)
     {
       if (search_index == (int)search_ptr->index)
-	return search_ptr;
+        return search_ptr;
       else
-	return (struct buffer_t *)NULL;
+        return (struct buffer_t *)NULL;
     }
   else
     return (struct buffer_t *)NULL;
-  
+
   // FUNC_CALL_EXIT;
 }
 
@@ -198,15 +198,14 @@ uint32_t check_if_physaddr_used(uint64_t paddr)
   while(search_ptr != NULL)
     {
       if ( (paddr >= search_ptr->fake_paddr) && (paddr < search_ptr->fake_paddr_hi) )
-	{
-	  flag = 1;
-	  break;
-	}
+        {
+          flag = 1;
+          break;
+        }
       else
-	{
-	  search_ptr = search_ptr->next;
-	}
+        {
+          search_ptr = search_ptr->next;
+        }
     }
   return flag;
 }
-

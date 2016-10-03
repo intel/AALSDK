@@ -6,25 +6,25 @@ package ccip_if_pkg;
 //=====================================================================
 parameter CCIP_VERSION_NUMBER    = 12'h070;
 
-parameter CCIP_CLADDR_WIDTH      = 42; 
-parameter CCIP_CLDATA_WIDTH      = 512; 
+parameter CCIP_CLADDR_WIDTH      = 42;
+parameter CCIP_CLDATA_WIDTH      = 512;
 
-parameter CCIP_MMIOADDR_WIDTH    = 16; 
-parameter CCIP_MMIODATA_WIDTH    = 64; 
-parameter CCIP_TID_WIDTH         = 9; 
+parameter CCIP_MMIOADDR_WIDTH    = 16;
+parameter CCIP_MMIODATA_WIDTH    = 64;
+parameter CCIP_TID_WIDTH         = 9;
 
-parameter CCIP_MDATA_WIDTH       = 16; 
+parameter CCIP_MDATA_WIDTH       = 16;
 
 
-// Number of requests that can be accepted after almost full is asserted. 
-parameter CCIP_TX_ALMOST_FULL_THRESHOLD = 8; 
+// Number of requests that can be accepted after almost full is asserted.
+parameter CCIP_TX_ALMOST_FULL_THRESHOLD = 8;
 
 parameter CCIP_MMIO_RD_TIMEOUT = 512;
 
 parameter CCIP_SYNC_RESET_POLARITY=1;       // Active High Reset
 
-// Base types 
-//---------------------------------------------------------------------- 
+// Base types
+//----------------------------------------------------------------------
 typedef logic [CCIP_CLADDR_WIDTH-1:0]   t_ccip_clAddr;
 typedef logic [CCIP_CLDATA_WIDTH-1:0]   t_ccip_clData;
 
@@ -38,7 +38,7 @@ typedef logic [CCIP_MDATA_WIDTH-1:0]    t_ccip_mdata;
 typedef logic [1:0]                     t_ccip_clNum;
 typedef logic [2:0]                     t_ccip_qwIdx;
 
-  
+
 // Request Type  Encodings
 //----------------------------------------------------------------------
 // Channel 0
@@ -69,7 +69,7 @@ typedef enum logic [3:0] {
 // Channel 1
 typedef enum logic [3:0] {
     eRSP_WRLINE     = 4'h0,     // Memory Write
-    eRSP_WRFENCE    = 4'h4,     // Memory Write Fence 
+    eRSP_WRFENCE    = 4'h4,     // Memory Write Fence
     eRSP_INTR       = 4'h6      // Interrupt delivered to the CPU ** NOT SUPPORTED CURRENTLY **
 } t_ccip_c1_rsp;
 
@@ -171,7 +171,7 @@ typedef struct packed {
 } t_ccip_c1_RspIntrHdr;
 
 
-// Alternate Channel 0 MMIO request from host : 
+// Alternate Channel 0 MMIO request from host :
 //  MMIO requests arrive on the same channel as read responses, sharing
 //  t_if_ccip_c0_Rx below.  When either mmioRdValid or mmioWrValid is set
 //  the message is an MMIO request and should be processed by casting
@@ -190,65 +190,65 @@ typedef struct packed {
 parameter CCIP_C2TX_HDR_WIDTH = $bits(t_ccip_c2_RspMmioHdr);
 
 //------------------------------------------------------------------------
-// CCI-P Input & Output bus structures 
-// 
+// CCI-P Input & Output bus structures
+//
 // Users are encouraged to use these for AFU development
 //------------------------------------------------------------------------
 // Channel 0 : Memory Reads
-typedef struct packed { 
-    t_ccip_c0_ReqMemHdr  hdr;            // Request Header 
-    logic                valid;          // Request Valid 
-} t_if_ccip_c0_Tx; 
+typedef struct packed {
+    t_ccip_c0_ReqMemHdr  hdr;            // Request Header
+    logic                valid;          // Request Valid
+} t_if_ccip_c0_Tx;
 
 
 // Channel 1 : Memory Writes,  Interrupts, CmpXchg
-typedef struct packed { 
-    t_ccip_c1_ReqMemHdr  hdr;            // Request Header 
-    t_ccip_clData        data;           // Request Data 
-    logic                valid;          // Request Wr Valid 
-} t_if_ccip_c1_Tx; 
+typedef struct packed {
+    t_ccip_c1_ReqMemHdr  hdr;            // Request Header
+    t_ccip_clData        data;           // Request Data
+    logic                valid;          // Request Wr Valid
+} t_if_ccip_c1_Tx;
 
 // Channel 2 : MMIO Read response
-typedef struct packed { 
-    t_ccip_c2_RspMmioHdr    hdr;            // Response Header 
-    logic                   mmioRdValid;    // Response Read Valid 
-    t_ccip_mmioData         data;           // Response Data 
-} t_if_ccip_c2_Tx; 
-  
+typedef struct packed {
+    t_ccip_c2_RspMmioHdr    hdr;            // Response Header
+    logic                   mmioRdValid;    // Response Read Valid
+    t_ccip_mmioData         data;           // Response Data
+} t_if_ccip_c2_Tx;
+
 // Wrap all Tx channels
 typedef struct packed {
-    t_if_ccip_c0_Tx      c0; 
-    t_if_ccip_c1_Tx      c1; 
-    t_if_ccip_c2_Tx      c2; 
+    t_if_ccip_c0_Tx      c0;
+    t_if_ccip_c1_Tx      c1;
+    t_if_ccip_c2_Tx      c2;
 } t_if_ccip_Tx;
 
 
 // Channel 0: Memory Read response, MMIO Request
-typedef struct packed { 
+typedef struct packed {
     t_ccip_c0_RspMemHdr  hdr;            //  Rd Response/ MMIO req Header
-    t_ccip_clData        data;           //  Rd Data / MMIO req Data 
+    t_ccip_clData        data;           //  Rd Data / MMIO req Data
     // Only one of valid, mmioRdValid and mmioWrValid may be set
     // in a cycle.  When either mmioRdValid or mmioWrValid are true
     // the hdr must be processed specially.  See t_ccip_c0_ReqMmioHdr
     // above.
-    logic                rspValid;       //  Rd Response Valid 
+    logic                rspValid;       //  Rd Response Valid
     logic                mmioRdValid;    //  MMIO Read Valid
     logic                mmioWrValid;    //  MMIO Write Valid
 } t_if_ccip_c0_Rx;
 
-// Channel 1: Memory Writes 
-typedef struct packed { 
-    t_ccip_c1_RspMemHdr  hdr;            //  Response Header 
-    logic                rspValid;       //  Response Valid 
-} t_if_ccip_c1_Rx; 
+// Channel 1: Memory Writes
+typedef struct packed {
+    t_ccip_c1_RspMemHdr  hdr;            //  Response Header
+    logic                rspValid;       //  Response Valid
+} t_if_ccip_c1_Rx;
 
-// Wrap all channels 
-typedef struct packed { 
-    logic                c0TxAlmFull;    //  C0 Request Channel Almost Full 
-    logic                c1TxAlmFull;    //  C1 Request Channel Almost Full 
+// Wrap all channels
+typedef struct packed {
+    logic                c0TxAlmFull;    //  C0 Request Channel Almost Full
+    logic                c1TxAlmFull;    //  C1 Request Channel Almost Full
 
-    t_if_ccip_c0_Rx      c0; 
-    t_if_ccip_c1_Rx      c1; 
+    t_if_ccip_c0_Rx      c0;
+    t_if_ccip_c1_Rx      c1;
 } t_if_ccip_Rx;
 
 endpackage

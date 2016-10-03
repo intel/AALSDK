@@ -141,7 +141,7 @@
 #define ASE_LOGGER_LEN    1024
 
 // work Directory location
-char *ase_workdir_path;
+  char *ase_workdir_path;
 
 // Timestamp IPC file
 #define TSTAMP_FILENAME ".ase_timestamp"

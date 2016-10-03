@@ -37,7 +37,7 @@ uint32_t generate_ase_seed()
 
   seed = (uint32_t)time(NULL);
   seed = seed & 0x0000FFFF ;
-  
+
   return seed;
 }
 
@@ -99,29 +99,29 @@ uint32_t ase_read_seed()
       // Open file (known to exist)
       fp_seed = fopen(ASE_SEED_FILE, "r");
       if (fp_seed == NULL)
-	{
-	  printf("SIM-C : ASE Seed file could not be read (NULL seed fileptr) \n");
-	  printf("        Old seed unusable --- creating a new seed\n");
+        {
+          printf("SIM-C : ASE Seed file could not be read (NULL seed fileptr) \n");
+          printf("        Old seed unusable --- creating a new seed\n");
 
-	  // Generate seed
-	  new_seed = generate_ase_seed();
+          // Generate seed
+          new_seed = generate_ase_seed();
 
-	  // Write seed to file
-	  ase_write_seed(new_seed);
+          // Write seed to file
+          ase_write_seed(new_seed);
 
-	  // Return seed
-	  return new_seed;
-	}
+          // Return seed
+          return new_seed;
+        }
       else
-	{
-	  // Read conents, post on log, close, return
-	  fscanf(fp_seed, "%u", &readback_seed);
-	  // printf("SIM-C : Readback seed %u\n", readback_seed);
-	  fclose(fp_seed);
+        {
+          // Read conents, post on log, close, return
+          fscanf(fp_seed, "%u", &readback_seed);
+          // printf("SIM-C : Readback seed %u\n", readback_seed);
+          fclose(fp_seed);
 
-	  // Return seed
-	  return readback_seed;
-	}
+          // Return seed
+          return readback_seed;
+        }
     }
 }
 

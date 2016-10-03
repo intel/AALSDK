@@ -158,9 +158,9 @@ void backtrace_handler(int sig)
       cmd_ret = system(sys_cmd);
       // man page for system asks users to check for SIGINT/SIGQUIT
       if (WIFSIGNALED(cmd_ret) && ((WTERMSIG(cmd_ret) == SIGINT)||(WTERMSIG(cmd_ret) == SIGQUIT)))
-	{
-	  break;
-	}
+        {
+          break;
+        }
     }
   END_RED_FONTCOLOR;
 

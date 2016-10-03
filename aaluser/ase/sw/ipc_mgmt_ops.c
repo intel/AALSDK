@@ -24,13 +24,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 // **************************************************************************
-/* 
+/*
  * Module Info: IPC management functions
  * Language   : C/C++
  * Owner      : Rahul R Sharma
  *              rahul.r.sharma@intel.com
  *              Intel Corporation
- */ 
+ */
 
 
 #include "ase_common.h"
@@ -45,12 +45,12 @@ void create_ipc_listfile()
   FUNC_CALL_ENTRY;
 
   ipclist_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  
+
   snprintf(ipclist_filepath, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, IPC_LOCAL_FILENAME);
 
   // local_ipc_fp = fopen(IPC_LOCAL_FILENAME, "w");
   local_ipc_fp = fopen(ipclist_filepath, "w");
-  if (local_ipc_fp == NULL) 
+  if (local_ipc_fp == NULL)
     {
       ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
       printf("Local IPC file cannot be opened\n");
@@ -106,64 +106,63 @@ void final_ipc_cleanup()
 
   // Reopen local IPC listfile
   local_ipc_fp = fopen(ipclist_filepath, "r");
-  if (local_ipc_fp == NULL) 
+  if (local_ipc_fp == NULL)
     {
       ase_error_report("fopen", errno, ASE_IPCKILL_CATERR);
       start_simkill_countdown(); // RRS: exit(1);
     }
   else
-  {  
-  // Parse through list
-  printf("SIM-C : Removing message queues and buffer handles ... \n");
-  while(1)
     {
-      fscanf(local_ipc_fp, "%s\t%s", ipc_type, ipc_name);
+      // Parse through list
+      printf("SIM-C : Removing message queues and buffer handles ... \n");
+      while(1)
+        {
+          fscanf(local_ipc_fp, "%s\t%s", ipc_type, ipc_name);
 
-      if (feof(local_ipc_fp))
-      	break;
+          if (feof(local_ipc_fp))
+            break;
 
-      if (strncmp (ipc_type, "MQ", 4) == 0)
-      	{
-        #ifdef ASE_DEBUG
-      	  printf("        Removing MQ  %s ... ", ipc_name);
-        #endif
-      	  if ( unlink(ipc_name) == -1 )
-      	    {
-            #ifdef ASE_DEBUG
-      	      printf("\n");
-            #endif
-      	    }
-      	  else
-      	    {
-            #ifdef ASE_DEBUG
-      	      printf("DONE\n");
-            #endif
-      	    }
-      	}
-      else if (strncmp (ipc_type, "SHM", 4) == 0)
-      	{
-        #ifdef ASE_DEBUG
-      	  printf("        Removing SHM %s ... ", ipc_name);
-        #endif
-      	  if ( shm_unlink(ipc_name) == -1 )
-      	    {
-            #ifdef ASE_DEBUG	    
-	      printf("\n");
-            #endif
-      	    }
-      	  else
-      	    {
-            #ifdef ASE_DEBUG
-      	      printf("DONE\n");
-            #endif
-      	    }
-      	}
+          if (strncmp (ipc_type, "MQ", 4) == 0)
+            {
+#ifdef ASE_DEBUG
+              printf("        Removing MQ  %s ... ", ipc_name);
+#endif
+              if ( unlink(ipc_name) == -1 )
+                {
+#ifdef ASE_DEBUG
+                  printf("\n");
+#endif
+                }
+              else
+                {
+#ifdef ASE_DEBUG
+                  printf("DONE\n");
+#endif
+                }
+            }
+          else if (strncmp (ipc_type, "SHM", 4) == 0)
+            {
+#ifdef ASE_DEBUG
+              printf("        Removing SHM %s ... ", ipc_name);
+#endif
+              if ( shm_unlink(ipc_name) == -1 )
+                {
+#ifdef ASE_DEBUG
+                  printf("\n");
+#endif
+                }
+              else
+                {
+#ifdef ASE_DEBUG
+                  printf("DONE\n");
+#endif
+                }
+            }
+        }
+      printf("DONE\n");
+
+      // Close both files
+      fclose(local_ipc_fp);
     }
-  printf("DONE\n");
-
-  // Close both files
-  fclose(local_ipc_fp);
-}
   FUNC_CALL_EXIT;
 }
-

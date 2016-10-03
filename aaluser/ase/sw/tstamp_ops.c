@@ -94,7 +94,7 @@ void put_timestamp()
 
       // Write session code
       fprintf(fp, "%lld\n", rdtsc_out );
-      
+
       // Close file
       fclose(fp);
     }
@@ -137,74 +137,74 @@ char* get_timestamp(int dont_kill)
       fp = fopen(tstamp_filepath, "r");
       // fopen failed
       if (fp == NULL)
-	{
-  	  ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
-        #ifdef SIM_SIDE
-	  start_simkill_countdown();
-        #else
-  	  exit(1);
-        #endif
-	}
+        {
+          ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
+#ifdef SIM_SIDE
+          start_simkill_countdown();
+#else
+          exit(1);
+#endif
+        }
       else
-	{
-	  // Read timestamp file
-	  if ( fgets(tstamp_str, 20, fp) == NULL )
-	    {
-	      ase_error_report("fgets", errno, ASE_OS_MALLOC_ERR);
-            #ifdef SIM_SIDE
-	      start_simkill_countdown();
-            #else
-	      exit(1);
-            #endif
-	    }
+        {
+          // Read timestamp file
+          if ( fgets(tstamp_str, 20, fp) == NULL )
+            {
+              ase_error_report("fgets", errno, ASE_OS_MALLOC_ERR);
+#ifdef SIM_SIDE
+              start_simkill_countdown();
+#else
+              exit(1);
+#endif
+            }
 
-	  // Close fp
-	  fclose(fp);
-	}
+          // Close fp
+          fclose(fp);
+        }
 
-  // Remove newline char
-  remove_newline(tstamp_str);
+      // Remove newline char
+      remove_newline(tstamp_str);
 
-  // check if null
-  if (tstamp_str == NULL)
-    {
-      printf("** ASE ERROR: Session ID was calculated as NULL **\n");
-    #ifdef SIM_SIDE
-      start_simkill_countdown();
-    #else
-      exit(1);
-    #endif
-    }
-  
-  // Marking a global session ID
-  // strncpy(glbl_session_id, tstamp_str, 20);
-  
-  // Free path string
-  ase_free_buffer (tstamp_filepath);
-  
-  FUNC_CALL_EXIT;
-  return tstamp_str;  
+      // check if null
+      if (tstamp_str == NULL)
+        {
+          printf("** ASE ERROR: Session ID was calculated as NULL **\n");
+#ifdef SIM_SIDE
+          start_simkill_countdown();
+#else
+          exit(1);
+#endif
+        }
+
+      // Marking a global session ID
+      // strncpy(glbl_session_id, tstamp_str, 20);
+
+      // Free path string
+      ase_free_buffer (tstamp_filepath);
+
+      FUNC_CALL_EXIT;
+      return tstamp_str;
     }
   else   // File doesnt exist
     {
       if (dont_kill != 0)  // Dont kill the process (dealloc side)
-	{
-        #ifdef ASE_DEBUG
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf(" Timestamp gone ! .. ");
-	  END_YELLOW_FONTCOLOR;
-        #endif
-	}
+        {
+#ifdef ASE_DEBUG
+          BEGIN_YELLOW_FONTCOLOR;
+          printf(" Timestamp gone ! .. ");
+          END_YELLOW_FONTCOLOR;
+#endif
+        }
       else // Kill (alloc side problems
-	{
-        #ifdef SIM_SIDE
-  	  ase_error_report("access", errno, ASE_OS_FOPEN_ERR);
-	  start_simkill_countdown();
-        #else
-  	  perror("access");
-  	  exit(1);
-        #endif
-	}
+        {
+#ifdef SIM_SIDE
+          ase_error_report("access", errno, ASE_OS_FOPEN_ERR);
+          start_simkill_countdown();
+#else
+          perror("access");
+          exit(1);
+#endif
+        }
 
       return NULL;
     }
@@ -228,4 +228,3 @@ void poll_for_session_id()
     }
   printf("DONE\n");
 }
-

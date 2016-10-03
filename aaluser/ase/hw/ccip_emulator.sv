@@ -77,22 +77,22 @@ module ccip_emulator
     * CCIP breakout
     */
    // Clock/reset
-   logic 			      Clk16UI ;
-   logic 			      Clk32UI ;
-   logic 			      Clk64UI ;
-   logic 			      SoftReset;
+   logic 	      Clk16UI ;
+   logic 	      Clk32UI ;
+   logic 	      Clk64UI ;
+   logic 	      SoftReset;
    // Tx0 & bookkeeper
    ASETxHdr_t                         ASE_C0TxHdr;
    TxHdr_t                            C0TxHdr;
-   logic 	                      C0TxValid;
+   logic 	      C0TxValid;
    // Tx1 & bookkeeper
    ASETxHdr_t                         ASE_C1TxHdr;
    TxHdr_t                            C1TxHdr;
-   logic [CCIP_DATA_WIDTH-1:0]        C1TxData;
-   logic 		              C1TxValid;
+   logic [CCIP_DATA_WIDTH-1:0] C1TxData;
+   logic 		       C1TxValid;
    // Tx2
    MMIOHdr_t                          C2TxHdr;
-   logic                              C2TxMmioRdValid;
+   logic 		       C2TxMmioRdValid;
    logic [CCIP_MMIO_RDDATA_WIDTH-1:0] C2TxData;
    // Rx0 & bookkeeper
    logic 			      C0RxMmioWrValid;
@@ -120,7 +120,7 @@ module ccip_emulator
     * Reset lockdown flag
     * - Stop taking any more requests if ase_reset was requested
     */
-   logic reset_lockdown = 0;
+   logic 			      reset_lockdown = 0;
 
 
    /*
@@ -312,6 +312,7 @@ module ccip_emulator
 
    // ASE Initialize function
    import "DPI-C" context task ase_init();
+
    // Indication that ASE is ready
    import "DPI-C" function void ase_ready();
 
@@ -329,6 +330,7 @@ module ccip_emulator
 
    // Start simulation structures teardown
    import "DPI-C" context task start_simkill_countdown();
+
    // Signal to kill simulation
    export "DPI-C" task simkill;
 
@@ -391,15 +393,15 @@ module ccip_emulator
    /*
     * Credit control system
     */
-   int glbl_dealloc_credit;
-   int glbl_dealloc_credit_q;
+   int 	 glbl_dealloc_credit;
+   int 	 glbl_dealloc_credit_q;
 
    // Individual credit counts
-   int rd_credit;
-   int wr_credit;
-   int mmiowr_credit;
-   int mmiord_credit;
-   int umsg_credit;
+   int 	 rd_credit;
+   int 	 wr_credit;
+   int 	 mmiowr_credit;
+   int 	 mmiord_credit;
+   int 	 umsg_credit;
 
    logic [ASE_RSPFIFO_COUNT_WIDTH:0] rdrsp_fifo_cnt;
    logic [ASE_RSPFIFO_COUNT_WIDTH:0] wrrsp_fifo_cnt;
@@ -410,18 +412,18 @@ module ccip_emulator
    // cf2as_latbuf_ch0 signals
    TxHdr_t                       cf2as_latbuf_tx0hdr;
    RxHdr_t                       cf2as_latbuf_rx0hdr;
-   logic                         cf2as_latbuf_ch0_empty;
-   logic                         cf2as_latbuf_ch0_read;
-   int 				 cf2as_latbuf_ch0_count;
+   logic 			     cf2as_latbuf_ch0_empty;
+   logic 			     cf2as_latbuf_ch0_read;
+   int 				     cf2as_latbuf_ch0_count;
 
    // cf2as_latbuf_ch1 signals
-   logic [CCIP_DATA_WIDTH-1:0]   cf2as_latbuf_tx1data;
+   logic [CCIP_DATA_WIDTH-1:0] 	     cf2as_latbuf_tx1data;
    TxHdr_t                       cf2as_latbuf_tx1hdr;
    RxHdr_t                       cf2as_latbuf_rx1hdr;
-   logic 		         cf2as_latbuf_ch1_empty;
-   logic 		         cf2as_latbuf_ch1_read;
-   int 				 cf2as_latbuf_ch1_count;
-   logic 			 cf2as_latbuf_ch1_valid;
+   logic 			     cf2as_latbuf_ch1_empty;
+   logic 			     cf2as_latbuf_ch1_read;
+   int 				     cf2as_latbuf_ch1_count;
+   logic 			     cf2as_latbuf_ch1_valid;
 
    // Hazard checker signals
    ase_haz_if haz_if;
@@ -978,18 +980,18 @@ module ccip_emulator
    UMsgHdr_t                   umsgfifo_hdr_in;
    logic [CCIP_DATA_WIDTH-1:0] umsgfifo_data_in;
 
-   logic [CCIP_DATA_WIDTH-1:0]    umsgfifo_data_out;
+   logic [CCIP_DATA_WIDTH-1:0] umsgfifo_data_out;
    logic [ASE_UMSG_HDR_WIDTH-1:0] umsgfifo_hdrvec_out;
 
 
-   logic 		       umsgfifo_write;
-   logic 		       umsgfifo_read;
-   logic 		       umsgfifo_valid;
-   logic 		       umsgfifo_full;
-   logic 		       umsgfifo_empty;
+   logic 			  umsgfifo_write;
+   logic 			  umsgfifo_read;
+   logic 			  umsgfifo_valid;
+   logic 			  umsgfifo_full;
+   logic 			  umsgfifo_empty;
 
    // Data store
-   logic [CCIP_DATA_WIDTH-1:0] umsg_latest_data_array [0:NUM_UMSG_PER_AFU-1];
+   logic [CCIP_DATA_WIDTH-1:0] 	  umsg_latest_data_array [0:NUM_UMSG_PER_AFU-1];
 
    // Umsg engine
    umsg_t umsg_array[NUM_UMSG_PER_AFU];
@@ -1396,11 +1398,11 @@ module ccip_emulator
    if (condition == 1) counter_val <= counter_val + 1
 
 
-   /*
-    * Transaction counts
-    */
-   // Channel count structures
-   txn_vc_counts   rdreq_vc_cnt  , rdrsp_vc_cnt;
+				      /*
+				       * Transaction counts
+				       */
+				      // Channel count structures
+				      txn_vc_counts   rdreq_vc_cnt  , rdrsp_vc_cnt;
    txn_vc_counts   wrreq_vc_cnt  , wrrsp_vc_cnt;
    txn_vc_counts   wrfreq_vc_cnt , wrfrsp_vc_cnt;
 
@@ -1471,8 +1473,8 @@ module ccip_emulator
 	 // Read counts
 	 // ------------------------------------ //
 	 // Total counts
-	  if (C0TxValid && isReadRequest(C0TxHdr))
-	    ase_tx0_rdvalid_cnt <= ase_tx0_rdvalid_cnt + (C0TxHdr.len + 1);
+	 if (C0TxValid && isReadRequest(C0TxHdr))
+	   ase_tx0_rdvalid_cnt <= ase_tx0_rdvalid_cnt + (C0TxHdr.len + 1);
 	 `incr_cnt ( (C0RxRspValid && isReadResponse(C0RxHdr)), ase_rx0_rdvalid_cnt);
 	 // C0Tx granular counts
 	 `incr_cnt ( (C0TxValid && isReadRequest(C0TxHdr) && (C0TxHdr.vc == VC_VA )), rdreq_vc_cnt.va);
@@ -1869,160 +1871,160 @@ module ccip_emulator
  `endif
 `endif
 
-   // Packing state machine
-   always @(posedge clk) begin
-      if (ase_reset) begin
-	 pack_state  <= PassThru_Pack1CL;
-	 wrrsp_write <= 0;
-	 wrrsp_hdr_in <= RxHdr_t'(0);
-      end
-      else begin
-	 case (pack_state)
-	   // ---------------------------------------- //
-	   // Pack 1CL if format enable, else passthru
-	   // ---------------------------------------- //
-	   PassThru_Pack1CL:
-	     begin
-		if (pack_hdr_valid) begin
-		   if (pack_hdr.format) begin
-		      if (pack_hdr.clnum == ASE_1CL) begin
-			 wrrsp_hdr_in <= pack_hdr;
-			 wrrsp_write  <= 1;
-			 pack_state   <= PassThru_Pack1CL;
-		      end
-		      else begin
-			 wrrsp_hdr_in <= pack_hdr;
-			 wrrsp_write  <= 0;
-			 pack_state <= Pack2CL;
-		      end
-		   end
-		   else begin
-		      wrrsp_hdr_in <= pack_hdr;
-		      wrrsp_write  <= 1;
-		      pack_state   <= PassThru_Pack1CL;
-		   end
-		end
-		else begin
-		   wrrsp_hdr_in <= pack_hdr;
-		   wrrsp_write  <= 0;
-		   pack_state   <= PassThru_Pack1CL;
-		end
-	     end
+     // Packing state machine
+     always @(posedge clk) begin
+	if (ase_reset) begin
+	   pack_state  <= PassThru_Pack1CL;
+	   wrrsp_write <= 0;
+	   wrrsp_hdr_in <= RxHdr_t'(0);
+	end
+	else begin
+	   case (pack_state)
+	     // ---------------------------------------- //
+	     // Pack 1CL if format enable, else passthru
+	     // ---------------------------------------- //
+	     PassThru_Pack1CL:
+	       begin
+		  if (pack_hdr_valid) begin
+		     if (pack_hdr.format) begin
+			if (pack_hdr.clnum == ASE_1CL) begin
+			   wrrsp_hdr_in <= pack_hdr;
+			   wrrsp_write  <= 1;
+			   pack_state   <= PassThru_Pack1CL;
+			end
+			else begin
+			   wrrsp_hdr_in <= pack_hdr;
+			   wrrsp_write  <= 0;
+			   pack_state <= Pack2CL;
+			end
+		     end
+		     else begin
+			wrrsp_hdr_in <= pack_hdr;
+			wrrsp_write  <= 1;
+			pack_state   <= PassThru_Pack1CL;
+		     end
+		  end
+		  else begin
+		     wrrsp_hdr_in <= pack_hdr;
+		     wrrsp_write  <= 0;
+		     pack_state   <= PassThru_Pack1CL;
+		  end
+	       end
 
-	   // ---------------------------------------- //
-	   // Pack 2CL/4CL if format enable, else ERROR
-	   // ---------------------------------------- //
-	   Pack2CL:
-	     begin
-		if (pack_hdr_valid) begin
-		   if (pack_hdr.format) begin
-		      if (pack_hdr.clnum == ASE_2CL) begin
-			 wrrsp_hdr_in <= pack_hdr;
-			 wrrsp_write  <= 1;
-			 pack_state   <= PassThru_Pack1CL;
-		      end
-		      else if (pack_hdr.clnum == ASE_4CL) begin
-			 wrrsp_hdr_in <= pack_hdr;
-			 wrrsp_write  <= 0;
-			 pack_state   <= Pack3CL;
-		      end
-		      else begin
-			 wrrsp_hdr_in <= pack_hdr;
-			 wrrsp_write  <= 0;
-			 pack_state   <= PackError;
-		      end
-		   end
-		   else begin
-		      wrrsp_hdr_in <= pack_hdr;
-		      wrrsp_write  <= 0;
-		      pack_state   <= PackError;
-		   end
-		end
-		else begin
-		   wrrsp_hdr_in <= pack_hdr;
-		   wrrsp_write  <= 0;
-		   pack_state   <= Pack2CL;
-		end
-	     end
+	     // ---------------------------------------- //
+	     // Pack 2CL/4CL if format enable, else ERROR
+	     // ---------------------------------------- //
+	     Pack2CL:
+	       begin
+		  if (pack_hdr_valid) begin
+		     if (pack_hdr.format) begin
+			if (pack_hdr.clnum == ASE_2CL) begin
+			   wrrsp_hdr_in <= pack_hdr;
+			   wrrsp_write  <= 1;
+			   pack_state   <= PassThru_Pack1CL;
+			end
+			else if (pack_hdr.clnum == ASE_4CL) begin
+			   wrrsp_hdr_in <= pack_hdr;
+			   wrrsp_write  <= 0;
+			   pack_state   <= Pack3CL;
+			end
+			else begin
+			   wrrsp_hdr_in <= pack_hdr;
+			   wrrsp_write  <= 0;
+			   pack_state   <= PackError;
+			end
+		     end
+		     else begin
+			wrrsp_hdr_in <= pack_hdr;
+			wrrsp_write  <= 0;
+			pack_state   <= PackError;
+		     end
+		  end
+		  else begin
+		     wrrsp_hdr_in <= pack_hdr;
+		     wrrsp_write  <= 0;
+		     pack_state   <= Pack2CL;
+		  end
+	       end
 
-	   // ---------------------------------------- //
-	   // Pack 3CL if format enable, else ERROR
-	   // ---------------------------------------- //
-	   Pack3CL:
-	     begin
-		if (pack_hdr_valid) begin
-		   if (pack_hdr.format) begin
-		      if (pack_hdr.clnum == ASE_4CL) begin
-			 wrrsp_hdr_in <= pack_hdr;
-			 wrrsp_write  <= 0;
-			 pack_state   <= Pack4CL;
-		      end
-		      else begin
-			 wrrsp_hdr_in <= pack_hdr;
-			 wrrsp_write  <= 0;
-			 pack_state   <= PackError;
-		      end
-		   end
-		   else begin
-		      wrrsp_hdr_in <= pack_hdr;
-		      wrrsp_write  <= 0;
-		      pack_state   <= PackError;
-		   end
-		end
-		else begin
-		   wrrsp_hdr_in <= pack_hdr;
-		   wrrsp_write  <= 0;
-		   pack_state   <= Pack3CL;
-		end
-	     end
+	     // ---------------------------------------- //
+	     // Pack 3CL if format enable, else ERROR
+	     // ---------------------------------------- //
+	     Pack3CL:
+	       begin
+		  if (pack_hdr_valid) begin
+		     if (pack_hdr.format) begin
+			if (pack_hdr.clnum == ASE_4CL) begin
+			   wrrsp_hdr_in <= pack_hdr;
+			   wrrsp_write  <= 0;
+			   pack_state   <= Pack4CL;
+			end
+			else begin
+			   wrrsp_hdr_in <= pack_hdr;
+			   wrrsp_write  <= 0;
+			   pack_state   <= PackError;
+			end
+		     end
+		     else begin
+			wrrsp_hdr_in <= pack_hdr;
+			wrrsp_write  <= 0;
+			pack_state   <= PackError;
+		     end
+		  end
+		  else begin
+		     wrrsp_hdr_in <= pack_hdr;
+		     wrrsp_write  <= 0;
+		     pack_state   <= Pack3CL;
+		  end
+	       end
 
-	   // ---------------------------------------- //
-	   // Pack 4CL if format enable, else ERROR
-	   // ---------------------------------------- //
-	   Pack4CL:
-	     begin
-		if (pack_hdr_valid) begin
-		   if (pack_hdr.format && pack_hdr.clnum == ASE_4CL) begin
-		      wrrsp_hdr_in <= pack_hdr;
-		      wrrsp_write  <= 1;
-		      pack_state   <= PassThru_Pack1CL;
-		   end
-		   else begin
-		      wrrsp_hdr_in <= pack_hdr;
-		      wrrsp_write  <= 0;
-		      pack_state   <= PackError;
-		   end
-		end
-		else begin
-		   wrrsp_hdr_in <= pack_hdr;
-		   wrrsp_write  <= 0;
-		   pack_state   <= Pack4CL;
-		end
-	     end
+	     // ---------------------------------------- //
+	     // Pack 4CL if format enable, else ERROR
+	     // ---------------------------------------- //
+	     Pack4CL:
+	       begin
+		  if (pack_hdr_valid) begin
+		     if (pack_hdr.format && pack_hdr.clnum == ASE_4CL) begin
+			wrrsp_hdr_in <= pack_hdr;
+			wrrsp_write  <= 1;
+			pack_state   <= PassThru_Pack1CL;
+		     end
+		     else begin
+			wrrsp_hdr_in <= pack_hdr;
+			wrrsp_write  <= 0;
+			pack_state   <= PackError;
+		     end
+		  end
+		  else begin
+		     wrrsp_hdr_in <= pack_hdr;
+		     wrrsp_write  <= 0;
+		     pack_state   <= Pack4CL;
+		  end
+	       end
 
-	   // --------------------------------------------------- //
-	   // Packing ERROR, bail out | ASE should not reach here
-	   // --------------------------------------------------- //
-	   PackError:
-	     begin
-		`BEGIN_RED_FONTCOLOR;
-		$display("** ERROR ** : %d => Unexpected formatting order found --- packing cannot proceed, EXITING", $time);
-		`END_RED_FONTCOLOR;
-		start_simkill_countdown();
-	     end
+	     // --------------------------------------------------- //
+	     // Packing ERROR, bail out | ASE should not reach here
+	     // --------------------------------------------------- //
+	     PackError:
+	       begin
+		  `BEGIN_RED_FONTCOLOR;
+		  $display("** ERROR ** : %d => Unexpected formatting order found --- packing cannot proceed, EXITING", $time);
+		  `END_RED_FONTCOLOR;
+		  start_simkill_countdown();
+	       end
 
-	   // --------------------------------------------------- //
-	   // Default
-	   // --------------------------------------------------- //
-	   default:
-	     begin
-		wrrsp_hdr_in <= pack_hdr;
-		wrrsp_write  <= 0;
-		pack_state   <= PassThru_Pack1CL;
-	     end
-	 endcase
-      end
-   end
+	     // --------------------------------------------------- //
+	     // Default
+	     // --------------------------------------------------- //
+	     default:
+	       begin
+		  wrrsp_hdr_in <= pack_hdr;
+		  wrrsp_write  <= 0;
+		  pack_state   <= PassThru_Pack1CL;
+	       end
+	   endcase
+	end
+     end
 
 
    // latbuf_ch1 -> pack logic
@@ -2370,7 +2372,7 @@ module ccip_emulator
       $display("SIM-SV: ASE running with seed => %d", cfg.ase_seed);
       // $srandom(cfg.ase_seed);
       // $urandom(cfg.ase_seed);
-            
+
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
       ase_reset_trig();
@@ -2626,7 +2628,7 @@ module ccip_emulator
 	 // Command to close logfd
 	 $finish;
       end
-   // endfunction
+      // endfunction
    endtask
 
 

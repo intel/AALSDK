@@ -690,12 +690,12 @@ module ccip_sniffer
    		 } ExpTxState;
    ExpTxState exp_c1state;
 
-   logic [15:0] 		base_c1mdata;
-   logic [1:0] 			base_c1addr_low2;
+   logic [15:0] base_c1mdata;
+   logic [1:0] 	base_c1addr_low2;
    t_ccip_vc                    base_c1vc;
-   logic [1:0] 			base_c1len;
+   logic [1:0] 	base_c1len;
    t_ccip_c1_req                base_c1reqtype;
-   logic 			c1tx_1to3_flag;
+   logic 	c1tx_1to3_flag;
 
    // Base signal sampling
    always @(*) begin
@@ -849,7 +849,7 @@ module ccip_sniffer
 
    /*
     * Subsequent line checks
-    */ 
+    */
    always @(posedge clk) begin
       // ----------------------------------------- //
       // Write Fence must not be seen here
@@ -875,14 +875,14 @@ module ccip_sniffer
       // MDATA modification check
       if (c1tx_1to3_flag && ccip_tx.c1.valid && (ccip_tx.c1.hdr.mdata != base_c1mdata)) begin
 	 decode_error_code(0, SNIFF_C1TX_UNEXP_MDATA);
-      end      
+      end
       // ----------------------------------------- //
       // Request Type modification check
       if (c1tx_1to3_flag && ccip_tx.c1.valid && (ccip_tx.c1.hdr.req_type != base_c1reqtype)) begin
 	 decode_error_code(0, SNIFF_C1TX_UNEXP_REQTYPE);
       end
    end
-   
+
 
    /*
     * Check memory transactions in flight, maintain active list
@@ -969,7 +969,7 @@ module ccip_sniffer
    parameter int      MMIO_TRACKER_DEPTH = 2**CCIP_CFGHDR_TID_WIDTH;
 
    // Tracker structure
-   typedef struct {
+   typedef struct     {
       // Status management
       logic [`MMIO_RESPONSE_TIMEOUT_RADIX-1:0] timer_val;
       logic 				       timeout;

@@ -41,8 +41,8 @@ import ccip_if_pkg::*;
 `timescale 1ns/1ns
 
 module ase_top();
-   
-   
+
+
    logic pClkDiv4;
    logic pClkDiv2;
    logic pClk;
@@ -50,13 +50,13 @@ module ase_top();
 
    logic uClk_usr;
    logic uClk_usrDiv2;
-      
+
    t_if_ccip_Tx pck_af2cp_sTx;
    t_if_ccip_Rx pck_cp2af_sRx;
-   
+
    logic [1:0] pck_cp2af_pwrState;   // CCI-P AFU Power State
    logic       pck_cp2af_error;      // CCI-P Protocol Error Detected
-   
+
    // CCI-P emulator
    ccip_emulator ccip_emulator
      (
@@ -92,7 +92,6 @@ module ase_top();
    // assign DBG_C0RxAtomic = t_ccip_c0_RspAtomicHdr'(pck_cp2af_sRx.c0.hdr);
 
    t_ccip_c0_ReqMmioHdr DBG_C0RxMMIO;
-   assign DBG_C0RxMMIO  = t_ccip_c0_ReqMmioHdr'(pck_cp2af_sRx.c0.hdr);   
-   
-endmodule // ase_top
+   assign DBG_C0RxMMIO  = t_ccip_c0_ReqMmioHdr'(pck_cp2af_sRx.c0.hdr);
 
+endmodule // ase_top
