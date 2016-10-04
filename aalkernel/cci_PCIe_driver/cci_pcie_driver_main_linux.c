@@ -432,8 +432,9 @@ cci_pci_probe( struct pci_dev             *pcidev,
    }
 
    // Call the probe function.  This is where the real work occurs
+   //  If probe_fn returns NULL, it should print a verbose message in the log
+   //  as to why (e.g. skipped PF because VF is present).
    pccidev = probe_fn( pcidev, pcidevid );
-   ASSERT(pccidev);
 
    // If all went well record this device on our
    //  list of devices owned by the driver
@@ -551,7 +552,8 @@ struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev
 
    // If we are on the host node (aka Dom0) then we do not publish VF objects
    if(isPFDriver){
-      PINFO("VF Device detected on PF Driver.\nIgnoring.\n");
+      // Make this a warning so it always prints to the log
+      PWARN("VF Device detected on PF Driver.\nIgnoring.\n");
       return NULL;
    }
 
@@ -730,7 +732,8 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
    //  This is useful for bringing up a driver on bare metal that only sees the
    //  VFs. Mainly for testing and debug, but perhaps also for containers?
    if (skip_pf) {
-      PINFO("Skipping PF, as requested (skip_pf)\n");
+      // Make this a warning, so it always prints
+      PWARN("Skipping PF, as requested (skip_pf)\n");
       return NULL;
    }
 
