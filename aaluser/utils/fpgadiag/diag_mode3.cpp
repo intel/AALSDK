@@ -506,13 +506,14 @@ void  CNLBMode3::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
            << endl << endl;
    }
 
-   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_MULTICL)      &&
-     ((0 == strcasecmp(cmd.TestMode.c_str(), NLB_TESTMODE_READ)) ||
-      (0 == strcasecmp(cmd.TestMode.c_str(), NLB_TESTMODE_TRPUT)))) {
+   if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_CSV) ) {
+      if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_MULTICL)      &&
+         ((0 == strcasecmp(cmd.TestMode.c_str(), NLB_TESTMODE_READ)) ||
+          (0 == strcasecmp(cmd.TestMode.c_str(), NLB_TESTMODE_TRPUT)))) {
          cout << "INFO: Cachelines   -- Number of CLs read.\n";
          cout << "      VH0_Rd_Count -- Number of Multi-CL read requests sent out.\n\n ";
       }
-
+   }
    if(( 0 == strcmp(cmd.TestMode.c_str(), "TestMode_read")) &&
      (pAFUDSM->num_reads < cls)){
       cout << "WARNING: Read test did NOT run for the requested number of CLs" << endl;
