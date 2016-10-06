@@ -76,7 +76,10 @@ CMockDispatchable::CMockDispatchable(IMockWorkClient* pClient, IBase* pMockDoWor
 
 void CMockDispatchable::operator()()
 {
-   m_pWorkClient->workComplete(m_TranID);
+   ASSERT(NULL != m_pWorkClient);
+   if (NULL != m_pWorkClient) {
+      m_pWorkClient->workComplete(m_TranID);
+   }
    delete this;
 }
 
@@ -89,7 +92,10 @@ CMockDispatchable2::CMockDispatchable2(IMockWorkClient* pClient, IBase* pMockDoW
 
 void CMockDispatchable2::operator()()
 {
-   m_pWorkClient->workComplete2(m_TranID);
+   ASSERT(NULL != m_pWorkClient);
+   if (NULL != m_pWorkClient) {
+      m_pWorkClient->workComplete2(m_TranID);
+   }
    delete this;
 }
 
@@ -98,7 +104,7 @@ void CMockDispatchable2::operator()()
 ///
 
 /// ===================================================================
-/// @interanal    Service configuration and allocation.  The
+/// @internal    Service configuration and allocation.  The
 /// ConfigRecord for the module library is left out as both service and
 /// client are in the same module.  This circumvents the service module
 /// creation and load-library code, allowing us to test without relying
