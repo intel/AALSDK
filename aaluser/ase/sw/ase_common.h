@@ -78,7 +78,7 @@
 /*
  * ASE Unique ID Check
  */
-#define ASE_UNIQUE_ID "SR-5.0.2-Beta-e196aa7"
+#define ASE_UNIQUE_ID "SR-6.2.0-bbf1df2"
 
 
 /*
@@ -553,7 +553,7 @@ struct ase_cfg_t
 struct ase_cfg_t *cfg;
 
 // ASE config file
-#define ASE_CONFIG_FILE "ase.cfg"
+// #define ASE_CONFIG_FILE "ase.cfg"
 
 // ASE seed file
 #define ASE_SEED_FILE  "ase_seed.txt"

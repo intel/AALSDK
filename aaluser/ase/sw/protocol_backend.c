@@ -99,18 +99,23 @@ int ase_instance_running()
  */
 void sv2c_config_dex(const char *str)
 {
+  // Allocate memory
+  sv2c_config_filepath = ase_malloc(ASE_FILEPATH_LEN);
+
+  // Check that input string is not NULL
   if (str == NULL)
     {
       BEGIN_YELLOW_FONTCOLOR;
       printf("SIM-C : sv2c_config_dex => Input string is unusable\n");
       END_YELLOW_FONTCOLOR;
+      ase_free_buffer(sv2c_config_filepath);
     }
   else
     {
-      sv2c_config_filepath = ase_malloc(ASE_FILEPATH_LEN);
+      // If Malloc fails
       if (sv2c_config_filepath != NULL)
         {
-          // strncpy(sv2c_config_filepath, str, ASE_FILEPATH_LEN);
+          // Attempt string copy and keep safe
           ase_string_copy(sv2c_config_filepath, str, ASE_FILEPATH_LEN);
 #ifdef ASE_DEBUG
           BEGIN_YELLOW_FONTCOLOR;
@@ -118,16 +123,19 @@ void sv2c_config_dex(const char *str)
           END_YELLOW_FONTCOLOR;
 #endif
 
+          // Check if file exists
           if (access(sv2c_config_filepath, F_OK)==0)
             {
+              BEGIN_YELLOW_FONTCOLOR;
               printf("SIM-C : +CONFIG %s file found !\n", sv2c_config_filepath);
+              END_YELLOW_FONTCOLOR;
             }
           else
             {
-              BEGIN_YELLOW_FONTCOLOR;
+              BEGIN_RED_FONTCOLOR;
               printf("SIM-C : ** WARNING ** +CONFIG file was not found, will revert to DEFAULTS\n");
+              END_RED_FONTCOLOR;
               memset(sv2c_config_filepath, 0, ASE_FILEPATH_LEN);
-              END_YELLOW_FONTCOLOR;
             }
         }
     }
@@ -160,7 +168,9 @@ void sv2c_script_dex(const char *str)
           // Check for existance of file
           if (access(sv2c_script_filepath, F_OK)==0)
             {
+              BEGIN_YELLOW_FONTCOLOR;
               printf("SIM-C : +SCRIPT %s file found !\n", sv2c_script_filepath);
+              END_YELLOW_FONTCOLOR;
             }
           else
             {
@@ -804,7 +814,8 @@ int ase_init()
   incoming_umsg_pkt = (struct umsgcmd_t *)ase_malloc(sizeof(struct umsgcmd_t) );
 
   // ASE configuration management
-  ase_config_parse(ASE_CONFIG_FILE);
+  // ase_config_parse(ASE_CONFIG_FILE);
+  ase_config_parse ( sv2c_config_filepath );
 
   // Evaluate IPCs
   ipc_init();
@@ -1107,16 +1118,17 @@ void ase_config_parse(char *filename)
   int value;
   char *pch;
 
-  char *ase_cfg_filepath;
-  ase_cfg_filepath = ase_malloc(256);
+  /* char *ase_cfg_filepath; */
+  /* ase_cfg_filepath = ase_malloc(256); */
 
-  if ( access(sv2c_script_filepath, F_OK) != -1 )
-    {
-      /* if ( (strlen(sv2c_config_filepath) != 0) && (sv2c_config_filepath!=(char*)NULL)) */
-      /*        { */
-      snprintf(ase_cfg_filepath, 256, "%s", sv2c_config_filepath);
-      /* } */
-    }
+  /* if ( access(sv2c_config_filepath, F_OK) != -1 ) */
+  /*   { */
+  /*     /\* if ( (strlen(sv2c_config_filepath) != 0) && (sv2c_config_filepath!=(char*)NULL)) *\/ */
+  /*     /\*        { *\/ */
+  /*     // snprintf(ase_cfg_filepath, 256, "%s", sv2c_config_filepath); */
+  /*     /\* } *\/ */
+  /* ase_string_copy(ase_cfg_filepath, sv2c_config_filepath, 256); */
+  /*   } */
 
   // ase_string_copy(ase_cfg_filepath, sv2c_config_filepath, 256);
 
@@ -1145,133 +1157,146 @@ void ase_config_parse(char *filename)
       cfg->usr_tps                  = DEFAULT_USR_CLK_TPS;
       cfg->phys_memory_available_gb = 256;
 
+      // Fclk Mhz
+      f_usrclk = DEFAULT_USR_CLK_MHZ;
+
       // Find ase.cfg OR not
-      if ( access (ase_cfg_filepath, F_OK) != -1 )
+      if ( access (filename, F_OK) != -1 )
         {
           // FILE exists, overwrite
-          printf("SIM-C : Reading %s configuration file\n", ASE_CONFIG_FILE);
-          fp = fopen(ase_cfg_filepath, "r");
-
-          // Parse file line by line
-          while (getline(&line, &len, fp) != -1)
+          fp = fopen(filename, "r");
+          if (fp == NULL)
             {
-              // Remove all invalid characters
-              remove_spaces (line);
-              remove_tabs (line);
-              remove_newline (line);
-              // Ignore strings begining with '#' OR NULL (compound NOR)
-              if ( (line[0] != '#') && (line[0] != '\0') )
+              BEGIN_RED_FONTCOLOR;
+              printf("SIM-C : %s supplied by +CONFIG could not be opened, IGNORED\n", filename);
+              END_RED_FONTCOLOR;
+            }
+          else
+            {
+              BEGIN_GREEN_FONTCOLOR;
+              printf("SIM-C : Reading %s configuration file \n", filename );
+              END_GREEN_FONTCOLOR;
+              // Parse file line by line
+              while (getline(&line, &len, fp) != -1)
                 {
-                  parameter = strtok(line, "=\n");
-                  if (parameter != NULL)
+                  // Remove all invalid characters
+                  remove_spaces (line);
+                  remove_tabs (line);
+                  remove_newline (line);
+                  // Ignore strings begining with '#' OR NULL (compound NOR)
+                  if ( (line[0] != '#') && (line[0] != '\0') )
                     {
-                      if (strncmp (parameter,"ASE_MODE", 20) == 0)
+                      parameter = strtok(line, "=\n");
+                      if (parameter != NULL)
                         {
-                          pch = strtok(NULL, "");
-                          if (pch != NULL)
+                          if (strncmp (parameter,"ASE_MODE", 20) == 0)
                             {
-                              cfg->ase_mode = atoi(pch);
-                            }
-                        }
-                      else if (strncmp (parameter,"ASE_TIMEOUT", 20) == 0)
-                        {
-                          pch = strtok(NULL, "");
-                          if (pch != NULL)
-                            {
-                              cfg->ase_timeout = atoi(pch);
-                            }
-                        }
-                      else if (strncmp (parameter,"ASE_NUM_TESTS", 20) == 0)
-                        {
-                          pch = strtok(NULL, "");
-                          if (pch != NULL)
-                            {
-                              cfg->ase_num_tests = atoi(pch);
-                            }
-                        }
-                      else if (strncmp (parameter, "ENABLE_REUSE_SEED", 20) == 0)
-                        {
-                          pch = strtok(NULL, "");
-                          if (pch != NULL)
-                            {
-                              cfg->enable_reuse_seed =  atoi(pch);
-                            }
-                        }
-                      else if (strncmp (parameter, "ASE_SEED", 20) == 0)
-                        {
-                          pch = strtok(NULL, "");
-                          if (pch != NULL)
-                            {
-                              cfg->ase_seed =  atoi(pch);
-                            }
-                        }
-                      else if (strncmp (parameter,"ENABLE_CL_VIEW", 20) == 0)
-                        {
-                          pch = strtok(NULL, "");
-                          if (pch != NULL)
-                            {
-                              cfg->enable_cl_view =  atoi(pch);
-                            }
-                        }
-                      else if (strncmp (parameter, "USR_CLK_MHZ", 20) == 0)
-                        {
-                          pch = strtok(NULL, "");
-                          if (pch != NULL)
-                            {
-                              f_usrclk = atof(pch);
-                              if (f_usrclk == 0.000000)
+                              pch = strtok(NULL, "");
+                              if (pch != NULL)
                                 {
-                                  BEGIN_RED_FONTCOLOR;
-                                  printf("SIM-C : User Clock Frequency cannot be 0.000 MHz\n");
-                                  printf("        Reverting to %f MHz\n", DEFAULT_USR_CLK_MHZ);
-                                  f_usrclk = DEFAULT_USR_CLK_MHZ;
-                                  cfg->usr_tps = DEFAULT_USR_CLK_TPS;
-                                  END_RED_FONTCOLOR;
+                                  cfg->ase_mode = atoi(pch);
                                 }
-                              else if (f_usrclk == DEFAULT_USR_CLK_MHZ)
+                            }
+                          else if (strncmp (parameter,"ASE_TIMEOUT", 20) == 0)
+                            {
+                              pch = strtok(NULL, "");
+                              if (pch != NULL)
                                 {
-                                  cfg->usr_tps = DEFAULT_USR_CLK_TPS;
+                                  cfg->ase_timeout = atoi(pch);
                                 }
-                              else
+                            }
+                          else if (strncmp (parameter,"ASE_NUM_TESTS", 20) == 0)
+                            {
+                              pch = strtok(NULL, "");
+                              if (pch != NULL)
                                 {
-                                  cfg->usr_tps = (int)( 1E+12/(f_usrclk*pow(1000,2)) );
-#ifdef ASE_DEBUG
-                                  BEGIN_YELLOW_FONTCOLOR;
-                                  printf("  [DEBUG]  usr_tps = %d\n", cfg->usr_tps);
-                                  END_YELLOW_FONTCOLOR;
-#endif
-                                  if (f_usrclk != DEFAULT_USR_CLK_MHZ)
+                                  cfg->ase_num_tests = atoi(pch);
+                                }
+                            }
+                          else if (strncmp (parameter, "ENABLE_REUSE_SEED", 20) == 0)
+                            {
+                              pch = strtok(NULL, "");
+                              if (pch != NULL)
+                                {
+                                  cfg->enable_reuse_seed =  atoi(pch);
+                                }
+                            }
+                          else if (strncmp (parameter, "ASE_SEED", 20) == 0)
+                            {
+                              pch = strtok(NULL, "");
+                              if (pch != NULL)
+                                {
+                                  cfg->ase_seed =  atoi(pch);
+                                }
+                            }
+                          else if (strncmp (parameter,"ENABLE_CL_VIEW", 20) == 0)
+                            {
+                              pch = strtok(NULL, "");
+                              if (pch != NULL)
+                                {
+                                  cfg->enable_cl_view =  atoi(pch);
+                                }
+                            }
+                          else if (strncmp (parameter, "USR_CLK_MHZ", 20) == 0)
+                            {
+                              pch = strtok(NULL, "");
+                              if (pch != NULL)
+                                {
+                                  f_usrclk = atof(pch);
+                                  if (f_usrclk == 0.000000)
                                     {
                                       BEGIN_RED_FONTCOLOR;
-                                      printf("SIM-C : User clock Frequency was modified from %f to %f MHz\n", DEFAULT_USR_CLK_MHZ, f_usrclk);
-                                      printf("        **WARNING** Modifying User Clock is not supported in-system !\n");
+                                      printf("SIM-C : User Clock Frequency cannot be 0.000 MHz\n");
+                                      printf("        Reverting to %f MHz\n", DEFAULT_USR_CLK_MHZ);
+                                      f_usrclk = DEFAULT_USR_CLK_MHZ;
+                                      cfg->usr_tps = DEFAULT_USR_CLK_TPS;
                                       END_RED_FONTCOLOR;
+                                    }
+                                  else if (f_usrclk == DEFAULT_USR_CLK_MHZ)
+                                    {
+                                      cfg->usr_tps = DEFAULT_USR_CLK_TPS;
+                                    }
+                                  else
+                                    {
+                                      cfg->usr_tps = (int)( 1E+12/(f_usrclk*pow(1000,2)) );
+#ifdef ASE_DEBUG
+                                      BEGIN_YELLOW_FONTCOLOR;
+                                      printf("  [DEBUG]  usr_tps = %d\n", cfg->usr_tps);
+                                      END_YELLOW_FONTCOLOR;
+#endif
+                                      if (f_usrclk != DEFAULT_USR_CLK_MHZ)
+                                        {
+                                          BEGIN_RED_FONTCOLOR;
+                                          printf("SIM-C : User clock Frequency was modified from %f to %f MHz\n", DEFAULT_USR_CLK_MHZ, f_usrclk);
+                                          printf("        **WARNING** Modifying User Clock is not supported in-system !\n");
+                                          END_RED_FONTCOLOR;
+                                        }
                                     }
                                 }
                             }
-                        }
-                      else if (strncmp(parameter,"PHYS_MEMORY_AVAILABLE_GB", 32) == 0)
-                        {
-                          pch = strtok(NULL, "");
-                          if (pch != NULL)
+                          else if (strncmp(parameter,"PHYS_MEMORY_AVAILABLE_GB", 32) == 0)
                             {
-                              value = atoi(pch);
-                              if (value < 0)
+                              pch = strtok(NULL, "");
+                              if (pch != NULL)
                                 {
-                                  BEGIN_RED_FONTCOLOR;
-                                  printf("SIM-C : Physical memory size is negative in %s\n", ASE_CONFIG_FILE);
-                                  printf("        Reverting to default 256 GB\n");
-                                  END_RED_FONTCOLOR;
-                                }
-                              else
-                                {
-                                  cfg->phys_memory_available_gb = value;
+                                  value = atoi(pch);
+                                  if (value < 0)
+                                    {
+                                      BEGIN_RED_FONTCOLOR;
+                                      printf("SIM-C : Physical memory size is negative in %s\n", filename);
+                                      printf("        Reverting to default 256 GB\n");
+                                      END_RED_FONTCOLOR;
+                                    }
+                                  else
+                                    {
+                                      cfg->phys_memory_available_gb = value;
+                                    }
                                 }
                             }
-                        }
-                      else
-                        {
-                          printf("SIM-C : In config file %s, Parameter type %s is unidentified \n", ASE_CONFIG_FILE, parameter);
+                          else
+                            {
+                              printf("SIM-C : In config file %s, Parameter type %s is unidentified \n", filename, parameter);
+                            }
                         }
                     }
                 }
@@ -1327,7 +1352,7 @@ void ase_config_parse(char *filename)
       else
         {
           // FILE does not exist
-          printf("SIM-C : %s not found, using default values\n", ASE_CONFIG_FILE);
+          printf("SIM-C : %s not found, using default values\n", filename);
         }
 
       // Mode configuration
@@ -1385,7 +1410,7 @@ void ase_config_parse(char *filename)
     }
 
   // Free cfg filepath
-  free(ase_cfg_filepath);
+  // free(ase_cfg_filepath);
 
   FUNC_CALL_EXIT;
 }
