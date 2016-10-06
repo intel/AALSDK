@@ -396,22 +396,31 @@ RuntimeEvent::~RuntimeEvent()
 
 RuntimeEvent::RuntimeEvent(const AAL::RuntimeEvent& other)
 {
-    if ( NULL != other.m_pEvent ) {
-        m_pEvent = other.m_pEvent->Clone();
-    }
+   m_pRTClient = other.m_pRTClient;
+   if ( NULL != other.m_pEvent ) {
+      m_pEvent = other.m_pEvent->Clone();
+   } else {
+      m_pEvent = NULL;
+   }
 }
 
 RuntimeEvent& RuntimeEvent::operator=(const AAL::RuntimeEvent& other)
 {
-    if ( NULL != other.m_pEvent ) {
-        m_pEvent = other.m_pEvent->Clone();
-    }
-    return *this;
+   m_pRTClient = other.m_pRTClient;
+   if ( NULL != other.m_pEvent ) {
+      m_pEvent = other.m_pEvent->Clone();
+   } else {
+      m_pEvent = NULL;
+   }
+   return *this;
 }
 
 void RuntimeEvent::operator() ()
 {
-   m_pRTClient->runtimeEvent(*m_pEvent);
+   ASSERT(NULL != m_pRTClient);
+   if ( NULL != m_pRTClient) {
+      m_pRTClient->runtimeEvent(*m_pEvent);
+   }
    delete this;
 }
 
