@@ -99,6 +99,7 @@
 BEGIN_NAMESPACE(AAL)
 
 
+extern kosal_semaphore g_listlock;
 
 
 //=============================================================================

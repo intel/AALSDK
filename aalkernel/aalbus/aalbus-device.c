@@ -88,6 +88,7 @@
 #include "aalsdk/kernel/aalbus-device.h"
 #include "aalsdk/kernel/aaldevice.h"
 
+kosal_semaphore g_listlock;
 
 //=============================================================================
 // Name:  aalbus_destroy_device
@@ -435,6 +436,12 @@ aaldev_addOwner(struct aal_device *pdev,
    // Record the device
    pown->m_device = pdev;
 
+   // protect list operations
+   if ( unlikely( kosal_sem_get_user_alertable(&g_listlock) ) ) {
+      DPRINTF (AALBUS_DBG_MOD, ": kosal_sem_get_user_alertable interrupted\n");
+      return aaldev_addowner_Interrupted;
+   }
+
    // Add the owner to the device's owner list.
    // This is the list of owners for this device
    list_add(&pown->m_ownerlist, &pdev->m_ownerlist);
@@ -442,6 +449,8 @@ aaldev_addOwner(struct aal_device *pdev,
    // Add this owner object to the session's list
    // This is a list of devices owned by this session
    list_add(&pown->m_devicelist, psessionlist);
+
+   kosal_sem_put(&g_listlock);
 
    // Increment number of owners
    if ( MAFU_CONFIGURE_UNLIMTEDSHARES != pdev->m_numowners ) {
@@ -530,8 +539,16 @@ aaldev_removeOwner(struct aal_device *pdev, btPID pid)
       goto out;
    }
 
+   // protect list operations
+   if ( unlikely( kosal_sem_get_user_alertable(&g_listlock) ) ) {
+      DPRINTF (AALBUS_DBG_MOD, ": kosal_sem_get_user_alertable interrupted\n");
+      return aaldev_addowner_Interrupted;
+   }
+
    list_del_init(&pown->m_devicelist);
    list_del_init(&pown->m_ownerlist);
+
+   kosal_sem_put(&g_listlock);
 
    // done list update
    kfree(pown);
@@ -587,6 +604,12 @@ aaldev_updateOwner(struct aal_device          *pdev,
       goto out;
    }
 
+   // protect list operations
+   if ( unlikely( kosal_sem_get_user_alertable(&g_listlock) ) ) {
+      DPRINTF (AALBUS_DBG_MOD, ": kosal_sem_get_user_alertable interrupted\n");
+      return aaldev_addowner_Interrupted;
+   }
+
    // Remove this entry from the previous session list
    list_del(&pown->m_devicelist);
 
@@ -598,6 +621,8 @@ aaldev_updateOwner(struct aal_device          *pdev,
 
    // Add it to the new session owners list
    list_add(&pown->m_devicelist, psessionlist);
+
+   kosal_sem_put( &g_listlock );
 
    DPRINTF (AALBUS_DBG_MOD, ": Done Updating Owner\n");
 

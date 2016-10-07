@@ -659,6 +659,7 @@ process_bind_request(struct ccidrv_session  *psess,
          //   by the dev_OwnerSession() call.
          //----------------------------------------------------------------
          PDEBUG("Changing owner session to UI\n");
+         kosal_sem_get_user_alertable( &psess->m_sem );
          if ( unlikely( aaldev_addowner_OK != dev_updateOwner(pdev,                 // Device
                                                               psess->m_pid,         // Process ID
                                                               ownerSessp,           // New session attributes
@@ -678,6 +679,7 @@ process_bind_request(struct ccidrv_session  *psess,
             // Create the completion event
             bindcmplt = ccipdrv_event_bindcmplt_create(preq->handle, &bindevt, uid_errnumOK, preq);
          }
+         kosal_sem_put( &psess->m_sem );
          ret = 0;
       } goto BIND_DONE; // case reqid_UID_Bind
 

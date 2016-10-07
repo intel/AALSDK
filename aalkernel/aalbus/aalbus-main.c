@@ -436,6 +436,7 @@ aalbus_init(void)
    kosal_mutex_init(&aalBus.m_sem);
    kosal_list_init(&aalBus.alloc_list_head);
    kosal_mutex_init(&aalBus.alloc_list_sem);
+   kosal_mutex_init(&g_listlock);
 
    //
    // Register our bus subsystem with the kernel
