@@ -36,6 +36,7 @@
 SUBDIRS=\
 aalscan \
 fpgadiag \
+mmlink \
 data_model \
 ALIAFU/ALI \
 PowerManager/PwrMgrService \

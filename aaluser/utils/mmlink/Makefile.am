@@ -27,63 +27,33 @@
 ##  Accelerator Abstraction Layer Library Software Developer Kit (SDK)
 ##
 ##  Content:
-##     samples/SigTap/Makefile
+##     aalutils/fpgadiag/Makefile
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
-##     Joseph Grecco, Intel Corporation
 ##  History:
-##     11/19/2015    JG   Initial version based off of canonical sample makefile
+##     07/21/2015    TSW   Initial version
 ##******************************************************************************
-CPPFLAGS ?=
-CXX      ?= g++
-LDFLAGS  ?=
+bin_PROGRAMS=mmlink
 
-ifeq (,$(CFLAGS))
-CFLAGS = -g -O2
-endif
+mmlink_SOURCES=\
+mm_debug_link_interface.h \
+mm_debug_link_linux.cpp \
+mm_debug_link_linux.h \
+mmlink_connection.cpp \
+mmlink_connection.h \
+mmlink_server.cpp \
+mmlink_server.h \
+SigTap.cpp
 
-ifneq (,$(ndebug))
-else
-CPPFLAGS += -DENABLE_DEBUG=1
-endif
-ifneq (,$(nassert))
-else
-CPPFLAGS += -DENABLE_ASSERT=1
-endif
+mmlink_CPPFLAGS=\
+-g -O0 \
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
 
-ifeq (,$(DESTDIR))
-ifneq (,$(prefix))
-CPPFLAGS += -I$(prefix)/include
-LDFLAGS  += -L$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(prefix)/lib \
-            -L$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(prefix)/lib64
-endif
-else
-ifeq (,$(prefix))
-prefix = /usr/local
-endif
-CPPFLAGS += -I$(DESTDIR)$(prefix)/include
-LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib \
-            -L$(DESTDIR)$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib64
-endif
+mmlink_LDADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la \
+$(top_builddir)/aas/AALRuntime/libaalrt.la \
+$(top_builddir)/aas/AIAService/libaia.la \
+$(top_builddir)/clp/libaalclp.la
 
-all: mmlink
-
-mmlink: SigTap.o mmlink_server.o mmlink_connection.o mm_debug_link.o
-	$(CXX) $(CPPFLAGS) -o mmlink SigTap.o mmlink_server.o mmlink_connection.o mm_debug_link.o $(LDFLAGS) -lOSAL -lAAS -laalrt
-
-SigTap.o: SigTap.cpp  mmlink_server.h mm_debug_link_interface.h Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 $(CFLAGS) -c -o SigTap.o SigTap.cpp
-
-mmlink_connection.o: mmlink_connection.cpp mmlink_connection.h 
-	$(CXX) $(CPPFLAGS) -c mmlink_connection.cpp
-
-mm_debug_link.o: mm_debug_link_linux.cpp mm_debug_link_linux.h  
-	$(CXX) -I $(KERNEL_SRC_DIR)/include $(CPPFLAGS) -c mm_debug_link_linux.cpp -o mm_debug_link.o
-	
-mmlink_server.o: mmlink_server.cpp mmlink_server.h mmlink_connection.h mm_debug_link_interface.h 
-	$(CXX) $(CPPFLAGS) -c mmlink_server.cpp
-
-clean:
-	$(RM) mmlink SigTap.o mmlink_server.o mmlink_connection.o mm_debug_link.o 
-
-.PHONY:all clean

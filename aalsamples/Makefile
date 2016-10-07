@@ -46,6 +46,7 @@ SUBDIRS :=$(filter-out \
 Hello_CCI_NLB/SW/ \
 Hello_SPL_LB/SW/ \
 Sudoku_SPL/SW/ \
+PCIe_ErrMon/SW/ \
 LinkedList_SPL/SW/, \
 $(SUBDIRS))
 

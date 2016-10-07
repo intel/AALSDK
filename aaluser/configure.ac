@@ -185,6 +185,7 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/Makefile
                  utils/aalscan/Makefile
                  utils/fpgadiag/Makefile
+                 utils/mmlink/Makefile
                  utils/data_model/Makefile
                  utils/ALIAFU/ALI/Makefile
                  utils/PowerManager/PwrMgrService/Makefile
