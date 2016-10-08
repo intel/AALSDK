@@ -244,7 +244,7 @@ void ase_eval_session_directory()
 {
   FUNC_CALL_ENTRY;
 
-  ase_workdir_path = ase_malloc (ASE_FILEPATH_LEN);
+  // ase_workdir_path = ase_malloc (ASE_FILEPATH_LEN);
 
   // Evaluate location of simulator or own location
 #ifdef SIM_SIDE
@@ -580,6 +580,7 @@ int ase_read_lock_file(const char *workdir)
                       printf("** ERROR ** => Application UID does not match known release UID\n");
                       printf("** ERROR ** => Simulator built with UID=%s, Application built with UID=%s\n", readback_uid, curr_uid );
                       printf("** ERROR ** => Ensure that ASE simulator and AAL application are compiled from the same System Release version !\n");
+		      printf("** ERROR ** => Also, check if env(LD_LIBRARY_PATH) is set to appropriate <prefix> or <DESTDIR> library paths \n");
                       printf("** ERROR ** => Simulation cannot proceed ... EXITING\n");
                       END_RED_FONTCOLOR;
 #ifdef SIM_SIDE
@@ -699,36 +700,45 @@ void ase_string_copy(char *dest, const char *src, size_t num_bytes)
   // Allocate memory if not already done
   if (dest == NULL)
     {
-#ifdef ASE_DEBUG
+#ifdef SIM_SIDE
       BEGIN_RED_FONTCOLOR;
-      printf("  [DEBUG]  ase_string_copy => Destination string not allocated, running ase_malloc\n");
+      printf("SIM-C : ** ERROR ** => String copy destination not allocated.. Exiting\n");
       END_RED_FONTCOLOR;
+      start_simkill_countdown();
+#else
+      BEGIN_RED_FONTCOLOR;
+      printf("  [APP] ** ERROR ** => String copy destination not allocated.. Exiting\n");
+      END_RED_FONTCOLOR;
+      exit(1);
 #endif
-      dest = ase_malloc(num_bytes);
-    }
-
-  // Use snprintf as a copy mechanism
-  snprintf(dest, num_bytes, "%s", src);
-
-  // Find length
-  dest_strlen = strlen(dest);
-
-  // Terminate length, or kill
-  if ( dest_strlen < num_bytes )
-    {
-      dest[dest_strlen] = '\0';
     }
   else
     {
-      BEGIN_RED_FONTCOLOR;
+      // Use snprintf as a copy mechanism
+      snprintf(dest, num_bytes, "%s", src);
+
+      // Find length
+      dest_strlen = strlen(dest);
+
+      // Terminate length, or kill
+      if ( dest_strlen < num_bytes )
+        {
+          dest[dest_strlen] = '\0';
+        }
+      else
+        {
 #ifdef SIM_SIDE
-      printf("SIM-C : ** Internal Error ** => Invalid null termination during string copy [%d]\n", dest_strlen);
-      start_simkill_countdown();
+          BEGIN_RED_FONTCOLOR;
+          printf("SIM-C : ** Internal Error ** => Invalid null termination during string copy [%d]\n", dest_strlen);
+          END_RED_FONTCOLOR;
+          start_simkill_countdown();
 #else
-      printf("  [APP]  ** Internal Error ** => Invalid null termination during string copy [%d]\n", dest_strlen);
-      exit(1);
+          BEGIN_RED_FONTCOLOR;
+          printf("  [APP]  ** Internal Error ** => Invalid null termination during string copy [%d]\n", dest_strlen);
+          END_RED_FONTCOLOR;
+          exit(1);
 #endif
-      END_RED_FONTCOLOR;
+        }
     }
 
   FUNC_CALL_EXIT;

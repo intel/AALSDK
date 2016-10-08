@@ -108,21 +108,13 @@ void put_timestamp()
 // -----------------------------------------------------------------------
 // Read timestamp
 // -----------------------------------------------------------------------
-char* get_timestamp(int dont_kill)
+void get_timestamp(char *session_str)
 {
   FUNC_CALL_ENTRY;
 
   FILE *fp = (FILE *)NULL;
 
-  char *tstamp_str;
-  tstamp_str = ase_malloc(20);
-
-  // int ret;
-
-  char *tstamp_filepath;
-  tstamp_filepath = (char*)ase_malloc(ASE_FILEPATH_LEN);
-
-  // Generate tstamp_filepath
+  // Form session code path
   snprintf(tstamp_filepath, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
 #ifdef ASE_DEBUG
@@ -131,71 +123,54 @@ char* get_timestamp(int dont_kill)
   END_YELLOW_FONTCOLOR;
 #endif
 
-  // Check if file exists
-  if (access(tstamp_filepath, F_OK) != -1) // File exists
+  if (session_str != NULL)
     {
-      fp = fopen(tstamp_filepath, "r");
-      // fopen failed
-      if (fp == NULL)
+      // Check if file exists
+      if (access(tstamp_filepath, F_OK) != -1) // File exists
         {
-          ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
-#ifdef SIM_SIDE
-          start_simkill_countdown();
-#else
-          exit(1);
-#endif
-        }
-      else
-        {
-          // Read timestamp file
-          if ( fgets(tstamp_str, 20, fp) == NULL )
+          fp = fopen(tstamp_filepath, "r");
+          // fopen failed
+          if (fp == NULL)
             {
-              ase_error_report("fgets", errno, ASE_OS_MALLOC_ERR);
+              ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
 #ifdef SIM_SIDE
               start_simkill_countdown();
 #else
               exit(1);
 #endif
             }
-
-          // Close fp
-          fclose(fp);
-        }
-
-      // Remove newline char
-      remove_newline(tstamp_str);
-
-      // check if null
-      if (tstamp_str == NULL)
-        {
-          printf("** ASE ERROR: Session ID was calculated as NULL **\n");
+          else
+            {
+              // Read timestamp file
+              if ( fgets(session_str, 20, fp) == NULL )
+                {
+                  ase_error_report("fgets", errno, ASE_OS_MALLOC_ERR);
 #ifdef SIM_SIDE
-          start_simkill_countdown();
+                  start_simkill_countdown();
 #else
-          exit(1);
+                  exit(1);
 #endif
-        }
+                }
 
-      // Marking a global session ID
-      // strncpy(glbl_session_id, tstamp_str, 20);
+              // Close fp
+              fclose(fp);
+            }
 
-      // Free path string
-      ase_free_buffer (tstamp_filepath);
+          // Remove newline char
+          remove_newline(session_str);
 
-      FUNC_CALL_EXIT;
-      return tstamp_str;
-    }
-  else   // File doesnt exist
-    {
-      if (dont_kill != 0)  // Dont kill the process (dealloc side)
-        {
-#ifdef ASE_DEBUG
-          BEGIN_YELLOW_FONTCOLOR;
-          printf(" Timestamp gone ! .. ");
-          END_YELLOW_FONTCOLOR;
+          // check if null
+          if (session_str == NULL)
+            {
+              printf("** ASE ERROR: Session ID was calculated as NULL **\n");
+#ifdef SIM_SIDE
+              start_simkill_countdown();
+#else
+              exit(1);
 #endif
+            }
         }
-      else // Kill (alloc side problems
+      else
         {
 #ifdef SIM_SIDE
           ase_error_report("access", errno, ASE_OS_FOPEN_ERR);
@@ -205,9 +180,9 @@ char* get_timestamp(int dont_kill)
           exit(1);
 #endif
         }
-
-      return NULL;
     }
+
+  FUNC_CALL_EXIT;
 }
 
 
@@ -217,7 +192,7 @@ char* get_timestamp(int dont_kill)
 // -----------------------------------------------------------------------
 void poll_for_session_id()
 {
-  char tstamp_filepath[ASE_FILEPATH_LEN];
+  // char tstamp_filepath[ASE_FILEPATH_LEN];
   snprintf(tstamp_filepath, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
   printf("  [APP]  Waiting till session ID is created by ASE ... ");

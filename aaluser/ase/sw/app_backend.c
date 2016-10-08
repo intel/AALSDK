@@ -424,7 +424,8 @@ void session_init()
       // Wait till session file is created
       poll_for_session_id();
       tstamp_string = (char*) ase_malloc(20);
-      tstamp_string = get_timestamp(0);
+      // tstamp_string = get_timestamp(0);
+      get_timestamp(tstamp_string);
 
       // Creating CSR map
       BEGIN_YELLOW_FONTCOLOR;
@@ -1354,6 +1355,9 @@ void umsg_set_attribute(uint32_t hint_mask)
 
   // Send transaction
   ase_portctrl(umsg_attrib_cmd);
+
+  // Free memory
+  ase_free_buffer(umsg_attrib_cmd);
 }
 
 
@@ -1418,6 +1422,9 @@ void *umsg_watcher()
         }
       usleep(1);
     }
+
+  // Free memory
+  ase_free_buffer((char*)umsg_pkt);
 
   return 0;
 }

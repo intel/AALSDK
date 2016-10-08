@@ -117,8 +117,10 @@ int get_smq_perm_flag(const char *mq_name_str)
               ret = O_WRONLY;
             }
 #endif
+
+          // Free memory
+          ase_free_buffer(mq_str);
         }
-      //      ase_free_buffer(mq_str);
     }
 
   return ret;
@@ -143,7 +145,8 @@ void ipc_init()
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
     {
       // Set name
-      strncpy(mq_array[ipc_iter].name, mq_name_arr[ipc_iter], ASE_MQ_NAME_LEN);
+      // strncpy(mq_array[ipc_iter].name, mq_name_arr[ipc_iter], ASE_MQ_NAME_LEN);
+      ase_string_copy(mq_array[ipc_iter].name, mq_name_arr[ipc_iter], ASE_MQ_NAME_LEN);
       // Compute path
       snprintf(mq_array[ipc_iter].path, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, mq_array[ipc_iter].name);
       // Set permission flag

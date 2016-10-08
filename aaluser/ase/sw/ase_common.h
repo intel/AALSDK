@@ -78,7 +78,7 @@
 /*
  * ASE Unique ID Check
  */
-#define ASE_UNIQUE_ID "SR-6.2.0-bbf1df2"
+#define ASE_UNIQUE_ID "SR-6.2.0-a6ad1bb"
 
 
 /*
@@ -132,20 +132,23 @@
  *
  * *******************************************************************************/
 // SHM memory name length
-#define ASE_FILENAME_LEN   40
+#define ASE_FILENAME_LEN        40
 
 // ASE filepath length
-#define ASE_FILEPATH_LEN  256
+#define ASE_FILEPATH_LEN        256
 
 // ASE logger len
-#define ASE_LOGGER_LEN    1024
+#define ASE_LOGGER_LEN          1024
+
+// Timestamp session code length
+#define ASE_SESSION_CODE_LEN    20
 
 // work Directory location
-  char *ase_workdir_path;
+char *ase_workdir_path;
 
 // Timestamp IPC file
 #define TSTAMP_FILENAME ".ase_timestamp"
-char *tstamp_filepath;
+char tstamp_filepath[ASE_FILEPATH_LEN];
 char *glbl_session_id;
 
 // CCIP Warnings and Error stat location
@@ -281,6 +284,9 @@ typedef struct umsgcmd_t {
 // Incoming UMSG packet (allocated in ase_init, deallocated in start_simkill_countdown)
 struct umsgcmd_t *incoming_umsg_pkt;
 
+// Incoming MMIO packet (allocated in ase_init, deallocated in start_simkill_countdown)
+struct mmio_t    *incoming_mmio_pkt;
+
 // Compute buffer_t size
 #define BUFSIZE     sizeof(struct buffer_t)
 
@@ -383,7 +389,8 @@ int mqueue_recv(int, char*, int);
 
 // Timestamp functions
 void put_timestamp();
-char* get_timestamp(int);
+// char* get_timestamp(int);
+void get_timestamp(char*);
 char* generate_tstamp_path(char*);
 
 // Error report functions
@@ -522,8 +529,6 @@ struct ipc_t mq_array[ASE_MQ_INSTANCES];
 int bt_j, bt_nptrs;
 void *bt_buffer[4096];
 char **bt_strings;
-
-
 
 
 /* *********************************************************************

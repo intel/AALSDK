@@ -226,38 +226,38 @@ void wr_memline_dex(cci_pkt *pkt)
       // Success
       pkt->success = 1;
     }
-#ifndef DEFEATURE_ATOMICS
-  else if (pkt->mode == CCIPKT_ATOMIC_MODE)
-    {
-      /*
-       * This is a special mode in which read response goes back
-       * WRITE request is responded with a READ response
-       */
-      // Specifics of the requested compare operation
-      cmp_qword = pkt->qword[0];
-      new_qword = pkt->qword[4];
+/* #ifndef DEFEATURE_ATOMICS */
+/*   else if (pkt->mode == CCIPKT_ATOMIC_MODE) */
+/*     { */
+/*       /\* */
+/*        * This is a special mode in which read response goes back */
+/*        * WRITE request is responded with a READ response */
+/*        *\/ */
+/*       // Specifics of the requested compare operation */
+/*       cmp_qword = pkt->qword[0]; */
+/*       new_qword = pkt->qword[4]; */
 
-      // Get cl_addr, deduce rd_target_vaddr
-      phys_addr = (uint64_t)pkt->cl_addr << 6;
-      rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr);
+/*       // Get cl_addr, deduce rd_target_vaddr */
+/*       phys_addr = (uint64_t)pkt->cl_addr << 6; */
+/*       rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr); */
 
-      // Perform read first and set response packet accordingly
-      memcpy((char*)pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);
+/*       // Perform read first and set response packet accordingly */
+/*       memcpy((char*)pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH); */
 
-      // Get cl_addr, deduct wr_target, use qw_start to determine exact qword
-      wr_target_vaddr = (uint64_t*)( (uint64_t)rd_target_vaddr + pkt->qw_start*8 );
+/*       // Get cl_addr, deduct wr_target, use qw_start to determine exact qword */
+/*       wr_target_vaddr = (uint64_t*)( (uint64_t)rd_target_vaddr + pkt->qw_start*8 ); */
 
-      // CmpXchg output
-      pkt->success = (int)__sync_bool_compare_and_swap (wr_target_vaddr, cmp_qword, new_qword);
+/*       // CmpXchg output */
+/*       pkt->success = (int)__sync_bool_compare_and_swap (wr_target_vaddr, cmp_qword, new_qword); */
 
-      // Debug output
-#ifdef ASE_DEBUG
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("  [DEBUG]  CmpXchg_op=%d\n", pkt->success);
-      END_YELLOW_FONTCOLOR;
-#endif
-    }
-#endif
+/*       // Debug output */
+/* #ifdef ASE_DEBUG */
+/*       BEGIN_YELLOW_FONTCOLOR; */
+/*       printf("  [DEBUG]  CmpXchg_op=%d\n", pkt->success); */
+/*       END_YELLOW_FONTCOLOR; */
+/* #endif */
+/*     } */
+/* #endif */
 
   FUNC_CALL_EXIT;
 }
@@ -480,16 +480,17 @@ int ase_listener()
               printf("Session requested by PID = %d\n", portctrl_value);
               // Generate new timestamp
               put_timestamp();
-              tstamp_filepath = ase_malloc(ASE_FILEPATH_LEN);
+              // tstamp_filepath = ase_malloc(ASE_FILEPATH_LEN);
               snprintf(tstamp_filepath, ASE_FILEPATH_LEN, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
               // Print timestamp
               glbl_session_id = ase_malloc(20);
-              glbl_session_id = get_timestamp(0);
+              // glbl_session_id = get_timestamp(0);
               if (glbl_session_id == NULL)
                 {
                   BEGIN_RED_FONTCOLOR;
                   printf("SIM-C : Session ID could not be allocated, ERROR.. exiting\n");
                   END_RED_FONTCOLOR;
+                  ase_free_buffer(glbl_session_id);
                   start_simkill_countdown();
                 }
               else
@@ -572,6 +573,9 @@ int ase_listener()
 
               // Send portctrl_rsp message
               mqueue_send(sim2app_portctrl_rsp_tx, completed_str_msg, ASE_MQ_MSGSIZE);
+
+              // Clean up session OD
+              ase_free_buffer(glbl_session_id);
             }
           else
             {
@@ -698,17 +702,19 @@ int ase_listener()
       /*
        * MMIO request listener
        */
+      // char mmio_mapstr[ASE_MQ_MSGSIZE];
       // Message string
-      struct mmio_t *mmio_pkt;
-      mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(mmio_t) );
+      // struct mmio_t *mmio_pkt;
 
       // Receive csr_write packet
-      if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_pkt, sizeof(mmio_t) )==ASE_MSG_PRESENT)
+      if(mqueue_recv(app2sim_mmioreq_rx, (char*)incoming_mmio_pkt, sizeof(struct mmio_t) )==ASE_MSG_PRESENT)
         {
+          // memcpy(incoming_mmio_pkt, (mmio_t *)mmio_mapstr, sizeof(struct mmio_t));
+
 #ifdef ASE_DEBUG
-          print_mmiopkt(fp_memaccess_log, "MMIO Sent", mmio_pkt);
+          print_mmiopkt(fp_memaccess_log, "MMIO Sent", incoming_mmio_pkt);
 #endif
-          mmio_dispatch (0, mmio_pkt);
+          mmio_dispatch (0, incoming_mmio_pkt);
         }
 
       // ------------------------------------------------------------------------------- //
@@ -809,6 +815,9 @@ int ase_init()
   // Get PID
   ase_pid = getpid();
   printf("SIM-C : PID of simulator is %d\n", ase_pid);
+
+  // Allocate incoming_mmio_pkt
+  incoming_mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(mmio_t) );
 
   // Allocate incoming_umsg_pkt
   incoming_umsg_pkt = (struct umsgcmd_t *)ase_malloc(sizeof(struct umsgcmd_t) );
@@ -1033,7 +1042,11 @@ void start_simkill_countdown()
   // *FIXME* Remove the ASE timestamp file
   if (unlink(tstamp_filepath) == -1)
     {
-      printf("SIM-C : %s could not be deleted, please delete manually... \n", TSTAMP_FILENAME);
+      printf("SIM-C : %s could not be deleted, please delete manually... \n", tstamp_filepath);
+    }
+  else
+    {
+      printf("SIM-C : Session code file removed\n");
     }
 
   // Final clean of IPC
@@ -1079,6 +1092,9 @@ void start_simkill_countdown()
     }
   BEGIN_GREEN_FONTCOLOR;
   printf("        ASE seed                | $ASE_WORKDIR/ase_seed.txt\n");
+  
+  // Display test count
+  printf("\nSIM-C : Tests run     => %d\n", glbl_test_cmplt_cnt);
   END_GREEN_FONTCOLOR;
 
   // Send a simulation kill command
@@ -1089,10 +1105,11 @@ void start_simkill_countdown()
   svSetScope(scope);
 
   // Free memories
-  // ase_free_buffer (ase_workdir_path);
   free(cfg);
   free(ase_ready_filepath);
-  free(incoming_umsg_pkt);
+  ase_free_buffer((char*)incoming_mmio_pkt);
+  ase_free_buffer((char*)incoming_umsg_pkt);
+  // ase_free_buffer (ase_workdir_path);
 
   // Issue Simulation kill
   simkill();

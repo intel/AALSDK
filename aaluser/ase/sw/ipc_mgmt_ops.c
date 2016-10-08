@@ -98,8 +98,16 @@ void add_to_ipc_list(char *ipc_type, char *ipc_name)
 void final_ipc_cleanup()
 {
   FUNC_CALL_ENTRY;
-  char ipc_type[4];
-  char ipc_name[ASE_FILEPATH_LEN];
+  /* char ipc_type[4]; */
+  /* char ipc_name[ASE_FILEPATH_LEN]; */
+
+  char *ipc_type;
+  char *ipc_name;
+
+  char *ipc_line;
+  size_t ipc_line_len = 0;
+
+  ipc_line = ase_malloc(ASE_FILEPATH_LEN + 16);
 
   // Close global/local files
   fclose(local_ipc_fp);
@@ -115,54 +123,68 @@ void final_ipc_cleanup()
     {
       // Parse through list
       printf("SIM-C : Removing message queues and buffer handles ... \n");
-      while(1)
+      while(getline(&ipc_line, &ipc_line_len, local_ipc_fp) != -1)
         {
-          fscanf(local_ipc_fp, "%s\t%s", ipc_type, ipc_name);
+          // fscanf(local_ipc_fp, "%s\t%s", ipc_type, ipc_name);
+	  /* if (feof(local_ipc_fp)) */
+          /*   break; */
 
-          if (feof(local_ipc_fp))
-            break;
-
-          if (strncmp (ipc_type, "MQ", 4) == 0)
-            {
+	  ipc_type = strtok(ipc_line, " \t");
+	  ipc_name = strtok(NULL, " \t");
+	  if ((ipc_type == NULL) || (ipc_name == NULL))
+	    {
 #ifdef ASE_DEBUG
-              printf("        Removing MQ  %s ... ", ipc_name);
+	      printf("Ignoring ipc_line_len\n");
 #endif
-              if ( unlink(ipc_name) == -1 )
-                {
+	    }
+	  else
+	    {
+	      // Compare type of ipc_type
+	      if (strncmp (ipc_type, "MQ", 4) == 0)
+		{
 #ifdef ASE_DEBUG
-                  printf("\n");
+		  printf("        Removing MQ  %s ", ipc_name);
 #endif
-                }
-              else
-                {
+		  if ( unlink(ipc_name) == -1 )
+		    {
 #ifdef ASE_DEBUG
-                  printf("DONE\n");
+		      printf("\n");
 #endif
-                }
-            }
-          else if (strncmp (ipc_type, "SHM", 4) == 0)
-            {
+		    }
+		  else
+		    {
 #ifdef ASE_DEBUG
-              printf("        Removing SHM %s ... ", ipc_name);
+		      printf("DONE\n");
 #endif
-              if ( shm_unlink(ipc_name) == -1 )
-                {
+		    }
+		}
+	      else if (strncmp (ipc_type, "SHM", 4) == 0)
+		{
 #ifdef ASE_DEBUG
-                  printf("\n");
+		  printf("        Removing SHM %s ", ipc_name);
 #endif
-                }
-              else
-                {
+		  if ( shm_unlink(ipc_name) == -1 )
+		    {
 #ifdef ASE_DEBUG
-                  printf("DONE\n");
+		      printf("\n");
 #endif
-                }
-            }
-        }
-      printf("DONE\n");
+		    }
+		  else
+		    {
+#ifdef ASE_DEBUG
+		      printf("DONE\n");
+#endif
+		    }
+		}
+	    }
+	  // printf("DONE\n");
+	}
 
       // Close both files
       fclose(local_ipc_fp);
     }
+
+  ase_free_buffer(ipc_line);
+  
   FUNC_CALL_EXIT;
 }

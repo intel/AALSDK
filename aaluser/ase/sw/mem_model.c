@@ -236,16 +236,22 @@ void ase_dealloc_action(struct buffer_t *buf, int mq_enable)
 
   // Traversal pointer
   struct buffer_t *dealloc_ptr;
-  dealloc_ptr = (struct buffer_t *) ase_malloc(sizeof(struct buffer_t));
+  // dealloc_ptr = (struct buffer_t *) ase_malloc(sizeof(struct buffer_t));
 
   // Search buffer and Invalidate
   dealloc_ptr = ll_search_buffer(buf->index);
 
   //  If deallocate returns a NULL, dont get hosed
-  if(dealloc_ptr != NULL)
+  if (dealloc_ptr == NULL)
     {
       BEGIN_YELLOW_FONTCOLOR;
-      printf("SIM-C : Command to invalidate \"%s\" ...\n", dealloc_ptr->memname);
+      printf("SIM-C : NULL deallocation request received ... ignoring.\n");
+      END_YELLOW_FONTCOLOR;
+    }
+  else
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("SIM-C : Request to deallocate \"%s\" ...\n", dealloc_ptr->memname);
       END_YELLOW_FONTCOLOR;
 
       // Mark buffer as invalid & deallocate
@@ -268,17 +274,10 @@ void ase_dealloc_action(struct buffer_t *buf, int mq_enable)
       ll_traverse_print();
       END_YELLOW_FONTCOLOR;
 #endif
-
-    }
-  else
-    {
-      BEGIN_YELLOW_FONTCOLOR;
-      printf("SIM-C : NULL deallocation request received ... ignoring.\n");
-      END_YELLOW_FONTCOLOR;
     }
 
   // Free dealloc_ptr
-  free(dealloc_ptr);
+  // free(dealloc_ptr);
 
   FUNC_CALL_EXIT;
 }

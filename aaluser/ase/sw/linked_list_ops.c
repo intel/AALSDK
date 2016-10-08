@@ -151,7 +151,7 @@ void ll_remove_buffer(struct buffer_t *ptr)
 // --------------------------------------------------------------------
 struct buffer_t* ll_search_buffer(int search_index)
 {
-  // FUNC_CALL_ENTRY;
+  FUNC_CALL_ENTRY;
 
   struct buffer_t* search_ptr;
 
@@ -167,7 +167,6 @@ struct buffer_t* ll_search_buffer(int search_index)
           if(search_ptr == NULL)
             break;
         }
-
     }
 
   // When found, return pointer to buffer
@@ -181,7 +180,7 @@ struct buffer_t* ll_search_buffer(int search_index)
   else
     return (struct buffer_t *)NULL;
 
-  // FUNC_CALL_EXIT;
+  FUNC_CALL_EXIT;
 }
 
 
