@@ -53,6 +53,7 @@
 #include <aalsdk/aalclp/aalclp.h>
 
 #include <string.h>
+#include <getopt.h>
 
 //****************************************************************************
 // UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
@@ -86,14 +87,24 @@ using namespace AAL;
 #define FILENAME_INFIX_LEN (strlen(FILENAME_INFIX))
 #define FILENAME_INFIX_OFFSET 6
 
+# define CMD_PARSE_ERR        300
 /// Command Line
 BEGIN_C_DECLS
 
-int aliconigafu_on_nix_long_option_only(AALCLP_USER_DEFINED , const char * );
-int aliconigafu_on_nix_long_option(AALCLP_USER_DEFINED , const char * , const char * );
+#define GETOPT_STRING ":hb:t:a:d:f:B:D:F:"
 
-void help_msg_callback(FILE * , struct _aalclp_gcs_compliance_data * );
-void showhelp(FILE * , struct _aalclp_gcs_compliance_data * );
+struct option longopts[] = {
+      {"help",                no_argument,       NULL, 'h'},
+      {"bitstream",           required_argument, NULL, 'b'},
+      {"reconftimeout",       required_argument, NULL, 't'},
+      {"reconfaction",        required_argument, NULL, 'a'},
+      {"reactivateDisabled",  required_argument, NULL, 'd'},
+      {"force",               required_argument, NULL, 'f'},
+      {"bus",                 required_argument, NULL, 'B'},
+      {"device",              required_argument, NULL, 'D'},
+      {"function",            required_argument, NULL, 'F'},
+      {0, 0, 0, 0}
+};
 
 struct  ALIConfigCommandLine
 {
@@ -118,203 +129,132 @@ struct  ALIConfigCommandLine
 };
 struct ALIConfigCommandLine configCmdLine = { 0,"",1,0,0,0,0,0,0 };
 
-
-int aliconigafu_on_non_option(AALCLP_USER_DEFINED user, const char *nonoption) {
-   struct ALIConfigCommandLine *cl = (struct ALIConfigCommandLine *)user;
-   flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
-   printf("Invalid: %s\n", nonoption);
-   return 0;
-}
-
-int aliconigafu_on_dash_only(AALCLP_USER_DEFINED user) {
-   struct ALIConfigCommandLine *cl = (struct ALIConfigCommandLine *)user;
-   flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
-   printf("Invalid option: -\n");
-   return 0;
-}
-
-int aliconigafu_on_dash_dash_only(AALCLP_USER_DEFINED user) {
-   struct ALIConfigCommandLine *cl = (struct ALIConfigCommandLine *)user;
-   flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
-   printf("Invalid option: --\n");
-   return 0;
-}
-
-int aliconigafu_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option)
+void AliConfigShowHelp()
 {
-   struct ALIConfigCommandLine *cl = (struct ALIConfigCommandLine *)user;
-   if ( 0 == strcmp("--help", option) ) {
-      flag_setf(cl->flags, ALICONIFG_CMD_FLAG_HELP);
-   } else if ( 0 == strcmp("--version", option) ) {
-      flag_setf(cl->flags, ALICONIFG_CMD_FLAG_VERSION);
-   }else  if(0 != strcmp("--bitstream=", option))  {
-      printf("Invalid option  : %s\n", option);
-      flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
+   cout << "Usage:\n";
+   cout << "   aliconfafu [<BITSTREAM>] [<RECONF-TIMEOUT>] [<RECONF-ACTION>]";
+   cout << " [<REACTIVATE-DISABLED>] [<FORCE>] [<BUS>] [<DEVICE>] [<FUNCTION>] \n\n";
+   cout << "<BITSTREAM>           --bitstream=<FILENAME>       OR  -b=<FILENAME>\n";
+   cout << "<RECONF-TIMEOUT>      --reconftimeout=<SECONDS>    OR  -t=<SECONDS>\n";
+   cout << "<RECONF-ACTION>       --reconfaction=A             OR  -a=A                ";
+   cout << "where A = <ACTION_HONOR_REQUEST or ACTION_HONOR_OWNER >\n";
+   cout << "<REACTIVATE-DISABLED> --reactivateDisabled=C       OR  -d=C                ";
+   cout << "where C = <TRUE or FALSE>\n";
+   cout << "<FORCE>               --force==TRUE                OR  -f==TRUE\n";
+   cout << "<BUS>                 --bus=<BUS_NUMBER>           OR  -B=<BUS_NUMBER>\n";
+   cout << "<DEVICE>              --device=<DEVICE_NUMBER>     OR  -D=<DEVICE_NUMBER>\n";
+   cout << "<FUNCTION>            --function=<FUNCTION_NUMBER> OR  -F=<FUNCTION_NUMBER>\n";
+   cout << "\n";
 
-   }else if(0 != strcmp("--reconftimeout=", option))  {
-      printf("Invalid option : %s\n", option);
-      flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
-      return 0;
-   }
-   return 0;
 }
-
-
-int aliconigafu_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char *value)
-{
-   struct ALIConfigCommandLine *pcmdline     = (struct ALIConfigCommandLine *)user;
-
-   // Bitstream file name
-   if ( 0 == strcmp("--bitstream", option)) {
-      strncpy(pcmdline->bitstream_file, value, sizeof(pcmdline->bitstream_file));
-      return 0;
-   }
-
-   // Reconfigure  timeout
-   if ( 0 == strcmp("--reconftimeout", option)) {
-      char *endptr = NULL;
-      pcmdline->reconftimeout = strtoul(value, &endptr, 0);
-      return 0;
-   }
-
-   // Reconfigure  action
-   if ( 0 == strcmp("--reconfaction", option)) {
-
-      if ( 0 == strcmp("ACTION_HONOR_OWNER", value)) {
-         pcmdline->reconfAction =AALCONF_RECONF_ACTION_HONOR_OWNER_ID;
-      } else  {
-      // Default
-         pcmdline->reconfAction =AALCONF_RECONF_ACTION_HONOR_REQUEST_ID;
-      }
-      return 0;
-   }
-
-   // Reactive disabled
-   if ( 0 == strcmp("--reactivateDisabled", option)) {
-
-      if ( 0 == strcmp("TRUE", value))  {
-         pcmdline->reactivateDisabled =true;
-      } else {
-      // Default
-         pcmdline->reactivateDisabled =false;
-      }
-      return 0;
-   }
-
-   //Bus Number
-   if ( 0 == strcmp("--bus", option)) {
-    char *endptr = NULL;
-    pcmdline->bus = strtoul(value, &endptr, 0);
-    flag_setf(pcmdline->flags, ALICONIFG_CMD_FLAG_BUS);
-  }
-
-   //Device Number
-   if ( 0 == strcmp("--device", option)) {
-	   char *endptr = NULL;
-	   pcmdline->device = strtoul(value, &endptr, 0);
-	   flag_setf(pcmdline->flags, ALICONIFG_CMD_FLAG_DEV);
-   }
-   //Function Number
-   if ( 0 == strcmp("--function", option)) {
-	  char *endptr = NULL;
-	  pcmdline->function = strtoul(value, &endptr, 0);
-	  flag_setf(pcmdline->flags, ALICONIFG_CMD_FLAG_FUNC);
-	}
-
-   //Force programming
-   if ( 0 == strcmp("--force", option)) {
-
-      if ( 0 == strcmp("TRUE", value))  {
-         pcmdline->force=true;
-      } else {
-      // Default
-         pcmdline->force=false;
-         printf("Command line option --force= can only be TRUE, but was found to be %s\n", value);
-         printf("\t--force= option being set to false.\n");
-      }
-      return 0;
-   }
-   return 0;
-}
-
-aalclp_option_only  aliconigafu_nix_long_option_only  = { aliconigafu_on_nix_long_option_only,  };
-aalclp_option       aliconigafu_nix_long_option       = { aliconigafu_on_nix_long_option,       };
-aalclp_non_option   aliconigafu_non_option            = { aliconigafu_on_non_option,            };
-aalclp_dash_only    aliconigafu_dash_only             = { aliconigafu_on_dash_only,             };
-aalclp_dash_only    aliconigafu_dash_dash_only        = { aliconigafu_on_dash_dash_only,        };
-
-AALCLP_DECLARE_GCS_COMPLIANT(stdout,
-                             "aliconfafu",
-                             "0",
-                             "",
-                             help_msg_callback,
-                             &configCmdLine)
 
 int ParseCmds(struct ALIConfigCommandLine *pconfigcmd, int argc, char *argv[])
 {
-   int    res;
-   int    clean;
-   aalclp clp;
+   int getopt_ret;
+   int option_index;
+   char *endptr = NULL;
 
-   res = aalclp_init(&clp);
-   if ( 0 != res ) {
-      cerr << "aalclp_init() failed : " << res << ' ' << strerror(res) << endl;
-      return res;
+   while( -1 != ( getopt_ret = getopt_long(argc, argv, GETOPT_STRING, longopts, &option_index))){
+      const char *tmp_optarg = optarg;
+
+      if((optarg) &&
+         ('=' == *tmp_optarg)){
+         ++tmp_optarg;
+      }
+
+      if((!optarg) &&
+         (NULL != argv[optind]) &&
+         ('-' != argv[optind][0]) ) {
+         tmp_optarg = argv[optind++];
+      }
+
+      switch(getopt_ret){
+
+         case 'h':    /* help option */
+            flag_setf(pconfigcmd->flags, ALICONIFG_CMD_FLAG_HELP);
+            AliConfigShowHelp();
+            break;
+
+         case 'b':    /* bitstream option */
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
+            strncpy(pconfigcmd->bitstream_file, tmp_optarg, sizeof(pconfigcmd->bitstream_file));
+            break;
+
+         case 't':    /* reconftimeout option */
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
+            endptr = NULL;
+            pconfigcmd->reconftimeout = strtoul(tmp_optarg, &endptr, 0);
+            break;
+
+         case 'a':    /* reconfAction option */
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
+            if ( 0 == strcasecmp("ACTION_HONOR_OWNER", tmp_optarg) ) {
+               pconfigcmd->reconfAction =AALCONF_RECONF_ACTION_HONOR_OWNER_ID;
+            }else{
+               pconfigcmd->reconfAction =AALCONF_RECONF_ACTION_HONOR_REQUEST_ID;
+            }
+            break;
+
+         case 'd':    /* reactivateDisabled option */
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
+            if ( 0 == strcasecmp("TRUE", tmp_optarg) ) {
+               pconfigcmd->reactivateDisabled =true;
+            } else {
+               pconfigcmd->reactivateDisabled =false;
+            }
+            break;
+
+         case 'f':    /* force option */
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
+            if ( 0 == strcasecmp("TRUE", tmp_optarg) ) {
+               pconfigcmd->force =true;
+            } else {
+               pconfigcmd->force =false;
+               cout << "Command line option --force= can only be TRUE, but was found to be " << tmp_optarg << endl;
+               cout << "\t--force= option being set to false.\n";
+            }
+            break;
+
+         case 'B':    /* bus option */
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
+            endptr = NULL;
+            pconfigcmd->bus = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(pconfigcmd->flags, ALICONIFG_CMD_FLAG_BUS);
+            break;
+
+         case 'D':    /* device option */
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
+            endptr = NULL;
+            pconfigcmd->device = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(pconfigcmd->flags, ALICONIFG_CMD_FLAG_DEV);
+            break;
+
+         case 'F':    /* function option */
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
+            endptr = NULL;
+            pconfigcmd->function = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(pconfigcmd->flags, ALICONIFG_CMD_FLAG_FUNC);
+            break;
+
+         case ':':   /* missing option argument */
+            cout << "Missing option argument.\n";
+            return CMD_PARSE_ERR;
+
+         case '?':
+         default:    /* invalid option */
+            cout << "Invalid cmdline options.\n";
+            return CMD_PARSE_ERR;
+      }
    }
-
-   aliconigafu_nix_long_option_only.user = pconfigcmd;
-   aalclp_add_nix_long_option_only(&clp, &aliconigafu_nix_long_option_only);
-
-   aliconigafu_nix_long_option.user = pconfigcmd;
-   aalclp_add_nix_long_option(&clp, &aliconigafu_nix_long_option);
-
-   aliconigafu_non_option.user = pconfigcmd;
-   aalclp_add_non_option(&clp, &aliconigafu_non_option);
-
-   aliconigafu_dash_only.user             = pconfigcmd;
-   aalclp_add_dash_only(&clp,             &aliconigafu_dash_only);
-
-   aliconigafu_dash_dash_only.user        = pconfigcmd;
-   aalclp_add_dash_dash_only(&clp,        &aliconigafu_dash_dash_only);
-
-   res = aalclp_add_gcs_compliance(&clp);
-   if ( 0 != res ) {
-      cerr << "aalclp_add_gcs_compliance() failed : " << res << ' ' << strerror(res) << endl;
-      goto CLEANUP;
-   }
-
-   res = aalclp_scan_argv(&clp, argc, argv);
-   if ( 0 != res ) {
-      cerr << "aalclp_scan_argv() failed : " << res << ' ' << strerror(res) << endl;
-   }
-
-CLEANUP:
-   clean = aalclp_destroy(&clp);
-   if ( 0 != clean ) {
-      cerr << "aalclp_destroy() failed : " << clean << ' ' << strerror(clean) << endl;
-   }
-
-   return res;
-}
-
-
-void help_msg_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
-{
-   fprintf(fp, "Usage:\n");
-   fprintf(fp, "   aliconfafu [--bitstream=<FILENAME>] [--reconftimeout=<SECONDS>] \n \
-             [--reconfaction=<ACTION_HONOR_REQUEST or ACTION_HONOR_OWNER >] \n \
-             [--reactivateDisabled=< TRUE or FALSE>]\n \
-             [--bus=<BUS_NUMBER>]\n \
-	      [--device=<DEVICE_NUMBER>]\n \
-	      [--function=<FUNCTION_NUMBER>]\n \
-             [--force==TRUE]\n");
-   fprintf(fp, "\n");
-
-}
-
-void showhelp(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
-{
-   help_msg_callback(fp, gcs);
+   return 0;
 }
 
 int verifycmds(struct ALIConfigCommandLine *cl)
@@ -840,7 +780,7 @@ int main(int argc, char *argv[])
 
 
    if ( argc < 2 ) {
-      showhelp(stdout, &_aalclp_gcs_data);
+      AliConfigShowHelp();
       return 1;
    } else if ( 0!= ParseCmds(&configCmdLine, argc, argv) ) {
       cerr << "Error scanning command line." << endl;
