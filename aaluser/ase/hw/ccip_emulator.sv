@@ -814,6 +814,7 @@ module ccip_emulator
 	    @(posedge clk);
 	    cwlp_wrvalid = 0;
 	    cwlp_rdvalid = 0;
+	    @(posedge clk);
 	    mmio_dispatch_lock = 0;
 	    run_clocks (`MMIO_LATENCY);
 	 end // else: !if(initialize)
