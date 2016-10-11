@@ -93,6 +93,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\..\aaluser\include;$(SolutionDir)winbuild\$(Configuration)\$(Platform)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;AALRUNTIME_EXPORTS;AIASERVICE_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;UAIA_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
     </ClCompile>
     <Link>
       <AdditionalDependencies>$(OutDir)libOSAL.lib;$(OutDir)libAAS.lib;$(OutDir)libaalrt.lib;Setupapi.lib;%(AdditionalDependencies)</AdditionalDependencies>

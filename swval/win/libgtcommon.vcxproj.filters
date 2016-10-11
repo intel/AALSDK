@@ -36,6 +36,27 @@
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Stream.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_ClassOverrides.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_DoWorker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_ModuleStub.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_RTAdapter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_RTClientAdapter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_ServiceListener.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_SMocks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon.cpp">
@@ -63,6 +84,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Stream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_RTAdapter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_RTClientAdapter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_SMocks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

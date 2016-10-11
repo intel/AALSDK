@@ -86,9 +86,6 @@
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtAIAService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtHWALIAFU.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtCValue.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

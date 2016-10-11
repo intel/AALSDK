@@ -17,40 +17,40 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="_MessageDelivery.cpp">
+    <ClCompile Include="..\..\aaluser\aas\AALRuntime\rtlib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="_RuntimeImpl.cpp">
+    <ClCompile Include="..\..\aaluser\aas\AALRuntime\Runtime.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="_ServiceBroker.cpp">
+    <ClCompile Include="..\..\aaluser\aas\AALRuntime\ServiceHost.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="rtlib.cpp">
+    <ClCompile Include="..\..\aaluser\aas\AALRuntime\_MessageDelivery.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Runtime.cpp">
+    <ClCompile Include="..\..\aaluser\aas\AALRuntime\_RuntimeImpl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ServiceHost.cpp">
+    <ClCompile Include="..\..\aaluser\aas\AALRuntime\_ServiceBroker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="_MessageDelivery.h">
+    <ClInclude Include="..\..\aaluser\include\aalsdk\aas\IServiceBroker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="_RuntimeImpl.h">
+    <ClInclude Include="..\..\aaluser\include\aalsdk\aas\ServiceHost.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="_ServiceBroker.h">
+    <ClInclude Include="..\..\aaluser\aas\AALRuntime\_MessageDelivery.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\aalsdk\aas\ServiceHost.h">
-      <Filter>Header Files\aalsdk\aas</Filter>
+    <ClInclude Include="..\..\aaluser\aas\AALRuntime\_RuntimeImpl.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\aalsdk\aas\IServiceBroker.h">
-      <Filter>Header Files\aalsdk\aas</Filter>
+    <ClInclude Include="..\..\aaluser\aas\AALRuntime\_ServiceBroker.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

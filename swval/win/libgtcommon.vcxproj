@@ -25,18 +25,28 @@
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_GTest.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Mocks.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_RNG.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_RTAdapter.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_RTClientAdapter.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Signals.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_SMocks.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Status.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Stream.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon.h" />
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_ClassOverrides.h" />
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Config.h" />
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Console.h" />
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_DoWorker.h" />
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_GTest.h" />
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Mocks.h" />
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_ModuleStub.h" />
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_RNG.h" />
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_RTAdapter.h" />
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_RTClientAdapter.h" />
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_ServiceListener.h" />
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Signals.h" />
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_SMocks.h" />
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Status.h" />
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Stream.h" />
   </ItemGroup>

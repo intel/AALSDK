@@ -30,7 +30,6 @@
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtDispatchables.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtDynLinkLibrary.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtEnvVar.cpp" />
-    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtHWALIAFU.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtMDS.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtNVS0.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtNVS1.cpp" />
