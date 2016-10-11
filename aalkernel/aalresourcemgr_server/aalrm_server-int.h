@@ -266,7 +266,7 @@ static inline struct rms_reqq_reqdev *
 //=============================================================================
 static inline void rms_reqq_reqdev_destroy(struct rms_reqq_reqdev *This)
 {
-   kfree(This);
+   kosal_kfree(This, sizeof(struct rms_reqq_reqdev));
 }
 
 
@@ -332,7 +332,7 @@ static inline struct rms_reqq_registrar *
 //=============================================================================
 static inline void rms_reqq_regreq_destroy(struct rms_reqq_registrar *This)
 {
-   kfree(This);
+   kosal_kfree(This, sizeof(struct rms_reqq_registrar));
 }
 
 //------------------------------------------------------------------------------
@@ -394,8 +394,8 @@ static inline struct rms_reqq_config_update_event *
 //=============================================================================
 static inline void rms_reqq_config_update_event_destroy(struct rms_reqq_config_update_event *This)
 {
-   kfree(This->m_pupdateEvt);
-   kfree(This);
+   kosal_kfree(This->m_pupdateEvt, sizeof(struct aalrms_configUpDateEvent));
+   kosal_kfree(This, sizeof(struct rms_reqq_config_update_event));
 }
 
 
@@ -452,7 +452,7 @@ static inline struct rms_reqq_Shutdown *
 //=============================================================================
 static inline void rms_reqq_Shutdown_destroy(struct rms_reqq_Shutdown *This)
 {
-   kfree(This);
+   kosal_kfree(This, sizeof(struct rms_reqq_Shutdown));
 }
 
 

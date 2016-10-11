@@ -173,7 +173,7 @@ aalrm_server_close (struct inode *inode, struct file *file)
 
    // Unregister the interface with the AALBus Service Interface Broker
    rms_sess_to_rms_server(session).unregister_sess(&session->m_sessq);
-   kfree(session);
+   kosal_kfree(session, sizeof(struct aalrm_server_session));
    DPRINTF(AALRMS_DBG_FILE, ": CLOSE Exited\n");
    return ret;
 }

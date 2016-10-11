@@ -701,7 +701,7 @@ ERR:
    }
 
    if ( NULL != pccipdev ) {
-      kfree(pccipdev);
+      kosal_kfree(pccipdev, sizeof(struct ccip_device));
    }
 
    PTRACEOUT_INT(res);
@@ -1052,7 +1052,7 @@ ERR:
    }
 
    if ( NULL != pccipdev ) {
-         kfree(pccipdev);
+         kosal_kfree(pccipdev, sizeof(struct ccip_device));
    }
 }
 

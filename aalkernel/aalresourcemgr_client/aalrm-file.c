@@ -203,7 +203,7 @@ btInt aalrm_close (struct inode *inode, struct file *file)
 
    // remove the session from the RMC queue
    rmssess_to_rmcsrv(psess).unregister_sess(&psess->m_sessq);
-   kfree(psess);
+   kosal_kfree(psess, sizeof(struct aalresmgr_session));
    DPRINTF(AALRMC_DBG_FILE, ": RM-CLOSE Exited\n");
    return ret;
 }

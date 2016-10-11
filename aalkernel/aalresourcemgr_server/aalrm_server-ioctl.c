@@ -330,7 +330,7 @@ int aalrms_process_message( struct aalrm_server_session *psess,
          // User should have passed the payload buffer size.  Do not exceed buffer
          if(preq->size < QI_LEN(pqitem)){
             // TODO SHOULD SEND A FAILURE RESOPONSE TO REQUESTOR NOT DELETE MYSELF AND REMOVE FROM PENDING
-            kfree(u.preqdev->m_reqdev); rms_reqq_reqdev_destroy(u.preqdev);
+            kosal_kfree(u.preqdev->m_reqdev, sizeof(struct req_allocdev)); rms_reqq_reqdev_destroy(u.preqdev);
             DPRINTF(AALRMS_DBG_IOCTL, ": DEBUG FREEING THE QITEM AND ITEM ITSELF\n");
             ret = -EINVAL;
             goto done;
@@ -661,7 +661,7 @@ int aalrms_process_sendresponse(struct aalrm_server_session *psess,
             //Copy the payload
             if (copy_from_user(&pregresp->buf, preq->payload, preq->size)) {
                DPRINTF(AALRMS_DBG_IOCTL, ": CMD - Copy failed\n");
-               kfree(pregresp);
+               kosal_kfree(pregresp, (preq->size + REGISTRAR_REQ_HDRSZ));
                ret = -EFAULT;
                goto done;
             }
@@ -674,7 +674,7 @@ int aalrms_process_sendresponse(struct aalrm_server_session *psess,
                                     RMSSQ_TRANID(u.pregreq));
 
          // Free the copy of the response
-         kfree(pregresp);
+         kosal_kfree(pregresp, (preq->size + REGISTRAR_REQ_HDRSZ));
 
          //Destroy original request message
          rms_reqq_regreq_destroy(u.pregreq);
@@ -720,7 +720,7 @@ int aalrms_process_sendresponse(struct aalrm_server_session *psess,
             DPRINTF(AALRMS_DBG_IOCTL, ": Copying payload %p[%d]\n",preq->payload,(int)presresp->size);
             if (copy_from_user(&presresp->buf, preq->payload, preq->size)) {
                DPRINTF(AALRMS_DBG_IOCTL, ": CMD - Copy failed\n");
-               kfree(presresp);
+               kosal_kfree(presresp, (preq->size + REQDEVICE_RSP_HDRSZ));
                ret = -EFAULT;
                goto done;
             }
@@ -736,7 +736,7 @@ int aalrms_process_sendresponse(struct aalrm_server_session *psess,
          rms_reqq_reqdev_destroy(u.preqdev);
 
          // Destroy the response
-         kfree(presresp);
+         kosal_kfree(presresp, (preq->size + REQDEVICE_RSP_HDRSZ));
          
          break;
       } // rspid_URMS_RequestDevice

@@ -129,7 +129,7 @@ static inline struct rms_event_devreq_cmplt *
 //=============================================================================
 static inline void rms_event_devreq_cmplt_destroy(struct rms_event_devreq_cmplt *This)
 {
-   kfree(This);
+   kosal_kfree(This, sizeof(struct rms_event_devreq_cmplt));
 }
 
 

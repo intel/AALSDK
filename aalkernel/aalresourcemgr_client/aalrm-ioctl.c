@@ -141,7 +141,7 @@ void aalrm_reqdev_cmplt( btInt errno,
       DPRINTF (AALRMC_DBG_IOCTL, ": Request device Cancelled.\n");
 
       // No longer need the original request
-      kfree(origreq);
+      kosal_kfree(origreq, sizeof(struct req_allocdev));
       return;
    }
 
@@ -186,7 +186,7 @@ void aalrm_reqdev_cmplt( btInt errno,
    wake_up_interruptible (&psess->m_waitq);
 
    // No longer need the original request
-   kfree(origreq);
+   kosal_kfree(origreq, sizeof(struct req_allocdev));
 }
 
 
@@ -218,7 +218,7 @@ void aalrm_registar_cmplt(btInt errno,
       DPRINTF (AALRMC_DBG_IOCTL, ": Request device Cancelled.\n");
 
       // No longer need the original request
-      kfree(origreq);
+      kosal_kfree(origreq, sizeof(struct req_registrar));
       return;
    }
 
@@ -232,7 +232,7 @@ void aalrm_registar_cmplt(btInt errno,
    wake_up_interruptible (&psess->m_waitq);
 
    // No longer need the original request
-   kfree(origreq);
+   kosal_kfree(origreq, sizeof(struct req_registrar));
 }
 
 
@@ -466,7 +466,7 @@ btInt aalrm_processmsg(struct aalrm_ioctlreq    *preq,
       case reqid_RS_Registrar:{
          // Allocate the message -
          // Note the message will be freed when the completion event is returned
-         req.preqreg = kmalloc((preq->size + REGISTRAR_REQ_HDRSZ), GFP_KERNEL);
+         req.preqreg = kosal_kmalloc((preq->size + REGISTRAR_REQ_HDRSZ));
          if(req.preqreg == NULL){
             DPRINTF (AALRMC_DBG_IOCTL, ": CMD - reqid_Registrar failed kmalloc\n");
             return -ENOMEM;
@@ -478,7 +478,7 @@ btInt aalrm_processmsg(struct aalrm_ioctlreq    *preq,
 
          if(copy_from_user (&req.preqreg->buf, preq->payload, preq->size)){
             DPRINTF (AALRMC_DBG_IOCTL, ": CMD - Copy failed\n");
-            kfree(req.preqreg);
+            kosal_kfree(req.preqreg, (preq->size + REGISTRAR_REQ_HDRSZ));
             return -EFAULT;
          }
          //--------------------------------------------------------------
@@ -506,7 +506,7 @@ btInt aalrm_processmsg(struct aalrm_ioctlreq    *preq,
       case reqid_URMS_RequestDevice:  {
          // Allocate the message -
          // Note the message will be freed when the compeletion event is returned
-         pallocmsg = kmalloc((preq->size + ALLOC_DEVHDRSZ), GFP_KERNEL);
+         pallocmsg = kosal_kmalloc((preq->size + ALLOC_DEVHDRSZ));
          if(pallocmsg == NULL){
             DPRINTF (AALRMC_DBG_IOCTL, ": CMD - AALRM_IOCTL_REQDEV failed kmalloc\n");
             return -ENOMEM;
@@ -518,7 +518,7 @@ btInt aalrm_processmsg(struct aalrm_ioctlreq    *preq,
          if( preq->size != 0 ){
             if(copy_from_user (&pallocmsg->buf, preq->payload, preq->size)){
                DPRINTF (AALRMC_DBG_IOCTL, ": CMD - Copy failed\n");
-               kfree(pallocmsg);
+               kosal_kfree(pallocmsg, (preq->size + ALLOC_DEVHDRSZ));
                return -EFAULT;
             }
          }

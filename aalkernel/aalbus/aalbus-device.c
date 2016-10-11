@@ -128,7 +128,7 @@ aaldev_destroy_device(struct aal_device *devp)
       }
       list_del(&devp->m_alloc_list);
       kosal_sem_put(&aal_bus_type_p->alloc_list_sem);
-      kfree(devp);
+      kosal_kfree(devp, sizeof(struct aal_device));
       retval = 1;
       DPRINTF(AALBUS_DBG_MOD, "device %p destroyed\n", devp);
    } else {
@@ -235,7 +235,7 @@ aaldev_create_device(struct mafu_CreateAFU *pRequest,
    aal_bus_p = aalbus_get_bus();
    if (NULL == aal_bus_p) {
       DPRINTF(AALBUS_DBG_MOD, " aalbus_get_bus failed\n");
-      kfree(paaldevice);
+      kosal_kfree(paaldevice, sizeof(struct aal_device));
       return NULL;
    }
    aal_bus_type_p = kosal_container_of(aal_bus_p, struct aal_bus_type, m_bus);
@@ -245,7 +245,7 @@ aaldev_create_device(struct mafu_CreateAFU *pRequest,
    status = kosal_sem_get_user_alertable(&aal_bus_type_p->alloc_list_sem);
    if (0 != status) {
       DPRINTF(AALBUS_DBG_MOD, " Failed to acquire allocate list semaphore\n");
-      kfree(paaldevice);
+      kosal_kfree(paaldevice, sizeof(struct aal_device));
       return NULL;
    } else {
       list_add(&paaldevice->m_alloc_list, &aal_bus_type_p->alloc_list_head);
@@ -319,7 +319,7 @@ aaldev_create_device(struct mafu_CreateAFU *pRequest,
       } else {
          list_del(&paaldevice->m_alloc_list);
          kosal_sem_put(&aal_bus_type_p->alloc_list_sem);
-         kfree(paaldevice);
+         kosal_kfree(paaldevice, sizeof(struct aal_device));
       }
       return NULL;
    }
@@ -534,7 +534,7 @@ aaldev_removeOwner(struct aal_device *pdev, btPID pid)
    list_del_init(&pown->m_ownerlist);
 
    // done list update
-   kfree(pown);
+   kosal_kfree(pown, sizeof(struct aaldev_owner));
 
    // Decrement number of owners
    pdev->m_numowners--;

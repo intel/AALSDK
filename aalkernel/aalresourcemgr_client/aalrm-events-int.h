@@ -165,7 +165,7 @@ reqdev_cmplt_create( struct rsp_device   *pretdev,
 //=============================================================================
 static inline void reqdev_cmplt_destroy(struct reqdev_cmplt *This)
 {
-   kfree(This);
+   kosal_kfree(This, sizeof(struct reqdev_cmplt));
 }
 
 
@@ -177,7 +177,7 @@ static inline struct registrarreq_cmplt *
                           registrar_cmplt_create(int errno,
                                                  struct req_registrar *resp)
 {
-   struct registrarreq_cmplt * This = kmalloc(sizeof(struct registrarreq_cmplt),GFP_KERNEL);
+   struct registrarreq_cmplt * This = kosal_kmalloc(sizeof(struct registrarreq_cmplt));
    if(This == NULL){
       return NULL;
    }
@@ -201,7 +201,7 @@ static inline struct registrarreq_cmplt *
 static inline void registrar_cmplt_destroy(struct registrarreq_cmplt *This)
 {
 
-   kfree(This);
+   kosal_kfree(This, sizeof(struct registrarreq_cmplt));
 }
 
 
@@ -212,7 +212,7 @@ static inline void registrar_cmplt_destroy(struct registrarreq_cmplt *This)
 static inline struct shutdownreq_cmplt *
                           shutdown_cmplt_create(int errno)
 {
-   struct shutdownreq_cmplt * This = kmalloc(sizeof(struct shutdownreq_cmplt),GFP_KERNEL);
+   struct shutdownreq_cmplt * This = kosal_kmalloc(sizeof(struct shutdownreq_cmplt));
    if(This == NULL){
       return NULL;
    }
@@ -234,7 +234,7 @@ static inline struct shutdownreq_cmplt *
 //=============================================================================
 static inline void shutdown_cmplt_destroy(struct shutdownreq_cmplt *This)
 {
-   kfree(This);
+   kosal_kfree(This, sizeof(struct shutdownreq_cmplt));
 }
 
 
