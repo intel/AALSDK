@@ -73,3 +73,8 @@ vc_hdrs.h
 # Mac cruft
 .DS_Store
 
+cscope.in.out
+cscope.out
+cscope.po.out
+*.tags
+*.tags_sorted_by_file
