@@ -89,8 +89,8 @@ using namespace AAL;
 
 struct option longopts[] = {
       {"help",                no_argument,       NULL, 'h'},
-      {"clear",               optional_argument, NULL, 'c'},
-      {"Clear",               optional_argument, NULL, 'C'},
+      {"clear",               no_argument,       NULL, 'c'},
+      {"Clear",               no_argument,       NULL, 'C'},
       {"bus-number",          required_argument, NULL, 'B'},
       {"device-number",       required_argument, NULL, 'D'},
       {"function-number",     required_argument, NULL, 'F'},
