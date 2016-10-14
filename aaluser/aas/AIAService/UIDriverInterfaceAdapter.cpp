@@ -531,6 +531,33 @@ btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
       return false;
    }
 
+   // Determine which low-level command should be used to send down the stack
+   switch ( pMessage->getMsgID() ) {
+
+      case reqid_UID_Bind:
+      case reqid_UID_ExtendedBindInfo:
+      case reqid_UID_UnBind:
+         cmd = AALUID_IOCTL_BINDDEV;
+         break;
+
+      case reqid_UID_Activate:
+         cmd = AALUID_IOCTL_ACTIVATEDEV;
+         break;
+
+      case reqid_UID_Deactivate:
+         cmd = AALUID_IOCTL_DEACTIVATEDEV;
+         break;
+
+      case reqid_UID_SendAFU:
+      case reqid_UID_Shutdown:
+         cmd = AALUID_IOCTL_SENDMSG;
+         break;
+      default:
+         std::cerr << "UIDRV: Unknown command class" << std::endl;
+         return false;
+         break;
+   }
+
    // Build the low level message
    struct ccipui_ioctlreq *reqp = reinterpret_cast<struct ccipui_ioctlreq *> (new char[ sizeof(struct ccipui_ioctlreq) + pMessage->getPayloadSize() ]);
 
@@ -541,33 +568,6 @@ btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
    reqp->size = pMessage->getPayloadSize();
 
    memcpy(aalui_ioctlPayload(reqp), pMessage->getPayloadPtr(), pMessage->getPayloadSize());
-
-   // Determine which low-level command should be used to send down the stack
-   switch ( pMessage->getMsgID() ) {
-
-    case reqid_UID_Bind:
-    case reqid_UID_ExtendedBindInfo:
-    case reqid_UID_UnBind:
-       cmd = AALUID_IOCTL_BINDDEV;
-       break;
-
-    case reqid_UID_Activate:
-       cmd = AALUID_IOCTL_ACTIVATEDEV;
-       break;
-
-    case reqid_UID_Deactivate:
-       cmd = AALUID_IOCTL_DEACTIVATEDEV;
-       break;
-
-    case reqid_UID_SendAFU:
-    case reqid_UID_Shutdown:
-       cmd = AALUID_IOCTL_SENDMSG;
-       break;
-     default:
-       std::cerr << "UIDRV: Unknown command class" << std::endl;
-       return false;
-       break;
-    }
 
 
 #if   defined( __AAL_WINDOWS__ )
@@ -608,6 +608,7 @@ btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
    }
 #endif // OS
 
+   delete [] reqp;
    return true;
 }  // UIDriverInterfaceAdapter::SendMessage
 
