@@ -69,9 +69,22 @@
 
 #define CCI_SIM_APERTURE_SIZE     (  0x120000  )       /// Size of device CSR region, in bytes
 
-// Using NLB AFU ID
-#define CCI_SIM_AFUIDH            ( 0xC000C9660D824272L )
-#define CCI_SIM_AFUIDL            ( 0x9AEFFE5F84570612L )
+// Using NLB AFU ID for Mode 0 NLB
+#ifndef BDX_SIM
+   #define BDX_SIM 0
+#endif
+#ifndef SKX_SIM
+   #define SKX_SIM 1
+#endif
+
+// FWIW, I think the High and Low are reversed, here.
+#if BDX_SIM
+   #define CCI_SIM_AFUIDH         ( 0xC000C9660D824272L )
+   #define CCI_SIM_AFUIDL         ( 0x9AEFFE5F84570612L )
+#elif SKX_SIM
+   #define CCI_SIM_AFUIDH         ( 0xD8424DC4A4A3C413L )
+   #define CCI_SIM_AFUIDL         ( 0xF89E433683F9040BL )
+#endif /* BDX */
 
 #define CCI_SIM_MAFUIDH           ( 0x6d0b2b05111c460eL )
 #define CCI_SIM_MAFUIDL           ( 0xaaf163c9f423dc1dL )
