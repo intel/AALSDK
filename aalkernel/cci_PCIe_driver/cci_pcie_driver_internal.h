@@ -94,6 +94,8 @@
 #define PCIe_DEVICE_ID_RCiEP2        0xBCBC ///< QPI or UPI EPt
 #define PCIe_DEVICE_ID_RCiEP0_SKX_P  0xBCC0 ///< Primary PF device on SKX-P
 #define PCIe_DEVICE_ID_VF_SKX_P      0xBCC1 ///< VF device on SKX-P
+#define PCIe_DEVICE_ID_RCiEP0_DCP    0x09C4 ///< Primary PF device on DCP
+#define PCIe_DEVICE_ID_VF_DCP        0x09C5 ///< VF device for DCP
 
 //=============================================================================
 // Prototypes

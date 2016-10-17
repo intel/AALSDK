@@ -258,6 +258,8 @@ static struct pci_device_id cci_pcie_id_tbl[] = {
    { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP2),          .driver_data = (kernel_ulong_t)0 },
    { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP0_SKX_P),    .driver_data = (kernel_ulong_t)cci_enumerate_device },
    { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_VF_SKX_P),        .driver_data = (kernel_ulong_t)cci_enumerate_vf_device },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP0_DCP),      .driver_data = (kernel_ulong_t)cci_enumerate_device },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_VF_DCP),          .driver_data = (kernel_ulong_t)cci_enumerate_vf_device },
    { 0, }
 };
 CASSERT(sizeof(void *) == sizeof(kernel_ulong_t));
@@ -851,10 +853,13 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       ccip_dev_pcie_socketnum(pccipdev) = ccip_dev_to_fme_dev(pccipdev)->m_pHDR->fab_capability.socket_id ;
       PINFO(" Socket Num = %x   \n",ccip_dev_pcie_socketnum(pccipdev));
 
-      // Checking for PCIe0,PCIe1,UPI link status
-      if(!ccip_links_status(ccip_dev_to_fme_dev(pccipdev))){
-         PERR(" FPGA Interface links are not up \n");
-         goto ERR;
+      //disable the link status check for DCP because it is currently BDX based
+      if(pcidevid->device != PCIe_DEVICE_ID_RCiEP0_DCP) {
+         // Checking for PCIe0,PCIe1,UPI link status
+         if(!ccip_links_status(ccip_dev_to_fme_dev(pccipdev))){
+            PERR(" FPGA Interface links are not up \n");
+            goto ERR;
+         }
       }
 
       // Save the PCI device in the FME object
