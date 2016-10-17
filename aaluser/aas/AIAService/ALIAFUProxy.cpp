@@ -121,7 +121,8 @@ btBool ALIAFUProxy::init( IBase *pclientBase,
    // Bind to device and report when we get Bind complete AFU Event,
    //  The first argument to the bind transaction is the Owner (i.e., ProxyClient). This is where
    //  all HW messages will be sent by default.
-   m_pAIA->SendMessage(m_devHandle, new BindAFUDevice(m_pClient, rtid), dynamic_cast<IAFUProxyClient*>(this) );
+   BindAFUDevice DeviceMessage(m_pClient, rtid);
+   m_pAIA->SendMessage(m_devHandle, &DeviceMessage, dynamic_cast<IAFUProxyClient*>(this) );
 
    return true;
 }
