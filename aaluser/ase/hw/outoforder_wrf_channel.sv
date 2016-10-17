@@ -154,7 +154,19 @@ module outoforder_wrf_channel
    /*
     * Optional tracking log - enabled by ASE_DEBUG
     */
+`ifdef ASE_PROFILE
+   // Distribution histogram counters
+   int histogram_stats[`ASE_MAX_LATENCY];
+   initial begin
+      // Initialize histogram counters
+      for(int ii=0; ii<`ASE_MAX_LATENCY; ii = ii + 1) begin
+	 histogram_stats[ii] = 0;
+      end
+   end   
+`endif   
+   
 `ifdef ASE_DEBUG
+   // Internal logger fd
    int 				       log_fd;
    initial begin
       log_fd = $fopen( DEBUG_LOGNAME, "w");
@@ -345,16 +357,16 @@ module outoforder_wrf_channel
    // Transaction storage
    typedef struct
 		  {
-		     TxHdr_t                     hdr  [0:LATBUF_MAX_TXN-1]; // in
-		     logic [CCIP_DATA_WIDTH-1:0] data [0:LATBUF_MAX_TXN-1]; // in
-		     logic [LATBUF_TID_WIDTH-1:0] tid  [0:LATBUF_MAX_TXN-1]; // in
+		     TxHdr_t                        hdr  [0:LATBUF_MAX_TXN-1]; // in
+		     logic [CCIP_DATA_WIDTH-1:0]    data [0:LATBUF_MAX_TXN-1]; // in
+		     logic [LATBUF_TID_WIDTH-1:0]   tid  [0:LATBUF_MAX_TXN-1]; // in
 		     logic [LATBUF_TIMER_WIDTH-1:0] ctr_out;       // out
 		     int 			    num_items;     // in
-		     logic 			    record_valid;  // out
+		     // logic 			    record_valid;  // out
 		     logic 			    record_ready;  // out
-		     logic 			    record_push;   // in
+		     // logic 			    record_push;   // in
 		     logic 			    record_pop;    // in
-		     latsc_fsmState              state;         // out
+		     latsc_fsmState                 state;         // out
 		  } transact_t;
 
    // Array of stored transactions
@@ -364,11 +376,32 @@ module outoforder_wrf_channel
    logic [0:NUM_WAIT_STATIONS-1] 		    record_vh0_flag_arr;
    logic [0:NUM_WAIT_STATIONS-1] 		    record_vh1_flag_arr;
 
-   logic [0:NUM_WAIT_STATIONS-1] 		    record_pop_arr;
-   logic [0:NUM_WAIT_STATIONS-1] 		    record_push_arr;
+   // logic [0:NUM_WAIT_STATIONS-1] 		    record_pop_arr;
+   // logic [0:NUM_WAIT_STATIONS-1] 		    record_push_arr;
+
+   /*
+    * Busy state management
+    */
+   logic [0:NUM_WAIT_STATIONS-1] 		    latbuf_busy_state;
+
+   // Set Record as busy
+   function void set_latbuf_busy(int slot);
+      begin
+	 latbuf_busy_state[slot] = 1;
+      end
+   endfunction
+
+   // Unset record as available
+   function void unset_latbuf_available(int slot);
+      begin
+	 latbuf_busy_state[slot] = 0;
+      end
+   endfunction
 
 
-   // Infifo, request staging
+   /*
+    * Infifo, request staging
+    */
    always @(posedge clk) begin : infifo_push
       if (write_en) begin
 `ifdef ASE_DEBUG
@@ -387,7 +420,7 @@ module outoforder_wrf_channel
    logic [LATBUF_TID_WIDTH-1:0]  infifo_tid_out;
    logic [CCIP_TX_HDR_WIDTH-1:0] infifo_hdr_out_vec;
    TxHdr_t                       infifo_hdr_out;
-   logic 			 infifo_vld;
+   logic 			 infifo_vld_out;
 
    ccip_vc_t 		  vc_rd_arb;
    ccip_vc_t 		  vc_wr_arb;
@@ -550,7 +583,7 @@ module outoforder_wrf_channel
 	 endcase
 	 // ----------------------------------------------------------------------- //
 	 @(posedge clk);
-	 vc_push = 3'b000;
+	 // vc_push = 3'b000;
       end
    endtask
 `endif
@@ -668,7 +701,7 @@ module outoforder_wrf_channel
 	 end // else: !if(infifo_hdr_out.reqtype == ASE_WRFENCE)
 	 // ----------------------------------------------------------------------- //
 	 @(posedge clk);
-	 vc_push = 3'b000;
+	 // vc_push = 3'b000;
       end
    endtask
 `endif
@@ -689,15 +722,18 @@ module outoforder_wrf_channel
 	       infifo_tid_out <= {LATBUF_TID_WIDTH{1'b0}};
 	       infifo_data_out <= {CCIP_DATA_WIDTH{1'b0}};
 	       infifo_hdr_out <= TxHdr_t'({CCIP_TX_HDR_WIDTH{1'b0}});
+	       infifo_vld_out     <= 0;
 	    end
 	    else if (~some_lane_full && (infifo.size() != 0)) begin
 	       READ_infifo_to_vc_push();
+	       infifo_vld_out     <= 1;
 	    end
 	    else begin
 	       vc_push <= 3'b000;
 	       infifo_tid_out <= {LATBUF_TID_WIDTH{1'b0}};
 	       infifo_data_out <= {CCIP_DATA_WIDTH{1'b0}};
 	       infifo_hdr_out <= TxHdr_t'({CCIP_TX_HDR_WIDTH{1'b0}});
+	       infifo_vld_out     <= 0;
 	    end
 	 end
       end
@@ -712,15 +748,18 @@ module outoforder_wrf_channel
 	       infifo_tid_out <= {LATBUF_TID_WIDTH{1'b0}};
 	       infifo_data_out <= {CCIP_DATA_WIDTH{1'b0}};
 	       infifo_hdr_out <= TxHdr_t'({CCIP_TX_HDR_WIDTH{1'b0}});
+	       infifo_vld_out     <= 0;
 	    end
 	    else if (~some_lane_full && (infifo.size() != 0)) begin
 	       WRITE_infifo_to_vc_push();
+	       infifo_vld_out     <= 1;
 	    end
 	    else begin
 	       vc_push <= 3'b000;
 	       infifo_tid_out <= {LATBUF_TID_WIDTH{1'b0}};
 	       infifo_data_out <= {CCIP_DATA_WIDTH{1'b0}};
 	       infifo_hdr_out <= TxHdr_t'({CCIP_TX_HDR_WIDTH{1'b0}});
+	       infifo_vld_out     <= 0;
 	    end
 	 end
       end
@@ -794,8 +833,8 @@ module outoforder_wrf_channel
 	     find_iter < latbuf_push_ptr + NUM_WAIT_STATIONS;
 	     find_iter = find_iter + 1) begin
 	    ret_free_slot = find_iter % NUM_WAIT_STATIONS;
-   	    if ( (records[ret_free_slot].state == LatSc_Disabled) &&
-	    	 ~records[ret_free_slot].record_valid ) begin
+   	    // if ( (records[ret_free_slot].state == LatSc_Disabled) && ~records[ret_free_slot].record_valid ) begin
+   	    if ( (records[ret_free_slot].state == LatSc_Disabled) && ~latbuf_busy_state[ret_free_slot] ) begin
    	       return ret_free_slot;
    	    end
    	 end
@@ -830,14 +869,15 @@ module outoforder_wrf_channel
 	 // If slot is legal only then proceed
 	 // ------------------------------------------------------ //
 	 if (ptr != LATBUF_SLOT_INVALID) begin
+	    set_latbuf_busy(ptr);
 	    {array_tid, array_data, array_hdr} = array.pop_front();
 	    hdr = TxHdr_t'(array_hdr);
 	    record_len = int'(hdr.len);
 	    records[ptr].hdr[0]       = hdr;
 	    records[ptr].data[0]      = array_data;
 	    records[ptr].tid[0]       = array_tid;
-	    records[ptr].record_push  = 1;
-	    records[ptr].record_valid = 1;
+	    // records[ptr].record_push  = 1;
+	    // records[ptr].record_valid = 1;
 	    records[ptr].num_items    = int'(ASE_1CL);
 	    mcl_write_in_progress     = 0;
  `ifdef ASE_DEBUG
@@ -908,11 +948,12 @@ module outoforder_wrf_channel
 	       // If a VHx transaction
 	       // ------------------------------------------------------ //
 	       if (isVHxRequest(hdr)) begin
+		  set_latbuf_busy(ptr);
 		  records[ptr].hdr[mcl_txn_iter]  = hdr;
 		  records[ptr].data[mcl_txn_iter] = array_data;
 		  records[ptr].tid[mcl_txn_iter]  = array_tid;
-		  records[ptr].record_push     = 1;
-		  records[ptr].record_valid    = 1;
+		  // records[ptr].record_push     = 1;
+		  // records[ptr].record_valid    = 1;
 		  records[ptr].num_items       = record_len;
 		  if (mcl_txn_iter != record_len)
 		    mcl_write_in_progress      = 1;
@@ -930,11 +971,12 @@ module outoforder_wrf_channel
 	       // If a VL0 transaction
 	       // ------------------------------------------------------ //
 	       else begin
+		  set_latbuf_busy(ptr);
 		  records[ptr].hdr[0]       = hdr;
 		  records[ptr].data[0]      = array_data;
 		  records[ptr].tid[0]       = array_tid;
-		  records[ptr].record_push  = 1;
-		  records[ptr].record_valid = 1;
+		  // records[ptr].record_push  = 1;
+		  // records[ptr].record_valid = 1;
 		  records[ptr].num_items    = int'(ASE_1CL);
 		  mcl_write_in_progress     = 0;
  `ifdef ASE_DEBUG
@@ -976,8 +1018,9 @@ module outoforder_wrf_channel
 	       hazpkt_in.valid <= 0;
 	       mcl_write_in_progress <= 0;
 	       for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
-		  records[ii].record_push <= 0;
-		  records[ii].record_valid <= 0;
+		  unset_latbuf_available(ii);
+		  // records[ii].record_push <= 0;
+		  // records[ii].record_valid <= 0;
 	       end
 	    end
 	    else begin
@@ -1031,8 +1074,9 @@ module outoforder_wrf_channel
 	       // -------------------------------------------------- //
 	       for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
 		  if (records[ii].state == LatSc_Countdown) begin
-		     records[ii].record_push <= 0;
-		     records[ii].record_valid <= 0;
+		     unset_latbuf_available(ii);
+		     // records[ii].record_push <= 0;
+		     // records[ii].record_valid <= 0;
 		  end
 	       end
 	    end
@@ -1051,8 +1095,9 @@ module outoforder_wrf_channel
 	       vh1_wrfence_flag <= 0;
 	       mcl_write_in_progress <= 0;
 	       for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
-		  records[ii].record_push <= 0;
-		  records[ii].record_valid <= 0;
+		  unset_latbuf_available(ii);
+		  // records[ii].record_push <= 0;
+		  // records[ii].record_valid <= 0;
 	       end
 	    end
 	    else begin
@@ -1143,8 +1188,9 @@ module outoforder_wrf_channel
 	       // -------------------------------------------------- //
 	       for(int ii = 0 ; ii < NUM_WAIT_STATIONS ; ii = ii + 1) begin
 		  if (records[ii].state == LatSc_Countdown) begin
-		     records[ii].record_push <= 0;
-		     records[ii].record_valid <= 0;
+		     unset_latbuf_available(ii);
+		     // records[ii].record_push <= 0;
+		     // records[ii].record_valid <= 0;
 		  end
 	       end
 	    end // else: !if(rst)
@@ -1172,16 +1218,15 @@ module outoforder_wrf_channel
 	 case (hdr.vc)
 	   VC_VL0:
 	     begin
-		// return $urandom_range(20, 118);
-		delay = get_random_from_range(20, 118);
+		delay = get_random_from_range(`RDWR_VL_LATRANGE);
 	     end
 	   VC_VH0:
 	     begin
-		delay = get_random_from_range(240, 270);
+		delay = get_random_from_range(`RDWR_VH_LATRANGE);
 	     end
 	   VC_VH1:
 	     begin
-		delay = get_random_from_range(240, 270);
+		delay = get_random_from_range(`RDWR_VH_LATRANGE);
 	     end
 	   VC_VA:
 	     begin
@@ -1190,7 +1235,10 @@ module outoforder_wrf_channel
 		$fwrite(log_fd, "%d | *ERROR* => get_delay() must not get VC_VA", $time);
 `endif
 	     end
-	 endcase
+	 endcase // case (hdr.vc)
+`ifdef ASE_PROFILE
+	 histogram_stats[delay] = histogram_stats[delay] + 1;	 
+`endif
 	 return delay;
       end
    endfunction
@@ -1214,7 +1262,9 @@ module outoforder_wrf_channel
 		 LatSc_Disabled:
 		   begin
 		      records[ii].record_ready  <= 0;
-		      if (records[ii].record_push) begin
+		      //if (records[ii].record_push) begin
+		      // if (records[ii].record_valid) begin
+		      if (latbuf_busy_state[ii]) begin
 			 records[ii].ctr_out      <= get_delay(records[ii].hdr[0]);
 			 records[ii].state        <= LatSc_Countdown;
 			 if (records[ii].hdr[0].vc == VC_VL0) begin
@@ -1308,7 +1358,7 @@ module outoforder_wrf_channel
    // Status of unroll (readouts)
    logic [CCIP_RX_HDR_WIDTH-1:0] rxhdr_out_vec;
    logic [CCIP_TX_HDR_WIDTH-1:0] txhdr_out_vec;
-   logic 			 unroll_active;
+   // logic 			 // unroll_active;
 
 
    /*
@@ -1342,11 +1392,11 @@ module outoforder_wrf_channel
       ccip_len_t                  base_len;
       int 			   loop_max;
       begin
-	 unroll_active  = 0;
+	 // unroll_active  = 0;
 	 ptr            = find_next_pop_slot();
 	 latbuf_pop_ptr = ptr;
 	 if (ptr != LATBUF_SLOT_INVALID) begin
-	    unroll_active = 1;
+	    // unroll_active = 1;
 	    base_hdr      = records[ptr].hdr[0];
 	    base_addr     = records[ptr].hdr[0].addr;
 	    base_mdata    = records[ptr].hdr[0].mdata;
@@ -1398,7 +1448,7 @@ module outoforder_wrf_channel
 	    // ----------------------------------------------------- //
 	    // Pop record and deactivate unroll
 	    // ----------------------------------------------------- //
-	    unroll_active = 0;
+	    // unroll_active = 0;
 	    records[ptr].record_pop = 1;
 	    @(posedge clk);
 	 end // if (ptr != LATBUF_SLOT_INVALID)
@@ -1423,11 +1473,11 @@ module outoforder_wrf_channel
       ccip_len_t                  base_len;
       int 			   loop_max;
       begin
-	 unroll_active  = 0;
+	 // unroll_active  = 0;
 	 ptr            = find_next_pop_slot();
 	 latbuf_pop_ptr = ptr;
 	 if (ptr != LATBUF_SLOT_INVALID) begin
-	    unroll_active = 1;
+	    // unroll_active = 1;
 	    base_hdr      = records[ptr].hdr[0];
 	    base_addr     = records[ptr].hdr[0].addr;
 	    base_mdata    = records[ptr].hdr[0].mdata;
@@ -1478,7 +1528,7 @@ module outoforder_wrf_channel
 	    // ----------------------------------------------------- //
 	    // Pop record and deactivate unroll
 	    // ----------------------------------------------------- //
-	    unroll_active = 0;
+	    // unroll_active = 0;
 	    records[ptr].record_pop = 1;
 	    @(posedge clk);
 	 end // if (ptr != LATBUF_SLOT_INVALID)
@@ -1521,7 +1571,7 @@ module outoforder_wrf_channel
 	       vh1_wrfence_deassert <= 0;
 	       latbuf_pop_proc_status	<= 3'b000;
 	       glbl_wrfence_pop_status <= 0;
-	       unroll_active        <= 0;
+	       // unroll_active        <= 0;
 	    end
 	    // empty outfifo on normal transactions
 	    else if (~outfifo_almfull && ~latbuf_empty ) begin
@@ -1557,7 +1607,7 @@ module outoforder_wrf_channel
 	       vh1_wrfence_deassert <= 0;
 	       latbuf_pop_proc_status	<= 3'b000;
 	       glbl_wrfence_pop_status <= 0;
-	       unroll_active        <= 0;
+	       // unroll_active        <= 0;
 	    end
 	    // empty outfifo on normal transactions
 	    else if (~outfifo_almfull && ~latbuf_empty ) begin
@@ -1631,7 +1681,7 @@ module outoforder_wrf_channel
 	       vh1_wrfence_deassert <= 0;
 	       latbuf_pop_proc_status	<= 3'b000;
 	       glbl_wrfence_pop_status <= 0;
-	       unroll_active           <= 0;
+	       // unroll_active           <= 0;
 	    end
 	    // ------------------------------------------------------------------- //-
 	    // Book keeping

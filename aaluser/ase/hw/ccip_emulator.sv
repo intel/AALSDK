@@ -2571,6 +2571,10 @@ module ccip_emulator
    // Flag
    logic       simkill_started = 0;
 
+`ifdef ASE_PROFILE
+   int 	       hist_ch0_fd, hist_ch1_fd;	 
+`endif
+   
    // Simkill progress
    task simkill();
       string print_str;
@@ -2615,12 +2619,30 @@ module ccip_emulator
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display("-------------------------------------------------");
+	 $display("-----------------------------------------------------------------");
 	 $display("cf2as_latbuf_ch0 contents =>");
 	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.check_hdr_array);
 	 $display("cf2as_latbuf_ch1 contents =>");
 	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.check_hdr_array);
-	 $display("-------------------------------------------------");
+	 $display("-----------------------------------------------------------------");
+	 `END_YELLOW_FONTCOLOR;
+`endif
+	 
+	 // Histogram dump generator
+`ifdef ASE_PROFILE
+	 `BEGIN_YELLOW_FONTCOLOR;
+	 $display("Generating Latency distribution histograms... cf2as_latbuf_ch0");
+	 hist_ch0_fd = $fopen("latbuf_ch0.hist.dat", "w");
+	 for(int ii = 0; ii < `ASE_MAX_LATENCY; ii = ii + 1) begin
+	    $fwrite(hist_ch0_fd, "%d\t%d\n", ii, ase_top.ccip_emulator.cf2as_latbuf_ch0.histogram_stats[ii]);
+	 end
+	 $fclose(hist_ch0_fd);
+	 $display("Generating Latency distribution histograms... cf2as_latbuf_ch1");
+	 hist_ch1_fd = $fopen("latbuf_ch1.hist.dat", "w");
+	 for(int ii = 0; ii < `ASE_MAX_LATENCY; ii = ii + 1) begin
+	    $fwrite(hist_ch1_fd, "%d\t%d\n", ii, ase_top.ccip_emulator.cf2as_latbuf_ch1.histogram_stats[ii]);
+	 end
+	 $fclose(hist_ch0_fd);
 	 `END_YELLOW_FONTCOLOR;
 `endif
 	 // Finish command issue

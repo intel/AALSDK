@@ -149,15 +149,20 @@
  * 
  */ 
 `define MMIO_LATENCY                15
-`define RDLINE_S_LATRANGE          8,16
-`define RDLINE_I_LATRANGE          8,16
-`define WRLINE_M_LATRANGE          4,7
-`define WRLINE_I_LATRANGE          4,7
+`define RDLINE_S_LATRANGE          20,118
+`define RDLINE_I_LATRANGE          20,118
+`define WRLINE_M_LATRANGE          20,118
+`define WRLINE_I_LATRANGE          20,118
 `define UMSG_START2HINT_LATRANGE   39,41   // 200 ns
 `define UMSG_HINT2DATA_LATRANGE    41,45   // 220 ns
 `define UMSG_START2DATA_LATRANGE   82,85   // 420 ns
 `define INTR_LATRANGE              10,15
 
-`define LAT_UNDEFINED              50
+`define LAT_UNDEFINED              300
+
+`define RDWR_VL_LATRANGE           20,118
+`define RDWR_VH_LATRANGE           240,270
+
+`define ASE_MAX_LATENCY            300
 
 `endif

@@ -56,7 +56,8 @@ ASE_PROFILE ?= 0
 
 # Coverage settings (lcov in SW and VCS-CM in HW)
 ASE_COVERAGE ?= 0
-COV_DIR=$(ASE_BASEDIR)/coverage/
+COV_DIR = $(ASE_BASEDIR)/coverage/
+COV_TYPES = line+cond+branch+fsm+tgl
 
 # Enable Altera gates library
 GLS_SIM = 1
@@ -170,22 +171,25 @@ ifeq ($(ASE_DEBUG), 1)
 endif
 ## Coverage switches
 ifeq ($(ASE_COVERAGE), 1)
-  SNPS_VCS_OPT+= -cm_dir $(COV_DIR)/vcs_coverage -cm_name ase_cov
-  SNPS_VCS_OPT+= -cm cond+fsm+branch -cm_tgl mda
+  SNPS_VCS_OPT+= -cm_dir $(COV_DIR)/ase_simv -cm_name ase_cov
+  SNPS_VCS_OPT+= -cm $(COV_TYPES) -cm_tgl mda
   SNPS_VCS_OPT+= -cm_hier $(ASEVAL_GIT)/ase_coverage.cfg
 endif
 ## Profile switches
 ifeq ($(ASE_PROFILE), 1)
   SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
-  SNPS_VCS_OPT+= -simprofile +prof
+  SNPS_VCS_OPT+= -simprofile
 endif
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 
 ## Simulation options
 VCS_SIM_OPT = -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
 VCS_SIM_OPT+= -l run.log
-ifeq ($(ASE_PROFILE), 1)
-  VCS_SIM_OPT+= -cm cond+fsm+branch
+ifeq ($(ASE_COVERAGE), 1)
+  VCS_SIM_OPT+= -cm $(COV_TYPES)
+endif
+ifeq ($(ASE_PROFILE), 1) 
+  VCS_SIM_OPT+= -simprofile time
 endif
 VCS_SIM_OPT+= +ntb_random_seed=1234
 
@@ -202,7 +206,8 @@ MENT_VLOG_OPT+= -nologo +librescan -work $(WORK) +define+$(SIMULATOR) -novopt
 MENT_VLOG_OPT+= -dpiheader work/dpiheader.h
 MENT_VLOG_OPT+= +incdir+$(ASE_INCDIR)+$(DUT_INCDIR)+$(WORK)
 MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
-MENT_VLOG_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
+# MENT_VLOG_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
+MENT_VLOG_OPT+= +define+CCIP_IF_V0_1 +define+MPF_PLATFORM_BDX  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
 ifeq ($(ASE_DEBUG), 1)
   MENT_VLOG_OPT+= +define+ASE_DEBUG -hazards
 endif
@@ -500,7 +505,7 @@ ifeq ($(SIMULATOR), VCS)
 	cd $(ASE_WORKDIR) ; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) ; cd -
   ifeq ($(ASE_COVERAGE), 1)
 	cd $(COV_DIR) ; lcov --base-directory $(COV_DIR) --directory $(ASE_WORKDIR) --capture --output-file $(COV_DIR)/sim_coverage.info ; genhtml $(COV_DIR)/sim_coverage.info --output-directory $(COV_DIR)/sim_coverage ; cd -
-	cd $(COV_DIR) ; urg -full64 -dir $(COV_DIR)/vcs_coverage.vdb ; cd -
+	cd $(COV_DIR) ; urg -full64 -dir $(COV_DIR)/ase_simv.vdb ; cd -
   endif
 else
   ifeq ($(SIMULATOR), QUESTA)
@@ -510,6 +515,10 @@ else
 	@echo "#         SIMULATOR=$(SIMULATOR) not supported             #"
 	@echo "############################################################"
   endif
+endif
+## Gnuplot post latency distribution
+ifeq ($(ASE_DEBUG), 1)
+	cd $(ASE_WORKDIR) ; gnuplot $(ASEVAL_GIT)/gp_hist_ch0.cfg ; gnuplot $(ASEVAL_GIT)/gp_hist_ch1.cfg ; cd -
 endif
 
 # Open Wave file
@@ -574,7 +583,7 @@ coverage_gui:
 	chromium-browser  $(COV_DIR)/urgReport/dashboard.html &
 	chromium-browser  $(COV_DIR)/lcov_coverage/index.html &
 	chromium-browser  $(COV_DIR)/profileReport.html &
-	dve -dir $(COV_DIR)/vcs_coverage.vdb/ -full64 &
+	dve -dir $(COV_DIR)/ase_simv.vdb/ -full64 &
 
 # Valgrind run
 valgrind_run:
