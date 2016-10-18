@@ -424,12 +424,12 @@ int main(int argc, char **argv)
 {
 
     // Set up the logger
-// pAALLogger()->AddToMask(LM_ResMgr,LOG_INFO);
+    pAALLogger()->AddToMask(LM_ResMgr,LOG_INFO);
     //pAALLogger()->AddToMask(LM_ResMgr,LOG_DEBUG);
-    pAALLogger()->AddToMask(LM_ResMgr, LOG_VERBOSE);
+    //pAALLogger()->AddToMask(LM_ResMgr, LOG_VERBOSE);
 
 // pAALLogger()->AddToMask(LM_Database,LOG_DEBUG);
-    pAALLogger()->AddToMask(LM_Database, LOG_INFO);
+// pAALLogger()->AddToMask(LM_Database, LOG_INFO);
 
     pAALLogger()->SetLogPID(true);
     pAALLogger()->SetLogTimeStamp(true);
