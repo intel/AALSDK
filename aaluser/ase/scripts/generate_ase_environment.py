@@ -253,42 +253,45 @@ if len(str) != 0:
 # Find ASE HW files ###
 #############################################
 pwd = commands_getoutput("pwd").strip()
-ase_hw_files_str = ""
-ase_hw_files_str = commands_getoutput ("find -L " + pwd + "/hw/ -name *pkg*.v -or -name *pkg*.sv")
-ase_hw_files_str = ase_hw_files_str + commands_getoutput ("find -L " + pwd + "/hw/ -name *.v -or -name *.sv -not -name *pkg*sv -not -name *pkg*v")
-if len(ase_hw_files_str) == 0:
-    ase_functions.begin_red_fontcolor()
-    print("ERROR: ASE files could not be found, please ensure you run this script in the <AALSDK>/ase directory\n")
-    print("ERROR: generate_ase_environment.py script will now exit.\n")
-    ase_functions.end_red_fontcolor()
-    sys.exit(0)
-ase_hw_files_str = ase_hw_files_str.replace("\n", " \\\n\t")
-ase_hw_files_str = ase_hw_files_str[:-1]
-fd.write("ASEHW_FILE_LIST = \\\n\t")
-fd.write(ase_hw_files_str)
-fd.write("\n\n")
+# ase_hw_files_str = ""
+# ase_hw_files_str = commands_getoutput ("find -L " + pwd + "/hw/ -name *pkg*.v -or -name *pkg*.sv")
+# ase_hw_files_str = ase_hw_files_str + commands_getoutput ("find -L " + pwd + "/hw/ -name *.v -or -name *.sv -not -name *pkg*sv -not -name *pkg*v")
+# if len(ase_hw_files_str) == 0:
+#     ase_functions.begin_red_fontcolor()
+#     print("ERROR: ASE files could not be found, please ensure you run this script in the <AALSDK>/ase directory\n")
+#     print("ERROR: generate_ase_environment.py script will now exit.\n")
+#     ase_functions.end_red_fontcolor()
+#     sys.exit(0)
+# ase_hw_files_str = ase_hw_files_str.replace("\n", " \\\n\t")
+# ase_hw_files_str = ase_hw_files_str[:-1]
+# fd.write("ASEHW_FILE_LIST = \\\n\t")
+# fd.write(ase_hw_files_str)
+# fd.write("\n\n")
 
 #################################################################
 # Recursively find and add directory locations for ASE HW files
 #################################################################
-print("")
-print("Finding include directories ... ")
-str = commands_getoutput("find -L " + pwd + "/hw/ -type d")
-str = str.replace("\n", "+")
-if len(str) != 0:
-    print("ASE_INCDIR = " + str)
-    fd.write("ASE_INCDIR = " + str + "\n\n")
+# print("")
+# print("Finding include directories ... ")
+# str = commands_getoutput("find -L " + pwd + "/hw/ -type d")
+# str = str.replace("\n", "+")
+# if len(str) != 0:
+#     print("ASE_INCDIR = " + str)
+#     fd.write("ASE_INCDIR = " + str + "\n\n")
 
 #############################################
 # Find ASE SW files
 #############################################
-ase_sw_files_str = commands_getoutput ("find -L " + pwd + "/sw/ -name *.c ! -name app_backend.c")
-ase_sw_files_str = ase_sw_files_str.replace("\n", " \\\n\t")
-ase_sw_files_str = ase_sw_files_str[:-1]
-fd.write("ASESW_FILE_LIST = \\\n\t")
-fd.write(ase_sw_files_str)
-fd.write("\n\n")
+# ase_sw_files_str = commands_getoutput ("find -L " + pwd + "/sw/ -name *.c ! -name app_backend.c")
+# ase_sw_files_str = ase_sw_files_str.replace("\n", " \\\n\t")
+# ase_sw_files_str = ase_sw_files_str[:-1]
+# fd.write("ASESW_FILE_LIST = \\\n\t")
+# fd.write(ase_sw_files_str)
+# fd.write("\n\n")
 
+#############################################
+# Set up ASE_TOP
+#############################################
 fd.write("ASE_TOP = ase_top")
 fd.write("\n\n")
 

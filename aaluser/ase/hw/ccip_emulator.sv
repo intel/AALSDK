@@ -122,6 +122,10 @@ module ccip_emulator
     */
    logic 			      reset_lockdown = 0;
 
+   // Disable settings
+   logic 			      ase_logger_disable;
+   logic 			      ase_checker_disable;
+
 
    /*
     * Local valid/debug breakout signals
@@ -2408,6 +2412,11 @@ module ccip_emulator
     * - XZ checker
     * - Data hazard warning
     */
+`ifndef ASE_DISABLE_CHECKER
+
+   assign ase_checker_disable = 0;
+
+   // ccip_sniffer instance
    ccip_sniffer ccip_sniffer
      (
       // ----------------------------------------- //
@@ -2430,12 +2439,19 @@ module ccip_emulator
       .cf2as_ch0_realfull ( cf2as_ch0_realfull ),
       .cf2as_ch1_realfull ( cf2as_ch1_realfull )
       );
+`else
+   assign ase_checker_disable = 1;
+`endif
 
 
    /*
     * CCI Logger module
     */
 `ifndef ASE_DISABLE_LOGGER
+
+   assign ase_logger_disable = 0;
+
+   // ccip_logger instance
    ccip_logger
      #(
        .LOGNAME         ("ccip_transactions.tsv")
@@ -2455,6 +2471,8 @@ module ccip_emulator
       .ccip_rx          ( pck_cp2af_sRx        ),
       .ccip_tx          ( pck_af2cp_sTx        )
       );
+`else
+   assign ase_logger_disable = 1;
 `endif //  `ifndef ASE_DISABLE_LOGGER
 
    /*
@@ -2572,9 +2590,9 @@ module ccip_emulator
    logic       simkill_started = 0;
 
 `ifdef ASE_PROFILE
-   int 	       hist_ch0_fd, hist_ch1_fd;	 
+   int 	       hist_ch0_fd, hist_ch1_fd;
 `endif
-   
+
    // Simkill progress
    task simkill();
       string print_str;
@@ -2627,7 +2645,7 @@ module ccip_emulator
 	 $display("-----------------------------------------------------------------");
 	 `END_YELLOW_FONTCOLOR;
 `endif
-	 
+
 	 // Histogram dump generator
 `ifdef ASE_PROFILE
 	 `BEGIN_YELLOW_FONTCOLOR;

@@ -47,6 +47,10 @@ include ase_sources.mk
 # Base directory
 ASE_BASEDIR = $(PWD)
 
+# ASE switches (these tend to increase log sizes)
+ASE_DISABLE_LOGGER ?= 0
+ASE_DISABLE_CHECKER ?= 0
+
 # Enable Altera gates library
 GLS_SIM = 1
 GLS_SAMPLE_LIB = $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
@@ -65,6 +69,39 @@ ASE_WORKDIR = $(ASE_SRCDIR)/$(WORK)
 ASE_CONFIG ?= $(ASE_SRCDIR)/ase.cfg
 ASE_SCRIPT ?= $(ASE_SRCDIR)/ase_regress.sh
 
+#########################################################################
+#                          ASE HW/SW settings                           #
+#########################################################################
+## ASE HW file setup
+ASEHW_FILE_LIST = \
+	$(ASE_SRCDIR)/hw/ccip_if_pkg.sv \
+	$(ASE_SRCDIR)/hw/ase_pkg.sv \
+	$(ASE_SRCDIR)/hw/outoforder_wrf_channel.sv \
+	$(ASE_SRCDIR)/hw/latency_pipe.sv \
+	$(ASE_SRCDIR)/hw/ccip_emulator.sv \
+	$(ASE_SRCDIR)/hw/ase_svfifo.sv \
+	$(ASE_SRCDIR)/hw/ccip_logger.sv \
+	$(ASE_SRCDIR)/hw/ccip_sniffer.sv \
+	$(ASE_SRCDIR)/hw/ase_top.sv \
+
+## ASE HW include directory setup
+ASE_INCDIR = $(ASE_SRCDIR)/hw/+
+
+## ASE SW file setup
+ASESW_FILE_LIST = \
+	$(ASE_SRCDIR)/sw/ase_ops.c \
+	$(ASE_SRCDIR)/sw/ipc_mgmt_ops.c \
+	$(ASE_SRCDIR)/sw/mem_model.c \
+	$(ASE_SRCDIR)/sw/protocol_backend.c \
+	$(ASE_SRCDIR)/sw/tstamp_ops.c \
+	$(ASE_SRCDIR)/sw/mqueue_ops.c \
+	$(ASE_SRCDIR)/sw/error_report.c \
+	$(ASE_SRCDIR)/sw/linked_list_ops.c \
+	$(ASE_SRCDIR)/sw/randomness_control.c \
+
+## ASE top level module
+ASE_TOP = ase_top
+
 
 #########################################################################
 #                          Default options                              #
@@ -79,6 +116,7 @@ MENT_COMMAND = $(shell command -v vsim)
 
 ## C Compiler options
 CC_OPT = -g  -m64 -fPIC -D SIM_SIDE=1 -D SIMULATOR=$(SIMULATOR)
+CC_OPT+= -I $(ASE_SRCDIR)/sw/
 # CC_OPT+= -std=c11
 CC_OPT+= -Wall -fstack-protector-all
 ifeq ($(SIMULATOR), VCS)
@@ -121,7 +159,10 @@ SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+MPF_PLATFORM_BDX  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
 SNPS_VLOGAN_OPT+= +lint=all,noVCDE,noNS,NCEID,CAWM,TFIPC,IPDP,PCWM
 ifeq ($(ASE_DISABLE_LOGGER), 1)
-  SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
+  SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER=1
+endif
+ifeq ($(ASE_DISABLE_CHECKER), 1)
+  SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_CHECKER=1
 endif
 ifeq ($(GLS_SIM), 1)
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
@@ -144,7 +185,8 @@ SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 
 ## Simulation options
 VCS_SIM_OPT = -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
-VCS_SIM_OPT+= -l run.log
+# VCS_SIM_OPT+= -l run.log
+VCS_SIM_OPT+= +ntb_random_seed=1234
 
 
 #########################################################################
@@ -159,7 +201,8 @@ MENT_VLOG_OPT+= -nologo +librescan -work $(WORK) +define+$(SIMULATOR) -novopt
 MENT_VLOG_OPT+= -dpiheader work/dpiheader.h
 MENT_VLOG_OPT+= +incdir+$(ASE_INCDIR)+$(DUT_INCDIR)+$(WORK)
 MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
-MENT_VLOG_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
+# MENT_VLOG_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
+MENT_VLOG_OPT+= +define+CCIP_IF_V0_1 +define+MPF_PLATFORM_BDX  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
 ifeq ($(GLS_SIM), 1)
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
   MENT_VLOG_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
@@ -176,6 +219,7 @@ endif
 # MENT_VSIM_OPT = -64
 MENT_VSIM_OPT+= -c -l run.log -dpioutoftheblue 1 -novopt
 MENT_VSIM_OPT+= -sv_lib $(ASE_SHOBJ_NAME) -do $(ASE_SRCDIR)/vsim_run.tcl
+MENT_VSIM_OPT+= -sv_seed 1234
 # -voptargs="+acc"
 
 
@@ -247,48 +291,57 @@ endif
 
 # Print version number
 header:
-	@echo "############################################################"
-	@echo "#                                                          #"
-	@echo "#       Xeon(R) + FPGA Accelerator Abstraction Layer       #"
-	@echo "#             AFU Simulation Environment (ASE)             #"
-	@echo "#                                                          #"
-	@echo "############################################################"
+	@echo "#################################################################"
+	@echo "#                                                               #"
+	@echo "#         Xeon(R) + FPGA Accelerator Abstraction Layer          #"
+	@echo "#               AFU Simulation Environment (ASE)                #"
+	@echo "#                                                               #"
+	@echo "#################################################################"
 
 
 # Help information
 help: header
-	@echo "#                |                                         #"
-	@echo "#  COMMAND       |   DESCRIPTION                           #"
-	@echo "# -------------------------------------------------------- #"
-	@echo "# make           | Build the HW Model using RTL supplied   #"
-	@echo "#                |                                         #"
-	@echo "# make sim       | Run simulator                           #"
-	@echo "#                | - ASE can be run in one of 4 modes set  #"
-	@echo "#                |   in ase.cfg                            #"
-	@echo "#                | - A regression mode can be enabled by   #"
-	@echo "#                |   writing ASE_MODE = 4 in ase.cfg and   #"
-	@echo "#                |   supplying an ase_regress.sh script    #"
-	@echo "#                |                                         #"
-	@echo "# make wave      | Open the waveform (if created)          #"
-	@echo "#                | To be run after simulation completes    #"
-	@echo "#                |                                         #"
-	@echo "# make clean     | Clean simulation files                  #"
-	@echo "#                |                                         #"
-	@echo "# make distclean | Clean ASE sub-distribution              #"
-	@echo "#                |                                         #"
-	@echo "# ======================================================== #"
-	@echo "# CONFIG         |   DESCRIPTION                           #"
-	@echo "# -------------------------------------------------------- #"
-	@echo "# ASE_CONFIG     | Directly input an ASE configuration     #"
-	@echo "#                |   file path (ase.cfg)                   #"
-	@echo "#                |                                         #"
-	@echo "# ASE_SCRIPT     | Directly input an ASE regression file   #"
-	@echo "#                |   path (ase_regress.sh, for ASE_MODE=4) #"
-	@echo "#                |                                         #"
-	@echo "# SIMULATOR      | Directly input a simulator brand        #"
-	@echo "#                |   (select between 'VCS' or 'QUESTA')    #"
-	@echo "#                                                          #"
-	@echo "############################################################"
+	@echo "#                     |                                         #"
+	@echo "#        COMMAND      |               DESCRIPTION               #"
+	@echo "# --------------------|---------------------------------------- #"
+	@echo "# make                | Build the HW Model using RTL supplied   #"
+	@echo "#                     |                                         #"
+	@echo "# make sim            | Run simulator                           #"
+	@echo "#                     | - ASE can be run in one of 4 modes set  #"
+	@echo "#                     |   in ase.cfg                            #"
+	@echo "#                     | - A regression mode can be enabled by   #"
+	@echo "#                     |   writing ASE_MODE = 4 in ase.cfg and   #"
+	@echo "#                     |   supplying an ase_regress.sh script    #"
+	@echo "#                     |                                         #"
+	@echo "# make wave           | Open the waveform (if created)          #"
+	@echo "#                     | To be run after simulation completes    #"
+	@echo "#                     |                                         #"
+	@echo "# make clean          | Clean simulation files                  #"
+	@echo "#                     |                                         #"
+	@echo "# make distclean      | Clean ASE sub-distribution              #"
+	@echo "#                     |                                         #"
+	@echo "# ====================|======================================== #"
+	@echo "#    Makefile switch  |               DESCRIPTION               #"
+	@echo "# --------------------|---------------------------------------- #"
+	@echo "# ASE_CONFIG          | Directly input an ASE configuration     #"
+	@echo "#                     |   file path (ase.cfg)                   #"
+	@echo "#                     |                                         #"
+	@echo "# ASE_SCRIPT          | Directly input an ASE regression file   #"
+	@echo "#                     |   path (ase_regress.sh, for ASE_MODE=4) #"
+	@echo "#                     |                                         #"
+	@echo "# SIMULATOR           | Directly input a simulator brand        #"
+	@echo "#                     |   (select between 'VCS' or 'QUESTA')    #"
+	@echo "#                     |                                         #"
+	@echo "# ASE_DISABLE_CHECKER | Disable CCI-P protocol checker module   #"
+	@echo "#                     |  (set to '1' might speed up simulation) #"
+	@echo "#                     | **WARNING** => NO warnings on hazards,  #"
+	@echo "#                     |   protocol checks, timeouts will be     #"
+	@echo "#                     |   generated. This option must be ONLY   #"
+	@echo "#                     |   used if the design is already CCI-P   #"
+	@echo "#                     |   compliant and fast simulation of      #"
+	@echo "#                     |   app-specific logic is needed          #"
+	@echo "#                     |                                         #"
+	@echo "#################################################################"
 
 
 ## Build ASE Software objects and shared library ##
@@ -350,6 +403,7 @@ else
   endif
 endif
 
+
 ## Run ASE Simulator ##
 sim: check
 ifeq ($(SIMULATOR), VCS)
@@ -357,12 +411,13 @@ ifeq ($(SIMULATOR), VCS)
 else
   ifeq ($(SIMULATOR), QUESTA)
 	cd $(ASE_WORKDIR) ; vsim $(MENT_VSIM_OPT) +CONFIG=$(ASE_CONFIG) +SCRIPT=$(ASE_SCRIPT) $(ASE_TOP) ; cd -
-  else	
+  else
 	@echo "############################################################"
 	@echo "#         SIMULATOR=$(SIMULATOR) not supported             #"
 	@echo "############################################################"
   endif
 endif
+
 
 # Open Wave file
 wave: check
@@ -380,14 +435,13 @@ endif
 #########################################################################
 clean: header
 	rm -rf work/ *.log *.tsv AN.DB/ || echo "make: Didn't clean up work"
-	rm -rf csrc/ vc_hdrs.h .vlogansetup.* *.vpd
+	rm -rf csrc/ vc_hdrs.h .vlogansetup.* *.vpd app_build/
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
-	rm -rf profile* simprofile* scanbuild/ DVEfiles/ csrc/
+	rm -rf profile* simprofile* scanbuild-app scanbuild-sim DVEfiles/ csrc/
 	rm -rf .ase_* *.o ase_seed.txt warnings.txt
 	rm -rf transcript *.log .ase_ipc_local ase_seed.txt
 	rm -rf vsim.wlf *_smq __hdl_xmr.tab
 
 distclean: header clean
 	./distclean.sh
-
 
