@@ -22,6 +22,7 @@
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Config.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Console.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_DoWorker.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_GTest.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Mocks.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_RNG.cpp" />
@@ -34,6 +35,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon.h" />
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Builder.h" />
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_ClassOverrides.h" />
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Config.h" />
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Console.h" />
@@ -49,6 +51,7 @@
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_SMocks.h" />
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Status.h" />
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Stream.h" />
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_VisitingWorker.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D253BEDB-18B8-412A-A6D9-962C54209B52}</ProjectGuid>

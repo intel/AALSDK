@@ -38,6 +38,7 @@ gtRuntime_Int.cpp \
 gtSem.cpp \
 gtSeqRand.cpp \
 gtSeqRand.h \
+gtSendMessage.cpp \
 gtServiceBase.cpp \
 gtServiceBroker.cpp \
 gtServiceHost.cpp \

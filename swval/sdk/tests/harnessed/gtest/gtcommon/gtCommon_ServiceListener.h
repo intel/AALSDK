@@ -143,7 +143,6 @@ public:
    void OnWorkComplete2(TransactionID const& rTranID)
    {
       MOCKDEBUG(m_Message);
-      //    dynamic_cast<CMockDoWorker*>(m_pServiceBase)->Release(TransactionID(), AAL_INFINITE_WAIT);
       m_pLock->signal();   // Signal semaphore to indicate callback completion.
    }
 

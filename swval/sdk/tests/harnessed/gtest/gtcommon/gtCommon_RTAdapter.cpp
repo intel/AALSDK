@@ -1,7 +1,7 @@
 // INTEL CONFIDENTIAL - For Intel Internal Use Only
 #ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif // HAVE_CONFIG_H
+#include <config.h>
+#endif   // HAVE_CONFIG_H
 #include "gtCommon.h"
 
 /// ===================================================================
@@ -17,57 +17,60 @@ CRuntimeListener::~CRuntimeListener()
 
 void CRuntimeListener::OnRuntimeCreateOrGetProxyFailed(IEvent const& rEvent)
 {
-   MOCKDEBUG("runtime adapter");   // output using the MSG macro when DBGMOCK is defined.
-   // raise(SIGTRAP) for ease of use in command-line debuggers.
+   MOCKDEBUG("runtime adapter");
+
    m_pLock->signal();
 }
 
-void CRuntimeListener::OnRuntimeStarted(IRuntime* pRuntime, const NamedValueSet& rConfigParams)
+void CRuntimeListener::OnRuntimeStarted(IRuntime* pRuntime,
+                                        const NamedValueSet& rConfigParams)
 {
-   MOCKDEBUG("runtime adapter");   // output using the MSG macro when DBGMOCK is defined.
-   // raise(SIGTRAP) for ease of use in command-line debuggers.
+   MOCKDEBUG("runtime adapter");
+
    m_pLock->signal();
 }
 
 void CRuntimeListener::OnRuntimeStopped(IRuntime* pRuntime)
 {
-   MOCKDEBUG("runtime adapter");   // output using the MSG macro when DBGMOCK is defined.
-   // raise(SIGTRAP) for ease of use in command-line debuggers.
+   MOCKDEBUG("runtime adapter");
+
    m_pLock->signal();
 }
 
 void CRuntimeListener::OnRuntimeStartFailed(IEvent const& rEvent)
 {
-   MOCKDEBUG("runtime adapter");   // output using the MSG macro when DBGMOCK is defined.
-   // raise(SIGTRAP) for ease of use in command-line debuggers.
+   MOCKDEBUG("runtime adapter");
+
    m_pLock->signal();
 }
 
 void CRuntimeListener::OnRuntimeStopFailed(IEvent const& rEvent)
 {
-   MOCKDEBUG("runtime adapter");   // output using the MSG macro when DBGMOCK is defined.
-   // raise(SIGTRAP) for ease of use in command-line debuggers.
+   MOCKDEBUG("runtime adapter");
+
    m_pLock->signal();
 }
 
 void CRuntimeListener::OnRuntimeAllocateServiceFailed(IEvent const& rEvent)
 {
-   MOCKDEBUG("runtime adapter");   // output using the MSG macro when DBGMOCK is defined.
-   // raise(SIGTRAP) for ease of use in command-line debuggers.
+   MOCKDEBUG("runtime adapter");
+
    m_pLock->signal();
 }
 
-void CRuntimeListener::OnRuntimeAllocateServiceSucceeded(IBase* pBase, TransactionID const& rTranID)
+void CRuntimeListener::OnRuntimeAllocateServiceSucceeded(IBase* pBase,
+                                                         TransactionID const
+                                                         & rTranID)
 {
-   MOCKDEBUG("runtime adapter");   // output using the MSG macro when DBGMOCK is defined.
-   // raise(SIGTRAP) for ease of use in command-line debuggers.
+   MOCKDEBUG("runtime adapter");
+
    m_pLock->signal();
 }
 
 void CRuntimeListener::OnRuntimeEvent(IEvent const& rEvent)
 {
-   MOCKDEBUG("runtime adapter");   // output using the MSG macro when DBGMOCK is defined.
-   // raise(SIGTRAP) for ease of use in command-line debuggers.
+   MOCKDEBUG("runtime adapter");
+
    m_pLock->signal();
 }
 
@@ -140,17 +143,21 @@ btBool CRuntimeAdapter::IsOK()
 /// @internal     Custom override of allocService so we can use the
 /// custom in-module service factory.
 ///
-void CRuntimeAdapter::allocService(IBase* pServiceClient, NamedValueSet const& rManifest, TransactionID const& rTranID)
+void CRuntimeAdapter::allocService(IBase* pServiceClient,
+                                   NamedValueSet const& rManifest,
+                                   TransactionID const& rTranID)
 {
    InModuleSvcsFact<CMockDoWorker>* pFact = GetServiceFactory();
 
    ASSERT(pFact);
-   IBase* pService = pFact->CreateServiceObject(GetServiceModule(), static_cast<IRuntime*>(this));
+   IBase* pService = pFact->CreateServiceObject(GetServiceModule(),
+                                                static_cast<IRuntime*>(this));
 
    ASSERT(pService);
 
    pFact->InitializeService(pService, pServiceClient, rTranID, rManifest);
 
    ASSERT(pServiceClient);
-   dynamic_ptr<ServiceBase>(iidServiceBase, pService)->init(pServiceClient, rManifest, rTranID);
+   dynamic_ptr<ServiceBase>(iidServiceBase, pService)
+      ->init(pServiceClient, rManifest, rTranID);
 }

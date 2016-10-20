@@ -1,63 +1,8 @@
 // INTEL CONFIDENTIAL - For Intel Internal Use Only
 #ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif // HAVE_CONFIG_H
+#include <config.h>
+#endif   // HAVE_CONFIG_H
 #include "gtCommon.h"
-
-/// ===================================================================
-/// @internal        CMockDoWorker
-///
-
-btBool CMockDoWorker::init(IBase* pClientBase, NamedValueSet const& optArgs, TransactionID const& rtid)
-{
-   m_pWorkClient = dynamic_ptr<IMockWorkClient>(iidMockWorkClient, pClientBase);
-   m_pSvcClient = dynamic_ptr<IServiceClient>(iidServiceClient, pClientBase);
-
-   if(NULL == m_pWorkClient || NULL == m_pSvcClient) {
-      initFailed(new CExceptionTransactionEvent(
-         NULL, rtid, errBadParameter, reasMissingInterface, "Client did not publish IMockWorkClient Interface"));
-      return false;
-   }
-
-   initComplete(rtid);
-   return true;
-}
-
-AALServiceModule* CMockDoWorker::getAALServiceModule() const
-{
-   return GetServiceModule();
-}
-
-IServiceClient* CMockDoWorker::getServiceClient() const
-{
-   return dynamic_cast<IServiceClient*>(m_pSvcClient);
-}
-
-void CMockDoWorker::dispatchWorkFunctor(TransactionID const& rTranID)
-{
-   CMockDispatchable* pDisp = new (std::nothrow) CMockDispatchable(m_pWorkClient, static_cast<IBase*>(this), rTranID);
-
-   ASSERT(pDisp);
-   getRuntime()->schedDispatchable(pDisp);
-}
-
-void CMockDoWorker::dispatchWorkFunctor2(TransactionID const& rTranID)
-{
-   CMockDispatchable2* pDisp = new (std::nothrow) CMockDispatchable2(m_pWorkClient, static_cast<IBase*>(this), rTranID);
-
-   ASSERT(pDisp);
-   getRuntime()->schedDispatchable(pDisp);
-}
-
-btBool CMockDoWorker::Release(TransactionID const& rTranID, btTime timeout)
-{
-   return ServiceBase::Release(rTranID, timeout);
-}
-
-btBool CMockDoWorker::initComplete(TransactionID const& rtid)
-{
-   return ServiceBase::initComplete(rtid);
-}
 
 /// ===================================================================
 /// @internal        CMockDispatchable
@@ -66,7 +11,6 @@ btBool CMockDoWorker::initComplete(TransactionID const& rtid)
 /// @param        pMockDoWorker    The mock do worker
 /// @param        rTranID          The r tran id
 ///
-
 CMockDispatchable::CMockDispatchable(IMockWorkClient* pClient, IBase* pMockDoWorker, TransactionID const& rTranID)
    : m_pWorkClient(pClient)
    , m_pService(pMockDoWorker)
@@ -77,24 +21,8 @@ CMockDispatchable::CMockDispatchable(IMockWorkClient* pClient, IBase* pMockDoWor
 void CMockDispatchable::operator()()
 {
    ASSERT(NULL != m_pWorkClient);
-   if (NULL != m_pWorkClient) {
+   if(NULL != m_pWorkClient) {
       m_pWorkClient->workComplete(m_TranID);
-   }
-   delete this;
-}
-
-CMockDispatchable2::CMockDispatchable2(IMockWorkClient* pClient, IBase* pMockDoWorker, TransactionID const& rTranID)
-   : m_pWorkClient(pClient)
-   , m_pService(pMockDoWorker)
-   , m_TranID(rTranID)
-{
-}
-
-void CMockDispatchable2::operator()()
-{
-   ASSERT(NULL != m_pWorkClient);
-   if (NULL != m_pWorkClient) {
-      m_pWorkClient->workComplete2(m_TranID);
    }
    delete this;
 }
@@ -110,7 +38,6 @@ void CMockDispatchable2::operator()()
 /// creation and load-library code, allowing us to test without relying
 /// on a separate binary.
 ///
-
 int CMockWorkClient::aquireServiceResource()
 {
    NamedValueSet Manifest;
@@ -163,9 +90,4 @@ void CMockWorkClient::serviceEvent(const IEvent& rEvent)
 void CMockWorkClient::workComplete(TransactionID const& rTranID)
 {
    m_pListener->OnWorkComplete(rTranID);
-}
-
-void CMockWorkClient::workComplete2(TransactionID const& rTranID)
-{
-   m_pListener->OnWorkComplete2(rTranID);
 }

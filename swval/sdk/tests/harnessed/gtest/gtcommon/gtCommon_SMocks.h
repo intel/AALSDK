@@ -35,9 +35,7 @@ public:
    }
 
    // virtual desctructor to allow deletion from a base pointer
-   virtual ~CMockWorkClient()
-   {
-   }
+   virtual ~CMockWorkClient() {}
 
    int aquireServiceResource();
    void setListener(IServiceListener* pListener)
@@ -51,7 +49,6 @@ public:
    /// @param        rTranID    A read-only transaction ID reference.
    ///
    virtual void workComplete(TransactionID const& rTranID);
-   virtual void workComplete2(TransactionID const& rTranID);
 
    /// @internal    <begin IServiceClient interface>
    virtual void serviceAllocated(IBase* pServiceBase, TransactionID const& rTranID);

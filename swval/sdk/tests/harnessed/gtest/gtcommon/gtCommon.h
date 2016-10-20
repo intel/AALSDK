@@ -39,23 +39,23 @@ using namespace AAL;
 #endif   // ERR
 //===========================================================================
 
-// #define DBGMOCK
-// #define PRINT_EVENTS
-
+//#define DBGMOCK
 #ifdef DBGMOCK
-#define MOCKDEBUG(x) \
-   MSG(endl << (x)); \
-   raise(SIGTRAP)
-#define NULLCHECKDBG(x) \
-   if(NULL == (x)) MOCKDEBUG;
-#else
-#define MOCKDEBUG \
-   while(0)       \
-      ;
-#ifdef PRINT_EVENTS
-#define MOCKDEBUG(x) MSG(endl << (x))
+   #define MOCKDEBUG(x) MSG(std::endl << (x)); raise(SIGTRAP)
+   #define NULLCHECKDBG(x) if(NULL == (x)) { MSG(std::endl << (x)); raise(SIGTRAP); } else delete (x);
+#else 
+   #define MOCKDEBUG(x) MSG(std::endl << (x))
+   #define NULLCHECKDBG(x) ASSERT(NULL != (x)) 
 #endif
-#endif
+
+//===========================================================================
+   // Turn MOCKDEBUG off
+   ///////////////////////
+   #ifdef MOCKDEBUG
+   #undef MOCKDEBUG
+   #endif
+   #define MOCKDEBUG(x) while(0);
+//===========================================================================   
 
 #define SUCCESS 0
 
@@ -67,6 +67,10 @@ using namespace AAL;
 #include "gtCommon_Signals.h"
 #include "gtCommon_GTest.h"
 #include "gtCommon_Mocks.h"
+
+#include "gtCommon_Builder.h"
+#include "gtCommon_VisitingWorker.h"
+
 #include "gtCommon_ClassOverrides.h"
 #include "gtCommon_DoWorker.h"
 #include "gtCommon_ModuleStub.h"

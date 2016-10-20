@@ -15,6 +15,8 @@ gtCommon_Status.h \
 gtCommon_Signals.h \
 gtCommon_GTest.h \
 gtCommon_Mocks.h \
+gtCommon_Builder.h \
+gtCommon_VisitingWorker.h \
 gtCommon_ClassOverrides.h \
 gtCommon_DoWorker.h \
 gtCommon_ModuleStub.h \
@@ -22,12 +24,13 @@ gtCommon_RTAdapter.h \
 gtCommon_RTClientAdapter.h \
 gtCommon_SMocks.h \
 gtCommon_ServiceListener.h \
+gtCommon.cpp \
+gtCommon_Config.cpp \
+gtCommon_DoWorker.cpp \
+gtCommon_RNG.cpp \
 gtCommon_RTAdapter.cpp \
 gtCommon_RTClientAdapter.cpp \
 gtCommon_SMocks.cpp \
-gtCommon.cpp \
-gtCommon_Config.cpp \
-gtCommon_RNG.cpp \
 gtCommon_Stream.cpp \
 gtCommon_Console.cpp \
 gtCommon_Status.cpp \
