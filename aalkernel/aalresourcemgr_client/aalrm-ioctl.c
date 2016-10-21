@@ -466,7 +466,7 @@ btInt aalrm_processmsg(struct aalrm_ioctlreq    *preq,
       case reqid_RS_Registrar:{
          // Allocate the message -
          // Note the message will be freed when the completion event is returned
-         req.preqreg = kosal_kmalloc((preq->size + REGISTRAR_REQ_HDRSZ));
+         req.preqreg = (struct req_registrar *)kosal_kmalloc((preq->size + REGISTRAR_REQ_HDRSZ));
          if(req.preqreg == NULL){
             DPRINTF (AALRMC_DBG_IOCTL, ": CMD - reqid_Registrar failed kmalloc\n");
             return -ENOMEM;
@@ -506,7 +506,7 @@ btInt aalrm_processmsg(struct aalrm_ioctlreq    *preq,
       case reqid_URMS_RequestDevice:  {
          // Allocate the message -
          // Note the message will be freed when the compeletion event is returned
-         pallocmsg = kosal_kmalloc((preq->size + ALLOC_DEVHDRSZ));
+         pallocmsg = (struct req_allocdev  *)kosal_kmalloc((preq->size + ALLOC_DEVHDRSZ));
          if(pallocmsg == NULL){
             DPRINTF (AALRMC_DBG_IOCTL, ": CMD - AALRM_IOCTL_REQDEV failed kmalloc\n");
             return -ENOMEM;

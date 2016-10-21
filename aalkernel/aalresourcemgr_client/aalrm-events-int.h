@@ -177,7 +177,7 @@ static inline struct registrarreq_cmplt *
                           registrar_cmplt_create(int errno,
                                                  struct req_registrar *resp)
 {
-   struct registrarreq_cmplt * This = kosal_kmalloc(sizeof(struct registrarreq_cmplt));
+   struct registrarreq_cmplt * This = (struct registrarreq_cmplt *)kosal_kmalloc(sizeof(struct registrarreq_cmplt));
    if(This == NULL){
       return NULL;
    }
@@ -212,7 +212,7 @@ static inline void registrar_cmplt_destroy(struct registrarreq_cmplt *This)
 static inline struct shutdownreq_cmplt *
                           shutdown_cmplt_create(int errno)
 {
-   struct shutdownreq_cmplt * This = kosal_kmalloc(sizeof(struct shutdownreq_cmplt));
+   struct shutdownreq_cmplt * This = (struct shutdownreq_cmplt * )kosal_kmalloc(sizeof(struct shutdownreq_cmplt));
    if(This == NULL){
       return NULL;
    }
