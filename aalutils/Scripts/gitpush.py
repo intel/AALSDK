@@ -20,9 +20,10 @@ USERS = {
 
 def fromgroups(groups):
     for group in groups:
-        for user in USERS[group].split(','):
-            yield USERS.get(user, user)
-
+        for user in USERS.get(group, '').split(','):
+            u = USERS.get(user):
+            if u:
+                yield u
 
 
 if __name__ == '__main__':
@@ -60,10 +61,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     cmd = 'git push {} HEAD:refs/for/{}'.format(args.remote, args.branch)
-    if args.cc or args.reviewers or args.groups:
+    if args.cc or args.reviewers or args.groups or USERS.get('default',[]):
         cmd += '%{}'.format(','.join(['r={}'.format(USERS[k])  for k in args.reviewers] +
                                      ['cc={}'.format(USERS[k]) for k in args.cc] +
-                                     ['r={}'.format(u) for u in fromgroups(args.groups)]))
-    print cmd
+                                     ['r={}'.format(u) for u in fromgroups(args.groups + ['default'])]))
+    print(cmd)
     if not args.pretend:
         subprocess.call(cmd, shell=True)
