@@ -53,7 +53,7 @@
 #include <aalsdk/aalclp/aalclp.h>
 
 #include <string.h>
-
+#include <getopt.h>
 //****************************************************************************
 // UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
 //    DEFAULT is to use Software Simulation.
@@ -112,14 +112,22 @@ using namespace AAL;
 #define DSM_STATUS_TEST_COMPLETE 0x40
 #define CSR_AFU_DSM_BASEL        0x0110
 #define CSR_AFU_DSM_BASEH        0x0114
-#define NLB_TEST_MODE_PCIE0		 0x2000
+#define NLB_TEST_MODE_PCIE0		0x2000
 
 BEGIN_C_DECLS
 
-int dualnlb_on_nix_long_option(AALCLP_USER_DEFINED , const char * , const char * );
+#define GETOPT_STRING ":hb:d:f:B:D:F:"
 
-void help_msg_callback(FILE * , struct _aalclp_gcs_compliance_data * );
-void showhelp(FILE * , struct _aalclp_gcs_compliance_data * );
+struct option longopts[] = {
+      {"help",                no_argument,       NULL, 'h'},
+      {"bus0",                required_argument, NULL, 'b'},
+      {"dev0",                required_argument, NULL, 'd'},
+      {"func0",               required_argument, NULL, 'f'},
+      {"bus1",                required_argument, NULL, 'B'},
+      {"dev1",                required_argument, NULL, 'D'},
+      {"func1",               required_argument, NULL, 'F'},
+      {0, 0, 0, 0}
+};
 
 struct  DualNLBConfigCommandLine
 {
@@ -144,150 +152,104 @@ struct  DualNLBConfigCommandLine
 };
 struct DualNLBConfigCommandLine configCmdLine = { 0,0,0,0,0,0,0 };
 
-int dualnlb_on_non_option(AALCLP_USER_DEFINED user, const char *nonoption) {
-   struct DualNLBConfigCommandLine *cl = (struct DualNLBConfigCommandLine *)user;
-   flag_setf(cl->flags, DUALNLB_CMD_PARSE_ERROR);
-   printf("Invalid: %s\n", nonoption);
-   return 0;
-}
-
-int dualnlb_on_dash_only(AALCLP_USER_DEFINED user) {
-   struct DualNLBConfigCommandLine *cl = (struct DualNLBConfigCommandLine *)user;
-   flag_setf(cl->flags, DUALNLB_CMD_PARSE_ERROR);
-   printf("Invalid option: -\n");
-   return 0;
-}
-
-int dualnlb_on_dash_dash_only(AALCLP_USER_DEFINED user) {
-   struct DualNLBConfigCommandLine *cl = (struct DualNLBConfigCommandLine *)user;
-   flag_setf(cl->flags, DUALNLB_CMD_PARSE_ERROR);
-   printf("Invalid option: --\n");
-   return 0;
-}
-
-int dualnlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char *value)
+void showhelp()
 {
-   struct DualNLBConfigCommandLine *pcmdline = (struct DualNLBConfigCommandLine *)user;
-
-   char *endptr = NULL;
-   //Bus number for socket 1
-   if ( (0 == strcmp("--bus0", option)) || (0 == strcmp("--b0", option)) ) {
-
-	   pcmdline->bus0 = strtoul(value, &endptr, 0);
-	   flag_setf(pcmdline->flags, DUALNLB_CMD_FLAG_BUS0);
-	   endptr = NULL;
-
-   }else if ( (0 == strcmp("--bus1", option)) || (0 == strcmp("--b1", option)) ) {
-
-	   pcmdline->bus1 = strtoul(value, &endptr, 0);
-	   flag_setf(pcmdline->flags, DUALNLB_CMD_FLAG_BUS1);
-	   endptr = NULL;
-
-   }else if ( (0 == strcmp("--device0", option)) || (0 == strcmp("--d0", option)) ) {
-
-   	   pcmdline->device0 = strtoul(value, &endptr, 0);
-   	   flag_setf(pcmdline->flags, DUALNLB_CMD_FLAG_DEV0);
-   	   endptr = NULL;
-
-   }else if ( (0 == strcmp("--device1", option)) || (0 == strcmp("--d1", option)) ) {
-
-	   pcmdline->device1 = strtoul(value, &endptr, 0);
-	   flag_setf(pcmdline->flags, DUALNLB_CMD_FLAG_DEV1);
-	   endptr = NULL;
-
-   }else if ( (0 == strcmp("--function0", option)) || (0 == strcmp("--f0", option)) ) {
-
-	   pcmdline->function0 = strtoul(value, &endptr, 0);
-	   flag_setf(pcmdline->flags, DUALNLB_CMD_FLAG_FUNC0);
-	   endptr = NULL;
-
-   }else if ( (0 == strcmp("--function1", option)) || (0 == strcmp("--f1", option)) ) {
-
-	   pcmdline->function1 = strtoul(value, &endptr, 0);
-	   flag_setf(pcmdline->flags, DUALNLB_CMD_FLAG_FUNC1);
-	   endptr = NULL;
-
-   }else{
-
-	   printf("Invalid option: %s\n", option);
-	   flag_setf(pcmdline->flags,DUALNLB_CMD_PARSE_ERROR);
-   }
-
-   return 0;
+   cout << "Usage:\n";
+   cout << "   dualNLB [<BUS_NUMBER>] [<DEVICE_NUMBER>] [<FUNCTION_NUMBER>] \n\n";
+   cout << "<BUS_NUMBER>       --bus0=x       OR       -b=x       where x is the bus number of the PCIe0\n";
+   cout << "                   --bus1=x       OR       -B=x       where x is the bus number of the PCIe1\n";
+   cout << "<DEVICE_NUMBER>    --dev0=y       OR       -d=y       where y is the device number of the PCIe0\n";
+   cout << "                   --dev1=y       OR       -D=y       where y is the device number of the PCIe1\n";
+   cout << "<FUNCTION_NUMBER>  --func0=z      OR       -f=z       where z is the function number of the PCIe0\n";
+   cout << "                   --func1=z      OR       -F=z       where z is the function number of the PCIe1\n";
+   cout << "\n";
 }
-
-aalclp_option       dualnlb_nix_long_option       = { dualnlb_on_nix_long_option, };
-aalclp_non_option   dualnlb_non_option            = { dualnlb_on_non_option,      };
-aalclp_dash_only    dualnlb_dash_only             = { dualnlb_on_dash_only,       };
-aalclp_dash_only    dualnlb_dash_dash_only        = { dualnlb_on_dash_dash_only,  };
-
-AALCLP_DECLARE_GCS_COMPLIANT(stdout,
-                             "dualNLB",
-                             "0",
-                             "",
-                             help_msg_callback,
-                             &configCmdLine)
-
 int ParseCmds(struct DualNLBConfigCommandLine *pconfigcmd, int argc, char *argv[])
 {
-   int    res;
-   int    clean;
-   aalclp clp;
+   int getopt_ret;
+   int option_index;
+   char *endptr = NULL;
 
-   res = aalclp_init(&clp);
-   if ( 0 != res ) {
-      cerr << "aalclp_init() failed : " << res << ' ' << strerror(res) << endl;
-      return res;
+   while( -1 != ( getopt_ret = getopt_long(argc, argv, GETOPT_STRING, longopts, &option_index))){
+      const char *tmp_optarg = optarg;
+
+      if((optarg) &&
+         ('=' == *tmp_optarg)){
+         ++tmp_optarg;
+      }
+
+      if((!optarg) &&
+         (NULL != argv[optind]) &&
+         ('-' != argv[optind][0]) ) {
+         tmp_optarg = argv[optind++];
+      }
+
+      switch(getopt_ret){
+
+         case 'h':    /* help option */
+            flag_setf(pconfigcmd->flags, DUALNLB_CMD_FLAG_HELP);
+            showhelp();
+            break;
+
+         case 'b':    /* bitstream option */
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
+            endptr = NULL;
+            pconfigcmd->bus0 = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(pconfigcmd->flags, DUALNLB_CMD_FLAG_BUS0);
+            break;
+
+         case 'd':    /* reactivateDisabled option */
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
+            endptr = NULL;
+            pconfigcmd->device0 = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(pconfigcmd->flags, DUALNLB_CMD_FLAG_DEV0);
+            break;
+
+         case 'f':    /* force option */
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
+            endptr = NULL;
+            pconfigcmd->function0 = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(pconfigcmd->flags, DUALNLB_CMD_FLAG_FUNC0);
+            break;
+
+         case 'B':    /* bus option */
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
+            endptr = NULL;
+            pconfigcmd->bus1 = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(pconfigcmd->flags, DUALNLB_CMD_FLAG_BUS1);
+            break;
+
+         case 'D':    /* device option */
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
+            endptr = NULL;
+            pconfigcmd->device1 = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(pconfigcmd->flags, DUALNLB_CMD_FLAG_DEV1);
+            break;
+
+         case 'F':    /* function option */
+            ASSERT(NULL != tmp_optarg);
+            if (NULL == tmp_optarg) break;
+            endptr = NULL;
+            pconfigcmd->function1 = strtoul(tmp_optarg, &endptr, 0);
+            flag_setf(pconfigcmd->flags, DUALNLB_CMD_FLAG_FUNC1);
+            break;
+
+         case ':':   /* missing option argument */
+            cout << "Missing option argument.\n";
+            return DUALNLB_CMD_PARSE_ERROR;
+
+         case '?':
+         default:    /* invalid option */
+            cout << "Invalid cmdline options.\n";
+            return DUALNLB_CMD_PARSE_ERROR;
+      }
    }
-
-   dualnlb_nix_long_option.user = pconfigcmd;
-   aalclp_add_nix_long_option(&clp, &dualnlb_nix_long_option);
-
-   dualnlb_non_option.user = pconfigcmd;
-   aalclp_add_non_option(&clp, &dualnlb_non_option);
-
-   dualnlb_dash_only.user = pconfigcmd;
-   aalclp_add_dash_only(&clp, &dualnlb_dash_only);
-
-   dualnlb_dash_dash_only.user = pconfigcmd;
-   aalclp_add_dash_dash_only(&clp, &dualnlb_dash_dash_only);
-
-   res = aalclp_add_gcs_compliance(&clp);
-   if ( 0 != res ) {
-      cerr << "aalclp_add_gcs_compliance() failed : " << res << ' ' << strerror(res) << endl;
-      goto CLEANUP;
-   }
-
-   res = aalclp_scan_argv(&clp, argc, argv);
-   if ( 0 != res ) {
-      cerr << "aalclp_scan_argv() failed : " << res << ' ' << strerror(res) << endl;
-   }
-
-CLEANUP:
-   clean = aalclp_destroy(&clp);
-   if ( 0 != clean ) {
-      cerr << "aalclp_destroy() failed : " << clean << ' ' << strerror(clean) << endl;
-   }
-
-   return res;
-}
-
-void help_msg_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
-{
-   fprintf(fp, "Usage:\n");
-   fprintf(fp, "   dualNLB [<BUS_NUMBER>] [<DEVICE_NUMBER>] [<FUNCTION_NUMBER>] \n\n");
-   fprintf(fp, "<BUS_NUMBER>       --bus0=b       OR       --b0=b       where b is the bus number of the PCIe0\n");
-   fprintf(fp, "                   --bus1=b       OR       --b1=b       where b is the bus number of the PCIe1\n");
-   fprintf(fp, "<DEVICE_NUMBER>    --dev0=b       OR       --d0=d       where d is the device number of the PCIe0\n");
-   fprintf(fp, "                   --dev1=b       OR       --d1=d       where d is the device number of the PCIe1\n");
-   fprintf(fp, "<FUNCTION_NUMBER>  --func0=f      OR       --f0=f       where f is the function number of the PCIe0\n");
-   fprintf(fp, "                   --func1=f      OR       --f1=f       where f is the function number of the PCIe1\n");
-   fprintf(fp, "\n");
-}
-
-void showhelp(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
-{
-   help_msg_callback(fp, gcs);
+   return 0;
 }
 
 int verifycmds(struct DualNLBConfigCommandLine *cl)
@@ -1004,7 +966,7 @@ int main(int argc, char *argv[])
 {
 
 	if ( argc < 3 ) {
-	  showhelp(stdout, &_aalclp_gcs_data);
+	  showhelp();
 	  return 1;
 	} else if ( 0!= ParseCmds(&configCmdLine, argc, argv) ) {
 	  cout << "Error scanning command line." << endl;
