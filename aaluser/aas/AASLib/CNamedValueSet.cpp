@@ -2895,6 +2895,9 @@ public:
       ENamedValues  result;
 
       ASSERT(NULL != pType);
+      if (NULL == pType) {
+         return ENamedValuesNullPointerArgument;
+      }
 
       AutoLock(this);
 
