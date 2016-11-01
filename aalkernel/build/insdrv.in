@@ -105,219 +105,61 @@ fi
 declare mod
 declare mod_path
 
+
+#arg1 - ko file name
+#arg2 - mod path
+#arg3+ - optional module arguments
+load_ko_module() {
+   mod=$1
+   mod_path=$2
+   shift 2
+   printf "insmod %-15s " "${mod}"
+   if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+      printf "[ALREADY]\n"
+   elif ! ${INSMOD} "${mod_path}/${mod}" $@ ; then
+      die "[FAIL]"
+   fi
+   printf "[ OK ]\n"
+}
+
 case $1 in
 
    cci)
-      mod="@AALBUS_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalbus/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
+      load_ko_module "@AALBUS_DRV_NAME@.ko" "${BUILD_DIR}/aalbus/kbuild"
+      load_ko_module "@AALRMS_DRV_NAME@.ko" "${BUILD_DIR}/aalresourcemgr_server/kbuild"
+      load_ko_module "@AALRMC_DRV_NAME@.ko" "${BUILD_DIR}/aalresourcemgr_client/kbuild"
+      load_ko_module "@CCIPCIEDRV_DRV_NAME@.ko" "${BUILD_DIR}/cci_PCIe_driver/kbuild"
+   ;; # cci
 
-      mod="@AALRMS_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-
-      mod="@AALRMC_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-
-      mod="@CCIPCIEDRV_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/cci_PCIe_driver/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-   ;; # cci 
-      
    cci-sim|cci_sim)
-      mod="@AALBUS_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalbus/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" debug=15; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-
-      mod="@AALRMS_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" debug=15 ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-
-      mod="@AALRMC_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-
-      mod="@CCIPCIEDRV_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/cci_PCIe_driver/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" sim=1 debug=-134217601; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
+      load_ko_module "@AALBUS_DRV_NAME@.ko" "${BUILD_DIR}/aalbus/kbuild" debug=15
+      load_ko_module "@AALRMS_DRV_NAME@.ko" "${BUILD_DIR}/aalresourcemgr_server/kbuild" debug=15
+      load_ko_module "@AALRMC_DRV_NAME@.ko" "${BUILD_DIR}/aalresourcemgr_client/kbuild"
+      load_ko_module "@CCIPCIEDRV_DRV_NAME@.ko" "${BUILD_DIR}/cci_PCIe_driver/kbuild"  sim=1 debug=-134217601
    ;; # cci-sim | cci_sim
 
    cci-dbg|cci_dbg|cci-debug|cci_debug)
-      mod="@AALBUS_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalbus/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-
-      mod="@AALRMS_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-
-      mod="@AALRMC_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-
-      mod="@CCIPCIEDRV_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/cci_PCIe_driver/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" debug=-134217601; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
+      load_ko_module "@AALBUS_DRV_NAME@.ko" "${BUILD_DIR}/aalbus/kbuild"
+      load_ko_module "@AALRMS_DRV_NAME@.ko" "${BUILD_DIR}/aalresourcemgr_server/kbuild"
+      load_ko_module "@AALRMC_DRV_NAME@.ko" "${BUILD_DIR}/aalresourcemgr_client/kbuild"
+      load_ko_module "@CCIPCIEDRV_DRV_NAME@.ko" "${BUILD_DIR}/cci_PCIe_driver/kbuild" debug=-134217601
    ;; # cci-dbg | cci_dbg | cci-debug | cci_debug
 
    cci-sriov|cci_sriov)
-      mod="@AALBUS_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalbus/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-
-      mod="@AALRMS_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-
-      mod="@AALRMC_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-
-      mod="@CCIPCIEDRV_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/cci_PCIe_driver/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" sriov=1; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
+      load_ko_module "@AALBUS_DRV_NAME@.ko" "${BUILD_DIR}/aalbus/kbuild"
+      load_ko_module "@AALRMS_DRV_NAME@.ko" "${BUILD_DIR}/aalresourcemgr_server/kbuild"
+      load_ko_module "@AALRMC_DRV_NAME@.ko" "${BUILD_DIR}/aalresourcemgr_client/kbuild"
+      load_ko_module "@CCIPCIEDRV_DRV_NAME@.ko" "${BUILD_DIR}/cci_PCIe_driver/kbuild" sriov=1
    ;; # cci-sriov | cci_sriov
 
-   cci-vf|cci_vf)
-      mod="@AALBUS_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalbus/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
+   ##  The following are to be deprecated
+   cci-vf|cci_vf|cci-sriov-vf|cci_sriov_vf)
+      load_ko_module "@AALBUS_DRV_NAME@.ko" "${BUILD_DIR}/aalbus/kbuild"
+      load_ko_module "@AALRMS_DRV_NAME@.ko" "${BUILD_DIR}/aalresourcemgr_server/kbuild"
+      load_ko_module "@AALRMC_DRV_NAME@.ko" "${BUILD_DIR}/aalresourcemgr_client/kbuild"
+      load_ko_module "@CCIPCIEDRV_DRV_NAME@.ko" "${BUILD_DIR}/cci_PCIe_driver/kbuild" sriov=1 sriov_vf=1
+   ;;
 
-      mod="@AALRMS_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-
-      mod="@AALRMC_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-
-      mod="@CCIPCIEDRV_DRV_NAME@.ko"
-      mod_path="${BUILD_DIR}/cci_PCIe_driver/kbuild"
-      printf "insmod %-15s " "${mod}"
-      if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-         printf "[ALREADY]\n"
-      elif ! ${INSMOD} "${mod_path}/${mod}" skip_pf=1; then
-         die "[FAIL]"
-      fi
-      printf "[ OK ]\n"
-   ;; # cci-vf | cci_vf
-
-   ##  The following are to be deprecated 
    base)
       die "base is no longer available. Try cci."
    ;;
@@ -343,7 +185,7 @@ ${SLEEP} 3
 ${CHMOD} "${DEV_PERMS}" '/dev/uidrv'     || die "dev file perms for uidrv"
 ${CHMOD} "${DEV_PERMS}" '/dev/aalrms'    || die "dev file perms for aalrms"
 ${CHMOD} "${DEV_PERMS}" '/dev/aalresmgr' || die "dev file perms for aalresmgr"
-${LS} -l '/dev/uidrv' '/dev/aalrms' '/dev/aalresmgr' 
+${LS} -l '/dev/uidrv' '/dev/aalrms' '/dev/aalresmgr'
 
 exit 0
 

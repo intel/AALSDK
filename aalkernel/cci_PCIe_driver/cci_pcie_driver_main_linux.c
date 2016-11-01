@@ -91,8 +91,6 @@ kosal_list_head g_device_list;
 /// g_dev_list_sem - Global device list semaphore.
 kosal_semaphore g_dev_list_sem;
 
-static btBool isPFDriver = 0;
-
 
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -110,14 +108,14 @@ MODULE_LICENSE    (DRV_LICENSE);
 //       Value: Number of AFUs to instantiate
 //      sriov: Activate SR-IOV
 //       Value: Number of VFs to enable (can't exceed number of PORTs)
-//      skip_pf: Skip PF enumeration (to enable VF enumeration on bare metal)
-//       Value: 1 to skip PF enumeration, 0 to enumerate PF (default)
+//      sriov_vf: Ignore VF driver binding (to enable VF enumeration on VM)
+//       Value: 1 to ignore VF, 0 to bind VF device to driver(default)
 //
 // Typical usage:
 //    sudo insmod ccidrv           # Normal load. PCIe enumeration enabled
 //    sudo insmod ccidrv sim=4     # Instantiate 4 simulated AFUs
 //    sudo insmod ccidrv sriov=1   # Activate SR-IOV with 1 VF
-//    sudo insmod ccidrv skip_pf   # Don't enumerate PF
+//    sudo insmod ccidrv sriov_vf=1   # bind VF driver in sriov mode
 
 unsigned long  sim = 0;
 MODULE_PARM_DESC(sim, "Simulation: #=Number of simulated AFUs to instantiate");
@@ -127,9 +125,9 @@ unsigned long  sriov = 0;
 MODULE_PARM_DESC(sriov, "SR-IOV: #=Number of VFs to activate");
 module_param    (sriov, ulong, S_IRUGO);
 
-int            skip_pf = 0;
-MODULE_PARM_DESC(skip_pf, "Skip PF enumeration: 1 to skip PF enumeration");
-module_param    (skip_pf, int, S_IRUGO);
+int            sriov_vf = 0;
+MODULE_PARM_DESC(sriov_vf, "SR-IOV with VF driver binding: 1 to enable VF driver with PF");
+module_param    (sriov_vf, int, S_IRUGO);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -236,6 +234,14 @@ module_exit(ccidrv_exit);
 extern int ccidrv_initDriver(void/*callback*/);
 extern int ccidrv_initUMAPI(void);
 void ccidrv_exitUMAPI(void);
+
+enum cci_config_afu_access_type {
+   cci_config_afu_access_PF,
+   cci_config_afu_access_VF
+};
+static void cci_config_afu_access_control(struct ccip_device * pccipdev,
+                                          unsigned long num_ports,
+                                          enum cci_config_afu_access_type mode);
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -514,6 +520,15 @@ struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev
 
    PTRACEIN;
 
+   // Ignore VF if requested
+   // This is needed to tell the host node (aka Dom0) ccip driver to ignore
+   // the VFs so that the VF can be attached to a VM
+   if (0 == sriov_vf && 1 == sriov) {
+      // Make this a warning, so it always prints
+      PWARN("Ignoring VF, (sriov_vf == 0)\n");
+      return NULL;
+   }
+
    // Check arguments
    ASSERT(pcidev);
    if ( NULL == pcidev ) {
@@ -549,14 +564,6 @@ struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev
    } else {
       PERR("No suitable DMA support available.\n");
       goto ERR;
-   }
-
-
-   // If we are on the host node (aka Dom0) then we do not publish VF objects
-   if(isPFDriver){
-      // Make this a warning so it always prints to the log
-      PWARN("VF Device detected on PF Driver.\nIgnoring.\n");
-      return NULL;
    }
 
    // Create the CCI device object
@@ -732,15 +739,6 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
 
    PTRACEIN;
 
-   // Skip PF if requested
-   //  This is useful for bringing up a driver on bare metal that only sees the
-   //  VFs. Mainly for testing and debug, but perhaps also for containers?
-   if (skip_pf) {
-      // Make this a warning, so it always prints
-      PWARN("Skipping PF, as requested (skip_pf)\n");
-      return NULL;
-   }
-
    // Check arguments
    ASSERT(pcidev);
    if ( NULL == pcidev ) {
@@ -752,9 +750,6 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       PTRACEOUT_INT(-EINVAL);
       return NULL;
     }
-
-   // This is a PF driver
-   isPFDriver = 1;
 
    // Setup the PCIe device
    //----------------------
@@ -874,9 +869,14 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          goto ERR;
       }
 
-      // Creates AAL PR device object
-      if(!cci_create_AAL_PR_allocatable_objects(pccipdev)){
-         goto ERR;
+      //FIXME: PR doesn't work in SRIOV mode right now
+      //I think the PR flow assumes there is an AFU object and dereferences
+      //a NULL pointer
+      if(0 == sriov) {
+         // Creates AAL PR device object
+         if(!cci_create_AAL_PR_allocatable_objects(pccipdev)){
+            goto ERR;
+         }
       }
 
       // Creates AAL Power device object
@@ -981,8 +981,11 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          // Instantiate allocatable objects including AFUs if present.
          //   Subdevice addresses start at 10x the 1 based port number to leave room for
          //   10 devices beneath the port. E.e., STAP, PR, User AFU
-         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i) ){
-            goto ERR;
+         // Enumerate AFUs in PF if not in SRIOV mode.
+         if (0 == sriov) {
+            if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i) ){
+               goto ERR;
+            }
          }
       }// End for loop
 
@@ -990,33 +993,13 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       ccip_portdev_maxVFs(pccipdev) = i;     // Can't have more VFs than ports for now
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
-      if (sriov != 0) {
-         // FIXME Hack to enable SR-IOV to enable poweron
-         // If started with sriov module parameter, we'll activate a VF and
-         // transfer ownership of the AFU. At that point, the AFU will already
-         // have been enumerated, so the PF still thinks it has an AFU (and
-         // anyone binding to the PF driver will see it), though it is no
-         // longer reachable. THIS NEEDS TO BE FIXED! Ideally by deactivating
-         // the AFU, moving it over to the VF, and re-enumerating the PF port.
+      if (0 != sriov) {
          if (sriov > ccip_portdev_maxVFs(pccipdev)) {
             sriov = ccip_portdev_maxVFs(pccipdev);
             PINFO("Asked for more VFs than PORTs, setting to number of PORTs (%ld).\n", sriov);
          }
          if (0 == pci_enable_sriov(pcidev, sriov)){
-            // get FME device
-            volatile struct fme_device *pfmedev;
-            struct CCIP_PORT_AFU_OFFSET port_offset;
-            pfmedev = ccip_dev_to_fme_dev(pccipdev);
-            if (NULL != pfmedev) {
-               for (i = 0; i < sriov; i++) {
-                  // transfer ownership of AFU in PORTi to VF
-                  port_offset.csr = pfmedev->m_pHDR->port_offsets[i].csr;
-                  port_offset.afu_access_control = 0x1;
-                  pfmedev->m_pHDR->port_offsets[i].csr = port_offset.csr;
-               }
-            } else {
-               PINFO("No FME device, can't transfer ownership of VF.");
-            }
+            cci_config_afu_access_control(pccipdev, sriov, cci_config_afu_access_VF);
             PINFO("SRIOV Enabled on this device for %ld VF%s\n", sriov, (sriov > 1 ? "s" : ""));
          }else{
             PINFO("Failed to enable SRIOV");
@@ -1069,6 +1052,42 @@ ERR:
 }
 
 //=============================================================================
+// Name: cci_config_afu_access_control
+// Description: enables or disables AFU access control setting
+// Interface: private
+// Inputs: pccipdev - ccip_device
+//                    num_ports - the number of VF ports to enable
+//                    mode - access control mode - either PF or VF
+// Outputs: none.
+// Comments:
+//=============================================================================
+static
+void
+cci_config_afu_access_control(struct ccip_device * pccipdev, unsigned long num_ports,
+                              enum cci_config_afu_access_type mode)
+{
+   int i ;
+   // get FME device
+   volatile struct fme_device *pfmedev;
+   struct CCIP_PORT_AFU_OFFSET port_offset;
+   pfmedev = ccip_dev_to_fme_dev(pccipdev);
+   if (NULL != pfmedev) {
+      for (i = 0; i < num_ports; i++) {
+         // transfer ownership of AFU in PORTi to VF
+         // ENABLE afu_access_control
+         port_offset.csr = pfmedev->m_pHDR->port_offsets[i].csr;
+         if(mode == cci_config_afu_access_VF)
+            port_offset.afu_access_control = 0x1;
+         else
+            port_offset.afu_access_control = 0x0;
+         pfmedev->m_pHDR->port_offsets[i].csr = port_offset.csr;
+      }
+   } else {
+      PINFO("No FME device, can't transfer ownership of VF.");
+   }
+}
+
+//=============================================================================
 // Name: cci_pci_remove
 // Description: Entry point called when a device registered with the PCIe
 //              subsystem is being removed
@@ -1095,6 +1114,34 @@ cci_pci_remove(struct pci_dev *pcidev)
       PERR("PCI remove called with NULL.\n");
       return;
    }
+
+   //need to disable SRIOV before removing cci devices so that VF is removed
+   //before PF
+   // Search through our list of devices to find the one matching pcidev
+   #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
+      if (0 != sriov) {
+         struct ccip_device   *sriov_pf_pccidev    = NULL;
+
+         if ( !kosal_list_is_empty(&g_device_list) ) {
+            kosal_list_for_each(This, &g_device_list) {
+               pccidev = ccip_list_to_ccip_device(This);
+               if ( pccidev->m_pcidev == pcidev ) {
+                  if( NULL != ccip_dev_to_fme_dev(pccidev)) {
+                     sriov_pf_pccidev = pccidev;
+                  }
+               }
+            }
+         }
+
+         if(sriov_pf_pccidev) {
+            //pci_disable_sriov cannot be called while traversing g_device_list
+            //Disabling sriov will remove vf drivers and devices before this
+            //function finishes and will cause g_device_list to be updated
+            pci_disable_sriov(pcidev);
+            cci_config_afu_access_control(sriov_pf_pccidev, sriov, cci_config_afu_access_PF);
+         }
+      }
+   #endif
 
    // Search through our list of devices to find the one matching pcidev
    if ( !kosal_list_is_empty(&g_device_list) ) {
@@ -1330,10 +1377,16 @@ ccidrv_exitDriver(void)
          // Get the device from the list entry
          pccidev = ccip_list_to_ccip_device(This);
 
-         PDEBUG("<- Deleting device 0x%p with list head 0x%p from list 0x%p\n", pccidev,
-                                                                                This,
-                                                                                &g_device_list);
-         cci_remove_device(pccidev);
+         //Only remove cci devices that are not attached to PCIe(the sim ones)
+         //cci_pci_remove will handle the PCIe cci devices.  This check
+         //is needed for certain SRIOV cases where ccidrv_exitDriver and
+         //cci_pci_remove can conflict with each other with cci_remove_device
+         if(NULL == pccidev->m_pcidev) {
+            PDEBUG("<- Deleting device 0x%p with list head 0x%p from list 0x%p\n", pccidev,
+                                                                                   This,
+                                                                                   &g_device_list);
+            cci_remove_device(pccidev);
+         }
       }// kosal_list_for_each_safe
 
    }else {
@@ -1378,8 +1431,8 @@ ccidrv_init(void)
    PINFO("-> %s\n",       DRV_COPYRIGHT);
 
    // Module parameter sanity check
-   if (sriov > 0 && skip_pf != 0) {
-      PERR("Can't skip PF and enable VFs at the same time. Sorry.\n");
+   if (0 == sriov && 0 != sriov_vf) {
+      PERR("sriov_vf must be enable with sriov\n");
       return -EINVAL;
    }
 
