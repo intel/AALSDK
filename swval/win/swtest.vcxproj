@@ -30,6 +30,7 @@
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtDispatchables.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtDynLinkLibrary.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtEnvVar.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtEventUtil.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtMDS.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtNVS0.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtNVS1.cpp" />
@@ -44,7 +45,9 @@
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtRuntime.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtRuntime_Int.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtSem.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtSendMessage.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtSeqRand.cpp" />
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtServiceBase.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtServiceBroker.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtServiceHost.cpp" />
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtSleep.cpp" />

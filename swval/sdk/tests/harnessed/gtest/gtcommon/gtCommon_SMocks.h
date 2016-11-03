@@ -2,8 +2,6 @@
 #ifndef __GTCOMMON_SMOCKS_H__
 #define __GTCOMMON_SMOCKS_H__
 
-using namespace std;
-
 /// ===================================================================
 /// @brief        The custom service client.
 ///
@@ -11,36 +9,28 @@ using namespace std;
 ///               includes work-completion callbacks, which are
 ///               recieved here.
 ///
-class GTCOMMON_API CMockWorkClient : public CAASBase, public IServiceClient, public IMockWorkClient
+class GTCOMMON_API CMockWorkClient : public EmptyIServiceClient,
+                                     public IMockWorkClient
 {
 
 public:
    /// ================================================================
    /// @brief        The main service client constructor, taking a runtime
-   ///               client adapter to recieve callback notifications from the shared
-   ///               singlton runtime instance through a proxy.
+   ///               client adapter to recieve callback notifications from the
+   ///               shared singlton runtime instance through a proxy.
    ///
    /// @param        pRCA    The runtime client adapter pointer.
    ///
 
-   CMockWorkClient(CRuntimeClientAdapter* pRCA)
-      : m_pAALService(NULL)
-      , m_pRuntimeClient(pRCA)
-      , m_Result(0)
-      , m_pListener(NULL)
-      , m_pLock(pRCA->getListenerLock())
+   CMockWorkClient( CRuntimeClientAdapter* pRCA )
+          : m_pAALService( NULL )
+          , m_pRuntimeClient( pRCA )
+          , m_Result( 0 )
+          , m_pListener( NULL )
+          , m_pLock( pRCA->getListenerLock() )
    {
-      SetInterface(iidServiceClient, dynamic_cast<IServiceClient*>(this));
-      SetInterface(iidMockWorkClient, dynamic_cast<IMockWorkClient*>(this));
-   }
-
-   // virtual desctructor to allow deletion from a base pointer
-   virtual ~CMockWorkClient() {}
-
-   int aquireServiceResource();
-   void setListener(IServiceListener* pListener)
-   {
-      m_pListener = pListener;
+      SetInterface( iidServiceClient, dynamic_cast<IServiceClient*>( this ) );
+      SetInterface( iidMockWorkClient, dynamic_cast<IMockWorkClient*>( this ) );
    }
 
    /// ================================================================
@@ -48,16 +38,29 @@ public:
    ///
    /// @param        rTranID    A read-only transaction ID reference.
    ///
-   virtual void workComplete(TransactionID const& rTranID);
+   virtual void workComplete( TransactionID const& rTranID );
 
    /// @internal    <begin IServiceClient interface>
-   virtual void serviceAllocated(IBase* pServiceBase, TransactionID const& rTranID);
-   virtual void serviceAllocateFailed(const IEvent& rEvent);
-   virtual void serviceReleaseFailed(const IEvent& rEvent);
-   virtual void serviceReleased(TransactionID const& rTranID);
-   virtual void serviceReleaseRequest(IBase* pServiceBase, const IEvent& rEvent);
-   virtual void serviceEvent(const IEvent& rEvent);
+   virtual void serviceAllocated( IBase* pServiceBase,
+                                  TransactionID const& rTranID );
+   virtual void serviceAllocateFailed( const IEvent& rEvent );
+   virtual void serviceReleaseFailed( const IEvent& rEvent );
+   virtual void serviceReleased( TransactionID const& rTranID );
+   virtual void serviceReleaseRequest( IBase* pServiceBase,
+                                       const IEvent& rEvent );
+   virtual void serviceEvent( const IEvent& rEvent );
    /// @internal   <end IServiceClient interface>
+
+   // virtual destructor to allow deletion from a base pointer
+   virtual ~CMockWorkClient()
+   {
+   }
+
+   int aquireServiceResource();
+   void setListener( IServiceListener* pListener )
+   {
+      m_pListener = pListener;
+   }
 
 protected:
    IBase* m_pAALService;

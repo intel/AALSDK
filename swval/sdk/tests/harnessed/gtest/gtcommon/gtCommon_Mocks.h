@@ -145,6 +145,7 @@ class GTCOMMON_API EmptyIAALTransport : public AAL::IAALTransport
 {
 public:
    EmptyIAALTransport();
+   virtual ~EmptyIAALTransport() {}
 
    virtual btBool  connectremote(NamedValueSet const & );
    virtual btBool waitforconnect(NamedValueSet const & );
@@ -173,6 +174,7 @@ class GTCOMMON_API EmptyIAALMarshaller : public AAL::IAALMarshaller
 {
 public:
    EmptyIAALMarshaller();
+   virtual ~EmptyIAALMarshaller() {}
 
    virtual ENamedValues   Empty();
    virtual btBool           Has(btStringKey )                   const;
@@ -253,6 +255,7 @@ class GTCOMMON_API EmptyIAALUnMarshaller : public AAL::IAALUnMarshaller
 {
 public:
    EmptyIAALUnMarshaller();
+   virtual ~EmptyIAALUnMarshaller() {}
 
    virtual ENamedValues   Empty();
    virtual btBool           Has(btStringKey )                   const;

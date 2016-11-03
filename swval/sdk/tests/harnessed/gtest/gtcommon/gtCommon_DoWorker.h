@@ -9,18 +9,16 @@
 class GTCOMMON_API IServiceListener : public Listener
 {
 public:
-   virtual void OnServiceAllocated(ServiceBase*) = 0;
-   virtual void OnServiceAllocateFailed(IEvent const&) = 0;
-   virtual void OnServiceReleaseFailed(IEvent const&) = 0;
-   virtual void OnServiceReleased(TransactionID const&) = 0;
-   virtual void OnServiceReleaseRequest(IBase*, IEvent const&) = 0;
-   virtual void OnWorkComplete(TransactionID const&) = 0;
-   virtual void OnWorkComplete2(TransactionID const&) = 0;
-   virtual void OnServiceEvent(IEvent const&) = 0;
-
    virtual ~IServiceListener()
    {
    }
+   virtual void OnServiceAllocated( ServiceBase* ) = 0;
+   virtual void OnServiceAllocateFailed( IEvent const& ) = 0;
+   virtual void OnServiceReleaseFailed( IEvent const& ) = 0;
+   virtual void OnServiceReleased( TransactionID const& ) = 0;
+   virtual void OnServiceReleaseRequest( IBase*, IEvent const& ) = 0;
+   virtual void OnWorkComplete( TransactionID const& ) = 0;
+   virtual void OnServiceEvent( IEvent const& ) = 0;
 };
 
 /// ===================================================================
@@ -30,14 +28,15 @@ public:
 ///               order to "do work".
 ///
 
-#define iidMockDoWorker __INTC_IID(INTC_sysSampleAFU, 0x0001)
-// @todo Investigate whether or not custom interfaces should be deriving
-// from IBase
+#define iidMockDoWorker __INTC_IID( INTC_sysSampleAFU, 0x0001 )
 //
 class GTCOMMON_API IMockDoWorker
 {
 public:
-   virtual void dispatchWorkComplete(TransactionID const& rTranID) = 0;
+   virtual ~IMockDoWorker()
+   {
+   }
+   virtual void dispatchWorkComplete( TransactionID const& rTranID ) = 0;
    virtual void doWork() = 0;
 };
 
@@ -47,17 +46,16 @@ public:
 /// @details      Clients of the service implement this interface to get
 ///               callback notifications.
 ///
-#define iidMockWorkClient __INTC_IID(INTC_sysSampleAFU, 0x0002)
+#define iidMockWorkClient __INTC_IID( INTC_sysSampleAFU, 0x0002 )
 
 class GTCOMMON_API IMockWorkClient
 {
 public:
-   virtual void setListener(IServiceListener*) = 0;
-   virtual void workComplete(TransactionID const& rTranID) = 0;
-
    virtual ~IMockWorkClient()
    {
    }
+   virtual void setListener( IServiceListener* ) = 0;
+   virtual void workComplete( TransactionID const& rTranID ) = 0;
 };
 
 /// ===================================================================
@@ -70,30 +68,47 @@ class GTCOMMON_API CMockDoWorker : public EmptyServiceBase,
                                    public IAcceptsVisitors
 {
 public:
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(CMockDoWorker, EmptyServiceBase),
-      m_pSvcClient(NULL), m_pWorkClient(NULL), m_pVisitingWorker(NULL)
+   DECLARE_AAL_SERVICE_CONSTRUCTOR( CMockDoWorker, EmptyServiceBase ),
+      m_pSvcClient( NULL ), m_pWorkClient( NULL ), m_pVisitingWorker( NULL )
    {
-      SetInterface(iidMockDoWorker, dynamic_cast<IMockDoWorker*>(this));
+      SetInterface( iidMockDoWorker, dynamic_cast<IMockDoWorker*>( this ) );
    }
 
-   // allow deletion from a base pointer
+   // allow deletion from base pointer
+
+   // pre-empt the ServiceBase destructor to avoid double-free on the
+   // interface pointers ... these will be deleted in the test application /
+   // builder provider. ***!!!This seems only to be required on Linux,
+   // indicating a possible threading issue / race condition!!!***//
    virtual ~CMockDoWorker()
    {
+      ASSERT( NULL != this->m_ptransport );
+      // delete this->m_ptransport;
+      this->m_ptransport = NULL;
+
+      ASSERT( NULL != this->m_pmarshaller );
+      // delete this->m_pmarshaller;
+      this->m_pmarshaller = NULL;
+
+      ASSERT( NULL != this->m_punmarshaller );
+      // delete this->m_punmarshaller;
+      this->m_punmarshaller = NULL;
    }
 
-   virtual btBool init(IBase*, NamedValueSet const&, TransactionID const&);
+public:
+   virtual btBool init( IBase*, NamedValueSet const&, TransactionID const& );
 
    //<overrides from ServiceBase, IServiceBase>
-   virtual btBool
-      Release(TransactionID const&, btTime timeout = AAL_INFINITE_WAIT);
-   virtual btBool initComplete(TransactionID const&);
+   virtual btBool Release( TransactionID const&,
+                           btTime timeout = AAL_INFINITE_WAIT );
+   virtual btBool initComplete( TransactionID const& );
    virtual AALServiceModule* getAALServiceModule() const;
    virtual IServiceClient* getServiceClient() const;
    //<overrides from ServiceBase, IServiceBase>
 
    virtual void doWork();
-   virtual void dispatchWorkComplete(TransactionID const&);
-   virtual void acceptVisitor(IVisitingWorker*);
+   virtual void dispatchWorkComplete( TransactionID const& );
+   virtual void acceptVisitor( IVisitingWorker* );
 
 protected:
    IServiceClient* m_pSvcClient;
@@ -105,13 +120,13 @@ protected:
 /// ===================================================================
 /// @brief        The primary custom service functor.
 ///
-/// @details      The operator()() overload invokes work site(s) to
-///               do work, perform tasks, etc.
+/// @details      The operator()() overload notifies listeners of
+///               completion events.
 ///
 class GTCOMMON_API CMockDispatchable : public IDispatchable
 {
 public:
-   CMockDispatchable(IMockWorkClient*, IBase*, TransactionID const&);
+   CMockDispatchable( IMockWorkClient*, IBase*, TransactionID const& );
 
    virtual void operator()();
 

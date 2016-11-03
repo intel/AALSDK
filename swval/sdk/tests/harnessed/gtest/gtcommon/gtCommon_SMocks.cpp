@@ -7,22 +7,21 @@
 /// ===================================================================
 /// @internal        CMockDispatchable
 ///
-/// @param        pClient          The client
-/// @param        pMockDoWorker    The mock do worker
-/// @param        rTranID          The r tran id
-///
-CMockDispatchable::CMockDispatchable(IMockWorkClient* pClient, IBase* pMockDoWorker, TransactionID const& rTranID)
-   : m_pWorkClient(pClient)
-   , m_pService(pMockDoWorker)
-   , m_TranID(rTranID)
+CMockDispatchable::CMockDispatchable( IMockWorkClient* pClient,
+                                      IBase* pMockDoWorker,
+                                      TransactionID const& rTranID )
+       : m_pWorkClient( pClient )
+       , m_pService( pMockDoWorker )
+       , m_TranID( rTranID )
 {
 }
 
+// Provides the work completion callback event to clients.
 void CMockDispatchable::operator()()
 {
-   ASSERT(NULL != m_pWorkClient);
-   if(NULL != m_pWorkClient) {
-      m_pWorkClient->workComplete(m_TranID);
+   ASSERT( m_pWorkClient );
+   if ( m_pWorkClient != NULL ) {
+      m_pWorkClient->workComplete( m_TranID );
    }
    delete this;
 }
@@ -43,51 +42,55 @@ int CMockWorkClient::aquireServiceResource()
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
 
-   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+   ConfigRecord.Add( AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true );
 
-   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+   Manifest.Add( AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord );
 
-   Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Mock DoWorker");
+   Manifest.Add( AAL_FACTORY_CREATE_SERVICENAME, "Mock DoWorker" );
 
    IRuntime* pRuntime = m_pRuntimeClient->getRuntime();
-   pRuntime->allocService(static_cast<IBase*>(this), Manifest, TransactionID());
+   pRuntime->allocService(
+      static_cast<IBase*>( this ), Manifest, TransactionID() );
 
    m_pLock->wait();   // wait for OnRuntimeAllocateServiceSucceeded
    return m_Result;
 }
 
-void CMockWorkClient::serviceAllocated(IBase* pServiceBase, TransactionID const& rTranID)
+void CMockWorkClient::serviceAllocated( IBase* pServiceBase,
+                                        TransactionID const& rTranID )
 {
-   m_pListener->OnServiceAllocated(dynamic_cast<ServiceBase*>(pServiceBase));
+   m_pListener->OnServiceAllocated( dynamic_cast
+                                    <ServiceBase*>( pServiceBase ) );
 }
 
-void CMockWorkClient::serviceAllocateFailed(const IEvent& rEvent)
+void CMockWorkClient::serviceAllocateFailed( const IEvent& rEvent )
 {
    m_Result++;
-   m_pListener->OnServiceAllocateFailed(rEvent);
+   m_pListener->OnServiceAllocateFailed( rEvent );
 }
 
-void CMockWorkClient::serviceReleaseFailed(const IEvent& rEvent)
+void CMockWorkClient::serviceReleaseFailed( const IEvent& rEvent )
 {
-   m_pListener->OnServiceReleaseFailed(rEvent);
+   m_pListener->OnServiceReleaseFailed( rEvent );
 }
 
-void CMockWorkClient::serviceReleased(TransactionID const& rTranID)
+void CMockWorkClient::serviceReleased( TransactionID const& rTranID )
 {
-   m_pListener->OnServiceReleased(rTranID);
+   m_pListener->OnServiceReleased( rTranID );
 }
 
-void CMockWorkClient::serviceReleaseRequest(IBase* pServiceBase, const IEvent& rEvent)
+void CMockWorkClient::serviceReleaseRequest( IBase* pServiceBase,
+                                             const IEvent& rEvent )
 {
-   m_pListener->OnServiceReleaseRequest(pServiceBase, rEvent);
+   m_pListener->OnServiceReleaseRequest( pServiceBase, rEvent );
 }
 
-void CMockWorkClient::serviceEvent(const IEvent& rEvent)
+void CMockWorkClient::serviceEvent( const IEvent& rEvent )
 {
-   m_pListener->OnServiceEvent(rEvent);
+   m_pListener->OnServiceEvent( rEvent );
 }
 
-void CMockWorkClient::workComplete(TransactionID const& rTranID)
+void CMockWorkClient::workComplete( TransactionID const& rTranID )
 {
-   m_pListener->OnWorkComplete(rTranID);
+   m_pListener->OnWorkComplete( rTranID );
 }

@@ -116,6 +116,15 @@
     <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtSeqRand.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtServiceBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtSendMessage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sdk\tests\harnessed\gtest\swtest\gtEventUtil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\sdk\tests\harnessed\gtest\swtest\gtNVSTester.h">

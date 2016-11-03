@@ -18,7 +18,13 @@ public:
 /// @brief        A basic, light-weight spin-lock semaphore that works
 ///               without native synchronization primitives.
 ///
-class GTCOMMON_API CListenerLock
+/// @todo This should ultimately get wrapped around or integrated with
+/// the Synchronizing classes in mocks.
+///
+/// @internal     Added AutoLock to ensure serial access to the counter
+/// variable. Thu 03 Nov 2016 05:26:21 AM PDT
+///
+class GTCOMMON_API CListenerLock : public CAASBase
 {
 
 private:
@@ -26,13 +32,7 @@ private:
    // volatile may be helpful, but does not guarantee atomic access
 
 public:
-   /// ================================================================
-   /// @brief        A constructor, supporting wrap of the SDK semaphore.
-   ///
-   /// @details      Default value is NULL as the use of this parameter
-   ///               depends on disabled code.
-   ///
-   CListenerLock() : signal_count(0)
+   CListenerLock() : signal_count( 0 )
    {
    }
 
@@ -43,20 +43,20 @@ public:
    void signal()
    {
       // stdout indicator to aid in debugging
-      MOCKDEBUG("                              >>>>>>>>>>");
+      MSG( "                              >>>>>>>>>>" );
+      AutoLock( this );
       --signal_count;
-      // m_Sem.Post(1);
    }
 
    void wait()
    {
-      while(signal_count >= 0) {
+      while ( signal_count >= 0 ) {
          SleepZero();
       }
       // stdout indicator to aid in debugging
-      MOCKDEBUG("                              ||||||||||");
+      MSG( "                              ||||||||||" );
+      AutoLock( this );
       ++signal_count;
-      // m_Sem.Wait();
    }
 };
 

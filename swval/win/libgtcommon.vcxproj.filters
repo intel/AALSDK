@@ -57,10 +57,7 @@
     <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_SMocks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_VisitingWorker.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_Builder.h">
+    <ClInclude Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_CSurrogateAdapter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -104,5 +101,10 @@
     <ClCompile Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_DoWorker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\sdk\tests\harnessed\gtest\gtcommon\gtCommon_ModuleStub.tpp">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

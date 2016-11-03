@@ -7,7 +7,7 @@
 /// ===================================================================
 /// @internal        CRuntimeListener
 ///
-CRuntimeListener::CRuntimeListener(CListenerLock* pLock) : m_pLock(pLock)
+CRuntimeListener::CRuntimeListener( CListenerLock* pLock ) : m_pLock( pLock )
 {
 }
 
@@ -15,62 +15,54 @@ CRuntimeListener::~CRuntimeListener()
 {
 }
 
-void CRuntimeListener::OnRuntimeCreateOrGetProxyFailed(IEvent const& rEvent)
+void CRuntimeListener::OnRuntimeCreateOrGetProxyFailed( IEvent const& rEvent )
 {
-   MOCKDEBUG("runtime adapter");
-
+   MSG( "runtime adapter" );
    m_pLock->signal();
 }
 
-void CRuntimeListener::OnRuntimeStarted(IRuntime* pRuntime,
-                                        const NamedValueSet& rConfigParams)
+void CRuntimeListener::OnRuntimeStarted( IRuntime* pRuntime,
+                                         const NamedValueSet& rConfigParams )
 {
-   MOCKDEBUG("runtime adapter");
-
+   MSG( "runtime adapter" );
    m_pLock->signal();
 }
 
-void CRuntimeListener::OnRuntimeStopped(IRuntime* pRuntime)
+void CRuntimeListener::OnRuntimeStopped( IRuntime* pRuntime )
 {
-   MOCKDEBUG("runtime adapter");
-
+   MSG( "runtime adapter" );
    m_pLock->signal();
 }
 
-void CRuntimeListener::OnRuntimeStartFailed(IEvent const& rEvent)
+void CRuntimeListener::OnRuntimeStartFailed( IEvent const& rEvent )
 {
-   MOCKDEBUG("runtime adapter");
-
+   MSG( "runtime adapter" );
    m_pLock->signal();
 }
 
-void CRuntimeListener::OnRuntimeStopFailed(IEvent const& rEvent)
+void CRuntimeListener::OnRuntimeStopFailed( IEvent const& rEvent )
 {
-   MOCKDEBUG("runtime adapter");
-
+   MSG( "runtime adapter" );
    m_pLock->signal();
 }
 
-void CRuntimeListener::OnRuntimeAllocateServiceFailed(IEvent const& rEvent)
+void CRuntimeListener::OnRuntimeAllocateServiceFailed( IEvent const& rEvent )
 {
-   MOCKDEBUG("runtime adapter");
-
+   MSG( "runtime adapter" );
    m_pLock->signal();
 }
 
-void CRuntimeListener::OnRuntimeAllocateServiceSucceeded(IBase* pBase,
-                                                         TransactionID const
-                                                         & rTranID)
+void CRuntimeListener::OnRuntimeAllocateServiceSucceeded( IBase* pBase,
+                                                          TransactionID const
+                                                          & rTranID )
 {
-   MOCKDEBUG("runtime adapter");
-
+   MSG( "runtime adapter" );
    m_pLock->signal();
 }
 
-void CRuntimeListener::OnRuntimeEvent(IEvent const& rEvent)
+void CRuntimeListener::OnRuntimeEvent( IEvent const& rEvent )
 {
-   MOCKDEBUG("runtime adapter");
-
+   MSG( "runtime adapter" );
    m_pLock->signal();
 }
 
@@ -78,16 +70,14 @@ void CRuntimeListener::OnRuntimeEvent(IEvent const& rEvent)
 /// @internal        CRuntimeAdapter
 ///
 
-CRuntimeAdapter::CRuntimeAdapter(IRuntimeClient* pRCA)
-   : m_pRuntimeDelegate(NULL)
-   , m_pRCA(pRCA)
-   , m_pLock(NULL)
+CRuntimeAdapter::CRuntimeAdapter( IRuntimeClient* pRCA )
+       : m_pRuntimeDelegate( NULL ), m_pRCA( pRCA ), m_pLock( NULL )
 {
-   m_pRuntimeDelegate = new (std::nothrow) Runtime(pRCA);
-   SetInterface(iidRuntime, m_pRuntimeDelegate);
+   m_pRuntimeDelegate = new ( std::nothrow ) Runtime( pRCA );
+   SetInterface( iidRuntime, m_pRuntimeDelegate );
 }
 
-void CRuntimeAdapter::setListenerLock(CListenerLock* pLock)
+void CRuntimeAdapter::setListenerLock( CListenerLock* pLock )
 {
    m_pLock = pLock;
 }
@@ -95,6 +85,7 @@ void CRuntimeAdapter::setListenerLock(CListenerLock* pLock)
 CRuntimeAdapter::~CRuntimeAdapter()
 {
    delete m_pRuntimeDelegate;
+   m_pRuntimeDelegate = NULL;
 }
 
 /// ===================================================================
@@ -104,9 +95,9 @@ CRuntimeAdapter::~CRuntimeAdapter()
 /// function in order to invoke the custom in-module service factory.
 ///
 
-btBool CRuntimeAdapter::start(const NamedValueSet& rconfigParms)
+btBool CRuntimeAdapter::start( const NamedValueSet& rconfigParms )
 {
-   return m_pRuntimeDelegate->start(rconfigParms);
+   return m_pRuntimeDelegate->start( rconfigParms );
 }
 
 void CRuntimeAdapter::stop()
@@ -114,14 +105,14 @@ void CRuntimeAdapter::stop()
    m_pRuntimeDelegate->stop();
 }
 
-btBool CRuntimeAdapter::schedDispatchable(IDispatchable* pDispatchable)
+btBool CRuntimeAdapter::schedDispatchable( IDispatchable* pDispatchable )
 {
-   return m_pRuntimeDelegate->schedDispatchable(pDispatchable);
+   return m_pRuntimeDelegate->schedDispatchable( pDispatchable );
 }
 
-IRuntime* CRuntimeAdapter::getRuntimeProxy(IRuntimeClient* pClient)
+IRuntime* CRuntimeAdapter::getRuntimeProxy( IRuntimeClient* pClient )
 {
-   return m_pRuntimeDelegate->getRuntimeProxy(pClient);
+   return m_pRuntimeDelegate->getRuntimeProxy( pClient );
 }
 
 btBool CRuntimeAdapter::releaseRuntimeProxy()
@@ -143,21 +134,27 @@ btBool CRuntimeAdapter::IsOK()
 /// @internal     Custom override of allocService so we can use the
 /// custom in-module service factory.
 ///
-void CRuntimeAdapter::allocService(IBase* pServiceClient,
-                                   NamedValueSet const& rManifest,
-                                   TransactionID const& rTranID)
+void CRuntimeAdapter::allocService( IBase* pServiceClient,
+                                    NamedValueSet const& rManifest,
+                                    TransactionID const& rTranID )
 {
-   InModuleSvcsFact<CMockDoWorker>* pFact = GetServiceFactory();
+   InModuleSvcsFact<CMockDoWorker>* pFact = InModuleSvcsFact
+      <CMockDoWorker>::GetServiceFactory();
 
-   ASSERT(pFact);
-   IBase* pService = pFact->CreateServiceObject(GetServiceModule(),
-                                                static_cast<IRuntime*>(this));
-
-   ASSERT(pService);
-
-   pFact->InitializeService(pService, pServiceClient, rTranID, rManifest);
-
-   ASSERT(pServiceClient);
-   dynamic_ptr<ServiceBase>(iidServiceBase, pService)
-      ->init(pServiceClient, rManifest, rTranID);
+   ASSERT( NULL != pFact );
+   if ( pFact != NULL ) {
+      IBase* pService = pFact->CreateServiceObject(
+         InModuleSvcsFact<CMockDoWorker>::GetServiceModule(),
+         static_cast<IRuntime*>( this ) );
+      ASSERT( NULL != pService );
+      if ( pService != NULL ) {
+         pFact->InitializeService(
+            pService, pServiceClient, rTranID, rManifest );
+      }
+      ASSERT( NULL != pServiceClient );
+      if ( pServiceClient != NULL ) {
+         dynamic_ptr<ServiceBase>( iidServiceBase, pService )
+            ->init( pServiceClient, rManifest, rTranID );
+      }
+   }
 }

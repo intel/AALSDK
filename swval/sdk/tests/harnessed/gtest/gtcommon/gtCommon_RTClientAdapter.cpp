@@ -1,33 +1,31 @@
 // INTEL CONFIDENTIAL - For Intel Internal Use Only
 #ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif // HAVE_CONFIG_H
+#include <config.h>
+#endif   // HAVE_CONFIG_H
 #include "gtCommon.h"
 
 /// ===================================================================
 /// @internal        CRuntimeClientAdapter
 ///
 
-CRuntimeClientAdapter::CRuntimeClientAdapter(CListenerLock* pLock)
-   : m_pRuntimeAdapter(new (std::nothrow) CRuntimeAdapter(dynamic_cast<IRuntimeClient*>(this)))
-   , m_isOK(false)
-   , m_pLock(pLock)
+CRuntimeClientAdapter::CRuntimeClientAdapter( CListenerLock* pLock )
+       : m_pRuntimeAdapter( new ( std::nothrow ) CRuntimeAdapter(
+            dynamic_cast<IRuntimeClient*>( this ) ) )
+       , m_isOK( false )
+       , m_pLock( pLock )
 {
-   m_pRTListener = dynamic_cast<IRuntimeListener*>(new (std::nothrow) CRuntimeListener(pLock));
+   m_pRTListener = dynamic_cast
+      <IRuntimeListener*>( new ( std::nothrow ) CRuntimeListener( pLock ) );
 
-   SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient*>(this));
+   SetInterface( iidRuntimeClient, dynamic_cast<IRuntimeClient*>( this ) );
 
    NamedValueSet nvs;
-   ASSERT(m_pRuntimeAdapter->start(nvs));
-}
-
-CRuntimeClientAdapter::~CRuntimeClientAdapter()
-{
+   ASSERT( m_pRuntimeAdapter->start( nvs ) );
 }
 
 IRuntime* CRuntimeClientAdapter::getRuntimeAdapter()
 {
-   return dynamic_cast<IRuntime*>(m_pRuntimeAdapter);
+   return dynamic_cast<IRuntime*>( m_pRuntimeAdapter );
 }
 
 btBool CRuntimeClientAdapter::isOK()
@@ -50,48 +48,52 @@ IRuntime* CRuntimeClientAdapter::getRuntime()
    return getRuntimeAdapter();
 }
 
-void CRuntimeClientAdapter::runtimeCreateOrGetProxyFailed(IEvent const& rEvent)
+void CRuntimeClientAdapter::runtimeCreateOrGetProxyFailed( IEvent const
+                                                           & rEvent )
 {
    m_isOK = false;
-   m_pRTListener->OnRuntimeCreateOrGetProxyFailed(rEvent);
+   m_pRTListener->OnRuntimeCreateOrGetProxyFailed( rEvent );
 }
 
-void CRuntimeClientAdapter::runtimeStarted(IRuntime* pRuntime, const NamedValueSet& rConfigParms)
+void CRuntimeClientAdapter::runtimeStarted( IRuntime* pRuntime,
+                                            const NamedValueSet& rConfigParms )
 {
    m_isOK = true;
-   m_pRTListener->OnRuntimeStarted(pRuntime, rConfigParms);
+   m_pRTListener->OnRuntimeStarted( pRuntime, rConfigParms );
 }
 
-void CRuntimeClientAdapter::runtimeStopped(IRuntime* pRuntime)
+void CRuntimeClientAdapter::runtimeStopped( IRuntime* pRuntime )
 {
    m_isOK = false;
-   m_pRTListener->OnRuntimeStopped(pRuntime);
+   m_pRTListener->OnRuntimeStopped( pRuntime );
 }
 
-void CRuntimeClientAdapter::runtimeStartFailed(const IEvent& rEvent)
+void CRuntimeClientAdapter::runtimeStartFailed( const IEvent& rEvent )
 {
    m_isOK = false;
-   m_pRTListener->OnRuntimeStartFailed(rEvent);
+   m_pRTListener->OnRuntimeStartFailed( rEvent );
 }
 
-void CRuntimeClientAdapter::runtimeStopFailed(const IEvent& rEvent)
+void CRuntimeClientAdapter::runtimeStopFailed( const IEvent& rEvent )
 {
-   m_pRTListener->OnRuntimeStopFailed(rEvent);
+   m_pRTListener->OnRuntimeStopFailed( rEvent );
 }
 
-void CRuntimeClientAdapter::runtimeAllocateServiceFailed(IEvent const& rEvent)
+void CRuntimeClientAdapter::runtimeAllocateServiceFailed( IEvent const& rEvent )
 {
    m_isOK = false;
-   m_pRTListener->OnRuntimeAllocateServiceFailed(rEvent);
+   m_pRTListener->OnRuntimeAllocateServiceFailed( rEvent );
 }
 
-void CRuntimeClientAdapter::runtimeAllocateServiceSucceeded(IBase* pBase, TransactionID const& rTranID)
+void CRuntimeClientAdapter::runtimeAllocateServiceSucceeded( IBase* pBase,
+                                                             TransactionID const
+                                                             & rTranID )
 {
    m_isOK = true;
-   m_pRTListener->OnRuntimeAllocateServiceSucceeded(pBase, rTranID);
+   m_pRTListener->OnRuntimeAllocateServiceSucceeded( pBase, rTranID );
 }
 
-void CRuntimeClientAdapter::runtimeEvent(IEvent const& rEvent)
+void CRuntimeClientAdapter::runtimeEvent( IEvent const& rEvent )
 {
-   m_pRTListener->OnRuntimeEvent(rEvent);
+   m_pRTListener->OnRuntimeEvent( rEvent );
 }

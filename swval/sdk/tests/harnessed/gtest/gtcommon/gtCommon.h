@@ -39,39 +39,19 @@ using namespace AAL;
 #endif   // ERR
 //===========================================================================
 
-//#define DBGMOCK
-#ifdef DBGMOCK
-   #define MOCKDEBUG(x) MSG(std::endl << (x)); raise(SIGTRAP)
-   #define NULLCHECKDBG(x) if(NULL == (x)) { MSG(std::endl << (x)); raise(SIGTRAP); } else delete (x);
-#else 
-   #define MOCKDEBUG(x) MSG(std::endl << (x))
-   #define NULLCHECKDBG(x) ASSERT(NULL != (x)) 
-#endif
-
-//===========================================================================
-   // Turn MOCKDEBUG off
-   ///////////////////////
-   #ifdef MOCKDEBUG
-   #undef MOCKDEBUG
-   #endif
-   #define MOCKDEBUG(x) while(0);
-//===========================================================================   
-
 #define SUCCESS 0
 
 #include "gtCommon_Config.h"
-#include "gtCommon_RNG.h"
-#include "gtCommon_Stream.h"
 #include "gtCommon_Console.h"
-#include "gtCommon_Status.h"
-#include "gtCommon_Signals.h"
 #include "gtCommon_GTest.h"
 #include "gtCommon_Mocks.h"
-
-#include "gtCommon_Builder.h"
-#include "gtCommon_VisitingWorker.h"
-
+#include "gtCommon_RNG.h"
+#include "gtCommon_Stream.h"
+#include "gtCommon_Status.h"
+#include "gtCommon_Signals.h"
+// begin bclacasx additions   
 #include "gtCommon_ClassOverrides.h"
+#include "gtCommon_CSurrogateAdapter.h"
 #include "gtCommon_DoWorker.h"
 #include "gtCommon_ModuleStub.h"
 #include "gtCommon_RTAdapter.h"

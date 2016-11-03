@@ -1,12 +1,8 @@
 // INTEL CONFIDENTIAL - For Intel Internal Use Only
 #ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif   // HAVE_CONFIG_H
-
-#ifndef HAVE_COMMON_H
-#define HAVE_COMMON_H
+# include <config.h>
+#endif // HAVE_CONFIG_H
 #include "gtCommon.h"
-#endif
 
 TEST(SMocks, aal0820)
 {
@@ -78,7 +74,8 @@ TEST(SMocks, aal0820)
    CMockDoWorker* pMS = dynamic_cast<CMockDoWorker*>(listener->getService());
    EXPECT_NONNULL(pMS);
 
-   pMS->doWork();
+   pMS->doWork(); // no longer implemented due to the lack of a visitor
+                  // Wed 02 Nov 2016 02:24:34 PM PDT
 
    localLock.wait();   // wait for work completion
 

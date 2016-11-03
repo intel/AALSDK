@@ -53,7 +53,7 @@
 /// 05/08/2008     HM       Comments & License
 /// 07/23/2008     HM       Added beginning of Resource Manager keys, started
 ///                            testing conversion to consts from macros
-/// 09/22/2008	    HM       Added ResMgr sub-system key
+/// 09/22/2008     HM       Added ResMgr sub-system key
 /// 09/23/2008     JG+HM    Added Management AFU sub-system keys
 /// 10/12/2008     HM       Merging updates for MAFU, adding Registrar keys
 /// 11/13/2008     HM       Fixed RegistrarKey macro creation bug
@@ -330,7 +330,7 @@
 #define errMemory                      AAL_ErrNum     (0x000B)
 #define errDevice                      AAL_ErrNum     (0x000C)
 #define errAFUPackage                  AAL_ErrNum     (0x000D)
-#define errAFUTransactionNotFound	   AAL_ErrNum     (0x000E)
+#define errAFUTransactionNotFound      AAL_ErrNum     (0x000E)
 #define errServiceNotFound             AAL_ErrNum     (0x000F)
 #define errAllocationFailure           AAL_ErrNum     (0x0010)
 #define errReleaseFailure              AAL_ErrNum     (0x0011)
@@ -422,6 +422,12 @@
 #define iidRuntime                   __AAL_IID(AAL_sysAAL, 0x0008)   // Class implements IRuntime
 
 #define iidServiceRevoke             __AAL_IID(AAL_sysAAL, 0x0009)   // IServiceRevoke
+
+#define iidAALTransport              __AAL_IID(AAL_sysAAL, 0x0010)   // Added for CAASBuilder in swtest
+
+#define iidAALMarshaller             __AAL_IID(AAL_sysAAL, 0x0011)   // Added for CAASBuilder in swtest
+
+#define iidAALUnMarshaller           __AAL_IID(AAL_sysAAL, 0x0012)   // Added for CAASBuilder in swtest
 
 /// @}
 

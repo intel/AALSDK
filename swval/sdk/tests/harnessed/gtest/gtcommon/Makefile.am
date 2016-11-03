@@ -7,26 +7,26 @@ libgtcommon.la
 
 libgtcommon_la_SOURCES=\
 gtCommon.h \
+gtCommon_ClassOverrides.h \
 gtCommon_Config.h \
-gtCommon_RNG.h \
-gtCommon_Stream.h \
 gtCommon_Console.h \
-gtCommon_Status.h \
-gtCommon_Signals.h \
+gtCommon_CSurrogateAdapter.h \
+gtCommon_DoWorker.h \
 gtCommon_GTest.h \
 gtCommon_Mocks.h \
-gtCommon_Builder.h \
-gtCommon_VisitingWorker.h \
-gtCommon_ClassOverrides.h \
-gtCommon_DoWorker.h \
 gtCommon_ModuleStub.h \
+gtCommon_RNG.h \
 gtCommon_RTAdapter.h \
 gtCommon_RTClientAdapter.h \
-gtCommon_SMocks.h \
 gtCommon_ServiceListener.h \
+gtCommon_SMocks.h \
+gtCommon_Stream.h \
+gtCommon_Signals.h \
+gtCommon_Status.h \
 gtCommon.cpp \
 gtCommon_Config.cpp \
 gtCommon_DoWorker.cpp \
+gtCommon_ModuleStub.tpp \
 gtCommon_RNG.cpp \
 gtCommon_RTAdapter.cpp \
 gtCommon_RTClientAdapter.cpp \

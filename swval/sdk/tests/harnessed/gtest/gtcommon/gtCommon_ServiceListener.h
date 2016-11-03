@@ -19,13 +19,15 @@ public:
    ///                             synchronization lock.
    /// @param[in]    msg           The message
    ///
-   CServiceListener(CRuntimeClientAdapter* pRCAdapter, CListenerLock* pLock, string msg)
-      : m_pServiceBase(NULL)
-      , m_Message(msg)
-      , m_pSvcClient(NULL)
-      , m_pLock(pLock)
-      , m_pRCA(pRCAdapter)
-      , m_Result(0)
+   CServiceListener( CRuntimeClientAdapter* pRCAdapter,
+                     CListenerLock* pLock,
+                     std::string msg )
+          : m_pServiceBase( NULL )
+          , m_Message( msg )
+          , m_pSvcClient( NULL )
+          , m_pLock( pLock )
+          , m_pRCA( pRCAdapter )
+          , m_Result( 0 )
    {
    }
 
@@ -42,13 +44,13 @@ public:
    ///
    /// @param        pBase    Service IBase pointer.
    ///
-   void OnServiceAllocated(ServiceBase* pBase)
+   void OnServiceAllocated( ServiceBase* pBase )
    {
-      MOCKDEBUG(m_Message);
+      MSG( m_Message );
       m_pServiceBase = pBase;
       m_pSvcClient = pBase->getServiceClient();
-      ASSERT_NONNULL(m_pServiceBase);
-      ASSERT_NONNULL(m_pSvcClient);
+      ASSERT_NONNULL( m_pServiceBase );
+      ASSERT_NONNULL( m_pSvcClient );
       m_pLock->signal();
    }
 
@@ -58,14 +60,15 @@ public:
    ///
    /// @param        rEvent    The event read-only reference.
    ///
-   void OnServiceAllocateFailed(IEvent const& rEvent)
+   void OnServiceAllocateFailed( IEvent const& rEvent )
    {
-      MOCKDEBUG(m_Message);
-      --m_Result;                                   // decrement the result, indicating a failure.
-      IEvent& rRef = const_cast<IEvent&>(rEvent);   // cast away the constness
+      MSG( m_Message );
+      --m_Result;   // decrement the result, indicating a failure.
+      IEvent& rRef = const_cast<IEvent&>( rEvent );   // cast away the constness
       // in order to construct the exception transaction event.
-      IExceptionTransactionEvent& rTEE = dynamic_cast<IExceptionTransactionEvent&>(rRef);
-      MSG("debug " << rTEE.Description());
+      IExceptionTransactionEvent& rTEE = dynamic_cast
+         <IExceptionTransactionEvent&>( rRef );
+      MSG( "debug " << rTEE.Description() );
       m_pLock->signal();
    }
 
@@ -75,9 +78,9 @@ public:
    ///
    /// @param        rEvent    Read-only event reference.
    ///
-   void OnServiceReleaseFailed(IEvent const& rEvent)
+   void OnServiceReleaseFailed( IEvent const& rEvent )
    {
-      MOCKDEBUG(m_Message);
+      MSG( m_Message );
       m_pLock->signal();   // Signal semaphore to indicate callback completion.
    }
 
@@ -86,9 +89,9 @@ public:
    ///
    /// @param        rTranID    Read-only transaction ID reference.
    ///
-   void OnServiceReleased(TransactionID const& rTranID)
+   void OnServiceReleased( TransactionID const& rTranID )
    {
-      MOCKDEBUG(m_Message);
+      MSG( m_Message );
       m_pLock->signal();
    }
 
@@ -99,9 +102,9 @@ public:
    /// @param        pBase     Service IBase pointer.
    /// @param        rEvent    Read-only event reference.
    ///
-   void OnServiceReleaseRequest(IBase* pBase, IEvent const& rEvent)
+   void OnServiceReleaseRequest( IBase* pBase, IEvent const& rEvent )
    {
-      MOCKDEBUG(m_Message);
+      MSG( m_Message );
       m_pLock->signal();   // Signal semaphore to indicate callback completion.
    }
 
@@ -110,9 +113,9 @@ public:
    ///
    /// @param        rEvent    Read-only event reference.
    ///
-   void OnServiceEvent(IEvent const& rEvent)
+   void OnServiceEvent( IEvent const& rEvent )
    {
-      MOCKDEBUG(m_Message);
+      MSG( m_Message );
       m_pLock->signal();   // Signal semaphore to indicate callback completion.
    }
 
@@ -123,26 +126,9 @@ public:
    ///
    /// @param        rTranID    Read-only TransactionID reference.
    ///
-   void OnWorkComplete(TransactionID const& rTranID)
+   void OnWorkComplete( TransactionID const& rTranID )
    {
-      MOCKDEBUG(m_Message);
-      //      dynamic_cast<CMockDoWorker*>(m_pServiceBase)->Release(TransactionID(), AAL_INFINITE_WAIT);
-      m_pLock->signal();   // Signal semaphore to indicate callback completion.
-   }
-
-   /// ================================================================
-   /// @brief        Additional work complete event handler, invoked by service
-   ///               client.
-   ///
-   /// @details      Indicates service work completion for task number
-   ///               2, showing how individual services can expose an
-   ///               arbitrary number of functions or tasks.
-   ///
-   /// @param        rTranID    Read-only TransactionID reference.
-   ///
-   void OnWorkComplete2(TransactionID const& rTranID)
-   {
-      MOCKDEBUG(m_Message);
+      MSG( m_Message );
       m_pLock->signal();   // Signal semaphore to indicate callback completion.
    }
 
@@ -153,18 +139,18 @@ private:
    CRuntimeClientAdapter* m_pRCA;
    CListenerLock* m_pLock;
    int m_Result;
-   string m_Message;
+   std::string m_Message;
 
 public:
    IServiceBase* getService()
    {
-      ASSERT(m_pServiceBase);
+      ASSERT( m_pServiceBase );
       return m_pServiceBase;
    }
 
    IServiceClient* getClient()
    {
-      ASSERT(m_pSvcClient);
+      ASSERT( m_pSvcClient );
       return m_pSvcClient;
    }
 };

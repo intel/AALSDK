@@ -2,7 +2,8 @@
 #ifndef __RUNTIME_CLIENT_ADAPTER_H__
 #define __RUNTIME_CLIENT_ADAPTER_H__
 
-class GTCOMMON_API CRuntimeClientAdapter : public CAASBase, public IRuntimeClient
+class GTCOMMON_API CRuntimeClientAdapter : public CAASBase,
+                                           public IRuntimeClient
 {
 
 public:
@@ -11,16 +12,18 @@ public:
    ///
    /// @param        pLock    The lock
    ///
-   CRuntimeClientAdapter(CListenerLock* pLock);
+   CRuntimeClientAdapter( CListenerLock* pLock );
 
    // virtual destructor, allowing deletion from a base pointer.
-   virtual ~CRuntimeClientAdapter();
+   virtual ~CRuntimeClientAdapter()
+   {
+   }
 
 protected:
-   CRuntimeAdapter*  m_pRuntimeAdapter;
-   btBool            m_isOK;
+   CRuntimeAdapter* m_pRuntimeAdapter;
+   btBool m_isOK;
    IRuntimeListener* m_pRTListener;
-   CListenerLock*    m_pLock;
+   CListenerLock* m_pLock;
 
 public:
    // custom functions
@@ -54,14 +57,16 @@ public:
    /// @brief        The runtime client interface
    ///
 
-   virtual void runtimeCreateOrGetProxyFailed(IEvent const& rEvent);
-   virtual void runtimeStarted(IRuntime* pRuntime, const NamedValueSet& rConfigParms);
-   virtual void runtimeStopped(IRuntime* pRuntime);
-   virtual void runtimeStartFailed(const IEvent& rEvent);
-   virtual void runtimeStopFailed(const IEvent& rEvent);
-   virtual void runtimeAllocateServiceFailed(IEvent const& rEvent);
-   virtual void runtimeAllocateServiceSucceeded(IBase* pBase, TransactionID const& rTranID);
-   virtual void runtimeEvent(IEvent const& rEvent);
+   virtual void runtimeCreateOrGetProxyFailed( IEvent const& rEvent );
+   virtual void runtimeStarted( IRuntime* pRuntime,
+                                const NamedValueSet& rConfigParms );
+   virtual void runtimeStopped( IRuntime* pRuntime );
+   virtual void runtimeStartFailed( const IEvent& rEvent );
+   virtual void runtimeStopFailed( const IEvent& rEvent );
+   virtual void runtimeAllocateServiceFailed( IEvent const& rEvent );
+   virtual void runtimeAllocateServiceSucceeded( IBase* pBase,
+                                                 TransactionID const& rTranID );
+   virtual void runtimeEvent( IEvent const& rEvent );
 };
 
 #endif   // __RUNTIME_CLIENT_ADAPTER_H__
