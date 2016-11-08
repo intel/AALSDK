@@ -456,7 +456,6 @@ void TempPowMonApp::runtimeAllocateServiceFailed( IEvent const &rEvent)
 void TempPowMonApp::runtimeAllocateServiceSucceeded(IBase *pClient,
                                                     TransactionID const &rTranID)
 {
-   TransactionID const * foo = &rTranID;
    MSG("Runtime Allocate Service Succeeded");
 }
 
