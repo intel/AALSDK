@@ -658,7 +658,7 @@ void CMyApp::allocateWorkspaces()
    m_UMsgSize = numUmsg * KB(4);
 
    if(NULL == m_UMsgVirt){
-	  ERR("No uMSG support");
+	  cout << "WARNING: No uMSG support" << endl;
    }
 }
 
