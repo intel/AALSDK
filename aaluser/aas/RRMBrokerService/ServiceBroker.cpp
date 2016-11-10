@@ -380,10 +380,13 @@ void ServiceBroker::allocService(IRuntime               *pProxy,
       }
       return;
    } else {
-      ServiceHost *SvcHost = NULL;
+      ServiceHost *SvcHost      = NULL;
+      btBool       AllocSvcHost = false;
+
       if ( NULL == (SvcHost = findServiceHost(sName)) ) {
          // Instantiate the core facilities
-         SvcHost = new ServiceHost(sName);
+         AllocSvcHost = true;
+         SvcHost      = new ServiceHost(sName);
       }
 
       if ( !SvcHost->IsOK() ) {
@@ -398,6 +401,11 @@ void ServiceBroker::allocService(IRuntime               *pProxy,
 
       // Allocate the service
       if ( !SvcHost->InstantiateService( getRuntime(), pServiceClientBase, rManifest, rTranID) ) {
+
+         if ( AllocSvcHost ) {
+            delete SvcHost;
+         }
+
          getRuntime()->schedDispatchable( new ServiceAllocateFailed(pServiceClient,
                                                                     pRuntimeClient,
                                                                     new CExceptionTransactionEvent(NULL,
