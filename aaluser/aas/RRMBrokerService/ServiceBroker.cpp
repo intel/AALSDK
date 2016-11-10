@@ -696,10 +696,13 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
         return;
      }
 
-     ServiceHost *SvcHost = NULL;
+     ServiceHost *SvcHost      = NULL;
+     btBool       AllocSvcHost = false;
+
      if ( NULL == (SvcHost = findServiceHost(sName)) ) {
         // Load the Service Library and set the Runtime Proxy and Runtime Service Providers
-        SvcHost = new ServiceHost(sName);
+        AllocSvcHost = true;
+        SvcHost      = new ServiceHost(sName);
      }
 
      if ( !SvcHost->IsOK() ) {
@@ -714,6 +717,11 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
 
      // Allocate the service
      if ( !SvcHost->InstantiateService(pProxy, pClientBase, nvsInstancerecord, origTid) ) {
+
+        if ( AllocSvcHost ) {
+           delete SvcHost;
+        }
+
         getRuntime()->schedDispatchable( new ServiceAllocateFailed(dynamic_ptr<IServiceClient>(iidServiceClient, pClientBase),
                                                                    pRuntimeClient,
                                                                    new CExceptionTransactionEvent(NULL,
