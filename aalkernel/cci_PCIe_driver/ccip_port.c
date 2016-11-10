@@ -638,8 +638,8 @@ struct port_device  *get_port_device( btPhysAddr pphys_port_mmio,
 
    // Validate inputs parameters
    ASSERT(pkvp_port_mmio);
-   if((NULL ==  pkvp_port_mmio)) {
-
+   if( NULL ==  pkvp_port_mmio ) {
+      return NULL;
    }
 
    // Construct the new object
@@ -678,6 +678,8 @@ struct port_device  *get_port_device( btPhysAddr pphys_port_mmio,
    return pportdev;
 
 ERR:
+   kosal_kfree(pportdev, sizeof(struct port_device));
+
    PERR("Error getting Port device\n");
    PTRACEOUT;
    return NULL;
