@@ -867,12 +867,14 @@ btBool ccip_links_status(struct fme_device *pfme_dev)
 
    // checking PCIe0,PCIe1,UPI link status
    // UPI link up status    - 0xE -> b1110
+   // Ignore  upilink_satus[0] bit KTI_ERROR
    // PCIe0 link up status  - 0x1
    // PCIe1 link up status  - 0x1
 
-   if( (0xE == ccip_fme_hdr(pfme_dev)->fab_status.upilink_status  ) &&
-       (0x1 == ccip_fme_hdr(pfme_dev)->fab_status.pcie0link_status ) &&
-       (0x1 == ccip_fme_hdr(pfme_dev)->fab_status.pcie1link_status ) ) {
+   if( ((0xE == ccip_fme_hdr(pfme_dev)->fab_status.upilink_status  ) ||
+        (0xF == ccip_fme_hdr(pfme_dev)->fab_status.upilink_status  )) &&
+        (0x1 == ccip_fme_hdr(pfme_dev)->fab_status.pcie0link_status ) &&
+        (0x1 == ccip_fme_hdr(pfme_dev)->fab_status.pcie1link_status ) ) {
 
       //PCIe0,PCIe1,UPI links are up
       res = true ;
