@@ -327,9 +327,9 @@ int ccidrv_ioctl(struct inode *inode,
       // Read whole message
       if ( copy_from_user(pfullrequest, (void *)arg, FullRequestSize) ) {
          kosal_kfree(pfullrequest, FullRequestSize);
-         kosal_kfree(pfullresponse, FullRequestSize);
          return -EFAULT;
       }
+
    } else {
       //Header is all there is. No need to read it again. Just point to req earlier.
       pfullrequest = &req;
@@ -342,7 +342,10 @@ int ccidrv_ioctl(struct inode *inode,
    //-------------------------------------------------------------------------------------------
    pfullresponse = (struct ccipui_ioctlreq *) kosal_kzmalloc(FullRequestSize);
    ASSERT(NULL != pfullresponse);
-   if( NULL == pfullresponse) {
+   if ( NULL == pfullresponse ) {
+      if ( &req != pfullrequest ) {
+         kosal_kfree(pfullrequest, FullRequestSize);
+      }
       PERR("Unable to allocate memory \n");
       ret = -ENOMEM;
       return ret;
@@ -362,7 +365,7 @@ int ccidrv_ioctl(struct inode *inode,
                                pfullresponse,                       // Pointer to output response
                                &Outbufsize);                        // Outbuf buffer size
 
-   if(0 == ret){
+   if ( 0 == ret ) {
 
       btWSSize FullResponseSize = sizeof(struct ccipui_ioctlreq) + Outbufsize;
 
@@ -370,18 +373,18 @@ int ccidrv_ioctl(struct inode *inode,
       PINFO("UIDRV is writing %" PRIu64 "-byte response message with payload of size %" PRIu64 " bytes with %llx\n", FullResponseSize, pfullresponse->size, (btWSID)(*pfullresponse->payload));
       ret = copy_to_user((void*)arg, pfullresponse, FullResponseSize);
 
-   }else{
+   } else {
       PDEBUG("ccidrv_messageHandler failed\n");
       ret = -EINVAL;
    }
 
    // Free response buffer
-   if( NULL != pfullresponse){
-         kosal_kfree( pfullresponse, FullRequestSize);
+   if ( NULL != pfullresponse ) {
+      kosal_kfree(pfullresponse, FullRequestSize);
    }
 
    // Free message copy if it had a payload
-   if( &req != pfullrequest ) {
+   if ( &req != pfullrequest ) {
       kosal_kfree(pfullrequest, FullRequestSize);
    }
 
