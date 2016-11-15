@@ -98,14 +98,14 @@ do                   \
 }while(0)
 
 #define MAX_ARGUMENT 512
-static char argument[MAX_ARGUMENT] = { 0, };
-static int  argument_len           = 0;
+static char argument[MAX_ARGUMENT+1] = { 0, };
+static int  argument_len             = 0;
 
-#define cont_argument(str, len)                             \
-do                                                          \
-{                                                           \
-   strncat(argument, str, sizeof(argument) - argument_len); \
-   argument_len += len;                                     \
+#define cont_argument(str, len)                         \
+do                                                      \
+{                                                       \
+   strncat(argument, str, MAX_ARGUMENT - argument_len); \
+   argument_len += len;                                 \
 }while(0)
 
 #define end_argument() \
@@ -236,7 +236,8 @@ PRINT_MINUS_WS_EQU   [[:print:]]{-}[[:space:]=]
                                                          }
 
 <NIXSHORTOPTWS>{PRINT_MINUS_WS_DASH}{PRINT_MINUS_WS}*    { // -a abc
-                                                            strncpy(argument, yytext, sizeof(argument));
+                                                            strncpy(argument, yytext, MAX_ARGUMENT);
+                                                            argument[sizeof(argument) - 1] = 0;
                                                             if ( aalclp_on_nix_short_option(yyscanner, option, argument) ) {
                                                                yyterminate();
                                                             }
@@ -326,7 +327,8 @@ PRINT_MINUS_WS_EQU   [[:print:]]{-}[[:space:]=]
                                                                buf[1] = *p;
                                                                buf[2] = 0;
 
-                                                               strncpy(argument, yytext, sizeof(argument));
+                                                               strncpy(argument, yytext, MAX_ARGUMENT);
+                                                               argument[sizeof(argument) - 1] = 0;
 
                                                                if ( aalclp_on_nix_short_option(yyscanner, buf, argument) ) {
                                                                   yyterminate();
@@ -441,7 +443,8 @@ PRINT_MINUS_WS_EQU   [[:print:]]{-}[[:space:]=]
                                                          }
 
 <NIXLONGOPTWS>{PRINT_MINUS_WS_DASH}{PRINT_MINUS_WS}*     { // --abc xyz
-                                                            strncpy(argument, yytext, sizeof(argument));
+                                                            strncpy(argument, yytext, MAX_ARGUMENT);
+                                                            argument[sizeof(argument) - 1] = 0;
                                                             if ( aalclp_on_nix_long_option(yyscanner, option, argument) ) {
                                                                yyterminate();
                                                             }
