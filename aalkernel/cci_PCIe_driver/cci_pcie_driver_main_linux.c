@@ -185,7 +185,7 @@ static ssize_t ahmpip_attrib_store_debug(struct device_driver *drv,
                                          const char *buf,
                                          size_t size)
 {
-   int temp = 0;
+   unsigned temp = 0;
    sscanf(buf,"%x", &temp);
 
    debug = temp;
