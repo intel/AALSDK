@@ -229,11 +229,13 @@ int mmlink_connection::handle_data()
 
 int mmlink_connection::handle_bound_command(char *cmd)
 {
+  unsigned u = 0;
   int arg1, arg2;
   bool unknown = true;
 
-  if (1 == sscanf(cmd, "IDENT %X", &arg1))
+  if (1 == sscanf(cmd, "IDENT %X", &u))
   {
+    arg1 = (int)u;
     if (arg1 >= 0 && arg1 <= 0xF) {
       int ident[4];
       size_t msg_len = 64;
