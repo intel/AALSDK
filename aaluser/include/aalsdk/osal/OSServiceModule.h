@@ -224,6 +224,7 @@ extern __storagecls bt32bitInt AAL_SVC_MOD_ENTRY_POINT(__rtnamesym)(btUnsigned32
 #define AAL_MOD_DEFAULT_IMPL(__arg, __verstr, __vercur, __verrev, __verage) \
 case AAL_SVC_CMD_VER_STR : {                                                \
    strncpy((BTSTR)(__arg), __verstr, AAL_SVC_MOD_VER_STR_MAX);              \
+   *( (BTSTR)(__arg) + (AAL_SVC_MOD_VER_STR_MAX-1) ) = 0;                   \
 } return 0;                                                                 \
 case AAL_SVC_CMD_VER_CURRENT : {                                            \
    *(BT32U *)(__arg) = __vercur;                                            \

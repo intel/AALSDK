@@ -225,10 +225,12 @@ void OSAL_API OSServiceModuleInit(OSServiceModule *p, btcString root_name)
    strncpy(p->root_name,
            root_name,
            AAL_SVC_MOD_ROOT_NAME_MAX);
+   p->root_name[sizeof(p->root_name)-1] = 0;
    // eg full_name = "libOSAL.so" or "libOSAL.dll"
    strncpy(p->full_name,
            p->root_name,
            AAL_SVC_MOD_FULL_NAME_MAX);
+   p->full_name[sizeof(p->full_name)-1] = 0;
    strncat(p->full_name,
            AAL_SVC_MOD_EXT,
            AAL_SVC_MOD_FULL_NAME_MAX - strlen(p->full_name));
@@ -236,6 +238,7 @@ void OSAL_API OSServiceModuleInit(OSServiceModule *p, btcString root_name)
    strncpy(p->entry_point_name,
            p->root_name,
            AAL_SVC_MOD_ROOT_NAME_MAX);
+   p->entry_point_name[sizeof(p->entry_point_name)-1] = 0;
    strncat(p->entry_point_name,
            AAL_SVC_MOD_ENTRY_SUFFIX,
            AAL_SVC_MOD_ENTRY_NAME_MAX - strlen(p->entry_point_name));
