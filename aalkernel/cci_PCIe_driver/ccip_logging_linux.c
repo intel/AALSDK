@@ -114,8 +114,8 @@ static ssize_t ccip_logging_timervalue_attrib_store_debug(struct device_driver *
 {
    kosal_sem_get_krnl(logging_msg_sem(g_logging_msg) );
 
-   sscanf(buf,"%ld", &logging_msg_time(g_logging_msg));
-   printk("g_logging_timer_value= %ld\n", g_logging_msg.m_logging_timer_value);
+   sscanf(buf,"%lu", &logging_msg_time(g_logging_msg));
+   printk("g_logging_timer_value= %lu\n", g_logging_msg.m_logging_timer_value);
 
    kosal_sem_put( logging_msg_sem(g_logging_msg));
    return size;
