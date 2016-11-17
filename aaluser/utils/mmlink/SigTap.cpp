@@ -102,7 +102,7 @@ public:
    ///
    /// Application Requests Service using Runtime Client passing a pointer to self.
    /// Blocks calling thread from [Main} untill application is done. 
-   int run(mmlink_server *server, char* filename, int busnum, int devnum, int funnum);
+   int run(mmlink_server *server, int busnum, int devnum, int funnum);
 
    btBool IsOK()  {return m_isOK;}
 
@@ -186,7 +186,7 @@ SigTapApp::~SigTapApp()
    m_Sem.Destroy();
 }
 
-int SigTapApp::run(mmlink_server *server, char* filename, int busnum, int devnum, int funnum)
+int SigTapApp::run(mmlink_server *server, int busnum, int devnum, int funnum)
 {
 
    cout <<"====================="<<endl;
@@ -380,7 +380,6 @@ int main(int argc, char *argv[])
 
    int 	 ip 	  = INADDR_ANY;
    int    port	  = 3333;
-   char *sys_file = (char *)malloc (MAX_FILENAME_SIZE);
    int bus = -1;
    int device = -1;
    int function = -1;
@@ -391,7 +390,6 @@ int main(int argc, char *argv[])
 	{
 		sscanf(argv[i], "--ip=%d", &ip);
 		sscanf(argv[i], "--port=%d", &port);
-		sscanf(argv[i], "--sysfs=%s", sys_file);
 		sscanf(argv[i], "--bus=%i", &bus);
 		sscanf(argv[i], "--device=%i", &device);
 		sscanf(argv[i], "--function=%i", &function);
@@ -405,13 +403,13 @@ int main(int argc, char *argv[])
    mm_debug_link_interface *driver = get_mm_debug_link();
    server = new mmlink_server(&sock, driver);
 
-   //int err = server->run(sys_file);
-
    if(theApp.IsOK()){
-      result = theApp.run(server, sys_file, bus, device, function);
+      result = theApp.run(server, bus, device, function);
    }else{
       MSG("App failed to initialize");
    }
+
+   delete server;
 
    MSG("Done");
    return result;
