@@ -491,7 +491,8 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    fme_pr.ccip_fme_pr_control.pr_push_complete =0x1;
    fme_pr.ccip_fme_pr_control.pr_start_req =0x1;
    fme_pr.ccip_fme_pr_control.pr_regionid =0x1;
-   fme_pr.ccip_fme_pr_control.enable_pr_port_access =0x1;
+   fme_pr.ccip_fme_pr_control.pr_reset =0x1;
+   fme_pr.ccip_fme_pr_control.pr_reset_ack =0x1;
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_pr.ccip_fme_pr_control.csr);
 
@@ -1158,7 +1159,8 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "next_DFH_offset = %x \n",pfme_dev->m_pPRmgmt->ccip_pr_dflhdr.next_DFH_offset);
       PDEBUG( "End of List = %x \n",pfme_dev->m_pPRmgmt->ccip_pr_dflhdr.eol);
 
-      PDEBUG( "enable_pr_port_access = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_control.enable_pr_port_access);
+      PDEBUG( "pr_reset = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_control.pr_reset);
+      PDEBUG( "pr_reset_ack = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_control.pr_reset_ack);
       PDEBUG( "pr_regionid = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_control.pr_regionid);
       PDEBUG( "pr_start_req = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_control.pr_start_req);
       PDEBUG( "pr_push_complete = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_control.pr_push_complete);

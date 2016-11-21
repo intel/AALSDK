@@ -125,7 +125,8 @@ typedef enum
    uid_errnumBadSocket,                          // 44
    uid_errnumRdMsrCmdFail,                       // 45
    uid_errnumFPGAPowerRequestTooLarge,           // 46
-   uid_errnumAP6Detected                         // 47
+   uid_errnumAP6Detected,                        // 47
+   uid_errnumIncompatibleBlueBitstream           // 48
 
 } uid_errnum_e;
 

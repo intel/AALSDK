@@ -80,9 +80,9 @@
 BEGIN_NAMESPACE(AAL)
 
 
-// Maximum  PR timeout  15 seconds
-#define  PR_OUTSTADREQ_TIMEOUT   15000000
-#define  PR_OUTSTADREQ_DELAY     1
+// Maximum  PR timeout  10 seconds
+#define  PR_OUTSTADREQ_TIMEOUT   8000000
+#define  PR_OUTSTADREQ_DELAY     1000
 #define  PR_COUNTER_MAX_TRY      0xFFFFFF
 
 // PR revoke Maximum try count

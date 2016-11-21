@@ -667,7 +667,12 @@ bt32bitInt get_fme_dev_featurelist( struct fme_device *pfme_dev,
          res = -EINVAL;
          goto ERR;
       }
-      if(0 != fme_dfh.Feature_rev){
+
+      // FIXME  PR DFH Revisions version changes to 1.
+      // Invalid feature if revision is not zero, except PR DFH.
+      if ((0 != fme_dfh.Feature_rev)  &&
+         (CCIP_FME_DFLID_PR != fme_dfh.Feature_ID)) {
+
          PVERBOSE("Found FME feature with invalid revision %d. IGNORING!\n",fme_dfh.Feature_rev);
          continue;
       }

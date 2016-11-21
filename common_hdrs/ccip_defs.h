@@ -1155,8 +1155,10 @@ struct CCIP_FME_PR_CONTROL {
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt enable_pr_port_access :1;          // Enable PR Port access
-         btUnsigned64bitInt rsvd3 :7;                          // Reserved
+         btUnsigned64bitInt pr_reset :1;                       // Reset PR Engine
+         btUnsigned64bitInt rsvd3 :3;                          // Reserved
+         btUnsigned64bitInt pr_reset_ack :1;                   // Reset PR Engine Ack
+         btUnsigned64bitInt rsvd4 :3;                          // Reserved
          btUnsigned64bitInt pr_regionid :2;                    // PR Region ID
          btUnsigned64bitInt rsvd1 :2;                          // Reserved
          btUnsigned64bitInt pr_start_req :1;                   // PR Start Request

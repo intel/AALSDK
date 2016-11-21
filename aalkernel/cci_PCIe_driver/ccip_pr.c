@@ -629,8 +629,6 @@ void program_afu_callback(struct kosal_work_object * pwork)
    btUnsigned64bitInt   PR_FIFO_credits       = 0;
    btUnsigned32bitInt   *byteRead             = NULL;
    uid_errnum_e   errnum                      = uid_errnumOK;
-   btTime   delay                             = PR_OUTSTADREQ_DELAY;
-   btTime   totaldelay                        = 0;
    btUnsigned64bitInt   counter               = 0;
    struct fme_device   *pfme_dev              = NULL;
    struct CCIP_FME_DFL_PR   *pr_dev           = NULL;
@@ -639,6 +637,7 @@ void program_afu_callback(struct kosal_work_object * pwork)
    struct CCIP_FME_PR_CONTROL pr_control_local;
    struct CCIP_FME_PR_STATUS  pr_status_local;
    struct CCIP_FME_PR_ERROR  pr_err_local;
+   ktime_t timeout;
 
 
    PTRACEIN;
@@ -678,39 +677,62 @@ void program_afu_callback(struct kosal_work_object * pwork)
       ccipdrv_event_afu_aysnc_pr_release_send(ppr_program_ctx,uid_errnumOK);
       return ;
    }
+   
+   // if BBS PR DFH revision is not 1 return InCompatiable bitstream error
+   if (0x1 != pr_dev->ccip_pr_dflhdr.Feature_rev) {
+   
+    PERR(" PR InCompatiable BBS bitstream \n");
+    errnum = uid_errnumIncompatibleBlueBitstream;
+    goto ERR;
+   }
 
    // Program the AFU
-   // For BDX-P only FME initiated PR is supported. So, CSR_FME_PR_CONTROL[0] = 0
+   // Reset PR Engine CSR_FME_PR_CONTROL[0] = 0x1 before Initiating PR
    // ---------------------------------------------------------------------------
-   PVERBOSE("Setting up PR access mode to FME initiated PR \n");
-
+   PVERBOSE("Resetting PR before initiated PR \n");
    Get64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_control_local.csr);
 
-   // Disable PORT PR access ,SW use the FME to PR
-   pr_control_local.enable_pr_port_access = 0x0;
-
+   //CSR_FME_PR_CONTROL[0] = 0x1 and wait for reset ack bit set CSR_FME_PR_CONTROL[4]
+   pr_control_local.pr_reset = 0x1;
    Set64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_control_local.csr);
 
+   timeout = ktime_add_us(ktime_get(), PR_OUTSTADREQ_TIMEOUT);
+
+   do {
+      // Sleep
+      usleep_range((PR_OUTSTADREQ_DELAY >> 4) + 1, PR_OUTSTADREQ_DELAY);
+      Get64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_control_local.csr);
+
+      // if total delay is more then PR_OUTSTADREQ_TIMEOUT, returns  Timeout error
+      if (ktime_compare(ktime_get(), timeout) > 0) {
+          PERR("PR Reset Timeout Error  \n");
+          errnum=uid_errnumPRTimeout;
+          goto ERR;
+      }
+
+   } while( 0x1 != pr_control_local.pr_reset_ack);
+
+   // Clear reset reset bit
+   pr_control_local.pr_reset = 0x0;
+   Set64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_control_local.csr);
+  
+  
    // Step 1 - Check FME_PR_STATUS[27:24] == 4'h0
    // -------------------------------------------
    // Both Initially as well as after PR, HW updates PR status to this state
    PVERBOSE("Waiting for PR Resource in HW to be initialized and ready \n");
 
-   totaldelay=0;
+   timeout = ktime_add_us(ktime_get(), PR_OUTSTADREQ_TIMEOUT);
    do {
-
+      // Sleep
+      usleep_range((PR_OUTSTADREQ_DELAY >> 4) + 1, PR_OUTSTADREQ_DELAY);
       Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_status_local.csr);
-       // Sleep
-      kosal_udelay(delay);
-
-      // total delay
-      totaldelay = totaldelay + delay;
 
       // if total delay is more then PR_OUTSTADREQ_TIMEOUT, returns  Timeout error
-      if (totaldelay > PR_OUTSTADREQ_TIMEOUT)   {
-         PERR(" Maximum PR Timeout   \n");
-         errnum=uid_errnumPRTimeout;
-         goto ERR;
+      if (ktime_compare(ktime_get(), timeout) > 0) {
+          PERR("PR Status Timeout Error  \n");
+          errnum=uid_errnumPRTimeout;
+          goto ERR;
       }
 
    } while( CCIP_PORT_PR_Idle != pr_status_local.pr_host_status);
@@ -825,7 +847,7 @@ void program_afu_callback(struct kosal_work_object * pwork)
 
              // if counter value is more then PR_COUNTER_MAX_TRY,returns Timeout error.
              if (counter > PR_COUNTER_MAX_TRY)   {
-                PERR(" Maximum  try   \n");
+                PERR("PR FIFI Credits Timeout Error \n");
                 errnum=uid_errnumPRTimeout;
                 goto ERR;
              }
@@ -870,21 +892,20 @@ void program_afu_callback(struct kosal_work_object * pwork)
 
    PVERBOSE("Waiting for HW to release PR resource \n");
 
-   totaldelay=0;
+   timeout = ktime_add_us(ktime_get(), PR_OUTSTADREQ_TIMEOUT);
+
    do {
-
+      // Sleep
+      usleep_range((PR_OUTSTADREQ_DELAY >> 4) + 1, PR_OUTSTADREQ_DELAY);
       Get64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_control_local.csr);
-      kosal_udelay(delay);
 
-      // total delay
-      totaldelay = totaldelay + delay;
-
-      // if total delay is more then PR_OUTSTADREQ_TIMEOUT, returns Timeout error
-      if (totaldelay > PR_OUTSTADREQ_TIMEOUT)   {
-         PERR(" Maximum PR Timeout   \n");
-         errnum=uid_errnumPRTimeout;
-         goto ERR;
+      // if total delay is more then PR_OUTSTADREQ_TIMEOUT, returns  Timeout error
+      if (ktime_compare(ktime_get(), timeout) > 0) {
+          PERR("PR Completion Timeout Error  \n");
+          errnum=uid_errnumPRTimeout;
+          goto ERR;
       }
+
    } while(0x0 != pr_control_local.pr_start_req);
 
    PVERBOSE("PR operation complete, checking Status \n");
