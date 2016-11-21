@@ -126,6 +126,7 @@ class AIASERVICE_API ShutdownMDT : public IAIATransaction
 public:
    // Used by the AFU Proxy to bind to AFU device
    ShutdownMDT(AAL::TransactionID const &tranID = AAL::TransactionID(), AAL::btTime timeout = 0);
+   ~ShutdownMDT();
 
    AAL::btBool                    IsOK() const;
 

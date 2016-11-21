@@ -132,6 +132,15 @@ ShutdownMDT::ShutdownMDT(AAL::TransactionID const &tranID, AAL::btTime timeout) 
    m_bIsOK = true;
 
 }
+
+ShutdownMDT::~ShutdownMDT()
+{
+   if ( NULL != m_payload ) {
+      struct aalui_Shutdown *puiShutdown = reinterpret_cast<aalui_Shutdown *>(m_payload);
+      delete puiShutdown;
+   }
+}
+
 AAL::btBool                    ShutdownMDT::IsOK() const {return m_bIsOK;}
 AAL::btVirtAddr                ShutdownMDT::getPayloadPtr()const {return m_payload;}
 AAL::btWSSize                  ShutdownMDT::getPayloadSize()const {return m_size;}

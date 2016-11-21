@@ -602,6 +602,7 @@ void AIAService::ShutdownDisp::operator() ()
 
    m_pAIA->WaitForShutdown(m_tid, m_timeout);
 
+   delete pShutdownTrans;
    delete this;
 }
 
