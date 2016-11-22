@@ -174,6 +174,7 @@ aaldev_destroy_device(struct aal_device * );
 #define AAL_DEV_ID_MASK_ADDR        (0x1 <<  9)
 #define AAL_DEV_ID_MASK_DEVNUM      (0x1 << 10)
 #define AAL_DEV_ID_MASK_BUSNUM      (0x1 << 11)
+#define AAL_DEV_ID_MASK_SOCKETNUM   (0x1 << 12)
 
 // Common mask for resource manager
 #define AAL_DEV_ID_MASK_EXCEPT_ADDR  AAL_DEV_ID_MASK_VENDOR+AAL_DEV_ID_MASK_AHMGUID+AAL_DEV_ID_MASK_AFUGUID+AAL_DEV_ID_MASK_PIPGUID+AAL_DEV_ID_MASK_BUSTYPE+AAL_DEV_ID_MASK_DEVTYPE

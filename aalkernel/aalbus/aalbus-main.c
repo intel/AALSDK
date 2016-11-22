@@ -1819,6 +1819,15 @@ aalbus_itr_get_device(struct device *pdev, void *data)
       }
 
       // Match the Board number
+      DPRINTF(AALBUS_DBG_MOD, ": check AAL_DEV_ID_MASK_SOCKETNUM\n");
+      if( (mask & AAL_DEV_ID_MASK_SOCKETNUM)){
+          if(param->m_devID->m_devaddr.m_socketnum != aaldev_devaddr_socketnum(paal)){
+             DPRINTF(AALBUS_DBG_MOD, ": No match on AAL_DEV_ID_MASK_SOCKETNUM\n");
+             return 0;
+           }
+      }
+
+      // Match the Board number
       DPRINTF(AALBUS_DBG_MOD, ": check AAL_DEV_ID_MASK_BUSNUM\n");
       if( (mask & AAL_DEV_ID_MASK_BUSNUM)){
           if(param->m_devID->m_devaddr.m_busnum != aaldev_devaddr_busnum(paal)){

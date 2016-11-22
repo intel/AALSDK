@@ -224,9 +224,10 @@ struct aal_device {
 #define aaldev_devaddr_bustype(dev)      (aaldev_devaddr(dev).m_bustype)
 #define aaldev_devaddr_busnum(dev)       (aaldev_devaddr(dev).m_busnum)
 #define aaldev_devaddr_devnum(dev)       (aaldev_devaddr(dev).m_devicenum)
-#define aaldev_devaddr_fcnnum(dev)     	 (aaldev_devaddr(dev).m_functnum)
+#define aaldev_devaddr_fcnnum(dev)       (aaldev_devaddr(dev).m_functnum)
 #define aaldev_devaddr_subdevnum(dev)    (aaldev_devaddr(dev).m_subdevnum)
 #define aaldev_devaddr_instanceNum(dev)  (aaldev_devaddr(dev).m_instanceNum)
+#define aaldev_devaddr_socketnum(dev)    (aaldev_devaddr(dev).m_socketnum)
 
 // Utility macros
 #define aaldev_haspip(devp)              (NULL != (devp)->m_pip)
@@ -296,23 +297,25 @@ static inline struct aal_device *
 #if   defined( __AAL_LINUX__ )
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,29)
    dev_set_name(&aaldev_to_basedev(paaldevice),
-                "%s[%d:%d:%d:%x:%d]",
+                "%s[%d:%d:%d:%x:%d:%d]",
                 (char*)aaldev_basename(paaldevice),
                 aaldev_devaddr_busnum(paaldevice),
                 aaldev_devaddr_devnum(paaldevice),
                 aaldev_devaddr_fcnnum(paaldevice),
                 aaldev_devaddr_subdevnum(paaldevice),
-				aaldev_devaddr_instanceNum(paaldevice));
+                aaldev_devaddr_socketnum(paaldevice),
+                aaldev_devaddr_instanceNum(paaldevice));
 #else
    // Construct the device name from the base name and the device ID
    snprintf((char*)aaldev_devname(paaldevice), BUS_ID_SIZE,
-            "%s[%d:%d:%d:%x:%d]",
+            "%s[%d:%d:%d:%x:%d:%d]",
             (char*)aaldev_basename(paaldevice),
             aaldev_devaddr_busnum(paaldevice),
             aaldev_devaddr_devnum(paaldevice),
             aaldev_devaddr_fcnnum(paaldevice),
             aaldev_devaddr_subdevnum(paaldevice),
-			aaldev_devaddr_instanceNum(paaldevice));
+            aaldev_devaddr_socketnum(paaldevice),
+            aaldev_devaddr_instanceNum(paaldevice));
 #endif
 #endif
 

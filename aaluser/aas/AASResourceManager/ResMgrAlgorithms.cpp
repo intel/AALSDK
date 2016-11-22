@@ -237,6 +237,19 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
    }
 
    /*
+    * Get SocketNumber
+   */
+   btUnsigned32bitInt SocketNumber;
+   btBool             testSocketNumber(false);
+
+   if (nvsBackDoorRecord.Has( keyRegSocketNumber)) {
+      nvsBackDoorRecord.Get( keyRegSocketNumber, &SocketNumber);
+      testSocketNumber = true;
+      AAL_DEBUG( LM_ResMgr,  "CResMgr::ComputeBackdoorGoalRecords: Desired BusNumber is: " << SocketNumber << std::endl);
+   }
+
+
+   /*
     * Get BusNumber
     */
    btUnsigned32bitInt BusNumber;
@@ -375,6 +388,14 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
             continue;
          }
 
+         // SocketNumber
+         if ( ( testSocketNumber ) &&
+              ( SocketNumber != rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_socketnum)) {
+            AAL_VERBOSE(LM_ResMgr, "CResMgr::ComputeBackdoorGoalRecords: Instance Record being considered SoacketNumber is " <<
+                  rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_socketnum << " but desired BusNumber is " << SocketNumber << std::endl);
+            continue;
+         }
+
          // BusNumber
          if ( ( testBusNumber ) &&
               ( BusNumber != rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_busnum)) {
@@ -447,7 +468,8 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
    // If at end no records were found, return the manifest with a null handle
    if (listGoal.m_nvsList.empty()) {
       AAL_INFO(LM_ResMgr, "CResMgr::ComputeBackdoorGoalRecords: no match found.\n");
-//      AddNullHandleRecToList( nvsManifest, listGoal );
+
+      //      AddNullHandleRecToList( nvsManifest, listGoal );
       return false;
    }
 

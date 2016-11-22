@@ -160,6 +160,7 @@ struct aal_device_addr {
    btUnsigned16bitInt   m_functnum;    // function number
    btUnsigned16bitInt   m_subdevnum;   // Sub-device/channel number
    btUnsigned16bitInt   m_instanceNum; // instance number
+   btUnsigned16bitInt   m_socketnum;   // Socket number
 };
 #define aaldevaddr_bustype(devaddr)         ((devaddr).m_bustype)
 #define aaldevaddr_busnum(devaddr)          ((devaddr).m_busnum)
@@ -169,6 +170,7 @@ struct aal_device_addr {
 #define aaldevaddr_fcnnum(devaddr)          ((devaddr).m_functnum)
 #define aaldevaddr_subdevnum(devaddr)       ((devaddr).m_subdevnum)
 #define aaldevaddr_instanceNum(devaddr)     ((devaddr).m_instanceNum)
+#define aaldevaddr_socketnum(devaddr)       ((devaddr).m_socketnum)
 
 //=============================================================================
 // Name: AAL Device_ID
@@ -192,7 +194,8 @@ struct aal_device_id {
 };
 
 #define aal_device_id_terminator                                                            \
-{  .m_devaddr = { .m_bustype = 0, { .m_busnum = 0 }, .m_devicenum = 0, .m_subdevnum = 0, }, \
+{  .m_devaddr = { .m_bustype = 0, { .m_busnum = 0 }, .m_devicenum = 0, .m_subdevnum = 0,    \
+   .m_socketnum = 0 },                                                                      \
    .m_devicetype = aal_devtype_unknown,                                                     \
    .m_vendor   = 0,                                                                         \
    .m_pipGUID  = 0,                                                                         \
@@ -200,15 +203,16 @@ struct aal_device_id {
    .m_afuGUIDl = 0,                                                                         \
    .m_afuGUIDh = 0, }
 
-#define aaldevid_addr(devid)              	((devid).m_devaddr)
-#define aaldevid_devaddr_bustype(devid)   	((aaldevid_addr(devid)).m_bustype)
-#define aaldevid_devaddr_busnum(devid)    	((aaldevid_addr(devid)).m_busnum)
-#define aaldevid_devaddr_busdom(devid)    	((aaldevid_addr(devid)).m_busnum)
-#define aaldevid_devaddr_bus(devid)    	    ((aaldevid_addr(devid)).m_bus)
-#define aaldevid_devaddr_devnum(devid)    	((aaldevid_addr(devid)).m_devicenum)
-#define aaldevid_devaddr_fcnnum(devid)    	((aaldevid_addr(devid)).m_functnum)
-#define aaldevid_devaddr_subdevnum(devid) 	((aaldevid_addr(devid)).m_subdevnum)
-#define aaldevid_devaddr_instanceNum(devid)	((aaldevid_addr(devid)).m_instanceNum)
+#define aaldevid_addr(devid)                 ((devid).m_devaddr)
+#define aaldevid_devaddr_bustype(devid)      ((aaldevid_addr(devid)).m_bustype)
+#define aaldevid_devaddr_busnum(devid)       ((aaldevid_addr(devid)).m_busnum)
+#define aaldevid_devaddr_busdom(devid)       ((aaldevid_addr(devid)).m_busnum)
+#define aaldevid_devaddr_bus(devid)          ((aaldevid_addr(devid)).m_bus)
+#define aaldevid_devaddr_devnum(devid)       ((aaldevid_addr(devid)).m_devicenum)
+#define aaldevid_devaddr_fcnnum(devid)       ((aaldevid_addr(devid)).m_functnum)
+#define aaldevid_devaddr_subdevnum(devid)    ((aaldevid_addr(devid)).m_subdevnum)
+#define aaldevid_devaddr_instanceNum(devid)  ((aaldevid_addr(devid)).m_instanceNum)
+#define aaldevid_devaddr_socketnum(devid)    ((aaldevid_addr(devid)).m_socketnum)
 
 #define aaldevid_afuguidl(devid) ((devid).m_afuGUIDl)
 #define aaldevid_afuguidh(devid) ((devid).m_afuGUIDh)

@@ -745,11 +745,14 @@
 //                                                                  Channel on the device, e.g. SPL interface (0) or
 //                                                                  sub-device number. -1 if not defined */
 
-#define keyRegSubDeviceNumber               "AAL_keyRegSubDeviceNumber"
+#define keyRegSubDeviceNumber              "AAL_keyRegSubDeviceNumber"
 //                                                                  Subdevice within a B:D:F
 
-#define keyRegInstanceNumber              "AAL_keyRegInstanceNumber"
+#define keyRegInstanceNumber               "AAL_keyRegInstanceNumber"
 //                                                                  Instance identifier within a B:D:F:S
+
+#define keyRegSocketNumber                 "AAL_keyRegSocketNumber"
+//                                                                  Instance identifier within a B:D:F:S:Socket
 
 #define keyRegDeviceAddress               "AAL_keyRegDeviceAddress"
 //#define keyRegDeviceAddress               AAL_RegKey(0x0014)   /* DataType: btUnsigned64bitInt (also, btID, and the native key type of an NVS

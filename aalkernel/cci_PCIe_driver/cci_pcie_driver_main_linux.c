@@ -608,6 +608,7 @@ struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev
    ccip_dev_pcie_busnum(pccipdev)   = pcidev->bus->number;
    ccip_dev_pcie_devnum(pccipdev)   = PCI_SLOT(pcidev->devfn);
    ccip_dev_pcie_fcnnum(pccipdev)   = PCI_FUNC(pcidev->devfn);
+   ccip_dev_pcie_socketnum(pccipdev)= 0;
 
    // Enumerate the device
    //  Instantiate internal objects. Objects that represent
@@ -658,6 +659,7 @@ struct ccip_device * cci_enumerate_vf_device( struct pci_dev             *pcidev
    ccip_port_busnum(pportdev)    = ccip_dev_pcie_busnum(pccipdev);
    ccip_port_devnum(pportdev)    = ccip_dev_pcie_devnum(pccipdev);
    ccip_port_fcnnum(pportdev)    = ccip_dev_pcie_fcnnum(pccipdev);
+   ccip_port_socketnum(pportdev) = ccip_dev_pcie_socketnum(pccipdev);
 
    // Log the Port MMIO
    print_sim_port_device(pportdev);
@@ -961,6 +963,7 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          ccip_port_busnum(pportdev)    = ccip_dev_pcie_busnum(pccipdev);
          ccip_port_devnum(pportdev)    = ccip_dev_pcie_devnum(pccipdev);
          ccip_port_fcnnum(pportdev)    = ccip_dev_pcie_fcnnum(pccipdev);
+         ccip_port_socketnum(pportdev) = ccip_dev_pcie_socketnum(pccipdev);
 
          // Log the Port MMIO
          print_sim_port_device(pportdev);

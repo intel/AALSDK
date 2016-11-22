@@ -104,7 +104,8 @@ static struct aal_device_addr nextAFU_addr = {
    { .m_busnum  = 1 },     //
    .m_devicenum = 0,       //
    .m_functnum  = 1,       //
-   .m_subdevnum = 0        // AFU
+   .m_subdevnum = 0,       // AFU
+   .m_socketnum = 0
 };
 
 
@@ -244,10 +245,11 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
    ccip_dev_pci_dev(pccipdev) = NULL;
 
    // Save the Bus:Device:Function of simulated device
-   ccip_dev_pcie_bustype(pccipdev)  = aal_bustype_Host;
-   ccip_dev_pcie_busnum(pccipdev)   = aaldevid_devaddr_busnum(*pdevid);
-   ccip_dev_pcie_devnum(pccipdev)   = aaldevid_devaddr_devnum(*pdevid);
-   ccip_dev_pcie_fcnnum(pccipdev)   = aaldevid_devaddr_fcnnum(*pdevid);
+   ccip_dev_pcie_bustype(pccipdev)     = aal_bustype_Host;
+   ccip_dev_pcie_busnum(pccipdev)      = aaldevid_devaddr_busnum(*pdevid);
+   ccip_dev_pcie_devnum(pccipdev)      = aaldevid_devaddr_devnum(*pdevid);
+   ccip_dev_pcie_fcnnum(pccipdev)      = aaldevid_devaddr_fcnnum(*pdevid);
+   ccip_dev_pcie_socketnum(pccipdev)   = aaldevid_devaddr_socketnum(*pdevid);
 
    // Mark this device as simulated
    ccip_set_simulated(pccipdev);
@@ -366,10 +368,11 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
          ccip_dev_to_port_dev(pccipdev,i)  = pportdev;
 
          // Inherits B:D:F from board
-         ccip_port_bustype(pportdev)   = ccip_dev_pcie_bustype(pccipdev);
-         ccip_port_busnum(pportdev)    = (btUnsigned16bitInt) ccip_dev_pcie_busnum(pccipdev);
-         ccip_port_devnum(pportdev)    = ccip_dev_pcie_devnum(pccipdev);
-         ccip_port_fcnnum(pportdev)    = ccip_dev_pcie_fcnnum(pccipdev);
+         ccip_port_bustype(pportdev)        = ccip_dev_pcie_bustype(pccipdev);
+         ccip_port_busnum(pportdev)         = (btUnsigned16bitInt) ccip_dev_pcie_busnum(pccipdev);
+         ccip_port_devnum(pportdev)         = ccip_dev_pcie_devnum(pccipdev);
+         ccip_port_fcnnum(pportdev)         = ccip_dev_pcie_fcnnum(pccipdev);
+         ccip_port_socketnum(pportdev)      = ccip_dev_pcie_socketnum(pccipdev);
 
          // Log the Port MMIO
          print_sim_port_device(pportdev);

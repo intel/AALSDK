@@ -251,6 +251,7 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
    aaldevid_devaddr_devnum(aalid)      = ccip_dev_pcie_devnum(pccipdev);
    aaldevid_devaddr_fcnnum(aalid)      = ccip_dev_pcie_fcnnum(pccipdev);
    aaldevid_devaddr_subdevnum(aalid)   = CCIP_DEV_FME_SUBDEV;	// FME subdevice number is constant
+   aaldevid_devaddr_socketnum(aalid)   = ccip_dev_pcie_socketnum(pccipdev);  
    aaldevid_devaddr_instanceNum(aalid) = 0;						// FME is always instance 0
 
    // The following attributes describe the interfaces supported by the device
@@ -357,6 +358,7 @@ btBool cci_create_AAL_PR_allocatable_objects(struct ccip_device * pccipdev)
    aaldevid_devaddr_fcnnum(aalid)      = ccip_dev_pcie_fcnnum(pccipdev);
    aaldevid_devaddr_subdevnum(aalid)   = 0x0;    // PR subdevice number is constant
    aaldevid_devaddr_instanceNum(aalid) = 0x5;    // PR is always instance 06
+   aaldevid_devaddr_socketnum(aalid)   = ccip_dev_pcie_socketnum(pccipdev);
    aaldevid_devtype(aalid)             = aal_devtypeAFU;
 
    pcci_aaldev = cci_create_AAL_PR_Device(ccip_dev_to_fme_dev(pccipdev), &aalid);

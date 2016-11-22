@@ -176,11 +176,12 @@ struct cci_aal_device   *
 
    // The AAL address maps to the PCIe address. The Subdevice number is
    //  vendor defined and in this case the FME object has the value CCIP_DEV_FME_SUBDEV
-   aaldevid_devaddr_busnum(*paalid)      = ccip_port_busnum(pportdev);
-   aaldevid_devaddr_devnum(*paalid)      = ccip_port_devnum(pportdev);
-   aaldevid_devaddr_fcnnum(*paalid)      = ccip_port_fcnnum(pportdev);
-   aaldevid_devaddr_subdevnum(*paalid)   = devnum;
-   aaldevid_devaddr_instanceNum(*paalid) = 0;
+   aaldevid_devaddr_busnum(*paalid)          = ccip_port_busnum(pportdev);
+   aaldevid_devaddr_devnum(*paalid)          = ccip_port_devnum(pportdev);
+   aaldevid_devaddr_fcnnum(*paalid)          = ccip_port_fcnnum(pportdev);
+   aaldevid_devaddr_subdevnum(*paalid)       = devnum;
+   aaldevid_devaddr_instanceNum(*paalid)     = 0;
+   aaldevid_devaddr_socketnum(*paalid)       = ccip_port_socketnum(pportdev);
 
    // The following attributes describe the interfaces supported by the device
    aaldevid_afuguidl(*paalid)            = CCIP_PORT_GUIDL;

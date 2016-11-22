@@ -263,7 +263,8 @@ std::ostream & operator << (std::ostream &s, const aal_device_addr &devaddr)
                  "devicenum:     " << devaddr.m_devicenum << "\n\t"
                  "functnum:      " << devaddr.m_functnum<< "\n\t"
                  "subdevnum:     " << devaddr.m_subdevnum << "\n\t"
-                 "instance:      " << devaddr.m_instanceNum << "\n";
+                 "instance:      " << devaddr.m_instanceNum << "\n\t"
+                 "socket:        " << devaddr.m_socketnum << "\n";
 
    // reset flag and fill state
    // s.fill(defaultFillChar);

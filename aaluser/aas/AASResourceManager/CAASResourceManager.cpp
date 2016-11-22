@@ -771,7 +771,8 @@ void CResMgr::NVSFromConfigUpdate(const aalrms_configUpDateEvent &cfgUpdate, Nam
    nvs.Add(keyRegDeviceNumber,         cfgUpdate.devattrs.devid.m_devaddr.m_devicenum);
    nvs.Add(keyRegFunctionNumber,       cfgUpdate.devattrs.devid.m_devaddr.m_functnum);
    nvs.Add(keyRegSubDeviceNumber,      cfgUpdate.devattrs.devid.m_devaddr.m_subdevnum);
-   nvs.Add(keyRegInstanceNumber,	      cfgUpdate.devattrs.devid.m_devaddr.m_instanceNum);
+   nvs.Add(keyRegInstanceNumber,       cfgUpdate.devattrs.devid.m_devaddr.m_instanceNum);
+   nvs.Add(keyRegSocketNumber,         cfgUpdate.devattrs.devid.m_devaddr.m_socketnum);
 
    nvs.Add(keyRegDeviceType,           cfgUpdate.devattrs.devid.m_devicetype);
 

@@ -108,6 +108,7 @@ struct port_device
    btUnsigned16bitInt            m_busNum;
    btUnsigned16bitInt            m_devicenum;   // device number
    btUnsigned16bitInt            m_functnum;    // function number
+   btUnsigned16bitInt            m_socketnum;   // socket number
 
    // The User AFU in this port
    struct cci_aal_device        *m_uafu;
@@ -138,6 +139,7 @@ struct port_device
 #define ccip_port_busnum(pdev)                ((pdev)->m_busNum)
 #define ccip_port_devnum(pdev)                ((pdev)->m_devicenum)
 #define ccip_port_fcnnum(pdev)                ((pdev)->m_functnum)
+#define ccip_port_socketnum(pdev)             ((pdev)->m_socketnum)
 
 #define ccip_port_mem_sessionp(pdev)          ((pdev)->m_pmem_session)
 

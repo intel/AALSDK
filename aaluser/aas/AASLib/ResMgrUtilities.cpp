@@ -368,11 +368,12 @@ btUnsigned64bitInt AIA_IDFromStringName(const std::string &sKeyName)
 struct INFDA_structure // private to IntNameFromDeviceAddress
 {  // This structure will overlay a btNumberKey
    btUnsigned16bitInt subdevnum;
-   btUnsigned16bitInt functnum;
+   btByte             functnum;
    btByte             instanceNum;
    btByte             devicenum;
    btByte             busnum;
    btByte             bustype;
+   btByte             socketnum;
 };
 CASSERT(sizeof(struct INFDA_structure) == sizeof(btNumberKey));
 union INFDA_union      // private to IntNameFromDeviceAddress
@@ -397,6 +398,7 @@ btNumberKey IntNameFromDeviceAddress(const aal_device_addr *paddr)
    overload.inner.functnum    =  paddr->m_functnum;
    overload.inner.subdevnum   = paddr->m_subdevnum;
    overload.inner.instanceNum = paddr->m_instanceNum;
+   overload.inner.socketnum   = paddr->m_socketnum;
 
    return overload.Key;
 } // IntNameFromDeviceAddress
@@ -419,6 +421,7 @@ void DeviceAddressFromIntName(const btNumberKey &inKey, aal_device_addr *paddr)
    paddr->m_functnum    = overload.inner.functnum;
    paddr->m_subdevnum   = overload.inner.subdevnum;
    paddr->m_instanceNum = overload.inner.instanceNum;
+   paddr->m_socketnum  = overload.inner.socketnum;
 
 }  // DeviceAddressFromIntName
 

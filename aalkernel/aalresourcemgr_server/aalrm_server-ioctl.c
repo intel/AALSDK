@@ -175,6 +175,7 @@ void aalrms_event_config_update(struct aal_device *pdev,
    DPRINTF(AALRMS_DBG_IOCTL,"funcnum: %x\n", pcfgUpdate->devattrs.devid.m_devaddr.m_functnum);
    DPRINTF(AALRMS_DBG_IOCTL,"subdevnum: %x\n\n", pcfgUpdate->devattrs.devid.m_devaddr.m_subdevnum);
    DPRINTF(AALRMS_DBG_IOCTL,"instancenum: %x\n\n", pcfgUpdate->devattrs.devid.m_devaddr.m_instanceNum);
+   DPRINTF(AALRMS_DBG_IOCTL,"socketnum: %x\n\n", pcfgUpdate->devattrs.devid.m_devaddr.m_socketnum);
 
    DPRINTF(AALRMS_DBG_IOCTL,"pipGUID: %llx\n", pcfgUpdate->devattrs.devid.m_pipGUID); // PIP GUID
    DPRINTF(AALRMS_DBG_IOCTL,"ahmGUID: %llx\n", pcfgUpdate->devattrs.devid.m_ahmGUID); // AHM GUID
