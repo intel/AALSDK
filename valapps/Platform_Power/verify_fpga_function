@@ -1,0 +1,122 @@
+#!/bin/bash +x
+
+usage() {
+   echo "1. Note: please build driver in release package first"
+   echo "2. Copy or create soft link for:" 
+   echo "3. Hello_ALI_NLB, aliconfafu, fpgadiag in this folder"
+   echo "4. For bypass inout creential during driver installation, Run this script as root"
+   echo "5. Usage: verify_fpga_function <driver location> <rtl lcoation and name> <socket number>"
+}
+
+GetDeviceInformation(){
+   CMDRST="$(lspci | grep bcc0)"
+   DEVINFO1="${CMDRST[0]}"
+   DEVINFO2="${CMDRST[1]}"
+
+   echo  $DEVINFO1
+   Bus1="${DEVINFO1:0:2}"
+   Dev1="${DEVINFO1:3:2}"
+   Func1="${DEVINFO1:6:1}"
+   Bus2="${DEVINFO1:67:2}"
+   Dev2="${DEVINFO1:3:2}"
+   Func2="${DEVINFO1:6:1}"
+}
+
+#flag for touching virtualization and running 
+FLG=1
+
+if [ -z "$1" ] || [ -z "$2" ]; 
+ then
+   usage
+   exit 1
+fi
+
+#check number of sockets
+if [ "$3" != "" ] && [ "$3" -eq "2" ]; then 
+    FLG=2
+    echo "2 sockets system"
+  else
+    echo "1 socket system"
+fi
+
+
+DriverPATH=$1
+echo $DriverPATH 
+
+Result=$(lsmod | grep aal >&1)
+echo $Result 
+
+if [[ $Result =~ .*ccipciedrv* ]]; then
+   echo "Remove old driver"
+   sudo $DriverPATH/rmdrv 
+fi
+
+echo "Install driver"
+
+# 1 socket system
+if [[ $FLG -eq 1 ]]; then
+  sudo $DriverPATH/insdrv cci
+
+   echo "Run Hello_ALI_NLB to test NLB0"
+
+   if [ ! -f helloALInlb ]; then 
+     echo "helloALInlb doesn't exist"
+     exit 1
+   else
+     ./helloALInlb
+     
+     if [ $? -eq 0 ]; then 
+       if [ ! -f aliconfafu ]; then
+         echo "aliconfafu doesn't exist"
+         exit 1
+       else 
+         ./aliconfafu --bitstream=$2 
+
+	 if [ $? -eq 0 ]; then
+           ./fpgadiag --mode=read --begin=10 --read-vc=vl0   
+         else
+           echo "aliconfafu $ Failed !!!"
+           exit 1
+         fi
+       fi     
+     else
+       echo "./helloALInlb failed !!!"
+       exit 1
+     fi
+   fi
+else
+   sudo $DriverPATH/insdrv cci
+   echo "run test on 2 sockets system"
+   
+   GetDeviceInformation
+   echo "$Bus1:$Dev1:$Func1"
+   echo "$Bus2:$Dev2:$Func2"
+
+   if [ ! -f helloALInlb ]; then 
+     echo "helloALInlb doesn't exist"
+     exit 1
+   else
+     ./helloALInlb -B Bus1 -D Dev1 -F Func1 &
+     ./helloALInlb -B Bus2 -D Dev2 -F Func2 && fg
+   fi
+fi
+
+Result=$?
+echo $Result
+
+if [ $Result -eq 0 ];
+  then
+    echo Test PASS
+    exit 0
+else
+    echo Test FAIL
+    exit 1
+fi
+
+
+
+
+ 
+
+   
+

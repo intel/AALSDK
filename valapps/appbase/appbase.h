@@ -15,7 +15,7 @@
 
 //#include <config.h>
 #include <appbuffer.h>
-
+#include "arguments.h"
 //****************************************************************************
 // UN-COMMENT appropriate # define in order to enable either Hardware or ASE.
 //****************************************************************************
@@ -65,9 +65,9 @@ public:
     btBool isOK()  {return m_bIsOK;}
 
     // Custom derivations
-    virtual btInt run() = 0;    ///< Return 0 if success
+    virtual btInt run(const arguments& args) = 0;    ///< Return 0 if success
 
-    btInt requestService();   /// < Return 0 if success
+    btInt requestService(const arguments &args);   /// < Return 0 if success
 
     btInt requestBuffers();   /// < Return 0 if success
 

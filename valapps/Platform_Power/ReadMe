@@ -1,0 +1,11 @@
+Test scirpt usage:
+
+verify_fpga_function <release pakcage driver location>  <rtl location> <number of socket : optional>
+
+Note: 
+1. build driver in release package first
+2. copy Hello_ALI_NLB, aliconfafu, and fpgadiag to same folder as this script. 
+   configure $LD_LIBARY_PATH and $PATH for running Hello_ALI_NLB app
+3. For bypass credential input during driver installation, can run this script as root
+
+

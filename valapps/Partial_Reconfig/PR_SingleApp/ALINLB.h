@@ -60,6 +60,7 @@
 #include <aalsdk/service/IALIAFU.h>
 
 #include <string.h>
+#include "arguments.h"
 
 using namespace std;
 using namespace AAL;
@@ -69,7 +70,7 @@ class AllocatesNLBService: public CAASBase, public IServiceClient
 {
 public:
 
-   AllocatesNLBService();
+   AllocatesNLBService(const arguments &args);
    ~AllocatesNLBService();
 
    // <begin IServiceClient interface>
@@ -110,6 +111,9 @@ protected:
    btWSSize       m_OutputSize;     ///< Output workspace size in bytes.
    btID           m_errNum;
    btBool         m_ReleaseService;
+
+private:
+   arguments      m_args;
 };
 
 #endif

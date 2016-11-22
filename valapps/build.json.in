@@ -1,0 +1,9 @@
+{ 
+    "name" : "@CMAKE_PROJECT_NAME@",
+    "version" : "@VALAPPS_VERSION_MAJOR@.@VALAPPS_VERSION_MINOR@.@VALAPPS_VERSION_PATCH@",
+    "branch" : "@GIT_BRANCH@",
+    "commit" : "@GIT_COMMIT@",
+    "hostname" : "@HOSTNAME@"
+}
+
+

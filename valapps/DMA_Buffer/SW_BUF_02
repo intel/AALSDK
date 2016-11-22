@@ -1,0 +1,84 @@
+#!/bin/bash +x
+
+usage() {
+   echo "./SW_BUF_2 <number of socket> <size> <delay> "
+}
+
+#input parameters
+SocketNum=$1
+size=$2
+delay=$3
+
+GetDeviceInformation(){
+   CMDRST="$(lspci | grep bcc0)"
+   DEVINFO1="${CMDRST[0]}"
+   DEVINFO2="${CMDRST[1]}"
+
+   echo  $DEVINFO1
+   Bus1="${DEVINFO1:0:2}"
+   Dev1="${DEVINFO1:3:2}"
+   Func1="${DEVINFO1:6:1}"
+   Bus2="${DEVINFO1:67:2}"
+   Dev2="${DEVINFO1:3:2}"
+   Func2="${DEVINFO1:6:1}"
+}
+
+SocketNum=1
+size=$2
+delay=$3
+
+GetDeviceInformation
+echo "$Bus1:$Dev1:$Func1"
+echo "$Bus2:$Dev2:$Func2"
+
+#2 socket test
+TwoSocketsTest(){
+   echo "Run DMA_Buffer on 2 sockets system Bus: "0x"$Bus1"
+
+   ./DMA_Buffer --size=$size --delay=$delay --bus="0x"$Bus1
+
+   result1=$?
+
+   echo "Run DMA_Buffer on 2 sockets system Bus: "0x"$Bus2"
+   
+   ./DMA_Buffer --size=$size --delay=$delay --bus="0x"$Bus2
+      
+   result2=$?  
+     
+   if [[ $result1 -eq 0 && $result2 -eq 0 ]] ; then 
+      echo "Test PASS on 2 sockets system !!!"
+      exit 0
+   else 
+      echo "Test FAILED on 2 sockets system !!!"
+      exit 1
+   fi
+}
+
+OneSocketTest(){
+   echo "Run DMA_Buffer on 2 sockets system"
+
+   ./DMA_Buffer --size=$size --delay=$delay --bus="0x"$Bus1
+
+   if [[ $? -eq 0 ]]; then 
+         echo "Test PASS on 1 socket system !!!"
+         exit 0
+    else 
+         echo "Test FAILED on 1 socket system !!!"
+         exit 1
+    fi
+}
+
+# run fpgadiag test
+if [[ $1 -eq 2 ]]; then
+   TwoSocketsTest
+else
+   OneSocketTest
+fi
+
+
+
+
+ 
+
+   
+

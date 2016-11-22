@@ -2,9 +2,9 @@
 
 # valapps/Read_Perf_Counters/Makefile
 
-CPPFLAGS ?=
+CPPFLAGS ?= -I../valapp
 CXX      ?= g++
-LDFLAGS  ?= -L../vallib
+LDFLAGS  ?= -L../vallib -L../valapp
 
 ifneq (,$(ndebug))
 else
@@ -33,12 +33,12 @@ endif
 all: Read_Perf_Counters
 
 Read_Perf_Counters: main.o
-	$(CXX) -g -O2 -o Read_Perf_Counters main.o $(LDFLAGS) -lOSAL -lAAS -laalrt -lvallib
+	$(CXX) -g -O2 -o Read_Perf_Counter main.o $(LDFLAGS) -lOSAL -lAAS -laalrt -lvallib
 
 main.o: main.cpp ../vallib/vallib.h Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -I../vallib -g -O2 -c -o main.o main.cpp
 
 clean:
-	$(RM) Read_Perf_Counters main.o
+	$(RM) Read_Perf_Counter main.o
 
 .PHONY:all clean

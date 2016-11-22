@@ -3,19 +3,17 @@
 ## ************************************************
 ##  Set AAL lib path
 ## ************************************************
-cd ../../../../aalsdk/myinst/usr/local/lib/
-export LD_LIBRARY_PATH=$PWD
-cd ../../../../valapps/Partial_Reconfig/PR_TwoApp/
+#export LD_LIBRARY_PATH=$PWD
 
 
 ## ************************************************
 ##  run PR app with bitstream
 ## ************************************************
 
-echo $1
+echo $1 $2 $3 $4
 
 echo  "\\n./Hello_ALI_NLB/SW/helloALInlb   \\n"
-nlb_app/ALInlb $1
+nlb_app/ALInlb $1 --bus=$2 --device=$3 --function=$4
 
 echo  "\\n **** DONE**** \\n"
 

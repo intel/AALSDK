@@ -34,12 +34,13 @@
 ##  History:
 ##     06/09/2015    JG   Initial version based off of canonical sample makefile
 ##******************************************************************************
-CPPFLAGS ?=
+CPPFLAGS ?= -I../../../valapp -g3
+
 CXX      ?= g++
 LDFLAGS  ?=
 
 ifeq (,$(CFLAGS))
-CFLAGS = -g -O2
+CFLAGS = -g3
 endif
 
 ifneq (,$(ndebug))
@@ -69,7 +70,7 @@ endif
 all: aliconfafu
 
 aliconfafu: main.o ALIReconf.o
-	$(CXX) $(CFLAGS) -o aliconfafu main.o ALIReconf.o $(LDFLAGS) -lOSAL -lAAS -laalrt -laalclp
+	$(CXX) $(CFLAGS) -o aliconfafu main.o ALIReconf.o ../../../valapp/libvalutils.la $(LDFLAGS) -lOSAL -lAAS -laalrt -laalclp
 
 ALIConfAFU.o: main.cpp  Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  $(CFLAGS) -c -o main.o main.cpp

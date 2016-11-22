@@ -56,6 +56,7 @@
 #include <aalsdk/aalclp/aalclp.h>
 
 #include "../../PR_SingleApp/ALIReconf.h"
+#include "arguments.h"
 
 using namespace std;
 using namespace AAL;
@@ -71,25 +72,12 @@ using namespace AAL;
 #endif // ERR
 #define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
 
-/// Command Line
-BEGIN_C_DECLS
-
-struct ALIConfigCommandLine configCmdLine = { 0,"",1,0,0 };
-
-AALCLP_DECLARE_GCS_COMPLIANT(stdout,
-                             "aliconfafu",
-                             "0",
-                             "",
-                             help_msg_callback,
-                             &configCmdLine);
-END_C_DECLS
-
 
 class ALIConfAFUApp: public CAASBase, public IRuntimeClient
 {
 public:
 
-   ALIConfAFUApp();
+   ALIConfAFUApp(const arguments &args);
    ~ALIConfAFUApp();
 
    // <begin IRuntimeClient interface>
@@ -114,6 +102,7 @@ protected:
    btInt                     m_Result;            ///< Returned result v; 0 if success
    AllocatesReconfService    m_reconfAFU;
    btInt                     m_Errors;
+   arguments                 m_args;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -125,10 +114,12 @@ protected:
 /// @brief   Constructor registers this objects client interfaces and starts
 ///          the AAL Runtime. The member m_bisOK is used to indicate an error.
 ///
-ALIConfAFUApp::ALIConfAFUApp() :
-   m_Runtime(this),\
+ALIConfAFUApp::ALIConfAFUApp(const arguments &args) :
+   m_Runtime(this),
    m_pAALService(NULL),
-   m_Result(0)
+   m_Result(0),
+   m_args(args),
+   m_reconfAFU(args)
 {
 
    SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
@@ -217,14 +208,13 @@ void ALIConfAFUApp::PrintReconfExceptionDescription(IEvent const &rEvent)
 btBool ALIConfAFUApp::allocRecongService()
 {
    m_reconfAFU.AllocatePRService(&m_Runtime);
-   //strcpy(configCmdLine.bitstream_file,BitStreamFile);
 
    if(false == m_reconfAFU.IsOK() ) {
       ++m_Errors;
       ERR("--- Failed to Allocate Reconfigure Service --- ");
       return false;
    }
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"),1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    return true;
 
 }
@@ -235,29 +225,39 @@ btBool ALIConfAFUApp::runTests()
       ERR("--- Failed to allocate Reconf Service  --- ");
       return false;
    }
-
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,configCmdLine.reconftimeout,configCmdLine.reconfAction,configCmdLine.reactivateDisabled);
+   std::string defaultAction = "ACTION_HONOR_OWNER";
+   std::string interface = m_args.get_string("reconfInterface");
+   std::string bitstream1 = m_args.get_string("bitstream1");
+   int reactivateDisabled = m_args.get_int("reactivate-disabled", 0);
+   int timeout = m_args.get_int("reconftimeout");
+   int action = m_args.get_string("reconfaction", defaultAction) == defaultAction ?
+                AALCONF_RECONF_ACTION_HONOR_OWNER_ID:
+                AALCONF_RECONF_ACTION_HONOR_REQUEST_ID;
+   m_reconfAFU.setreconfnvs(bitstream1,
+                            timeout,
+                            action,
+                            reactivateDisabled);
 
    TEST_CASE(" configCmdLine.reconfInterface");
-   cout << "configCmdLine.reconfInterface" << configCmdLine.reconfInterface<< endl;
+   cout << "configCmdLine.reconfInterface" << interface << std::endl;
 
 
-   if ( 0 == strcmp("D", configCmdLine.reconfInterface)) {
+   if ( "D" == interface) {
 
       // DeActiavte AFU
       m_reconfAFU.reconfDeactivate();
 
-   } else if ( 0 == strcmp("A", configCmdLine.reconfInterface)) {
+   } else if ( "A" == interface) {
 
       // Actiavte AFU
       m_reconfAFU.reconfActivate();
 
-   }else if ( 0 == strcmp("C", configCmdLine.reconfInterface))
+   }else if ( "C" == interface)
    {
       // Reconfigure  AFU
       m_reconfAFU.reconfConfigure();
 
-   } else if ( 0 == strcmp("ALL", configCmdLine.reconfInterface))  {
+   } else if ( "ALL" == interface)  {
 
       m_reconfAFU.reconfDeactivate();
       m_reconfAFU.reconfConfigure();
@@ -284,19 +284,23 @@ btBool ALIConfAFUApp::FreeRuntime()
 //=============================================================================
 int main(int argc, char *argv[])
 {
+   arguments argparse;
+   argparse("bus",                'b', optional_argument, "pci bus number")
+           ("function",           'f', optional_argument, "pci feature number")
+           ("device",             'd', optional_argument, "pci device number")
+           ("bitstream1",         'A', required_argument)
+           ("bitstream2",         'B', optional_argument)
+           ("testcase",           't', optional_argument)
+           ("reconftimeout",      'T', optional_argument)
+           ("reconfaction",       'a', optional_argument)
+           ("reconfInterface",    'I', optional_argument)
+           ("reactivate-disbled", 'd', optional_argument)
+           ;
+   if (!argparse.parse(argc, argv)) return -1;
    btInt Result =0;
 
-   if ( argc < 2 ) {
-      showhelp(stdout, &_aalclp_gcs_data);
-      return 1;
-   } else if ( 0!= ParseCmds(&configCmdLine, argc, argv) ) {
-      cerr << "Error scanning command line." << endl;
-      return 2;
-   }else if ( flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_HELP|ALICONIFG_CMD_FLAG_VERSION) ) {
-      return 0;
-   }
 
-   ALIConfAFUApp theApp;
+   ALIConfAFUApp theApp(argparse);
    if(!theApp.IsOK()){
       ERR("Runtime Failed to Start");
       exit(1);

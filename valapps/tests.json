@@ -1,0 +1,47 @@
+{
+    "collateral" :
+    [
+        {
+            "name": "nlb",
+            "version": "622",
+            "type": "binary",
+            "url": "https://af01p-ir.devtools.intel.com/artifactory/fpga-solutions-local/intel/fpt/gbs/nlb/nlb-622",
+            "fetcher":
+            {
+                "name": "artifactory",
+                "auth": ["sys_aalsdk", "AP96kSXktYLFnTfZyem1YZVaNUb"],
+                "base": "https://af01p-ir.devtools.intel.com/artifactory",
+                "repo": "fpga-solutions-local",
+                "files": [["*", "rbf"]]
+            }
+        }
+    ],
+    "tests" : 
+    [
+        {
+            "name": "gtreconfigure",
+            "args": {
+                "bitstream1": "rbf/101516_skxp_622_pr_2_b447_sd00_skxnlb400m0.rbf",
+                "bitstream2": "rbf/101516_skxp_622_pr_2_b447_sd00_skxnlb400m3.rbf"
+            },
+            "filter_" : "*01a",
+            "disabled" : false
+        },
+        {
+            "name": "gtmmio",
+            "filter": "*01"
+        },
+        {
+            "name": "gtreset",
+            "disabled": false
+        },
+        {
+            "name": "gtperfc",
+            "disabled": true
+        },
+        {
+            "name": "gtdma_buffer",
+            "disabled": false
+        }
+    ]
+}

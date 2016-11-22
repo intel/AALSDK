@@ -4,9 +4,9 @@ project(AFU_Reset)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(SOURCE_FILES main.cpp)
+set(SOURCE_FILES main.cpp AFU_Reset.h)
 add_executable(AFU_Reset ${SOURCE_FILES})
-target_link_libraries(AFU_Reset appbase)
+target_link_libraries(AFU_Reset)
 
 include(CTest)
 enable_testing()

@@ -1,10 +1,10 @@
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
 
 # valapps/Partial_Reconfig/Makefile
-
-CPPFLAGS ?=
+VALAPP   = ../../valapp
+CPPFLAGS ?= --std=c++11 -I$(VALAPP)
 CXX      ?= g++
-LDFLAGS  ?=
+LDFLAGS  ?= 
 
 ifneq (,$(ndebug))
 else
@@ -34,7 +34,7 @@ endif
 all: Partial_Reconfig
 
 Partial_Reconfig: main.o ALINLB.o ALIReconf.o
-	$(CXX) -g -O2 -o Partial_Reconfig main.o ALINLB.o ALIReconf.o $(LDFLAGS) -lOSAL -lAAS -laalrt -laalclp
+	$(CXX) -g -O2 -o Partial_Reconfig main.o ALINLB.o ALIReconf.o $(VALAPP)/libvalutils.la $(LDFLAGS) -lOSAL -lAAS -laalrt -laalclp
 
 main.o: main.cpp Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -g -O2 -c -o main.o main.cpp

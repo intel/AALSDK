@@ -34,7 +34,7 @@
 ##  History:
 ##     06/09/2015    JG   Initial version based off of canonical sample makefile
 ##******************************************************************************
-CPPFLAGS ?=
+CPPFLAGS ?= -I ../../../valapp
 CXX      ?= g++
 LDFLAGS  ?=
 
@@ -69,7 +69,7 @@ endif
 all: ALInlb
 
 ALInlb: main.o ALINLB.o
-	$(CXX) $(CFLAGS) -o ALInlb main.o ALINLB.o $(LDFLAGS) -lOSAL -lAAS -laalrt
+	$(CXX) $(CFLAGS) -o ALInlb main.o ALINLB.o ../../../valapp/libvalutils.la $(LDFLAGS) -lOSAL -lAAS -laalrt
 
 main.o: main.cpp  Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  $(CFLAGS) -c -o main.o main.cpp

@@ -53,7 +53,7 @@
 #include <aalsdk/Runtime.h>
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/service/IALIAFU.h>
-
+#include "arguments.h"
 #include "../../PR_SingleApp/ALINLB.h"
 
 using namespace std;
@@ -76,7 +76,7 @@ class HelloNLBTestApp: public CAASBase, public IRuntimeClient
 {
 public:
 
-   HelloNLBTestApp();
+   HelloNLBTestApp(const arguments &args);
    ~HelloNLBTestApp();
 
    // <begin IRuntimeClient interface>
@@ -118,12 +118,13 @@ protected:
 /// @brief   Constructor registers this objects client interfaces and starts
 ///          the AAL Runtime. The member m_bisOK is used to indicate an error.
 ///
-HelloNLBTestApp::HelloNLBTestApp() :
+HelloNLBTestApp::HelloNLBTestApp(const arguments &args) :
    m_Runtime(this),
    m_Result(0),
    m_Errors(0),
    m_btestMode(false),
-   m_bReleaseService(true)
+   m_bReleaseService(true),
+   m_helloALINLB(args)
 
 
 {
@@ -250,22 +251,33 @@ btBool HelloNLBTestApp::runTests(btBool brunloop,btBool bReleaseMode)
 //=============================================================================
 int main(int argc, char *argv[])
 {
+   arguments argparse;
+   argparse("bus",                'b', optional_argument, "pci bus number")
+           ("function",           'f', optional_argument, "pci feature number")
+           ("device",             'd', optional_argument, "pci device number")
+           ("loop",               'l', no_argument,       "loop test")
+           ("NoRelease",          'r', no_argument,       "NoRelease test" );
+
+   if (!argparse.parse(argc, argv)) return -1;
+
    btBool brunloop = false;
    btBool bReleaseMode = true;
    btInt Result;
 
-   HelloNLBTestApp theApp;
+   HelloNLBTestApp theApp(argparse);
    if(!theApp.IsOK()){
       ERR("Runtime Failed to Start");
       exit(1);
    }
 
-   if( argc>1 ) { // process command line arg of "-c"
-      if (0 == strcmp (argv[1], "--loop")) brunloop = true ;
+   if (true == argparse.have("loop"))
+   {
+      brunloop = true;
    }
 
-   if( argc>2 ) { // process command line arg of "-c"
-      if (0 == strcmp (argv[2], "--NoRelease")) bReleaseMode = false ;
+   if (true == argparse.have("NoRelease"))
+   {
+      bReleaseMode = false;
    }
 
    // Run Test cases

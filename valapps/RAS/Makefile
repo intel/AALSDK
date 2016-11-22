@@ -4,7 +4,7 @@
 
 CPPFLAGS ?=
 CXX      ?= g++
-LDFLAGS  ?= -L../vallib
+LDFLAGS  ?= -L../vallib -L../valapp
 
 ifneq (,$(ndebug))
 else
@@ -33,10 +33,10 @@ endif
 all: RAS
 
 RAS: main.o
-	$(CXX) -g -O2 -o RAS main.o $(LDFLAGS) -lOSAL -lAAS -laalrt -lvallib
+	$(CXX) -g -O2 -o RAS main.o $(LDFLAGS) -lOSAL -lAAS -laalrt -lvallib -lvalutils
 
 main.o: main.cpp ../vallib/vallib.h Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -I../vallib -g -O2 -c -o main.o main.cpp
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -I../vallib -I../valapp -g -O2 -c -o main.o main.cpp
 
 clean:
 	$(RM) RAS main.o

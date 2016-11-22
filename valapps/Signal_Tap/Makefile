@@ -2,9 +2,9 @@
 
 # valapps/Signal_Tap/Makefile
 
-CPPFLAGS ?=
+CPPFLAGS ?= -I../valapp
 CXX      ?= g++
-LDFLAGS  ?=
+LDFLAGS  ?= -L../valapp
 
 ifneq (,$(ndebug))
 else
@@ -33,7 +33,7 @@ endif
 all: Signal_Tap
 
 Signal_Tap: main.o
-	$(CXX) -g -O2 -o Signal_Tap main.o $(LDFLAGS) -lOSAL -lAAS -laalrt
+	$(CXX) -g -O2 -o Signal_Tap main.o ../valapp/libvalutils.la $(LDFLAGS) -lOSAL -lAAS -laalrt 
 
 main.o: main.cpp Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -g -O2 -c -o main.o main.cpp

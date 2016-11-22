@@ -48,7 +48,7 @@
 
 
 #include <string.h>
-
+#include "arguments.h"
 //****************************************************************************
 // UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
 //    DEFAULT is to use Software Simulation.
@@ -120,7 +120,7 @@ public:
 	MMIOMapping(btString strPlatform);
    ~MMIOMapping();
 
-   btInt  run(btString strPlatform, btInt testNum); ///< Return 0 if success
+   btInt  run(btString strPlatform, btInt testNum, const arguments &args); ///< Return 0 if success
    btInt  MMIOWholeRegion32();		 				///< return 0 if success
    btInt  MMIOWholeRegion64();        				///< return 0 if success
    btInt  InvalidMMIORegion();        				///< return 0 if success
@@ -128,7 +128,9 @@ public:
    btInt  DFHFeature();               				///< return 0 if success
    btInt  CorruptDFH();               				///< return 0 if success
    btInt  MMIOStress();               				///< return 0 if success
-   btInt  testMMIOWriteOneCacheLine();              //write 1 cache line to MMIO
+   btInt  testMMIOWriteOneCacheLine();              ///write 1 cache line to MMIO
+   btInt  initDFHList();                            //Initialize DFH list
+   btInt  initCorruptedDFHList();               //Initialize Corrupted DFH list
 
    //display usage function
    void usage();
@@ -192,10 +194,7 @@ protected:
    btString       m_strPlatform;       /// test platform selected by user
 
    //get service routine for internal use only
-   btBool _getALIMMIOService();
-
-   //Initialize DFH list
-   btBool _initDFHList();
+   btBool _getALIMMIOService(const arguments &args);
 
    //Verify Feature Type in the List
    btBool _verifyFeatureType(btUnsigned32bitInt featureType,

@@ -3,15 +3,15 @@
 // valapps/Read_Perf_Counters/main.cpp
 
 #include "vallib.h"
-
+#include "arguments.h"
 
 class Read_Perf_CountersApp : public CAASBase,
                               public IRuntimeClient
 {
 public:
-   Read_Perf_CountersApp();
+   Read_Perf_CountersApp(const arguments &args);
 
-   btInt    Run();    ///< Return 0 if success
+   btInt Run(const arguments &args);    ///< Return 0 if success
    btInt Errors() const { return m_Errors; }
 
    // <IRuntimeClient>
@@ -39,12 +39,14 @@ protected:
    AllocatesFME         m_FMEAllocator;
 };
 
-Read_Perf_CountersApp::Read_Perf_CountersApp() :
+Read_Perf_CountersApp::Read_Perf_CountersApp(const arguments& args) :
    m_Runtime(this),
-   m_Errors(0)
+   m_Errors(0),
+   m_Lpbk1Allocator(args),
+   m_FMEAllocator(args)
 {
    // Register our Client side interfaces so that the Service can acquire them.
-   //   SetInterface() is inherited from CAASBase
+   // SetInterface() is inherited from CAASBase
    SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
    // Initialize our internal semaphore
@@ -53,8 +55,8 @@ Read_Perf_CountersApp::Read_Perf_CountersApp() :
    // Start the AAL Runtime, setting any startup options via a NamedValueSet
 
    // Using Hardware Services requires the Remote Resource Manager Broker Service
-   //  Note that this could also be accomplished by setting the environment variable
-   //   AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
+   // Note that this could also be accomplished by setting the environment variable
+   // AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
    NamedValueSet configArgs;
    NamedValueSet configRecord;
 
@@ -128,8 +130,10 @@ void Read_Perf_CountersApp::runtimeEvent(const IEvent &rEvent)
    ERR("runtimeEvent(): received unexpected event 0x" << std::hex << rEvent.SubClassID() << std::dec);
 }
 
-btInt Read_Perf_CountersApp::Run()
+btInt Read_Perf_CountersApp::Run(const arguments& args)
 {
+   btUnsigned32bitInt testNum = 0; 
+
    // Get a pointer to an NLB Lpbk1 AAL Service.
    m_Lpbk1Allocator.Allocate(&m_Runtime);
    m_Lpbk1Allocator.Wait();
@@ -150,9 +154,24 @@ btInt Read_Perf_CountersApp::Run()
       goto _LPBK1;
    }
 
-   sw_perfc_01(pAFUService, pFMEService);
-   sw_perfc_02(pAFUService, pFMEService);
-   sw_perfc_03(pAFUService, pFMEService);
+   if (args.have("testNum")){
+        testNum = static_cast<btUnsigned32bitInt>(args.get_long("testNum")); 
+        MSG(testNum);
+    }
+
+   switch (testNum){
+     case 1:  
+        sw_perfc_01(pAFUService, pFMEService);
+        break;
+     case 2:
+        sw_perfc_02(pAFUService, pFMEService);
+        break;
+     case 3:
+        sw_perfc_03(pAFUService, pFMEService);
+        break;
+     default:
+        MSG("Usg: Read_Perf_Counters -b <bus> -f <function> -d <device> -t <testNum>");
+   }
 
    m_FMEAllocator.Free();
    m_FMEAllocator.Wait();
@@ -501,13 +520,28 @@ void Read_Perf_CountersApp::sw_perfc_03(IBase *pAFUService, IBase *pFMEService)
 
 int main(int argc, char *argv[])
 {
-   Read_Perf_CountersApp TheApp;
-
-   if ( TheApp.Errors() > 0 ) {
-      // something bad happened during Runtime startup.
-      return TheApp.Errors();
+   arguments argparse;
+   argparse("bus", 'b', optional_argument, "pci bus number")
+           ("feature", 'f', optional_argument, "pci feature number")
+           ("device", 'd', optional_argument, "pci device number")
+           ("testNum", 't', optional_argument, "test case number");
+   if (argc < 2)
+   {
+      MSG("Usg: Read_Perf_Counters -b <bus> -f <function> -d <device> -t <testNum>");
+      return -1;
    }
+   else {
 
-   return TheApp.Run();
+      if (!argparse.parse(argc, argv)) return -1;
+
+      Read_Perf_CountersApp TheApp(argparse);
+
+      if ( TheApp.Errors() > 0 ) {
+        // something bad happened during Runtime startup.
+        return TheApp.Errors();
+      }
+
+      return TheApp.Run(argparse);
+   }
 }
 

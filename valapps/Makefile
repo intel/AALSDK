@@ -3,8 +3,9 @@
 
 ## These subdirectories must be built first
 SUBDIRS1=\
+valapp   \
 appbase/ \
-vallib/
+vallib/  
 
 ## Automagically include ALL sub-directories that have a Makefile (Thanks TBD!)
 SUBDIRS2 := $(shell find . -name Makefile|sed 's^./^^;s/Makefile//')

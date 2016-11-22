@@ -1,0 +1,106 @@
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+# valapps/appbase/makefile
+
+CPPFLAGS ?=--std=c++11 -I . -I/usr/include/jsoncpp
+CXX      ?= g++
+LDFLAGS  ?= 
+
+ifneq (,$(ndebug))
+else
+CPPFLAGS += -DENABLE_DEBUG=1
+endif
+ifneq (,$(nassert))
+else
+CPPFLAGS += -DENABLE_ASSERT=1
+endif
+
+ifeq (,$(DESTDIR))
+ifneq (,$(prefix))
+CPPFLAGS += -I$(prefix)/include
+LDFLAGS  += -L. -L$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(prefix)/lib \
+            -L$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(prefix)/lib64
+endif
+else
+ifeq (,$(prefix))
+prefix = /usr/local
+endif
+CPPFLAGS += -I$(DESTDIR)$(prefix)/include
+LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib \
+            -L$(DESTDIR)$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib64
+endif
+
+all: valapp libvalafu.so libafu_reset.so libdma_buffer.so libmmio_tests.so libreconfigure_test.so
+
+main.o: main.cpp makefile
+	$(CXX) $(CPPFLAGS) -fPIC -DPIC -g3 -c main.cpp -o main.o -I. -I$(prefix)/include
+
+valapp: main.o libvalafu.so
+	$(CXX) $(CPPFLAGS) -g3 main.cpp -o valapp -I. -I$(prefix)/include $(LDFLAGS) -L. -lvalafu 
+
+libafu_reset.so : afu_reset.o
+	$(CXX) $(CPPFLAGS) -fPIC -shared -g3 afu_reset.o $(LDFLAGS) -o libafu_reset.so
+
+afu_reset.o: afu_reset.h afu_reset.cpp
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c afu_reset.cpp -o afu_reset.o
+
+libreconfigure_test.so : reconfigure_test.o
+	$(CXX) $(CPPFLAGS) -fPIC -shared -g3 reconfigure_test.o $(LDFLAGS) -o libreconfigure_test.so
+
+reconfigure_test.o: reconfigure_test.h reconfigure_test.cpp
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c reconfigure_test.cpp -o reconfigure_test.o
+
+libdma_buffer.so : dma_buffer.o
+	$(CXX) $(CPPFLAGS) -fPIC -shared -g3 dma_buffer.o $(LDFLAGS) -o libdma_buffer.so
+
+dma_buffer.o: dma_buffer.h dma_buffer.cpp
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c dma_buffer.cpp -o dma_buffer.o
+
+libmmio_tests.so : mmio_mapping.o libvalafu.so
+	$(CXX) $(CPPFLAGS) -fPIC -shared -g3 mmio_mapping.o $(LDFLAGS) -o libmmio_tests.so -lvalafu
+
+mmio_mapping.o: mmio_mapping.h mmio_mapping.cpp
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c mmio_mapping.cpp -o mmio_mapping.o
+
+reconfigure_client.o: reconfigure_client.h reconfigure_client.cpp
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c reconfigure_client.cpp -o reconfigure_client.o
+
+libvalafu.so: jsoncpp.o afu_test.o ali_client.o reconfigure_client.o test_args.o test_context.o test_manager.o service_manager.o service_client.o utils.o makefile
+	$(CXX) -fPIC -shared -g3  jsoncpp.o afu_test.o ali_client.o reconfigure_client.o test_args.o test_context.o test_manager.o service_manager.o service_client.o utils.o $(LDFLAGS) -lOSAL -lAAS -laalrt -ldl -o libvalafu.so
+
+jsoncpp.o: jsoncpp.cpp 
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c jsoncpp.cpp -o jsoncpp.o
+
+afu_test.o: afu_test.cpp afu_test.h makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c afu_test.cpp -o afu_test.o
+
+ali_client.o: ali_client.cpp ali_client.h makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c ali_client.cpp -o ali_client.o
+
+test_args.o: test_args.cpp test_args.h makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c test_args.cpp -o test_args.o
+
+test_context.o: test_context.cpp test_context.h makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c test_context.cpp -o test_context.o
+
+test_manager.o: test_manager.cpp test_manager.h makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c test_manager.cpp -o test_manager.o
+
+service_client.o: service_client.cpp service_client.h makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c service_client.cpp -o service_client.o
+
+service_manager.o: service_manager.cpp service_manager.h makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c service_manager.cpp -o service_manager.o
+
+utils.o: utils.cpp utils.h makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c utils.cpp -o utils.o
+
+clean:
+	$(RM) valapp libvalafu.so libafu_reset.so libdma_buffer.so *.o
+
+cva.so : c_service_manager.o
+	$(CXX) $(CPPFLAGS) -fPIC -shared -g3 c_service_manager.o $(LDFLAGS) -o cva.so -lvalafu
+
+c_service_manager.o: c_service_manager.h c_service_manager.cpp
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3 -c c_service_manager.cpp -o c_service_manager.o
+.PHONY: all clean

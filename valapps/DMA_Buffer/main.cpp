@@ -3,6 +3,7 @@
 #include <string>
 #include <appbase.h>
 #include <appconstants.h>
+#include "arguments.h"
 
 class HelloALIBufferApp: public appbase
 {
@@ -12,7 +13,7 @@ public:
     ~HelloALIBufferApp();
 
     // App-specific methods
-    btInt run();    ///< Return 0 if success
+    btInt run(const arguments &args);    ///< Return 0 if success
 
     void setBufferSize(btUnsigned32bitInt bufferSize);
 
@@ -67,7 +68,7 @@ void HelloALIBufferApp::setBufferDelay(btUnsigned16bitInt bufferDelay)
 /// - Executes the Reset algorithm
 /// - Cleans up.
 
-btInt HelloALIBufferApp::run()
+btInt HelloALIBufferApp::run(const arguments &args)
 {
 
     // DMA Buffer support   Over-all    Enno    When fpgadiag/NLB0 is run and passes, it demonstrates that DMA buffer allocation and mapping is working correctly.  26
@@ -77,7 +78,7 @@ btInt HelloALIBufferApp::run()
     // IALIBuffer   Enno    Verify that the IOVA operation returns the correct value for known buffers. E.g. allocate a buffer B of length N mapped at user virtual address of V and given IOVA(V) is P. Get various IOVA values and ensure that they are what is expected. Specifically: P=IOVA(V), then P+1=IOVA(V+1); P+L-1=IOVA(V+L-1); 0=IOVA(V+L) [indicating failure]    26
 
     // Request the service
-    requestService();
+    requestService(args);
 
     // We have the service and the DSM buffer
     appMSG("Starting Test...");
@@ -91,35 +92,50 @@ btInt HelloALIBufferApp::run()
 
         // Request the buffers
         appMSG("Requesting buffers...");
-        requestBuffers(appMB(m_BufferSize),
-                       0,
-                       0);
-        cout<<"*** Current buffer size is "<<m_BufferSize<<" MB"<<endl;
+  
+       m_Status = requestBuffers(appMB(m_BufferSize),0,0);
+       cout<<"m_Status:"<<m_Status<<endl;
+       if (m_Status != 0)
+       {
+          if (m_BufferSize < 5 )
+          {
+              cout<<"Test Failed: buffer allocation failure: " <<m_Status<<endl;
+              m_Result = 1;
+          }
+          else
+          {
+	      cout<<"Expected buffer allocation failure: " <<m_Status<<endl;
+              m_Result = 0;
+          }
+         
+          goto end;
+       }
+       cout<<"*** Current buffer size is "<<m_BufferSize<<" MB"<<endl;
 
-        // Operate on cache lines
-        struct CacheLine {
+       // Operate on cache lines
+       struct CacheLine {
             btUnsigned32bitInt uint[16];
-        };
+       };
 
-        // Cache-Line[n] is zero except last uint = n
-        cout<<"*** Writing to buffer..."<<endl;
-        struct CacheLine *pCL = reinterpret_cast<struct CacheLine *>(m_InputVirt);
-        for (btUnsigned32bitInt i = 0; i < m_InputSize / CL(1) ; ++i ) {
+       // Cache-Line[n] is zero except last uint = n
+       cout<<"*** Writing to buffer..."<<endl;
+       struct CacheLine *pCL = reinterpret_cast<struct CacheLine *>(m_InputVirt);
+       for (btUnsigned32bitInt i = 0; i < m_InputSize / CL(1) ; ++i ) {
             pCL[i].uint[15] = i;
-        };
+       };
 
-        // Hold buffer for extra timing
-        cout<<"*** Holding buffer for "<<m_BufferDelay<<" seconds."<<endl;
-        SleepMilli(1000 * m_BufferDelay);
+       // Hold buffer for extra timing
+       cout<<"*** Holding buffer for "<<m_BufferDelay<<" seconds."<<endl;
+       SleepMilli(1000 * m_BufferDelay);
 
-        // Release the buffers
-        appMSG("Releasing buffers...");
-        releaseBuffers();
-
+       // Release the buffers
+       appMSG("Releasing buffers...");
+       releaseBuffers();
     }
-    appMSG("Done Running Test");
 
     // Exit
+    end:
+    appMSG("Done Running Test");
     requestExit();
 
     // Clean-up and return
@@ -136,17 +152,17 @@ btInt HelloALIBufferApp::run()
  */
 int main(int argc, char *argv[])
 {
+    arguments argparse;
+    argparse("bus",      'b', optional_argument, "pci bus number")
+            ("feature",  'f', optional_argument, "pci feature number")
+            ("device",   'd', optional_argument, "pci device number")
+            ("size",     's', required_argument, "buffer size (MB) for test")
+            ("delay",    'd', required_argument, "delay (sec) to hold on to buffer");
+    if (!argparse.parse(argc, argv)) return -1;
     btInt opt;
-    btUnsigned32bitInt bufferSize = 1;
-    btUnsigned16bitInt bufferDelay = 2;
+    btUnsigned32bitInt bufferSize = argparse.get_long("size", 1);
+    btUnsigned16bitInt bufferDelay = argparse.get_long("delay", 2);
 
-    while ((opt = getopt(argc,argv,"s:d:")) != EOF)
-        switch(opt)
-        {
-        case 's': bufferSize = (btUnsigned32bitInt) atoi(optarg); cout <<" Passing buffer size."<<endl; break;
-        case 'd': bufferDelay = (btUnsigned16bitInt) atoi(optarg); cout <<" Passing buffer delay."<<endl; break;
-        case '?': cerr<<"Usage is \n -s [value]: defines buffer size on MB. \n -d [value]: defines buffer delay in seconds. \n"<<endl;
-        default: cout<<endl; abort(); }
 
     HelloALIBufferApp theApp("HW",
                              "D8424DC4-A4A3-C413-F89E-433683F9040B",
@@ -159,7 +175,7 @@ int main(int argc, char *argv[])
         appERR("Runtime Failed to Start");
         exit(1);
     }
-    btInt Result = theApp.run();
+    btInt Result = theApp.run(argparse);
 
     appMSG("Done");
     return Result;

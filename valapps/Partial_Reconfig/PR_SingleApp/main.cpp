@@ -56,6 +56,8 @@
 
 #include "../PR_SingleApp/ALINLB.h"
 #include "../PR_SingleApp/ALIReconf.h"
+#include "arguments.h"
+#include "utils.h"
 
 using namespace std;
 using namespace AAL;
@@ -90,7 +92,7 @@ class PRTest: public CAASBase, public IRuntimeClient
 {
 public:
 
-   PRTest();
+   PRTest(const arguments &args);
    ~PRTest();
 
    // <begin IRuntimeClient interface>
@@ -104,6 +106,7 @@ public:
    void runtimeEvent(const IEvent &rEvent);
    // <end IRuntimeClient interface>
 
+   bool findFpgadiag();
    btBool FreeRuntime();
    btBool runTests();
    btBool allocRecongService();
@@ -132,6 +135,8 @@ protected:
    btInt                   m_Errors;            /// < Partial Reconfiguration errors
    AllocatesReconfService  m_reconfAFU;         /// < Reconfiguration Service
    AllocatesNLBService     m_ALINLB ;           /// < NLB Service
+   arguments               m_args;
+   std::string             m_fpgadiag;
 
 };
 
@@ -144,10 +149,13 @@ protected:
 /// @brief   Constructor registers this objects client interfaces and starts
 ///          the AAL Runtime. The member m_bisOK is used to indicate an error.
 ///
-PRTest::PRTest() :
+PRTest::PRTest(const arguments &args) :
          m_Runtime(this),
          m_Result(0),
-         m_Errors(0)
+         m_Errors(0),
+         m_args(args),
+         m_reconfAFU(args),
+         m_ALINLB(args)
 {
 
    SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
@@ -176,6 +184,42 @@ PRTest::~PRTest()
    m_Sem.Destroy();
 }
 
+
+bool PRTest::findFpgadiag()
+{
+   char *envpath = NULL;
+   envpath = getenv("LD_LIBRARY_PATH");
+
+   if (m_args.have("fpgadiag"))
+   {
+      m_fpgadiag = m_args.get_string("fpgadiag");
+      if (utils::path_exists(m_fpgadiag))
+      {
+          return true;
+      }
+      else
+      {
+          return false;
+      }
+   }
+   else if (0 != envpath)
+   {
+      std::vector<std::string> splits = utils::split<std::string>(envpath, ":");
+      std::vector<std::string>::const_iterator iter = splits.begin();
+      struct stat buffer;
+      std::string path = "";
+      for ( ; iter < splits.end(); ++iter)
+      {
+          path = *iter + "/../bin/fpgadiag";
+          if (utils::path_exists(path))
+          {
+              m_fpgadiag = path;
+              return true;
+          }
+      }
+   }
+   return false;
+}
 
 void PRTest::runtimeStarted( IRuntime            *pRuntime,
                              const NamedValueSet &rConfigParms)
@@ -238,8 +282,8 @@ btBool PRTest::allocRecongService()
       ERR("--- Failed to Allocate Reconfigure Service --- ");
       return false;
    }
-   //strcpy(configCmdLine.bitstream_file1,BitStreamFile);
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   //strcpy(m_args.get_string("bitstream1"),BitStreamFile);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"),1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
 
    m_reconfAFU.reconfConfigure();
    if(false == m_reconfAFU.IsOK() ) {
@@ -258,13 +302,13 @@ btBool PRTest::runTests()
    }
  
    cout << "----INPUT ARGUEMENTS  ---- "  << endl;
-   cout << "configCmdLine.bitstream_file1: " << configCmdLine.bitstream_file1 << endl;
-   cout << "configCmdLine.bitstream_file2: " << configCmdLine.bitstream_file2 << endl;
+   cout << "m_args.get_string('bitstream1'): " << m_args.get_string("bitstream1") << endl;
+   cout << "m_args.get_string('bitstream2'): " << m_args.get_string("bitstream2") << endl;
    cout << "testcasenum: " << configCmdLine.testcasenum << endl;
 
    cout << endl << "-------- START TEST CASES  ---------" << endl << endl;
-
-   switch(configCmdLine.testcasenum){
+   int testcase = m_args.get_int("testcase");
+   switch(testcase){
       case 1: {
          sw_pr_01a();
          break;
@@ -349,13 +393,16 @@ void PRTest::sw_pr_01a()
    // run NLB/fpgadiag to demonstrate that one works, as well.
 
    TEST_CASE("-------- sw_pr_01a START ---------");
-   char* envpath = NULL;
+   if (!findFpgadiag())
+   {
+      ERR("Don't know where to find fpgadiag.");
+      //exit(1);
+   }
+
    int res       = 0;
-   std::string path ;
-   envpath = getenv("LD_LIBRARY_PATH");
 
    // Reconfigure bitstream
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"),1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfConfigure();
    if(false == m_reconfAFU.IsOK() ) {
       ++m_Errors;
@@ -364,13 +411,13 @@ void PRTest::sw_pr_01a()
    }
 
    TEST_CASE("-------- Reconfigurted Mode0 bitstream---------");
+   std::string loopback  = m_fpgadiag + " --mode=lpbk1 -r=vl0";
+   std::string moderead  = m_fpgadiag + " --mode=read -r=vl0";
+   std::string modewrite = m_fpgadiag + " --mode=write -r=vl0";
 
-   path.append("cd  ");
-   path.append(envpath);
-   path.append("; cd ../bin; ./fpgadiag --mode=lpbk1");
    //cout << endl << "Mode0 Bitstream Path" <<path << endl;
 
-   res = system(path.c_str());
+   res = system(loopback.c_str());
    if ( -1 == res ) {
       ++m_Errors;
       ERR("sw_pr_01a: Mode0  FAILED to RUN");
@@ -379,7 +426,7 @@ void PRTest::sw_pr_01a()
    TEST_CASE("-------- Reconfigurted Mode3 bitstream---------");
 
    // Reconfigure bitstream
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file2,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream2"),1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfConfigure();
    if(false == m_reconfAFU.IsOK() ) {
       ++m_Errors;
@@ -387,25 +434,17 @@ void PRTest::sw_pr_01a()
       return ;
    }
 
-   path.clear();
-   path.append("cd ");
-   path.append(envpath);
-   path.append("; cd ../bin; ./fpgadiag --mode=read");
    //cout << endl << "Mode3 Bitstream Path" <<path << endl;
 
-   res = system(path.c_str());
+   res = system(moderead.c_str());
    if ( -1 == res ) {
       ++m_Errors;
       ERR("sw_pr_01a: Mode3 Read FAILED to RUN");
    }
 
-   path.clear();
-   path.append("cd ");
-   path.append(envpath);
-   path.append("; cd ../bin; ./fpgadiag  --mode=write");
    //cout << endl << "Mode7 Bitstream Path" <<path << endl;
 
-   res = system(path.c_str());
+   res = system(modewrite.c_str());
    if ( -1 == res ) {
       ++m_Errors;
       ERR("sw_pr_01a: Mode3 Write FAILED to RUN");
@@ -413,7 +452,7 @@ void PRTest::sw_pr_01a()
 
 
    // Reconfigure bitstream
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1, 1000, AALCONF_RECONF_ACTION_HONOR_OWNER_ID, false);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"), 1000, AALCONF_RECONF_ACTION_HONOR_OWNER_ID, false);
    m_reconfAFU.reconfConfigure();
    if (false == m_reconfAFU.IsOK()) {
       ++m_Errors;
@@ -435,7 +474,7 @@ void PRTest::sw_pr_02()
    TEST_CASE("-------- sw_pr_02 START  ---------");
 
    // Reconfigure bitstream
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"),1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.setIsOk(true);
    m_reconfAFU.reconfDeactivate();
    if(false == m_reconfAFU.IsOK() ) {
@@ -467,7 +506,7 @@ void PRTest::sw_pr_03()
    TEST_CASE("-------- sw_pr_03 START ---------");
 
    // Reconfigure bitstream
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"),1000,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfActivate();
    m_reconfAFU.setIsOk(true);
 
@@ -512,7 +551,7 @@ void PRTest::sw_pr_04a()
 
    SleepSec(1);
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"),5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfDeactivate();
    if(false == m_reconfAFU.IsOK() ) {
       ++m_Errors;
@@ -557,7 +596,7 @@ void PRTest::sw_pr_05a()
 
    SleepSec(1);
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,10,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"),10,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfDeactivate();
    if(( true == m_reconfAFU.IsOK() ) &&
       (m_reconfAFU.getErrnum() != ali_errnumDeActiveTimeout) ){
@@ -607,7 +646,7 @@ void PRTest::sw_pr_06a()
 
 
    SleepSec(1);
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_REQUEST_ID,false);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"),5,AALCONF_RECONF_ACTION_HONOR_REQUEST_ID,false);
    m_reconfAFU.reconfDeactivate();
    if(false == m_reconfAFU.IsOK() ) {
       ++m_Errors;
@@ -652,7 +691,7 @@ void PRTest::sw_pr_07a()
                                  &m_ALINLB);
    SleepSec(1);
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_REQUEST_ID,false);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"),5,AALCONF_RECONF_ACTION_HONOR_REQUEST_ID,false);
    m_reconfAFU.reconfDeactivate();
    if(false == m_reconfAFU.IsOK() ) {
       ++m_Errors;
@@ -679,8 +718,7 @@ void PRTest::sw_pr_08()
 
    TEST_CASE("--------  sw_pr_08 START ---------");
 
-   char wrongFile[200];
-   strcpy(wrongFile,BitStreamWrongFile);
+   std::string wrongFile = BitStreamWrongFile;
    m_reconfAFU.setreconfnvs(wrongFile,10,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
 
    m_reconfAFU.reconfConfigure();
@@ -702,9 +740,15 @@ void PRTest::sw_pr_09()
 
    TEST_CASE("--------  sw_pr_09 START ---------");
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"),5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfDeactivate();
    m_reconfAFU.reconfActivate();
+
+   // Activate fails if user try to activate active AFU.
+   // Activate is unsuccessful
+   m_reconfAFU.reconfActivate();
+
+   //  Test case fails if  Activate is successful.
    if(true == m_reconfAFU.IsOK() ) {
       ++m_Errors;
       ERR("sw_pr_09:Deactivate  FAIL");
@@ -735,7 +779,7 @@ void PRTest::sw_pr_10()
 
    TEST_CASE("--------  sw_pr_10 START ---------");
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,true);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"),5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,true);
 
    m_reconfAFU.reconfConfigure();
    if(false == m_reconfAFU.IsOK() ) {
@@ -785,7 +829,7 @@ void PRTest::sw_pr_11()
 
    SleepSec(1);
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"),5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfDeactivate();
    m_ALINLB.setReleaseService(false);
    m_reconfAFU.setIsOk(true);
@@ -834,7 +878,7 @@ void PRTest::sw_pr_12()
 
    TEST_CASE("--------  sw_pr_12 START ---------");
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"),5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
 
    m_reconfAFU.reconfConfigure();
    if(false == m_reconfAFU.IsOK() ) {
@@ -860,7 +904,7 @@ void PRTest::sw_pr_12()
 
    SleepSec(1);
 
-   m_reconfAFU.setreconfnvs(configCmdLine.bitstream_file1,5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
+   m_reconfAFU.setreconfnvs(m_args.get_string("bitstream1"),5,AALCONF_RECONF_ACTION_HONOR_OWNER_ID,false);
    m_reconfAFU.reconfDeactivate();
    m_ALINLB.setReleaseService(false);
    m_reconfAFU.setIsOk(true);
@@ -907,21 +951,23 @@ void PRTest::sw_pr_12()
 
 int main(int argc, char *argv[])
 {
+   arguments argparse;
+   argparse("bus",        'b', optional_argument, "pci bus number")
+           ("function",   'f', optional_argument, "pci function number")
+           ("device",     'd', optional_argument, "pci device number")
+           ("fpgadiag",   'F', optional_argument, "location of fpgadiag binary")
+           ("bitstream1", 'A', required_argument)
+           ("bitstream2", 'B', required_argument)
+           ("testcase",   't', required_argument)
+           ("timeout",    'T', optional_argument)
+           ("action",     'a', optional_argument)
+           ("reactivate-disbled", 'd', optional_argument)
+           ;
+   if (!argparse.parse(argc, argv)) return -1;
+
    btInt Result =0;
 
-   if ( argc < 2 ) {
-      showhelp(stdout, &_aalclp_gcs_data);
-      return 1;
-   } else if ( 0!= ParseCmds(&configCmdLine, argc, argv) ) {
-      cerr << "Error scanning command line." << endl;
-      return 2;
-   }else if ( flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_HELP|ALICONIFG_CMD_FLAG_VERSION) ) {
-      return 0;
-   }else if ( verifycmds(&configCmdLine) ) {
-      return 3;
-   }
-
-   PRTest theApp;
+   PRTest theApp(argparse);
    if(!theApp.IsOK()){
       ERR("Runtime Failed to Start");
       exit(1);

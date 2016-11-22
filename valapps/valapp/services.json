@@ -1,0 +1,131 @@
+{
+    "services" :
+        [
+            {
+                "service_lib" : "libALI",
+                "alias" : "NLB0",
+                "afu_id_" : "D8424DC4-A4A3-C413-F89E-433683F9040B",
+                "afu_id" : "C000C966-0D82-4272-9AEF-FE5F84570612",
+                "include_aia" : true,
+                "bus_" : "0xde",
+                "feature_" : "0x00",
+                "device_" : "0x00",
+                "registers" :
+                [
+                    {"id": "DFH", "offset": "0x0000", "type": "RO", "width": 64, "comment": "AFU Device Feature Header" },
+                    {"id": "AFU_ID_L", "offset": "0x0008", "type": "RO", "width": 64, "comment": "AFU ID low 64b" },
+                    {"id": "AFU_ID_H", "offset": "0x0010", "type": "RO", "width": 64, "comment": "AFU ID high 64b" },
+                    {"id": "CSR_DFH_RSVD0", "offset": "0x0018", "type": "RsvdZ", "width": 64, "comment": "Mandatory Reserved 0" },
+                    {"id": "CSR_DFH_RSVD1", "offset": "0x0020", "type": "RO", "width": 64, "comment": "Mandatory Reserved 1" },
+                    {"id": "CSR_SCRATCHPAD0", "offset": "0x0100", "type": "RW", "width": 64, "comment": "Scratchpad register 0" },
+                    {"id": "CSR_SCRATCHPAD1", "offset": "0x0108", "type": "RW", "width": 64, "comment": "Scratchpad register 2" },
+                    {"id": "CSR_AFU_DSM_BASEL", "offset": "0x0110", "type": "RW", "width": 32, "comment": "Lower 32-bits of AFU DSM base address. The lower 6-bbits are 4x00 since the address is cache aligned." },
+                    {"id": "CSR_AFU_DSM_BASEH", "offset": "0x0114", "type": "RW", "width": 32, "comment": "Upper 32-bits of AFU DSM base address." },
+                    {"id": "CSR_SRC_ADDR", "offset": "0x0120", "type": "RW", "width": 64, "comment": "Start physical address for source buffer. All read requests are targetted to this region." },
+                    {"id": "CSR_DST_ADDR", "offset": "0x0128", "type": "RW", "width": 64, "comment": "Start physical address for destination buffer. All write requests are targetted to this region." },
+                    {"id": "CSR_NUM_LINES", "offset": "0x0130", "type": "RW", "width": 32, "comment": "Number of cache lines" },
+                    {"id": "CSR_CTL", "offset": "0x0138", "type": "RW", "width": 32, "comment": "Controls test flow, start, stop, force completion" },
+                    {"id": "CSR_CFG", "offset": "0x0140", "type": "RW", "width": 32, "comment": "Configures test parameters" },
+                    {"id": "CSR_INACT_THRESH", "offset": "0x0148", "type": "RW", "width": 32, "comment": "inactivity threshold limit" },
+                    {"id": "CSR_INTERRUPT0", "offset": "0x0150", "type": "RW", "width": 32, "comment": "SW allocates Interrupt APIC ID & Vector to device" }
+                ]
+            },
+            {
+                "service_lib" : "libALI",
+                "alias" : "NLB3",
+                "afu_id" : "F7DF405C-BD7A-CF72-22F1-44B0B93ACD18",
+                "include_aia" : true,
+                "bus_" : "0xde",
+                "feature_" : "0x00",
+                "device_" : "0x00",
+                "registers" :
+                [
+                    {"id": "DFH", "offset": "0x0000", "type": "RO", "width": 64, "comment": "AFU Device Feature Header" },
+                    {"id": "AFU_ID_L", "offset": "0x0008", "type": "RO", "width": 64, "comment": "AFU ID low 64b" },
+                    {"id": "AFU_ID_H", "offset": "0x0010", "type": "RO", "width": 64, "comment": "AFU ID high 64b" },
+                    {"id": "CSR_DFH_RSVD0", "offset": "0x0018", "type": "RsvdZ", "width": 64, "comment": "Mandatory Reserved 0" },
+                    {"id": "CSR_DFH_RSVD1", "offset": "0x0020", "type": "RO", "width": 64, "comment": "Mandatory Reserved 1" },
+                    {"id": "CSR_SCRATCHPAD0", "offset": "0x0100", "type": "RW", "width": 64, "comment": "Scratchpad register 0" },
+                    {"id": "CSR_SCRATCHPAD1", "offset": "0x0108", "type": "RW", "width": 64, "comment": "Scratchpad register 2" },
+                    {"id": "CSR_AFU_DSM_BASEL", "offset": "0x0110", "type": "RW", "width": 32, "comment": "Lower 32-bits of AFU DSM base address. The lower 6-bbits are 4x00 since the address is cache aligned." },
+                    {"id": "CSR_AFU_DSM_BASEH", "offset": "0x0114", "type": "RW", "width": 32, "comment": "Upper 32-bits of AFU DSM base address." },
+                    {"id": "CSR_SRC_ADDR", "offset": "0x0120", "type": "RW", "width": 64, "comment": "Start physical address for source buffer. All read requests are targetted to this region." },
+                    {"id": "CSR_DST_ADDR", "offset": "0x0128", "type": "RW", "width": 64, "comment": "Start physical address for destination buffer. All write requests are targetted to this region." },
+                    {"id": "CSR_NUM_LINES", "offset": "0x0130", "type": "RW", "width": 32, "comment": "Number of cache lines" },
+                    {"id": "CSR_CTL", "offset": "0x0138", "type": "RW", "width": 32, "comment": "Controls test flow, start, stop, force completion" },
+                    {"id": "CSR_CFG", "offset": "0x0140", "type": "RW", "width": 32, "comment": "Configures test parameters" },
+                    {"id": "CSR_INACT_THRESH", "offset": "0x0148", "type": "RW", "width": 32, "comment": "inactivity threshold limit" },
+                    {"id": "CSR_INTERRUPT0", "offset": "0x0150", "type": "RW", "width": 32, "comment": "SW allocates Interrupt APIC ID & Vector to device" }
+                ]
+            },
+            {
+                "service_lib" : "libALI",
+                "alias" : "NLB7",
+                "afu_id" : "7BAF4DEA-A57C-E91E-168A-455D9BDA88A3",
+                "include_aia" : true,
+                "bus_" : "0xde",
+                "feature_" : "0x00",
+                "device_" : "0x00",
+                "registers" :
+                [
+                    {"id": "DFH", "offset": "0x0000", "type": "RO", "width": 64, "comment": "AFU Device Feature Header" },
+                    {"id": "AFU_ID_L", "offset": "0x0008", "type": "RO", "width": 64, "comment": "AFU ID low 64b" },
+                    {"id": "AFU_ID_H", "offset": "0x0010", "type": "RO", "width": 64, "comment": "AFU ID high 64b" },
+                    {"id": "CSR_DFH_RSVD0", "offset": "0x0018", "type": "RsvdZ", "width": 64, "comment": "Mandatory Reserved 0" },
+                    {"id": "CSR_DFH_RSVD1", "offset": "0x0020", "type": "RO", "width": 64, "comment": "Mandatory Reserved 1" },
+                    {"id": "CSR_SCRATCHPAD0", "offset": "0x0100", "type": "RW", "width": 64, "comment": "Scratchpad register 0" },
+                    {"id": "CSR_SCRATCHPAD1", "offset": "0x0108", "type": "RW", "width": 64, "comment": "Scratchpad register 2" },
+                    {"id": "CSR_AFU_DSM_BASEL", "offset": "0x0110", "type": "RW", "width": 32, "comment": "Lower 32-bits of AFU DSM base address. The lower 6-bbits are 4x00 since the address is cache aligned." },
+                    {"id": "CSR_AFU_DSM_BASEH", "offset": "0x0114", "type": "RW", "width": 32, "comment": "Upper 32-bits of AFU DSM base address." },
+                    {"id": "CSR_SRC_ADDR", "offset": "0x0120", "type": "RW", "width": 64, "comment": "Start physical address for source buffer. All read requests are targetted to this region." },
+                    {"id": "CSR_DST_ADDR", "offset": "0x0128", "type": "RW", "width": 64, "comment": "Start physical address for destination buffer. All write requests are targetted to this region." },
+                    {"id": "CSR_NUM_LINES", "offset": "0x0130", "type": "RW", "width": 32, "comment": "Number of cache lines" },
+                    {"id": "CSR_CTL", "offset": "0x0138", "type": "RW", "width": 32, "comment": "Controls test flow, start, stop, force completion" },
+                    {"id": "CSR_CFG", "offset": "0x0140", "type": "RW", "width": 32, "comment": "Configures test parameters" },
+                    {"id": "CSR_INACT_THRESH", "offset": "0x0148", "type": "RW", "width": 32, "comment": "inactivity threshold limit" },
+                    {"id": "CSR_INTERRUPT0", "offset": "0x0150", "type": "RW", "width": 32, "comment": "SW allocates Interrupt APIC ID & Vector to device" }
+                ]
+            },
+            {
+                "service_lib" : "libALI",
+                "alias" : "PR",
+                "afu_id" : "A3AAB285-79A0-4572-83B5-4FD5E5216870",
+                "include_aia" : true,
+                "interfaces" :
+                    [
+                        ["AAL::IALIReconfigure", "0x808610600020007"]
+                    ]
+            },
+            {
+                "service_lib" : "libALI",
+                "alias" : "FME",
+                "afu_id" : "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764",
+                "include_aia" : true,
+                "interfaces" :
+                    [
+                        ["AAL::IALIPerf", "0x808610600020005"]
+                    ]
+            },
+            {
+                "service_lib" : "libALI",
+                "alias" : "PORT",
+                "afu_id" : "3AB49893-138D-42EB-9642-B06C6B355B87",
+                "include_aia" : true,
+                "interfaces" :
+                    [
+                        ["AAL::IALIPortError", "0x808610600020010"]
+                    ]
+            },
+            {
+                "service_lib" : "libALI",
+                "alias" : "STAP",
+                "afu_id" : "022F85B1-2CC2-4C9D-B6B0-3A385883AB8D",
+                "include_aia" : true,
+                "interfaces" :
+                    [
+                        ["AAL::IALIMMIO",      "0x808610600020001"],
+                        ["AAL::IALISignalTap", "0x808610600020009"]
+                    ]
+            }
+        ]
+}

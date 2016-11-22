@@ -50,6 +50,7 @@
 //****************************************************************************
 
 #include "MMIOmapping.h"
+#include "arguments.h"
 
 using namespace std;
 
@@ -111,8 +112,8 @@ MMIOMapping::MMIOMapping() :
    // Start the AAL Runtime, setting any startup options via a NamedValueSet
 
    // Using Hardware Services requires the Remote Resource Manager Broker Service
-   //  Note that this could also be accomplished by setting the environment variable
-   //   AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
+   // Note that this could also be accomplished by setting the environment variable
+   // AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
    NamedValueSet configArgs;
    NamedValueSet configRecord;
 
@@ -126,7 +127,7 @@ MMIOMapping::MMIOMapping() :
    }
 
    // Start the Runtime and wait for the callback by sitting on the semaphore.
-   //   the runtimeStarted() or runtimeStartFailed() callbacks should set m_bIsOK appropriately.
+   // the runtimeStarted() or runtimeStartFailed() callbacks should set m_bIsOK appropriately.
    if(!m_Runtime.start(configArgs)){
 	   m_bIsOK = false;
       return;
@@ -164,8 +165,8 @@ MMIOMapping::MMIOMapping(btString strPlatform) :
    // Start the AAL Runtime, setting any startup options via a NamedValueSet
 
    // Using Hardware Services requires the Remote Resource Manager Broker Service
-   //  Note that this could also be accomplished by setting the environment variable
-   //   AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
+   // Note that this could also be accomplished by setting the environment variable
+   // AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
    NamedValueSet configArgs;
    NamedValueSet configRecord;
 
@@ -177,7 +178,7 @@ MMIOMapping::MMIOMapping(btString strPlatform) :
    }
 
    // Start the Runtime and wait for the callback by sitting on the semaphore.
-   //   the runtimeStarted() or runtimeStartFailed() callbacks should set m_bIsOK appropriately.
+   // the runtimeStarted() or runtimeStartFailed() callbacks should set m_bIsOK appropriately.
    if(!m_Runtime.start(configArgs)){
        m_bIsOK = false;
       return;
@@ -196,7 +197,7 @@ MMIOMapping::~MMIOMapping()
 ///        interface handler
 ///
 ///
-btBool MMIOMapping::_getALIMMIOService()
+btBool MMIOMapping::_getALIMMIOService(const arguments &args)
 {
    // Request the Service we are interested in.
 
@@ -215,7 +216,7 @@ btBool MMIOMapping::_getALIMMIOService()
 
 	   Manifest.Add(ALIAFU_NVS_KEY_TARGET, ali_afu_ase);
 
-	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASEALIAFU");
+	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
 	   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
    }
    else
@@ -224,9 +225,26 @@ btBool MMIOMapping::_getALIMMIOService()
 	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
 
 	   // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
-	   //ConfigRecord.Add(keyRegAFU_ID,"949C47DE-DA1A-EEB8-3B56-1FBB2ADE456D");
-	   ConfigRecord.Add(keyRegAFU_ID,"D8424DC4-A4A3-C413-F89E-433683F9040B");
-	   //ConfigRecord.Add(keyRegBusNumber, (btUnsigned32bitInt)0xbe);
+      if (static_cast<btUnsigned32bitInt>(args.get_long("test")) == 0)
+      {
+	      ConfigRecord.Add(keyRegAFU_ID,"D8424DC4-A4A3-C413-F89E-433683F9040B");
+	   }
+      else
+      {
+         ConfigRecord.Add(keyRegAFU_ID,"10C1BFF1-88D1-4DFB-96BF-6F5FC4038FAC");
+      }
+   }
+
+   if (args.have("bus")){
+       ConfigRecord.Add(keyRegBusNumber, static_cast<btUnsigned32bitInt>(args.get_long("bus")));
+   }
+
+   if (args.have("device")){
+       ConfigRecord.Add(keyRegDeviceNumber, static_cast<btUnsigned32bitInt>(args.get_long("device")));
+   }
+
+   if (args.have("function")){
+       ConfigRecord.Add(keyRegFunctionNumber, static_cast<btUnsigned32bitInt>(args.get_long("function")));
    }
 
    // Add the Config Record to the Manifest describing what we want to allocate
@@ -303,12 +321,13 @@ btBool MMIOMapping::_verifyFeatureType(btUnsigned32bitInt featureType, btUnsigne
 /// @brief create DFH list
 ///
 ///
-btBool MMIOMapping::_initDFHList()
+btInt MMIOMapping::initDFHList()
 {
     btUnsigned64bitInt iData64 = 0;
     btBool retStatus = false;
 
     MSG("initialize DFH list");
+
     //Next AFU
     iData64=0x48;
     retStatus = m_pALIMMIOService->mmioWrite64(0x18, iData64);
@@ -328,7 +347,7 @@ btBool MMIOMapping::_initDFHList()
     }
 
     //1st private feature header in the list
-    iData64=0x30000000001010BB;
+    iData64=0x30010000001010BB;
     retStatus = m_pALIMMIOService->mmioWrite64(0x28, iData64);
     if (retStatus != true)
     {
@@ -346,7 +365,7 @@ btBool MMIOMapping::_initDFHList()
     }
 
     //2nd private feature Header
-    iData64=iData64=0x300000000101012;
+    iData64=iData64=0x2001010000101012;
     retStatus = m_pALIMMIOService->mmioWrite64(0x38, iData64);
     if (retStatus != true)
     {
@@ -354,9 +373,18 @@ btBool MMIOMapping::_initDFHList()
         goto done;
     }
 
-    //Private feature CSR
-    iData64=0x1133557799224466;
+    //Private feature CSR - BBB_ID_L
+    iData64=0x0000000099224466;
     retStatus = m_pALIMMIOService->mmioWrite64(0x40, iData64);
+    if (retStatus != true)
+    {
+        MSG("mmioWrite64 fail !!!!");
+        goto done;
+    }
+
+    //Private feature CSR - BBB_ID_H
+    iData64=0x1133557700000000;
+    retStatus = m_pALIMMIOService->mmioWrite64(0x48, iData64);
     if (retStatus != true)
     {
         MSG("mmioWrite64 fail !!!!");
@@ -365,7 +393,100 @@ btBool MMIOMapping::_initDFHList()
 
 done:
     MSG("DFH is initialized");
-    return retStatus;
+    if (retStatus == true)
+    {
+        return 0;
+    }
+    else
+    {
+        return -1;
+    }
+
+}
+
+/// @brief initialize corrupted DFH list
+///
+///
+btInt MMIOMapping::initCorruptedDFHList()
+{
+    btUnsigned64bitInt iData64 = 0;
+    btBool retStatus = false;
+
+    MSG("initialize Corrupted DFH list");
+
+    //Next AFU
+    iData64=0x48;
+    retStatus = m_pALIMMIOService->mmioWrite64(0x18, iData64);
+    if (retStatus != true)
+    {
+        MSG("mmioWrite64 fail !!!!");
+        goto done;
+    }
+
+    //Reserve
+    iData64=0x0;
+    retStatus = m_pALIMMIOService->mmioWrite64(0x20, iData64);
+    if (retStatus != true)
+    {
+        MSG("mmioWrite64 fail !!!!");
+        goto done;
+    }
+
+    //1st private feature header in the list
+    iData64=0x30010000001010BB;
+    retStatus = m_pALIMMIOService->mmioWrite64(0x28, iData64);
+    if (retStatus != true)
+    {
+        MSG("mmioWrite64 fail !!!!");
+        goto done;
+    }
+
+    //Private feature CSR
+    iData64=0x1234123412341234;
+    retStatus = m_pALIMMIOService->mmioWrite64(0x30, iData64);
+    if (retStatus != true)
+    {
+        MSG("mmioWrite64 fail !!!!");
+        goto done;
+    }
+
+    //2nd private feature Header
+    iData64=iData64=0x3002010000101012;
+    retStatus = m_pALIMMIOService->mmioWrite64(0x38, iData64);
+    if (retStatus != true)
+    {
+        MSG("mmioWrite64 fail !!!!");
+        goto done;
+    }
+
+    //Private feature CSR - BBB_ID_L
+    iData64=0x0000000099224466;
+    retStatus = m_pALIMMIOService->mmioWrite64(0x40, iData64);
+    if (retStatus != true)
+    {
+        MSG("mmioWrite64 fail !!!!");
+        goto done;
+    }
+
+    //Private feature CSR - BBB_ID_H
+    iData64=0x1133557700000000;
+    retStatus = m_pALIMMIOService->mmioWrite64(0x48, iData64);
+    if (retStatus != true)
+    {
+        MSG("mmioWrite64 fail !!!!");
+        goto done;
+    }
+
+done:
+    MSG("DFH is initialized");
+    if (retStatus == true)
+    {
+        return 0;
+    }
+    else
+    {
+        return -1;
+    }
 
 }
 
@@ -376,12 +497,12 @@ done:
 ///             - Executes the Test RTL function
 ///             - Cleans up.
 ///
-btInt MMIOMapping::run(btString strPlatform, btInt testNum)
+btInt MMIOMapping::run(btString strPlatform, btInt testNum, const arguments& args)
 {
    //save platform information
    m_strPlatform = strPlatform;
 
-   if (_getALIMMIOService() == false)
+   if (_getALIMMIOService(args) == false)
    {
 	   cout <<"service allocation failed "<<endl;
 	   m_bIsOK = false;
@@ -403,7 +524,7 @@ btInt MMIOMapping::run(btString strPlatform, btInt testNum)
 		  m_Result = MMIOWholeRegion64();
 		  break;
 	  case 3 :
-		  std::cout <<"Access invalid memory region and expect seg fault "<<endl;
+		  std::cout <<"Access invalid memory region and expect no access "<<endl;
 		  m_Result = InvalidMMIORegion();
 		  break;
 	  case 4 :
@@ -422,14 +543,27 @@ btInt MMIOMapping::run(btString strPlatform, btInt testNum)
 		  std::cout <<"MMIO Stress Test" <<endl;
 		  m_Result = MMIOStress();
 			break;
+	  case 98:
+		  //can't combine this step with test because AASResourcemanager need to be started
+		  std::cout <<"Initialize DFH header" <<endl;
+		  m_Result = initDFHList();
+		  break;
+	  case 99:
+	      //can't combine this step with test because AASResourcemanager need to be started
+	      std::cout <<"Initialize DFH header" <<endl;
+	      m_Result = initCorruptedDFHList();
+	      break;
       default:
 	      std::cout<<"Please type: ./MMIO_Mapping  to display help menu ! "<<endl;
    }
 
 done_0:
-   // Freed all three so now Release() the Service through the Services IAALService::Release() method
-   (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
-   m_Sem.Wait();
+   // Freed all Service through the Services IAALService::Release() method
+   if (m_pAALService)
+   {
+      (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
+       m_Sem.Wait();
+   }
 
    m_Runtime.stop();
    m_Sem.Wait();
@@ -627,7 +761,6 @@ btInt MMIOMapping::MMIOWholeRegion32()
 
 		//write data through 32 bit interface
 		for (btUnsigned32bitInt j = 0; j< (MMIO_SIZE / 4); ++j) {
-		//for (btUnsigned32bitInt j = 0; j< (20); ++j) {
 			 status = m_pALIMMIOService->mmioWrite32(offSet, iData32);
 
 			 if (status == false)
@@ -638,6 +771,7 @@ btInt MMIOMapping::MMIOWholeRegion32()
 			 }
 
 			 offSet = offSet + 4;
+          iData32 += 1;
 		};
 
 		if (asePlatformStr.compare(m_strPlatform) == 0)
@@ -648,37 +782,21 @@ btInt MMIOMapping::MMIOWholeRegion32()
 		MSG("Done writing 32 bit data");
 
 		// read data with 32 bit interface and compare the value
-		offSet = MMIO_Start_Address;//at the beginning of the MMIO region
-
+		offSet = MMIO_Start_Address;  //at the beginning of the MMIO region
+      iData32 = Data_4_Byte;        //re-initialize the value for verification
 		for (btUnsigned32bitInt j = 0; j<20; ++j) {
 			   m_pALIMMIOService->mmioRead32(offSet, &rData32);
 
-			   cout <<"0x"<< hex << offSet <<"  " << hex << rData32 << endl ;
-
-			   if (rData32 != Data_4_Byte)
+			   if (rData32 != iData32)
 			   {
 				   _result = -1;
 				   cout << endl << "Test Failed !!!!!!!!"<<endl;
 				   goto done_0;
 			   }
 			   offSet = offSet + 4;
+            iData32 += 1;
 		}
 
-
-		 offSet = MMIO_Start_Address + MMIO_SIZE;  //at the end of the MMIO region
-		 for (btUnsigned32bitInt j = 0; j<20; ++j) {
-			 m_pALIMMIOService->mmioRead32(offSet, &rData32);
-
-			 cout <<"0x"<< hex << offSet <<"  " << hex << rData32 << endl ;
-
-			 if (rData32 != Data_4_Byte)
-			 {
-				 _result = -1;
-				 cout << endl << "Test Failed !!!!!!!!"<<endl;
-				 goto done_0;
-			 }
-			 offSet = offSet - 4;
-		 }
 	}
 
     MSG("MMIO Region Write / Read (32 bit interface) Test PASS!");
@@ -718,41 +836,31 @@ btInt MMIOMapping::MMIOWholeRegion64()
 
         //write & read data through 64 bit interface in MMIO region
         btUnsigned64bitInt iData64 = Data_8_Byte;
-        offSet = MMIO_Start_Address + 3;
+        offSet = MMIO_Start_Address;
 
         for (btUnsigned32bitInt j = 0; j< (MMIO_SIZE / 8); ++j) {
             m_pALIMMIOService->mmioWrite64(offSet, iData64);
             offSet = offSet + 8;
-        };
+            iData64 += 1;
+        }
 
         MSG("Done writing 64 bit data");
 
         // read data with 64 bit interface and compare the value
-
         btUnsigned64bitInt oData64 = 0x0;
         offSet = MMIO_Start_Address;  //at the beginning of the MMIO region
-
+        iData64 = Data_8_Byte;
         for (btUnsigned32bitInt j = 0; j<20; ++j) {
              m_pALIMMIOService->mmioRead64(offSet, &oData64);
 
-             cout <<"0x"<< hex << offSet <<"  " << hex << oData64 << endl ;
-
-             if (oData64 != Data_8_Byte)
+             if (oData64 != iData64)
              {
                  _result = -1;
                  cout << endl << "Test Failed !!!!!!!!"<<endl;
                  goto done_0;
              }
              offSet = offSet + 8;
-        }
-
-        oData64 = 0x0;
-        endOffSet = MMIO_SIZE;  // at end of MMIO region
-
-        for (btUnsigned32bitInt j = 0; j< 20; ++j) {
-             m_pALIMMIOService->mmioRead64(endOffSet, &oData64);
-             cout << "End: 0x"<< hex << endOffSet << " "<< hex << oData64 << endl ;
-             endOffSet = endOffSet - 8;
+             iData64 += 1;
         }
    }
 
@@ -790,6 +898,7 @@ btInt MMIOMapping::InvalidMMIORegion()
              else
              {
                  MSG("MMIO out off boundary condition Test PASS !");
+                 _result = 0;
                  goto done_0;
              }
 
@@ -841,6 +950,7 @@ done_0:
    return _result;
 }
 
+
 btInt MMIOMapping::DFHFeature()
 {
     btCSROffset offSet = MMIO_Start_Address;
@@ -862,6 +972,7 @@ btInt MMIOMapping::DFHFeature()
    //   now we can use it
    //=============================
    MSG("Running Test");
+
    if(true == m_bIsOK){
 
        // Initiate AFU Reset
@@ -870,7 +981,7 @@ btInt MMIOMapping::DFHFeature()
        // If ASE, give it some time to catch up
        if (asePlatformStr.compare(m_strPlatform) == 0)
        {
-           SleepSec(2);
+            SleepSec(2);
        }
 
        MSG("Done ASEAFU reset");
@@ -959,10 +1070,10 @@ btInt MMIOMapping::CorruptDFH()
        _retVal = m_pALIMMIOService->mmioGetFeatureOffset(&_featureOffSet, _afuReqst);
 
        //check if featureOffset from the API is from the correct location in DFH
-       if (_retVal == false)
+       if (_retVal == true)
        {
            cout << "Feature OffSet 0x:" << hex << _featureOffSet <<endl;
-           cout <<"feature Type 0x:"<<hex <<featureType << " is not found !!!!" <<endl;
+           cout <<"feature Type 0x:"<<hex <<featureType << " is found !!!!" <<endl;
            MSG("Corrupt DFH Feature discovery Test FAIL !");
            _result = -1;
            goto done_0;
@@ -1003,7 +1114,7 @@ btInt MMIOMapping::MMIOStress()
 
 
     cout <<"=============================================================="<<endl;
-    cout <<"= Discover DFH features offset using mmioGetFeaturesOffset() ="<<endl;
+    cout <<"= Stress test using mmioGetFeaturesOffset() ="<<endl;
     cout <<"=============================================================="<<endl;
 
 
@@ -1211,7 +1322,7 @@ void MMIOMapping::serviceAllocateFailed(const IEvent &rEvent)
 	   std::cout << "x: 0 - MMIO 1 CL read/write "<<endl;
 	   std::cout << "x: 1 - MMIO whole region read/write (32 bit API)"<<endl;
 	   std::cout << "x: 2 - MMIO whole region read/write (64 bit API)"<<endl;
-	   std::cout << "x: 3 - Access invalid memory region and expect seg fault"<<endl;
+	   std::cout << "x: 3 - Access invalid memory region and expect no access"<<endl;
 	   std::cout << "x: 4 - get AFU MMIO Length"<<endl;
 	   std::cout << "x: 5 - discover device feature offset"<<endl;
 	   std::cout << "x: 6 - trigger error path when searching by feature type" <<endl;
@@ -1227,36 +1338,37 @@ void MMIOMapping::serviceAllocateFailed(const IEvent &rEvent)
 //=============================================================================
 int main(int argc, char *argv[])
 {
+   arguments argparse;
    btInt Result = 0;
 
-   if (argc < 2)
+   argparse("bus",      'b', optional_argument, "pci bus number")
+           ("feature",  'f', optional_argument, "pci feature number")
+           ("device",   'd', optional_argument, "pci device number")
+           ("test",     't', required_argument, "test number to run")
+           ("platform", 'p', optional_argument, "platform (HW?)");
+   if (!argparse.parse(argc, argv))
    {
-	   usage();
+       usage();
+       return -1;
    }
-   else
-   {
-	   btString strPlatform = (btString)"HW";  //use HW as default platform
+  
+   std::string  strPlatform = argparse.get_string("platform", "HW");  //use HW as default platform
+   std::cout << strPlatform <<endl;
+  
+   btInt testNumber = argparse.get_long("test");
+   std::cout<<"test number: "<<testNumber<<endl;
 
-	   if (argc >= 3)
-	   {
-	       strPlatform = argv[2];
-	       std::cout << strPlatform <<endl;
-	   }
+   MMIOMapping theApp((btString)strPlatform.c_str());
 
-	   btInt testNumber = atoi(argv[1]);
-	   std::cout<<"test number: "<<testNumber<<endl;
-
-	   MMIOMapping theApp(strPlatform);
-
-	   if(!theApp.isOK()){
-	      ERR("Runtime Failed to Start");
-	      exit(1);
-	   }
-
-	   Result = theApp.run(strPlatform, testNumber);
-
+   if(!theApp.isOK()){
+      ERR("Runtime Failed to Start");
+      exit(1);
    }
-   return Result;
+
+   Result = theApp.run((btString)strPlatform.c_str(), testNumber, argparse);
+
+done_1:
+    return Result;
 }
 
 

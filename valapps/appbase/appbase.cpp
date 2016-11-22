@@ -6,7 +6,6 @@
 
 #include <appconstants.h>
 #include <appbase.h>
-
 /// @brief   Constructor registers this objects client interfaces and starts
 ///          the AAL Runtime. The member m_bisOK is used to indicate an appERRor.
 ///
@@ -150,12 +149,12 @@ appbase::~appbase()
 /// @brief   allocService() is called from run to perform the following:
 ///             - Allocate the appropriate ALI Service depending
 ///               on whether a hardware, ASE or software implementation is desired.
-btInt appbase::requestService()
+btInt appbase::requestService(const arguments &args)
 {
 
 if (m_AppType == "HW") {               /* Use FPGA hardware */
     // Service Library to use
-    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
 
     // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
     ConfigRecord.Add(keyRegAFU_ID, m_AFUId.c_str());
@@ -175,6 +174,17 @@ if (m_AppType == "HW") {               /* Use FPGA hardware */
     return -1;
 }
 
+    if (args.have("bus")){
+        ConfigRecord.Add(keyRegBusNumber, static_cast<btUnsigned32bitInt>(args.get_long("bus")));
+    }
+
+    if (args.have("device")){
+        ConfigRecord.Add(keyRegDeviceNumber, static_cast<btUnsigned32bitInt>(args.get_long("device")));
+    }
+
+    if (args.have("function")){
+        ConfigRecord.Add(keyRegFunctionNumber, static_cast<btUnsigned32bitInt>(args.get_long("function")));
+    }
     // Add the Config Record to the Manifest describing what we want to allocate
     Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
 

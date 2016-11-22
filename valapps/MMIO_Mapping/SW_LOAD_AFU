@@ -1,0 +1,86 @@
+#!/bin/bash +x
+
+usage() {
+   echo "./SW_LOAD_AFU <number of socket> <testNum>"
+}
+
+NumSocket=$1
+testNum=$2
+bitStream=$RTL
+echo $SystemConfig $NumSocket
+echo $bitStream
+
+GetDeviceInformation(){
+   CMDRST="$(/usr/sbin/lspci | grep bcc0)"
+   DEVINFO1="${CMDRST[0]}"
+   DEVINFO2="${CMDRST[1]}"
+
+   echo  $DEVINFO1
+   Bus1="${DEVINFO1:0:2}"
+   Dev1="${DEVINFO1:3:2}"
+   Func1="${DEVINFO1:6:1}"
+   Bus2="${DEVINFO1:67:2}"
+   Dev2="${DEVINFO1:3:2}"
+   Func2="${DEVINFO1:6:1}"
+}
+
+CopyAliConfafuToWorkDirectory(){
+
+   App=$SampleAppPATH"ALI_Configure_AFU/SW/aliconfafu"
+   echo $App
+
+   #copy aliconfafu tool to local directory
+   if [ -f aliconfafu ]; then 
+      echo "remove aliconfafu "
+      rm aliconfafu
+   fi
+   echo "copy aliconfafu "
+   cp $App .
+}
+
+GetDeviceInformation
+bus1="0x"$Bus1
+bus2="0x"$Bus2
+
+CopyAliConfafuToWorkDirectory
+
+#for test case 1, bitstream is NLB mode 0
+if [[ $testNum -eq 0 ]]; then
+   bitStream=$RTLNLB0 
+   echo $bitStream
+fi
+
+if [[ $NumSocket -eq 1 ]]; then
+   ./aliconfafu --bitstream=$bitStream --force=TRUE --bus=$bus1
+
+   if [[ $? -eq 0 ]]; then 
+      echo "AFU updated on 1 socket system !!!"
+      exit 0
+   else 
+      echo "FAILED to update AFU on 1 socket system !!!"
+      exit 1
+   fi
+fi
+
+if [[ $NumSocket -eq 2 ]]; then
+   echo ./aliconfafu --bitstream=$bitStream --force=TRUE --bus=$bus1
+   ./aliconfafu --bitstream=$bitStream --force=TRUE --bus=$bus1
+
+   result1=$?
+   
+   echo ./aliconfafu --bitstream=$bitStream --force=TRUE --bus=$bus2
+   ./aliconfafu --bitstream=$bitStream --force=TRUE --bus=$bus2
+      
+   result2=$?  
+  
+   if [[ $result1 -eq 0 && $result2 -eq 0 ]] ; then 
+      echo "AFU updated on 2 socket system !!!"
+      exit 0
+   else 
+      echo "FAILED to update AFU on 2 socket system !!!"
+      exit 1
+   fi
+fi
+
+
+

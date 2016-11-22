@@ -87,7 +87,7 @@ using namespace AAL;
 #define CSR_AFU_DSM_BASEH        0x0114
 #define NLB_TEST_MODE_PCIE0      0x2000
 
-AllocatesNLBService::AllocatesNLBService() :
+AllocatesNLBService::AllocatesNLBService(const arguments &args) :
    m_pRuntime(NULL),
    m_pNLBService(NULL),
    m_pALIBufferService(NULL),
@@ -103,7 +103,8 @@ AllocatesNLBService::AllocatesNLBService() :
    m_OutputVirt(NULL),
    m_OutputPhys(0),
    m_OutputSize(0),
-   m_ReleaseService(true)
+   m_ReleaseService(true),
+   m_args(args)
 {
    SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
 
@@ -359,6 +360,18 @@ btBool AllocatesNLBService::AllocateNLBService(Runtime *pRuntime)
 
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
    ConfigRecord.Add(keyRegAFU_ID, "D8424DC4-A4A3-C413-F89E-433683F9040B");
+
+   if (m_args.have("bus")){
+       ConfigRecord.Add(keyRegBusNumber, static_cast<btUnsigned32bitInt>(m_args.get_long("bus")));
+   }
+
+   if (m_args.have("device")){
+       ConfigRecord.Add(keyRegDeviceNumber, static_cast<btUnsigned32bitInt>(m_args.get_long("device")));
+   }
+
+   if (m_args.have("function")){
+       ConfigRecord.Add(keyRegFunctionNumber, static_cast<btUnsigned32bitInt>(m_args.get_long("function")));
+   }
 
    // Add the Config Record to the Manifest describing what we want to allocate
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);

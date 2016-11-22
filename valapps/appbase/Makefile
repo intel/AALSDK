@@ -2,9 +2,9 @@
 
 # valapps/appbase/Makefile
 
-CPPFLAGS ?=-I .
+CPPFLAGS ?=-I. -I../valapp
 CXX      ?= g++
-LDFLAGS  ?=
+LDFLAGS  ?=-L../valapp
 
 ifneq (,$(ndebug))
 else
@@ -42,16 +42,16 @@ all: libappbase.a
 #	$(CXX) -fPIC -shared -Wl,-soname -Wl,libappbase.so.0 libappbase.o $(LDFLAGS) -lOSAL -lAAS -laalrt -o libappbase.so.0.0.0
 
 libappbase.a: appbase.o appconstants.o appbuffer.o
-	ar -rcs libappbase.a appbase.o appconstants.o appbuffer.o
+	ar -rcs libappbase.a appbase.o appconstants.o appbuffer.o ../valapp/libvalutils.la
 
 appbase.o: appbase.cpp appbase.h appconstants.cpp appbuffer.cpp Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -lOSAL -lAAS -laalrt appbase.cpp -o appbase.o
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3  -c -lOSAL -lAAS -laalrt -lvalutils appbase.cpp -o appbase.o
 
 appconstants.o: appbase.cpp appbase.h appconstants.cpp appbuffer.cpp Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -lOSAL -lAAS -laalrt appconstants.cpp -o appconstants.o
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3  -c -lOSAL -lAAS -laalrt appconstants.cpp -o appconstants.o
 
 appbuffer.o: appbase.cpp appbase.h appconstants.cpp appbuffer.cpp Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -lOSAL -lAAS -laalrt appbuffer.cpp -o appbuffer.o
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g3  -c -lOSAL -lAAS -laalrt appbuffer.cpp -o appbuffer.o
 
 clean:
 	$(RM) libappbase.so libappbase.so.0 libappbase.so.0.0.0 appbase.o appconstants.o appbuffer.o libappbase.a

@@ -48,6 +48,7 @@
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/service/IALIAFU.h>
 #include <string.h>
+#include "arguments.h"
 
 #define MM_DEBUG_LINK_SIGNATURE         0x4170
 #define MM_DEBUG_LINK_VERSION           0x4174
@@ -91,7 +92,7 @@ public:
    MMlinkTestApp();
    ~MMlinkTestApp();
 
-   btInt run();    ///< Return 0 if success
+   btInt run(const arguments &args);    ///< Return 0 if success
 
    // <begin IServiceClient interface>
    void serviceAllocated(IBase *pServiceBase,
@@ -192,7 +193,7 @@ MMlinkTestApp::~MMlinkTestApp()
 /// @brief   run()
 /// Runs the validation test.
 
-btInt MMlinkTestApp::run()
+btInt MMlinkTestApp::run(const arguments &args)
 {
    cout <<"========================="<<endl;
    cout <<"= MMLink Validation App ="<<endl;
@@ -212,6 +213,18 @@ btInt MMlinkTestApp::run()
 
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID,"3AB49893-138D-42EB-9642-B06C6B355B87"); //PORT0 AFU ID
+
+   if (args.have("bus")){
+       ConfigRecord.Add(keyRegBusNumber, static_cast<btUnsigned32bitInt>(args.get_long("bus")));
+   }
+
+   if (args.have("device")){
+       ConfigRecord.Add(keyRegDeviceNumber, static_cast<btUnsigned32bitInt>(args.get_long("device")));
+   }
+
+   if (args.have("function")){
+       ConfigRecord.Add(keyRegFunctionNumber, static_cast<btUnsigned32bitInt>(args.get_long("function")));
+   }
 
    // Add the Config Record to the Manifest describing what we want to allocate
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
@@ -412,12 +425,19 @@ void MMlinkTestApp::serviceAllocateFailed(const IEvent &rEvent)
 //=============================================================================
 int main(int argc, char *argv[])
 {
+   arguments argparse;
+   argparse("bus",      'b', optional_argument, "pci bus number")
+           ("feature",  'f', optional_argument, "pci feature number")
+           ("device",   'd', optional_argument, "pci device number");
+
+   if(!argparse.parse(argc, argv)) return -1;
+
    MMlinkTestApp theApp;
    if(!theApp.isOK()){
       ERR("Runtime Failed to Start");
       exit(1);
    }
-   btInt Result = theApp.run();
+   btInt Result = theApp.run(argparse);
 
    if(0 == Result){
       MSG ("TEST PASS!");

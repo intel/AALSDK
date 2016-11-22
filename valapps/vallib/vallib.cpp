@@ -9,6 +9,30 @@ AllocatesAALService::AllocatesAALService() :
    SetInterface(iidServiceClient, dynamic_cast<AAL::IServiceClient *>(this));
 }
 
+AllocatesAALService::AllocatesAALService(const arguments &args) :
+   m_pAALService(NULL),
+   m_Errors(0),
+   m_args(args)
+{
+   m_Sem.Create(0, 1);
+   SetInterface(iidServiceClient, dynamic_cast<AAL::IServiceClient *>(this));
+}
+
+void AllocatesAALService::SetPciArguments(NamedValueSet &nvs)
+{
+    if (m_args.have("bus")){
+        nvs.Add(keyRegBusNumber, static_cast<btUnsigned32bitInt>(m_args.get_long("bus")));
+    }
+
+    if (m_args.have("device")){
+        nvs.Add(keyRegDeviceNumber, static_cast<btUnsigned32bitInt>(m_args.get_long("device")));
+    }
+
+    if (m_args.have("function")){
+        nvs.Add(keyRegFunctionNumber, static_cast<btUnsigned32bitInt>(m_args.get_long("function")));
+    }
+}
+
 void AllocatesAALService::Free()
 {
    if ( NULL != m_pAALService ) {
@@ -106,6 +130,7 @@ void AllocatesNLBLpbk1AFU::Allocate(AAL::IRuntime *pRuntime)
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID, "D8424DC4-A4A3-C413-F89E-433683F9040B");
 //   ConfigRecord.Add(keyRegBusNumber, (btUnsigned32bitInt)0xbe);
+   SetPciArguments(ConfigRecord);
 
 #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
 
@@ -152,6 +177,7 @@ void AllocatesFME::Allocate(AAL::IRuntime *pRuntime)
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID, "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764");
 //   ConfigRecord.Add(keyRegBusNumber, (btUnsigned32bitInt)0xbe);
+   SetPciArguments(ConfigRecord);
 
 #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
 
@@ -198,6 +224,7 @@ void AllocatesPort::Allocate(AAL::IRuntime *pRuntime)
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID, "3AB49893-138D-42EB-9642-B06C6B355B87");
 //   ConfigRecord.Add(keyRegBusNumber, (btUnsigned32bitInt)0xbe);
+   SetPciArguments(ConfigRecord);
 
 #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
 

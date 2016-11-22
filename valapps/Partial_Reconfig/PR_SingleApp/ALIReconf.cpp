@@ -65,214 +65,14 @@ using namespace AAL;
 #endif // ERR
 #define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
 
-BEGIN_C_DECLS
 
-
-aalclp_option_only  aliconigafu_nix_long_option_only  = { aliconigafu_on_nix_long_option_only,  };
-
-aalclp_option       aliconigafu_nix_long_option       = { aliconigafu_on_nix_long_option,       };
-aalclp_non_option   aliconigafu_non_option            = { aliconigafu_on_non_option,            };
-aalclp_dash_only    aliconigafu_dash_only             = { aliconigafu_on_dash_only,             };
-aalclp_dash_only    aliconigafu_dash_dash_only        = { aliconigafu_on_dash_dash_only,        };
-
-
-int aliconigafu_on_non_option(AALCLP_USER_DEFINED user, const char *nonoption) {
-   struct ALIConfigCommandLine *cl = (struct ALIConfigCommandLine *)user;
-   flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
-   printf("Invalid: %s\n", nonoption);
-   return 0;
-}
-
-int aliconigafu_on_dash_only(AALCLP_USER_DEFINED user) {
-   struct ALIConfigCommandLine *cl = (struct ALIConfigCommandLine *)user;
-   flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
-   printf("Invalid option: -\n");
-   return 0;
-}
-
-int aliconigafu_on_dash_dash_only(AALCLP_USER_DEFINED user) {
-   struct ALIConfigCommandLine *cl = (struct ALIConfigCommandLine *)user;
-   flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
-   printf("Invalid option: --\n");
-   return 0;
-}
-
-int aliconigafu_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option)
-{
-   struct ALIConfigCommandLine *cl = (struct ALIConfigCommandLine *)user;
-   if ( 0 == strcmp("--help", option) ) {
-      flag_setf(cl->flags, ALICONIFG_CMD_FLAG_HELP);
-   } else if ( 0 == strcmp("--version", option) ) {
-      flag_setf(cl->flags, ALICONIFG_CMD_FLAG_VERSION);
-   }else  if(0 != strcmp("--bitstream1=", option))  {
-      printf("Invalid option  : %s\n", option);
-      flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
-
-   }else if(0 != strcmp("--reconftimeout=", option))  {
-      printf("Invalid option : %s\n", option);
-      flag_setf(cl->flags, ALICONIFG_CMD_PARSE_ERROR);
-      return 0;
-   }
-   return 0;
-}
-
-int aliconigafu_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char *value)
-{
-   struct ALIConfigCommandLine *pcmdline     = (struct ALIConfigCommandLine *)user;
-
-   // Bitstream file name
-   if ( 0 == strcmp("--bitstream1", option)) {
-      strcpy(pcmdline->bitstream_file1 ,value);
-      return 0;
-   }
-
-   // Bitstream file name
-   if ( 0 == strcmp("--bitstream2", option)) {
-      strcpy(pcmdline->bitstream_file2 ,value);
-      return 0;
-   }
-
-   // Reconfigure  timeout
-   if ( 0 == strcmp("--testcasenum", option)) {
-
-       if((0 == strcmp("ALL", value)) || (0 == strcmp("all", value))) {
-          pcmdline->testcasenum = 0;
-       } else {
-
-         char *endptr = NULL;
-         pcmdline->testcasenum = strtoul(value, &endptr, 0);
-       }
-      return 0;
-   }
-   // Reconfigure  timeout
-   if ( 0 == strcmp("--reconftimeout", option)) {
-      char *endptr = NULL;
-      pcmdline->reconftimeout = strtoul(value, &endptr, 0);
-      return 0;
-   }
-
-   // Reconfigure  action
-   if ( 0 == strcmp("--reconfaction", option)) {
-
-      if ( 0 == strcmp("ACTION_HONOR_OWNER", value)) {
-         pcmdline->reconfAction =AALCONF_RECONF_ACTION_HONOR_OWNER_ID;
-      } else  {
-      // Default
-         pcmdline->reconfAction =AALCONF_RECONF_ACTION_HONOR_REQUEST_ID;
-      }
-      return 0;
-   }
-
-   // Reactive disabled
-   if ( 0 == strcmp("--reactivateDisabled", option)) {
-
-      if ( 0 == strcmp("TRUE", value))  {
-         pcmdline->reactivateDisabled =true;
-      } else {
-      // Default
-         pcmdline->reactivateDisabled =false;
-      }
-      return 0;
-   }
-   //reconfInterface
-   if ( 0 == strcmp("--reconfInterface", option)) {
-         strcpy(pcmdline->reconfInterface ,value);
-        return 0;
-     }
-
-   return 0;
-}
-
-
-int ParseCmds(struct ALIConfigCommandLine *pconfigcmd, int argc, char *argv[])
-{
-   int    res;
-   int    clean;
-   aalclp clp;
-
-   res = aalclp_init(&clp);
-   if ( 0 != res ) {
-      cerr << "aalclp_init() failed : " << res << ' ' << strerror(res) << endl;
-      return res;
-   }
-
-   aliconigafu_nix_long_option_only.user = pconfigcmd;
-   aalclp_add_nix_long_option_only(&clp, &aliconigafu_nix_long_option_only);
-
-   aliconigafu_nix_long_option.user = pconfigcmd;
-   aalclp_add_nix_long_option(&clp, &aliconigafu_nix_long_option);
-
-   aliconigafu_non_option.user = pconfigcmd;
-   aalclp_add_non_option(&clp, &aliconigafu_non_option);
-
-   aliconigafu_dash_only.user             = pconfigcmd;
-   aalclp_add_dash_only(&clp,             &aliconigafu_dash_only);
-
-   aliconigafu_dash_dash_only.user        = pconfigcmd;
-   aalclp_add_dash_dash_only(&clp,        &aliconigafu_dash_dash_only);
-
-   res = aalclp_scan_argv(&clp, argc, argv);
-   if ( 0 != res ) {
-      cerr << "aalclp_scan_argv() failed : " << res << ' ' << strerror(res) << endl;
-   }
-
-CLEANUP:
-   clean = aalclp_destroy(&clp);
-   if ( 0 != clean ) {
-      cerr << "aalclp_destroy() failed : " << clean << ' ' << strerror(clean) << endl;
-   }
-
-   return res;
-}
-
-
-void help_msg_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
-{
-   fprintf(fp, "Usage:\n");
-   fprintf(fp, "Partial_Reconfig [--bitstream1=<MODE0 BITSTREAM FILENAME>] \n \
-                [--bitstream2=<MODE3 BITSTREAM FILENAME>] \n \
-                [--testcasenum=<TEST CASE NUMBER>]  \n \
-                [--reconftimeout=<SECONDS>]  \n \
-                [--reconfaction=<ACTION_HONOR_REQUEST or ACTION_HONOR_OWNER >] \n \
-                [--reactivateDisabled=< TRUE or FALSE>]\n");
-   fprintf(fp, "\n");
-
-}
-
-
-void showhelp(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
-{
-   help_msg_callback(fp, gcs);
-}
-
-
-int verifycmds(struct ALIConfigCommandLine *cl)
-{
-   std::ifstream bitfile1(cl->bitstream_file1,std::ios::binary);
-
-   if(!bitfile1.good()) {
-      printf("Invalid File : %s\n", cl->bitstream_file1);
-      return 3;
-   }
-
-   std::ifstream bitfile2(cl->bitstream_file2,std::ios::binary);
-
-   if(!bitfile2.good()) {
-      printf("Invalid File : %s\n", cl->bitstream_file2);
-      return 3;
-   }
-   return 0;
-}
-
-
-END_C_DECLS
-
-AllocatesReconfService::AllocatesReconfService() :
+AllocatesReconfService::AllocatesReconfService(const arguments &args) :
    m_pRuntime(NULL),
    m_pFMEService(NULL),
    m_pALIReconfService(NULL),
    m_Result(0),
-   m_errNum(0)
+   m_errNum(0),
+   m_args(args)
 {
    SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
    SetInterface(iidALI_CONF_Service_Client, dynamic_cast<IALIReconfigure_Client *>(this));
@@ -419,7 +219,7 @@ void AllocatesReconfService::PrintReconfExceptionDescription(IEvent const &rEven
 }
 
 
-void AllocatesReconfService::setreconfnvs( char* pbitstream,
+void AllocatesReconfService::setreconfnvs( const std::string & pbitstream,
                                            btUnsigned64bitInt reconftimeout ,
                                            btUnsigned64bitInt reconfAction ,
                                            btUnsigned64bitInt reactivateDisabled)
@@ -442,7 +242,7 @@ void AllocatesReconfService::setreconfnvs( char* pbitstream,
       m_reconfnvs.Add(AALCONF_REACTIVATE_DISABLED,false);
    }
 
-   m_reconfnvs.Add(AALCONF_FILENAMEKEY,pbitstream);
+   m_reconfnvs.Add(AALCONF_FILENAMEKEY,pbitstream.c_str());
 
 }
 
@@ -454,6 +254,18 @@ btBool AllocatesReconfService::AllocatePRService(Runtime *pRuntime)
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
    ConfigRecord.Add(keyRegAFU_ID,ALI_AFUID_UAFU_CONFIG);
    ConfigRecord.Add(keyRegSubDeviceNumber,0);
+
+   if (m_args.have("bus")){
+       ConfigRecord.Add(keyRegBusNumber, static_cast<btUnsigned32bitInt>(m_args.get_long("bus")));
+   }
+
+   if (m_args.have("device")){
+       ConfigRecord.Add(keyRegDeviceNumber, static_cast<btUnsigned32bitInt>(m_args.get_long("device")));
+   }
+
+   if (m_args.have("function")){
+       ConfigRecord.Add(keyRegFunctionNumber, static_cast<btUnsigned32bitInt>(m_args.get_long("function")));
+   }
 
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "ALI Conf AFU");

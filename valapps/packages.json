@@ -1,0 +1,37 @@
+[
+    {
+        "name": "cmake",
+        "version" : "3.7.0",
+        "type" : "executable",
+        "install" : ".develop",
+        "url" : "https://cmake.org/files/v3.7/cmake-3.7.0-rc2.tar.gz",
+        "fetcher" :
+        {
+            "name": "urlfetcher",
+            "file" : "cmake-3.7.0-rc2.tar.gz"
+        },
+        "unpacker" : "tar",
+        "installer" :
+        {
+            "name": "make_installer"
+        }
+    },
+    {
+        "name": "gtest",
+        "version": "1.8.0",
+        "type": "library",
+        "url": "https://af01p-ir.devtools.intel.com/artifactory/fpga-solutions-local/google/gtest/src/gtest-1.8.0.tar.gz",
+        "fetcher" :
+        {
+            "name": "artifactory",
+            "file": "gtest-1.8.0.tar.gz",
+            "auth": ["sys_aalsdk", "AP96kSXktYLFnTfZyem1YZVaNUb"]
+        },
+        "unpacker" : "tar",
+        "installer" :
+        {
+            "name": "cmake_installer",
+            "cmake_args": "-DBUILD_SHARED_LIBS=ON"
+        }
+    }
+]

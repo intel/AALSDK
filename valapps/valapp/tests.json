@@ -1,0 +1,28 @@
+{
+    "suites" : [
+                {
+                    "libname" : "./libafu_tests.so",
+                    "class" : "afu_reset",
+                    "tests" : [
+                                { 
+                                  "test" : "SW-RESET-01",
+                                  "args" : [],
+                                  "disabled" : true
+                                }
+                    ]
+                },
+                {
+                    "libname" : "./libafu_tests.so",
+                    "class" : "dma_buffer",
+                    "tests" : [
+                                { 
+                                  "test" : "SW-BUF-01",
+                                  "test_id" : "id",
+                                  "args" : ["--size=1",  "--duration=2"],
+                                  "disabled" : false
+                                }
+                    ]
+                }
+
+    ]
+}

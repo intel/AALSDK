@@ -57,7 +57,8 @@
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/service/IALIAFU.h>
 #include <aalsdk/aalclp/aalclp.h>
-#include <string.h>
+#include <string>
+#include "arguments.h"
 
 #define BitStreamWrongFile  "/home/aravuri/kernelpr/pr_script/bitstream/100.rbf"
 
@@ -105,7 +106,7 @@ class AllocatesReconfService: public CAASBase, public IServiceClient, IALIReconf
 {
 public:
 
-   AllocatesReconfService();
+   AllocatesReconfService(const arguments &args);
    ~AllocatesReconfService();
 
    // <begin IServiceClient interface>
@@ -132,7 +133,7 @@ public:
 
    btBool FreePRService();
    btBool AllocatePRService(Runtime *pRuntime);
-   void setreconfnvs( char* pbitstream,
+   void setreconfnvs( const std::string & pbitstream,
                       btUnsigned64bitInt reconftimeout ,
                       btUnsigned64bitInt reconfAction ,
                       btUnsigned64bitInt reactivateDisabled);
@@ -164,5 +165,6 @@ protected:
    btInt                 m_Result;             ///< Returned result v; 0 if success
    NamedValueSet         m_reconfnvs;          ///< Reconfigure input parameters
    btID                  m_errNum;             ///< AAL Error code
+   arguments             m_args;
 };
 #endif  //__RECONF_SERVICE__

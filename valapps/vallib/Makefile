@@ -2,9 +2,9 @@
 
 # valapps/vallib/Makefile
 
-CPPFLAGS ?=
-CXX      ?= g++
-LDFLAGS  ?=
+CPPFLAGS ?= -I../valapp
+CXX      ?= g++ -std=c++11
+LDFLAGS  ?= -L../valapp
 
 ifneq (,$(ndebug))
 else
@@ -37,7 +37,7 @@ libvallib.so.0: libvallib.so.0.0.0
 	ln -sf libvallib.so.0.0.0 libvallib.so.0
 
 libvallib.so.0.0.0: libvallib.o
-	$(CXX) -fPIC -shared -Wl,-soname -Wl,libvallib.so.0 libvallib.o $(LDFLAGS) -lOSAL -lAAS -laalrt -o libvallib.so.0.0.0
+	$(CXX) -fPIC -shared -Wl,-soname -Wl,libvallib.so.0 libvallib.o ../valapp/libvalutils.la $(LDFLAGS) -lOSAL -lAAS -laalrt -o libvallib.so.0.0.0
 
 libvallib.o: vallib.cpp vallib.h Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -o libvallib.o vallib.cpp

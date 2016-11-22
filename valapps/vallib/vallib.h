@@ -5,6 +5,7 @@
 #include <aalsdk/Runtime.h>
 #include <aalsdk/service/IALIAFU.h>
 #include <aalsdk/utils/NLBVAFU.h>
+#include "arguments.h"
 
 using namespace std;
 using namespace AAL;
@@ -46,10 +47,13 @@ class AllocatesAALService : public AAL::CAASBase,
 {
 public:
    AllocatesAALService();
+   AllocatesAALService(const arguments &args);
    virtual ~AllocatesAALService() {}
 
    virtual void                   Allocate(AAL::IRuntime * ) = 0;
    virtual const char * ServiceDescription() const           = 0;
+   virtual void SetPciArguments(NamedValueSet &nvs);
+
 
    void            Wait()       { m_Sem.Wait();         }
    AAL::IBase * Service() const { return m_pAALService; }
@@ -72,6 +76,8 @@ protected:
    AAL::IBase      *m_pAALService;
    AAL::btInt       m_Errors;
    AAL::CSemaphore  m_Sem;
+private:
+   arguments m_args;
 };
 
 // Allocates an NLB Lpbk1 AAL Service.
@@ -80,6 +86,7 @@ class AllocatesNLBLpbk1AFU : public AllocatesAALService
 {
 public:
    AllocatesNLBLpbk1AFU() {}
+   AllocatesNLBLpbk1AFU(const arguments &args) : AllocatesAALService(args) {}
    virtual void                   Allocate(AAL::IRuntime * );
    virtual const char * ServiceDescription() const { return "NLB Lpbk1"; }
 };
@@ -90,6 +97,7 @@ class AllocatesFME : public AllocatesAALService
 {
 public:
    AllocatesFME() {}
+   AllocatesFME(const arguments &args) : AllocatesAALService(args) {}
    virtual void                   Allocate(AAL::IRuntime * );
    virtual const char * ServiceDescription() const { return "FME"; }
 };
@@ -101,6 +109,7 @@ class AllocatesPort : public AllocatesAALService
 {
 public:
    AllocatesPort() {}
+   AllocatesPort(const arguments &args) : AllocatesAALService(args) {}
    virtual void                   Allocate(AAL::IRuntime * );
    virtual const char * ServiceDescription() const { return "PORT"; }
 };
