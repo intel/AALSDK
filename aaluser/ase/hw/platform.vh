@@ -165,4 +165,16 @@
 
 `define ASE_MAX_LATENCY            300
 
+
+/*
+ * Disable Transaction shuffling
+ */
+// `define INFINITE_BANDWIDTH_MODE
+`ifdef INFINITE_BANDWIDTH_MODE
+ `define FORWARDING_CHANNEL            inorder_wrf_channel
+`else
+ `define FORWARDING_CHANNEL            outoforder_wrf_channel
+`endif
+
+
 `endif

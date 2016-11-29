@@ -1694,7 +1694,7 @@ module ccip_emulator
     * Formed as {TxHdr_t}
     * Latency scoreboard (for latency modeling and shuffling)
     */
-   outoforder_wrf_channel
+   `FORWARDING_CHANNEL
      #(
        .DEBUG_LOGNAME       ("latbuf_ch0.log"),
        .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
@@ -1774,7 +1774,7 @@ module ccip_emulator
     * Formed as {TxHdr_t, <data_512>}
     * Latency scoreboard (latency modeling and shuffling)
     */
-   outoforder_wrf_channel
+   `FORWARDING_CHANNEL
      #(
        .DEBUG_LOGNAME       ("latbuf_ch1.log"),
        .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
