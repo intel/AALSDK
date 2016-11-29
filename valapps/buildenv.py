@@ -184,7 +184,7 @@ if __name__ == '__main__':
     if args.install_dir:
         install_dir = args.install_dir
 
-    if args.bootstrap or not path.exists(install_dir) or not path.exists(cache_dir):
+    if args.bootstrap:
         exit_code |= bootstrap(args.packages, args.package_list, install_dir)
 
     if args.buildsdk and args.aalsdk is None:
