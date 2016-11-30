@@ -82,11 +82,6 @@ using namespace AAL;
 # define EVENT_CASE(x) case x :
 #endif
 
-/// Filename prefix check - needs to match (or specify --force=TRUE)
-#define FILENAME_INFIX "_skxp_620_pr"
-#define FILENAME_INFIX_LEN (strlen(FILENAME_INFIX))
-#define FILENAME_INFIX_OFFSET 6
-
 # define CMD_PARSE_ERR        300
 /// Command Line
 BEGIN_C_DECLS
@@ -99,7 +94,6 @@ struct option longopts[] = {
       {"reconftimeout",       required_argument, NULL, 't'},
       {"reconfaction",        required_argument, NULL, 'a'},
       {"reactivateDisabled",  required_argument, NULL, 'd'},
-      {"force",               required_argument, NULL, 'f'},
       {"bus",                 required_argument, NULL, 'B'},
       {"device",              required_argument, NULL, 'D'},
       {"function",            required_argument, NULL, 'F'},
@@ -124,23 +118,21 @@ struct  ALIConfigCommandLine
    int     bus;
    int     device;
    int     function;
-   bool    force;
 
 };
-struct ALIConfigCommandLine configCmdLine = { 0,"",1,0,0,0,0,0,0 };
+struct ALIConfigCommandLine configCmdLine = { 0,"",1,0,0,0,0,0 };
 
 void AliConfigShowHelp()
 {
    cout << "Usage:\n";
    cout << "   aliconfafu [<BITSTREAM>] [<RECONF-TIMEOUT>] [<RECONF-ACTION>]";
-   cout << " [<REACTIVATE-DISABLED>] [<FORCE>] [<BUS>] [<DEVICE>] [<FUNCTION>] \n\n";
+   cout << " [<REACTIVATE-DISABLED>] [<BUS>] [<DEVICE>] [<FUNCTION>] \n\n";
    cout << "<BITSTREAM>           --bitstream=<FILENAME>       OR  -b=<FILENAME>\n";
    cout << "<RECONF-TIMEOUT>      --reconftimeout=<SECONDS>    OR  -t=<SECONDS>\n";
    cout << "<RECONF-ACTION>       --reconfaction=A             OR  -a=A                ";
    cout << "where A = <ACTION_HONOR_REQUEST or ACTION_HONOR_OWNER >\n";
    cout << "<REACTIVATE-DISABLED> --reactivateDisabled=C       OR  -d=C                ";
    cout << "where C = <TRUE or FALSE>\n";
-   cout << "<FORCE>               --force==TRUE                OR  -f==TRUE\n";
    cout << "<BUS>                 --bus=<BUS_NUMBER>           OR  -B=<BUS_NUMBER>\n";
    cout << "<DEVICE>              --device=<DEVICE_NUMBER>     OR  -D=<DEVICE_NUMBER>\n";
    cout << "<FUNCTION>            --function=<FUNCTION_NUMBER> OR  -F=<FUNCTION_NUMBER>\n";
@@ -208,18 +200,6 @@ int ParseCmds(struct ALIConfigCommandLine *pconfigcmd, int argc, char *argv[])
             }
             break;
 
-         case 'f':    /* force option */
-            ASSERT(NULL != tmp_optarg);
-            if (NULL == tmp_optarg) break;
-            if ( 0 == strcasecmp("TRUE", tmp_optarg) ) {
-               pconfigcmd->force =true;
-            } else {
-               pconfigcmd->force =false;
-               cout << "Command line option --force= can only be TRUE, but was found to be " << tmp_optarg << endl;
-               cout << "\t--force= option being set to false.\n";
-            }
-            break;
-
          case 'B':    /* bus option */
             ASSERT(NULL != tmp_optarg);
             if (NULL == tmp_optarg) break;
@@ -264,21 +244,6 @@ int verifycmds(struct ALIConfigCommandLine *cl)
    if(!bitfile.good()) {
       printf("Invalid File : %s\n", cl->bitstream_file);
       return 3;
-   }
-
-   // find filename part of path
-   std::string bitstream_file_path(cl->bitstream_file);
-   std::string bitstream_file_base =
-      bitstream_file_path.substr( bitstream_file_path.find_last_of( "/\\" ) +1 );
-
-   // compare filename prefix
-   if ( 0 != bitstream_file_base.compare(FILENAME_INFIX_OFFSET, FILENAME_INFIX_LEN, FILENAME_INFIX) ) {
-      if (! cl->force) {
-         printf("Filename prefix mismatch - please check bitstream versions.\n");
-         printf("Expected prefix is 'mmddyy%s', where 'mmddyy' is a date.\n", FILENAME_INFIX);
-         printf("Add --force=TRUE to override.\n");
-         return 3;
-      }
    }
 
    return 0;
@@ -353,8 +318,12 @@ protected:
    Runtime               m_Runtime;           ///< AAL Runtime
    IBase                *m_pAALService;       ///< The generic AAL Service interface for the AFU.
    IALIReconfigure      *m_pALIReconfService; ///< Pointer to Buffer Service
+   IBase                *m_pFMEAALService;    ///< The generic AAL Service interface for the FME
+   IALIMMIO             *m_pFMEMMIOService;   ///< Pointer to MMIO Service
    CSemaphore            m_Sem;               ///< For synchronizing with the AAL runtime.
    btInt                 m_Result;            ///< Returned result v; 0 if success
+   TransactionID         m_tranIDFME;         ///< Transaction ID for FME service
+   TransactionID         m_tranIDPR;          ///< Transaction ID for PR service
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -369,6 +338,10 @@ ALIConfAFUApp::ALIConfAFUApp() :
    m_Runtime(this),\
    m_pAALService(NULL),
    m_pALIReconfService(NULL),
+   m_pFMEAALService(NULL),
+   m_pFMEMMIOService(NULL),
+   m_tranIDPR(),
+   m_tranIDFME(),
    m_Result(0)
 {
    // Register our Client side interfaces so that the Service can acquire them.
@@ -411,10 +384,11 @@ ALIConfAFUApp::~ALIConfAFUApp()
 }
 
 /// @brief   run() is called from main performs the following:
-///             - Allocate the appropriate ALI Service depending
+///             - Allocate an ALI FME service to retrieve BBS interface ID
+///             - Check BBS metadata against BBS interface ID
+///             - Allocate the appropriate ALI PR Service depending
 ///               on whether a hardware, ASE or software implementation is desired.
-///             - Allocates the necessary buffers to be used by the NLB AFU algorithm
-///             - Executes the NLB algorithm
+///             - Initiate PR operation
 ///             - Cleans up.
 btInt ALIConfAFUApp::run()
 {
@@ -432,6 +406,89 @@ btInt ALIConfAFUApp::run()
    NamedValueSet ConfigRecord;
    NamedValueSet reconfnvs;
 
+   //
+   // Check green bitstream file agains BBS interface ID
+   //   The BBS interface ID is retrieved from FME registers
+   //
+
+   std::ifstream bitfile(configCmdLine.bitstream_file,std::ios::binary);
+   btUnsigned32bitInt magic;
+   btUnsigned64bitInt expected_ifid_l;
+   btUnsigned64bitInt expected_ifid_h;
+   btUnsigned64bitInt bitstream_id;
+   btUnsigned64bitInt ifid_l;
+   btUnsigned64bitInt ifid_h;
+
+   // Read and check metadata header
+   bitfile.read( (char *)&magic, sizeof( magic ) );
+   if (magic != 0x1d1f8680) { // little endian, magic sequence is 0x80 0x86 0x1f 0x1d
+      ERR(configCmdLine.bitstream_file << " does not appear to be a valid GBS file (header mismatch).");
+      goto done_0;
+   }
+
+   // Read and store expected bitstream ID from GBS metadata
+   bitfile.read( (char *)&expected_ifid_l, sizeof( expected_ifid_l ) );
+   bitfile.read( (char *)&expected_ifid_h, sizeof( expected_ifid_h ) );
+
+   // Read interface ID off blue bitstream (FME registers)
+   //  this functionality will eventually be part of the driver
+   //  FME_PR_INTFC_ID_L: FME offset 0x50A8
+   //  FME_PR_INTFC_ID_H: FME offset 0x50B0
+
+   // Prepare FME service allocation
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
+   ConfigRecord.Add(keyRegAFU_ID,CCIP_FME_AFUID);
+
+   // Select specific bus/device/function, if desired
+   if (flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_BUS)) {
+      ConfigRecord.Add(keyRegBusNumber, btUnsigned32bitInt(configCmdLine.bus));
+   }
+   if (flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_DEV)) {
+      ConfigRecord.Add(keyRegDeviceNumber, btUnsigned32bitInt(configCmdLine.device));
+   }
+   if (flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_FUNC)) {
+      ConfigRecord.Add(keyRegFunctionNumber, btUnsigned32bitInt(configCmdLine.function));
+   }
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+   Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "FME");
+
+   // Allocate FME service
+   MSG("Allocating FME Service to check interface ID");
+   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, m_tranIDFME);
+   m_Sem.Wait();
+   if(!m_bIsOK){
+      ERR("Allocation failed\n");
+      goto done_0;
+   }
+
+   // Read FME CSRs
+   m_pFMEMMIOService->mmioRead64( 0x60, &bitstream_id );
+   m_pFMEMMIOService->mmioRead64( 0x50A8, &ifid_l );
+   m_pFMEMMIOService->mmioRead64( 0x50B0, &ifid_h );
+   MSG( "BBS bitstream ID is 0x" << std::hex << bitstream_id );
+   MSG( "BBS interface ID is 0x" << std::hex << ifid_h << ifid_l );
+
+   // Release FME service
+   MSG("Releasing FME Service");
+   (dynamic_ptr<IAALService>(iidService, m_pFMEAALService))->Release(TransactionID());
+   m_Sem.Wait();
+
+   // Compare expected and actual interface ID
+   if ( expected_ifid_l!= ifid_l || expected_ifid_h!= ifid_h ) {
+      ERR("BBS interface ID does not match GBS metadata (0x" << std::hex <<
+            expected_ifid_h << expected_ifid_l << ")");
+      goto done_0;
+   }
+   MSG( "Interface ID matches" );
+
+   // Clear ConfigRecord and Manifest for next service allocation
+   ConfigRecord.Empty();
+   Manifest.Empty();
+
+   //
+   // Allocate PR service
+   //
+
 #if defined( HWAFU )                /* Use FPGA hardware */
    // Service Library to use
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libALI");
@@ -442,13 +499,13 @@ btInt ALIConfAFUApp::run()
    ConfigRecord.Add(keyRegSubDeviceNumber,0);
 
    if (flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_BUS)) {
-   		ConfigRecord.Add(keyRegBusNumber, btUnsigned32bitInt(configCmdLine.bus));
+      ConfigRecord.Add(keyRegBusNumber, btUnsigned32bitInt(configCmdLine.bus));
    }
    if (flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_DEV)) {
-   		ConfigRecord.Add(keyRegDeviceNumber, btUnsigned32bitInt(configCmdLine.device));
+      ConfigRecord.Add(keyRegDeviceNumber, btUnsigned32bitInt(configCmdLine.device));
    }
    if (flag_is_set(configCmdLine.flags, ALICONIFG_CMD_FLAG_FUNC)) {
-   		ConfigRecord.Add(keyRegFunctionNumber, btUnsigned32bitInt(configCmdLine.function));
+      ConfigRecord.Add(keyRegFunctionNumber, btUnsigned32bitInt(configCmdLine.function));
    }
 
    #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
@@ -478,7 +535,7 @@ btInt ALIConfAFUApp::run()
    //   If allocation fails the serviceAllocateFailed() should set m_bIsOK appropriately.
    //   (Refer to the serviceAllocated() callback to see how the Service's interfaces
    //    are collected.)
-   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest);
+   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, m_tranIDPR);
    m_Sem.Wait();
    if(!m_bIsOK){
       ERR("Allocation failed\n");
@@ -545,13 +602,14 @@ btInt ALIConfAFUApp::run()
    }
    MSG("Done Running Test");
 
+
+
 done_1:
    // Clean-up and return
    // Release() the Service through the Services IAALService::Release() method
    MSG("Release Service");
    (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
    m_Sem.Wait();
-
 
 done_0:
    m_Runtime.stop();
@@ -568,22 +626,44 @@ done_0:
 void ALIConfAFUApp::serviceAllocated(IBase *pServiceBase,
                                       TransactionID const &rTranID)
 {
-   // Save the IBase for the Service. Through it we can get any other
-   //  interface implemented by the Service
-   m_pAALService = pServiceBase;
-   ASSERT(NULL != m_pAALService);
-   if ( NULL == m_pAALService ) {
-      m_bIsOK = false;
-      return;
-   }
+   if (rTranID == m_tranIDPR) {
+      // PR service allocated:
+      //   Save generic service pointer and IALIReconfigure pointer to PR
+      //   service
 
-   // Documentation says HWALIAFU Service publishes
-   //    IALIBuffer as subclass interface. Used in Buffer Allocation and Free
-   m_pALIReconfService = dynamic_ptr<IALIReconfigure>(iidALI_CONF_Service, pServiceBase);
-   ASSERT(NULL != m_pALIReconfService);
-   if ( NULL == m_pALIReconfService ) {
-      m_bIsOK = false;
-      return;
+      m_pAALService = pServiceBase;
+      ASSERT(NULL != m_pAALService);
+      if ( NULL == m_pAALService ) {
+         m_bIsOK = false;
+         return;
+      }
+
+      m_pALIReconfService = dynamic_ptr<IALIReconfigure>(iidALI_CONF_Service, pServiceBase);
+      ASSERT(NULL != m_pALIReconfService);
+      if ( NULL == m_pALIReconfService ) {
+         m_bIsOK = false;
+         return;
+      }
+
+   } else if (rTranID == m_tranIDFME) {
+
+      // FME service allocated:
+      //   Save generic service pointer and IALIMMIO pointer to FME service
+
+      m_pFMEAALService = pServiceBase;
+      ASSERT(NULL != m_pFMEAALService);
+      if ( NULL == m_pFMEAALService ) {
+         m_bIsOK = false;
+         return;
+      }
+
+      m_pFMEMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
+      ASSERT(NULL != m_pFMEMMIOService);
+      if ( NULL == m_pFMEMMIOService ) {
+         m_bIsOK = false;
+         return;
+      }
+
    }
 
    MSG("Service Allocated");

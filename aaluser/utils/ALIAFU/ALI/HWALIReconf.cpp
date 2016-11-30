@@ -59,7 +59,11 @@ BEGIN_NAMESPACE(AAL)
 /// @{
 
 // Bitstream File extension
-#define BITSTREAM_FILE_EXTENSION ".rbf"
+#define BITSTREAM_FILE_EXTENSION ".gbs"
+
+// FIXME: Placeholder for proper metadata handling (Alpha+)
+#define GBS_HEADER_MAGIC 0x1d1f8680
+#define GBS_HEADER_LEN   20
 
 //
 // ctor. CHWALIFME class constructor
@@ -165,7 +169,7 @@ void CHWALIReconf::reconfConfigure( TransactionID const &rTranID,
       btcString filename;
       rInputArgs.Get(AALCONF_FILENAMEKEY, &filename);
 
-      // File extension is not .rbf , Dispatch error Message "Wrong bitstream file extension"
+      // File extension is not .gbs , Dispatch error Message "Wrong bitstream file extension"
       std::string bitfilename(filename);
       if(BITSTREAM_FILE_EXTENSION != (bitfilename.substr(bitfilename.find_last_of("."))))  {
          // file extension invalid
@@ -244,7 +248,27 @@ void CHWALIReconf::reconfConfigure( TransactionID const &rTranID,
 #endif
    }
 
-   AFUConfigureTransaction configuretrans(reinterpret_cast<btVirtAddr>(bufptr), filesize, rTranID,rInputArgs);
+   //
+   // FIXME: Placeholder for proper metadata handling (Alpha+)
+   //
+   btByte *bufptr_skip = bufptr;
+   btWSSize filesize_skip = filesize;
+   if (*((btUnsigned32bitInt *)bufptr) == GBS_HEADER_MAGIC) {    // Alpha+ magic sequence
+      ASSERT( filesize > GBS_HEADER_LEN );
+      bufptr_skip = bufptr + GBS_HEADER_LEN;
+      filesize_skip = ((btWSSize)filesize) - GBS_HEADER_LEN;
+   } else {
+      AAL_ERR( LM_ALI, "Invalid green bitstream header" << std::endl);
+      getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                  rTranID,
+                  errFileError,
+                  reasUnknown,
+                  "Error: Invalid green bitstream header.")));
+      return;
+   }
+
+
+   AFUConfigureTransaction configuretrans(reinterpret_cast<btVirtAddr>(bufptr_skip), filesize_skip, rTranID,rInputArgs);
    // Send transaction
    m_pAFUProxy->SendTransaction(&configuretrans);
    if(configuretrans.getErrno() != uid_errnumOK){
