@@ -712,10 +712,10 @@ void OSAL_Sem_vp_int_1::Thr0(OSLThread *pThread, void *pContext)
    EXPECT_TRUE(sem.Post(1)); // (1 == count) at max.
    EXPECT_FALSE(sem.Post(1));
 
-   pTC->m_Scratch[2] = 1;
-
    // Reset and repeat the test.
    EXPECT_TRUE(sem.Reset(nInitialCount));
+
+   pTC->m_Scratch[2] = 1;
 
    EXPECT_TRUE(sem.Wait());
    pTC->m_Scratch[3] = 1;
