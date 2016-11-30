@@ -15,6 +15,7 @@ service_manager::ptr_t service_manager::instance_ = service_manager::ptr_t(0);
 
 service_manager::service_manager()
     : runtime_(0)
+    , env_(hwenv_t::hw)
     , runtimeStarted_(false)
 {
     sem_.Create(0,1);
@@ -27,28 +28,32 @@ service_manager::~service_manager()
 
 
 service_manager::ptr_t
-service_manager::instance()
+service_manager::instance(hwenv_t env)
 {
     if (instance_ == 0)
     {
         instance_.reset(new service_manager());
-        instance_->start();
+        instance_->start(env);
     }
     return instance_;
 }
 
 void
-service_manager::start()
+service_manager::start(hwenv_t env)
 {
     if (0 == runtime_)
     {
-
+        env_ = env;
         runtime_ = new Runtime(this);
         SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient*>(this));
 
         NamedValueSet configArgs, configRecord;
-        configRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-        configArgs.Add(AALRUNTIME_CONFIG_RECORD, &configRecord);
+        if (env == hwenv_t::hw)
+        {
+            configRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+            configArgs.Add(AALRUNTIME_CONFIG_RECORD, &configRecord);
+        }
+
         if (!runtime_->start(configArgs))
         {
             Log() << "error starting runtime" << std::endl;
@@ -92,8 +97,8 @@ void service_manager::define_services(const string &configFile)
             std::string client_type = service_info.get("client_type", "afu_client").asString();
             NamedValueSet configRecord;
             configRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, name.c_str());
-            configRecord.Add(keyRegAFU_ID, afuid.c_str());
-            if (service_info.get("include_aia", false).asBool())
+
+            if (service_info.get("include_aia", false).asBool() && env_ == hwenv_t::hw)
             {
                 configRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
             }
@@ -285,6 +290,17 @@ service_manager::allocate_service(const std::string &serviceAlias, NamedValueSet
         }
     }
     IBase* pBase = dynamic_cast<IBase*>(client.get());
+
+    switch(env_)
+    {
+        case hwenv_t::ase:
+            manifest.Add(keyRegHandle, 20);
+            manifest.Add(ALIAFU_NVS_KEY_TARGET, ali_afu_ase);
+            break;
+        default:
+            break;
+    }
+
     runtime_->allocService(pBase, manifest);
     //auto status = client->status();
     return client;

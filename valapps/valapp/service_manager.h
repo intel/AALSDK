@@ -26,13 +26,19 @@ class service_manager : public AAL::CAASBase,
 public:
     typedef std::shared_ptr<service_manager> ptr_t;
 
+    enum hwenv_t
+    {
+        hw = 0,
+        ase = 1
+    };
+
     /// @brief Get the instance to service_manager 
     /// @returns A shared_ptr to the only service_manager instance. 
-    static service_manager::ptr_t instance();
+    static service_manager::ptr_t instance(hwenv_t env = hwenv_t::hw);
     ~service_manager();
 
     /// @brief Starts the service_manager by starting the AAL runtime
-    void start();
+    void start(hwenv_t env = hw);
 
     /// @brief Shutsdown the service_manager by shutting down any service_client
     /// instances created by the service_manager and by shutting down the AAL runtime
@@ -127,6 +133,7 @@ protected:
 
 private:
     service_manager();
+    hwenv_t env_;
     AAL::Runtime* runtime_;
     bool runtimeStarted_;
     static service_manager::ptr_t instance_;
