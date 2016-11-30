@@ -20,7 +20,7 @@ The build environment can be provisioned using the buildenv.py script which is u
 3.  Build the valapps binaries and install
 
 ### Dependency Resolution (bootstrapping)
-Dependencies can and should be used from packages (git clones, comressed files like tar.gz or .zip files, deb/rpm files, etc.).
+Dependencies can and should be used from packages (git clones, compressed files like tar.gz or .zip files, deb/rpm files, etc.).
 Dependency resolution involves several steps:
 
 1.  Fetching (or downloading)
@@ -28,7 +28,7 @@ Dependency resolution involves several steps:
 3.  Building/installing 
 
 In order for buildenv.py to process dependencies, they should be placed in a dependency manifest file (typically referred to as packages.json) in JSON format.
-Each dependency specification includes the fetcher, an optonal unpacker, and a builder. Each of thise items may or may not require additional parameters that will be used at runtime as each dependency is processed. 
+Each dependency specification includes the fetcher, an optional unpacker, and a builder. Each of these items may or may not require additional parameters that will be used at runtime as each dependency is processed. 
 An example package in a packages.json file can look like this:
 
     {
@@ -49,7 +49,7 @@ An example package in a packages.json file can look like this:
         }
     }
 
-The preceding example tells buildenv.py to download cmake from the given url, unpack it using the tar unpacker, then install using conventional autotools generated makefiles. The `"install" : ".develop"` section is an indication to buildenv.py to install this in a directory outside the the default installation directory of `.packages`.
+The preceding example tells buildenv.py to download cmake from the given url, unpack it using the tar unpacker, then install using conventional autotools generated makefiles. The `"install" : ".develop"` section is an indication to buildenv.py to install this in a directory outside the default installation directory of `.packages`.
 
 To bootstrap packages using buildenv.py, use the `-B` or `--bootstrap` command line argument.
 Some example include:
@@ -87,7 +87,7 @@ To get more detailed help for running buildenv.py, use the `-h or --help` comman
 
 ## Development APIs
 Because valapps uses APIs in C++11, it is a requirement to use a compiler that supports the C++11 standard (or greater). 
-The only other requirement is the use the [JSONCPP](https://github.com/open-source-parsers/jsoncpp) library for parsing configuration files. 
+The only other requirement is use of the [JSONCPP](https://github.com/open-source-parsers/jsoncpp) library for parsing configuration files. 
 For convenience, the JSONCPP source files are included with the valapps code base under the valapp directory. These files are:
 
 * json/json.h
@@ -97,7 +97,7 @@ For convenience, the JSONCPP source files are included with the valapps code bas
 ### The wafu Library
 The wafu library is a thin wrapper around the AALSDK and encapsulates common client side APIs including callbacks required for interfacing with the AAL runtime. 
 Motivation for creating the wafu library stems from the:
-* The desire to have a simplifed API for developing AAL tests
+* The desire to have a simplified API for developing AAL tests
 * Eliminating boiler-plate code used when developing AAL tests
 * A flexible and dynamic framework that can have service parameters defined in text files
 
@@ -109,13 +109,13 @@ As a [singleton](https://en.wikipedia.org/wiki/Singleton_pattern), it serves as 
 In other words, there will be only one instance of this class in any application that uses it. Conceptually, the two most important functions that the service_manager 
 provides are the service_manager::define_services(const std::string &configFile) and service_manager::create_service(const std::string &service_name). The former is used to 
 define service parameters which will be stored internally (using AAL data structures) by the service_manager and the latter uses those parameters to call AAL functions to 
-create a given service (returning an object instance that derives from service_client). A service_client derived insntace is created by the service_manager whenever the 
+create a given service (returning an object instance that derives from service_client). A service_client derived instance is created by the service_manager whenever the 
 service_manager::create_service method is invoked. This derived class is determined by the JSON input file by the client_type field and must be registered with the service_manager 
 before service_manager::create_service is called. If no client_type is given, an object of type afu_client will be used when creating the service_client object. The valapps
 codebase includes a standard services input file, called [services.json](services.html).
 
 #### service_client
-The service_client implements the AAL::IService_Client interface class and becuase it derives from AAL::CAASBase, it can be used to get interface objects to an AAL service.  
+The service_client implements the AAL::IService_Client interface class and because it derives from AAL::CAASBase, it can be used to get interface objects to an AAL service.  
 As a convenience, one may optionally register interfaces with their corresponding identifiers (of type AAL::btIID) to be later retrieved using only the interface type.
 A typical use case of this is for a service developer to create a class which derives from service_client to serve as the client class for that service. The developer may
 then use the service_client::register_interface<T>(AAL::btIID serviceName) method to associate the identifier with the class type. A user of the service may then only use
@@ -125,7 +125,7 @@ This class registers common interface classes used by the ALI service and can be
 
 ### The google test valapps
 The wafu library was originally developed independent of google test and as such included its own test execution engine. As the codebase evolved and integrated the google test
-framework for not only test development but for test execution, many of the classes/functions in the original wafu library have become unnecessary and will be depracated.
+framework for not only test development but for test execution, many of the classes/functions in the original wafu library have become unnecessary and will be deprecated.
 Two classes that are still being used for valapps development/execution are test_manager and test_context.
 
 #### test_manager
@@ -140,11 +140,11 @@ Deriving from test_context will allow the test implementation to call its inheri
 Using this interface will also ensure that service allocation is complete by the AAL runtime before returning the service_client object.
 Test implementations should then use the [test_context::get_service<T>(const std::string &service_name)](@ref test_context) method to get a shared_ptr to a service_client object.
 Another important function defined in the test_context is the test_context::args() method. This is used to get a reference to the raw test arguments registered in the 
-main function and subsequentailly parsing them.
+main function and parse them.
 
 <a name="main" />
 ### valapps main
-The main function for valapps tests is found in the valapps codebase under gtest/main.cpp. The logic contained in here can be browken down into the following steps:
+The main function for valapps tests is found in the valapps codebase under gtest/main.cpp. The logic contained in here can be broken down into the following steps:
 
 1. Parses the arguments the first time.
    This gets the service specification file (defaults to services.json if not given) and the test library.
@@ -152,15 +152,15 @@ The main function for valapps tests is found in the valapps codebase under gtest
 2. Load the test library (given by the -t|--testlib argument).
    As the library is loaded, the google tests in the library will be discoverable by the google test runtime.
 3. Start the wafu service_manager.
-4. Call InitGoogleTest with the remainding arguments. Any non google test arguments will be left in argv and registered with the test_manager.
+4. Call InitGoogleTest with the remaining arguments. Any non google test arguments will be left in argv and registered with the test_manager.
 5. Call RUN_ALL_TESTS()
-   This will invoke the google test execution engine to run all tests (or those specifed with the --gtest_filter argument).
+   This will invoke the google test execution engine to run all tests (or those specified with the --gtest_filter argument).
 6. Shutdown the service_manager and the test_manager.
 
 
 
 ### Test Implementation
-Google test fixtures are typically declared and defined in C++ source (.cpp) files. valapps tests are segragated by domain into one .cpp file per test fixture and compiled into
+Google test fixtures are typically declared and defined in C++ source (.cpp) files. valapps tests are segregated by domain into one .cpp file per test fixture and compiled into
 one library per domain. For example, all tests related to testing the Partial Reconfigure feature of AAL are defined in the file gtPartialReconfig.cpp. Furthermore,
 the tests are compiled into one library, called libgtreconfigure.so.
 
@@ -205,7 +205,7 @@ service client as well as the "NLB0" service client. This example also uses goog
 
 ### gtapp
 The main function described above is used to build the test executable, called gtapp, which is used to execute tests
-compiled in test libraries. The only requuired argument to gtapp is the name of the test library (specifed with the -t|--testlib argument).
+compiled in test libraries. The only required argument to gtapp is the name of the test library (specified with the -t|--testlib argument).
 By default, gtapp looks for a services.json file in the current working directory for the service definitions to load 
 before test execution but can be overridden with the -s|--services command line argument. 
 Additional command line arguments that are processed first by gtapp are -h|--help and --gtest_help. The double-hyphen is used 
@@ -250,8 +250,8 @@ the test can be run using the following command:
 
 In addition to using gtapp to run a test, one may choose instead to use runit.py to run a test from the tests.json file.
 This is useful in running a given test without having to type out all command line arguments by hand.
-For example, say a developer wants to run the gtreconfigure tests without haiving to specify the command line arguments
-necessar for the tests, he/she would use the following command:
+For example, say a developer wants to run the gtreconfigure tests without having to specify the command line arguments
+necessary for the tests, he/she would use the following command:
 
     >./runit.py -t gtreconfigure 
 
@@ -280,7 +280,7 @@ A job in a CI build configuration can accomplish the building of valapps along w
     >./buildenv.py -B -b -s ../ -clean -M
     >./runit.py
 
-As mentioend above, a google test results file will be generated for each test library executed. The CI system may also be configured to 
+As mentioned above, a google test results file will be generated for each test library executed. The CI system may also be configured to 
 look for and process these results files for processing and displaying as part of the build.
 
 

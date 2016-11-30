@@ -20,10 +20,10 @@ Getting started (Using valapps.py)
 
 4. Create rtl.json file (rtl.json file is used by the tests to locate any necessary rtl collateral).
    The current rtl files are .rbf files that make up the NLB (both modes 0 and mode 3).
-   ./valapps.py --rtl /path/to/rtl/direcytory
+   ./valapps.py --rtl /path/to/rtl/directory
 
 
-5. Run tets:
+5. Run test:
    Use valapps.py with the -t option.
    ./valapps.py -t
    or 
