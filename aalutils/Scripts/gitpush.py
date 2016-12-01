@@ -21,7 +21,7 @@ USERS = {
 def fromgroups(groups):
     for group in groups:
         for user in USERS.get(group, '').split(','):
-            u = USERS.get(user):
+            u = USERS.get(user)
             if u:
                 yield u
 
