@@ -277,7 +277,7 @@ and generate test results in gt*.xml files.
 A job in a CI build configuration can accomplish the building of valapps along with the test execution by using the following commands:
 
     >cd valapps
-    >./buildenv.py -B -b -s ../ -clean -M
+    >./buildenv.py -B -b -s ../ --clean -M
     >./runit.py
 
 As mentioned above, a google test results file will be generated for each test library executed. The CI system may also be configured to 
