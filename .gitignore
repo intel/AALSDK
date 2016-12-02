@@ -78,3 +78,4 @@ cscope.out
 cscope.po.out
 *.tags
 *.tags_sorted_by_file
+valapps/*.xml
