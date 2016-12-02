@@ -522,6 +522,14 @@ void CHWALIPORT::readPortError( struct CCIP_PORT_ERROR port_error,
       rResult.Add(AAL_ERR_PORT_TX_CH0_REQ_CL_LEN4,true);
    }
 
+   if(port_error.afummio_rdrecv_portreset) {
+     rResult.Add(AAL_ERR_PORT_AFUMMIO_RDRECV_PORTRESET,true);
+   }
+
+   if(port_error.afummio_wrrecv_portreset) {
+      rResult.Add(AAL_ERR_PORT_AFUMMIO_WRRECV_PORTRESET,true);
+   }
+
    if(port_error.tx_ch1_overflow) {
       rResult.Add(AAL_ERR_PORT_TX_CH1_OVERFLOW,true);
    }
@@ -558,10 +566,6 @@ void CHWALIPORT::readPortError( struct CCIP_PORT_ERROR port_error,
       rResult.Add(AAL_ERR_PORT_TX_CH1_SOP_DETECTED,true);
    }
 
-   if(port_error.tx_ch1_atomic_req) {
-      rResult.Add(AAL_ERR_PORT_TX_CH1_ATOMIC_REQ,true);
-   }
-
    if(port_error.mmioread_timeout) {
       rResult.Add(AAL_ERR_PORT_MMIOREAD_TIMEOUT,true);
    }
@@ -577,7 +581,6 @@ void CHWALIPORT::readPortError( struct CCIP_PORT_ERROR port_error,
    if(port_error.num_pending_req_overflow) {
       rResult.Add(AAL_ERR_PORT_NUM_PENDREQ_OVERFLOW,true);
    }
-
 
    if(port_error.llpr_smrr_err) {
       rResult.Add(AAL_ERR_PORT_LLPR_SMRR,true);
@@ -661,6 +664,14 @@ void CHWALIPORT::writePortError(struct CCIP_ERROR *pError,const INamedValueSet &
       ccip_port_error.tx_ch0_req_cl_len4=0x1;
    }
 
+   if(rInputArgs.Has(AAL_ERR_PORT_AFUMMIO_RDRECV_PORTRESET)) {
+      ccip_port_error.afummio_rdrecv_portreset=0x1;
+   }
+
+   if(rInputArgs.Has(AAL_ERR_PORT_AFUMMIO_WRRECV_PORTRESET)) {
+      ccip_port_error.afummio_wrrecv_portreset=0x1;
+   }
+
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_OVERFLOW)) {
       ccip_port_error.tx_ch1_overflow=0x1;
    }
@@ -687,10 +698,6 @@ void CHWALIPORT::writePortError(struct CCIP_ERROR *pError,const INamedValueSet &
 
    if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_SOP_DETECTED)) {
        ccip_port_error.tx_ch1_sop_detcted=0x1;
-   }
-
-   if(rInputArgs.Has(AAL_ERR_PORT_TX_CH1_ATOMIC_REQ)) {
-      ccip_port_error.tx_ch1_atomic_req=0x1;
    }
 
    if(rInputArgs.Has(AAL_ERR_PORT_MMIOREAD_TIMEOUT)) {

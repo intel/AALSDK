@@ -1001,7 +1001,7 @@ struct CCIP_FME_RAS_GERROR {
          btUnsigned64bitInt prochot_error :1;                 // proc hot error
          btUnsigned64bitInt afu_access_mismatch :1;           // afu access PF/VF mismatch
          btUnsigned64bitInt injected_warn_error :1;           // Injected warning  error
-         btUnsigned64bitInt pcie_posion_error :1;             // PCIe poison port  error
+         btUnsigned64bitInt pcie_poison_error :1;             // PCIe poison port  error
          btUnsigned64bitInt gb_crc_err :1;                    // Green bitstream CRC Error
          btUnsigned64bitInt temp_trash_ap6 :1;                // thremal threshold AP6
          btUnsigned64bitInt power_trash_ap1 :1;               // Power threshold AP1
@@ -1406,7 +1406,10 @@ struct CCIP_PORT_ERROR {
             btUnsigned64bitInt tx_ch0_req_cl_len2 :1;          // Tx Channel0 : Request with cl_len=2
             btUnsigned64bitInt tx_ch0_req_cl_len4 :1;          // Tx Channel0 : Request with cl_len=4
 
-            btUnsigned64bitInt rsvd :11;                       // Reserved
+            btUnsigned64bitInt rsvd :4;                        // Reserved
+            btUnsigned64bitInt afummio_rdrecv_portreset :1;    // AFU MMIO RD received while PORT is in reset
+            btUnsigned64bitInt afummio_wrrecv_portreset :1;    // AFU MMIO WR received while PORT is in reset
+            btUnsigned64bitInt rsvd5 :5;                       // Reserved
 
             btUnsigned64bitInt tx_ch1_overflow :1;             // Tx Channel1 : Overflow
             btUnsigned64bitInt tx_ch1_invalidreq :1;           // Tx Channel1 : Invalid request encoding
@@ -1418,8 +1421,7 @@ struct CCIP_PORT_ERROR {
             btUnsigned64bitInt tx_ch1_datapayload_overrun:1;   // Tx Channel1 : Data payload overrun
             btUnsigned64bitInt tx_ch1_incorr_addr  :1;         // Tx Channel1 : Incorrect address
             btUnsigned64bitInt tx_ch1_sop_detcted  :1;         // Tx Channel1 : NON-Zero SOP Detected
-            btUnsigned64bitInt tx_ch1_atomic_req  :1;          // Tx Channel1 : Illegal VC_SEL, atomic request VLO
-            btUnsigned64bitInt rsvd1 :6;                       // Reserved
+            btUnsigned64bitInt rsvd1 :7;                       // Reserved
 
             btUnsigned64bitInt mmioread_timeout :1;            // MMIO Read Timeout in AFU
             btUnsigned64bitInt tx_ch2_fifo_overflow :1;        // Tx Channel2 : FIFO overflow
@@ -1486,8 +1488,21 @@ struct CCIP_PORT_DFL_ERR {
 
    }ccip_port_malformed_req_1;  // end struct CCIP_PORT_MALFORMED_REQ_1
 
+   // Port Debug
+   struct CCIP_PORT_DEBUG {
+
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt port_debug :64;    // port debug register
+         }; // end struct
+      }; // end union
+
+   }ccip_port_debug;  // end struct CCIP_PORT_DEBUG
+
+
 }; // end struct CCIP_PORT_DFL_ERR
-CASSERT(sizeof(struct CCIP_PORT_DFL_ERR ) == (6 *8));
+CASSERT(sizeof(struct CCIP_PORT_DFL_ERR ) == (7 *8));
 
 /******************************************************************************
  *  FPGA Port USMG Feature
@@ -1524,7 +1539,8 @@ struct CCIP_PORT_DFL_UMSG {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt umsg_base_address :64;    // UMAS segment start physical byte address
+            btUnsigned64bitInt umsg_base_address :48;    // UMAS segment start physical byte address
+            btUnsigned64bitInt rsvd :16;                 // Reserved
 
          }; // end struct
       }; // end union
@@ -1538,8 +1554,8 @@ struct CCIP_PORT_DFL_UMSG {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt umsg_hit :32;          // UMSG hit enable / disable
-            btUnsigned64bitInt rsvd :32;              // Reserved
+            btUnsigned64bitInt umsg_hit :8;          // UMSG hit enable / disable
+            btUnsigned64bitInt rsvd :56;             // Reserved
          }; // ens struct
       }; // end union
 
@@ -1650,21 +1666,40 @@ CASSERT(sizeof(struct CCIP_PORT_DFL_PR) == (6 *8));
  *  Feature Type = Private
  *
  ******************************************************************************/
+
+
+// Port Signal Tap Error
+struct CCIP_PORT_STAP_ERROR {
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt rw_timeout :1;             // SLD HUB end-point read/write timeout.
+         btUnsigned64bitInt stp_inreset :1;            // Remote SignalTap in Reset/ disabled .
+         btUnsigned64bitInt unsupport_read :1;         // Unsupported Read
+         btUnsigned64bitInt mmio_timeout :1;           // MMIO timeout detected
+         btUnsigned64bitInt txffio_count :4;           // Tx FFIO count
+         btUnsigned64bitInt rxffio_count :4;           // Rx FFIO count
+         btUnsigned64bitInt txffio_overflow :4;        // Tx FFIO overflow
+         btUnsigned64bitInt txffio_underflow :4;       // Tx FFIO underflow
+         btUnsigned64bitInt rxffio_overflow :4;        // Rx FFIO overflow
+         btUnsigned64bitInt rxffio_underflow :4;       // Rx FFIO underflow
+         btUnsigned64bitInt num_mmiowr :12;            // Number of MMIO Writes
+         btUnsigned64bitInt num_mmioreq :12;           // Number of MMIO Reads
+         btUnsigned64bitInt num_mmioresp :12;          // Number of MMIO Responses
+
+      }; // end struct
+   }; // end union
+
+}; // end struct CCIP_PORT_STAP_ERROR
+CASSERT(sizeof(struct CCIP_PORT_STAP_ERROR) == (1 *8));
+
 struct CCIP_PORT_DFL_STAP {
 
    // Port usmg Header
    struct CCIP_DFH ccip_port_stap_dflhdr;
 
-   // Remote Signal Tap
-   struct CCIP_PORT_STAP {
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt rsvd :64;           // Reserved
-         };
-      };
-
-   }ccip_port_stap; // end struct CCIP_PORT_STAP
+   // Remote Signal Tap Error
+   struct CCIP_PORT_STAP_ERROR stap_error;
 
 }; // end struct CCIP_PORT_STAP
 CASSERT(sizeof(struct CCIP_PORT_DFL_STAP) == (2*8));

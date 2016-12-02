@@ -367,28 +367,31 @@ void ccip_log_fme_error(struct ccip_device *pccipdev ,struct fme_device *pfme_de
                                                                                ccip_dev_pcie_devnum(pccipdev),
                                                                                ccip_dev_pcie_fcnnum(pccipdev),
                                                                                ccip_fme_gerr(pfme_dev)->fme_err.csr);
+      log_verbose_fme_error(pfme_dev);
    }
 
-   // FME Error1
+   // FME PCIe0 Error
    if((0x00 != ccip_fme_gerr(pfme_dev)->pcie0_err.csr) &&
       (ccip_fme_lastgerr(pfme_dev).pcie0_err.csr != ccip_fme_gerr(pfme_dev)->pcie0_err.csr )) {
 
-      PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME Error1 CSR:  0x%llx \n",kosal_gettimestamp(),
-                                                                                ccip_dev_pcie_busnum(pccipdev),
-                                                                                ccip_dev_pcie_devnum(pccipdev),
-                                                                                ccip_dev_pcie_fcnnum(pccipdev),
-                                                                                ccip_fme_gerr(pfme_dev)->pcie0_err.csr);
+      PERR(" FME Error occurred:%s B:D.F = %x:%x.%x PCIe0 Error CSR:  0x%llx \n",kosal_gettimestamp(),
+                                                                                 ccip_dev_pcie_busnum(pccipdev),
+                                                                                 ccip_dev_pcie_devnum(pccipdev),
+                                                                                 ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                 ccip_fme_gerr(pfme_dev)->pcie0_err.csr);
+      log_verbose_fme_pcie0error(pfme_dev);
    }
 
-   // FME Error2
+   // FME PCIe1 Error
    if((0x00 != ccip_fme_gerr(pfme_dev)->pcie1_err.csr) &&
       (ccip_fme_lastgerr(pfme_dev).pcie1_err.csr != ccip_fme_gerr(pfme_dev)->pcie1_err.csr )) {
 
-      PERR(" FME Error occurred:%s B:D.F = %x:%x.%x FME Error2 CSR:  0x%llx \n",kosal_gettimestamp(),
-                                                                                ccip_dev_pcie_busnum(pccipdev),
-                                                                                ccip_dev_pcie_devnum(pccipdev),
-                                                                                ccip_dev_pcie_fcnnum(pccipdev),
-                                                                                ccip_fme_gerr(pfme_dev)->pcie1_err.csr);
+      PERR(" FME Error occurred:%s B:D.F = %x:%x.%x PCIe1 Error CSR:  0x%llx \n",kosal_gettimestamp(),
+                                                                                 ccip_dev_pcie_busnum(pccipdev),
+                                                                                 ccip_dev_pcie_devnum(pccipdev),
+                                                                                 ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                 ccip_fme_gerr(pfme_dev)->pcie1_err.csr);
+      log_verbose_fme_pcie1error(pfme_dev);
    }
 
    // FME first error
@@ -439,33 +442,36 @@ void ccip_log_fme_ras_error(struct ccip_device *pccipdev ,struct fme_device *pfm
    if((0x00 != ccip_fme_gerr(pfme_dev)->ras_gerr.csr) &&
       (ccip_fme_lastgerr(pfme_dev).ras_gerr.csr != ccip_fme_gerr(pfme_dev)->ras_gerr.csr )) {
 
-      PERR(" RAS Green bitstream Error occurred:%s B:D.F = %x:%x.%x RAS GB Error CSR: 0x%llx \n",kosal_gettimestamp(),
-                                                                                                 ccip_dev_pcie_busnum(pccipdev),
-                                                                                                 ccip_dev_pcie_devnum(pccipdev),
-                                                                                                 ccip_dev_pcie_fcnnum(pccipdev),
-                                                                                                 ccip_fme_gerr(pfme_dev)->ras_gerr.csr);
+      PERR(" RAS Green bitstream Error occurred:%s B:D.F = %x:%x.%x RAS GBS Error CSR: 0x%llx \n",kosal_gettimestamp(),
+                                                                                                  ccip_dev_pcie_busnum(pccipdev),
+                                                                                                  ccip_dev_pcie_devnum(pccipdev),
+                                                                                                  ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                                  ccip_fme_gerr(pfme_dev)->ras_gerr.csr);
+      log_verbose_fme_rasgbserror(pfme_dev);
    }
 
    // RAS Blue bitstream Error
    if((0x00 != ccip_fme_gerr(pfme_dev)->ras_berror.csr) &&
       (ccip_fme_lastgerr(pfme_dev).ras_berror.csr != ccip_fme_gerr(pfme_dev)->ras_berror.csr )) {
 
-      PERR(" RAS Blue bitstream Error occurred:%s B:D.F = %x:%x.%x RAS BB Error CSR:  0x%llx \n",kosal_gettimestamp(),
-                                                                                                 ccip_dev_pcie_busnum(pccipdev),
-                                                                                                 ccip_dev_pcie_devnum(pccipdev),
-                                                                                                 ccip_dev_pcie_fcnnum(pccipdev),
-                                                                                                 ccip_fme_gerr(pfme_dev)->ras_berror.csr);
+      PERR(" RAS Blue bitstream Error occurred:%s B:D.F = %x:%x.%x RAS BBS Error CSR:  0x%llx \n",kosal_gettimestamp(),
+                                                                                                  ccip_dev_pcie_busnum(pccipdev),
+                                                                                                  ccip_dev_pcie_devnum(pccipdev),
+                                                                                                  ccip_dev_pcie_fcnnum(pccipdev),
+                                                                                                  ccip_fme_gerr(pfme_dev)->ras_berror.csr);
+      log_verbose_fme_rasbbserror(pfme_dev);
    }
 
-   // FME Error2
+   // FME Warning
    if((0x00 != ccip_fme_gerr(pfme_dev)->ras_warnerror.csr) &&
       (ccip_fme_lastgerr(pfme_dev).ras_warnerror.csr != ccip_fme_gerr(pfme_dev)->ras_warnerror.csr )) {
 
-      PERR(" RAS warning Error occurred:%s B:D.F = %x:%x.%x RAS warning CSR:  0x%llx \n",kosal_gettimestamp(),
+      PERR(" RAS Warning Error occurred:%s B:D.F = %x:%x.%x RAS Warning CSR:  0x%llx \n",kosal_gettimestamp(),
                                                                                          ccip_dev_pcie_busnum(pccipdev),
                                                                                          ccip_dev_pcie_devnum(pccipdev),
                                                                                          ccip_dev_pcie_fcnnum(pccipdev),
                                                                                          ccip_fme_gerr(pfme_dev)->ras_warnerror.csr);
+      log_verbose_fme_raswarnerror(pfme_dev);
    }
 
 
@@ -543,6 +549,7 @@ void ccip_log_port_error(struct ccip_device *pccipdev ,struct port_device *pport
                                                                                   ccip_dev_pcie_devnum(pccipdev),
                                                                                   ccip_dev_pcie_fcnnum(pccipdev),
                                                                                   ccip_port_err(pport_dev)->ccip_port_error.csr);
+      log_verbose_port_error(pport_dev);
    }
 
    // Port First Error
@@ -709,6 +716,441 @@ void ccip_log_pr_error(struct fme_device *pfme_dev )
    }
 
    PTRACEOUT;
+}
+
+///============================================================================
+/// Name:    log_verbose_fme_error
+/// @brief   logs fme errors description to kernel logger.
+///
+/// @param[in] pfme_dev  fme device pointer.
+/// @return    no return value
+///============================================================================
+void log_verbose_fme_error(struct fme_device *pfme_dev)
+{
+   struct CCIP_FME_ERROR0  fme_error0  ;
+   if(NULL == pfme_dev){
+      return ;
+   }
+
+   fme_error0.csr  = (ccip_fme_gerr(pfme_dev)->fme_err.csr ) &
+                     (~ccip_fme_lastgerr(pfme_dev).fme_err.csr);
+
+   // FME Error
+   if(fme_error0.fabric_err) {
+      PERR(" FME Error: %s \n",AAL_ERR_FME_FAB);
+   }
+
+   if(fme_error0.fabFifo_uoflow) {
+      PERR(" FME Error: %s \n",AAL_ERR_FME_FAB_UNDEROVERFLOW);
+   }
+
+   if(fme_error0.pcie0_poison_detected) {
+      PERR(" FME Error: %s \n",AAL_ERR_FME_PCIE0_POISON_DETECT);
+   }
+
+   if(fme_error0.pcie1_poison_detected) {
+      PERR(" FME Error: %s \n",AAL_ERR_FME_PCIE1_POISON_DETECT);
+   }
+
+   if(fme_error0.iommu_parity_error) {
+      PERR(" FME Error: %s \n",AAL_ERR_FME_IOMMU_PARITY);
+   }
+
+   if(fme_error0.afuerr_access_mismatch) {
+      PERR(" FME Error: %s \n",AAL_ERR_FME_AFUMISMATCH_DETECT);
+   }
+
+   if(fme_error0.mbp_event) {
+      PERR(" FME Error: %s \n",AAL_ERR_FME_MBPEVENT);
+   }
+}
+
+///============================================================================
+/// Name:    log_verbose_fme_pcie0error
+/// @brief   logs pcie0 errors description to kernel logger.
+///
+/// @param[in] pfme_dev  fme device pointer.
+/// @return    no return value
+///============================================================================
+void log_verbose_fme_pcie0error(struct fme_device *pfme_dev)
+{
+   struct CCIP_FME_PCIE0_ERROR pcie0_error ;
+   if(NULL == pfme_dev){
+      return ;
+   }
+
+   pcie0_error.csr  = (ccip_fme_gerr(pfme_dev)->pcie0_err.csr ) &
+                      (~ccip_fme_lastgerr(pfme_dev).pcie0_err.csr);
+
+   // PCIe0 Error
+   if(pcie0_error.formattype_err) {
+      PERR(" PCIe0 Error: %s \n",AAL_ERR_PCIE0_FORMAT);
+   }
+
+   if(pcie0_error.MWAddr_err) {
+      PERR(" PCIe0 Error: %s \n",AAL_ERR_PCIE0_MWADDR);
+   }
+
+   if(pcie0_error.MWAddrLength_err) {
+      PERR(" PCIe0 Error: %s \n",AAL_ERR_PCIE0_MWLEN);
+   }
+
+   if(pcie0_error.MRAddr_err) {
+      PERR(" PCIe0 Error: %s \n",AAL_ERR_PCIE0_MRADDR);
+   }
+
+   if(pcie0_error.MRAddrLength_err) {
+      PERR(" PCIe0 Error: %s \n",AAL_ERR_PCIE0_MRLEN);
+   }
+
+   if(pcie0_error.cpl_tag_err) {
+      PERR(" PCIe0 Error: %s \n",AAL_ERR_PCIE0_COMPTAG);
+   }
+
+   if(pcie0_error.cpl_status_err) {
+      PERR(" PCIe0 Error: %s \n",AAL_ERR_PCIE0_COMPSTAT);
+   }
+
+   if(pcie0_error.cpl_timeout_err) {
+      PERR(" PCIe0 Error: %s \n",AAL_ERR_PCIE0_TIMEOUT);
+   }
+
+}
+
+///============================================================================
+/// Name:    log_verbose_fme_pcie1error
+/// @brief   logs pcie1 errors description to kernel logger.
+///
+/// @param[in] pfme_dev  fme device pointer.
+/// @return    no return value
+///============================================================================
+void log_verbose_fme_pcie1error(struct fme_device *pfme_dev)
+{
+   struct CCIP_FME_PCIE1_ERROR pcie1_error ;
+   if(NULL == pfme_dev){
+      return ;
+   }
+
+   pcie1_error.csr  = (ccip_fme_gerr(pfme_dev)->pcie1_err.csr ) &
+                      (~ccip_fme_lastgerr(pfme_dev).pcie1_err.csr);
+
+   // PCIe1 Error
+   if(pcie1_error.formattype_err) {
+      PERR(" PCIe1 Error: %s \n",AAL_ERR_PCIE1_FORMAT);
+   }
+
+   if(pcie1_error.MWAddr_err) {
+      PERR(" PCIe1 Error: %s \n",AAL_ERR_PCIE1_MWADDR);
+   }
+
+   if(pcie1_error.MWAddrLength_err) {
+      PERR(" PCIe1 Error: %s \n",AAL_ERR_PCIE1_MWLEN);
+   }
+
+   if(pcie1_error.MRAddr_err) {
+      PERR(" PCIe1 Error: %s \n",AAL_ERR_PCIE1_MRADDR);
+   }
+
+   if(pcie1_error.MRAddrLength_err) {
+      PERR(" PCIe1 Error: %s \n",AAL_ERR_PCIE1_MRLEN);
+   }
+
+   if(pcie1_error.cpl_tag_err) {
+      PERR(" PCIe1 Error: %s \n",AAL_ERR_PCIE1_COMPTAG);
+   }
+
+   if(pcie1_error.cpl_status_err) {
+      PERR(" PCIe1 Error: %s \n",AAL_ERR_PCIE1_COMPSTAT);
+   }
+
+}
+
+///============================================================================
+/// Name:    log_verbose_fme_rasgbserror
+/// @brief   logs ras gbs errors description to kernel logger.
+///
+/// @param[in] pfme_dev  fme device pointer.
+/// @return    no return value
+///============================================================================
+void log_verbose_fme_rasgbserror(struct fme_device *pfme_dev)
+{
+   struct CCIP_FME_RAS_GERROR  ras_gerr ;
+   if(NULL == pfme_dev){
+      return ;
+   }
+
+   ras_gerr.csr  = (ccip_fme_gerr(pfme_dev)->ras_gerr.csr ) &
+                   (~ccip_fme_lastgerr(pfme_dev).ras_gerr.csr);
+
+   // RAS Green bitstream
+   if(ras_gerr.temp_trash_ap1) {
+      PERR(" RAS GBS Error: %s \n",AAL_ERR_RAS_TEMPAP1);
+   }
+
+   if(ras_gerr.temp_trash_ap2) {
+      PERR(" RAS GBS Error: %s \n",AAL_ERR_RAS_TEMPAP2);
+   }
+
+   if(ras_gerr.pcie_error) {
+      PERR(" RAS GBS Error: %s \n",AAL_ERR_RAS_PCIE);
+   }
+
+   if(ras_gerr.afufatal_error) {
+      PERR(" RAS GBS Error: %s \n",AAL_ERR_RAS_AFUFATAL);
+   }
+
+   if(ras_gerr.afu_access_mismatch) {
+      PERR(" RAS GBS Error: %s \n",AAL_ERR_RAS_AFUACCESS_MODE);
+   }
+
+   if(ras_gerr.pcie_poison_error) {
+      PERR(" RAS GBS Error: %s \n",AAL_ERR_RAS_PCIEPOISON);
+   }
+
+   if(ras_gerr.gb_crc_err) {
+      PERR(" RAS GBS Error: %s \n",AAL_ERR_RAS_GBCRC);
+   }
+
+   if(ras_gerr.temp_trash_ap6) {
+      PERR(" RAS GBS Error: %s \n",AAL_ERR_RAS_TEMPAP6);
+   }
+
+   if(ras_gerr.power_trash_ap1) {
+      PERR(" RAS GBS Error: %s \n",AAL_ERR_RAS_POWERAP1);
+   }
+
+   if(ras_gerr.power_trash_ap2) {
+      PERR(" RAS GBS Error: %s \n",AAL_ERR_RAS_POWERAP2);
+   }
+
+   if(ras_gerr.mbp_error) {
+      PERR(" RAS GBS Error: %s \n",AAL_ERR_RAS_MDP);
+   }
+
+
+}
+
+///============================================================================
+/// Name:    log_verbose_fme_rasbbserror
+/// @brief   logs ras bbs errors description to kernel logger.
+///
+/// @param[in] pfme_dev  fme device pointer.
+/// @return    no return value
+///============================================================================
+void log_verbose_fme_rasbbserror(struct fme_device *pfme_dev)
+{
+   struct CCIP_FME_RAS_BERROR ras_berror ;
+   if(NULL == pfme_dev){
+      return ;
+   }
+
+   ras_berror.csr  = (ccip_fme_gerr(pfme_dev)->ras_berror.csr ) &
+                     (~ccip_fme_lastgerr(pfme_dev).ras_berror.csr);
+
+
+   // RAS Blue bitstream Error
+   if(ras_berror.ktilink_fatal_err) {
+      PERR(" RAS BBS Error: %s \n",AAL_ERR_RAS_GBCRC);
+   }
+
+   if(ras_berror.tagcch_fatal_err) {
+      PERR(" RAS BBS Error: %s \n",AAL_ERR_RAS_TAGCCH_FATAL);
+   }
+
+   if(ras_berror.cci_fatal_err) {
+      PERR(" RAS BBS Error: %s \n",AAL_ERR_RAS_CCI_FATAL);
+   }
+
+   if(ras_berror.ktiprpto_fatal_err) {
+      PERR(" RAS BBS Error: %s \n",AAL_ERR_RAS_KTIPROTO_FATAL);
+   }
+
+   if(ras_berror.dma_fatal_err) {
+      PERR(" RAS BBS Error: %s \n",AAL_ERR_RAS_DMA_FATAL);
+   }
+
+   if(ras_berror.iommu_fatal_err) {
+      PERR(" RAS BBS Error: %s \n",AAL_ERR_RAS_IOMMU_FATAL);
+   }
+
+   if(ras_berror.iommu_catast_err) {
+      PERR(" RAS BBS Error: %s \n",AAL_ERR_RAS_IOMMU_CATAS);
+   }
+
+   if(ras_berror.crc_catast_err) {
+      PERR(" RAS BBS Error: %s \n",AAL_ERR_RAS_CRC_CATAS);
+   }
+
+   if(ras_berror.therm_catast_err) {
+      PERR(" RAS BBS Error: %s \n",AAL_ERR_PCIE1_COMPSTAT);
+   }
+
+}
+
+///============================================================================
+/// Name:    log_verbose_fme_raswarnerror
+/// @brief   logs ras warning errors description to kernel logger.
+///
+/// @param[in] pfme_dev  fme device pointer.
+/// @return    no return value
+///============================================================================
+void log_verbose_fme_raswarnerror(struct fme_device *pfme_dev)
+{
+   struct CCIP_FME_RAS_WARNERROR ras_warnerror;
+   if(NULL == pfme_dev){
+      return ;
+   }
+
+   ras_warnerror.csr  = (ccip_fme_gerr(pfme_dev)->ras_warnerror.csr ) &
+                        (~ccip_fme_lastgerr(pfme_dev).ras_warnerror.csr);
+
+   if(ras_warnerror.event_warn_err) {
+      PERR(" RAS Warning  Error: %s \n",AAL_ERR_RAS_WARNING);
+   }
+
+}
+
+///============================================================================
+/// Name:    log_verbose_port_error
+/// @brief   logs port errors description to kernel logger.
+///
+/// @param[in] pport_dev  port device pointer.
+/// @return    no return value
+///============================================================================
+void log_verbose_port_error(struct port_device *pport_dev)
+{
+   struct CCIP_PORT_ERROR port_error ;
+   if(NULL == pport_dev){
+      return ;
+   }
+
+   port_error.csr  = (~ccip_port_lasterr(pport_dev).ccip_port_error.csr ) &
+                     ( ccip_port_err(pport_dev)->ccip_port_error.csr);
+
+   if(port_error.tx_ch0_overflow) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH0_OVERFLOW);
+   }
+
+   if(port_error.tx_ch0_invalidreq) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH0_INVALIDREQ);
+   }
+
+   if(port_error.tx_ch0_req_cl_len3) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH0_REQ_CL_LEN3);
+   }
+
+   if(port_error.tx_ch0_req_cl_len2) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH0_REQ_CL_LEN2);
+   }
+
+   if(port_error.afummio_rdrecv_portreset) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_AFUMMIO_RDRECV_PORTRESET);
+   }
+
+   if(port_error.afummio_wrrecv_portreset) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_AFUMMIO_WRRECV_PORTRESET);
+   }
+
+   if(port_error.tx_ch0_req_cl_len4) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH0_REQ_CL_LEN4);
+   }
+
+   if(port_error.tx_ch1_overflow) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH1_OVERFLOW);
+   }
+
+   if(port_error.tx_ch1_invalidreq) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH1_INVALIDREQ);
+   }
+
+   if(port_error.tx_ch1_req_cl_len3) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH1_REQ_CL_LEN3);
+   }
+
+   if(port_error.tx_ch1_req_cl_len2) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH1_REQ_CL_LEN2);
+   }
+
+   if(port_error.tx_ch1_req_cl_len4) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH1_REQ_CL_LEN4);
+   }
+
+   if(port_error.tx_ch1_insuff_datapayload) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH1_INSUFF_DATAPYL);
+   }
+
+   if(port_error.tx_ch1_datapayload_overrun) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH1_DATAPYL_OVERRUN);
+   }
+
+   if(port_error.tx_ch1_incorr_addr) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH1_INCORR_ADDR);
+   }
+
+   if(port_error.tx_ch1_sop_detcted) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH1_SOP_DETECTED);
+   }
+
+   if(port_error.mmioread_timeout) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_MMIOREAD_TIMEOUT);
+   }
+
+   if(port_error.tx_ch2_fifo_overflow) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_TX_CH2_FIFO_OVERFLOW);
+   }
+
+   if(port_error.unexp_mmio_resp) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_UNEXP_MMIORESP);
+   }
+
+   if(port_error.num_pending_req_overflow) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_NUM_PENDREQ_OVERFLOW);
+   }
+
+   if(port_error.llpr_smrr_err) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_LLPR_SMRR);
+   }
+
+   if(port_error.llpr_smrr2_err) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_LLPR_SMRR2);
+   }
+
+   if(port_error.llpr_mesg_err) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_LLPR_MSG);
+   }
+
+   if(port_error.genport_range_err) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_GENPORT_RANGE);
+   }
+
+   if(port_error.legrange_low_err) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_LEGRANGE_LOW);
+   }
+
+   if(port_error.legrange_hight_err) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_LEGRANGE_HIGH);
+   }
+
+   if(port_error.vgmem_range_err) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_VGAMEM_RANGE);
+   }
+
+   if(port_error.page_fault_err) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_PAGEFAULT);
+   }
+
+   if(port_error.pmr_err) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_PMRERROR);
+   }
+
+   if(port_error.ap6_event) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_AP6EVENT);
+   }
+
+   if(port_error.vfflr_accesseror) {
+      PERR(" PORT Error: %s \n",AAL_ERR_PORT_VFFLR_ACCESS);
+   }
+
 }
 
 ///============================================================================

@@ -203,19 +203,19 @@ void CHWALIFME::readfmeError( struct CCIP_ERROR *pError, INamedValueSet &rResult
    }
 
    if(fme_error0.fabFifo_uoflow) {
-      rResult.Add(AAL_ERR_FME_FAB_UOVERFLOW,true);
+      rResult.Add(AAL_ERR_FME_FAB_UNDEROVERFLOW,true);
    }
 
    if(fme_error0.pcie0_poison_detected) {
-      rResult.Add(AAL_ERR_FME_PCIE0_POSION_DETECT,true);
+      rResult.Add(AAL_ERR_FME_PCIE0_POISON_DETECT,true);
    }
 
    if(fme_error0.pcie1_poison_detected) {
-      rResult.Add(AAL_ERR_FME_PCIE1_POSION_DETECT,true);
+      rResult.Add(AAL_ERR_FME_PCIE1_POISON_DETECT,true);
    }
 
    if(fme_error0.iommu_parity_error) {
-      rResult.Add(AAL_ERR_FME_IOMMU_PARIRY,true);
+      rResult.Add(AAL_ERR_FME_IOMMU_PARITY,true);
    }
 
    if(fme_error0.afuerr_access_mismatch) {
@@ -314,8 +314,8 @@ void CHWALIFME::readfmeError( struct CCIP_ERROR *pError, INamedValueSet &rResult
       rResult.Add(AAL_ERR_RAS_AFUACCESS_MODE,true);
    }
 
-   if(ras_gerr.pcie_posion_error) {
-      rResult.Add(AAL_ERR_RAS_PCIEPOSION,true);
+   if(ras_gerr.pcie_poison_error) {
+      rResult.Add(AAL_ERR_RAS_PCIEPOISON,true);
    }
 
    if(ras_gerr.gb_crc_err) {
@@ -442,22 +442,22 @@ void CHWALIFME::readOrderError( struct CCIP_ERROR *pError, INamedValueSet &rResu
 
       if(fme_error0.fabFifo_uoflow) {
          std::string str(FME_FIRST_ERR_STR);
-         rResult.Add(str.append(AAL_ERR_FME_FAB_UOVERFLOW).c_str(),true);
+         rResult.Add(str.append(AAL_ERR_FME_FAB_UNDEROVERFLOW).c_str(),true);
       }
 
       if(fme_error0.pcie0_poison_detected) {
          std::string str(FME_FIRST_ERR_STR);
-         rResult.Add(AAL_ERR_FME_PCIE0_POSION_DETECT,true);
+         rResult.Add(AAL_ERR_FME_PCIE0_POISON_DETECT,true);
       }
 
       if(fme_error0.pcie1_poison_detected) {
          std::string str(FME_FIRST_ERR_STR);
-         rResult.Add(AAL_ERR_FME_PCIE1_POSION_DETECT,true);
+         rResult.Add(AAL_ERR_FME_PCIE1_POISON_DETECT,true);
       }
 
       if(fme_error0.iommu_parity_error) {
          std::string str(FME_FIRST_ERR_STR);
-         rResult.Add(AAL_ERR_FME_IOMMU_PARIRY,true);
+         rResult.Add(AAL_ERR_FME_IOMMU_PARITY,true);
       }
 
       if(fme_error0.afuerr_access_mismatch) {
@@ -485,23 +485,23 @@ void CHWALIFME::readOrderError( struct CCIP_ERROR *pError, INamedValueSet &rResu
 
       if(fme_error0.fabFifo_uoflow) {
          std::string str(FME_NEXT_ERR_STR);
-         rResult.Add(str.append(AAL_ERR_FME_FAB_UOVERFLOW).c_str(),true);
+         rResult.Add(str.append(AAL_ERR_FME_FAB_UNDEROVERFLOW).c_str(),true);
       }
 
 
       if(fme_error0.pcie0_poison_detected) {
          std::string str(FME_NEXT_ERR_STR);
-         rResult.Add(AAL_ERR_FME_PCIE0_POSION_DETECT,true);
+         rResult.Add(AAL_ERR_FME_PCIE0_POISON_DETECT,true);
       }
 
       if(fme_error0.pcie1_poison_detected) {
          std::string str(FME_NEXT_ERR_STR);
-         rResult.Add(AAL_ERR_FME_PCIE1_POSION_DETECT,true);
+         rResult.Add(AAL_ERR_FME_PCIE1_POISON_DETECT,true);
       }
 
       if(fme_error0.iommu_parity_error) {
          std::string str(FME_NEXT_ERR_STR);
-         rResult.Add(AAL_ERR_FME_IOMMU_PARIRY,true);
+         rResult.Add(AAL_ERR_FME_IOMMU_PARITY,true);
       }
 
       if(fme_error0.afuerr_access_mismatch) {
@@ -895,15 +895,15 @@ void CHWALIFME::writefmeError( struct CCIP_ERROR *pError,const INamedValueSet &r
       fme_error0.fabric_err = errbit;
    }
 
-   if(rInputArgs.Has(AAL_ERR_FME_FAB_UOVERFLOW)) {
+   if(rInputArgs.Has(AAL_ERR_FME_FAB_UNDEROVERFLOW)) {
       fme_error0.fabFifo_uoflow = errbit;
    }
 
-   if(rInputArgs.Has(AAL_ERR_FME_PCIE1_POSION_DETECT)) {
+   if(rInputArgs.Has(AAL_ERR_FME_PCIE1_POISON_DETECT)) {
       fme_error0.pcie1_poison_detected = errbit;
    }
 
-   if(rInputArgs.Has(AAL_ERR_FME_IOMMU_PARIRY)) {
+   if(rInputArgs.Has(AAL_ERR_FME_IOMMU_PARITY)) {
       fme_error0.iommu_parity_error = errbit;
    }
 
@@ -1003,8 +1003,8 @@ void CHWALIFME::writefmeError( struct CCIP_ERROR *pError,const INamedValueSet &r
       ras_gerr.afu_access_mismatch = errbit;
    }
 
-   if(rInputArgs.Has(AAL_ERR_RAS_PCIEPOSION)) {
-      ras_gerr.pcie_posion_error = errbit;
+   if(rInputArgs.Has(AAL_ERR_RAS_PCIEPOISON)) {
+      ras_gerr.pcie_poison_error = errbit;
    }
 
    if(rInputArgs.Has(AAL_ERR_RAS_GBCRC)) {

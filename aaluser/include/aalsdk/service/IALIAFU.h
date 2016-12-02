@@ -978,10 +978,10 @@ public:
 
    // FME Error definitions
    #define AAL_ERR_FME_FAB                        "Fabric Error"
-   #define AAL_ERR_FME_FAB_UOVERFLOW              "Fabric FIFO Under / Overflow error"
-   #define AAL_ERR_FME_PCIE0_POSION_DETECT        "PCIe0 Poison Detected"
-   #define AAL_ERR_FME_PCIE1_POSION_DETECT        "PCIe0 Poison Detected"
-   #define AAL_ERR_FME_IOMMU_PARIRY               "IOMMU Parity Error"
+   #define AAL_ERR_FME_FAB_UNDEROVERFLOW          "Fabric FIFO Under / Overflow error"
+   #define AAL_ERR_FME_PCIE0_POISON_DETECT        "PCIe0 Poison Detected"
+   #define AAL_ERR_FME_PCIE1_POISON_DETECT        "PCIe1 Poison Detected"
+   #define AAL_ERR_FME_IOMMU_PARITY               "IOMMU Parity Error"
    #define AAL_ERR_FME_AFUMISMATCH_DETECT         "AFU PF/VF Access Mismatch detected"
    #define AAL_ERR_FME_MBPEVENT                   "MBP error event"
 
@@ -1005,8 +1005,8 @@ public:
    #define AAL_ERR_PCIE1_COMPSTAT                 "PCIe1 TLP CPL Status error"
    #define AAL_ERR_PCIE1_TIMEOUT                  "PCIe1 TLP CPL Timeout error"
 
-   #define AAL_ERR_PCIE_PHYFUNC                   "Physical function error"
-   #define AAL_ERR_PCIE_VIRTFUNCR                 "Virtual function error"
+   #define AAL_ERR_PCIE_PHYFUNCERROR              "Physical function error"
+   #define AAL_ERR_PCIE_VIRTFUNCERROR             "Virtual function error"
 
    #define AAL_ERR_RAS_TEMPAP1                    "Thermal threshold Triggered AP1"
    #define AAL_ERR_RAS_TEMPAP2                    "Thermal threshold Triggered AP2"
@@ -1014,7 +1014,7 @@ public:
    #define AAL_ERR_RAS_AFUFATAL                   "AFU Fatal error has occurred in AFU port"
    #define AAL_ERR_RAS_PROCHOT                    "Indicates A Proc Hot event"
    #define AAL_ERR_RAS_AFUACCESS_MODE             "AFU PF/VF access mode mismatch"
-   #define AAL_ERR_RAS_PCIEPOSION                 "PCIe poison port  error"
+   #define AAL_ERR_RAS_PCIEPOISON                 "PCIe poison port  error"
    #define AAL_ERR_RAS_GBCRC                      "Green bitstream CRC Error"
    #define AAL_ERR_RAS_TEMPAP6                    "Thremal threshold Triggered AP6"
    #define AAL_ERR_RAS_POWERAP1                   "Power threshold Triggered AP1"
@@ -1032,7 +1032,7 @@ public:
    #define AAL_ERR_RAS_CRC_CATAS                  "Catastrophic CRC Error"
    #define AAL_ERR_RAS_THER_CATAS                 "Catastrophic Thermal Error"
    #define AAL_ERR_RAS_GB_FATAL                   "Green bitstream fatal event Error"
-   #define AAL_ERR_RAS_INJ_CATAS_                 "Injected Catastrophic error"
+   #define AAL_ERR_RAS_INJ_CATAS                  "Injected Catastrophic error"
 
 
    virtual ~IALIFMEError() {}
@@ -1059,6 +1059,9 @@ public:
    #define AAL_ERR_PORT_TX_CH0_REQ_CL_LEN3        "Tx Channel0: Request with cl_len3"
    #define AAL_ERR_PORT_TX_CH0_REQ_CL_LEN2        "Tx Channel0: Request with cl_len2"
    #define AAL_ERR_PORT_TX_CH0_REQ_CL_LEN4        "Tx Channel0: Request with cl_len4"
+
+   #define AAL_ERR_PORT_AFUMMIO_RDRECV_PORTRESET  "AFU MMIO RD received while PORT is in reset"
+   #define AAL_ERR_PORT_AFUMMIO_WRRECV_PORTRESET  "AFU MMIO WR received while PORT is in reset"
 
    #define AAL_ERR_PORT_TX_CH1_OVERFLOW           "Tx Channel1: Overflow"
    #define AAL_ERR_PORT_TX_CH1_INVALIDREQ         "Tx Channel1: Invalid request encoding"

@@ -403,7 +403,7 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    fme_gerror.ras_gerr_mask.prochot_error = 0x1;
    fme_gerror.ras_gerr_mask.afu_access_mismatch = 0x1;
    fme_gerror.ras_gerr_mask.injected_warn_error = 0x1;
-   fme_gerror.ras_gerr_mask.pcie_posion_error = 0x1;
+   fme_gerror.ras_gerr_mask.pcie_poison_error = 0x1;
    fme_gerror.ras_gerr_mask.gb_crc_err = 0x1;
    fme_gerror.ras_gerr_mask.temp_trash_ap6 = 0x1;
    fme_gerror.ras_gerr_mask.power_trash_ap1 = 0x1;
@@ -421,7 +421,7 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    fme_gerror.ras_gerr.prochot_error = 0x1;
    fme_gerror.ras_gerr.afu_access_mismatch = 0x1;
    fme_gerror.ras_gerr.injected_warn_error = 0x1;
-   fme_gerror.ras_gerr.pcie_posion_error = 0x1;
+   fme_gerror.ras_gerr.pcie_poison_error = 0x1;
    fme_gerror.ras_gerr.gb_crc_err = 0x1;
    fme_gerror.ras_gerr.temp_trash_ap6 = 0x1;
    fme_gerror.ras_gerr.power_trash_ap1 = 0x1;
@@ -632,7 +632,6 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    port_err.ccip_port_error_mask.tx_ch1_datapayload_overrun =0x0;
    port_err.ccip_port_error_mask.tx_ch1_incorr_addr =0x0;
    port_err.ccip_port_error_mask.tx_ch1_sop_detcted =0x0;
-   port_err.ccip_port_error_mask.tx_ch1_atomic_req =0x0;
    port_err.ccip_port_error_mask.rsvd1 =0x0;
 
    port_err.ccip_port_error_mask.mmioread_timeout =0x0;
@@ -661,8 +660,7 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    port_err.ccip_port_error.tx_ch1_datapayload_overrun =0x1;
    port_err.ccip_port_error.tx_ch1_incorr_addr =0x1;
    port_err.ccip_port_error.tx_ch1_sop_detcted =0x1;
-   port_err.ccip_port_error.tx_ch1_atomic_req =0x1;
-
+   
 
    port_err.ccip_port_error.mmioread_timeout =0x1;
    port_err.ccip_port_error.tx_ch2_fifo_overflow =0x1;
@@ -703,8 +701,6 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    port_err.ccip_port_first_error.tx_ch1_datapayload_overrun =0x1;
    port_err.ccip_port_first_error.tx_ch1_incorr_addr =0x1;
    port_err.ccip_port_first_error.tx_ch1_sop_detcted =0x1;
-   port_err.ccip_port_first_error.tx_ch1_atomic_req =0x1;
-
 
    port_err.ccip_port_first_error.mmioread_timeout =0x1;
    port_err.ccip_port_first_error.tx_ch2_fifo_overflow =0x1;
@@ -762,7 +758,7 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
 
    // USMG Mode
    offset = offset + OFFSET;
-   port_umsg.ccip_umsg_mode.umsg_hit =0x00001001;
+   port_umsg.ccip_umsg_mode.umsg_hit =0x1;
    write_ccip_csr64(ptr,offset,port_umsg.ccip_umsg_mode.csr);
 
    // PR CSR Header
@@ -824,8 +820,8 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
 
    // SiganlTap CSR
    offset = offset + OFFSET;
-   port_stap.ccip_port_stap.rsvd =0;
-   write_ccip_csr64(ptr,offset,port_stap.ccip_port_stap.csr);
+   port_stap.stap_error.csr =0;
+   write_ccip_csr64(ptr,offset,port_stap.stap_error.csr);
 
    // First AFU offset is the next free location (ptr + OFFSET) - the base address of Port HDR afuptr
    offset = (ptr + OFFSET) - afuptr;
@@ -1097,7 +1093,7 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "Green BS Error mask  proc hot error  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.prochot_error);
       PDEBUG( "Green BS Error mask  afu access mode  error  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.afu_access_mismatch);
       PDEBUG( "Green BS Error mask  Injected warning  errorr  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.injected_warn_error);
-      PDEBUG( "Green BS Error mask  PCIe poison port  error  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.pcie_posion_error);
+      PDEBUG( "Green BS Error mask  PCIe poison port  error  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.pcie_poison_error);
       PDEBUG( "Green BS Error mask  gb_crc_err  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.gb_crc_err);
       PDEBUG( "Green BS Error mask  thremal threshold AP  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.temp_trash_ap6);
       PDEBUG( "Green BS Error mask  Power threshold AP1  = %x \n",pfme_dev->m_pGerror->ras_gerr_mask.power_trash_ap1);
@@ -1112,7 +1108,7 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "Green BS Error mask  proc hot error  = %x \n",pfme_dev->m_pGerror->ras_gerr.prochot_error);
       PDEBUG( "Green BS Error mask  afu access mode  error  = %x \n",pfme_dev->m_pGerror->ras_gerr.afu_access_mismatch);
       PDEBUG( "Green BS Error mask  Injected warning  errorr  = %x \n",pfme_dev->m_pGerror->ras_gerr.injected_warn_error);
-      PDEBUG( "Green BS Error mask  PCIe poison port  error  = %x \n",pfme_dev->m_pGerror->ras_gerr.pcie_posion_error);
+      PDEBUG( "Green BS Error mask  PCIe poison port  error  = %x \n",pfme_dev->m_pGerror->ras_gerr.pcie_poison_error);
       PDEBUG( "Green BS Error mask  gb_crc_err  = %x \n",pfme_dev->m_pGerror->ras_gerr.gb_crc_err);
       PDEBUG( "Green BS Error mask  thremal threshold AP  = %x \n",pfme_dev->m_pGerror->ras_gerr.temp_trash_ap6);
       PDEBUG( "Green BS Error mask  Power threshold AP1  = %x \n",pfme_dev->m_pGerror->ras_gerr.power_trash_ap1);
@@ -1272,7 +1268,6 @@ int print_sim_port_device(struct port_device *pport_dev)
       PDEBUG( "Port Error tx_ch1_datapayload_overrun = %x \n",pport_dev->m_pport_err->ccip_port_error.tx_ch1_datapayload_overrun);
       PDEBUG( "Port Error tx_ch1_incorr_addr = %x \n",pport_dev->m_pport_err->ccip_port_error.tx_ch1_incorr_addr);
       PDEBUG( "Port Error tx_ch1_sop_detcted = %x \n",pport_dev->m_pport_err->ccip_port_error.tx_ch1_sop_detcted);
-      PDEBUG( "Port Error tx_ch1_atomic_req = %x \n",pport_dev->m_pport_err->ccip_port_error.tx_ch1_atomic_req);
       PDEBUG( "Port Error mmioread_timeout = %x \n",pport_dev->m_pport_err->ccip_port_error.mmioread_timeout);
       PDEBUG( "Port Error tx_ch2_fifo_overflow = %x \n",pport_dev->m_pport_err->ccip_port_error.tx_ch2_fifo_overflow);
       PDEBUG( "Port Error num_pending_req_overflow = %x \n",pport_dev->m_pport_err->ccip_port_error.num_pending_req_overflow);
@@ -1309,7 +1304,6 @@ int print_sim_port_device(struct port_device *pport_dev)
       PDEBUG( "Port First Error tx_ch1_datapayload_overrun = %x \n",pport_dev->m_pport_err->ccip_port_first_error.tx_ch1_datapayload_overrun);
       PDEBUG( "Port First Error tx_ch1_incorr_addr = %x \n",pport_dev->m_pport_err->ccip_port_first_error.tx_ch1_incorr_addr);
       PDEBUG( "Port First Error tx_ch1_sop_detcted = %x \n",pport_dev->m_pport_err->ccip_port_first_error.tx_ch1_sop_detcted);
-      PDEBUG( "Port First Error tx_ch1_atomic_req = %x \n",pport_dev->m_pport_err->ccip_port_first_error.tx_ch1_atomic_req);
       PDEBUG( "Port First Error mmioread_timeout = %x \n",pport_dev->m_pport_err->ccip_port_first_error.mmioread_timeout);
       PDEBUG( "Port First Error tx_ch2_fifo_overflow = %x \n",pport_dev->m_pport_err->ccip_port_first_error.tx_ch2_fifo_overflow);
       PDEBUG( "Port First Error num_pending_req_overflow = %x \n",pport_dev->m_pport_err->ccip_port_first_error.num_pending_req_overflow);
@@ -1384,7 +1378,7 @@ int print_sim_port_device(struct port_device *pport_dev)
       PDEBUG( "next_DFH_offset = %x \n",pport_dev->m_pport_stap->ccip_port_stap_dflhdr.next_DFH_offset);
       PDEBUG( "End of List = %x \n",pport_dev->m_pport_stap->ccip_port_stap_dflhdr.eol);
 
-      PDEBUG( "Signal tap rsvd = %x \n",(  unsigned int)pport_dev->m_pport_stap->ccip_port_stap.rsvd);
+      PDEBUG( "Signal tap debug = %x \n",(  unsigned int)pport_dev->m_pport_stap->stap_error.csr);
 
       PDEBUG( "PORT SIGNAL tap  END \n \n");
 
