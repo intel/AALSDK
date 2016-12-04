@@ -100,6 +100,7 @@ void service_manager::define_services(const string &configFile)
 
             if (service_info.get("include_aia", false).asBool() && env_ == hwenv_t::hw)
             {
+                configRecord.Add(keyRegAFU_ID, afuid.c_str());
                 configRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
             }
             else
