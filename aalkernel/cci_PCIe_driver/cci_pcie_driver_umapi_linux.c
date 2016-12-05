@@ -318,6 +318,12 @@ int ccidrv_ioctl(struct inode *inode,
    // Total user buffer size is the size of the header structure ccipui_ioctlreq + payload size
    FullRequestSize = (sizeof(struct ccipui_ioctlreq)) + aalui_ioctlPayloadSize(&req);
 
+   ASSERT(FullRequestSize <= KMALLOC_MAX_SIZE);
+   if ( FullRequestSize > KMALLOC_MAX_SIZE ) {
+      PERR("Request size too large: %" PRIu64 "\n", FullRequestSize);
+      return -EINVAL;
+   }
+
    // If there is a payload then allocate a bige enough buffer and copy it in.
    if ( FullRequestSize > sizeof(struct ccipui_ioctlreq) ) {
 
