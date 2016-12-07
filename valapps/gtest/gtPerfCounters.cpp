@@ -73,10 +73,10 @@ class perf_counters_f : public test_context, public ::testing::TestWithParam<int
             NamedValueSet nvs1, nvs2, opt_args;
             
             auto success = perf_if->performanceCountersGet(&nvs1);
-            ASSERT_TRUE(success) << "Could not get performace counters" << endl;
+            ASSERT_TRUE(success) << "Could not get performance counters" << endl;
 
             success = perf_if->performanceCountersGet(&nvs2, opt_args);
-            ASSERT_TRUE(success) << "Could not get performace counters" << endl;
+            ASSERT_TRUE(success) << "Could not get performance counters" << endl;
 
             auto are_equal = validate(nvs1, nvs2);
             ASSERT_TRUE(are_equal) << "Counters don't match" << endl;
@@ -109,18 +109,69 @@ class perf_counters_f : public test_context, public ::testing::TestWithParam<int
 
 TEST_F(perf_counters_f, sw_perfc_01)
 {
+    ///
+    /// @test         Null test:  Get performance counters.  Do nothing.
+    ///               Get them again.  They should not change.
+    ///
+    /// @brief        Sanity check of Performance Counter acquisition
+    ///               when idle.
+    ///
+    /// @details      Allocate the FME Service.  Retrieve the IALIPerf
+    ///               interface from the FME Service.  Call
+    ///               IALIPerf::performanceCountersGet() to retrieve the
+    ///               perf counters into a NamedValueSet, NVS1.  Compare
+    ///               NVS1 to NVS2.  They should be equal.  Verify that
+    ///               NVS1 contains values for VERSION, READ_HIT,
+    ///               WRITE_HIT, READ_MISS, WRITE_MISS, EVICTIONS,
+    ///               PCIE0_READ, PCIE0_WRITE, PCIE1_READ, PCIE1_WRITE,
+    ///               UPI_READ, UPI_WRITE.
+    ///
     SCOPED_TRACE("sw_perfc_01");
     perfc01();
 }
 
 TEST_F(perf_counters_f, sw_perfc_02)
 {
+    ///
+    /// @test         Active test:  Get performance counters.  Run any
+    ///               NLB test.  Get the performance counters again.  If
+    ///               they changed, then the SW is accessing the HW.
+    ///               Test Passes.
+    ///
+    /// @brief        Sanity check of Performance Counter acquisition
+    ///               when busy.
+    ///
+    /// @details      Allocate the FME Service.  Allocate the NLB Lpbk1
+    ///               Service.  Retrieve the IALIPerf interface from the
+    ///               FME Service.  Call
+    ///               IALIPerf::performanceCountersGet() to retrieve the
+    ///               perf counters into a NamedValueSet, NVS1.  Use the
+    ///               NLB Lpbk1 Service to perform a 2MB data copy,
+    ///               verifying that source was copied to dest.  Call
+    ///               IALIPerf::performanceCountersGet() to retrieve the
+    ///               perf counters into a NamedValueSet, NVS2.  Compare
+    ///               NVS1 to NVS2.  They should differ, due to the NLB
+    ///               data copy.  Verify that NVS1 isn't set to all 1's
+    ///               for keys READ_HIT, WRITE_HIT, READ_MISS,
+    ///               WRITE_MISS, EVICTIONS, PCIE0_READ, PCIE0_WRITE,
+    ///               PCIE1_READ, PCIE1_WRITE, UPI_READ, UPI_WRITE.
+    ///
     SCOPED_TRACE("sw_perfc_02");
     perfc02();
 }
 
 TEST_P(perf_counters_f, sw_perfc_03)
 {
+    ///
+    /// @test         Randomly select between test 22 and test 23.
+    ///               Repeat this sequence of random executions 1,000
+    ///               times.  What key/values does pOPtArgs receive?
+    ///
+    /// @brief        Stress test.  Randomly execute SW-PERFC-01 or
+    ///               SW-PERFC-02 for 1000 iterations.
+    ///               
+    /// @details      See SW-PERFC-01 and SW-PERFC-02.
+    /// 
     SCOPED_TRACE("sw_perfc_03");
     // randomly select and call test 01/02 N (default to 1000) times
     auto iterations = GetParam();
