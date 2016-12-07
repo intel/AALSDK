@@ -797,11 +797,6 @@ int aalrm_server_ioctl(struct inode *inode,
       return -EFAULT;
    }
 
-   if ( ( req.size + REGISTRAR_REQ_HDRSZ ) > KMALLOC_MAX_SIZE ) {
-      PERR("Request size too large: %" PRIu64 "\n", req.size + REGISTRAR_REQ_HDRSZ);
-      return -EINVAL;
-   }
-
    //------------------
    // Process the IOCTL
    //------------------

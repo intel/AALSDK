@@ -225,6 +225,12 @@ btInt AFU_Reset::run(const arguments& args)
         m_pALIMMIOService->mmioWrite32(CSR_SCRATCHPAD, (btUnsigned32bitInt)x);
         SleepMicro(1000);
 
+        // Assert AFU reset
+        m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
+
+        //De-Assert AFU reset
+        m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
+
         // Read value in x
         m_pALIMMIOService->mmioRead32(CSR_SCRATCHPAD, &x);
         printf("Read x = 0x%08x\n", x);
@@ -245,6 +251,9 @@ btInt AFU_Reset::run(const arguments& args)
         }
         m_Result = x;
         MSG("Done Running Test");
+
+        // Stop the device
+        m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 
     }
 

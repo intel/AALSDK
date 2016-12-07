@@ -94,7 +94,7 @@ USING_NAMESPACE(AAL)
 #ifdef INFO
 # undef INFO
 #endif // INFO
-#if 1
+#ifdef VALAPPS_DEBUG
 # define INFO(x) AAL_INFO(LM_Any, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
 #else
 # define INFO(x)
