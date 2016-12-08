@@ -359,6 +359,8 @@ btInt PwrMgrClient::CoreIdler(btInt &FPIWatts, btInt &socket)
    int pid                     = 0;
    int i                       = 0;
 
+   long lres                   = 0;
+
    long double TotalWatts      = 0;
    long double AvailableWatts  = 0;
    long double FpgaWatts       = 0;
@@ -525,7 +527,7 @@ btInt PwrMgrClient::CoreIdler(btInt &FPIWatts, btInt &socket)
           }
       }
 
-      max_pid_index = strtol(&data1[0], &endptr, 10);
+      lres = strtol(&data1[0], &endptr, 10);
       ret_val = fclose(fp);
    } else {
 
@@ -534,6 +536,15 @@ btInt PwrMgrClient::CoreIdler(btInt &FPIWatts, btInt &socket)
       return(ali_errnumSystem);
 
    }
+
+   if ( ( ERANGE == errno ) && ( ( LONG_MIN == lres ) || ( LONG_MAX == lres ) ) ) {
+      printf("pid_max is out of bounds\n");
+      ERR("pid_max is out of bounds ");
+      return(ali_errnumSystem);
+   }
+
+   max_pid_index = (int)lres;
+
    //--//
    //--//  Set affinity for all possible pids to mask in cpuset.
    //--//
