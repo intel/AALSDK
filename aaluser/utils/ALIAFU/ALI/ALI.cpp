@@ -165,35 +165,40 @@ btBool ALI::init(IBase               *pclientBase,
 //
 btBool ALI::Release(TransactionID const &TranID, btTime timeout)
 {
-   bt32bitInt targetType;
-   // Wrap original transaction id and timeout
-   ReleaseContext *prc = new ReleaseContext(TranID, timeout);
-   btApplicationContext appContext = reinterpret_cast<btApplicationContext>(prc);
+   bt32bitInt           targetType;
+   ReleaseContext      *prc        = NULL;
+   btApplicationContext appContext = NULL;
 
-   if( OptArgs().Has(ALIAFU_NVS_KEY_TARGET) ){
+   if ( OptArgs().Has(ALIAFU_NVS_KEY_TARGET) ) {
+
       OptArgs().Get(ALIAFU_NVS_KEY_TARGET, &targetType);
 
-      if(targetType == ali_afu_ase) {
+      if ( targetType == ali_afu_ase ) {
          (static_cast<CASEALIAFU *>(m_pALIBase))->ASERelease();
 
-         if(m_pALIBase) {
-            delete m_pALIBase ;
-            m_pALIBase =NULL;
+         if ( m_pALIBase ) {
+            delete m_pALIBase;
+            m_pALIBase = NULL;
          }
-         return ServiceBase::Release(m_tidSaved,timeout);
+
+         return ServiceBase::Release(m_tidSaved, timeout);
       }
    }
 
-   if(m_pALIBase) {
-      delete m_pALIBase ;
-      m_pALIBase =NULL;
+   if ( m_pALIBase ) {
+      delete m_pALIBase;
+      m_pALIBase = NULL;
    }
 
    // Release ALI / AFUProxy
    ASSERT(m_pAALService != NULL);
-   if (NULL == m_pAALService){
+   if ( NULL == m_pAALService ) {
       return false;
    }
+
+   // Wrap original transaction id and timeout
+   prc = new ReleaseContext(TranID, timeout);
+   appContext = reinterpret_cast<btApplicationContext>(prc);
 
    return m_pAALService->Release(TransactionID(appContext), timeout);
 }
