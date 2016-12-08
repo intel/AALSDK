@@ -157,7 +157,7 @@ module ccip_sniffer
       // Indicate logfile created
       if (init_sniffer) begin
 		logfile_created <= 0;
-		decode_error_code(1, SNIFF_NO_ERROR);
+		error_code_q[SNIFF_NO_ERROR]=1'b0;
      end
 	 else
 		decode_error_code(0, SNIFF_NO_ERROR);	
@@ -263,7 +263,6 @@ module ccip_sniffer
       end
    end
 
-//
    /*
     * Helper functions
     */
@@ -578,19 +577,19 @@ module ccip_sniffer
 		decode_error_code(0, SNIFF_C0TX_RESET_IGNORED_WARN);
       end
 	  else
-		decode_error_code(1, SNIFF_C0TX_RESET_IGNORED_WARN);
+		error_code_q[SNIFF_C0TX_RESET_IGNORED_WARN]=1'b0;
      
 	 if (SoftReset && ccip_tx.c1.valid) begin
 		decode_error_code(0, SNIFF_C1TX_RESET_IGNORED_WARN);
       end
 	  else
-		decode_error_code(1, SNIFF_C1TX_RESET_IGNORED_WARN);
+		error_code_q[SNIFF_C1TX_RESET_IGNORED_WARN]=1'b0;
      
 	 if (SoftReset && ccip_tx.c2.mmioRdValid) begin
 		decode_error_code(0, MMIO_RDRSP_RESET_IGNORED_WARN);
       end
 	  else
-		decode_error_code(1, MMIO_RDRSP_RESET_IGNORED_WARN);
+		error_code_q[MMIO_RDRSP_RESET_IGNORED_WARN]=1'b0;
    end
 
 
@@ -623,21 +622,21 @@ module ccip_sniffer
 	 decode_error_code(0, SNIFF_C0TX_XZ_FOUND_WARN);
       end
 	  else
-	   decode_error_code(1, SNIFF_C0TX_XZ_FOUND_WARN);
+	   error_code_q[SNIFF_C0TX_XZ_FOUND_WARN]=1'b0;
 
       // ------------------------------------------------- //
       if (ccip_tx.c1.valid && isEqualsXorZ(xz_tx1_flag) && isCCIPWriteRequest(ccip_tx.c1.hdr)) begin
 	 decode_error_code(0, SNIFF_C1TX_XZ_FOUND_WARN);
       end
 	  else
-	  decode_error_code(1, SNIFF_C1TX_XZ_FOUND_WARN);
+	  error_code_q[SNIFF_C1TX_XZ_FOUND_WARN]=1'b0;
 	  
       // ------------------------------------------------- //
       if (ccip_tx.c2.mmioRdValid && isEqualsXorZ(xz_tx2_flag)) begin
 	 decode_error_code(0, MMIO_RDRSP_XZ_FOUND_WARN);
       end
 	  else
-	  decode_error_code(1, MMIO_RDRSP_XZ_FOUND_WARN);
+	  error_code_q[ MMIO_RDRSP_XZ_FOUND_WARN]=1'b0;
       // ------------------------------------------------- //
    end
 
@@ -652,7 +651,7 @@ module ccip_sniffer
 	 decode_error_code(0, SNIFF_C0TX_OVERFLOW);
       end
 	  else
-	  decode_error_code(1, SNIFF_C0TX_OVERFLOW);
+	  error_code_q[ SNIFF_C0TX_OVERFLOW]=1'b0;
 	  
       // ------------------------------------------------- //
       // Channel 1 overflow check
@@ -660,7 +659,7 @@ module ccip_sniffer
 	 decode_error_code(0, SNIFF_C1TX_OVERFLOW);
       end
 	  else
-	   decode_error_code(1, SNIFF_C1TX_OVERFLOW);
+	   error_code_q[ SNIFF_C1TX_OVERFLOW]=1'b0;
       // ------------------------------------------------- //
    end
 
@@ -673,27 +672,27 @@ module ccip_sniffer
       // C0TxHdr reqtype
       if (ccip_tx.c0.valid) begin
 		if (ccip_tx.c0.hdr.req_type inside {eREQ_RDLINE_S, eREQ_RDLINE_I}) begin
-			decode_error_code(1, SNIFF_C0TX_INVALID_REQTYPE);
+			error_code_q[ SNIFF_C0TX_INVALID_REQTYPE]=1'b0;
 		end
 		else begin
 	    decode_error_code(0, SNIFF_C0TX_INVALID_REQTYPE);
 		end
       end
 	  else
-		decode_error_code(1, SNIFF_C0TX_INVALID_REQTYPE);
+		error_code_q[ SNIFF_C0TX_INVALID_REQTYPE]=1'b0;
      
 	 // ------------------------------------------------- //
       // C1TxHdr reqtype
       if (ccip_tx.c1.valid) begin
 		if (ccip_tx.c1.hdr.req_type inside {eREQ_WRLINE_M, eREQ_WRLINE_I, eREQ_WRFENCE, eREQ_WRPUSH_I}) begin
-			decode_error_code(1, SNIFF_C1TX_INVALID_REQTYPE);
+			error_code_q[SNIFF_C1TX_INVALID_REQTYPE]=1'b0;
 		end
 		else begin
 			decode_error_code(0, SNIFF_C1TX_INVALID_REQTYPE);
 		end
      end
 	 else
-		decode_error_code(1, SNIFF_C1TX_INVALID_REQTYPE);
+		error_code_q[SNIFF_C1TX_INVALID_REQTYPE]=1'b0;
      
 	 // ------------------------------------------------- //
    end
@@ -712,25 +711,25 @@ module ccip_sniffer
 			decode_error_code(0, SNIFF_C0TX_3CL_REQUEST);
 		end
 		else
-			decode_error_code(1, SNIFF_C0TX_3CL_REQUEST);
+			error_code_q[ SNIFF_C0TX_3CL_REQUEST]=1'b0;
 	 
 	 // -------------------------------------------------------- //
 	 // Address alignment checks
 	 if ((ccip_tx.c0.hdr.cl_len == 2'b01) && (ccip_tx.c0.hdr.address[0] != 1'b0)) begin
 	    decode_error_code(0, SNIFF_C0TX_ADDRALIGN_2_ERROR);
 		decode_error_code(0, SNIFF_C0TX_UNEXP_ADDR);
-		decode_error_code(1, SNIFF_C0TX_ADDRALIGN_4_ERROR);
+		error_code_q[SNIFF_C0TX_ADDRALIGN_4_ERROR]=1'b0;
 	 end
 	 else if ((ccip_tx.c0.hdr.cl_len == 2'b11) && (ccip_tx.c0.hdr.address[1:0] != 2'b00)) begin
 	    decode_error_code(0, SNIFF_C0TX_ADDRALIGN_4_ERROR);
-		decode_error_code(1, SNIFF_C0TX_ADDRALIGN_2_ERROR);
+		error_code_q[SNIFF_C0TX_ADDRALIGN_2_ERROR]=1'b0;
 		decode_error_code(0, SNIFF_C0TX_UNEXP_ADDR);
 	 end
 	 else
 	 begin
-	      decode_error_code(1, SNIFF_C0TX_UNEXP_ADDR);
-	      decode_error_code(1, SNIFF_C0TX_ADDRALIGN_2_ERROR);
-		  decode_error_code(1, SNIFF_C0TX_ADDRALIGN_4_ERROR);
+	      error_code_q[SNIFF_C0TX_UNEXP_ADDR]=1'b0;
+	      error_code_q[SNIFF_C0TX_ADDRALIGN_2_ERROR]=1'b0;
+		  error_code_q[SNIFF_C0TX_ADDRALIGN_4_ERROR]=1'b0;
 	 end
 	 
 	 // -------------------------------------------------------- //
@@ -739,15 +738,15 @@ module ccip_sniffer
 			decode_error_code(0, SNIFF_C0TX_ADDR_ZERO_WARN);
 		end
 		else
-			decode_error_code(1, SNIFF_C0TX_ADDR_ZERO_WARN);
+			error_code_q[SNIFF_C0TX_ADDR_ZERO_WARN]=1'b0;
 		end
 	  else
 	  begin
-		  decode_error_code(1, SNIFF_C0TX_UNEXP_ADDR);
-		  decode_error_code(1, SNIFF_C0TX_ADDRALIGN_2_ERROR);
-		  decode_error_code(1, SNIFF_C0TX_ADDRALIGN_4_ERROR);
-		  decode_error_code(1, SNIFF_C0TX_ADDR_ZERO_WARN);
-		  decode_error_code(1, SNIFF_C0TX_3CL_REQUEST);
+		  error_code_q[SNIFF_C0TX_UNEXP_ADDR]=1'b0;
+		  error_code_q[SNIFF_C0TX_ADDRALIGN_2_ERROR]=1'b0;
+		  error_code_q[SNIFF_C0TX_ADDRALIGN_4_ERROR]=1'b0;
+		  error_code_q[SNIFF_C0TX_ADDR_ZERO_WARN]=1'b0;
+		  error_code_q[SNIFF_C0TX_3CL_REQUEST]=1'b0;
 	  end
    end
 
@@ -773,6 +772,7 @@ module ccip_sniffer
    logic            sop_mcl_flag;
    logic            wrfence_flag;
    logic            mcl_flag;
+   logic 			mcl_1to3_wrfence;
    
    // Base signal sampling
    always @(posedge clk) begin
@@ -785,7 +785,7 @@ module ccip_sniffer
 	end
 	else
 	begin
-      if (ccip_tx.c1.hdr.sop) begin
+      if (ccip_tx.c1.hdr.sop && ccip_tx.c1.valid ) begin
 	 base_c1addr_low2 <= ccip_tx.c1.hdr.address[1:0];
 	 base_c1vc        <= ccip_tx.c1.hdr.vc_sel;
 	 base_c1len       <= ccip_tx.c1.hdr.cl_len;
@@ -819,7 +819,7 @@ module ccip_sniffer
 			mcl_flag=0;
 			c1tx_1to3_flag = 0;
 			mcl_address=2'b00;
-		    decode_error_code(1, SNIFF_C1TX_UNEXP_ADDR);    
+		    error_code_q[SNIFF_C1TX_UNEXP_ADDR]=1'b0;   
 		
 		// ----------------------------------------- //   
 		// SOP check
@@ -833,24 +833,24 @@ module ccip_sniffer
 			if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b10) && ccip_tx.c1.hdr.sop) 
 				decode_error_code(0, SNIFF_C1TX_3CL_REQUEST);
 			else
-				decode_error_code(1, SNIFF_C1TX_3CL_REQUEST);
+				error_code_q[SNIFF_C1TX_3CL_REQUEST]=1'b0;
 		
 		// ----------------------------------------- //
 		// Address alignment checks
 			if (ccip_tx.c1.hdr.sop && ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b01) && (ccip_tx.c1.hdr.address[0] != 1'b0)) 
 			begin		  
 				decode_error_code(0, SNIFF_C1TX_ADDRALIGN_2_ERROR);
-				decode_error_code(1, SNIFF_C1TX_ADDRALIGN_4_ERROR);
+				error_code_q[SNIFF_C1TX_ADDRALIGN_4_ERROR]=1'b0;
 			end
 			else if (ccip_tx.c1.hdr.sop && ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b11) && (ccip_tx.c1.hdr.address[1:0] != 2'b00)) 
 			begin   
 				decode_error_code(0, SNIFF_C1TX_ADDRALIGN_4_ERROR);
-				decode_error_code(1, SNIFF_C1TX_ADDRALIGN_2_ERROR);
+				error_code_q[SNIFF_C1TX_ADDRALIGN_2_ERROR]=1'b0;
 			end
 			else
 			begin
-				decode_error_code(1, SNIFF_C1TX_ADDRALIGN_2_ERROR);
-				decode_error_code(1, SNIFF_C1TX_ADDRALIGN_4_ERROR);
+				error_code_q[SNIFF_C1TX_ADDRALIGN_2_ERROR]=1'b0;
+				error_code_q[SNIFF_C1TX_ADDRALIGN_4_ERROR]=1'b0;
 			end 
 		
 		// -------------------------------------------------------- //
@@ -858,23 +858,28 @@ module ccip_sniffer
 			if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.address == t_ccip_clAddr'(0)) && isCCIPWriteRequest(ccip_tx.c1.hdr)) 
 				decode_error_code(0, SNIFF_C1TX_ADDR_ZERO_WARN);
 			else
-				decode_error_code(1, SNIFF_C1TX_ADDR_ZERO_WARN);
+				error_code_q[SNIFF_C1TX_ADDR_ZERO_WARN]=1'b0;
 		
 		// ----------------------------------------- //
 		// State Transition
 			if (ccip_tx.c1.valid && isWrFenceRequest(ccip_tx.c1.hdr)) begin
+				mcl_1to3_wrfence=0;
 				exp_c1state_q = Exp_1CL_WrFence;
 			end
 			else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (ccip_tx.c1.hdr.cl_len == 2'b00)) begin
+				mcl_1to3_wrfence=0;
 				exp_c1state_q = Exp_1CL_WrFence;			 
 			end
 			else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (ccip_tx.c1.hdr.cl_len == 2'b01)) begin
+				mcl_1to3_wrfence=1;
 				exp_c1state_q = Exp_2CL;
 			end
 			else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (ccip_tx.c1.hdr.cl_len == 2'b11)) begin
+				mcl_1to3_wrfence=1;
 				exp_c1state_q = Exp_2CL;
 			end
 			else begin
+				mcl_1to3_wrfence=0;
 				c1tx_1to3_flag = 0;
 				exp_c1state_q = Exp_1CL_WrFence;
 			end
@@ -886,22 +891,29 @@ module ccip_sniffer
 	   begin
 			sop_mcl_flag=0;
 			mcl_address=base_c1addr_low2 + 1;
-		    decode_error_code(1, SNIFF_C1TX_UNEXP_ADDR);
+			/*if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 1))) begin
+		   		decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);
+			end
+			else
+				error_code_q[SNIFF_C1TX_UNEXP_ADDR]=1'b0;*/
 			// ----------------------------------------- //
 			
 		// ----------------------------------------- //
 		// State transition
 			if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (base_c1len == 2'b11)) begin
 				mcl_flag=1;
+				mcl_1to3_wrfence=1;
 				exp_c1state_q = Exp_3CL;
 			end
 			else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (base_c1len == 2'b01)||(base_c1len == 2'b00)) begin
 				mcl_flag=1;
+				mcl_1to3_wrfence=0;
 				exp_c1state_q = Exp_1CL_WrFence;
 			end
 			else 
 			begin
-				mcl_flag=0;			
+				mcl_flag=0;	
+				mcl_1to3_wrfence=1;
 				exp_c1state_q = Exp_2CL;
 			end
 		   
@@ -917,18 +929,24 @@ module ccip_sniffer
 	   begin
 			sop_mcl_flag=0;
 			mcl_address=base_c1addr_low2 + 2;
-			decode_error_code(1, SNIFF_C1TX_UNEXP_ADDR);
+		/*	if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 2))) begin
+		   		decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);
+			end
+			else
+				error_code_q[SNIFF_C1TX_UNEXP_ADDR]=1'b0;*/
 		// ----------------------------------------- //
 				   
 		// ----------------------------------------- //
 		// State transition
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (base_c1len == 2'b11)) begin		
 			mcl_flag=1;
+			mcl_1to3_wrfence=1;
 			exp_c1state_q = Exp_4CL;
 		end
 		else 
 		begin
 			mcl_flag=0;
+			mcl_1to3_wrfence=1;
 			exp_c1state_q = Exp_3CL;
 		end
 		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (base_c1len == 2'b11))
@@ -943,17 +961,23 @@ module ccip_sniffer
 	   begin
 			sop_mcl_flag=0;
 			mcl_address=base_c1addr_low2 + 3;
-			decode_error_code(1, SNIFF_C1TX_UNEXP_ADDR);
+		/*	if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.address[1:0] != (base_c1addr_low2 + 3))) begin
+		   		decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);
+			end
+			else
+				error_code_q[SNIFF_C1TX_UNEXP_ADDR]=1'b0;*/
 		// ----------------------------------------- //
 		  
 		// ----------------------------------------- //
 		// State transition	
 		if (ccip_tx.c1.valid && isCCIPWrFenceRequest(ccip_tx.c1.hdr)) begin
 			exp_c1state_q =Exp_4CL;
+			mcl_1to3_wrfence=1;
 			mcl_flag =0;
 	   end
 	   else
 	   begin
+	       mcl_1to3_wrfence=0;
 		   exp_c1state_q =Exp_1CL_WrFence;
 		   mcl_flag=1;
 	   end
@@ -987,20 +1011,20 @@ module ccip_sniffer
 		    decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);
 			end
 	  else
-		    decode_error_code(1, SNIFF_C1TX_UNEXP_ADDR);
+		    error_code_q[SNIFF_C1TX_UNEXP_ADDR]=1'b0;  
 			
 	  //Check if SOP is set or not for the 1st MCL
 	  if(sop_mcl_flag)	     
 		   decode_error_code(0, SNIFF_C1TX_SOP_NOT_SET);
 	  else
-		   decode_error_code(1, SNIFF_C1TX_SOP_NOT_SET);
+		   error_code_q[SNIFF_C1TX_SOP_NOT_SET]=1'b0;
 		   
       // Write Fence must not be seen here
-      if (isCCIPWrFenceRequest(ccip_tx.c1.hdr)&&  ccip_tx.c1.valid && ((base_c1len == 2'b11)|| (base_c1len == 2'b01))) begin
+      if (isCCIPWrFenceRequest(ccip_tx.c1.hdr)&&  ccip_tx.c1.valid && mcl_1to3_wrfence) begin
 			decode_error_code(0, SNIFF_C1TX_WRFENCE_IN_MCL1TO3);
       end
 	  else
-			decode_error_code(1, SNIFF_C1TX_WRFENCE_IN_MCL1TO3);
+			error_code_q[SNIFF_C1TX_WRFENCE_IN_MCL1TO3]=1'b0;
 			
       // ----------------------------------------- //
       // C1TX 1to3 SOP check
@@ -1008,7 +1032,7 @@ module ccip_sniffer
 			decode_error_code(0, SNIFF_C1TX_SOP_SET_MCL1TO3);
       end
 	  else
-			decode_error_code(1, SNIFF_C1TX_SOP_SET_MCL1TO3);
+			error_code_q[SNIFF_C1TX_SOP_SET_MCL1TO3]=1'b0;
 			
       // ----------------------------------------- //
       // CL_LEN modification check [Warning only]
@@ -1016,7 +1040,7 @@ module ccip_sniffer
 			decode_error_code(0, SNIFF_C1TX_UNEXP_CLLEN);
       end
 	  else
-			decode_error_code(1, SNIFF_C1TX_UNEXP_CLLEN);
+			error_code_q[SNIFF_C1TX_UNEXP_CLLEN]=1'b0;
 			
       // ----------------------------------------- //
       // VC modification check
@@ -1024,7 +1048,7 @@ module ccip_sniffer
 			decode_error_code(0, SNIFF_C1TX_UNEXP_VCSEL);
       end
 	  else
-			decode_error_code(1, SNIFF_C1TX_UNEXP_VCSEL);
+			error_code_q[SNIFF_C1TX_UNEXP_VCSEL]=1'b0;
      
 	 // ----------------------------------------- //
       // MDATA modification check
@@ -1032,7 +1056,7 @@ module ccip_sniffer
 			decode_error_code(0, SNIFF_C1TX_UNEXP_MDATA);
       end
       else
-			decode_error_code(1, SNIFF_C1TX_UNEXP_MDATA);	
+			error_code_q[SNIFF_C1TX_UNEXP_MDATA]=1'b0;	
 
 		// ----------------------------------------- //
       // Write Fence and SOP bit set modification check
@@ -1040,7 +1064,7 @@ module ccip_sniffer
 			decode_error_code(0, SNIFF_C1TX_WRFENCE_SOP_SET);
       end
       else
-			decode_error_code(1, SNIFF_C1TX_WRFENCE_SOP_SET);			
+			error_code_q[SNIFF_C1TX_WRFENCE_SOP_SET]=1'b0;		
 			
       // ----------------------------------------- //
       // Request Type modification check
@@ -1048,7 +1072,7 @@ module ccip_sniffer
 			decode_error_code(0, SNIFF_C1TX_UNEXP_REQTYPE);
       end
 	  else
-			decode_error_code(1, SNIFF_C1TX_UNEXP_REQTYPE);
+			error_code_q[SNIFF_C1TX_UNEXP_REQTYPE]=1'b0;
  end
    
 
@@ -1174,7 +1198,7 @@ module ccip_sniffer
       begin
    	 if (clear) begin
    	    mmioread_tracker[tid].active = 0;
-		decode_error_code(1, MMIO_RDRSP_UNSOLICITED);
+		error_code_q[MMIO_RDRSP_UNSOLICITED]=1'b0; 
    	 end
    	 else begin
 	    // If pop occured when not active
@@ -1182,7 +1206,7 @@ module ccip_sniffer
 	       decode_error_code(0, MMIO_RDRSP_UNSOLICITED);
    	    end
 		else
-		    decode_error_code(1, MMIO_RDRSP_UNSOLICITED);
+		    error_code_q[MMIO_RDRSP_UNSOLICITED]=1'b0;
 	    // Active management
 	    if (mmio_request) begin
 	       mmioread_tracker[tid].active = 1;
@@ -1240,7 +1264,7 @@ module ccip_sniffer
    	 always @(posedge clk) begin
    	    if (ase_reset|~mmioread_tracker[ii].active) begin
    	       mmioread_tracker[ii].timeout <= 0;
-		   decode_error_code(1, MMIO_RDRSP_TIMEOUT);
+		   error_code_q[MMIO_RDRSP_TIMEOUT]=1'b0;
    	    end
    	    else if (mmioread_tracker[ii].timer_val >= (`MMIO_RESPONSE_TIMEOUT )) 
 		begin
@@ -1248,7 +1272,7 @@ module ccip_sniffer
 	       decode_error_code(0, MMIO_RDRSP_TIMEOUT);
    	    end
 		else
-		   decode_error_code(1, MMIO_RDRSP_TIMEOUT);
+		   error_code_q[MMIO_RDRSP_TIMEOUT]=1'b0;
 		end
     end
    endgenerate
