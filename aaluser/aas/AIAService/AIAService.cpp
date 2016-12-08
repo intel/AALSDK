@@ -593,7 +593,8 @@ void AIAService::ShutdownDisp::operator() ()
    ShutdownMDT * pShutdownTrans = new (std::nothrow) ShutdownMDT(m_tid,m_timeout);
    ASSERT(pShutdownTrans->IsOK());
 
-   if(!pShutdownTrans->IsOK()){
+   if ( !pShutdownTrans->IsOK() ) {
+      delete pShutdownTrans;
       delete this;
       return;
    }
