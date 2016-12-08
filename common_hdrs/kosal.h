@@ -1064,6 +1064,16 @@ void _kosal_free_user_buffer(__ASSERT_HERE_PROTO KOSAL_VIRT user_prt,  KOSAL_WSS
 #endif // kosal_get_user_buffer
 #define kosal_free_user_buffer(__user_prt, __size_in_bytes) _kosal_free_user_buffer(__ASSERT_HERE_ARGS __user_prt, __size_in_bytes)
 
+//
+// Timers
+//
+#if   defined( __AAL_LINUX__ )
+// ktime_get(), ktime_compare() and related.
+# include <linux/hrtimer.h>
+# include <linux/ktime.h>
+
+#endif // __AAL_LINUX__
+
 #endif // __AALSDK_KERNEL_KOSAL_H__
 #endif // __AAL_KERNEL__
 
