@@ -611,6 +611,7 @@ void ServiceBroker::ShutdownHandlerThread(OSLThread *pThread,
    This->ShutdownHandler(pparms->m_itr, *pparms->m_srvcCount);
 
    // Destroy the thread and parms
+   delete pThread;
    delete pparms;
 }
 
