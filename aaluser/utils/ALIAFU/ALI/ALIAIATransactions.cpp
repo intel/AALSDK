@@ -706,54 +706,50 @@ AFUDeactivateTransaction::AFUDeactivateTransaction(AAL::TransactionID const &rTr
    m_bufLength(0),
    m_errno(uid_errnumOK)
 {
-
-   // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
-   // BufferFree-AIATransaction.
-   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req );
-
-   // Allocate structs
-   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
-
-   //check afumsg is non-NULL before using it
-   ASSERT(NULL != afumsg);
-   if (afumsg == NULL){
-     setErrno(uid_errnumNoMem);
-     return;
-   }
-
-   // Point at payload
-    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
-
-   btTime reconfTimeout            = 0;
-   btUnsigned64bitInt reconfAction = 0;
+   btTime             reconfTimeout = 0;
+   btUnsigned64bitInt reconfAction  = 0;
 
    // DeActive Timeout
-   if(rInputArgs.Has(AALCONF_MILLI_TIMEOUT)){
-
+   if ( rInputArgs.Has(AALCONF_MILLI_TIMEOUT) ) {
       rInputArgs.Get(AALCONF_MILLI_TIMEOUT, &reconfTimeout);
    }
 
    // ReConfiguration Action Flags
-   if(rInputArgs.Has(AALCONF_RECONF_ACTION)){
+   if( rInputArgs.Has(AALCONF_RECONF_ACTION) ) {
 
       rInputArgs.Get(AALCONF_RECONF_ACTION, &reconfAction);
 
-      if((AALCONF_RECONF_ACTION_HONOR_REQUEST_ID != reconfAction ) &&
-        (AALCONF_RECONF_ACTION_HONOR_OWNER_ID != reconfAction ))    {
-
-           m_bIsOK = false;
-           return ;
-         }
+      if( ( AALCONF_RECONF_ACTION_HONOR_REQUEST_ID != reconfAction ) &&
+          ( AALCONF_RECONF_ACTION_HONOR_OWNER_ID   != reconfAction ) ) {
+         m_bIsOK = false;
+         return;
+      }
 
    }
 
-   req->u.pr_config.reconfTimeout  = reconfTimeout;
-   req->u.pr_config.reconfAction   = reconfAction;
+   // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
+   // AFUDeactivate-AIATransaction.
+   m_size = sizeof(struct aalui_CCIdrvMessage) + sizeof(struct ahm_req);
+
+   // Allocate structs
+   struct aalui_CCIdrvMessage *afumsg = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   //check afumsg is non-NULL before using it
+   ASSERT(NULL != afumsg);
+   if ( afumsg == NULL ) {
+      setErrno(uid_errnumNoMem);
+      return;
+   }
+
+   // Point at payload
+   struct ahm_req *req = reinterpret_cast<struct ahm_req *>(afumsg->payload);
+
+   req->u.pr_config.reconfTimeout = reconfTimeout;
+   req->u.pr_config.reconfAction  = reconfAction;
 
    // fill out aalui_CCIdrvMessage
-   afumsg->cmd     = ccipdrv_deactivateAFU;
-   afumsg->size    = sizeof(struct ahm_req) ;
-
+   afumsg->cmd  = ccipdrv_deactivateAFU;
+   afumsg->size = sizeof(struct ahm_req);
 
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
