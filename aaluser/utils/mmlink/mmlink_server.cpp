@@ -92,6 +92,8 @@ mmlink_server::mmlink_server(struct sockaddr_in *sock, mm_debug_link_interface *
   m_driver = driver;
   m_server_id = 0;
 
+  m_listen = -1;
+
 #ifdef ENABLE_MMLINK_STATS
   m_h2t_stats = new mmlink_stats("h2t");
   m_t2h_stats = new mmlink_stats("t2h");
@@ -108,6 +110,10 @@ mmlink_server::~mmlink_server()
     }
   delete[] m_conn; m_conn = NULL;
   m_driver->close();
+
+  if ( -1 != m_listen ) {
+    close(m_listen);
+  }
 
 #ifdef ENABLE_MMLINK_STATS
   delete m_h2t_stats; m_h2t_stats = NULL;
