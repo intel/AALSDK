@@ -245,8 +245,7 @@ int mmlink_connection::handle_bound_command(char *cmd)
       driver()->write_ident(arg1);
       driver()->ident(ident);
       snprintf(msg, msg_len, "%08X%08X%08X%08X\n",
-        ident[3], ident[2], ident[1], ident[0],
-        get_server_id());
+        ident[3], ident[2], ident[1], ident[0]);
 
       send(msg, strlen(msg));
       unknown = false;
