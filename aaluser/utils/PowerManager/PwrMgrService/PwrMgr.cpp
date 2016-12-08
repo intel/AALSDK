@@ -117,13 +117,14 @@ btBool CPwrMgr::init(IBase               *pclientBase,
 //
 btBool CPwrMgr::Release(TransactionID const &TranID, btTime timeout)
 {
-   // Wrap original transaction id and timeout
-   ReleaseContext *prc = new ReleaseContext(TranID, timeout);
-   btApplicationContext appContext = reinterpret_cast<btApplicationContext>(prc);
    // Release ALI / AFUProxy
    ASSERT(m_pAALService != NULL);
-   if (m_pAALService != NULL) {
-       return m_pAALService->Release(TransactionID(appContext), timeout);
+   if ( m_pAALService != NULL ) {
+      // Wrap original transaction id and timeout
+      ReleaseContext      *prc        = new ReleaseContext(TranID, timeout);
+      btApplicationContext appContext = reinterpret_cast<btApplicationContext>(prc);
+
+      return m_pAALService->Release(TransactionID(appContext), timeout);
    } else {
        return false;
    }
