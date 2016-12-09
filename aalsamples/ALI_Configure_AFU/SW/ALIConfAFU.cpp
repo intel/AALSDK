@@ -170,7 +170,8 @@ int ParseCmds(struct ALIConfigCommandLine *pconfigcmd, int argc, char *argv[])
          case 'b':    /* bitstream option */
             ASSERT(NULL != tmp_optarg);
             if (NULL == tmp_optarg) break;
-            strncpy(pconfigcmd->bitstream_file, tmp_optarg, sizeof(pconfigcmd->bitstream_file));
+            strncpy(pconfigcmd->bitstream_file, tmp_optarg, sizeof(pconfigcmd->bitstream_file)-1);
+            pconfigcmd->bitstream_file[sizeof(pconfigcmd->bitstream_file)-1] = 0;
             break;
 
          case 't':    /* reconftimeout option */
