@@ -83,7 +83,7 @@ module ccip_checker
     input 				  t_if_ccip_Tx ccip_tx
     );
  logic [SNIFF_VECTOR_WIDTH-1:0] error_code_q;
- 
+
    /*
     * Function Request type checker
     */
@@ -141,7 +141,7 @@ module ccip_checker
 
    /*
     * File descriptors, codes etc
-    */	
+    */
    int 					     fd_errlog;
    logic 				     logfile_created;
    logic 				     init_sniffer_q;
@@ -153,15 +153,15 @@ module ccip_checker
 
    // Initialize sniffer
    always @(posedge clk) begin
-   
+
       // Indicate logfile created
       if (init_sniffer) begin
 		logfile_created <= 0;
 		error_code_q[SNIFF_NO_ERROR]=1'b0;
      end
 	 else
-		decode_error_code(0, SNIFF_NO_ERROR);	
-	 
+		decode_error_code(0, SNIFF_NO_ERROR);
+
      // Print that checker is running
      if (~init_sniffer && init_sniffer_q) begin
 		$display ("SIM-SV: Protocol Checker initialized");
@@ -504,15 +504,15 @@ module ccip_checker
 		   $sformat(log_str, "[%s] C1TxHdr cannot issue a WriteFence in between a multi-line transaction !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
-		 
+
 		 // C1TX - Write Fence observed with SOP set.
-	       SNIFF_C1TX_WRFENCE_SOP_SET: 
+	       SNIFF_C1TX_WRFENCE_SOP_SET:
 		begin
 		   error_code_q[code] = 1'b1;
 		   $sformat(log_str, "[%s] C1TxHdr cannot issue a WriteFence with SOP bit Set High !\n", errcode_str);
 		   print_message_and_log(0, log_str);
 		end
-		
+
 	      // C1TX - Address found to be zero
 	      SNIFF_C1TX_ADDR_ZERO_WARN:
 		begin
@@ -552,7 +552,7 @@ module ccip_checker
 		   $sformat(log_str, "[%s] MMIO Response was issued when SoftReset signal was HIGH !\n", errcode_str);
 		   print_message_and_log(1, log_str);
 		end
-         
+
 		 SNIFF_NO_ERROR:
 		begin
 		   error_code_q[code] = 1'b0;
@@ -578,13 +578,13 @@ module ccip_checker
       end
 	  else
 		error_code_q[SNIFF_C0TX_RESET_IGNORED_WARN]=1'b0;
-     
+
 	 if (SoftReset && ccip_tx.c1.valid) begin
 		decode_error_code(0, SNIFF_C1TX_RESET_IGNORED_WARN);
       end
 	  else
 		error_code_q[SNIFF_C1TX_RESET_IGNORED_WARN]=1'b0;
-     
+
 	 if (SoftReset && ccip_tx.c2.mmioRdValid) begin
 		decode_error_code(0, MMIO_RDRSP_RESET_IGNORED_WARN);
       end
@@ -630,7 +630,7 @@ module ccip_checker
       end
 	  else
 	  error_code_q[SNIFF_C1TX_XZ_FOUND_WARN]=1'b0;
-	  
+
       // ------------------------------------------------- //
       if (ccip_tx.c2.mmioRdValid && isEqualsXorZ(xz_tx2_flag)) begin
 	 decode_error_code(0, MMIO_RDRSP_XZ_FOUND_WARN);
@@ -652,7 +652,7 @@ module ccip_checker
       end
 	  else
 	  error_code_q[ SNIFF_C0TX_OVERFLOW]=1'b0;
-	  
+
       // ------------------------------------------------- //
       // Channel 1 overflow check
       if (cf2as_ch1_realfull && ccip_tx.c1.valid) begin
@@ -680,7 +680,7 @@ module ccip_checker
       end
 	  else
 		error_code_q[ SNIFF_C0TX_INVALID_REQTYPE]=1'b0;
-     
+
 	 // ------------------------------------------------- //
       // C1TxHdr reqtype
       if (ccip_tx.c1.valid) begin
@@ -693,7 +693,7 @@ module ccip_checker
      end
 	 else
 		error_code_q[SNIFF_C1TX_INVALID_REQTYPE]=1'b0;
-     
+
 	 // ------------------------------------------------- //
    end
 
@@ -704,7 +704,7 @@ module ccip_checker
    // 3CL and Address alignment checker
    always @(posedge clk) begin : c0tx_mcl_checker
       if (ccip_tx.c0.valid && isCCIPReadRequest(ccip_tx.c0.hdr)) begin
-	 
+
 	  // -------------------------------------------------------- //
 	  // Invalid length - 3 CL checks
 		if (ccip_tx.c0.hdr.cl_len == 2'b10) begin
@@ -712,7 +712,7 @@ module ccip_checker
 		end
 		else
 			error_code_q[ SNIFF_C0TX_3CL_REQUEST]=1'b0;
-	 
+
 	 // -------------------------------------------------------- //
 	 // Address alignment checks
 	 if ((ccip_tx.c0.hdr.cl_len == 2'b01) && (ccip_tx.c0.hdr.address[0] != 1'b0)) begin
@@ -731,7 +731,7 @@ module ccip_checker
 	      error_code_q[SNIFF_C0TX_ADDRALIGN_2_ERROR]=1'b0;
 		  error_code_q[SNIFF_C0TX_ADDRALIGN_4_ERROR]=1'b0;
 	 end
-	 
+
 	 // -------------------------------------------------------- //
 	 // Address zero warning
 	 if (ccip_tx.c0.hdr.address == t_ccip_clAddr'(0)) begin
@@ -773,31 +773,31 @@ module ccip_checker
    logic            wrfence_flag;
    logic            mcl_flag;
    logic 			mcl_1to3_wrfence;
-   
+
    // Base signal sampling
    always @(posedge clk) begin
-    if (SoftReset) begin
-		base_c1addr_low2 <= 0;
-		base_c1vc        <= 0;
-		base_c1len       <= 0;
-		base_c1mdata     <= 0;
-		base_c1reqtype   <= 0;
-	end
-	else
-	begin
-      if (ccip_tx.c1.hdr.sop && ccip_tx.c1.valid ) begin
-	 base_c1addr_low2 <= ccip_tx.c1.hdr.address[1:0];
-	 base_c1vc        <= ccip_tx.c1.hdr.vc_sel;
-	 base_c1len       <= ccip_tx.c1.hdr.cl_len;
-	 base_c1mdata     <= ccip_tx.c1.hdr.mdata;
-	 base_c1reqtype   <= ccip_tx.c1.hdr.req_type;
+      if (SoftReset) begin
+	 base_c1addr_low2 <= 0;
+	 base_c1vc        <= t_ccip_vc'(0);
+	 base_c1len       <= 0;
+	 base_c1mdata     <= 0;
+	 base_c1reqtype   <= t_ccip_c1_req'(0);
       end
-	 end
+      else
+	begin
+	   if (ccip_tx.c1.hdr.sop && ccip_tx.c1.valid ) begin
+	      base_c1addr_low2 <= ccip_tx.c1.hdr.address[1:0];
+	      base_c1vc        <= ccip_tx.c1.hdr.vc_sel;
+	      base_c1len       <= ccip_tx.c1.hdr.cl_len;
+	      base_c1mdata     <= ccip_tx.c1.hdr.mdata;
+	      base_c1reqtype   <= ccip_tx.c1.hdr.req_type;
+	   end
+	end
    end
 
    // Transaction Checker FSM
    always @(posedge clk) begin
-      if (SoftReset) begin	
+      if (SoftReset) begin
 		exp_c1state = Exp_1CL_WrFence;
       end
       else
@@ -808,10 +808,10 @@ module ccip_checker
 		   end
 	  end
    end
-   
-   always@(* ) begin	
+
+   always@(* ) begin
 	case (exp_c1state)
-	
+
 	// ==================================================== //
 	// 1st line in MCL request OR Write Fence Request
 	Exp_1CL_WrFence:
@@ -819,31 +819,31 @@ module ccip_checker
 			mcl_flag=0;
 			c1tx_1to3_flag = 0;
 			mcl_address=2'b00;
-		    error_code_q[SNIFF_C1TX_UNEXP_ADDR]=1'b0;   
-		
-		// ----------------------------------------- //   
+		    error_code_q[SNIFF_C1TX_UNEXP_ADDR]=1'b0;
+
+		// ----------------------------------------- //
 		// SOP check
-	if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ~ccip_tx.c1.hdr.sop) 
+	if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ~ccip_tx.c1.hdr.sop)
 				sop_mcl_flag=1;
 			else
-				sop_mcl_flag=0;		  
-	    
+				sop_mcl_flag=0;
+
 		// ----------------------------------------- //
 		// 3CL transaction check
-			if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b10) && ccip_tx.c1.hdr.sop) 
+			if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b10) && ccip_tx.c1.hdr.sop)
 				decode_error_code(0, SNIFF_C1TX_3CL_REQUEST);
 			else
 				error_code_q[SNIFF_C1TX_3CL_REQUEST]=1'b0;
-		
+
 		// ----------------------------------------- //
 		// Address alignment checks
-			if (ccip_tx.c1.hdr.sop && ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b01) && (ccip_tx.c1.hdr.address[0] != 1'b0)) 
-			begin		  
+			if (ccip_tx.c1.hdr.sop && ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b01) && (ccip_tx.c1.hdr.address[0] != 1'b0))
+			begin
 				decode_error_code(0, SNIFF_C1TX_ADDRALIGN_2_ERROR);
 				error_code_q[SNIFF_C1TX_ADDRALIGN_4_ERROR]=1'b0;
 			end
-			else if (ccip_tx.c1.hdr.sop && ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b11) && (ccip_tx.c1.hdr.address[1:0] != 2'b00)) 
-			begin   
+			else if (ccip_tx.c1.hdr.sop && ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (ccip_tx.c1.hdr.cl_len == 2'b11) && (ccip_tx.c1.hdr.address[1:0] != 2'b00))
+			begin
 				decode_error_code(0, SNIFF_C1TX_ADDRALIGN_4_ERROR);
 				error_code_q[SNIFF_C1TX_ADDRALIGN_2_ERROR]=1'b0;
 			end
@@ -851,15 +851,15 @@ module ccip_checker
 			begin
 				error_code_q[SNIFF_C1TX_ADDRALIGN_2_ERROR]=1'b0;
 				error_code_q[SNIFF_C1TX_ADDRALIGN_4_ERROR]=1'b0;
-			end 
-		
+			end
+
 		// -------------------------------------------------------- //
 		// Address zero warning
-			if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.address == t_ccip_clAddr'(0)) && isCCIPWriteRequest(ccip_tx.c1.hdr)) 
+			if (ccip_tx.c1.valid && (ccip_tx.c1.hdr.address == t_ccip_clAddr'(0)) && isCCIPWriteRequest(ccip_tx.c1.hdr))
 				decode_error_code(0, SNIFF_C1TX_ADDR_ZERO_WARN);
 			else
 				error_code_q[SNIFF_C1TX_ADDR_ZERO_WARN]=1'b0;
-		
+
 		// ----------------------------------------- //
 		// State Transition
 			if (ccip_tx.c1.valid && isWrFenceRequest(ccip_tx.c1.hdr)) begin
@@ -868,7 +868,7 @@ module ccip_checker
 			end
 			else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (ccip_tx.c1.hdr.cl_len == 2'b00)) begin
 				mcl_1to3_wrfence=0;
-				exp_c1state_q = Exp_1CL_WrFence;			 
+				exp_c1state_q = Exp_1CL_WrFence;
 			end
 			else if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (ccip_tx.c1.hdr.cl_len == 2'b01)) begin
 				mcl_1to3_wrfence=1;
@@ -897,7 +897,7 @@ module ccip_checker
 			else
 				error_code_q[SNIFF_C1TX_UNEXP_ADDR]=1'b0;*/
 			// ----------------------------------------- //
-			
+
 		// ----------------------------------------- //
 		// State transition
 			if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (base_c1len == 2'b11)) begin
@@ -910,13 +910,13 @@ module ccip_checker
 				mcl_1to3_wrfence=0;
 				exp_c1state_q = Exp_1CL_WrFence;
 			end
-			else 
+			else
 			begin
-				mcl_flag=0;	
+				mcl_flag=0;
 				mcl_1to3_wrfence=1;
 				exp_c1state_q = Exp_2CL;
 			end
-		   
+
 			if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && ((base_c1len == 2'b11)||(base_c1len == 2'b01)))
 				c1tx_1to3_flag = 1;
 			else
@@ -935,15 +935,15 @@ module ccip_checker
 			else
 				error_code_q[SNIFF_C1TX_UNEXP_ADDR]=1'b0;*/
 		// ----------------------------------------- //
-				   
+
 		// ----------------------------------------- //
 		// State transition
-		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (base_c1len == 2'b11)) begin		
+		if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && (base_c1len == 2'b11)) begin
 			mcl_flag=1;
 			mcl_1to3_wrfence=1;
 			exp_c1state_q = Exp_4CL;
 		end
-		else 
+		else
 		begin
 			mcl_flag=0;
 			mcl_1to3_wrfence=1;
@@ -954,7 +954,7 @@ module ccip_checker
 		 else
 		    c1tx_1to3_flag = 0;
 	    end
-	  
+
 	  // ==================================================== //
 	   // 4th line in MCL request
 	   Exp_4CL:
@@ -967,9 +967,9 @@ module ccip_checker
 			else
 				error_code_q[SNIFF_C1TX_UNEXP_ADDR]=1'b0;*/
 		// ----------------------------------------- //
-		  
+
 		// ----------------------------------------- //
-		// State transition	
+		// State transition
 		if (ccip_tx.c1.valid && isCCIPWrFenceRequest(ccip_tx.c1.hdr)) begin
 			exp_c1state_q =Exp_4CL;
 			mcl_1to3_wrfence=1;
@@ -981,13 +981,13 @@ module ccip_checker
 		   exp_c1state_q =Exp_1CL_WrFence;
 		   mcl_flag=1;
 	   end
-	   
+
 	   if (ccip_tx.c1.valid && isCCIPWriteRequest(ccip_tx.c1.hdr) && ccip_tx.c1.hdr.sop && (base_c1len == 2'b11))
 		   c1tx_1to3_flag = 1;
 		 else
 		   c1tx_1to3_flag = 0;
-	    end		
-		
+	    end
+
 	   // ==================================================== //
 	   // Lala-land
 	   default:
@@ -999,11 +999,11 @@ module ccip_checker
 	   	   exp_c1state_q = Exp_1CL_WrFence;
 	   end
 	 endcase
-	 end  
+	 end
 
    /*
     * Subsequent line checks
-    */ 
+    */
    always @(posedge clk) begin
       // ----------------------------------------- //
 	  //Check for unexpected Errors in C1Tx
@@ -1011,21 +1011,21 @@ module ccip_checker
 		    decode_error_code(0, SNIFF_C1TX_UNEXP_ADDR);
 			end
 	  else
-		    error_code_q[SNIFF_C1TX_UNEXP_ADDR]=1'b0;  
-			
+		    error_code_q[SNIFF_C1TX_UNEXP_ADDR]=1'b0;
+
 	  //Check if SOP is set or not for the 1st MCL
-	  if(sop_mcl_flag)	     
+	  if(sop_mcl_flag)
 		   decode_error_code(0, SNIFF_C1TX_SOP_NOT_SET);
 	  else
 		   error_code_q[SNIFF_C1TX_SOP_NOT_SET]=1'b0;
-		   
+
       // Write Fence must not be seen here
       if (isCCIPWrFenceRequest(ccip_tx.c1.hdr)&&  ccip_tx.c1.valid && mcl_1to3_wrfence) begin
 			decode_error_code(0, SNIFF_C1TX_WRFENCE_IN_MCL1TO3);
       end
 	  else
 			error_code_q[SNIFF_C1TX_WRFENCE_IN_MCL1TO3]=1'b0;
-			
+
       // ----------------------------------------- //
       // C1TX 1to3 SOP check
       if (~(isCCIPWrFenceRequest(ccip_tx.c1.hdr)) && c1tx_1to3_flag && ccip_tx.c1.valid && ccip_tx.c1.hdr.sop) begin
@@ -1033,7 +1033,7 @@ module ccip_checker
       end
 	  else
 			error_code_q[SNIFF_C1TX_SOP_SET_MCL1TO3]=1'b0;
-			
+
       // ----------------------------------------- //
       // CL_LEN modification check [Warning only]
       if (mcl_flag &&~(isCCIPWrFenceRequest(ccip_tx.c1.hdr)) &&  ~ccip_tx.c1.hdr.sop && ccip_tx.c1.valid && (ccip_tx.c1.hdr.cl_len != base_c1len)) begin
@@ -1041,7 +1041,7 @@ module ccip_checker
       end
 	  else
 			error_code_q[SNIFF_C1TX_UNEXP_CLLEN]=1'b0;
-			
+
       // ----------------------------------------- //
       // VC modification check
       if (mcl_flag &&~(isCCIPWrFenceRequest(ccip_tx.c1.hdr))&& ~ccip_tx.c1.hdr.sop && ccip_tx.c1.valid && (ccip_tx.c1.hdr.vc_sel != base_c1vc)) begin
@@ -1049,14 +1049,14 @@ module ccip_checker
       end
 	  else
 			error_code_q[SNIFF_C1TX_UNEXP_VCSEL]=1'b0;
-     
+
 	 // ----------------------------------------- //
       // MDATA modification check
       if (mcl_flag &&~(isCCIPWrFenceRequest(ccip_tx.c1.hdr))&& ~ccip_tx.c1.hdr.sop && ccip_tx.c1.valid && (ccip_tx.c1.hdr.mdata != base_c1mdata)) begin
 			decode_error_code(0, SNIFF_C1TX_UNEXP_MDATA);
       end
       else
-			error_code_q[SNIFF_C1TX_UNEXP_MDATA]=1'b0;	
+			error_code_q[SNIFF_C1TX_UNEXP_MDATA]=1'b0;
 
 		// ----------------------------------------- //
       // Write Fence and SOP bit set modification check
@@ -1064,8 +1064,8 @@ module ccip_checker
 			decode_error_code(0, SNIFF_C1TX_WRFENCE_SOP_SET);
       end
       else
-			error_code_q[SNIFF_C1TX_WRFENCE_SOP_SET]=1'b0;		
-			
+			error_code_q[SNIFF_C1TX_WRFENCE_SOP_SET]=1'b0;
+
       // ----------------------------------------- //
       // Request Type modification check
       if (mcl_flag && ~ccip_tx.c1.hdr.sop && ccip_tx.c1.valid && (ccip_tx.c1.hdr.req_type != base_c1reqtype)) begin
@@ -1074,7 +1074,7 @@ module ccip_checker
 	  else
 			error_code_q[SNIFF_C1TX_UNEXP_REQTYPE]=1'b0;
  end
-   
+
 
    /*
     * Check memory transactions in flight, maintain active list
@@ -1086,7 +1086,7 @@ module ccip_checker
    string  raw_haz_str;
    string  war_haz_str;
    logic   hazard_found;
-  
+
   // ------------------------------------------- //
    // Hazard check process
    // - Take in address, check if exists in
@@ -1098,7 +1098,7 @@ module ccip_checker
       if (haz_if.read_in.valid) begin
 		for (int ii = 0; ii <= haz_if.read_in.hdr.len ; ii = ii + 1) begin : read_channel_haz_monitor
 	    rd_active_addr_array[ haz_if.read_in.hdr.addr + ii ] = haz_if.read_in.hdr.addr + ii;
-	    
+
 		// Check for outstanding write request
 	    if (wr_active_addr_array.exists(haz_if.read_in.hdr.addr + ii)) begin
 			$sformat(war_haz_str,
@@ -1109,7 +1109,7 @@ module ccip_checker
 	    end
 	    end
       end
-	  
+
       // ------------------------------------------- //
       // Write in
       // ------------------------------------------- //
@@ -1121,7 +1121,7 @@ module ccip_checker
 		     $time,
 		     return_txhdr(haz_if.write_in.hdr));
 	         print_message_and_log(1, raw_haz_str);
-		end	 
+		end
 	 // Check for outstanding write
 		else if (wr_active_addr_array.exists(haz_if.write_in.hdr.addr)) begin
 			 $sformat(waw_haz_str,
@@ -1135,7 +1135,7 @@ module ccip_checker
 			wr_active_addr_array[haz_if.write_in.hdr.addr] = haz_if.write_in.hdr.addr;
 		end
      end
-	  
+
       // ------------------------------------------- //
       // Read out (delete from active list)
       // ------------------------------------------- //
@@ -1144,7 +1144,7 @@ module ccip_checker
 	     rd_active_addr_array.delete( haz_if.read_out.hdr.addr );
 	  end
       end
-     
+
 	 // ------------------------------------------- //
       // Write out (delete from active list)
       // ------------------------------------------- //
@@ -1171,7 +1171,7 @@ module ccip_checker
 			error_code_q[31:14]=17'b0;
 		end
    end
-   
+
    /*
     * Multiple outstandind MMIO Response tracking
     * - Maintains `MMIO_MAX_OUTSTANDING records tracking activity
@@ -1198,7 +1198,7 @@ module ccip_checker
       begin
    	 if (clear) begin
    	    mmioread_tracker[tid].active = 0;
-		error_code_q[MMIO_RDRSP_UNSOLICITED]=1'b0; 
+		error_code_q[MMIO_RDRSP_UNSOLICITED]=1'b0;
    	 end
    	 else begin
 	    // If pop occured when not active
@@ -1221,7 +1221,7 @@ module ccip_checker
    // Push/pop glue
    always @(posedge clk) begin
       if (SoftReset) begin
-	 
+
    	 for (int track_i = 0; track_i < MMIO_TRACKER_DEPTH ; track_i = track_i + 1) begin
    	    update_mmio_activity(1, 0, 0, track_i);
    	 end
@@ -1251,7 +1251,7 @@ module ccip_checker
 				mmioread_tracker[ii].timer_val <= 0;
    	       end
    	       else if (mmioread_tracker[ii].active) begin
-			if(mmioread_tracker[ii].timer_val >= (`MMIO_RESPONSE_TIMEOUT )) 
+			if(mmioread_tracker[ii].timer_val >= (`MMIO_RESPONSE_TIMEOUT ))
 			begin
 			end
 			else
@@ -1266,7 +1266,7 @@ module ccip_checker
    	       mmioread_tracker[ii].timeout <= 0;
 		   error_code_q[MMIO_RDRSP_TIMEOUT]=1'b0;
    	    end
-   	    else if (mmioread_tracker[ii].timer_val >= (`MMIO_RESPONSE_TIMEOUT )) 
+   	    else if (mmioread_tracker[ii].timer_val >= (`MMIO_RESPONSE_TIMEOUT ))
 		begin
    	       mmioread_tracker[ii].timeout <= 1;
 	       decode_error_code(0, MMIO_RDRSP_TIMEOUT);
@@ -1276,5 +1276,5 @@ module ccip_checker
 		end
     end
    endgenerate
-    
+
 endmodule // cci_sniffer
