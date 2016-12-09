@@ -26,6 +26,9 @@ target_link_libraries(gtdma_buffer ${GTEST_LIBRARIES} wafu)
 add_library(gtperfc SHARED gtPerfCounters.cpp)
 target_link_libraries(gtperfc ${GTEST_LIBRARIES} wafu)
 
+add_library(gtRAS SHARED gtRAS.cpp)
+target_link_libraries(gtRAS ${GTEST_LIBRARIES} wafu)
+
 add_executable(gtapp main.cpp)
 target_link_libraries(gtapp 
     ${GTEST_BOTH_LIBRARIES} 
@@ -36,7 +39,7 @@ target_link_libraries(gtapp
 
 
 
-install(TARGETS gtapp gtreconfigure gtreset gtdma_buffer gtperfc gtmmio
+install(TARGETS gtapp gtreconfigure gtreset gtdma_buffer gtperfc gtmmio gtRAS
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION tests
         ARCHIVE DESTINATION lib)
