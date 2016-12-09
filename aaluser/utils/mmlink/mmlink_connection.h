@@ -1,4 +1,4 @@
-// Copyright(c) 2014, Altera Corporation
+// Copyright(c) 2014, 2016, Altera Corporation
 // All rights reserved.
 // Copyright(c) 2007-2016, Intel Corporation
 // All rights reserved.
@@ -56,7 +56,7 @@ class mmlink_connection
 {
 public:
   // m_bufsize is the size of the buffer for h2t data
-  mmlink_connection(mmlink_server *server) : m_bufsize(3000) { m_buf = new char[m_bufsize]; init(server); }
+  mmlink_connection(mmlink_server*);
   ~mmlink_connection() { close_connection(); delete[] m_buf; }
   bool is_open() { return m_fd >= 0; }
   bool is_data() { return m_is_data; }
@@ -86,7 +86,7 @@ protected:
   mmlink_server *m_server;
 
   char *m_buf;
-  size_t m_buf_end;
+  volatile size_t m_buf_end;
 
   void init(mmlink_server *server) { m_server = server; init(); }
 

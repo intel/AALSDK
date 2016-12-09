@@ -1,4 +1,4 @@
-// Copyright(c) 2014, Altera Corporation
+// Copyright(c) 2014, 2016, Altera Corporation
 // All rights reserved.
 // Copyright(c) 2007-2016, Intel Corporation
 // All rights reserved.
@@ -67,6 +67,13 @@ using namespace AAL;
 
 const char *mmlink_connection::UNKNOWN = "UNKNOWN\n";
 const char *mmlink_connection::OK = "OK\n";
+
+mmlink_connection::mmlink_connection(mmlink_server* server) : m_bufsize(3000)
+{
+  m_buf_end = 0;
+  m_buf = new char[m_bufsize];
+  init(server);
+}
 
 // return value:
 //   0: everything A-OK
@@ -280,5 +287,3 @@ int mmlink_connection::handle_bound_command(char *cmd)
 
   return 0;
 }
-
-

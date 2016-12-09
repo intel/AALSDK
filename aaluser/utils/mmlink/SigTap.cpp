@@ -82,6 +82,9 @@ using namespace AAL;
 # define EVENT_CASE(x) case x :
 #endif
 
+// Feature revision 64-bit register address
+#define PORT_STP_DFH 0x4000
+
 #define MAX_FILENAME_SIZE (256)
 
 // doxygen hACK to generate correct class diagrams
@@ -101,7 +104,7 @@ public:
    /// @brief Called by the main part of the application,Returns 0 if Success
    ///
    /// Application Requests Service using Runtime Client passing a pointer to self.
-   /// Blocks calling thread from [Main} untill application is done. 
+   /// Blocks calling thread from [Main} untill application is done.
    int run(mmlink_server *server, int busnum, int devnum, int funnum);
 
    btBool IsOK()  {return m_isOK;}
@@ -229,16 +232,29 @@ int SigTapApp::run(mmlink_server *server, int busnum, int devnum, int funnum)
       goto done_0;
    }
 
-   // So signal tap
-   if(m_isOK){
-      stpAddr = m_pALIMMIOService->mmioGetAddress();
-   }
+   //Check for feature revision number
+   btUnsigned64bitInt mmioDFH;
+   m_pALIMMIOService->mmioRead64(PORT_STP_DFH, &mmioDFH);
+   mmioDFH &= 0x1000;
+   mmioDFH = mmioDFH >> 12;
+   if(1 != mmioDFH){
+      cout << "BBS revision number " << mmioDFH << endl;
+      ERR("Incompatible blue bitstream revision");
+      ++m_Result;
 
-   if (NULL != stpAddr){
-      m_Result = server->run(stpAddr);
    }else{
-      ERR("Failed to map STP region");
-      m_Result = 1;
+
+      // So signal tap
+      if(m_isOK){
+         stpAddr = m_pALIMMIOService->mmioGetAddress();
+      }
+
+      if (NULL != stpAddr){
+         m_Result = server->run(stpAddr);
+      }else{
+         ERR("Failed to map STP region");
+         m_Result = 1;
+      }
    }
 
     // Clean-up and return
@@ -378,27 +394,27 @@ int main(int argc, char *argv[])
    int result = 0;
    mmlink_server *server;
 
-   int 	 ip 	  = INADDR_ANY;
-   int    port	  = 3333;
+   int   ip       = INADDR_ANY;
+   int    port    = 3333;
    int bus = -1;
    int device = -1;
    int function = -1;
 
-	signal(SIGINT, int_handler);
+    signal(SIGINT, int_handler);
 
-	for (int i = 1; i < argc; ++i)
-	{
-		sscanf(argv[i], "--ip=%d", &ip);
-		sscanf(argv[i], "--port=%d", &port);
-		sscanf(argv[i], "--bus=%i", &bus);
-		sscanf(argv[i], "--device=%i", &device);
-		sscanf(argv[i], "--function=%i", &function);
-	}
+    for (int i = 1; i < argc; ++i)
+    {
+        sscanf(argv[i], "--ip=%d", &ip);
+        sscanf(argv[i], "--port=%d", &port);
+        sscanf(argv[i], "--bus=%i", &bus);
+        sscanf(argv[i], "--device=%i", &device);
+        sscanf(argv[i], "--function=%i", &function);
+    }
 
-	struct sockaddr_in sock;
-	sock.sin_family = AF_INET;
-	sock.sin_port = htons(port);
-	sock.sin_addr.s_addr = htonl(ip);
+    struct sockaddr_in sock;
+    sock.sin_family = AF_INET;
+    sock.sin_port = htons(port);
+    sock.sin_addr.s_addr = htonl(ip);
 
    mm_debug_link_interface *driver = get_mm_debug_link();
    server = new mmlink_server(&sock, driver);
@@ -414,5 +430,3 @@ int main(int argc, char *argv[])
    MSG("Done");
    return result;
 }
-
-

@@ -1,4 +1,4 @@
-// Copyright(c) 2014, Altera Corporation
+// Copyright(c) 2014, 2016, Altera Corporation
 // All rights reserved.
 // Copyright(c) 2007-2016, Intel Corporation
 // All rights reserved.
@@ -52,32 +52,29 @@
 
 #include "mm_debug_link_interface.h"
 
+// size of buffer for t2h data
+#define BUFFERSIZE_T2H 1073741824
+
 using namespace AAL;
 
 class mm_debug_link_linux: public mm_debug_link_interface
 {
 private:
   int m_fd;
-  static const size_t BUFSIZE = 1073741824; // size of buffer for t2h data
+  static const size_t BUFSIZE = BUFFERSIZE_T2H;
   char m_buf[BUFSIZE];
-  size_t m_buf_end;
+  volatile size_t m_buf_end;
   int m_write_fifo_capacity;
-  btVirtAddr map_base;
+  volatile btVirtAddr map_base;
   bool m_write_before_any_read_rfifo_level;
   clock_t m_last_read_rfifo_level_empty_time;
   clock_t m_read_rfifo_level_empty_interval;
 
 public:
-  mm_debug_link_linux() { 
-    m_fd = -1; 
-    m_buf_end = 0; 
-    m_write_fifo_capacity = 0;
-    m_write_before_any_read_rfifo_level = false;
-    m_last_read_rfifo_level_empty_time = 0;
-    m_read_rfifo_level_empty_interval = 1;}
+  mm_debug_link_linux();
   int open(btVirtAddr stpAddr);
   void* read_mmr(btCSROffset target, int access_type);
-  void write_mmr(off_t target, int access_type, unsigned int write_val);
+  void write_mmr(off_t target, int access_type, uint64_t write_val);
   ssize_t read();
   ssize_t write( const void *buf, size_t count);
   void close(void);
@@ -95,4 +92,3 @@ public:
 };
 
 #endif
-
