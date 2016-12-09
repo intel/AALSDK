@@ -2407,7 +2407,7 @@ module ccip_emulator
 
 
    /*
-    * CCI Sniffer
+    * CCI-P Checker
     * Aggregate point for all ASE checkers
     * - XZ checker
     * - Data hazard warning
@@ -2416,8 +2416,8 @@ module ccip_emulator
 
    assign ase_checker_disable = 0;
 
-   // ccip_sniffer instance
-   ccip_sniffer ccip_sniffer
+   // ccip_checker instance
+   ccip_checker ccip_checker
      (
       // ----------------------------------------- //
       // Logger control

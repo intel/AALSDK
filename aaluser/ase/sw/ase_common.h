@@ -62,6 +62,7 @@
 #include <locale.h>
 #include <stdbool.h>
 #include <sys/wait.h>
+#include <linux/limits.h>
 
 #ifndef SIM_SIDE
 #include <pthread.h>

@@ -518,17 +518,14 @@ int ase_read_lock_file(const char *workdir)
                         }
                       else if ( strncmp (parameter, "host", 5) == 0)
                         {
-                          // strncpy(readback_hostname, value, ASE_FILENAME_LEN);
                           ase_string_copy(readback_hostname, value, ASE_FILENAME_LEN);
                         }
                       else if ( strncmp (parameter, "dir", 4) == 0)
                         {
-                          // strncpy(readback_workdir_path, value, ASE_FILEPATH_LEN);
                           ase_string_copy(readback_workdir_path, value, ASE_FILEPATH_LEN);
                         }
                       else if ( strncmp (parameter, "uid", 4) == 0)
                         {
-                          // strncpy(readback_uid, value, ASE_FILEPATH_LEN);
                           ase_string_copy(readback_uid, value, ASE_FILEPATH_LEN);
                         }
                       else

@@ -58,7 +58,7 @@ import ccip_if_pkg::*;
 
 // `define STANDALONE_DEBUG
 
-module ccip_sniffer
+module ccip_checker
   #(
     parameter ERR_LOGNAME  = "ccip_warning_and_errors.txt"
     )

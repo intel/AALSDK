@@ -81,7 +81,7 @@ ASEHW_FILE_LIST = \
 	$(ASE_SRCDIR)/hw/ccip_emulator.sv \
 	$(ASE_SRCDIR)/hw/ase_svfifo.sv \
 	$(ASE_SRCDIR)/hw/ccip_logger.sv \
-	$(ASE_SRCDIR)/hw/ccip_sniffer.sv \
+	$(ASE_SRCDIR)/hw/ccip_checker.sv \
 	$(ASE_SRCDIR)/hw/ase_top.sv \
 
 ## ASE HW include directory setup

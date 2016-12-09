@@ -283,7 +283,7 @@ ase/hw/ase_svfifo.sv \
 ase/hw/latency_pipe.sv \
 ase/hw/ccip_emulator.sv \
 ase/hw/ccip_logger.sv \
-ase/hw/ccip_sniffer.sv \
+ase/hw/ccip_checker.sv \
 ase/hw/ase_top.sv \
 ase/hw/ase_pkg.sv \
 ase/hw/platform.vh \
