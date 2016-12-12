@@ -22,6 +22,8 @@ class test_context : Loggable
 
         service_client::ptr_t get_service(const std::string &service_name);
 
+        service_client::ptr_t create_service(const std::string &service_name, const service_manager::pci_info_t & pci);
+
         /// @brief Get a shared_ptr to a service_client
         /// @tparam T the derived class type of service_client
         /// @param service_name The friendly name of the service 

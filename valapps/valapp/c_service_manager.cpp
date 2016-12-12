@@ -31,13 +31,6 @@ void service_manager_create_service(char* service_name)
     auto status = service->status();
 }
 
-void service_manager_create_services(char* config_file)
-{
-    auto mgr = service_manager::instance();
-    mgr->start();
-    mgr->create_services(config_file);
-}
-
 void* service_manager_get_client(char* name)
 {
     auto client = service_manager::instance()->get_service(name);

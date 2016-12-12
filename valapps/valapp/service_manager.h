@@ -25,6 +25,7 @@ class service_manager : public AAL::CAASBase,
 {
 public:
     typedef std::shared_ptr<service_manager> ptr_t;
+    typedef std::map<std::string, AAL::btUnsigned32bitInt> pci_info_t;
 
     enum hwenv_t
     {
@@ -54,10 +55,11 @@ public:
     /// @brief Create an AAL service identified by the alias that maps back to 
     /// to an entry in ther services file used when calling define_services.
     /// @param[in] The friendly name of the service.
+    /// @param[in] The pci info map (bus, device, function)
+    ///            This overrides any bus info in the JSON file
     /// @returns A shared_ptr to a service_client.
-    service_client::ptr_t create_service(const std::string &service_name);
+    service_client::ptr_t create_service(const std::string &service_name, const pci_info_t &pci = pci_info_t());
 
-    void create_services(const std::string &configFile);
 
     template<class T>
     T* get_interface(AAL::btIID iid)

@@ -117,7 +117,7 @@ void service_manager::define_services(const string &configFile)
                 {
                     auto str_value = service_info[kvpair.first].asString();
                     auto value = static_cast<btUnsigned32bitInt>(std::stoi(str_value, nullptr, 16));
-                    configRecord.Add(kvpair.first, value);
+                    configRecord.Add(kvpair.second, value);
                 }
             }
 
@@ -136,103 +136,39 @@ void service_manager::define_services(const string &configFile)
     }
 }
 
-service_client::ptr_t service_manager::create_service(const string &service_name)
+service_client::ptr_t service_manager::create_service(const string &service_name, const pci_info_t & pci_info)
 {
+    // map short names to AAL string keys
+    static std::map<std::string, btStringKey> to_aal(
+            {
+                {"bus", keyRegBusNumber},
+                {"device", keyRegDeviceNumber},
+                {"function", keyRegFunctionNumber}
+            });
+
     service_client::ptr_t client;
     auto iter = service_configs_.find(service_name);
     if (runtimeStarted_ && iter != service_configs_.end())
     {
-        client = allocate_service(iter->first, iter->second.first, iter->second.second);
+        NamedValueSet &nvs = iter->second.first;
+        // iterate over pci_info and see if any key here 
+        // maps to the AAL string key map above. 
+        // If so, add the corresponding value to the config NVS
+        // stored in memory from calling define_services
+        for ( const auto &pci_datum : pci_info)
+        {
+            auto to_aal_iter = to_aal.find(pci_datum.first);
+            if (to_aal_iter != to_aal.end())
+            {
+                nvs.Add(to_aal_iter->second, pci_datum.second);
+            }
+        }
+        auto client_type = iter->second.second;
+        client = allocate_service(iter->first, nvs, client_type);
         service_map_[iter->first] = client;
         service_list_.push_back(client);
     }
     return client;
-}
-
-void service_manager::create_services(const string &configFile)
-{
-    if (runtimeStarted_)
-    {
-        Log() << "Runtime has not started. Cannot create services" << std::endl;
-        return;
-    }
-    Json::Value root;
-    Json::Reader reader;
-    std::ifstream stream(configFile);
-    if (reader.parse(stream, root))
-    {
-        auto services = root["services"];
-        for(auto item : services)
-        {
-            auto name = item["service_lib"].asString();
-            auto alias = item.get("alias", name).asString();
-            auto afuid = item["afu_id"].asString();
-            auto include_aia = item["include_aia"].asBool();
-
-            NamedValueSet configRecord;
-            configRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, name.c_str());
-            configRecord.Add(keyRegAFU_ID, afuid.c_str());
-            if (include_aia)
-            {
-                configRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
-            }
-            else
-            {
-                configRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
-            }
-
-            for (auto kvpair : { make_pair("bus", keyRegBusNumber),
-                                 make_pair("device", keyRegDeviceNumber),
-                                 make_pair("function", keyRegFunctionNumber) })
-            {
-                if (item.isMember(kvpair.first))
-                {
-                    auto str_value = item[kvpair.first].asString();
-                    auto value = static_cast<btUnsigned32bitInt>(std::stoi(str_value, nullptr, 16));
-                    configRecord.Add(kvpair.first, value);
-                }
-            }
-
-            auto client = this->allocate_service(alias, configRecord);
-            service_map_[name] = client;
-            service_map_[alias] = client;
-            service_list_.push_back(client);
-            auto status = client->status();
-            for (auto iface : item["interfaces"])
-            {
-                auto ifname = iface[0].asString();
-                auto ifid_str = iface[1].asString();
-                interface_map_[ifname] = client;
-                btIID idnum = std::strtol(ifid_str.c_str(), nullptr, 16);
-                id_map_[idnum] = client;
-                client->register_interface(ifname, idnum);
-            }
-
-            if (item.isMember("registers"))
-            {
-                auto afu = dynamic_pointer_cast<afu_client>(client);
-                if (0 == afu)
-                {
-                    Log() << "client is not an afu_client. Will not create register map" << std::endl;
-                }
-                else
-                {
-                    for (auto reg : item["registers"])
-                    {
-                        afu->add_register( afu_register( reg["id"].asString(),
-                                                         reg["offset"].asString(),
-                                                         reg["type"].asString(),
-                                                         reg["width"].asString(),
-                                                         reg["comment"].asString()));
-                    }
-                }
-            }
-        }
-    }
-    else
-    {
-        Log() << "Could not parse document: " << reader.getFormattedErrorMessages() << std::endl;
-    }
 }
 
 void service_manager::release_service(const std::string &name)
