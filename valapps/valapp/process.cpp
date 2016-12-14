@@ -83,11 +83,14 @@ namespace utils
         cargs[args.size()+1] = 0;
 
         pid_t child = fork();
-        if (child != 0)
+
+      // if we got a good pid, return that to caller
+      if (child != 0)
         {
             delete []cargs;
             return process(child);
         }
+        // else (in addition), invoke external application in the child process
         else
         {
             execvp(file.c_str(), cargs);

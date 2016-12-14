@@ -1,7 +1,7 @@
-
 #include "afu_test.h"
 #include <iostream>
 #include "gtest/gtest.h"
+#include "process.h"
 
 using namespace std;
 using namespace AAL;
@@ -34,26 +34,18 @@ TEST( DmaBuffer, sw_dma_01 )
    ///               that DMA buffer allocation and mapping is working
    ///               correctly.
    ///
-   pid_t pid;
    int status;
 
-   pid = fork();
-   if ( pid == 0 ) {
-      // comandline from the original sample
-      //./fpgadiag --mode=lpbk1 --target=fpga --begin=65535 --read-vc=vh0 --write-vc=vh0
-      // ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-      int retval = execl( "./.packages/bin/fpgadiag",
-                          "fpgadiag",
-                          "--mode=lpbk1",
-                          "--target=fpga",
-                          "--begin=65535",
-                          "--read-vc=vh0",
-                          "--write-vc=vh0" );
-      exit( retval );
-   } else {
-      wait( &status );
-      EXPECT_EQ( EXIT_SUCCESS, status );
-   }
+   // comandline from the original sample
+   //./fpgadiag --mode=lpbk1 --target=fpga --begin=65535 --read-vc=vh0 --write-vc=vh0
+   // ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+   std::vector<string> args
+      = { "--mode=lpbk1",  "--target=fpga", "--begin=65535", "--read-vc=vh0", "--write-vc=vh0" };
+
+   utils::process p = utils::process::start( "./.packages/bin/fpgadiag", args );
+   status = p.wait( /*milliseconds*/ 10000 );
+   EXPECT_EQ( EXIT_SUCCESS, status );
 }
 
 TEST_P( dma_buffer_f, sw_dma_02 )
@@ -127,26 +119,18 @@ TEST( DmaBuffer, sw_dma_04 )
    /// options. The difference is in the descriptions and pass creiteria
    /// only, not the code as far as I can tell.
    ///
-   pid_t pid;
    int status;
 
-   pid = fork();
-   if ( pid == 0 ) {
-      // comandline from the original sample
-      //./fpgadiag --mode=lpbk1 --target=fpga --begin=65535 --read-vc=vh0 --write-vc=vh0
-      // ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-      int retval = execl( "./.packages/bin/fpgadiag",
-                          "fpgadiag",
-                          "--mode=lpbk1",
-                          "--target=fpga",
-                          "--begin=65535",
-                          "--read-vc=vh0",
-                          "--write-vc=vh0" );
-      exit( retval );
-   } else {
-      wait( &status );
-      EXPECT_EQ( EXIT_SUCCESS, status );
-   }
+   // comandline from the original sample
+   //./fpgadiag --mode=lpbk1 --target=fpga --begin=65535 --read-vc=vh0 --write-vc=vh0
+   // ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+   std::vector<string> args
+      = { "--mode=lpbk1",  "--target=fpga", "--begin=65535", "--read-vc=vh0", "--write-vc=vh0" };
+
+   utils::process p = utils::process::start( "./.packages/bin/fpgadiag", args );
+   status = p.wait( /*milliseconds*/ 10000 );
+   EXPECT_EQ( EXIT_SUCCESS, status );
 }
 
 TEST_F( dma_buffer_f, sw_dma_05 )

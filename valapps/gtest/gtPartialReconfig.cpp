@@ -49,9 +49,9 @@ TEST_F(reconfigure_f, sw_pr_01a)
     auto lb_success = nlb->loopback1(4, 2);
     ASSERT_TRUE(lb_success);
     nlb->release();
-    auto afu_status = nlb->status();    
+    auto afu_status = nlb->status();
     ASSERT_EQ(afu_status, service_client::status_t::released) << "AFU not released";
- 
+
     status = pr->reconfigure(bs2, 1000, action::honor_owner);
     cout << "reconfigure result is :" << status << std::endl;
     ASSERT_EQ(status, reconfigure_client::status_t::reconfigure_success);
@@ -155,7 +155,7 @@ TEST_F(reconfigure_f, sw_pr_05a)
 
     fv.wait();
     ASSERT_EQ(fv.get(), true) << "Loopback was not successful";
-    
+
     nlb->release();
     auto afu_status = nlb->status();
     ASSERT_EQ(afu_status, service_client::status_t::released);
@@ -345,7 +345,6 @@ TEST_P(reconfigure_f, sw_pr_12)
     fv.wait();
     //ASSERT_NE(fv.get(), true) << "Loopback was successful";
 }
-
 
 INSTANTIATE_TEST_CASE_P(basic_stress,
         reconfigure_f,

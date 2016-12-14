@@ -7,7 +7,7 @@
                 "client_type" : "nlb_client",
                 "afu_id" : "D8424DC4-A4A3-C413-F89E-433683F9040B",
                 "include_aia" : true,
-                "bus_" : "0xde",
+                "bus_" : "0x5e",
                 "function_" : "0x00",
                 "device_" : "0x00",
                 "registers" :
@@ -36,7 +36,7 @@
                 "client_type" : "nlb_client",
                 "afu_id" : "F7DF405C-BD7A-CF72-22F1-44B0B93ACD18",
                 "include_aia" : true,
-                "bus_" : "0xde",
+                "bus_" : "0x5e",
                 "feature_" : "0x00",
                 "device_" : "0x00",
                 "registers" :
@@ -65,7 +65,7 @@
                 "client_type" : "nlb_client",
                 "afu_id" : "7BAF4DEA-A57C-E91E-168A-455D9BDA88A3",
                 "include_aia" : true,
-                "bus_" : "0xde",
+                "bus_" : "0x5e",
                 "feature_" : "0x00",
                 "device_" : "0x00",
                 "registers" :
