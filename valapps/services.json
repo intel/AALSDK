@@ -103,6 +103,7 @@
                 "alias" : "FME",
                 "afu_id" : "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764",
                 "include_aia" : true,
+                "socket_id" : 0,
                 "interfaces" :
                     [
                         ["AAL::IALIPerf", "0x808610600020005"]

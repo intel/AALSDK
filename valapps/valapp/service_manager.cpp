@@ -120,6 +120,13 @@ void service_manager::define_services(const string &configFile)
                     configRecord.Add(kvpair.first, value);
                 }
             }
+
+            if (service_info.isMember("socket_id"))
+            {
+               auto str_value = service_info["socket_id"].asString();
+               auto value = static_cast<btUnsigned32bitInt>(std::stoi(str_value, nullptr, 16));
+               configRecord.Add(keyRegSocketNumber, value);
+            }
             service_configs_[alias] = make_pair(configRecord, client_type);
         }
     }
