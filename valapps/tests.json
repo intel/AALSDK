@@ -29,7 +29,8 @@
         },
         {
             "name": "gtmmio",
-            "filter": "*01"
+            "filter": "*01",
+            "disabled": false
         },
         {
             "name": "gtreset",
