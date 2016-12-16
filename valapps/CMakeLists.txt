@@ -26,6 +26,7 @@ execute_process(
 
 add_subdirectory(valapp)
 add_subdirectory(gtest)
+add_subdirectory(cmdq)
 
 configure_file(CPackConfig.cmake.in CPackConfig.cmake @ONLY)
 configure_file(build.json.in build.json @ONLY)

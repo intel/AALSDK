@@ -1,0 +1,11 @@
+{
+    "continuous" : true,
+    "timeout" : 10.0, // seconds
+    "channels": 
+    {
+        // read is either vl0, vh0, vh1, or va
+        "read" : "vl0", 
+        // read is either vl0, vh0, vh1, or va
+        "write" : "vl0"
+    }
+}
