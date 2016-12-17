@@ -29,11 +29,11 @@ static std::map<std::string, uint32_t> read_ch_names =
 
 static std::map<std::string, uint32_t> write_ch_names =
 {
-    { "va",  0x0000 },
-    { "vl0", 0x2000 },
-    { "vh0", 0x4000 },
-    { "vh1", 0x6000 },
-    { "vr",  0x8000 }
+    { "va",  0x00000 },
+    { "vl0", 0x20000 },
+    { "vh0", 0x40000 },
+    { "vh1", 0x60000 },
+    { "vr",  0x80000 }
 };
 
 nlb_client::nlb_client()
