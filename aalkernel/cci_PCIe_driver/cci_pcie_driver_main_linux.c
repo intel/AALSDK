@@ -998,10 +998,14 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
             sriov = ccip_portdev_maxVFs(pccipdev);
             PINFO("Asked for more VFs than PORTs, setting to number of PORTs (%ld).\n", sriov);
          }
+         // Set AFU Access control bit before enable SRIOV.
+         cci_config_afu_access_control(pccipdev, sriov, cci_config_afu_access_VF);
+  
          if (0 == pci_enable_sriov(pcidev, sriov)){
-            cci_config_afu_access_control(pccipdev, sriov, cci_config_afu_access_VF);
             PINFO("SRIOV Enabled on this device for %ld VF%s\n", sriov, (sriov > 1 ? "s" : ""));
          }else{
+            // Clear AFU Access control bit if SRIOV enable fails.
+            cci_config_afu_access_control(pccipdev, sriov, cci_config_afu_access_PF);
             PINFO("Failed to enable SRIOV");
          }
       }
