@@ -318,7 +318,7 @@ btInt HelloALINLBApp::run(int busnum, int devnum, int funnum)
    }
    if (funnum >= 0) {
       cout << "Using PCIe function 0x" << std::hex << funnum << std::dec << endl;
-      ConfigRecord.Add(keyRegFunctionNumber, btUnsigned32bitInt(funnum));
+      ConfigRecord.Add(keyRegFunctionNumber, bt32bitInt(funnum));
    }
 
    // Add the Config Record to the Manifest describing what we want to allocate
