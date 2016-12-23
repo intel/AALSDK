@@ -659,6 +659,7 @@ process_bind_request(struct ccidrv_session  *psess,
          //   by the dev_OwnerSession() call.
          //----------------------------------------------------------------
          PDEBUG("Changing owner session to UI\n");
+         kosal_sem_get_user_alertable( &psess->m_sem );
          if ( unlikely( aaldev_addowner_OK != dev_updateOwner(pdev,                 // Device
                                                               psess->m_pid,         // Process ID
                                                               ownerSessp,           // New session attributes
@@ -678,6 +679,7 @@ process_bind_request(struct ccidrv_session  *psess,
             // Create the completion event
             bindcmplt = ccipdrv_event_bindcmplt_create(preq->handle, &bindevt, uid_errnumOK, preq);
          }
+         kosal_sem_put( &psess->m_sem );
          ret = 0;
       } goto BIND_DONE; // case reqid_UID_Bind
 
@@ -928,6 +930,18 @@ struct aal_wsid* ccidrv_getwsid(struct aal_device *pdev,
       return NULL;
    }
 
+   /* get list manipulation semaphore */
+   status = kosal_sem_get_krnl_alertable(&umDriver.wsid_list_sem);
+   if (0 != status) {
+      DPRINTF (UIDRV_DBG_FILE, ": couldn't add WSID to alloc_list\n");
+#ifdef __i386__
+      free_page(pwsid);
+#else
+      kosal_kfree(pwsid,sizeof(struct aal_wsid));
+#endif
+      return NULL;
+   }
+
    // Check the WSID for roll over. This gives us a very large number of WSIDs before
    //   roll over.
    if( 0 == wsid_to_wsidHandle(nextWSID) ){
@@ -942,25 +956,13 @@ struct aal_wsid* ccidrv_getwsid(struct aal_device *pdev,
 
    PDEBUG(": Created WSID %llu [Handle %llx] for device id %llx \n", nextWSID, pwsid->m_handle, id);
 
-   /* get list manipulation semaphore */
-   status = kosal_sem_get_krnl_alertable(&umDriver.wsid_list_sem);
-   if (0 != status) {
-      DPRINTF (UIDRV_DBG_FILE, ": couldn't add WSID to alloc_list\n");
-#ifdef __i386__
-      free_page(pwsid);
-#else
-      kosal_kfree(pwsid,sizeof(struct aal_wsid));
-#endif
-      return NULL;
-   }
-
    /* add to allocated list */
    kosal_list_add_head(&pwsid->m_alloc_list, &umDriver.wsid_list_head);
 
+   nextWSID++;
+
    /* release semaphore */
    kosal_sem_put(&umDriver.wsid_list_sem);
-
-   nextWSID++;
 
    return pwsid;
 }

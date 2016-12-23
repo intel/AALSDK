@@ -151,6 +151,7 @@ void aalrm_reqdev_cmplt( btInt errno,
       devp = aaldev_handle_to_devp(pretdev->devHandle);
       if(likely(devp) ){
          aaldev_AddOwner_e ret;
+         kosal_sem_get_user_alertable( &psess->m_sem );
          if( unlikely( (ret=dev_addOwner( devp,
                                           psess->m_tgpid,
                                           NULL, // TODO MANIFEST ON OWNER NOT SUPPORTED YET
@@ -163,6 +164,7 @@ void aalrm_reqdev_cmplt( btInt errno,
             pretdev->result = ret;
             pretdev->devHandle = NULL;
          }
+         kosal_sem_put( &psess->m_sem );
       } // if(likely(devp) ) 
       else{
          DPRINTF (AALRMC_DBG_IOCTL, ": Software AFU returned\n");
