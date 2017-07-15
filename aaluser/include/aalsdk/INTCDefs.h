@@ -1,4 +1,4 @@
-// Copyright(c) 2007-2016, Intel Corporation
+// Copyright(c) 2007-2017, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -37,7 +37,8 @@
 /// WHEN:          WHO:     WHAT:
 /// 07/13/2007     JG       Initial version started
 /// 05/08/2008     HM       Comments & License
-/// 01/04/2009     HM       Updated Copyright@endverbatim
+/// 01/04/2009     HM       Updated Copyright
+/// 07/14/2017     JG       Added defines for IPC connections @endverbatim
 //****************************************************************************
 #ifndef __AALSDK_INTCDEFS_H__
 #define __AALSDK_INTCDEFS_H__
@@ -60,6 +61,14 @@
 #define AAL_FACTORY_CREATE_CONFIGRECORD_SERVICENAME       "ConfigRecordServiceName"
 
 
+// The following keys are for IPC Services
+#define AAL_SERVICE_CONNECTION_PARMS            "AAL_SERVICE_CONNECTION_PARMS"
+#define AAL_SERVICE_ARGS                        "AAL_SERVICE_ARGS"
+#define AAL_SERVICE_COMM_POR                    "AAL_SERVICE_COMM_PORT"
+#define AAL_SERVICE_COMM_PORT                   "AAL_SERVICE_COMM_PORT"
+#define AAL_SERVICE_CONNECTION_TYPE             "AAL_SERVICE_CONNECTION_TYPE"
+#define AAL_SERVICE_COMM_HOST                   "AAL_SERVICE_COMM_HOST"
+#define AAL_SERVICE_CONNECTION_MAX_SERVER_WAIT  "AAL_SERVICE_CONNECTION_MAX_SERVER_WAIT"
 
 /******************************************************************************
 * Define INTC-AAL specific versions of macros

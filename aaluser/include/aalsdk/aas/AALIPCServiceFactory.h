@@ -1,4 +1,4 @@
-// Copyright(c) 2011-2016, Intel Corporation
+// Copyright(c) 2011-2017, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -41,13 +41,18 @@
 /// 01/12/2012     JG       Modified for cleaned up Service init() protocol
 /// 04/23/2012     HM       Added check for EOF in getmsg() to handle remote
 ///                            hang-up
-/// 07/14/2012     HM       Matched returned value to return type@endverbatim
+/// 07/14/2012     HM       Matched returned value to return type
+/// 07/15/2017     JG       Updated to be compatible with AAL SDK >4.0 @endverbatim
 //****************************************************************************
 #ifndef __AALSDK_AAS_AALIPCSERVICEFACTORY_H__
 #define __AALSDK_AAS_AALIPCSERVICEFACTORY_H__
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/AALNVSMarshaller.h>
 #include <aalsdk/osal/Sleep.h>
+
+#include "aalsdk/AALLoggerExtern.h"
+
+#include <aalsdk/aas/AALServiceModule.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -56,7 +61,7 @@
 //////////////                                                   //////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// @addtogroup InProcFactory
+// @addtogroup IPCFactory
 /// @{
 ///
 /// Factory template for creating a multiplicity of Services implemented
@@ -91,18 +96,13 @@
 //
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
+using namespace std;
 
 BEGIN_NAMESPACE(AAL)
 
 
 #define AAL_SERVICE_NAME                        "AAL_SERVICE_NAME"
-#define AAL_SERVICE_CONNECTION_PARMS            "AAL_SERVICE_CONNECTION_PARMS"
-#define AAL_SERVICE_ARGS                        "AAL_SERVICE_ARGS"
-#define AAL_SERVICE_COMM_POR                    "AAL_SERVICE_COMM_POR"
-#define AAL_SERVICE_COMM_PORT                   "AAL_SERVICE_COMM_PORT"
-#define AAL_SERVICE_CONNECTION_TYPE             "AAL_SERVICE_CONNECTION_TYPE"
-#define AAL_SERVICE_COMM_HOST                   "AAL_SERVICE_COMM_HOST"
-#define AAL_SERVICE_CONNECTION_MAX_SERVER_WAIT  "AAL_SERVICE_CONNECTION_MAX_SERVER_WAIT"
+
 #define MSG_BUFFER_SIZE                         65534
 #define MAX_MSG_SIZE                            MSG_BUFFER_SIZE+1
 
@@ -118,11 +118,12 @@ BEGIN_NAMESPACE(AAL)
 //=============================================================================
 /// @brief Class provides the implementation of the AAL Service
 ///              TCP/IP IPC transport.
-class TCPIPxport : public IAALTransport
+class TCPIPxport : protected CriticalSection, public IAALTransport
 {
 public:
    
    TCPIPxport():
+         CriticalSection(),
          m_socket(0),
          m_clientsock(0),
          m_port(0),
@@ -157,21 +158,14 @@ public:
    {
       btcString host;
 
-     NamedValueSet const *connParmskvs;
-     NamedValueSet const *configRecordkvs;
-
-     // Get the configuration record
-     if(!optArgs.Has(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED)){
-      return false;
-     }else{
-      optArgs.Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &configRecordkvs);
-     }
+     INamedValueSet const *connParmskvs;
+     INamedValueSet const *configRecordkvs;
 
      // Check for connection parameters
-     if(!configRecordkvs->Has(AAL_SERVICE_CONNECTION_PARMS)){
+     if(!optArgs.Has(AAL_SERVICE_CONNECTION_PARMS)){
        return false;
      }else{
-       configRecordkvs->Get(AAL_SERVICE_CONNECTION_PARMS, &connParmskvs);
+        optArgs.Get(AAL_SERVICE_CONNECTION_PARMS, &connParmskvs);
      }
 
      if(!connParmskvs->Has(AAL_SERVICE_COMM_HOST)){
@@ -285,7 +279,7 @@ public:
       //------------------------------
       // get the connection parameters
       //------------------------------
-      NamedValueSet const *connParmskvs;
+      INamedValueSet const *connParmskvs;
 
       if(!optArgs.Has(AAL_SERVICE_CONNECTION_PARMS)){
         return false;
@@ -342,6 +336,17 @@ public:
         perror("Opening socket");
         return false;
       }
+
+      // Allow socket reuse in case of crash or other unclean shutdown
+      int reuse = 1;
+      if (setsockopt(m_socket, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)) < 0)
+         perror("setsockopt(SO_REUSEADDR) failed");
+
+   #ifdef SO_REUSEPORT
+     if (setsockopt(m_socket, SOL_SOCKET, SO_REUSEPORT, (const char*)&reuse, sizeof(reuse)) < 0)
+           perror("setsockopt(SO_REUSEPORT) failed");
+   #endif
+
 #if 0
       int bufsize = sizeof(m_buffer);
       m_clientaddrlen = sizeof(struct sockaddr_in);
@@ -381,6 +386,7 @@ public:
          m_clientsock=accept(m_socket,NULL,NULL);
          if(m_clientsock == INVALID_SOCKET){
            perror("accept");
+           goto err;
          }
       }
 
@@ -449,7 +455,7 @@ err:
       }
 
       // Convert the string buffer size to int.
-      sscanf(lenstr, "%d", bytes_recv);
+      sscanf(lenstr, "%d", &bytes_recv);
 
       // Read the message TODO deal with real long messages
       ASSERT(bytes_recv <= MSG_BUFFER_SIZE);
@@ -459,6 +465,7 @@ err:
       }
 
       // Read the message
+      AutoLock(this);   // Lock to protect m_buffer
       bytes_recv = recv(m_clientsock, m_buffer, bytes_recv, 0);        
 
       ASSERT(bytes_recv >= 0);
@@ -534,98 +541,69 @@ protected:
 template <typename I,
           class T=TCPIPxport,
           class M=NVSMarshaller,
-          class U=NVSUnMarshaller> class IPCSvcsFact: public ISvcsFact
+          class U=NVSUnMarshaller>
+class IPCSvcsFact: public ISvcsFact
 {
 public:
+
    /// @brief Create a Service object.
-   /// @param[in] container    A pointer to the Service Host for the Service.
-   /// @param[in] eventHandler A handler for events generated.
-   /// @param[in] context      A context value passed to the Service.
-   /// @param[in] rtid         A reference to the Transaction ID.
-   /// @param[in] optArgs      A reference to an NVS describing optional arguments
-   ///                     to the Service.
-   /// @returns A pointer to the IBase interface of the Service object.
-   IBase* CreateServiceObject(AALServiceModule    *container,
-                              btEventHandler       eventHandler,
-                              btApplicationContext context,
-                              TransactionID const &rtid,
-                              NamedValueSet const &optArgs)
+   IBase * CreateServiceObject(AALServiceModule    *container,
+                               IRuntime            *pRuntime)
    {
+
+
+      I *pService = new(std::nothrow) I(container,pRuntime, new T, new M, new U);
+
+      if ( NULL == pService ) {
+         return NULL;
+      }
+      // Service MUST be derived from IBase
+      return dynamic_cast<IBase*>(pService);
+
+   }
+
+
+
+
+   // Initializes the service and returns what the service gives
+   btBool InitializeService(IBase               *newService,
+                            IBase               *Client,
+                            TransactionID const &rtid,
+                            NamedValueSet const &optArgs)
+
+   {
+
       // Get the connection parameters
       btStringArray     ppArgs;
       
-      NamedValueSet const *connParmskvs, *configRecordkvs;
-      // Get the configuration record
-      if(!optArgs.Has(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED)){
-         return NULL;
-      }else{
-         optArgs.Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &configRecordkvs);
-      }
-
       // Check for connection parameters
-      if(!configRecordkvs->Has(AAL_SERVICE_CONNECTION_PARMS)){
-         return NULL;
-      }else{
-         configRecordkvs->Get(AAL_SERVICE_CONNECTION_PARMS, &connParmskvs);
+      if(!optArgs.Has(AAL_SERVICE_CONNECTION_PARMS)){
+         return false;
       }
 
-      btcString         pServiceName=NULL;
-      if(connParmskvs->Has(AAL_SERVICE_NAME)){
-         connParmskvs->Get(AAL_SERVICE_NAME, &pServiceName);
-      }
-      if(NULL !=pServiceName) {
-         if(connParmskvs->Has(AAL_SERVICE_ARGS)){
-            connParmskvs->Get(AAL_SERVICE_ARGS, &ppArgs);
-         }
-
-   #ifdef __AAL_LINUX__
-         // Fork the child
-         pid_t  m_pid = fork();
-
-         if(m_pid==0){
-             cerr<<"I am child\n";
-             execvp(pServiceName,ppArgs);
-         }else{
-             cerr<<"I am parent of pid \n"<< m_pid;
-         }
-   #else
-         std::string name(pServiceName);
-         PROCESS_INFORMATION pi;
-         STARTUPINFO si;
-         memset(&si,0,sizeof(si));
-
-         char cmdline[2048];
-         strcpy(cmdline,name.c_str());
-   #if 0
-         cerr<<"Lauching " <<cmdline<< endl;
-         if( CreateProcess(NULL,
-                           cmdline,
-                           NULL,
-                           NULL,
-                           FALSE, 
-                           CREATE_NEW_CONSOLE,
-                           NULL,
-                           NULL,
-                           &si,
-                           &pi) != true){
-            cerr<<"failed to start process\n" << GetLastError();
-            return NULL;
-         }
-   #endif       
-   #endif
-      }// Service name not provided
-
-      I* pService = new I(container,new T, new M, new U);
 
       // Initialize the service
-      IBase * ptr = pService->_init(eventHandler,context,rtid,optArgs);
-      if( NULL == ptr ){
-         delete pService;
-         // Kill process
-         return NULL;
+      //
+      // Service MUST be of class template parameter <I>
+      I * pobj =  dynamic_cast<I *>(newService);
+      if(NULL != pobj){
+         return pobj->_init(Client, rtid, optArgs, NULL);
       }
-      return ptr;
+      AAL_DEBUG(LM_AAS,"InProcSvcsFact:FAILED to dynamic cast object\n");
+      return false;
    }
+
+   virtual void DestroyServiceObject(IBase *pServiceBase)
+   {
+      // Service MUST be of class template parameter I
+      I * pobj =  dynamic_cast<I *>(pServiceBase);
+      if(NULL != pobj){
+         delete pobj;
+      }else{
+         AAL_DEBUG(LM_AAS,"IPCSvcsFact::DestroyServiceObject object is NULL\n");
+      }
+   }
+
 };
 
 /// @}

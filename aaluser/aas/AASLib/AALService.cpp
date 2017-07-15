@@ -1,4 +1,4 @@
-// Copyright(c) 2012-2016, Intel Corporation
+// Copyright(c) 2012-2017, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -42,7 +42,8 @@
 /// 03/12/2014     JG       Added support for client callback interface
 ///                         Fixed a bug in copy constructor where copy was
 ///                          incomplete.
-/// 09/05/2015     JG       Modifed for 4.x@endverbatim
+/// 09/05/2015     JG       Modified for 4.
+/// 7/14/2017      JG       Revised IPC SDK for updated AAL SDK @endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -302,7 +303,6 @@ void ServiceBase::serviceRevoke()
 
 btBool ServiceBase::sendmsg()
 {
-   AutoLock(this);
 
    if ( !HasTransport() ) {
       return false;
@@ -322,7 +322,6 @@ btBool ServiceBase::sendmsg()
 
 btBool ServiceBase::getmsg()
 {
-   AutoLock(this);
 
    if ( !HasTransport() ) {
       return false;
@@ -393,9 +392,9 @@ IAALUnMarshaller &          ServiceBase::unmarshall()       { return *m_punmarsh
 IAALTransport &                  ServiceBase::recvr()       { return *m_ptransport;           }
 IAALTransport &                 ServiceBase::sender()       { return *m_ptransport;           }
 
-btBool                   ServiceBase::HasMarshaller() const { AutoLock(this); return NULL != m_pmarshaller;   }
-btBool                 ServiceBase::HasUnMarshaller() const { AutoLock(this); return NULL != m_punmarshaller; }
-btBool                    ServiceBase::HasTransport() const { AutoLock(this); return NULL != m_ptransport;    }
+btBool                   ServiceBase::HasMarshaller() const { return NULL != m_pmarshaller;   }
+btBool                 ServiceBase::HasUnMarshaller() const { return NULL != m_punmarshaller; }
+btBool                    ServiceBase::HasTransport() const { return NULL != m_ptransport;    }
 
 NamedValueSet const &          ServiceBase::OptArgs() const { return m_optArgs;               }
 IServiceClient *      ServiceBase::getServiceClient() const { return m_pclient;               }
@@ -453,7 +452,7 @@ ServiceProxyBase::ServiceProxyBase(AALServiceModule *container,
                ptransport,
                marshaller,
                unmarshaller),
-   m_pcmpltEvent(NULL)
+   m_cmpltEventQueue()
  {}
 
 btBool ServiceProxyBase::_init( IBase               *pclient,
@@ -461,12 +460,18 @@ btBool ServiceProxyBase::_init( IBase               *pclient,
                                 NamedValueSet const &optArgs,
                                 CAALEvent           *pcmpltEvent)
 {
-   // Check to see if this is the direct super class of the most derived class
-   if ( NULL != pclient ) {
+   // The class initialization should be performed from most superclass -> most derived class.
+   //  The _init() methods are implemented only by utility subclasses like this one.  The rule
+   //  for utility class::_init() is that if it is called with a completion event ( actually more
+   //  a Dispatchable than event), then that means it was called by a subclass utility class'
+   //  _init().  The event/dispatchable is used to defer the initialization of the subclass until
+   //  all of the superclasses have initialized. Then the dispatchables will be scheduled in reverse
+   //  order (most recently pushed to last).  This causes each class to initialize from base->most derived.
+   if ( NULL != pcmpltEvent ) {
 
       // No then save the completion event and post it when our initialization
       //  completes
-      m_pcmpltEvent = pcmpltEvent;
+      m_cmpltEventQueue.push_front(pcmpltEvent);
       return true;
    }
 
@@ -490,21 +495,12 @@ void ServiceProxyBase::Doinit(TransactionID const &rtid)
    }
 
    // If there is a transport use it to connect
-   m_ptransport->connectremote(OptArgs());
-
-   // Create the remote side object
-   marshall().Empty();  // Just to be sure
-   marshall().Add(AAL_SERVICE_PROXY_INTERFACE_METHOD,       eNew);
-   marshall().Add(AAL_SERVICE_PROXY_INTERFACE,              this);
-   marshall().Add(AAL_SERVICE_PROXY_INTERFACE_NEW_OPTARGS, &m_optArgs);
-
-   if ( !sendmsg() ) {
-      m_ptransport->disconnect();
+   if(!m_ptransport->connectremote(OptArgs())){
       initFailed(new CExceptionTransactionEvent( dynamic_cast<IBase *>(this),
                                                  rtid,
                                                  errCreationFailure,
-                                                 reasInternalError,
-                                                 "Failed to send NEW message to server"));
+                                                 reasCommunicationFailed,
+                                                 "Failed to connect to proxy server"));
 
       return;
    }
@@ -516,12 +512,15 @@ void ServiceProxyBase::Doinit(TransactionID const &rtid)
    //===========================
 
    // If this superclass' _init() was called with a completion Event to queue
-   //   then there is more initialzation to go (i.e., this is not the direct parent of the
+   //   then there is more initialization to go (i.e., this is not the direct parent of the
    //   most derived class) otherwise the only thing left to do is to call the subclass'
    //   init() method
    //
-   if ( NULL != m_pcmpltEvent ) {
-      getRuntime()->schedDispatchable(m_pcmpltEvent);
+   if ( !m_cmpltEventQueue.empty() ) {
+      // Pop the most recently pushed
+      getRuntime()->schedDispatchable(m_cmpltEventQueue.back());
+      m_cmpltEventQueue.pop_back();
+
    } else {
       // Last superclass before most derived so call init()
       init(getServiceClientBase(), OptArgs(), rtid);
@@ -540,7 +539,7 @@ ServiceStubBase::ServiceStubBase(AALServiceModule *container,
                ptransport,
                marshaller,
                unmarshaller),
-   m_pcmpltEvent(NULL)
+   m_cmpltEventQueue()
 {}
 
 btBool ServiceStubBase::_init( IBase               *pclient,
@@ -548,11 +547,17 @@ btBool ServiceStubBase::_init( IBase               *pclient,
                                NamedValueSet const &optArgs,
                                CAALEvent           *pcmpltEvent)
 {
-   // Check to see if this is the direct super class of the most derived class
-   if ( NULL != pclient ) {
+   // The class initialization should be performed from most superclass -> most derived class.
+   //  The _init() methods are implemented only by utility subclasses like this one.  The rule
+   //  for utility class::_init() is that if it is called with a completion event ( actually more
+   //  a Dispatchable than event), then that means it was called by a subclass utility class'
+   //  _init().  The event/dispatchable is used to defer the initialization of the subclass until
+   //  all of the superclasses have initialized. Then the dispatchables will be scheduled in reverse
+   //  order (most recently pushed to last).  This causes each class to initialize from base->most derived.
+   if ( NULL != pcmpltEvent ) {
       // No then save the completion event and post it when our initialization
       //  completes
-      m_pcmpltEvent = pcmpltEvent;
+      m_cmpltEventQueue.push_front(pcmpltEvent);
       return true;
    }
 
@@ -575,7 +580,14 @@ void ServiceStubBase::Doinit(TransactionID const &rtid)
    }
 
    // If there is a transport use it to connect
-   m_ptransport->waitforconnect(m_optArgs);
+   if ( !m_ptransport->waitforconnect(m_optArgs) ) {
+      initFailed(new CExceptionTransactionEvent( dynamic_cast<IBase *>(this),
+                                                 rtid,
+                                                 errCreationFailure,
+                                                 reasCommunicationFailed,
+                                                 "Stub failed to wait for proxy connection."));
+      return;
+   }
 
    //===========================
    //
@@ -584,12 +596,13 @@ void ServiceStubBase::Doinit(TransactionID const &rtid)
    //===========================
 
    // If this superclass' _init() was called with a completion Event to queue
-   //   then there is more initialzation to go (i.e., this is not the direct parent of the
+   //   then there is more initialization to go (i.e., this is not the direct parent of the
    //   most derived class) otherwise the only thing left to do is to call the subclass'
    //   init() method
    //
-   if ( NULL != m_pcmpltEvent ) {
-      getRuntime()->schedDispatchable(m_pcmpltEvent);
+   if ( !m_cmpltEventQueue.empty() ) {
+      getRuntime()->schedDispatchable(m_cmpltEventQueue.back());
+      m_cmpltEventQueue.pop_back();
    } else {
       // Last superclass before most derived so call init()
       init(getServiceClientBase(), OptArgs(), rtid);

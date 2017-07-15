@@ -1,4 +1,4 @@
-// Copyright(c) 2011-2016, Intel Corporation
+// Copyright(c) 2011-2017, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -58,7 +58,8 @@
 ///                          do, in which case it cleans itself up and calls
 ///                          parent Release().
 /// 03/13/2014     JG       Added support for client callback interface
-///                          signaling. @endverbatim
+///                          signaling.
+/// 7/14/2017     JG       Revised IPC SDK for updated AAL SDK @endverbatim
 //****************************************************************************
 #ifndef __AALSDK_AAS_AALSERVICE_H__
 #define __AALSDK_AAS_AALSERVICE_H__
@@ -68,6 +69,8 @@
 #include <aalsdk/IServiceClient.h>
 #include <aalsdk/aas/IServiceRevoke.h>
 #include <aalsdk/Runtime.h>
+
+#include <queue>
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -499,6 +502,7 @@ static const int   eProprietarymethodID=0xf000;
 enum aal_service_method_id
 {
       eNew=1,                 // create the stub object
+      eRemoteInitialized,     // remote is ready to be used
       eGetInterface,          // get the stub object's interface
       eGetInterfaceresp,      // response for GetInterface
       eRelease,               // release the stub object
@@ -543,7 +547,7 @@ private:
     //=============================================================================
     void Doinit(TransactionID const &rtid);
 
-    CAALEvent *m_pcmpltEvent;
+    std::deque<CAALEvent *> m_cmpltEventQueue;
 };
 
 //=============================================================================
@@ -583,7 +587,7 @@ private:
    //=============================================================================
    void Doinit(TransactionID const &rtid);
 
-   CAALEvent *m_pcmpltEvent;
+   std::deque<CAALEvent *> m_cmpltEventQueue;
 };
 
 /// @}
