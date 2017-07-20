@@ -501,12 +501,14 @@ static const int   eProprietarymethodID=0xf000;
 // Generic commands from proxy to the stub
 enum aal_service_method_id
 {
-      eNew=1,                 // create the stub object
-      eRemoteInitialized,     // remote is ready to be used
-      eGetInterface,          // get the stub object's interface
-      eGetInterfaceresp,      // response for GetInterface
-      eRelease,               // release the stub object
-      eReleaseResp            // response to the release message
+      eNew=1,                    // create the stub object
+      eRemoteInitialized,        // remote is ready to be used
+      eGetInterface,             // get the object's interface
+      eGetInterfaceresp,         // response for GetInterface
+      eGetClientInterface,       // get the client object's interface
+      eGetClientInterfaceresp,   // response for GetClientInterface
+      eRelease,                  // release the stub object
+      eReleaseResp               // response to the release message
 };
 
 
