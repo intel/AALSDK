@@ -503,6 +503,7 @@ enum aal_service_method_id
 {
       eNew=1,                    // create the stub object
       eRemoteInitialized,        // remote is ready to be used
+      eRemoteInitializeFailed,   // Service init() failed
       eGetInterface,             // get the object's interface
       eGetInterfaceresp,         // response for GetInterface
       eGetClientInterface,       // get the client object's interface

@@ -72,6 +72,15 @@ endif
 MFLAGS += DESTDIR=$(DESTDIR)
 endif
 
+ifeq (,$(CXXFLAGS))
+CXXFLAGS = -g -O2
+endif
+
+ifeq (,$(CFLAGS))
+CFLAGS = -g -O2
+endif
+
+
 all clean:
 	echo SUBDIRS is $(SUBDIRS)
 	@for d in ${SUBDIRS} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done

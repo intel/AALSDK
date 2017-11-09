@@ -52,6 +52,7 @@
 #include "aalsdk/aas/AALService.h"
 #include "aalsdk/AALLogger.h"
 #include "aalsdk/aas/Dispatchables.h"
+#include "aalsdk/osal/ThreadGroup.h"
 #include <aalsdk/osal/Sleep.h>
 BEGIN_NAMESPACE(AAL)
 
@@ -263,8 +264,13 @@ btBool ServiceBase::_init(IBase               *pclientBase,
    }
 
    // Queue the completion to enable next layer down (the class derived from this)
-   //   to initialize.
-   return getRuntime()->schedDispatchable(pcmpltEvent);
+   //   to initialize. We use FireAndForget to ensure that the next layer is
+   //   not called in the MDS thread context. Since MDS is currently single threaded
+   //   a deadlock can occur if the next level down loads a Service and blocks for
+   //   waiting for serviceAllocated.
+   return FireAndForget(pcmpltEvent);
+
+//   return getRuntime()->schedDispatchable(pcmpltEvent);
 }
 
 btBool ServiceBase::initComplete(TransactionID const &rtid)
@@ -518,7 +524,7 @@ void ServiceProxyBase::Doinit(TransactionID const &rtid)
    //
    if ( !m_cmpltEventQueue.empty() ) {
       // Pop the most recently pushed
-      getRuntime()->schedDispatchable(m_cmpltEventQueue.back());
+      FireAndForget(m_cmpltEventQueue.back());
       m_cmpltEventQueue.pop_back();
 
    } else {
@@ -555,8 +561,7 @@ btBool ServiceStubBase::_init( IBase               *pclient,
    //  all of the superclasses have initialized. Then the dispatchables will be scheduled in reverse
    //  order (most recently pushed to last).  This causes each class to initialize from base->most derived.
    if ( NULL != pcmpltEvent ) {
-      // No then save the completion event and post it when our initialization
-      //  completes
+      // No then save the completion event and post it when our initialization completes
       m_cmpltEventQueue.push_front(pcmpltEvent);
       return true;
    }
@@ -601,7 +606,7 @@ void ServiceStubBase::Doinit(TransactionID const &rtid)
    //   init() method
    //
    if ( !m_cmpltEventQueue.empty() ) {
-      getRuntime()->schedDispatchable(m_cmpltEventQueue.back());
+      FireAndForget(m_cmpltEventQueue.back());
       m_cmpltEventQueue.pop_back();
    } else {
       // Last superclass before most derived so call init()
