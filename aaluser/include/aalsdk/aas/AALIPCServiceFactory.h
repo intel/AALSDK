@@ -54,6 +54,10 @@
 
 #include <aalsdk/aas/AALServiceModule.h>
 
+#include <stdio.h>
+#include <errno.h>
+
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 //////////////                                                   //////////////
@@ -445,6 +449,8 @@ err:
       bytes_recv = recv(m_clientsock, lenstr, sizeof(lenstr), 0);
       ASSERT(bytes_recv >= 0);
       if ( bytes_recv < 0 ) {
+         std::cerr << "recv returned " << bytes_recv  <<std::endl;
+         perror("errno ");
          *len = (btWSSize)-1;
          return NULL;
       }

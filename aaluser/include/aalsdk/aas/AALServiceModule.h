@@ -1,4 +1,4 @@
-// Copyright(c) 2009-2016, Intel Corporation
+// Copyright(c) 2009-2017, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -52,7 +52,9 @@
 /// 09/07/2011     JG       Renamed AALServiceModule.h
 ///                           Moved AALServiceModule into here
 /// 04/23/2012     HM       Added virtual destructor to IAALTransport
-/// 07/14/2012     HM       Put virtual dtor in as needed to virtual classes@endverbatim
+/// 07/14/2012     HM       Put virtual dtor in as needed to virtual classes
+/// 11/17/2017     JG       Added Type for btNumberKey. TODO fill out the rest
+///                           of the missing methods.@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_AAS_AALSERVICEMODULE_H__
 #define __AALSDK_AAS_AALSERVICEMODULE_H__
@@ -100,12 +102,13 @@ class AASLIB_API IAALMarshalUnMarshallerUtil
 public:
    virtual ~IAALMarshalUnMarshallerUtil() {}
 
-   virtual ENamedValues   Empty()                                              = 0;
-   virtual btBool           Has(btStringKey   Name)                      const = 0;
-   virtual ENamedValues  Delete(btStringKey   Name)                            = 0;
-   virtual ENamedValues GetSize(btStringKey   Name,  btWSSize    *pSize) const = 0;
-   virtual ENamedValues    Type(btStringKey   Name,  eBasicTypes *pType) const = 0;
-   virtual ENamedValues GetName(btUnsignedInt index, btStringKey *pName) const = 0;
+   virtual ENamedValues   Empty()                                                = 0;
+   virtual btBool           Has(btStringKey   Name)                        const = 0;
+   virtual ENamedValues  Delete(btStringKey   Name)                              = 0;
+   virtual ENamedValues GetSize(btStringKey   Name,  btWSSize    *pSize)   const = 0;
+   virtual ENamedValues    Type(btStringKey   Name,  eBasicTypes *pType)   const = 0;
+   virtual ENamedValues    Type(btNumberKey   Name,  eBasicTypes   *pType) const = 0;
+   virtual ENamedValues GetName(btUnsignedInt index, btStringKey *pName)   const = 0;
 };
 
 //=============================================================================
@@ -122,6 +125,7 @@ public:
    virtual ENamedValues  Delete(btStringKey   Name)                                        = 0;
    virtual ENamedValues GetSize(btStringKey   Name,  btWSSize      *pSize) const           = 0;
    virtual ENamedValues    Type(btStringKey   Name,  eBasicTypes   *pType) const           = 0;
+   virtual ENamedValues    Type(btNumberKey   Name,  eBasicTypes   *pType) const           = 0;
    virtual ENamedValues GetName(btUnsignedInt index, btStringKey   *pName) const           = 0;
 
    virtual ENamedValues Add(btNumberKey Name, btBool                Value)                 = 0;
@@ -193,11 +197,12 @@ public:
    virtual ~IAALUnMarshaller() {}
 
    virtual ENamedValues   Empty()                                                     = 0;
-   virtual btBool           Has(btStringKey   Name)                      const        = 0;
+   virtual btBool           Has(btStringKey   Name)                        const      = 0;
    virtual ENamedValues  Delete(btStringKey   Name)                                   = 0;
-   virtual ENamedValues GetSize(btStringKey   Name,  btWSSize    *pSize) const        = 0;
-   virtual ENamedValues    Type(btStringKey   Name,  eBasicTypes *pType) const        = 0;
-   virtual ENamedValues GetName(btUnsignedInt index, btStringKey *pName) const        = 0;
+   virtual ENamedValues GetSize(btStringKey   Name,  btWSSize    *pSize)   const      = 0;
+   virtual ENamedValues    Type(btStringKey   Name,  eBasicTypes *pType)   const      = 0;
+   virtual ENamedValues    Type(btNumberKey   Name,  eBasicTypes *pType)   const      = 0;
+   virtual ENamedValues GetName(btUnsignedInt index, btStringKey *pName)   const      = 0;
 
    virtual ENamedValues Get(btNumberKey Name, btBool                   *pValue) const = 0;
    virtual ENamedValues Get(btNumberKey Name, btByte                   *pValue) const = 0;

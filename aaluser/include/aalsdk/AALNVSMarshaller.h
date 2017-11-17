@@ -1,4 +1,4 @@
-// Copyright(c) 2011-2016, Intel Corporation
+// Copyright(c) 2011-2017, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -35,7 +35,9 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 09/07/2011      JG      Removed from AALService.h@endverbatim
+/// 09/07/2011      JG      Removed from AALService.h
+/// 11/17/2017      JG      Added Type for btNumberKey. TODO fill out the rest
+///                           of the missing methods.@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_AALNVSMARSHALLER_H__
 #define __AALSDK_AALNVSMARSHALLER_H__
@@ -64,6 +66,7 @@ public:
    ENamedValues  Delete(btStringKey Name)                                  { return m_NamedValueSet.Delete(Name);          }
    ENamedValues GetSize(btStringKey Name, btWSSize *pSize)           const { return m_NamedValueSet.GetSize(Name, pSize);  }
    ENamedValues    Type(btStringKey Name, eBasicTypes *pType)        const { return m_NamedValueSet.Type(Name, pType);     }
+   ENamedValues    Type(btNumberKey Name, eBasicTypes *pType)        const { return m_NamedValueSet.Type(Name, pType);     }
    ENamedValues GetName(btUnsignedInt index, btStringKey *pName)     const { return m_NamedValueSet.GetName(index, pName); }
 
    ENamedValues Add(btNumberKey Name, btBool value)                { return m_NamedValueSet.Add(Name, value); }
@@ -109,8 +112,6 @@ public:
     // Extract a byte stream from marshaller
    btcString pmsgp(btWSSize *len)
    {
-//      std::string s(StdStringFromNamedValueSet(m_NamedValueSet));
-
       std::ostringstream oss;
       oss << m_NamedValueSet << '\0';  // add a final, ensuring, terminating null
       std::string s = oss.str();
@@ -145,6 +146,7 @@ public:
    ENamedValues  Delete(btStringKey Name)                                 { return m_NamedValueSet.Delete(Name);          }
    ENamedValues GetSize(btStringKey Name, btWSSize *pSize)          const { return m_NamedValueSet.GetSize(Name,pSize);   }
    ENamedValues    Type(btStringKey Name,eBasicTypes *pType)        const { return m_NamedValueSet.Type( Name,pType);     }
+   ENamedValues    Type(btNumberKey Name, eBasicTypes *pType)       const { return m_NamedValueSet.Type(Name, pType);     }
    ENamedValues GetName(btUnsignedInt index, btStringKey *pName)    const { return m_NamedValueSet.GetName(index, pName); }
 
    ENamedValues Get(btNumberKey Name, btBool *pValue)                  const { return m_NamedValueSet.Get(Name, pValue); }

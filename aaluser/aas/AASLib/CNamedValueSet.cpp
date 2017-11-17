@@ -76,7 +76,7 @@
 /// 03/16/2008     HM       Added streamio to FILE i/o for NVS's
 /// 03/21/2008     HM       Split stream io into stream i and stream o
 /// 03/22/2008     HM       Moved implementation of NVS operator << >> here
-/// 05/01/2008     JG       Added byByteArray
+/// 05/01/2008     JG       Added btByteArray
 /// 05/07/2008     HM       Tweaks to btByteArray, including I/O
 ///                            Fixed btByte I/O
 /// 05/08/2008     HM       Comments & License
@@ -94,7 +94,9 @@
 /// 01/04/2009     HM       Updated Copyright
 /// 04/25/2012     HM       Disabled hopefully irrelevant warning about export
 ///                            of template for _WIN32, plus some cleanup.
-///                         Warning disabled for template<> GetNumNames()@endverbatim
+///                         Warning disabled for template<> GetNumNames()
+/// 11/16/2017     JG       Fixed btByteArray serialization to stream where
+///                         array was stored as binary instead of ascii. NOT FIXED FOR FILE*@endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -3641,10 +3643,18 @@ ENamedValues CNamedValueSet::Write(FILE *file, unsigned level) const
             }
             CNamedValueSet::WriteUnsigned(file, typeData, level+1);
             CNamedValueSet::WriteUnsigned(file, Num, 0);
-            while (Num) {
-               NumWritten = fwrite(val, sizeof(btByte), Num, file);
-               Num -= NumWritten;
-            }
+
+            // Convert each byte into a space seperated hex ASCIIZ string
+            std::ostringstream os;
+            while ( Num-- ) {
+               os << std::hex << static_cast<int>(*val++) << " ";
+            };
+            os << "\n" << '\0';
+            std::string s = os.str();
+            btWSSize len= static_cast<btWSSize>(s.length());
+
+            NumWritten = fwrite(s.c_str(), sizeof(btByte), len, file);
+
             fprintf(file, "\n");
          }
          break;
@@ -4056,6 +4066,9 @@ case __type##Array_t : {                                                        
          }
 
          case btByteArray_t : {       // Read Data
+            // TODO FIX.  Need to convert binary array to space seperated ASCIIZ hex string
+            return ENamedValuesNotSupported;
+#if 0
             btByteArray        val;
             btUnsigned32bitInt Num = 0;
             btUnsigned32bitInt Total;
@@ -4097,6 +4110,7 @@ case __type##Array_t : {                                                        
 
             NVS_ADD_ARRAY(val, Num);
             delete[] val;
+#endif
          } break;
 
          NVSREADNVS_FSCANF_ARRAY(bt32bitInt,         "%d"  );
@@ -4581,7 +4595,12 @@ ENamedValues CNamedValueSet::Write(std::ostream &os, unsigned level) const
             }
             CNamedValueSet::WriteUnsigned(os, typeData, level+1);
             CNamedValueSet::WriteUnsigned(os, Num, 0);
-            os.write(val, Num);
+
+            // Convert each byte into a space seperated hex string
+            while ( Num-- ) {
+               unsigned tmp = static_cast<unsigned char>(*val++);
+               os << std::hex << tmp << " ";
+            };
             os << "\n";
          } break;
 
@@ -4883,7 +4902,14 @@ case __type##Array_t : {                                                        
             }
             val = new btByte[Num+1];
             is.ignore(1);                                // eat the preceeding space
-            is.read(val, Num+1);                         // load value + terminating \n
+            int index=0,temp;
+
+            // Read each space seperated hex digit into an int then store in char array
+            //  Storing into an int insures that the format is numeric and not char.
+            for(;index<Num;index++){
+               is >> std::hex >> temp;
+               val[index] = temp;
+            }
             val[Num] = 0;                                // overwrite terminating \n with \0
 
             NVS_ADD_ARRAY(val, Num);
