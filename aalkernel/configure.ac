@@ -56,8 +56,8 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
 
-AC_INIT([aalkernel], [6.3.0], [joe.grecco@intel.com])
-AC_COPYRIGHT([Copyright(c) 2003-2016, Intel Corporation])
+AC_INIT([aalkernel], [6.5.0], [joe.grecco@intel.com])
+AC_COPYRIGHT([Copyright(c) 2003-2018, Intel Corporation])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR([kOSAL/kOSAL.c])
@@ -76,10 +76,10 @@ AALSDK_COPYRIGHT_NOTICE([Copyright(c) 2003-2016, Intel Corporation])
 dnl ############################################################################
 dnl ## Module Versioning #######################################################
 dnl ############################################################################
-AALKERNEL_DRIVER_VERSION([AALBUS],     [aalbus],     [6],[3],[0])
-AALKERNEL_DRIVER_VERSION([AALRMS],     [aalrms],     [6],[3],[0])
-AALKERNEL_DRIVER_VERSION([AALRMC],     [aalrmc],     [6],[3],[0])
-AALKERNEL_DRIVER_VERSION([CCIPCIEDRV], [ccipciedrv], [6],[3],[0])
+AALKERNEL_DRIVER_VERSION([AALBUS],     [aalbus],     [6],[5],[0])
+AALKERNEL_DRIVER_VERSION([AALRMS],     [aalrms],     [6],[5],[0])
+AALKERNEL_DRIVER_VERSION([AALRMC],     [aalrmc],     [6],[5],[0])
+AALKERNEL_DRIVER_VERSION([CCIPCIEDRV], [ccipciedrv], [6],[5],[0])
 
 dnl ############################################################################
 dnl ## Optional Packages #######################################################
