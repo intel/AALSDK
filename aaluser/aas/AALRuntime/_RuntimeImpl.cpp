@@ -398,7 +398,6 @@ void _runtime::allocService(Runtime             *pProxy,
    IDispatchable *pDisp = NULL;
    ClientMap_itr  cmItr;
 
-   AutoLock(this);
 
    if ( Started != m_state ) {
       pDisp = new RuntimeAllocateServiceFailed(m_pOwnerClient,
