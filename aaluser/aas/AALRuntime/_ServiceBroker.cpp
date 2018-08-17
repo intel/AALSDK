@@ -179,7 +179,7 @@ void _ServiceBroker::allocService(IRuntime            *pProxy,
       }
 
       m_ServiceMap.erase(std::string(sName));
-      delete SvcHost;
+//      delete SvcHost;  // TODO CAN'T DELETE SvcHost as it will unload library.  Ref count??
 
       pDisp = new ServiceAllocateFailed(pServiceClient,
                                         pRuntimeClient,

@@ -386,7 +386,7 @@ void ServiceBase::MessageDeliveryThread()
    while ( m_runMDT ) {
 
       if ( false == getmsg() ) {
-         exit(1);
+         return;
       }
 
       processmsg();
