@@ -24,13 +24,13 @@ $ make install                              # no sudo, because going to a local 
 
 
 ## To build aalsamples (which depend upon aaluser installation, so need that directory)
-## assume you are still in aaluser/mybuild
+*assume you are still in aaluser/mybuild*
 
 $ cd ../../aalsamples
 $ make prefix=$PWD/../myinst                # note this is not --prefix, but prefix
                                             # point to aaluser installation directory tree
 ## To execute a sample, e.g. HelloAAL ...
-## assume you are still in aalsamples
+*assume you are still in aalsamples*
 
 $ source ld_library_path                    # add pointer to AAL Ping Service in Hello_AAL_Service
 $ Hello_AAL/SW/helloaal                     # execute AAL Ping Client against the AAL Ping Service
@@ -38,7 +38,8 @@ $ Hello_AAL/SW/helloaal                     # execute AAL Ping Client against th
 
 ## To build aalkernel (good up through about kernel 3.6)
 
-## assume you are in aalsdk
+*assume you are in aalsdk*
+
 $ cd aalkernel
 $ mkdir mybuild
 $ cd mybuild
