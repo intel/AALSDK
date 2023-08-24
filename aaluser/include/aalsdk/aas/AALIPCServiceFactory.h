@@ -214,7 +214,9 @@ public:
    }
 #endif // __AAL_WINDOWS__
 
-     if(conntype != conn_type_tcp){
+     if(conntype != conn_type_tcp     ||
+        conntype != conn_type_libftcp ||
+        conntype != conn_type_libfrdma ){
         cerr<<"Wrong connectiontype\n";
         return false;
      }
@@ -308,7 +310,9 @@ public:
         connParmskvs->Get(AAL_SERVICE_CONNECTION_TYPE, reinterpret_cast<int*>(&conntype));
       }
 
-      if(conntype != conn_type_tcp){
+      if(conntype != conn_type_tcp     ||
+         conntype != conn_type_libftcp ||
+         conntype != conn_type_libfrdma ){
         cerr<<"Wrong connectiontype\n";
         return false;
       }

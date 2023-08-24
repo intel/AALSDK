@@ -58,22 +58,22 @@ LT_PREREQ([2.2])
 LT_INIT([dlopen])
 LT_LANG([C++])
 
-AALSDK_COPYRIGHT_NOTICE([Copyright(c) 2003-2018, Intel Corporation])
+AALSDK_COPYRIGHT_NOTICE([Copyright(c) 2003-2019, Intel Corporation])
 AC_CONFIG_COMMANDS_PRE([CPPFLAGS+=" -D__AAL_USER__=1"])
 dnl ############################################################################
 dnl ## Library Versioning ######################################################
 dnl ############################################################################
-AALSDK_LTLIB_VERSION([OSAL],         [libOSAL],         [6],[5],[0])
-AALSDK_LTLIB_VERSION([AAS],          [libAAS],          [6],[5],[0])
-AALSDK_LTLIB_VERSION([AALRUNTIME],   [libaalrt],        [6],[5],[0])
-AALSDK_LTLIB_VERSION([RESMGR],       [libAASResMgr],    [6],[5],[0])
-AALSDK_LTLIB_VERSION([RRM],          [librrm],          [6],[5],[0])
-AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [6],[5],[0])
-AALSDK_LTLIB_VERSION([AIASERVICE],   [libaia],          [6],[5],[0])
-AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [6],[5],[0])
-AALSDK_LTLIB_VERSION([ASE],          [libASE],          [6],[5],[0])
-AALSDK_LTLIB_VERSION([ALI],          [libALI],          [6],[5],[0])
-AALSDK_LTLIB_VERSION([PWRMGR],       [libPwrMgr],       [6],[5],[0])
+AALSDK_LTLIB_VERSION([OSAL],         [libOSAL],         [6],[5],[1])
+AALSDK_LTLIB_VERSION([AAS],          [libAAS],          [6],[5],[1])
+AALSDK_LTLIB_VERSION([AALRUNTIME],   [libaalrt],        [6],[5],[1])
+AALSDK_LTLIB_VERSION([RESMGR],       [libAASResMgr],    [6],[5],[1])
+AALSDK_LTLIB_VERSION([RRM],          [librrm],          [6],[5],[1])
+AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [6],[5],[1])
+AALSDK_LTLIB_VERSION([AIASERVICE],   [libaia],          [6],[5],[1])
+AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [6],[5],[1])
+AALSDK_LTLIB_VERSION([ASE],          [libASE],          [6],[5],[1])
+AALSDK_LTLIB_VERSION([ALI],          [libALI],          [6],[5],[1])
+AALSDK_LTLIB_VERSION([PWRMGR],       [libPwrMgr],       [6],[5],[1])
 
 
 dnl ############################################################################

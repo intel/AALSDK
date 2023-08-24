@@ -92,8 +92,8 @@ DynLinkLibrary::DynLinkLibrary(const std::string &LibraryName) :
 //   const char *Errmsg = dlerror();
 #endif // __AAL_WINDOWS__
 
-#if HAVE_LTDL_H
    const char *ErrMsg = NULL;
+#if HAVE_LTDL_H
    lt_dladvise advise;
 
    if ( 0 != aalsdk_ltdl_lock() ) {

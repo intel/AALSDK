@@ -318,7 +318,12 @@ void session_init()
       ipc_init();
 
       // Initialize MMIO port lock
-      if ( pthread_mutex_init(&mmio_port_lock, NULL) != 0)
+      pthread_mutexattr_t attr;
+      pthread_mutexattr_init(&attr);
+      pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+      pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+
+      if ( pthread_mutex_init(&mmio_port_lock, &attr) != 0)
         {
           BEGIN_RED_FONTCOLOR;
           printf("  [APP]  MMIO Lock initialization failed, EXIT\n");

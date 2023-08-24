@@ -74,6 +74,8 @@ typedef enum eservice_connection_types
 {
    conn_type_udp,
    conn_type_tcp,
+   conn_type_libftcp,
+   conn_type_libfrdma,
    conn_type_shram
 } eservice_connection_types;
 
